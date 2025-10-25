@@ -174,8 +174,8 @@ dong4j dong4j@gmail.com
 
 1. 克隆项目：
    ```bash
-   git clone https://github.com/zeka-stack/good-kits.git
-   cd good-kits/ai-javadoc
+   git clone https://github.com/zeka-stack/zeka-idea-plugin.git
+   cd zeka-idea-plugin/ai-javadoc
    ```
 
 2. 使用 Gradle 构建项目：
@@ -298,7 +298,7 @@ A: 根据您的需求选择：
 
 1. 查看[项目技术解析文档](docs/项目技术解析文档.md)
 2. 查看[IDEA Plugin 开发文档](docs/IDEA_Plugin_开发文档.md)
-3. 在 [GitHub Issues](https://github.com/zeka-stack/good-kits/issues) 上提交问题
+3. 在 [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues) 上提交问题
 4. 发送邮件至 dong4j@gmail.com
 
 ## 致谢

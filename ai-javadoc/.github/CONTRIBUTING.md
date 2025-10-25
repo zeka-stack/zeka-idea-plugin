@@ -7,8 +7,8 @@
 ### 1. Fork 并克隆项目
 
 ```bash
-git clone https://github.com/zeka-stack/good-kits.git
-cd good-kits/ai-javadoc
+git clone https://github.com/zeka-stack/zeka-idea-plugin.git
+cd zeka-idea-plugin/ai-javadoc
 ```
 
 ### 2. 设置开发环境
@@ -134,7 +134,7 @@ Closes #123
 
 ## 📞 联系方式
 
-- GitHub Issues: [提交问题](https://github.com/zeka-stack/good-kits/issues)
+- GitHub Issues: [提交问题](https://github.com/zeka-stack/zeka-idea-plugin/issues)
 - Email: dong4j@gmail.com
 
 ## 📜 许可证

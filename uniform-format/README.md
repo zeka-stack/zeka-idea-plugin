@@ -137,7 +137,7 @@ uniform-format/
 ```bash
 # 克隆项目
 git clone https://github.com/dong4j/zeka.stack.git
-cd zeka.stack/good-kits/uniform-format
+cd zeka.stack/zeka-idea-plugin/uniform-format
 
 # 构建插件
 ./gradlew buildPlugin
