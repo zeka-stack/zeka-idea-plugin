@@ -46,3 +46,6 @@ bin/
 chain.crt
 private.pem
 private_encrypted.pem
+.qoder
+AGENTS.md
+IFLOW.md
