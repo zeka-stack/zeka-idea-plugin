@@ -22,7 +22,6 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = "223"  // 2022.3
-            untilBuild = "999.*" // 支持所有未来版本
         }
     }
 }

@@ -47,7 +47,7 @@
 
     <!-- 产品和插件兼容性要求。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
-    <idea-version since-build="223" until-build="999.*"/>
+    <idea-version since-build="223"/>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
 
