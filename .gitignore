@@ -43,3 +43,6 @@ bin/
 .intellijPlatform/
 *.jar
 .gradle/
+chain.crt
+private.pem
+private_encrypted.pem
