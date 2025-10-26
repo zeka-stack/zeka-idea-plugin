@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntelliJ AI Javadoc - 利用人工智能为 Java 代码自动生成 JavaDoc 注释，支持通义千问、Ollama 等 AI 服务">
+    <meta name="keywords" content="IntelliJ IDEA Plugin, AI Javadoc, Java Documentation, AI Code Generation, 通义千问, Ollama">
+    <title>IntelliJ AI Javadoc Plugin - AI 驱动的 Java 文档生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        .logo {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            line-height: 80px;
+            margin-right: 20px;
+            font-size: 2em;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            margin-bottom: 30px;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Features */
+        .features {
+            padding: 60px 40px;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 50px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+
+        .feature-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .feature-description {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Providers */
+        .providers {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 60px 40px;
+            color: white;
+        }
+
+        .provider-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .provider-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .provider-card:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: white;
+            transform: scale(1.05);
+        }
+
+        .provider-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Usage */
+        .usage {
+            padding: 60px 40px;
+            background: #f8f9fa;
+        }
+
+        .usage-steps {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            align-items: start;
+            margin-bottom: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .step-content p {
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* Installation */
+        .installation {
+            padding: 60px 40px;
+            background: white;
+        }
+
+        .install-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .install-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .install-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .install-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .install-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .install-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .install-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Stats */
+        .stats {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 60px 40px;
+            color: white;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .stat-item h3 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .stat-item p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Footer */
+        .footer {
+            background: #2d3748;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .footer-links {
+            margin: 20px 0;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #667eea;
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2em;
+            }
+
+            .logo-icon {
+                width: 60px;
+                height: 60px;
+                line-height: 60px;
+                font-size: 1.5em;
+            }
+
+            .feature-grid,
+            .provider-grid,
+            .install-options {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .features,
+            .usage,
+            .installation {
+                padding: 40px 20px;
+            }
+        }
+
+        /* Code highlight */
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-block code {
+            display: block;
+            line-height: 1.8;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-comment {
+            color: #7f8fa4;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <span class="logo-icon">📝</span>
+            IntelliJ AI Javadoc
+        </div>
+        <p class="subtitle">智能 AI 驱动的 Java 文档自动生成工具</p>
+        <span class="version-badge">🚀 Version 1.0.0</span>
+    </div>
+
+    <!-- Features -->
+    <div class="features">
+        <h2 class="section-title">✨ 强大功能</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3 class="feature-title">多 AI 提供商</h3>
+                <p class="feature-description">支持通义千问、Ollama、LM Studio、硅基流动等多种 AI 服务，满足不同需求</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">一键生成</h3>
+                <p class="feature-description">快捷键、右键菜单、Generate 菜单多种触发方式，一键生成高质量文档</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">智能识别</h3>
+                <p class="feature-description">自动识别方法、字段、类等元素，根据上下文生成精准的 JavaDoc 注释</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📦</div>
+                <h3 class="feature-title">批量处理</h3>
+                <p class="feature-description">支持整个文件或目录批量生成文档，提高工作效率</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3 class="feature-title">增量更新</h3>
+                <p class="feature-description">只为没有文档的元素生成注释，保留已有文档，智能不重复</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧪</div>
+                <h3 class="feature-title">测试方法识别</h3>
+                <p class="feature-description">自动识别 JUnit 测试方法，使用专用模板生成测试用例文档</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Providers -->
+    <div class="providers">
+        <h2 class="section-title" style="color: white;">🔌 支持的 AI 服务</h2>
+        <div class="provider-grid">
+            <div class="provider-card">
+                <div style="font-size: 2em;">🌐</div>
+                <div class="provider-name">通义千问</div>
+                <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">阿里云 AI 服务</p>
+            </div>
+            <div class="provider-card">
+                <div style="font-size: 2em;">💻</div>
+                <div class="provider-name">Ollama</div>
+                <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">本地大模型</p>
+            </div>
+            <div class="provider-card">
+                <div style="font-size: 2em;">🔧</div>
+                <div class="provider-name">LM Studio</div>
+                <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">本地模型</p>
+            </div>
+            <div class="provider-card">
+                <div style="font-size: 2em;">⚡</div>
+                <div class="provider-name">硅基流动</div>
+                <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">开源模型</p>
+            </div>
+            <div class="provider-card">
+                <div style="font-size: 2em;">🌍</div>
+                <div class="provider-name">自定义服务</div>
+                <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">OpenAI 兼容</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage -->
+    <div class="usage">
+        <h2 class="section-title">🚀 快速开始</h2>
+        <div class="usage-steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>打开设置</h3>
+                    <p>在 IntelliJ IDEA 中，打开 <strong>Settings → Tools → AI Javadoc</strong>，配置您的 AI 服务提供商和 API Key</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>选择触发方式</h3>
+                    <p>使用快捷键 <strong>Ctrl+Shift+D</strong>（Windows/Linux）或 <strong>Cmd+Shift+D</strong>（macOS），或通过右键菜单选择</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>生成文档</h3>
+                    <p>将光标放在要生成文档的方法、字段或类上，插件会智能识别并生成相应的 JavaDoc 注释</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Code -->
+    <div class="installation">
+        <h2 class="section-title">💡 示例代码</h2>
+        <div style="max-width: 800px; margin: 0 auto;">
+            <div class="code-block">
+                <code>
+                    <span class="code-comment">// 生成前</span><br>
+                    <span class="code-keyword">public class</span> UserService {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">public void</span>
+                    createUser(<span class="code-keyword">String</span> username) {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment">// 业务逻辑</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    }<br>
+                    <br>
+                    <span class="code-comment">// 生成后</span><br>
+                    /**<br>
+                    &nbsp;* 用户服务类<br>
+                    &nbsp;* 提供用户相关的业务操作<br>
+                    &nbsp;*/<br>
+                    <span class="code-keyword">public class</span> UserService {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;/**<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* 创建用户<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* <span class="code-keyword">@param</span> username 用户名<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;*/<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">public void</span>
+                    createUser(<span class="code-keyword">String</span> username) {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment">// 业务逻辑</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    }
+                </code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installation -->
+    <div class="providers">
+        <h2 class="section-title" style="color: white;">📥 安装方式</h2>
+        <div class="install-options">
+            <div class="install-card">
+                <div class="install-icon">🛒</div>
+                <div class="install-title">JetBrains Marketplace</div>
+                <p>从官方插件市场一键安装</p>
+                <a href="https://plugins.jetbrains.com/plugin/your-plugin-id" class="install-button" target="_blank">立即安装</a>
+            </div>
+            <div class="install-card">
+                <div class="install-icon">📦</div>
+                <div class="install-title">手动安装</div>
+                <p>下载插件包手动安装</p>
+                <a href="https://github.com/zeka-stack/zeka-idea-plugin/releases" class="install-button" target="_blank">下载 ZIP</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <h2 class="section-title" style="color: white;">📊 插件特性</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h3>5+</h3>
+                <p>AI 服务提供商</p>
+            </div>
+            <div class="stat-item">
+                <h3>4+</h3>
+                <p>文档生成模式</p>
+            </div>
+            <div class="stat-item">
+                <h3>100%</h3>
+                <p>增量更新支持</p>
+            </div>
+            <div class="stat-item">
+                <h3>⚡</h3>
+                <p>毫秒级响应</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <h3 style="font-size: 1.5em; margin-bottom: 20px;">💝 喜欢这个插件吗？</h3>
+        <div class="footer-links">
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank">⭐ GitHub Star</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank">🐛 报告问题</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/pulls" target="_blank">🤝 贡献代码</a>
+        </div>
+        <div class="footer-note">
+            <p>Made with ❤️ by dong4j</p>
+            <p style="margin-top: 10px;">Open Source • Free to Use • MIT License</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
