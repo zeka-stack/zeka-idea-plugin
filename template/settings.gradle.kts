@@ -1,1 +1,2 @@
-rootProject.name = "idea-plugin-template"
+rootProject.name = providers.gradleProperty("rootProjectName").orElse("idea-plugin-template").get()
+
