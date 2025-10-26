@@ -4,8 +4,8 @@ plugins {
     id("com.github.sherter.google-java-format") version "0.9"
 }
 
-group = "dev.dong4j"
-version = "1.0.0"
+group = providers.gradleProperty("pluginGroup").get()
+version = providers.gradleProperty("pluginVersion").get()
 
 repositories {
     mavenCentral()
@@ -18,10 +18,40 @@ repositories {
 // Configure Gradle IntelliJ Plugin 2.x
 intellijPlatform {
     pluginConfiguration {
-        version = project.version.toString()
+        name = providers.gradleProperty("pluginName")
+        version = providers.gradleProperty("pluginVersion")
+
+        // 从外部文件读取插件描述和更新记录
+        description = providers.fileContents(layout.projectDirectory.file("includes/pluginDescription.html")).asText
+        changeNotes = providers.fileContents(layout.projectDirectory.file("includes/pluginChanges.html")).asText
 
         ideaVersion {
-            sinceBuild = "223"  // 2022.3
+            sinceBuild = providers.gradleProperty("platformSinceBuild")
+            untilBuild = providers.gradleProperty("platformUntilBuild")
+        }
+    }
+
+    pluginVerification {
+        ides {
+            ide("IC", "2022.3")
+            ide("IC", "2023.1")
+            ide("IC", "2023.2")
+            ide("IC", "2023.3")
+            ide("IC", "2024.1")
+            ide("IC", "2024.2")
+            ide("IC", "2024.3")
+            ide("IC", "2025.1")
+            ide("IC", "2025.2")
+
+            ide("IU", "2022.3")
+            ide("IU", "2023.1")
+            ide("IU", "2023.2")
+            ide("IU", "2023.3")
+            ide("IU", "2024.1")
+            ide("IU", "2024.2")
+            ide("IU", "2024.3")
+            ide("IU", "2025.1")
+            ide("IU", "2025.2")
         }
     }
 }
@@ -29,13 +59,19 @@ intellijPlatform {
 dependencies {
     // IntelliJ Platform
     intellijPlatform {
-        intellijIdeaCommunity("2022.3")
+        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
 
         // Bundled plugins
         bundledPlugin("com.intellij.java")
 
         // Plugin development utilities
         instrumentationTools()
+
+        // Marketplace ZIP Signer for plugin signing
+        zipSigner()
+
+        // Plugin verifier for validation
+        pluginVerifier()
 
         // Test framework
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
@@ -60,9 +96,11 @@ dependencies {
 }
 
 tasks {
+    val javaVersion = providers.gradleProperty("javaVersion").get()
+    
     withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
     }
 
     signPlugin {
@@ -73,6 +111,7 @@ tasks {
 
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
+        channels = providers.gradleProperty("publishChannels").map { listOf(it) }
     }
 
     test {
