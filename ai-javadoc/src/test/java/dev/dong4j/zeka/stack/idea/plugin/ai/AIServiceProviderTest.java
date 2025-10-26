@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.OllamaProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.QianWenProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 

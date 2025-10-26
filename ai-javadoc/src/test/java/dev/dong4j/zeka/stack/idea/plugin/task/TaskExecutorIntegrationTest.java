@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.MyBasePlatformTestCase;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**

@@ -30,8 +30,8 @@ import javax.swing.UIManager;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 

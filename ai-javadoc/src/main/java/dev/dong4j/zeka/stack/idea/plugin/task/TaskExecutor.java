@@ -33,7 +33,7 @@ import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.Getter;

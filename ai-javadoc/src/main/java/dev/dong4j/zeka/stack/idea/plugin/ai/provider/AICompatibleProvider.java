@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.ai;
+package dev.dong4j.zeka.stack.idea.plugin.ai.provider;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 
@@ -558,7 +560,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             }
 
             // 如果没有 usage 信息，尝试解析 choices 作为备选方案
-            if (json.has("choices") && json.getAsJsonArray("choices").size() > 0) {
+            if (json.has("choices") && !json.getAsJsonArray("choices").isEmpty()) {
                 if (settings.verboseLogging) {
                     LOG.debug("Validation successful: response has choices");
                 }
@@ -617,6 +619,11 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             }
 
             return filteredContent;
+        }
+
+        // 某些时候会没有 </think> 标签, 那如果存在 think 内容就不替换注释, 否则出现错误
+        if (content.contains("<think>")) {
+            return "";
         }
 
         // 没有找到思考标签，返回原始内容

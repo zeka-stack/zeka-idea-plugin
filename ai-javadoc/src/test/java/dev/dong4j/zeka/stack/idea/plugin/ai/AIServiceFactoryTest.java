@@ -6,6 +6,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.LMStudioProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.OllamaProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.QianWenProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.SiliconFlowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 import static org.assertj.core.api.Assertions.assertThat;

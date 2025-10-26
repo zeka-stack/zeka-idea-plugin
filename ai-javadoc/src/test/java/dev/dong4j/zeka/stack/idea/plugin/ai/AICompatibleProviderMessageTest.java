@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.CustomProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -8,6 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.CustomProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.LMStudioProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.OllamaProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.QianWenProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.SiliconFlowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 

@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 

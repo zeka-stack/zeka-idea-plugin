@@ -26,6 +26,7 @@
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState"/>
 
         <!-- 设置面板 -->
+        <!--suppress PluginXmlI18n -->
         <projectConfigurable
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
@@ -33,6 +34,7 @@
                 displayName="AI Javadoc"/>
 
         <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
+        <!--suppress PluginXmlI18n -->
         <notificationGroup id="AI Javadoc Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>

@@ -1,9 +1,11 @@
-package dev.dong4j.zeka.stack.idea.plugin.ai;
+package dev.dong4j.zeka.stack.idea.plugin.ai.provider;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 
 /**
