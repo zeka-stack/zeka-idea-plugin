@@ -580,14 +580,13 @@ public class TaskExecutor {
 
             // 计算动态高度
             int providerCount = providerStats.size();
-            int totalRows = providerCount + 2; // 提供商行数 + 表头 + 总体统计行
 
             // 每行高度约30px，表头高度约35px，总体统计行高度约35px, 在加上标题和一定的冗余量
-            int calculatedHeight = 35 + (providerCount * 30) + 35 + 50;
+            int calculatedHeight = 35 + (providerCount * 30) + 35 + 80;
 
             // 设置最小和最大高度阈值
-            int minHeight = 200;  // 最小高度
-            int maxHeight = 600;  // 最大高度
+            int minHeight = 400;  // 最小高度
+            int maxHeight = 1000;  // 最大高度
 
             // 应用阈值限制
             int finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));

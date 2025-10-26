@@ -1,6 +1,8 @@
 # IntelliJ AI Javadoc 插件
 
-**中文** | [English](./README.md)
+**中文** | [English](./README.md) | [📄 精美 Landing Page](./index.html)
+
+> 🌟 [查看精美的推广页面](./index.html) - 更直观地了解插件功能！
 
 IntelliJ AI Javadoc 插件是一个功能强大的工具，利用人工智能为您的 Java 代码生成 JavaDoc 注释。它支持多种 AI 服务提供商，包括通义千问和 Ollama
 本地模型，提供智能且上下文感知的文档建议，适用于方法、类和接口。
