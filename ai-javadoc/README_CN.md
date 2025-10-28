@@ -41,9 +41,9 @@ IntelliJ AI Javadoc 插件是一个功能强大的工具，利用人工智能为
 
 ### 其他触发方式
 
-- **右键菜单**：在编辑器中右键 → "Generate JavaDoc with AI"
-- **Generate 菜单**：按 **Alt + Insert**（Windows/Linux）或 **Cmd + N**（macOS）→ 选择 "Generate JavaDoc with AI"
-- **Intention Action**：按 **Alt + Enter**（Windows/Linux）或 **Option + Enter**（macOS）→ 选择 "Generate JavaDoc with AI"
+- **右键菜单**：在编辑器中右键 → "Generate Javadoc with AI"
+- **Generate 菜单**：按 **Alt + Insert**（Windows/Linux）或 **Cmd + N**（macOS）→ 选择 "Generate Javadoc with AI"
+- **Intention Action**：按 **Alt + Enter**（Windows/Linux）或 **Option + Enter**（macOS）→ 选择 "Generate Javadoc with AI"
 
 ### 智能定位
 

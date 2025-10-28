@@ -44,9 +44,9 @@ The plugin provides multiple trigger methods, you can choose according to your n
 
 ### Other Trigger Methods
 
-- **Right-click Menu**: Right-click in editor → "Generate JavaDoc with AI"
-- **Generate Menu**: Press **Alt + Insert** (Windows/Linux) or **Cmd + N** (macOS) → Select "Generate JavaDoc with AI"
-- **Intention Action**: Press **Alt + Enter** (Windows/Linux) or **Option + Enter** (macOS) → Select "Generate JavaDoc with AI"
+- **Right-click Menu**: Right-click in editor → "Generate Javadoc with AI"
+- **Generate Menu**: Press **Alt + Insert** (Windows/Linux) or **Cmd + N** (macOS) → Select "Generate Javadoc with AI"
+- **Intention Action**: Press **Alt + Enter** (Windows/Linux) or **Option + Enter** (macOS) → Select "Generate Javadoc with AI"
 
 ### Smart Positioning
 

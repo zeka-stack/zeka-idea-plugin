@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Generate (Command+N) 菜单中的 JavaDoc 生成
  *
- * <p>在 Generate 弹出菜单中添加"Generate JavaDoc with AI"选项。
+ * <p>在 Generate 弹出菜单中添加"Generate Javadoc with AI"选项。
  * 用户可以通过 Command+N (Mac) 或 Alt+Insert (Win/Linux) 快捷键调用。
  * 作为插件的主要入口点之一，提供便捷的文档生成功能。
  *
