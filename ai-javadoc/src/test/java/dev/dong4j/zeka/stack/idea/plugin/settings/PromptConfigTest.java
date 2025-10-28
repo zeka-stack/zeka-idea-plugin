@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
+import lombok.extern.slf4j.Slf4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -11,20 +12,32 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Prompt 配置测试
- *
- * <p>测试 Prompt 模板的保存、加载和重置功能。
- * 验证配置的持久化和 UI 交互的正确性。
+ * Prompt 配置测试类
+ * <p>
+ * 用于验证 JavaDoc 提示词模板的保存、加载、重置以及空值处理功能的测试类。
+ * 包括对系统提示词、类提示词、方法提示词、字段提示词和测试提示词的测试。
+ * 确保 UI 交互与配置状态的同步正确性，以及默认模板的有效性。
  *
  * @author dong4j
  * @version 1.0.0
+ * @date 2025.10.24
  * @since 1.0.0
  */
+@Slf4j
 public class PromptConfigTest {
 
+    /** 设置面板，用于配置 JavaDoc 生成相关参数 */
     private JavaDocSettingsPanel settingsPanel;
+    /** 原始设置状态，用于保存未修改前的设置信息 */
     private SettingsState originalSettings;
 
+    /**
+     * 初始化测试环境，设置原始配置和配置面板
+     * <p>
+     * 在每次测试前创建新的配置实例，并初始化配置面板，加载当前配置到面板中
+     *
+     * @since 1.0
+     */
     @BeforeEach
     public void setUp() {
         // 创建新的设置实例
@@ -38,7 +51,12 @@ public class PromptConfigTest {
     }
 
     /**
-     * 测试 Prompt 模板的修改检测
+     * 测试 Prompt 模板的修改检测功能
+     * <p>
+     * 测试场景：用户修改了系统提示词后，验证系统是否能够正确检测到修改
+     * 预期结果：修改前后的系统提示词应不一致，且应与用户输入的修改内容一致
+     * <p>
+     * 说明：测试通过模拟用户输入修改内容，并对比获取到的设置值，验证修改检测机制是否正常工作
      */
     @Test
     public void testPromptModificationDetection() {
@@ -62,6 +80,11 @@ public class PromptConfigTest {
 
     /**
      * 测试 Prompt 模板的重置功能
+     * <p>
+     * 测试场景：用户修改了系统提示词后，调用重置方法将其恢复为默认值
+     * 预期结果：重置后文本应与默认提示词一致，且与修改前的自定义提示词不同
+     * <p>
+     * 该测试验证了重置功能的正确性，确保系统提示词能够正确恢复到默认状态
      */
     @Test
     public void testPromptReset() {
@@ -83,6 +106,12 @@ public class PromptConfigTest {
 
     /**
      * 测试所有 Prompt 模板的重置功能
+     * <p>
+     * 测试场景：修改所有提示词后，调用重置方法将提示词恢复为默认值
+     * 预期结果：所有提示词文本应与对应的默认模板一致
+     * <p>
+     * 该测试验证了 {@link SettingsPanel#resetPromptToDefault(String, javax.swing.JTextField)} 方法的正确性，
+     * 确保每个提示词字段在调用重置方法后能够正确恢复为系统预设的默认值。
      */
     @Test
     public void testAllPromptReset() {
@@ -115,7 +144,10 @@ public class PromptConfigTest {
     }
 
     /**
-     * 测试 Prompt 模板的保存和加载
+     * 测试 Prompt 模板的保存和加载功能
+     * <p>
+     * 测试场景：用户修改系统提示词和类提示词后，验证设置是否被正确保存，并通过新面板加载验证数据是否准确还原
+     * 预期结果：保存后的设置与加载后的面板内容应保持一致
      */
     @Test
     public void testPromptSaveAndLoad() {
@@ -144,6 +176,11 @@ public class PromptConfigTest {
 
     /**
      * 测试空提示词的处理
+     * <p>
+     * 测试场景：当系统提示词和类提示词为空或仅包含空格时
+     * 预期结果：设置对象中的提示词字段应被正确 trim 处理为为空字符串
+     * <p>
+     * 注意：此测试需要确保 settingsPanel 的文本区域和 getSettings 方法能正确读取和处理输入
      */
     @Test
     public void testEmptyPromptHandling() {
@@ -161,6 +198,11 @@ public class PromptConfigTest {
 
     /**
      * 测试默认提示词模板的有效性
+     * <p>
+     * 测试场景：验证系统默认的各类提示词模板是否已正确初始化
+     * 预期结果：所有默认提示词模板对象不为空且内容不为空字符串
+     * <p>
+     * 说明：该测试确保应用在未配置任何自定义提示词时，能够提供有效的默认模板
      */
     @Test
     public void testDefaultPromptTemplates() {

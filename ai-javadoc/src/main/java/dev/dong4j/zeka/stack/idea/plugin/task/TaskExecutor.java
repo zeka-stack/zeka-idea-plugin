@@ -297,7 +297,12 @@ public class TaskExecutor {
     }
 
     /**
-     * 顺序处理任务（原有逻辑）
+     * 顺序处理任务列表
+     * <p>
+     * 按顺序处理给定的任务列表，更新进度指示器并记录处理结果统计信息。
+     *
+     * @param tasks 任务列表
+     * @return 始终返回 true，表示处理完成
      */
     private boolean processTasksSequentially(@NotNull List<DocumentationTask> tasks) {
         int totalTasks = tasks.size();
@@ -330,6 +335,11 @@ public class TaskExecutor {
 
     /**
      * 并行处理任务（性能模式）
+     * <p>
+     * 该方法在性能模式下，利用多个AI服务提供商并行处理任务列表。如果无可用提供商，则回退到顺序处理。
+     *
+     * @param tasks 任务列表，包含需要处理的文档任务
+     * @return 处理是否成功
      */
     private boolean processTasksInParallel(@NotNull List<DocumentationTask> tasks) {
         List<AIServiceProvider> availableProviders = AIServiceFactory.getAvailableProviders();
@@ -398,7 +408,14 @@ public class TaskExecutor {
     }
 
     /**
-     * 使用指定提供商处理任务
+     * 使用指定提供商处理任务列表
+     * <p>
+     * 遍历任务列表，依次使用指定的AI服务提供商处理每个任务，并更新处理进度和统计信息。
+     *
+     * @param tasks     任务列表，包含需要处理的文档任务
+     * @param provider  AI服务提供商，用于执行具体的任务处理逻辑
+     * @param taskIndex 用于记录当前处理任务索引的原子整数，确保线程安全
+     * @param stats     统计信息对象，用于记录处理过程中的完成、失败和跳过任务数量
      */
     private void processTasksWithProvider(@NotNull List<DocumentationTask> tasks,
                                           @NotNull AIServiceProvider provider,
@@ -431,6 +448,13 @@ public class TaskExecutor {
 
     /**
      * 使用指定提供商处理单个任务
+     * <p>
+     * 该方法接收一个任务对象、一个AI服务提供商对象和一个统计对象，用于处理文档生成任务。
+     * 根据任务状态决定是否跳过任务，否则调用提供商生成文档，并根据结果更新任务状态和统计信息。
+     *
+     * @param task     要处理的文档生成任务对象
+     * @param provider 提供文档生成服务的AI服务提供商
+     * @param stats    用于记录处理统计信息的对象
      */
     private void processTaskWithProvider(@NotNull DocumentationTask task,
                                          @NotNull AIServiceProvider provider,
@@ -482,7 +506,12 @@ public class TaskExecutor {
     }
 
     /**
-     * 显示提供商统计信息
+     * 显示提供商的统计信息，包括HTML格式的表格和日志信息。
+     * <p>
+     * 该方法接收一个包含提供商统计信息的Map，生成HTML格式的统计表格，并在日志中记录详细信息。
+     * 同时，会弹出一个对话框展示统计结果。
+     *
+     * @param providerStats 包含提供商统计信息的Map，键为服务商名称，值为对应的统计对象
      */
     private void showProviderStatistics(@NotNull Map<String, ProviderStatistics> providerStats) {
         // 创建HTML格式的统计信息

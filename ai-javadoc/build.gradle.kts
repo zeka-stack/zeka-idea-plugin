@@ -79,6 +79,7 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.13")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")

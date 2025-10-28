@@ -384,9 +384,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      *
      * @param prompt 提示词内容
      * @return 构建好的 JSON 请求体
-     * @see org.json.JSONObject
      */
-    protected JsonObject buildRequestBody(String prompt) {
+    public JsonObject buildRequestBody(String prompt) {
         // 创建 system 消息
         JsonObject systemMessage = new JsonObject();
         systemMessage.addProperty("role", "system");
@@ -445,7 +444,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      *
      * @return 系统提示词内容
      */
-    protected String getSystemPrompt() {
+    public String getSystemPrompt() {
         String userSystemPrompt = settings.systemPromptTemplate;
 
         // 如果用户没有配置或配置为空，使用默认模板

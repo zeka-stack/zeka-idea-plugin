@@ -27,28 +27,31 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * AI Provider HTTP 集成测试
  * <p>
- * 本测试类展示如何测试真实的 HTTP 调用，包括：
- * <ul>
- *   <li>使用 MockWebServer 模拟 AI API 服务器</li>
- *   <li>测试成功的 HTTP 请求和响应</li>
- *   <li>测试各种错误场景（401, 429, 500等）</li>
- *   <li>测试重试机制</li>
- *   <li>验证请求头和请求体</li>
- *   <li>测试超时和网络错误</li>
- * </ul>
- * <p>
- * 这是真实的 HTTP 集成测试，不使用 Mock，而是启动一个本地 HTTP 服务器。
+ * 本测试类用于验证 AI 服务提供者与 HTTP API 的集成行为，包括正常请求、错误处理、重试机制、网络异常、响应解析等场景。
+ * 测试通过启动本地 MockWebServer 模拟真实 API 服务，确保测试的准确性和完整性。
  *
  * @author Cursor AI Assistant
  * @version 1.0
+ * @date 2025.04.01
+ * @since 1.0
  */
 @DisplayName("AI Provider HTTP 集成测试")
 public class AIProviderHttpIntegrationTest {
 
+    /** 模拟的 Web 服务器实例，用于测试网络请求和响应 */
     private MockWebServer mockServer;
+    /** 设置状态信息 */
     private SettingsState settings;
+    /** AIServiceProvider 实例，用于调用 AI 服务 */
     private AIServiceProvider provider;
 
+    /**
+     * 初始化测试环境，启动 Mock Web Server 并配置 Settings 对象
+     * <p>
+     * 该方法用于在每个测试用例执行前设置必要的测试环境，包括启动模拟的 Web 服务器、初始化 Settings 配置信息以及创建对应的 AI 服务提供者。
+     *
+     * @throws IOException 如果启动 Mock Web Server 时发生 I/O 异常
+     */
     @BeforeEach
     void setUp() throws IOException {
         // 启动 Mock Web Server
@@ -71,6 +74,13 @@ public class AIProviderHttpIntegrationTest {
         provider = new QianWenProvider(settings);
     }
 
+    /**
+     * 每次测试结束后关闭MockServer
+     * <p>
+     * 用于确保在每次测试用例执行完毕后，MockServer服务被正确关闭，释放相关资源。
+     *
+     * @throws IOException 如果关闭MockServer过程中发生IO异常
+     */
     @AfterEach
     void tearDown() throws IOException {
         if (mockServer != null) {
@@ -78,6 +88,16 @@ public class AIProviderHttpIntegrationTest {
         }
     }
 
+    /**
+     * 测试文档生成功能是否能正确模拟真实 API 响应
+     * <p>
+     * 测试场景：调用文档生成接口并模拟 OpenAI 格式的响应
+     * 预期结果：返回的文档注释应包含指定的测试方法内容，并且请求参数和返回值注释应正确
+     * <p>
+     * 测试过程中需要模拟 API 响应，验证生成的文档是否包含指定的注释内容，如 {@link #testMethod(String)} 方法的注释
+     * <p>
+     * 此外，还需验证请求是否正确发送至指定路径，并包含正确的请求头和请求体参数
+     */
     @Test
     @DisplayName("测试成功的文档生成 - 模拟真实 API 响应")
     void testSuccessfulDocumentationGeneration() throws Exception {
@@ -144,6 +164,14 @@ public class AIProviderHttpIntegrationTest {
         assertThat(requestJson.has("messages")).isTrue();
     }
 
+    /**
+     * 测试 401 未授权错误场景
+     * <p>
+     * 测试场景：当 API Key 无效时，调用 generateDocumentation 方法应抛出异常
+     * 预期结果：应抛出 AIServiceException 异常，且异常信息包含 "Invalid API Key"，错误码为 INVALID_API_KEY
+     * <p>
+     * 说明：通过 mockServer 模拟返回 401 状态码和错误信息，验证异常处理逻辑是否正确
+     */
     @Test
     @DisplayName("测试 401 未授权错误 - Invalid API Key")
     void testUnauthorizedError() {
@@ -165,6 +193,14 @@ public class AIProviderHttpIntegrationTest {
             .isEqualTo(AIServiceException.ErrorCode.INVALID_API_KEY);
     }
 
+    /**
+     * 测试生成文档时遇到 429 请求过多错误的场景
+     * <p>
+     * 测试场景：模拟服务器返回 429 状态码及对应的错误信息，验证生成文档时是否正确抛出异常并处理
+     * 预期结果：应抛出 AIServiceException 异常，且异常信息包含 "Rate limit"，错误码应为 RATE_LIMIT
+     * <p>
+     * 该测试需依赖 mockServer 模拟 HTTP 响应，确保在调用 provider.generateDocumentation 方法时能正确识别并处理 429 错误
+     */
     @Test
     @DisplayName("测试 429 请求过多错误 - Rate Limit")
     void testRateLimitError() {
@@ -185,6 +221,14 @@ public class AIProviderHttpIntegrationTest {
             .isEqualTo(AIServiceException.ErrorCode.RATE_LIMIT);
     }
 
+    /**
+     * 测试服务器返回 500 错误时的异常处理逻辑
+     * <p>
+     * 测试场景：模拟服务器返回 500 错误响应，验证异常是否被正确捕获和处理
+     * 预期结果：应抛出 AIServiceException 异常，且错误信息包含 "Server error"，错误码为 SERVICE_UNAVAILABLE
+     * <p>
+     * 注意：该测试依赖于 mockServer 模拟 HTTP 响应，需确保相关依赖已正确配置
+     */
     @Test
     @DisplayName("测试 500 服务器错误")
     void testServerError() {
@@ -205,6 +249,16 @@ public class AIProviderHttpIntegrationTest {
             .isEqualTo(AIServiceException.ErrorCode.SERVICE_UNAVAILABLE);
     }
 
+    /**
+     * 测试重试机制功能
+     * <p>
+     * 测试场景：第一次请求失败（500错误），第二次请求成功
+     * 预期结果：应返回成功的文档内容，并验证发送了两次POST请求
+     * <p>
+     * 该测试验证系统在首次请求失败时是否能正确触发重试机制，并在第二次请求成功后返回预期结果
+     * <p>
+     * 注意：测试中使用了MockServer模拟两次请求，第一次返回500错误，第二次返回成功响应
+     */
     @Test
     @DisplayName("测试重试机制 - 第二次请求成功")
     void testRetryMechanism() throws Exception {
@@ -248,6 +302,14 @@ public class AIProviderHttpIntegrationTest {
         assertThat(request2.getMethod()).isEqualTo("POST");
     }
 
+    /**
+     * 测试重试机制在所有重试都失败时的行为
+     * <p>
+     * 测试场景：模拟多次请求均返回 500 错误，验证重试次数是否达到最大限制后抛出异常
+     * 预期结果：应抛出 AIServiceException 异常，并包含 "Server error" 的错误信息
+     * <p>
+     * 特殊说明：需要 mockServer 模拟多次请求失败，确保重试次数准确统计
+     */
     @Test
     @DisplayName("测试重试耗尽 - 所有重试都失败")
     void testRetryExhausted() {
@@ -271,6 +333,14 @@ public class AIProviderHttpIntegrationTest {
         assertThat(mockServer.getRequestCount()).isEqualTo(settings.maxRetries);
     }
 
+    /**
+     * 测试网络连接错误场景
+     * <p>
+     * 测试场景：模拟关闭服务器以触发网络错误，调用生成文档方法时发生异常
+     * 预期结果：应抛出 AIServiceException 异常，且错误信息包含 "Network error"，错误码为 NETWORK_ERROR
+     * <p>
+     * 注意：测试需要依赖 mockServer 模拟网络环境，确保在测试前启动 mockServer
+     */
     @Test
     @DisplayName("测试网络连接错误")
     void testNetworkError() throws IOException {
@@ -288,6 +358,14 @@ public class AIProviderHttpIntegrationTest {
             .isEqualTo(AIServiceException.ErrorCode.NETWORK_ERROR);
     }
 
+    /**
+     * 测试响应解析错误场景
+     * <p>
+     * 测试场景：当接收到的响应内容不是有效的 JSON 格式时
+     * 预期结果：应抛出 AIServiceException 异常，且错误码为 INVALID_RESPONSE
+     * <p>
+     * 该测试通过模拟服务器返回非 JSON 格式的内容来验证异常处理逻辑
+     */
     @Test
     @DisplayName("测试响应解析错误 - 无效的 JSON")
     void testInvalidJsonResponse() {
@@ -306,6 +384,16 @@ public class AIProviderHttpIntegrationTest {
             .isEqualTo(AIServiceException.ErrorCode.INVALID_RESPONSE);
     }
 
+    /**
+     * 测试响应格式错误场景，即缺少必需字段
+     * <p>
+     * 测试场景：当响应体中缺少 "choices" 字段时
+     * 预期结果：应抛出 AIServiceException 异常，且错误码为 INVALID_RESPONSE
+     * <p>
+     * 该测试通过模拟服务器返回一个不包含必需字段的响应，验证生成文档时是否能正确识别并抛出异常
+     * <p>
+     * 关联方法：{@link provider#generateDocumentation(String, DocumentationTask.TaskType, String)}
+     */
     @Test
     @DisplayName("测试响应格式错误 - 缺少必需字段")
     void testMissingRequiredFields() {
@@ -325,6 +413,14 @@ public class AIProviderHttpIntegrationTest {
             .isEqualTo(AIServiceException.ErrorCode.INVALID_RESPONSE);
     }
 
+    /**
+     * 测试生成类文档功能
+     * <p>
+     * 测试场景：模拟生成用户服务类的文档
+     * 预期结果：返回的文档内容应包含类描述和业务逻辑说明
+     * <p>
+     * 该测试通过模拟 API 响应，验证文档生成器是否能正确解析并生成类级别的 JavaDoc 内容
+     */
     @Test
     @DisplayName("测试不同类型的文档生成 - 类")
     void testGenerateClassDocumentation() throws Exception {
@@ -353,6 +449,14 @@ public class AIProviderHttpIntegrationTest {
         assertThat(result).contains("业务逻辑");
     }
 
+    /**
+     * 测试生成测试方法文档的功能
+     * <p>
+     * 测试场景：模拟 API 响应，验证生成的文档是否包含指定的注释内容
+     * 预期结果：生成的文档应包含 "测试用户登录功能" 的注释内容
+     * <p>
+     * 说明：该测试通过模拟 HTTP 响应，验证文档生成器是否能正确解析并包含指定的注释内容
+     */
     @Test
     @DisplayName("测试不同类型的文档生成 - 测试方法")
     void testGenerateTestMethodDocumentation() throws Exception {
@@ -380,6 +484,14 @@ public class AIProviderHttpIntegrationTest {
         assertThat(result).contains("测试用户登录功能");
     }
 
+    /**
+     * 测试 Ollama Provider 在不需要 API Key 的情况下生成文档的功能
+     * <p>
+     * 测试场景：配置 Ollama 作为 AI 提供商，模型名称为 "qwen:7b"，且 API Key 为空字符串
+     * 预期结果：调用 generateDocumentation 方法后，返回结果应包含 "Ollama 生成的文档"，且请求头不包含 Authorization 字段
+     * <p>
+     * 注意：该测试依赖 mockServer 模拟 Ollama 的响应，需确保 mockServer 已正确启动并配置
+     */
     @Test
     @DisplayName("测试 Ollama Provider - 不需要 API Key")
     void testOllamaProviderWithoutApiKey() throws Exception {
@@ -418,6 +530,15 @@ public class AIProviderHttpIntegrationTest {
         assertThat(request.getHeader("Authorization")).isNull();
     }
 
+    /**
+     * 测试请求超时场景
+     * <p>
+     * 测试场景：模拟一个延迟响应（5秒），并设置较短的超时时间（1秒）
+     * 预期结果：应触发超时异常，验证超时机制是否正常工作
+     * <p>
+     * 注意：当前实现未配置超时，测试可能需要修改源代码支持
+     * 可参考 {@link OpenAICompatibleProvider} 中的 RestTemplate 配置进行调整
+     */
     @Test
     @DisplayName("测试请求超时")
     void testRequestTimeout() {
@@ -439,6 +560,14 @@ public class AIProviderHttpIntegrationTest {
         // 这里作为示例保留
     }
 
+    /**
+     * 测试配置验证功能
+     * <p>
+     * 测试场景：模拟一个成功的响应，验证配置是否通过检查
+     * 预期结果：验证结果应为成功
+     * <p>
+     * 说明：该测试需要模拟 HTTP 响应，确保验证逻辑正确处理成功状态
+     */
     @Test
     @DisplayName("测试配置验证")
     void testConfigurationValidation() {
@@ -453,6 +582,14 @@ public class AIProviderHttpIntegrationTest {
         assertThat(isValid.isSuccess()).isTrue();
     }
 
+    /**
+     * 测试配置验证失败的场景
+     * <p>
+     * 测试场景：模拟服务器返回 401 错误响应，表示验证失败
+     * 预期结果：验证结果应为失败状态
+     * <p>
+     * 该测试用于验证当配置验证接口接收到无效凭证时，{@link Provider#validateConfiguration()} 方法是否能正确返回验证失败的结果
+     */
     @Test
     @DisplayName("测试配置验证失败")
     void testConfigurationValidationFailure() {
@@ -466,6 +603,18 @@ public class AIProviderHttpIntegrationTest {
         assertThat(isValid.isSuccess()).isFalse();
     }
 
+    /**
+     * 测试完整的请求响应流程，包含代码生成和结果验证
+     * <p>
+     * 测试场景：模拟一个请求，生成JavaDoc注释并验证响应内容是否符合预期
+     * 预期结果：生成的文档应包含指定的注释内容，请求体应包含正确的代码信息
+     * <p>
+     * 测试过程中会模拟一个HTTP请求，并验证响应内容是否包含指定的注释内容
+     * 包括验证生成的文档是否包含“根据ID查找用户”、“@param id 用户ID”、“@return 用户对象”等关键信息
+     * <p>
+     * 同时验证请求的详细信息，包括请求方法、路径、头信息和请求体内容
+     * 并确保请求体中的消息内容包含“UserService”关键字
+     */
     @Test
     @DisplayName("测试完整的请求响应流程 - 带详细验证")
     void testCompleteRequestResponseFlow() throws Exception {
