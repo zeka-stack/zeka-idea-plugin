@@ -386,8 +386,11 @@ public class TaskExecutor {
             indicator.setFraction(1.0);
             indicator.setText("处理完成");
 
-            // 显示每个提供商的统计信息
-            showProviderStatistics(providerStats);
+            // 显示每个提供商的统计信息（如果启用）
+            SettingsState settings = SettingsState.getInstance();
+            if (settings.showProviderStatistics) {
+                showProviderStatistics(providerStats);
+            }
 
             log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                      completedCount.get(), failedCount.get(), skippedCount.get());
@@ -516,22 +519,21 @@ public class TaskExecutor {
     private void showProviderStatistics(@NotNull Map<String, ProviderStatistics> providerStats) {
         // 创建HTML格式的统计信息
         StringBuilder htmlContent = new StringBuilder();
+        // formatter:off
         htmlContent.append("<html><head><style>");
         htmlContent.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; font-size: 12px; }");
         htmlContent.append("h2 { color: #2E7D32; margin-bottom: 15px; font-size: 16px; }");
         htmlContent.append("h3 { color: #1976D2; margin-bottom: 10px; font-size: 14px; }");
-        htmlContent.append("table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 11px; border: 1px solid #ddd;" +
-                           " }");
-        htmlContent.append("th { background-color: #6c757d; color: white; padding: 8px; text-align: center; font-weight: bold; font-size:" +
-                           " 11px; border: 1px solid #ddd; }");
+        htmlContent.append("table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 11px; border: 1px solid #ddd; }");
+        htmlContent.append("th { background-color:rgb(122, 127, 131); color: white; padding: 8px; text-align: center; font-weight: bold; font-size: 11px; border: 1px solid #ddd; }");
         htmlContent.append("td { padding: 8px; text-align: center; font-size: 11px; border: 1px solid #ddd; }");
         htmlContent.append("td.provider-name { text-align: left; }");
         htmlContent.append("tr:nth-child(even) { background-color: #f8f9fa; }");
         htmlContent.append("tr:hover { background-color: #e3f2fd; }");
-        htmlContent.append(".summary-row { background-color: #495057; color: white; font-weight: bold; }");
+        htmlContent.append(".summary-row { background-color:rgb(41, 96, 123); color: white; font-weight: bold; }");
         htmlContent.append(".summary-row td { border: 1px solid #ddd; }");
         htmlContent.append("</style></head><body>");
-
+        // formatter:on
         // 添加标题
         htmlContent.append("<h2>🚀 性能模式处理完成</h2>");
 
@@ -596,8 +598,8 @@ public class TaskExecutor {
 
         // 显示HTML格式的通知给用户
         SwingUtilities.invokeLater(() -> {
-            // 创建自定义对话框
-            javax.swing.JDialog dialog = new javax.swing.JDialog((java.awt.Frame) null, "性能模式处理完成", true);
+            // 创建自定义对话框（非模态）
+            javax.swing.JDialog dialog = new javax.swing.JDialog((java.awt.Frame) null, "性能模式处理完成", false);
             dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
 
             // 创建HTML内容面板
@@ -611,12 +613,11 @@ public class TaskExecutor {
             int providerCount = providerStats.size();
 
             // 每行高度约30px，表头高度约35px，总体统计行高度约35px, 在加上标题和一定的冗余量
-            int calculatedHeight = 35 + (providerCount * 30) + 35 + 80;
+            int calculatedHeight = 35 + (providerCount * 30) + 35 + 170;
 
             // 设置最小和最大高度阈值
-            int minHeight = 400;  // 最小高度
-            int maxHeight = 1000;  // 最大高度
-
+            int minHeight = 200;  // 最小高度
+            int maxHeight = 800;  // 最大高度
             // 应用阈值限制
             int finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
 

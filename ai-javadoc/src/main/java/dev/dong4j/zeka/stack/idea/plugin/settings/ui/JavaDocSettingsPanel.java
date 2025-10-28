@@ -16,6 +16,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -106,6 +107,8 @@ public class JavaDocSettingsPanel {
     private JBCheckBox verboseLoggingCheckBox;
     /** 性能模式复选框，用于启用或禁用性能优化模式 */
     private JBCheckBox performanceModeCheckBox;
+    /** 显示提供商统计信息复选框 */
+    private JBCheckBox showProviderStatisticsCheckBox;
 
     /** 系统提示文本区域，用于显示或编辑系统提示内容 */
     public JTextArea systemPromptTextArea;
@@ -133,9 +136,6 @@ public class JavaDocSettingsPanel {
      * <p>
      * 该方法负责构建整个设置界面的主面板，包括 AI 提供商配置、模型选择、基础 URL 和 API 密钥输入、
      * 连接测试按钮、模型刷新按钮、生成选项、语言支持、高级配置参数以及提示模板区域。
-     *
-     * @param 无 参数
-     * @return 无 返回值
      */
     private void createUI() {
         // AI 提供商配置
@@ -164,7 +164,7 @@ public class JavaDocSettingsPanel {
         generateForFieldCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.field"));
         skipExistingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.skip.existing"));
         optimizeClassCodeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.optimize.class.code"));
-        maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 5000, 100));
+        maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
 
         // 语言支持
         javaCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.java"));
@@ -182,6 +182,7 @@ public class JavaDocSettingsPanel {
         presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.1, -2.0, 2.0, 0.1));
         verboseLoggingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.verbose.logging"));
         performanceModeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.performance.mode"));
+        showProviderStatisticsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.provider.statistics"));
 
         // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
         systemPromptTextArea = new JTextArea(10, 50);
@@ -236,6 +237,7 @@ public class JavaDocSettingsPanel {
                                                            "settings.timeout.hint"))
             .addComponent(verboseLoggingCheckBox)
             .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
+            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
             .addSeparator(10)
 
             .addComponent(new JBLabel(JavaDocBundle.message("settings.prompt.templates")))
@@ -525,10 +527,6 @@ public class JavaDocSettingsPanel {
      * <p>
      * 该方法为各个输入组件添加动作监听器，当组件内容发生变化时，触发相应的更新或验证状态清除操作。
      * 包括提供商、Base URL、API Key、模型选择以及代码优化配置等变化的监听。
-     *
-     * @param 无
-     * @return 无
-     * @throws 无
      */
     private void setupListeners() {
         // 提供商变更时更新模型列表和默认值
@@ -563,9 +561,6 @@ public class JavaDocSettingsPanel {
      * 然后根据该标识符获取对应的提供商类型，并加载该类型支持的所有模型。
      * 最后将用户之前选择的模型恢复到下拉框中，若为空则使用默认模型。
      * 同时设置模型输入框的提示文本。
-     *
-     * @param 无 参数
-     * @return 无 返回值
      */
     private void updateModelList() {
         String displayName = (String) providerComboBox.getSelectedItem();
@@ -868,9 +863,6 @@ public class JavaDocSettingsPanel {
      * 该方法首先获取当前选择的显示名称，将其转换为对应的提供者标识符。如果标识符有效，则获取对应的提供者类型。
      * 接着，尝试从已保存的配置中查找对应的配置信息，如果存在则使用该配置；否则使用提供者类型中的默认配置。
      * 最后，将配置信息填充到对应的 UI 控件中。
-     *
-     * @param 无 该方法不接受任何参数
-     * @return 无 该方法无返回值
      */
     private void updateDefaultValues() {
         String displayName = (String) providerComboBox.getSelectedItem();
@@ -1122,6 +1114,7 @@ public class JavaDocSettingsPanel {
         settings.presencePenalty = (Double) presencePenaltySpinner.getValue();
         settings.verboseLogging = verboseLoggingCheckBox.isSelected();
         settings.performanceMode = performanceModeCheckBox.isSelected();
+        settings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
 
         // Prompt 配置 - 从 Tab 页获取
         settings.systemPromptTemplate = systemPromptTextArea.getText().trim();
@@ -1140,12 +1133,8 @@ public class JavaDocSettingsPanel {
     public void loadSettings(@NotNull SettingsState settings) {
         // AI 提供商配置 - 将提供商标识符转换为显示名称
         String displayName = AIProviderType.getDisplayNameByProviderId(settings.aiProvider);
-        if (displayName != null) {
-            providerComboBox.setSelectedItem(displayName);
-        } else {
-            // 如果找不到对应的显示名称，使用默认值
-            providerComboBox.setSelectedItem(AIProviderType.QIANWEN.getDisplayName());
-        }
+        // 如果找不到对应的显示名称，使用默认值
+        providerComboBox.setSelectedItem(Objects.requireNonNullElseGet(displayName, AIProviderType.QIANWEN::getDisplayName));
         updateModelList();
         modelComboBox.setSelectedItem(settings.modelName);
         baseUrlField.setText(settings.baseUrl);
@@ -1179,6 +1168,7 @@ public class JavaDocSettingsPanel {
         presencePenaltySpinner.setValue(settings.presencePenalty);
         verboseLoggingCheckBox.setSelected(settings.verboseLogging);
         performanceModeCheckBox.setSelected(settings.performanceMode);
+        showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
 
         // Prompt 配置 - 加载到 Tab 页
         systemPromptTextArea.setText(settings.systemPromptTemplate);

@@ -440,6 +440,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean performanceMode = false;
 
     /**
+     * 是否显示性能模式统计信息
+     *
+     * <p>控制性能模式完成后是否显示统计信息对话框。
+     * 对话框包含各提供商的处理结果统计。
+     *
+     * <p>默认值: false
+     */
+    public boolean showProviderStatistics = false;
+
+    /**
      * 是否启用详细日志
      *
      * <p>控制是否输出详细的调试日志。
