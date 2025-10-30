@@ -123,7 +123,7 @@ public abstract class MyBasePlatformTestCase extends com.intellij.testFramework.
      * @return 文件文本内容
      */
     protected String getFileText(@NotNull PsiFile file) {
-        return runReadAction(() -> file.getText());
+        return runReadAction(file::getText);
     }
 
     /**
