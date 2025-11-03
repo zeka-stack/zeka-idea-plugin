@@ -835,8 +835,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     @NotNull
     public static SettingsState getInstance() {
-        return ApplicationManager.getApplication()
-            .getService(SettingsState.class);
+        return ApplicationManager.getApplication().getService(SettingsState.class);
     }
 
     /**

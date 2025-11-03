@@ -68,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction implements IntentionAction {
+public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction {
 
     /**
      * 获取 Action 显示的文本

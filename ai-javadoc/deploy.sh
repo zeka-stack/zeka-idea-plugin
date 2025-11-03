@@ -69,7 +69,7 @@ fi
 ############################################
 if $do_publish; then
     echo "[1/3] 执行 Gradle 发布 :publishPlugin ..."
-    "$REPO_ROOT/gradlew" :publishPlugin --no-daemon
+    "$REPO_ROOT/gradlew" clean publishPlugin --no-daemon
 else
     echo "[跳过] Gradle 发布 (根据参数设置)"
 fi
