@@ -56,7 +56,7 @@ public class TaskExecutorIntegrationTest extends MyBasePlatformTestCase {
 
         // 初始化设置
         settings = SettingsState.getInstance();
-        settings.skipExisting = false; // 允许替换已有注释
+        settings.overrideExisting = true; // 允许替换已有注释
         settings.maxRetries = 1; // 减少重试次数以加快测试
 
         // 创建 Mock ProgressIndicator
@@ -363,8 +363,8 @@ public class TaskExecutorIntegrationTest extends MyBasePlatformTestCase {
      * 该方法用于验证在启用跳过已有文档功能的情况下，文档生成任务是否能够正确跳过已存在的文档注释，并对未注释的方法进行处理。
      */
     public void testSkipExistingDocumentation() {
-        // 启用跳过功能
-        settings.skipExisting = true;
+        // 覆盖已有注释
+        settings.overrideExisting = false;
 
         String originalCode = """
             package com.example;

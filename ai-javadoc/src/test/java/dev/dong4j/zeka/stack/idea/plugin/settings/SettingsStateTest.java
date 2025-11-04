@@ -55,8 +55,7 @@ public class SettingsStateTest {
         assertThat(settings.generateForClass).isTrue();
         assertThat(settings.generateForMethod).isTrue();
         assertThat(settings.generateForField).isFalse();
-        assertThat(settings.skipExisting).isTrue();
-
+        assertThat(settings.overrideExisting).isFalse();
         // 高级配置
         assertThat(settings.maxRetries).isEqualTo(3);
         assertThat(settings.timeout).isEqualTo(30000);

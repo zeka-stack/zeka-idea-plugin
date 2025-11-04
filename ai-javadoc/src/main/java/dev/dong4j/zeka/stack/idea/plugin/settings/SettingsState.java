@@ -212,16 +212,17 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean generateForField = true;
 
     /**
-     * 是否跳过已有文档的元素
+     * 是否覆盖已有注释
      *
-     * <p>控制是否跳过已经包含 JavaDoc 注释的代码元素。
-     * 避免重复生成和覆盖用户自定义注释。
+     * <p>控制是否覆盖已经存在的文档注释。
+     * - false（默认）：跳过已有注释的元素，只对没有注释的元素生成文档
+     * - true：覆盖已有注释，无论是否已有注释都会生成新的文档
      *
-     * <p>默认值: true
+     * <p>默认值: false（跳过已有注释）
      *
      * @see TaskCollector#shouldGenerateForElement(PsiElement)
      */
-    public boolean skipExisting = true;
+    public boolean overrideExisting = false;
 
     /**
      * 是否启用代码压缩以减少 token 使用量
@@ -1012,7 +1013,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         generateForClass = true;
         generateForMethod = true;
         generateForField = true;
-        skipExisting = true;
+        overrideExisting = false;
         enableCodeCompression = false;
         maxClassCodeLines = 1000;
 

@@ -142,7 +142,7 @@ public class TaskCollector {
      *   <li>generateForClass：是否为类生成文档</li>
      *   <li>generateForMethod：是否为方法生成文档</li>
      *   <li>generateForField：是否为字段生成文档</li>
-     *   <li>skipExisting：是否跳过已有文档的元素</li>
+     *   <li>overrideExisting：是否覆盖已有注释（false=跳过，true=覆盖）</li>
      * </ul>
      *
      * @param psiClass PSI 类对象
@@ -503,26 +503,31 @@ public class TaskCollector {
      * 判断是否应该为元素生成文档
      *
      * <p>根据用户配置决定是否为指定元素生成文档。
-     * 主要检查 skipExisting 配置项，如果启用则跳过已有文档的元素。
+     * 主要检查 overrideExisting 配置项，如果为 false（默认）则跳过已有文档的元素。
      *
      * <p>检查逻辑：
      * <ol>
-     *   <li>如果 skipExisting 为 false，总是返回 true</li>
-     *   <li>如果 skipExisting 为 true 且元素支持文档：
+     *   <li>如果 overrideExisting 为 true，总是返回 true（覆盖已有注释）</li>
+     *   <li>如果 overrideExisting 为 false（默认）且元素支持文档：
      *     <ul>
      *       <li>检查元素是否已有 JavaDoc 注释</li>
-     *       <li>如果已有注释返回 false，否则返回 true</li>
+     *       <li>如果已有注释返回 false（跳过），否则返回 true（生成）</li>
      *     </ul>
      *   </li>
      * </ol>
      *
      * @param element PSI 元素
      * @return 如果应该生成文档返回 true，否则返回 false
-     * @see SettingsState#skipExisting
+     * @see SettingsState#overrideExisting
      */
     private boolean shouldGenerateForElement(@NotNull PsiElement element) {
-        // 如果配置为跳过已有文档，检查是否已有文档
-        if (settings.skipExisting && element instanceof PsiDocCommentOwner) {
+        // 如果配置为覆盖已有注释，总是生成
+        if (settings.overrideExisting) {
+            return true;
+        }
+
+        // 如果配置为跳过已有文档（默认），检查是否已有文档
+        if (element instanceof PsiDocCommentOwner) {
             PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
             return docComment == null;
         }

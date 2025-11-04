@@ -75,8 +75,8 @@ public class JavaDocSettingsPanel {
     private JBCheckBox generateForMethodCheckBox;
     /** 生成字段的复选框 */
     private JBCheckBox generateForFieldCheckBox;
-    /** 跳过已存在的文件复选框 */
-    private JBCheckBox skipExistingCheckBox;
+    /** 覆盖已有注释复选框 */
+    private JBCheckBox overrideExistingCheckBox;
     /** 启用代码压缩的复选框 */
     private JBCheckBox enableCodeCompressionCheckBox;
     /** 最大类代码行数设置控件 */
@@ -165,7 +165,7 @@ public class JavaDocSettingsPanel {
         generateForClassCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.class"));
         generateForMethodCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.method"));
         generateForFieldCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.field"));
-        skipExistingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.skip.existing"));
+        overrideExistingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.override.existing"));
         enableCodeCompressionCheckBox = new JBCheckBox(JavaDocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
 
@@ -290,7 +290,7 @@ public class JavaDocSettingsPanel {
         JPanel innerPanel = new JPanel();
         innerPanel.setLayout(new java.awt.BorderLayout());
 
-        innerPanel.add(createCheckBoxWithHint(skipExistingCheckBox, "settings.skip.existing.hint"), java.awt.BorderLayout.NORTH);
+        innerPanel.add(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"), java.awt.BorderLayout.NORTH);
 
         // 添加间距面板
         JPanel spacingPanel = new JPanel();
@@ -1318,7 +1318,7 @@ public class JavaDocSettingsPanel {
         settings.generateForClass = generateForClassCheckBox.isSelected();
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
         settings.generateForField = generateForFieldCheckBox.isSelected();
-        settings.skipExisting = skipExistingCheckBox.isSelected();
+        settings.overrideExisting = overrideExistingCheckBox.isSelected();
         settings.enableCodeCompression = enableCodeCompressionCheckBox.isSelected();
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
 
@@ -1374,7 +1374,7 @@ public class JavaDocSettingsPanel {
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
         generateForFieldCheckBox.setSelected(settings.generateForField);
-        skipExistingCheckBox.setSelected(settings.skipExisting);
+        overrideExistingCheckBox.setSelected(settings.overrideExisting);
         enableCodeCompressionCheckBox.setSelected(settings.enableCodeCompression);
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
 

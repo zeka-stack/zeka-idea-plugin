@@ -185,7 +185,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
         if (currentSettings.generateForField != panelSettings.generateForField) {
             return true;
         }
-        if (currentSettings.skipExisting != panelSettings.skipExisting) {
+        if (currentSettings.overrideExisting != panelSettings.overrideExisting) {
             return true;
         }
         if (currentSettings.enableCodeCompression != panelSettings.enableCodeCompression) {
@@ -284,7 +284,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
         currentSettings.generateForClass = panelSettings.generateForClass;
         currentSettings.generateForMethod = panelSettings.generateForMethod;
         currentSettings.generateForField = panelSettings.generateForField;
-        currentSettings.skipExisting = panelSettings.skipExisting;
+        currentSettings.overrideExisting = panelSettings.overrideExisting;
         currentSettings.enableCodeCompression = panelSettings.enableCodeCompression;
         currentSettings.maxClassCodeLines = panelSettings.maxClassCodeLines;
 

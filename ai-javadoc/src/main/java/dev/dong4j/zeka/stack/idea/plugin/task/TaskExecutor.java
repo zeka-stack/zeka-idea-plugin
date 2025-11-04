@@ -824,9 +824,15 @@ public class TaskExecutor {
      *
      * <p>跳过条件：
      * <ul>
-     *   <li>skipExisting 配置为 true</li>
+     *   <li>overrideExisting 配置为 false（默认）</li>
      *   <li>元素支持文档（PsiDocCommentOwner）</li>
      *   <li>元素已有 JavaDoc 注释</li>
+     * </ul>
+     *
+     * <p>逻辑说明：
+     * <ul>
+     *   <li>overrideExisting = false（默认）：跳过已有注释的元素</li>
+     *   <li>overrideExisting = true：覆盖已有注释，不跳过</li>
      * </ul>
      *
      * <p>线程安全：
@@ -837,10 +843,11 @@ public class TaskExecutor {
      *
      * @param task 文档生成任务
      * @return 如果应该跳过返回 true，否则返回 false
-     * @see SettingsState#skipExisting
+     * @see SettingsState#overrideExisting
      */
     private boolean shouldSkip(@NotNull DocumentationTask task) {
-        if (!settings.skipExisting) {
+        // 如果配置为覆盖已有注释，则不跳过
+        if (settings.overrideExisting) {
             return false;
         }
 
