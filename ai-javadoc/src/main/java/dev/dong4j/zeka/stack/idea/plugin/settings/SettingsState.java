@@ -12,8 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
@@ -79,7 +79,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIServiceFactory#createProvider(SettingsState)
      * @see AIProviderType
      */
-    public AIProviderType aiProvider = AIProviderType.QIANWEN;
+    public AIProviderType providerType = AIProviderType.QIANWEN;
 
     /**
      * 模型名称
@@ -360,14 +360,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: 空集合
      */
-    public Set<ProviderConfig> availableProviders = new HashSet<>();
+    public List<ProviderConfig> availableProviders = new LinkedList<>();
 
     /**
      * 服务提供商配置信息
      */
-    public static class ProviderConfig implements Comparable<ProviderConfig> {
+    public static class ProviderConfig {
         /** 提供商标识符 */
-        public AIProviderType providerId;
+        public AIProviderType providerType;
         /** 模型名称 */
         public String modelName;
         /** 基础请求地址 */
@@ -391,14 +391,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
          * <p>
          * 初始化 ProviderConfig 实例，设置提供者ID、模型名称、基础URL、API密钥、配置验证状态，并记录最后一次验证时间
          *
-         * @param providerId            提供者ID
+         * @param providerType          提供者ID
          * @param modelName             模型名称
          * @param baseUrl               基础URL
          * @param apiKey                API密钥
          * @param configurationVerified 配置是否已验证
          */
-        public ProviderConfig(AIProviderType providerId, String modelName, String baseUrl, String apiKey, boolean configurationVerified) {
-            this.providerId = providerId;
+        public ProviderConfig(AIProviderType providerType, String modelName, String baseUrl, String apiKey, boolean configurationVerified) {
+            this.providerType = providerType;
             this.modelName = modelName;
             this.baseUrl = baseUrl;
             this.apiKey = apiKey;
@@ -406,89 +406,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             this.lastVerifiedTime = System.currentTimeMillis();
         }
 
-        /**
-         * 判断当前对象与指定对象是否相等
-         * <p>
-         * 该方法重写 Object 类的 equals 方法，用于比较两个 ProviderConfig 对象是否相等。
-         * 比较依据为 providerId、baseUrl 和 apiKey 字段是否相等。
-         *
-         * @param obj 要比较的对象
-         * @return 如果对象相等则返回 true，否则返回 false
-         */
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) {
-                return true;
-            }
-            if (obj == null || getClass() != obj.getClass()) {
-                return false;
-            }
-            ProviderConfig that = (ProviderConfig) obj;
-            return Objects.equals(providerId, that.providerId) &&
-                   Objects.equals(baseUrl, that.baseUrl) &&
-                   Objects.equals(apiKey, that.apiKey);
-        }
-
-        /**
-         * 生成对象的哈希码
-         * <p>
-         * 根据 providerId、baseUrl 和 apiKey 三个字段生成哈希码，用于对象的唯一标识。
-         *
-         * @return 对象的哈希码值
-         */
-        @Override
-        public int hashCode() {
-            return Objects.hash(providerId, baseUrl, apiKey);
-        }
-
-        /**
-         * 比较两个 ProviderConfig 对象的顺序
-         * <p>
-         * 用于 Set 序列化时的排序。比较顺序：
-         * 1. 首先按 providerId 排序（枚举的 ordinal）
-         * 2. 如果 providerId 相同，按 baseUrl 排序
-         * 3. 如果 baseUrl 也相同，按 apiKey 排序
-         *
-         * @param other 要比较的另一个对象
-         * @return 负数表示当前对象小于 other，0 表示相等，正数表示大于
-         */
-        @Override
-        public int compareTo(@NotNull ProviderConfig other) {
-            // 首先比较 providerId
-            if (this.providerId != null && other.providerId != null) {
-                int providerCompare = this.providerId.compareTo(other.providerId);
-                if (providerCompare != 0) {
-                    return providerCompare;
-                }
-            } else if (this.providerId != null) {
-                return 1;
-            } else if (other.providerId != null) {
-                return -1;
-            }
-
-            // 然后比较 baseUrl
-            if (this.baseUrl != null && other.baseUrl != null) {
-                int baseUrlCompare = this.baseUrl.compareTo(other.baseUrl);
-                if (baseUrlCompare != 0) {
-                    return baseUrlCompare;
-                }
-            } else if (this.baseUrl != null) {
-                return 1;
-            } else if (other.baseUrl != null) {
-                return -1;
-            }
-
-            // 最后比较 apiKey
-            if (this.apiKey != null && other.apiKey != null) {
-                return this.apiKey.compareTo(other.apiKey);
-            } else if (this.apiKey != null) {
-                return 1;
-            } else if (other.apiKey != null) {
-                return -1;
-            }
-
-            return 0;
-        }
     }
 
     /**
@@ -944,7 +861,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean isValid() {
         // 检查必需字段
-        if (aiProvider == null) {
+        if (providerType == null) {
             return false;
         }
 
@@ -976,7 +893,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIProviderType#requiresApiKey()
      */
     public boolean requiresApiKey() {
-        return aiProvider != null && aiProvider.requiresApiKey();
+        return providerType != null && providerType.requiresApiKey();
     }
 
     /**
@@ -1011,22 +928,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
-     * 检查是否有多个可用的提供商
-     *
-     * @return 如果有多个提供商返回true
-     */
-    public boolean hasMultipleProviders() {
-        return getAvailableProviders().size() > 1;
-    }
-
-    /**
      * 将当前配置重置为默认值
      * <p>
      * 该方法会将所有配置参数恢复到初始默认状态，包括AI提供者、模型名称、基础URL、API密钥等，
      * 以及生成配置、重试设置、温度参数、最大令牌数等。
      */
     public void resetToDefaults() {
-        aiProvider = AIProviderType.QIANWEN;
+        providerType = AIProviderType.QIANWEN;
         modelName = AIProviderType.QIANWEN.getDefaultModel();
         baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
         apiKey = "";

@@ -34,6 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.ProviderConfigUtils;
 
 /**
  * JavaDoc 设置面板 UI
@@ -874,7 +875,7 @@ public class JavaDocSettingsPanel {
         new Thread(() -> {
             try {
                 SettingsState tempSettings = new SettingsState();
-                tempSettings.aiProvider = providerType;
+                tempSettings.providerType = providerType;
                 tempSettings.baseUrl = baseUrl;
                 tempSettings.apiKey = new String(apiKeyField.getPassword());
                 tempSettings.configurationVerified = true;
@@ -1023,7 +1024,7 @@ public class JavaDocSettingsPanel {
         new Thread(() -> {
             try {
                 SettingsState tempSettings = new SettingsState();
-                tempSettings.aiProvider = providerType;
+                tempSettings.providerType = providerType;
                 tempSettings.baseUrl = baseUrl;
                 tempSettings.apiKey = new String(apiKeyField.getPassword());
                 tempSettings.configurationVerified = true;
@@ -1134,10 +1135,10 @@ public class JavaDocSettingsPanel {
         SettingsState settings = SettingsState.getInstance();
         // 优先查找已验证的配置，如果没有则查找所有配置（包括未验证的）
         return settings.getAvailableProviders().stream()
-            .filter(config -> config.providerId != null && providerId.equals(config.providerId.getProviderId()))
+            .filter(config -> config.providerType != null && providerId.equals(config.providerType.getProviderId()))
             .findFirst()
             .orElse(settings.availableProviders.stream()
-                        .filter(config -> config.providerId != null && providerId.equals(config.providerId.getProviderId()))
+                        .filter(config -> config.providerType != null && providerId.equals(config.providerType.getProviderId()))
                         .findFirst()
                         .orElse(null));
     }
@@ -1276,7 +1277,7 @@ public class JavaDocSettingsPanel {
 
         // 创建提供商配置
         SettingsState.ProviderConfig providerConfig = new SettingsState.ProviderConfig(
-            currentSettings.aiProvider,
+            currentSettings.providerType,
             currentSettings.modelName,
             currentSettings.baseUrl,
             currentSettings.apiKey,
@@ -1286,15 +1287,24 @@ public class JavaDocSettingsPanel {
         settings.availableProviders.add(providerConfig);
     }
 
-    /**
-     * 从可用提供商列表中移除当前配置
-     */
     private void removeFromAvailableProviders() {
         SettingsState settings = SettingsState.getInstance();
         SettingsState currentSettings = getSettings();
 
-        // 从可用提供商列表中移除相同的配置（基于 providerId、baseUrl 和 apiKey）
-        settings.availableProviders.removeIf(config -> config.providerId == currentSettings.aiProvider);
+        // 从可用提供商列表中移除相同的配置（基于 providerId、modelName、apiKey 和 baseUrl 的 MD5）
+        settings.availableProviders.removeIf(config ->
+                                                 ProviderConfigUtils.areEqual(
+                                                     config.providerType != null ? config.providerType.getProviderId() : null,
+                                                     config.modelName,
+                                                     config.apiKey,
+                                                     config.baseUrl,
+                                                     currentSettings.providerType != null ? currentSettings.providerType.getProviderId()
+                                                                                          : null,
+                                                     currentSettings.modelName,
+                                                     currentSettings.apiKey,
+                                                     currentSettings.baseUrl
+                                                                             )
+                                            );
     }
 
     /**
@@ -1322,7 +1332,7 @@ public class JavaDocSettingsPanel {
         String displayName = (String) providerComboBox.getSelectedItem();
         String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
         AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
-        settings.aiProvider = providerType != null ? providerType : AIProviderType.QIANWEN;
+        settings.providerType = providerType != null ? providerType : AIProviderType.QIANWEN;
         // 获取用户输入的模型名称（可能是从列表选择的，也可能是手动输入的）
         Object selectedModel = modelComboBox.getEditor().getItem();
         settings.modelName = selectedModel != null ? selectedModel.toString().trim() : "";
@@ -1377,7 +1387,7 @@ public class JavaDocSettingsPanel {
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
         // AI 提供商配置 - 将提供商标识符转换为显示名称
-        AIProviderType providerType = settings.aiProvider != null ? settings.aiProvider : AIProviderType.QIANWEN;
+        AIProviderType providerType = settings.providerType != null ? settings.providerType : AIProviderType.QIANWEN;
         String displayName = providerType.getDisplayName();
         providerComboBox.setSelectedItem(displayName);
         updateModelList();

@@ -60,7 +60,7 @@ public class AIProviderHttpIntegrationTest {
 
         // 配置 Settings
         settings = new SettingsState();
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = mockServer.url("/").toString().replaceAll("/$", "");
         settings.apiKey = "test-api-key";
@@ -496,7 +496,7 @@ public class AIProviderHttpIntegrationTest {
     @DisplayName("测试 Ollama Provider - 不需要 API Key")
     void testOllamaProviderWithoutApiKey() throws Exception {
         // 配置 Ollama Provider
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "qwen:7b";
         settings.apiKey = ""; // Ollama 不需要 API Key
 

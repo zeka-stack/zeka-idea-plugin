@@ -95,7 +95,7 @@ public class AIServiceFactory {
      */
     @org.jetbrains.annotations.Nullable
     public static AIServiceProvider createProvider(@NotNull SettingsState settings) {
-        AIProviderType providerType = settings.aiProvider;
+        AIProviderType providerType = settings.providerType;
 
         // 检查配置是否已通过验证
         if (!settings.configurationVerified) {
@@ -135,15 +135,15 @@ public class AIServiceFactory {
      */
     @org.jetbrains.annotations.Nullable
     public static AIServiceProvider createProvider(@NotNull SettingsState.ProviderConfig providerConfig) {
-        if (providerConfig.providerId == null) {
+        if (providerConfig.providerType == null) {
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Provider ID is null");
             return null;
         }
 
-        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerConfig.providerId.getProviderId());
+        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerConfig.providerType.getProviderId());
         if (providerClass == null) {
             String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
-            String error = "不支持的 AI 提供商: " + providerConfig.providerId.getProviderId() + "。当前支持的提供商：" + supportedProviders;
+            String error = "不支持的 AI 提供商: " + providerConfig.providerType.getProviderId() + "。当前支持的提供商：" + supportedProviders;
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
             return null;
         }
@@ -151,7 +151,7 @@ public class AIServiceFactory {
         try {
             // 创建临时的SettingsState用于创建提供商实例
             SettingsState tempSettings = new SettingsState();
-            tempSettings.aiProvider = providerConfig.providerId;
+            tempSettings.providerType = providerConfig.providerType;
             tempSettings.modelName = providerConfig.modelName;
             tempSettings.baseUrl = providerConfig.baseUrl;
             tempSettings.apiKey = providerConfig.apiKey;
@@ -160,7 +160,7 @@ public class AIServiceFactory {
             return providerClass.getDeclaredConstructor(SettingsState.class)
                 .newInstance(tempSettings);
         } catch (Exception e) {
-            String error = "创建 AI 提供商失败: " + providerConfig.providerId.getProviderId() + "。请检查配置是否正确。";
+            String error = "创建 AI 提供商失败: " + providerConfig.providerType.getProviderId() + "。请检查配置是否正确。";
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
             return null;
         }
@@ -322,8 +322,8 @@ public class AIServiceFactory {
     public static boolean hasAvailableProvider() {
         SettingsState settings = SettingsState.getInstance();
         return settings.configurationVerified
-               && settings.aiProvider != null
-               && isProviderSupported(settings.aiProvider.getProviderId());
+               && settings.providerType != null
+               && isProviderSupported(settings.providerType.getProviderId());
     }
 
     /**

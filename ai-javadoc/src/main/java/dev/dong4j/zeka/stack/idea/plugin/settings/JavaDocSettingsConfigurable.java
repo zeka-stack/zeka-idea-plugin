@@ -160,7 +160,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
         SettingsState panelSettings = settingsPanel.getSettings();
 
         // 比较各个配置项
-        if (!currentSettings.aiProvider.equals(panelSettings.aiProvider)) {
+        if (!currentSettings.providerType.equals(panelSettings.providerType)) {
             return true;
         }
         if (!currentSettings.modelName.equals(panelSettings.modelName)) {
@@ -275,7 +275,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
 
         // 应用配置
         SettingsState currentSettings = SettingsState.getInstance();
-        currentSettings.aiProvider = panelSettings.aiProvider;
+        currentSettings.providerType = panelSettings.providerType;
         currentSettings.modelName = panelSettings.modelName;
         currentSettings.baseUrl = panelSettings.baseUrl;
         currentSettings.apiKey = panelSettings.apiKey;
@@ -381,7 +381,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
     @SuppressWarnings("D")
     private boolean validateSettings(SettingsState settings) {
         // 检查必填字段
-        if (settings.aiProvider == null) {
+        if (settings.providerType == null) {
             return false;
         }
 

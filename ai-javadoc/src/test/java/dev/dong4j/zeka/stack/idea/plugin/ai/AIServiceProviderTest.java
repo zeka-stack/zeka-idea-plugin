@@ -59,7 +59,7 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试千问 Provider 实现")
     void testQianWenProvider_implementation() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "test-key";
@@ -92,7 +92,7 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Ollama Provider 实现")
     void testOllamaProvider_implementation() {
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "";
@@ -150,7 +150,7 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试千问 Provider 的配置验证")
     void testQianWenProvider_configurationValidation() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = ""; // 空 API Key
@@ -179,7 +179,7 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Ollama Provider 的配置验证")
     void testOllamaProvider_configurationValidation() {
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = ""; // Ollama 不需要 API Key
@@ -202,12 +202,12 @@ public class AIServiceProviderTest {
     @DisplayName("测试 Provider 支持的模型列表不为空")
     void testProvider_supportedModels_notEmpty() {
         // 测试千问
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         AIServiceProvider qianwen = new QianWenProvider(settings);
         assertThat(qianwen.getSupportedModels()).isNotEmpty();
 
         // 测试 Ollama
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         AIServiceProvider ollama = new OllamaProvider(settings);
         assertThat(ollama.getSupportedModels()).isNotEmpty();
 

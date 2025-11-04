@@ -46,7 +46,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试默认配置值")
     void testDefaultValues() {
-        assertThat(settings.aiProvider).isEqualTo(AIProviderType.QIANWEN.getProviderId());
+        assertThat(settings.providerType).isEqualTo(AIProviderType.QIANWEN.getProviderId());
         assertThat(settings.modelName).isEqualTo("qwen3-8b");
         assertThat(settings.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
         assertThat(settings.apiKey).isEmpty();
@@ -83,7 +83,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试配置验证 - 有效配置")
     void testIsValid_withValidConfiguration() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "valid-api-key";
@@ -102,7 +102,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试配置验证 - 缺少 AI Provider")
     void testIsValid_withMissingAIProvider() {
-        settings.aiProvider = "";
+        settings.providerType = "";
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "valid-api-key";
@@ -119,7 +119,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试配置验证 - 缺少模型名称")
     void testIsValid_withMissingModelName() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "valid-api-key";
@@ -138,7 +138,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试配置验证 - 缺少 Base URL")
     void testIsValid_withMissingBaseUrl() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "";
         settings.apiKey = "valid-api-key";
@@ -157,7 +157,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试配置验证 - 缺少 API Key（需要时）")
     void testIsValid_withMissingApiKey_whenRequired() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId(); // 需要 API Key
+        settings.providerType = AIProviderType.QIANWEN.getProviderId(); // 需要 API Key
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "";
@@ -176,7 +176,7 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试配置验证 - Ollama 不需要 API Key")
     void testIsValid_withOllama_noApiKeyRequired() {
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "";
@@ -196,10 +196,10 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试是否需要 API Key")
     void testRequiresApiKey() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         assertThat(settings.requiresApiKey()).isTrue();
 
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         assertThat(settings.requiresApiKey()).isFalse();
     }
 
@@ -233,7 +233,7 @@ public class SettingsStateTest {
     @DisplayName("测试重置为默认配置")
     void testResetToDefaults() {
         // 修改配置
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "test-key";
@@ -250,7 +250,7 @@ public class SettingsStateTest {
         settings.resetToDefaults();
 
         // 验证
-        assertThat(settings.aiProvider).isEqualTo(AIProviderType.QIANWEN.getProviderId());
+        assertThat(settings.providerType).isEqualTo(AIProviderType.QIANWEN.getProviderId());
         assertThat(settings.modelName).isEqualTo("qwen3-8b");
         assertThat(settings.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
         assertThat(settings.apiKey).isEmpty();
@@ -277,7 +277,7 @@ public class SettingsStateTest {
     @DisplayName("测试配置复制")
     void testCopy() {
         // 设置原始配置
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "test-key";
@@ -292,7 +292,7 @@ public class SettingsStateTest {
         SettingsState copy = settings.copy();
 
         // 验证复制的值
-        assertThat(copy.aiProvider).isEqualTo(settings.aiProvider);
+        assertThat(copy.providerType).isEqualTo(settings.providerType);
         assertThat(copy.modelName).isEqualTo(settings.modelName);
         assertThat(copy.baseUrl).isEqualTo(settings.baseUrl);
         assertThat(copy.apiKey).isEqualTo(settings.apiKey);
@@ -307,8 +307,8 @@ public class SettingsStateTest {
         assertThat(copy).isNotSameAs(settings);
 
         // 修改副本不影响原始对象
-        copy.aiProvider = AIProviderType.QIANWEN.getProviderId();
-        assertThat(settings.aiProvider).isEqualTo(AIProviderType.OLLAMA.getProviderId());
+        copy.providerType = AIProviderType.QIANWEN.getProviderId();
+        assertThat(settings.providerType).isEqualTo(AIProviderType.OLLAMA.getProviderId());
     }
 
     /**
@@ -375,7 +375,7 @@ public class SettingsStateTest {
     @DisplayName("测试持久化状态")
     void testPersistentState() {
         // 修改配置
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.generateForField = true;
 
@@ -384,7 +384,7 @@ public class SettingsStateTest {
 
         // 验证状态是同一个对象
         assertThat(state).isSameAs(settings);
-        assertThat(state.aiProvider).isEqualTo(AIProviderType.OLLAMA.getProviderId());
+        assertThat(state.providerType).isEqualTo(AIProviderType.OLLAMA.getProviderId());
         assertThat(state.modelName).isEqualTo("llama2");
         assertThat(state.generateForField).isTrue();
     }
@@ -402,7 +402,7 @@ public class SettingsStateTest {
     void testLoadState() {
         // 创建新的状态
         SettingsState newState = new SettingsState();
-        newState.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        newState.providerType = AIProviderType.OLLAMA.getProviderId();
         newState.modelName = "llama2";
         newState.baseUrl = "http://localhost:11434";
         newState.generateForField = true;
@@ -415,7 +415,7 @@ public class SettingsStateTest {
         settings.loadState(newState);
 
         // 验证加载的值
-        assertThat(settings.aiProvider).isEqualTo(AIProviderType.OLLAMA.getProviderId());
+        assertThat(settings.providerType).isEqualTo(AIProviderType.OLLAMA.getProviderId());
         assertThat(settings.modelName).isEqualTo("llama2");
         assertThat(settings.baseUrl).isEqualTo("http://localhost:11434");
         assertThat(settings.generateForField).isTrue();

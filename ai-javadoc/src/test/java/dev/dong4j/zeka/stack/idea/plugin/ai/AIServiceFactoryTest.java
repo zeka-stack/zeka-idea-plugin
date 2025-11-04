@@ -55,7 +55,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建千问提供商")
     void testCreateProvider_qianwen() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "test-api-key";
@@ -79,7 +79,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建 Ollama 提供商")
     void testCreateProvider_ollama() {
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "";
@@ -103,7 +103,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建 LM Studio 提供商")
     void testCreateProvider_lmstudio() {
-        settings.aiProvider = AIProviderType.LM_STUDIO.getProviderId();
+        settings.providerType = AIProviderType.LM_STUDIO.getProviderId();
         settings.modelName = "gpt-3.5-turbo";
         settings.baseUrl = "http://localhost:1234/v1";
         settings.apiKey = "";
@@ -127,7 +127,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建硅基流动提供商")
     void testCreateProvider_siliconflow() {
-        settings.aiProvider = AIProviderType.SILICONFLOW.getProviderId();
+        settings.providerType = AIProviderType.SILICONFLOW.getProviderId();
         settings.modelName = "deepseek-chat";
         settings.baseUrl = "https://api.siliconflow.cn/v1";
         settings.apiKey = "test-api-key";
@@ -317,7 +317,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建的提供商实例配置正确 - 千问")
     void testCreatedProvider_hasCorrectConfiguration_qianwen() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "test-api-key";
@@ -344,7 +344,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建的提供商实例配置正确 - Ollama")
     void testCreatedProvider_hasCorrectConfiguration_ollama() {
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "";
@@ -371,7 +371,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试多次创建提供商实例")
     void testCreateMultipleInstances() {
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "test-api-key";
@@ -399,7 +399,7 @@ public class AIServiceFactoryTest {
     @DisplayName("测试切换提供商")
     void testSwitchProviders() {
         // 创建千问提供商
-        settings.aiProvider = AIProviderType.QIANWEN.getProviderId();
+        settings.providerType = AIProviderType.QIANWEN.getProviderId();
         settings.modelName = "qwen-max";
         settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         settings.apiKey = "test-api-key";
@@ -409,7 +409,7 @@ public class AIServiceFactoryTest {
         assertThat(qianwenProvider.getProviderId()).isEqualTo(AIProviderType.QIANWEN.getProviderId());
 
         // 切换到 Ollama
-        settings.aiProvider = AIProviderType.OLLAMA.getProviderId();
+        settings.providerType = AIProviderType.OLLAMA.getProviderId();
         settings.modelName = "llama2";
         settings.baseUrl = "http://localhost:11434";
         settings.apiKey = "";
