@@ -304,7 +304,6 @@ public class JavaDocSettingsConfigurable implements Configurable {
         currentSettings.testPromptTemplate = panelSettings.testPromptTemplate;
 
         currentSettings.supportedLanguages = panelSettings.supportedLanguages;
-        currentSettings.verboseLogging = panelSettings.verboseLogging;
     }
 
     /**
@@ -382,7 +381,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
     @SuppressWarnings("D")
     private boolean validateSettings(SettingsState settings) {
         // 检查必填字段
-        if (settings.aiProvider == null || settings.aiProvider.trim().isEmpty()) {
+        if (settings.aiProvider == null) {
             return false;
         }
 

@@ -95,7 +95,7 @@ public class AIServiceFactory {
      */
     @org.jetbrains.annotations.Nullable
     public static AIServiceProvider createProvider(@NotNull SettingsState settings) {
-        String providerId = settings.aiProvider;
+        AIProviderType providerType = settings.aiProvider;
 
         // 检查配置是否已通过验证
         if (!settings.configurationVerified) {
@@ -104,10 +104,15 @@ public class AIServiceFactory {
             return null;
         }
 
-        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerId);
+        if (providerType == null) {
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Provider type is null");
+            return null;
+        }
+
+        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerType.getProviderId());
         if (providerClass == null) {
             String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
-            String error = "不支持的 AI 提供商: " + providerId + "。当前支持的提供商：" + supportedProviders;
+            String error = "不支持的 AI 提供商: " + providerType.getProviderId() + "。当前支持的提供商：" + supportedProviders;
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
             return null;
         }
@@ -116,7 +121,7 @@ public class AIServiceFactory {
             return providerClass.getDeclaredConstructor(SettingsState.class)
                 .newInstance(settings);
         } catch (Exception e) {
-            String error = "创建 AI 提供商失败: " + providerId + "。请检查配置是否正确。";
+            String error = "创建 AI 提供商失败: " + providerType.getProviderId() + "。请检查配置是否正确。";
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
             return null;
         }
@@ -130,10 +135,15 @@ public class AIServiceFactory {
      */
     @org.jetbrains.annotations.Nullable
     public static AIServiceProvider createProvider(@NotNull SettingsState.ProviderConfig providerConfig) {
-        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerConfig.providerId);
+        if (providerConfig.providerId == null) {
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Provider ID is null");
+            return null;
+        }
+
+        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerConfig.providerId.getProviderId());
         if (providerClass == null) {
             String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
-            String error = "不支持的 AI 提供商: " + providerConfig.providerId + "。当前支持的提供商：" + supportedProviders;
+            String error = "不支持的 AI 提供商: " + providerConfig.providerId.getProviderId() + "。当前支持的提供商：" + supportedProviders;
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
             return null;
         }
@@ -150,7 +160,7 @@ public class AIServiceFactory {
             return providerClass.getDeclaredConstructor(SettingsState.class)
                 .newInstance(tempSettings);
         } catch (Exception e) {
-            String error = "创建 AI 提供商失败: " + providerConfig.providerId + "。请检查配置是否正确。";
+            String error = "创建 AI 提供商失败: " + providerConfig.providerId.getProviderId() + "。请检查配置是否正确。";
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
             return null;
         }
@@ -313,7 +323,7 @@ public class AIServiceFactory {
         SettingsState settings = SettingsState.getInstance();
         return settings.configurationVerified
                && settings.aiProvider != null
-               && isProviderSupported(settings.aiProvider);
+               && isProviderSupported(settings.aiProvider.getProviderId());
     }
 
     /**

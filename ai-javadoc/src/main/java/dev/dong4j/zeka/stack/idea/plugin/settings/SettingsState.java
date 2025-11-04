@@ -11,7 +11,6 @@ import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -56,14 +55,14 @@ import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
  */
 @State(
     name = "JavaDocAISettings",
-    storages = @Storage("JavaDocAI.xml")
+    storages = @Storage("zeka.stack.ai.javadoc.xml")
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     // ==================== AI 提供商配置 ====================
 
     /**
-     * AI 服务提供商 ID
+     * AI 服务提供商类型
      *
      * <p>标识当前使用的 AI 服务提供商。
      * 决定使用哪个 AIServiceProvider 实现。
@@ -80,7 +79,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIServiceFactory#createProvider(SettingsState)
      * @see AIProviderType
      */
-    public String aiProvider = AIProviderType.QIANWEN.getProviderId();
+    public AIProviderType aiProvider = AIProviderType.QIANWEN;
 
     /**
      * 模型名称
@@ -104,7 +103,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>默认值: "<a href="https://dashscope.aliyuncs.com/compatible-mode/v1">...</a>" (通义千问)
      *
      * @see AIServiceProvider#getDefaultBaseUrl()
-     * @see #normalizeBaseUrl(String)
      */
     public String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
@@ -149,8 +147,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * </ul>
      *
      * <p>默认值: false
-     *
-     * @see #isValid()
      */
     public boolean configurationVerified = false;
 
@@ -170,10 +166,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * </ul>
      *
      * <p>默认值: {"java"}
-     *
-     * @see #isLanguageSupported(String)
      */
-    public Set<String> supportedLanguages = new HashSet<String>() {{
+    public Set<String> supportedLanguages = new HashSet<>() {{
         add("java");
     }};
 
@@ -364,16 +358,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>存储所有已配置且通过验证的AI服务提供商信息。
      * 每个提供商包含其配置信息和验证状态。
      *
-     * <p>默认值: 空列表
+     * <p>默认值: 空集合
      */
-    public List<ProviderConfig> availableProviders = new ArrayList<>();
+    public Set<ProviderConfig> availableProviders = new HashSet<>();
 
     /**
      * 服务提供商配置信息
      */
-    public static class ProviderConfig {
+    public static class ProviderConfig implements Comparable<ProviderConfig> {
         /** 提供商标识符 */
-        public String providerId;
+        public AIProviderType providerId;
         /** 模型名称 */
         public String modelName;
         /** 基础请求地址 */
@@ -386,7 +380,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         public long lastVerifiedTime;
 
         /**
-         * 默认构造函数
+         * 默认构造函数, 必须要
          * <p>
          * 初始化 ProviderConfig 实例的默认构造函数
          */
@@ -403,7 +397,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
          * @param apiKey                API密钥
          * @param configurationVerified 配置是否已验证
          */
-        public ProviderConfig(String providerId, String modelName, String baseUrl, String apiKey, boolean configurationVerified) {
+        public ProviderConfig(AIProviderType providerId, String modelName, String baseUrl, String apiKey, boolean configurationVerified) {
             this.providerId = providerId;
             this.modelName = modelName;
             this.baseUrl = baseUrl;
@@ -445,6 +439,55 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         @Override
         public int hashCode() {
             return Objects.hash(providerId, baseUrl, apiKey);
+        }
+
+        /**
+         * 比较两个 ProviderConfig 对象的顺序
+         * <p>
+         * 用于 Set 序列化时的排序。比较顺序：
+         * 1. 首先按 providerId 排序（枚举的 ordinal）
+         * 2. 如果 providerId 相同，按 baseUrl 排序
+         * 3. 如果 baseUrl 也相同，按 apiKey 排序
+         *
+         * @param other 要比较的另一个对象
+         * @return 负数表示当前对象小于 other，0 表示相等，正数表示大于
+         */
+        @Override
+        public int compareTo(@NotNull ProviderConfig other) {
+            // 首先比较 providerId
+            if (this.providerId != null && other.providerId != null) {
+                int providerCompare = this.providerId.compareTo(other.providerId);
+                if (providerCompare != 0) {
+                    return providerCompare;
+                }
+            } else if (this.providerId != null) {
+                return 1;
+            } else if (other.providerId != null) {
+                return -1;
+            }
+
+            // 然后比较 baseUrl
+            if (this.baseUrl != null && other.baseUrl != null) {
+                int baseUrlCompare = this.baseUrl.compareTo(other.baseUrl);
+                if (baseUrlCompare != 0) {
+                    return baseUrlCompare;
+                }
+            } else if (this.baseUrl != null) {
+                return 1;
+            } else if (other.baseUrl != null) {
+                return -1;
+            }
+
+            // 最后比较 apiKey
+            if (this.apiKey != null && other.apiKey != null) {
+                return this.apiKey.compareTo(other.apiKey);
+            } else if (this.apiKey != null) {
+                return 1;
+            } else if (other.apiKey != null) {
+                return -1;
+            }
+
+            return 0;
         }
     }
 
@@ -901,7 +944,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean isValid() {
         // 检查必需字段
-        if (aiProvider == null || aiProvider.trim().isEmpty()) {
+        if (aiProvider == null) {
             return false;
         }
 
@@ -933,8 +976,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIProviderType#requiresApiKey()
      */
     public boolean requiresApiKey() {
-        AIProviderType providerType = AIProviderType.fromProviderId(aiProvider);
-        return providerType != null && providerType.requiresApiKey();
+        return aiProvider != null && aiProvider.requiresApiKey();
     }
 
     /**
@@ -957,23 +999,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
-     * 添加或更新提供商配置
-     *
-     * @param providerConfig 提供商配置
-     */
-    public void addOrUpdateProvider(@NotNull ProviderConfig providerConfig) {
-        // 移除相同的配置（基于providerId, baseUrl, apiKey）
-        availableProviders.removeIf(config ->
-                                        Objects.equals(config.providerId, providerConfig.providerId) &&
-                                        Objects.equals(config.baseUrl, providerConfig.baseUrl) &&
-                                        Objects.equals(config.apiKey, providerConfig.apiKey)
-                                   );
-
-        // 添加新配置
-        availableProviders.add(providerConfig);
-    }
-
-    /**
      * 获取可用的提供商配置列表
      *
      * @return 已验证的提供商配置列表
@@ -982,7 +1007,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public List<ProviderConfig> getAvailableProviders() {
         return availableProviders.stream()
             .filter(config -> config.configurationVerified)
-            .collect(java.util.stream.Collectors.toList());
+            .toList();
     }
 
     /**
@@ -1001,7 +1026,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 以及生成配置、重试设置、温度参数、最大令牌数等。
      */
     public void resetToDefaults() {
-        aiProvider = AIProviderType.QIANWEN.getProviderId();
+        aiProvider = AIProviderType.QIANWEN;
         modelName = AIProviderType.QIANWEN.getDefaultModel();
         baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
         apiKey = "";
