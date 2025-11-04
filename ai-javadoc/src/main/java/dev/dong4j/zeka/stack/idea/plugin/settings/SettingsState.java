@@ -652,7 +652,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             4. 如果有参数, 必须包含 @param 标签
             5. 如果有返回值, 必须包含 @return 标签
             6. 如果有异常抛出，使用 @throws 标签
-            7. 可以使用 @since 等标签
+            6. 不要添加不存在的参数,返回值和异常的注释标签
+            7. 可以使用 @since, @Deprecated 等标签
             
             # 示例
             输入代码：
@@ -818,19 +819,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultSystemPromptTemplate() {
         return """
-            你是一个专业的 Java 开发工程师，专门负责为 Java 代码生成高质量的 JavaDoc 注释。
-            
-            你精通 Java 编程语言和 JavaDoc 规范，能够准确理解代码逻辑并生成清晰、准确的中文注释。
-            
-            你的任务是分析用户提供的代码片段，并生成符合 JavaDoc 标准的注释，包括类、方法、字段等元素的文档。
-            
+            你是一个专业的 Java 开发工程师，专门负责为 Java 代码生成高质量的 JavaDoc 注释,
+            精通 Java 编程语言和 JavaDoc 规范，能够准确理解代码逻辑并生成清晰、准确的中文注释。
+            现在的任务是分析用户提供的代码片段，并生成符合 JavaDoc 标准的注释。
             请始终使用中文编写注释，确保注释内容准确、简洁、易懂。
             
             重要要求：
-            - 只返回 JavaDoc 注释，不要返回代码本身
-            - 不要使用任何 markdown 代码块标记（如 ```java）
-            - 确保注释格式符合 JavaDoc 标准
-            - 注释内容要准确描述代码的功能和用途
+            - 只返回 JavaDoc 注释，不要返回代码本身;
+            - 不要使用任何 markdown 代码块标记（如 ```java）;
+            - 确保注释格式符合 JavaDoc 标准;
+            - 注释内容要准确描述代码的功能和用途;
             """;
     }
 

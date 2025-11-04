@@ -33,7 +33,9 @@ import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.Getter;
@@ -307,6 +309,15 @@ public class TaskExecutor {
     private boolean processTasksSequentially(@NotNull List<DocumentationTask> tasks) {
         int totalTasks = tasks.size();
 
+        // 设置 ThreadLocal project，供 AICompatibleProvider 使用
+        if (aiService instanceof AICompatibleProvider) {
+            AICompatibleProvider.setCurrentProject(project);
+        }
+
+        // Console 日志：任务开始
+        JavaDocConsoleView.printWithTimestamp(project, String.format("========== 开始生成文档 任务总数: %s ==========", totalTasks));
+        JavaDocConsoleView.print(project, "");
+
         for (int i = 0; i < totalTasks && !indicator.isCanceled(); i++) {
             DocumentationTask task = tasks.get(i);
 
@@ -329,6 +340,16 @@ public class TaskExecutor {
 
         log.info("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                  completedCount.get(), failedCount.get(), skippedCount.get());
+
+        // Console 日志：任务完成统计
+        JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
+        JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
+                                                               completedCount.get(), failedCount.get(), skippedCount.get()));
+
+        // 清理 ThreadLocal
+        if (aiService instanceof AICompatibleProvider) {
+            AICompatibleProvider.setCurrentProject(null);
+        }
 
         return true;
     }
@@ -394,6 +415,16 @@ public class TaskExecutor {
 
             log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                      completedCount.get(), failedCount.get(), skippedCount.get());
+
+            // Console 日志：任务完成统计
+            JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
+            JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
+                                                                   completedCount.get(), failedCount.get(), skippedCount.get()));
+
+            // 清理 ThreadLocal
+            if (aiService instanceof AICompatibleProvider) {
+                AICompatibleProvider.setCurrentProject(null);
+            }
 
             return true;
 
@@ -465,11 +496,22 @@ public class TaskExecutor {
         try {
             task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
 
+            // Console 日志：任务开始（仅详细日志模式）
+            int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
+            String taskInfo = String.format("========== 任务 %d: %s %s ==========",
+                                            currentTaskNum,
+                                            task.getType().name(),
+                                            task.getFilePath());
+            JavaDocConsoleView.printWithTimestamp(project, taskInfo);
+            JavaDocConsoleView.print(project, "");
+
             // 检查是否应该跳过
             if (shouldSkip(task)) {
                 task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
                 skippedCount.incrementAndGet();
                 stats.incrementSkipped();
+                JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -481,6 +523,8 @@ public class TaskExecutor {
                 task.setErrorMessage("生成的文档为空");
                 failedCount.incrementAndGet();
                 stats.incrementFailed();
+                JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -492,6 +536,10 @@ public class TaskExecutor {
             completedCount.incrementAndGet();
             stats.incrementCompleted();
 
+            // Console 日志：任务完成
+            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
+            JavaDocConsoleView.print(project, "");
+
         } catch (AIServiceException e) {
             String errorMessage = getAIServiceErrorMessage(e);
             log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
@@ -499,12 +547,21 @@ public class TaskExecutor {
             task.setErrorMessage(errorMessage);
             failedCount.incrementAndGet();
             stats.incrementFailed();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
+            JavaDocConsoleView.print(project, "");
+            
         } catch (Exception e) {
             log.info("处理任务失败: {}", task, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
             failedCount.incrementAndGet();
             stats.incrementFailed();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
+            JavaDocConsoleView.print(project, "");
         }
     }
 
@@ -661,10 +718,21 @@ public class TaskExecutor {
         try {
             task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
 
+            // Console 日志：任务开始（仅详细日志模式）
+            int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
+            String taskInfo = String.format("========== 任务 %d: %s %s ==========",
+                                            currentTaskNum,
+                                            task.getType().name(),
+                                            task.getFilePath());
+            JavaDocConsoleView.printWithTimestamp(project, taskInfo);
+            JavaDocConsoleView.print(project, "");
+
             // 检查是否应该跳过
             if (shouldSkip(task)) {
                 task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
                 skippedCount.incrementAndGet();
+                JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -675,6 +743,8 @@ public class TaskExecutor {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);
                 task.setErrorMessage("生成的文档为空");
                 failedCount.incrementAndGet();
+                JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -685,6 +755,10 @@ public class TaskExecutor {
             task.setResult(documentation);
             completedCount.incrementAndGet();
 
+            // Console 日志：任务完成
+            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
+            JavaDocConsoleView.print(project, "");
+
         } catch (AIServiceException e) {
             // AI 服务异常 - 提供友好的错误提示
             String errorMessage = getAIServiceErrorMessage(e);
@@ -692,6 +766,10 @@ public class TaskExecutor {
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
             failedCount.incrementAndGet();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
+            JavaDocConsoleView.print(project, "");
 
             // 只在第一次失败时显示通知，避免过多通知
             if (failedCount.get() == 1) {
@@ -705,6 +783,10 @@ public class TaskExecutor {
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
             failedCount.incrementAndGet();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
+            JavaDocConsoleView.print(project, "");
         }
     }
 
@@ -880,6 +962,11 @@ public class TaskExecutor {
                             int endPosition = lineStartPosition + javadoc.length() + 1;
                             CodeStyleManager.getInstance(project).reformatText(psiFile, lineStartPosition, endPosition);
                         }
+
+                        // Console 日志：输出最终插入的 JavaDoc（仅详细日志模式）
+                        JavaDocConsoleView.printWithTimestamp(project, "=== 最终插入的 JavaDoc ===");
+                        JavaDocConsoleView.print(project, javadoc);
+                        JavaDocConsoleView.print(project, "");
 
                     } catch (Exception e) {
                         log.info("插入文档失败", e);

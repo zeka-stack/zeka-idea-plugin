@@ -6,9 +6,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 
@@ -60,6 +63,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     /** AI 兼容提供者日志记录器 */
     private static final Logger LOG = Logger.getInstance(AICompatibleProvider.class);
 
+    /** ThreadLocal 存储当前项目实例，用于 Console 日志输出 */
+    private static final ThreadLocal<Project> CURRENT_PROJECT = new ThreadLocal<>();
+
     /** 用户界面设置状态对象 */
     protected final SettingsState settings;
 
@@ -72,6 +78,29 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     protected AICompatibleProvider(SettingsState settings) {
         this.settings = settings;
+    }
+
+    /**
+     * 设置当前项目实例（用于 Console 日志输出）
+     *
+     * @param project 项目实例
+     */
+    public static void setCurrentProject(@Nullable Project project) {
+        if (project != null) {
+            CURRENT_PROJECT.set(project);
+        } else {
+            CURRENT_PROJECT.remove();
+        }
+    }
+
+    /**
+     * 获取当前项目实例
+     *
+     * @return 项目实例，如果不存在返回 null
+     */
+    @Nullable
+    protected static Project getCurrentProject() {
+        return CURRENT_PROJECT.get();
     }
 
     /**
@@ -273,6 +302,43 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 }
             }
 
+            // Console 日志：输出请求信息（仅非验证请求）
+            if (!"Validation Request".equals(logPrefix)) {
+                Project project = getCurrentProject();
+                if (project != null) {
+                    // 输出供应商和模型
+                    JavaDocConsoleView.printWithTimestamp(project, String.format("供应商: %s 模型: %s [%s性能模式] [%s代码压缩]",
+                                                                                 getProviderName(),
+                                                                                 settings.modelName,
+                                                                                 settings.performanceMode ? "启用" : "关闭",
+                                                                                 settings.enableCodeCompression ? "启用" : "关闭"));
+                    JavaDocConsoleView.print(project, "");
+
+                    // 输出 System Prompt
+                    String systemPrompt = getSystemPrompt();
+                    JavaDocConsoleView.print(project, "=== System Prompt ===");
+                    JavaDocConsoleView.print(project, systemPrompt);
+                    JavaDocConsoleView.print(project, "");
+
+                    // 输出 User Prompt（从 body 中提取）
+                    JsonArray messages = body.getAsJsonArray("messages");
+                    if (messages != null && messages.size() >= 2) {
+                        JsonObject userMessage = messages.get(1).getAsJsonObject();
+                        if (userMessage.has("content")) {
+                            String userPrompt = userMessage.get("content").getAsString();
+                            JavaDocConsoleView.print(project, "=== User Prompt ===");
+                            JavaDocConsoleView.print(project, userPrompt);
+                            JavaDocConsoleView.print(project, "");
+                        }
+                    }
+
+                    // 输出原始请求
+                    JavaDocConsoleView.print(project, "=== 原始请求 ===");
+                    JavaDocConsoleView.print(project, requestBody);
+                    JavaDocConsoleView.print(project, "");
+                }
+            }
+
             // 使用IDEA SDK的HttpRequests发送请求
             String responseBody = HttpRequests.post(url, "application/json")
                 .tuner(connection -> {
@@ -299,6 +365,16 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                                                              "Validation".equals(logPrefix) ? 1000 : 2000));
             }
 
+            // Console 日志：输出原始响应（仅非验证请求）
+            if (!"Validation Request".equals(logPrefix)) {
+                Project project = getCurrentProject();
+                if (project != null) {
+                    JavaDocConsoleView.print(project, "=== 原始响应 ===");
+                    JavaDocConsoleView.print(project, responseBody);
+                    JavaDocConsoleView.print(project, "");
+                }
+            }
+
             if (!responseBody.trim().isEmpty()) {
                 String result = responseParser.parse(responseBody);
 
@@ -307,7 +383,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     LOG.trace("Parsed Result:\n" + truncateForLog(result,
                                                                   "Validation".equals(logPrefix) ? 200 : 1000));
                 }
-
                 return result;
             }
 
@@ -666,30 +741,32 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @return Prompt 模板字符串，包含 %s 占位符用于代码插入
      */
     protected String loadPromptTemplate(DocumentationTask.TaskType type, String language) {
-        String template;
         // 根据文档类型选择相应的模板
-        String defaultTemplate = switch (type) {
+        String template;
+        String defaultTemplate;
+
+        switch (type) {
             case CLASS, INTERFACE, ENUM -> {
                 template = settings.classPromptTemplate;
-                yield SettingsState.getDefaultClassPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultClassPromptTemplate();
             }
             case FIELD -> {
                 template = settings.fieldPromptTemplate;
-                yield SettingsState.getDefaultFieldPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultFieldPromptTemplate();
             }
             case TEST_METHOD -> {
                 template = settings.testPromptTemplate;
-                yield SettingsState.getDefaultTestPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultTestPromptTemplate();
             }
             default -> {
                 template = settings.methodPromptTemplate;
-                yield SettingsState.getDefaultMethodPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultMethodPromptTemplate();
             }
-        };
-
+        }
 
         // 如果用户没有配置或配置为空，使用默认模板
-        if (template == null || template.trim().isEmpty()) {
+        // 使用 isBlank() 检查：null、空字符串、只包含空白字符（包括空白行）的情况
+        if (template == null || template.isBlank()) {
             return defaultTemplate;
         }
 

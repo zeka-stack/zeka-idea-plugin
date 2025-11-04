@@ -418,23 +418,24 @@ public class TaskCollector {
     @NotNull
     private String getCodeWithComment(@NotNull PsiElement element) {
         String originalCode = element.getText();
-        // 代码格式化
-        final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element, true);
 
-        // 如果启用了代码压缩，根据元素类型使用不同的压缩逻辑
-        if (settings.enableCodeCompression) {
-            // 类级别的代码使用 optimizeClassCode 方法
-            if (reformat instanceof PsiClass) {
-                // todo-dong4j : (2025.11.4 20:27) [删除 import 语句]
-                return AiCodePreprocessor.preprocess(optimizeClassCode(originalCode));
-            }
-            // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
-            if (reformat instanceof PsiMethod || reformat instanceof PsiField) {
-                return AiCodePreprocessor.preprocess(originalCode);
-            }
+        if (!settings.enableCodeCompression) {
+            // 其他情况返回格式化后的代码
+            return originalCode;
         }
 
-        // 其他情况直接返回原始代码
+        // 格式化副本, 不能直接操作原始的 PSI 元素, 因为该方法在 read-action 中调用, 所以拷贝一个副本来执行格式化
+        final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element.copy());
+
+        // 类级别的代码使用 optimizeClassCode 方法
+        if (element instanceof PsiClass) {
+            // todo-dong4j : (2025.11.4 20:27) [删除 import 语句]
+            return AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()));
+        }
+        // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
+        if (element instanceof PsiMethod || element instanceof PsiField) {
+            return AiCodePreprocessor.preprocess(reformat.getText());
+        }
         return originalCode;
     }
 
