@@ -224,21 +224,39 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean skipExisting = true;
 
     /**
-     * 是否优化类代码以减少 token 消耗
+     * 是否启用代码压缩以减少 token 使用量
      *
-     * <p>控制是否为类级别的代码进行优化以减少传递给 AI 的 token 数量。
-     * 优化包括：删除多余空行、删除单行注释、保留 JavaDoc 注释等。
+     * <p>控制是否为代码元素进行压缩处理以减少传递给 AI 的 token 数量。
      *
-     * <p>默认值: true
+     * <p>对于类级别的代码，压缩包括：
+     * <ul>
+     *   <li>删除多余的空行和空白字符</li>
+     *   <li>删除单行注释（// 注释）</li>
+     *   <li>保留 JavaDoc 注释（/** 注释）</li>
+     *   <li>如果超过最大行数限制，进行截取</li>
+     * </ul>
+     *
+     * <p>对于方法和字段级别的代码，压缩包括：
+     * <ul>
+     *   <li>删除所有注释（Javadoc、块注释、单行注释）</li>
+     *   <li>删除多余空格和空行</li>
+     *   <li>缩进压缩到最小层级（每层 1 个空格）</li>
+     * </ul>
+     *
+     * <p>注意：压缩后的代码会保持层级关系，但可能会影响 AI 对代码的理解。
+     * 建议在需要减少 token 消耗时开启。
+     *
+     * <p>默认值: false
      *
      * @see TaskCollector#optimizeClassCode(String)
+     * @see dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor
      */
-    public boolean optimizeClassCode = true;
+    public boolean enableCodeCompression = false;
 
     /**
      * 类代码最大行数限制
      *
-     * <p>当优化类代码时，如果代码行数超过此限制，将进行截取。
+     * <p>当启用代码压缩处理类代码时，如果代码行数超过此限制，将进行截取。
      * 这有助于控制传递给 AI 的 token 数量，避免超长代码导致的性能问题。
      *
      * <p>默认值: 1000
@@ -997,7 +1015,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         generateForMethod = true;
         generateForField = true;
         skipExisting = true;
-        optimizeClassCode = true;
+        enableCodeCompression = false;
         maxClassCodeLines = 1000;
 
         maxRetries = 2;

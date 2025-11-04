@@ -878,8 +878,7 @@ public class TaskExecutor {
                         PsiFile psiFile = element.getContainingFile();
                         if (psiFile != null) {
                             int endPosition = lineStartPosition + javadoc.length() + 1;
-                            CodeStyleManager.getInstance(project)
-                                .reformatText(psiFile, lineStartPosition, endPosition);
+                            CodeStyleManager.getInstance(project).reformatText(psiFile, lineStartPosition, endPosition);
                         }
 
                     } catch (Exception e) {

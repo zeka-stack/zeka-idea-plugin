@@ -188,6 +188,12 @@ public class JavaDocSettingsConfigurable implements Configurable {
         if (currentSettings.skipExisting != panelSettings.skipExisting) {
             return true;
         }
+        if (currentSettings.enableCodeCompression != panelSettings.enableCodeCompression) {
+            return true;
+        }
+        if (currentSettings.maxClassCodeLines != panelSettings.maxClassCodeLines) {
+            return true;
+        }
 
         if (currentSettings.maxRetries != panelSettings.maxRetries) {
             return true;
@@ -202,6 +208,12 @@ public class JavaDocSettingsConfigurable implements Configurable {
             return true;
         }
         if (currentSettings.performanceMode != panelSettings.performanceMode) {
+            return true;
+        }
+        if (currentSettings.showProviderStatistics != panelSettings.showProviderStatistics) {
+            return true;
+        }
+        if (currentSettings.verboseLogging != panelSettings.verboseLogging) {
             return true;
         }
 
@@ -273,12 +285,16 @@ public class JavaDocSettingsConfigurable implements Configurable {
         currentSettings.generateForMethod = panelSettings.generateForMethod;
         currentSettings.generateForField = panelSettings.generateForField;
         currentSettings.skipExisting = panelSettings.skipExisting;
+        currentSettings.enableCodeCompression = panelSettings.enableCodeCompression;
+        currentSettings.maxClassCodeLines = panelSettings.maxClassCodeLines;
 
         currentSettings.maxRetries = panelSettings.maxRetries;
         currentSettings.timeout = panelSettings.timeout;
         currentSettings.temperature = panelSettings.temperature;
         currentSettings.maxTokens = panelSettings.maxTokens;
         currentSettings.performanceMode = panelSettings.performanceMode;
+        currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
+        currentSettings.verboseLogging = panelSettings.verboseLogging;
 
         // 保存 Prompt 模板配置
         currentSettings.systemPromptTemplate = panelSettings.systemPromptTemplate;

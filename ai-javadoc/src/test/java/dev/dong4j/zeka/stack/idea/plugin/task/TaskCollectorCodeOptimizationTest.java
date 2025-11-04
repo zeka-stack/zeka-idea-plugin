@@ -192,7 +192,7 @@ class TaskCollectorCodeOptimizationTest {
      * 测试代码优化功能 - 禁用优化场景
      * <p>
      * 测试目标：验证当禁用代码优化时，优化方法不会对原始代码进行任何修改
-     * 测试场景：设置 optimizeClassCode 为 false，传入包含注释的原始代码
+     * 测试场景：设置 enableCodeCompression 为 false，传入包含注释的原始代码
      * 预期结果：优化后的代码应与原始代码完全一致
      * <p>
      * 注意：测试中使用了 {@link #invokeOptimizeClassCode(String)} 方法进行代码优化操作
@@ -200,7 +200,7 @@ class TaskCollectorCodeOptimizationTest {
     @Test
     @DisplayName("测试代码优化功能 - 禁用优化")
     void testOptimizeClassCode_disabled() {
-        settings.optimizeClassCode = false;
+        settings.enableCodeCompression = false;
 
         String originalCode = """
             public class TestClass {

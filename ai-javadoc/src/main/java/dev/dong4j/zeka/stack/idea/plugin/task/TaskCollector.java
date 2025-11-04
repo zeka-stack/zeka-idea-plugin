@@ -1,7 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.task;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.JavaRecursiveElementVisitor;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
@@ -12,6 +14,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
 
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor;
 
 /**
  * 任务收集器
@@ -326,6 +330,9 @@ public class TaskCollector {
      * <p>
      * 该方法会递归遍历指定目录下的所有子目录和文件，对于每个Java文件，调用
      * collectFromVirtualFile 方法收集文档任务，并将结果添加到任务列表中。
+     * <p>
+     * 使用 VfsUtilCore.visitChildrenRecursively() 来安全地遍历目录结构，
+     * 避免因循环符号链接导致的无限递归问题。
      *
      * @param directory 要收集的目录对象
      * @param tasks     用于存储收集到的文档任务的列表
@@ -336,13 +343,15 @@ public class TaskCollector {
             return;
         }
 
-        for (VirtualFile child : directory.getChildren()) {
-            if (child.isDirectory()) {
-                collectFromDirectoryRecursive(child, tasks);
-            } else if (isJavaFile(child)) {
-                tasks.addAll(collectFromVirtualFile(child));
+        VfsUtilCore.visitChildrenRecursively(directory, new VirtualFileVisitor<Void>() {
+            @Override
+            public boolean visitFile(@NotNull VirtualFile file) {
+                if (!file.isDirectory() && isJavaFile(file)) {
+                    tasks.addAll(collectFromVirtualFile(file));
+                }
+                return true;
             }
-        }
+        });
     }
 
     /**
@@ -388,6 +397,13 @@ public class TaskCollector {
      *   <li>如果优化后超过 1000 行，会进行截取</li>
      * </ul>
      *
+     * <p>对于方法和字段级别的代码，如果启用了代码压缩，会进行压缩处理：
+     * <ul>
+     *   <li>删除所有注释（Javadoc、块注释、单行注释）</li>
+     *   <li>删除多余空格和空行</li>
+     *   <li>缩进压缩到最小层级（每层 1 个空格）</li>
+     * </ul>
+     *
      * <p>设计考虑：
      * <ul>
      *   <li>保持代码的完整性</li>
@@ -402,13 +418,23 @@ public class TaskCollector {
     @NotNull
     private String getCodeWithComment(@NotNull PsiElement element) {
         String originalCode = element.getText();
+        // 代码格式化
+        final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element, true);
 
-        // 如果是类级别的代码且启用了优化，进行优化以减少 token 消耗
-        if (element instanceof PsiClass && settings.optimizeClassCode) {
-            return optimizeClassCode(originalCode);
+        // 如果启用了代码压缩，根据元素类型使用不同的压缩逻辑
+        if (settings.enableCodeCompression) {
+            // 类级别的代码使用 optimizeClassCode 方法
+            if (reformat instanceof PsiClass) {
+                // todo-dong4j : (2025.11.4 20:27) [删除 import 语句]
+                return AiCodePreprocessor.preprocess(optimizeClassCode(originalCode));
+            }
+            // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
+            if (reformat instanceof PsiMethod || reformat instanceof PsiField) {
+                return AiCodePreprocessor.preprocess(originalCode);
+            }
         }
 
-        // 其他类型的代码直接返回
+        // 其他情况直接返回原始代码
         return originalCode;
     }
 

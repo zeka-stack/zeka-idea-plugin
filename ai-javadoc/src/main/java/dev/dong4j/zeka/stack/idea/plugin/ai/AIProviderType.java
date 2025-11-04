@@ -34,6 +34,30 @@ import java.util.List;
 public enum AIProviderType {
 
     /**
+     * 自定义服务提供商
+     *
+     * <p>兼容 OpenAI API 的自定义服务提供商。
+     * 支持任何提供 OpenAI 兼容 API 的服务。
+     *
+     * <p>特点：
+     * <ul>
+     *   <li>兼容 OpenAI API</li>
+     *   <li>支持多种第三方服务</li>
+     *   <li>需要 API Key</li>
+     *   <li>高度可定制</li>
+     * </ul>
+     */
+    CUSTOM(
+        "custom",
+        "OpenAI API",
+        "https://api.openai.com/v1",
+        "gpt-3.5-turbo",
+        true,
+        List.of(
+            "qwen3-8b")
+    ),
+
+    /**
      * 通义千问服务提供商
      *
      * <p>阿里云提供的 AI 服务，支持多种模型。
@@ -49,7 +73,7 @@ public enum AIProviderType {
      */
     QIANWEN(
         "qianwen",
-        "通义千问 (QianWen)",
+        "通义千问",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "qwen3-8b",
         true,
@@ -59,6 +83,32 @@ public enum AIProviderType {
             "qwen3-8b",
             "qwen3-4b"
                      )
+    ),
+
+    /**
+     * 硅基流动服务提供商
+     *
+     * <p>硅基流动提供的 AI 服务，支持多种开源和商业模型。
+     * 提供 OpenAI 兼容的 API 接口。
+     *
+     * <p>特点：
+     * <ul>
+     *   <li>兼容 OpenAI API</li>
+     *   <li>支持多种开源模型</li>
+     *   <li>需要 API Key</li>
+     *   <li>性能稳定</li>
+     *   <li>价格合理</li>
+     * </ul>
+     */
+    SILICONFLOW(
+        "siliconflow",
+        "硅基流动",
+        "https://api.siliconflow.cn/v1",
+        "deepseek-chat",
+        true,
+        List.of(
+            "qwen3-8b"
+               )
     ),
 
     /**
@@ -87,8 +137,7 @@ public enum AIProviderType {
             "qwen3-coder:480b-cloud",
             "glm-4.6:cloud",
             "deepseek-r1:14b",
-            "qwen3-8b"
-                     )
+            "qwen3-8b")
     ),
 
     /**
@@ -108,64 +157,12 @@ public enum AIProviderType {
      */
     LM_STUDIO(
         "lmstudio",
-        "LM Studio (本地)",
+        "LM Studio",
         "http://localhost:1234/v1",
         "gpt-3.5-turbo",
         false,
         List.of(
-            "qwen3-8b"
-               )
-    ),
-
-    /**
-     * 硅基流动服务提供商
-     *
-     * <p>硅基流动提供的 AI 服务，支持多种开源和商业模型。
-     * 提供 OpenAI 兼容的 API 接口。
-     *
-     * <p>特点：
-     * <ul>
-     *   <li>兼容 OpenAI API</li>
-     *   <li>支持多种开源模型</li>
-     *   <li>需要 API Key</li>
-     *   <li>性能稳定</li>
-     *   <li>价格合理</li>
-     * </ul>
-     */
-    SILICONFLOW(
-        "siliconflow",
-        "硅基流动 (SiliconFlow)",
-        "https://api.siliconflow.cn/v1",
-        "deepseek-chat",
-        true,
-        List.of(
-            "qwen3-8b"
-               )
-    ),
-
-    /**
-     * 自定义服务提供商
-     *
-     * <p>兼容 OpenAI API 的自定义服务提供商。
-     * 支持任何提供 OpenAI 兼容 API 的服务。
-     *
-     * <p>特点：
-     * <ul>
-     *   <li>兼容 OpenAI API</li>
-     *   <li>支持多种第三方服务</li>
-     *   <li>需要 API Key</li>
-     *   <li>高度可定制</li>
-     * </ul>
-     */
-    CUSTOM(
-        "custom",
-        "自定义服务 (OpenAI 兼容)",
-        "https://api.openai.com/v1",
-        "gpt-3.5-turbo",
-        true,
-        List.of(
-            "qwen3-8b"
-               )
+            "qwen3-8b")
     );
 
     /**

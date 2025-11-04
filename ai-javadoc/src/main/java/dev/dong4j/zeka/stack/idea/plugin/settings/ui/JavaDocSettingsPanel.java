@@ -77,8 +77,8 @@ public class JavaDocSettingsPanel {
     private JBCheckBox generateForFieldCheckBox;
     /** 跳过已存在的文件复选框 */
     private JBCheckBox skipExistingCheckBox;
-    /** 优化类代码的复选框 */
-    private JBCheckBox optimizeClassCodeCheckBox;
+    /** 启用代码压缩的复选框 */
+    private JBCheckBox enableCodeCompressionCheckBox;
     /** 最大类代码行数设置控件 */
     private JSpinner maxClassCodeLinesSpinner;
 
@@ -120,6 +120,9 @@ public class JavaDocSettingsPanel {
     public JTextArea fieldPromptTextArea;
     /** 测试提示文本区域 */
     public JTextArea testPromptTextArea;
+
+    /** 存储复选框和提示标签的映射关系，用于更新提示文本颜色 */
+    private final java.util.Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new java.util.HashMap<>();
 
     /**
      * 构造函数，初始化 JavaDoc 设置面板
@@ -163,7 +166,7 @@ public class JavaDocSettingsPanel {
         generateForMethodCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.method"));
         generateForFieldCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.field"));
         skipExistingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.skip.existing"));
-        optimizeClassCodeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.optimize.class.code"));
+        enableCodeCompressionCheckBox = new JBCheckBox(JavaDocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
 
         // 语言支持
@@ -201,8 +204,7 @@ public class JavaDocSettingsPanel {
 
             .addComponent(new JBLabel(JavaDocBundle.message("settings.generation.options")))
             .addComponent(createGenerationOptionsPanel())
-
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.class.code.lines")), maxClassCodeLinesSpinner)
+            .addComponent(createCodeCompressionSubConfigPanel())
             .addSeparator(10)
 
             .addComponent(new JBLabel(JavaDocBundle.message("settings.language.support")))
@@ -235,9 +237,9 @@ public class JavaDocSettingsPanel {
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.timeout")),
                                  createAdvancedConfigPanel(timeoutSpinner,
                                                            "settings.timeout.hint"))
-            .addComponent(verboseLoggingCheckBox)
+            .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
-            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
+            .addComponent(createPerformanceModeSubConfigPanel())
             .addSeparator(10)
 
             .addComponent(new JBLabel(JavaDocBundle.message("settings.prompt.templates")))
@@ -280,18 +282,25 @@ public class JavaDocSettingsPanel {
         secondRowPanel.setLayout(new java.awt.BorderLayout());
         secondRowPanel.setBorder(JBUI.Borders.emptyTop(8)); // 与第一行保持适当间距
 
-        // 创建垂直布局的面板，控制两个复选框之间的间距
+        // 创建垂直布局的面板，控制复选框之间的间距
         JPanel verticalPanel = new JPanel();
         verticalPanel.setLayout(new java.awt.BorderLayout());
-        verticalPanel.add(createCheckBoxWithHint(skipExistingCheckBox, "settings.skip.existing.hint"), java.awt.BorderLayout.NORTH);
+
+        // 创建内部垂直面板
+        JPanel innerPanel = new JPanel();
+        innerPanel.setLayout(new java.awt.BorderLayout());
+
+        innerPanel.add(createCheckBoxWithHint(skipExistingCheckBox, "settings.skip.existing.hint"), java.awt.BorderLayout.NORTH);
 
         // 添加间距面板
         JPanel spacingPanel = new JPanel();
         spacingPanel.setPreferredSize(new java.awt.Dimension(0, 8)); // 8像素高度间距
-        verticalPanel.add(spacingPanel, java.awt.BorderLayout.CENTER);
+        innerPanel.add(spacingPanel, java.awt.BorderLayout.CENTER);
 
-        verticalPanel.add(createCheckBoxWithHint(optimizeClassCodeCheckBox, "settings.optimize.class.code.hint"),
+        innerPanel.add(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"),
                           java.awt.BorderLayout.SOUTH);
+
+        verticalPanel.add(innerPanel, java.awt.BorderLayout.NORTH);
 
         secondRowPanel.add(verticalPanel, java.awt.BorderLayout.CENTER);
 
@@ -369,7 +378,14 @@ public class JavaDocSettingsPanel {
     /**
      * 创建包含复选框和提示文本的面板
      * <p>
-     * 该方法用于创建一个包含复选框和提示文本的面板，提示文本通过指定的键从资源文件中获取，并设置为较暗的字体颜色和固定宽度。
+     * 该方法用于创建一个包含复选框和提示文本的面板，提示文本通过指定的键从资源文件中获取。
+     * 当复选框被勾选时，提示文本会以正常颜色（高亮）显示；未勾选时，提示文本以较暗的颜色显示。
+     *
+     * <p>特殊处理：
+     * <ul>
+     *   <li>显示统计信息复选框：不在这里添加监听器，因为它需要依赖性能模式的状态，监听器在 setupListeners 中添加</li>
+     *   <li>其他复选框：自动添加监听器来更新提示文本颜色</li>
+     * </ul>
      *
      * @param checkBox 要添加到面板中的复选框
      * @param hintKey  用于获取提示文本的资源键
@@ -384,11 +400,195 @@ public class JavaDocSettingsPanel {
         // 提示文本放在右侧
         JBLabel hintLabel = new JBLabel(JavaDocBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
+
+        // 保存映射关系，用于后续更新颜色
+        checkBoxHintLabelMap.put(checkBox, hintLabel);
+
+        // 根据复选框状态设置提示文本颜色
+        updateHintLabelColor(hintLabel, checkBox.isSelected());
+
+        // 监听复选框状态变化，动态更新提示文本颜色
+        // 注意：显示统计信息复选框的监听器在 setupListeners 中添加，因为它需要特殊处理
+        if (checkBox != showProviderStatisticsCheckBox) {
+            checkBox.addActionListener(e -> updateHintLabelColor(hintLabel, checkBox.isSelected()));
+        }
+        
         panel.add(hintLabel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /** 类代码最大行数标签，用于控制其可用性 */
+    private JBLabel maxClassCodeLinesLabel;
+
+    /** 类代码最大行数提示标签，用于控制其可用性 */
+    private JBLabel maxClassCodeLinesHintLabel;
+
+    /**
+     * 创建代码压缩的子配置面板（类代码最大行数）
+     * <p>
+     * 该类代码最大行数配置作为代码压缩的子配置，会向右缩进2个空格。
+     * 当代码压缩复选框被勾选时，该配置才可用。
+     *
+     * @return 包含类代码最大行数配置的面板
+     */
+    private JPanel createCodeCompressionSubConfigPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 添加左侧缩进（2个空格，约20像素）
+        JPanel indentPanel = new JPanel(new BorderLayout());
+        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
+
+        // 创建标签
+        maxClassCodeLinesLabel = new JBLabel(JavaDocBundle.message("settings.max.class.code.lines"));
+
+        // 创建提示标签
+        maxClassCodeLinesHintLabel = new JBLabel(JavaDocBundle.message("settings.max.class.code.lines.hint"));
+        maxClassCodeLinesHintLabel.setFont(maxClassCodeLinesHintLabel.getFont().deriveFont(maxClassCodeLinesHintLabel.getFont().getSize() - 2.0f));
+        maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        maxClassCodeLinesHintLabel.setPreferredSize(new Dimension(300, maxClassCodeLinesHintLabel.getPreferredSize().height));
+
+        // 创建包含标签、输入框和提示的面板
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(maxClassCodeLinesLabel, BorderLayout.WEST);
+
+        // 创建输入框和提示的面板
+        JPanel spinnerPanel = new JPanel(new BorderLayout(5, 0));
+        maxClassCodeLinesSpinner.setPreferredSize(new Dimension(120, maxClassCodeLinesSpinner.getPreferredSize().height));
+        spinnerPanel.add(maxClassCodeLinesSpinner, BorderLayout.WEST);
+        spinnerPanel.add(maxClassCodeLinesHintLabel, BorderLayout.CENTER);
+        contentPanel.add(spinnerPanel, BorderLayout.CENTER);
+
+        indentPanel.add(contentPanel, BorderLayout.CENTER);
+        panel.add(indentPanel, BorderLayout.CENTER);
+
+        // 初始状态：根据代码压缩复选框的状态设置可用性
+        updateMaxClassCodeLinesEnabled();
+
+        return panel;
+    }
+
+    /**
+     * 创建性能模式的子配置面板（显示统计信息）
+     * <p>
+     * 该显示统计信息配置作为性能模式的子配置，会向右缩进2个空格。
+     * 当性能模式复选框被勾选时，该配置才可用。
+     *
+     * @return 包含显示统计信息配置的面板
+     */
+    private JPanel createPerformanceModeSubConfigPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 添加左侧缩进（2个空格，约22像素）
+        JPanel indentPanel = new JPanel(new BorderLayout());
+        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
+
+        // 创建复选框面板
+        JPanel checkBoxPanel = createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint");
+        indentPanel.add(checkBoxPanel, BorderLayout.CENTER);
+        panel.add(indentPanel, BorderLayout.CENTER);
+
+        // 初始状态：根据性能模式复选框的状态设置可用性
+        updateShowProviderStatisticsEnabled();
         
         return panel;
+    }
+
+    /**
+     * 更新提示标签的颜色
+     * <p>
+     * 根据复选框的选中状态，设置提示标签的前景色。
+     * 选中时使用正常颜色（高亮），未选中时使用较暗的颜色。
+     *
+     * @param hintLabel 提示标签
+     * @param selected  是否选中
+     */
+    private void updateHintLabelColor(JBLabel hintLabel, boolean selected) {
+        if (selected) {
+            // 选中时使用正常颜色（高亮显示）
+            hintLabel.setForeground(UIManager.getColor("Label.foreground"));
+        } else {
+            // 未选中时使用较暗的颜色
+            hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        }
+    }
+
+    /**
+     * 更新类代码最大行数输入框的可用性
+     * <p>
+     * 根据代码压缩复选框的状态，设置类代码最大行数输入框、标签和提示的可用性。
+     */
+    private void updateMaxClassCodeLinesEnabled() {
+        boolean enabled = enableCodeCompressionCheckBox.isSelected();
+        maxClassCodeLinesSpinner.setEnabled(enabled);
+        if (maxClassCodeLinesLabel != null) {
+            maxClassCodeLinesLabel.setEnabled(enabled);
+        }
+        if (maxClassCodeLinesHintLabel != null) {
+            maxClassCodeLinesHintLabel.setEnabled(enabled);
+            // 根据可用性更新提示文本颜色
+            if (enabled) {
+                maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.foreground"));
+            } else {
+                maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            }
+        }
+    }
+
+    /**
+     * 更新显示统计信息复选框的可用性
+     * <p>
+     * 根据性能模式复选框的状态，设置显示统计信息复选框的可用性和提示文本颜色。
+     * 当性能模式未启用时，显示统计信息复选框及其提示文本都会显示为禁用状态。
+     */
+    private void updateShowProviderStatisticsEnabled() {
+        boolean enabled = performanceModeCheckBox.isSelected();
+        showProviderStatisticsCheckBox.setEnabled(enabled);
+
+        // 更新显示统计信息复选框的提示文本颜色
+        // 如果性能模式未启用，提示文本显示为禁用状态
+        // 如果性能模式启用，则根据显示统计信息复选框的状态更新颜色
+        JBLabel hintLabel = checkBoxHintLabelMap.get(showProviderStatisticsCheckBox);
+        if (hintLabel != null) {
+            if (enabled) {
+                // 性能模式启用时，根据显示统计信息复选框的状态更新颜色
+                updateHintLabelColor(hintLabel, showProviderStatisticsCheckBox.isSelected());
+            } else {
+                // 性能模式未启用时，提示文本显示为禁用状态
+                hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            }
+        }
+    }
+
+    /**
+     * 更新所有复选框的提示文本颜色
+     * <p>
+     * 根据每个复选框的当前选中状态，更新对应的提示文本颜色。
+     * 用于在加载设置时初始化提示文本的颜色。
+     *
+     * <p>特殊处理：
+     * <ul>
+     *   <li>显示统计信息复选框：如果性能模式未启用，提示文本显示为禁用状态</li>
+     *   <li>其他复选框：根据复选框的选中状态更新颜色</li>
+     * </ul>
+     */
+    private void updateAllCheckBoxHintColors() {
+        checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> {
+            // 显示统计信息复选框需要特殊处理
+            if (checkBox == showProviderStatisticsCheckBox) {
+                // 如果性能模式未启用，提示文本显示为禁用状态
+                if (!performanceModeCheckBox.isSelected()) {
+                    hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+                } else {
+                    // 性能模式启用时，根据复选框状态更新颜色
+                    updateHintLabelColor(hintLabel, checkBox.isSelected());
+                }
+            } else {
+                // 其他复选框根据选中状态更新颜色
+                updateHintLabelColor(hintLabel, checkBox.isSelected());
+            }
+        });
     }
 
     /**
@@ -473,9 +673,13 @@ public class JavaDocSettingsPanel {
         textArea.setWrapStyleWord(true);
         textArea.setToolTipText(JavaDocBundle.message("settings.prompt." + promptType + ".tooltip"));
 
+        // 创建滚动面板，并添加边框以在四周留出空间
         JBScrollPane scrollPane = new JBScrollPane(textArea);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // 添加边框，在四周留出10像素的空间
+        scrollPane.setBorder(JBUI.Borders.empty(10));
+
         tabPanel.add(scrollPane, BorderLayout.CENTER);
 
         // 创建重置按钮
@@ -547,10 +751,33 @@ public class JavaDocSettingsPanel {
         // 模型选择变更时清除验证状态
         modelComboBox.addActionListener(e -> markConfigurationAsUnverified());
 
-        // 监听代码优化配置变更
-        optimizeClassCodeCheckBox.addActionListener(e -> {
-            // 当启用/禁用代码优化时，可以更新最大行数输入框的可用性
-            maxClassCodeLinesSpinner.setEnabled(optimizeClassCodeCheckBox.isSelected());
+        // 监听代码压缩配置变更
+        enableCodeCompressionCheckBox.addActionListener(e -> {
+            // 当启用/禁用代码压缩时，更新最大行数输入框的可用性
+            updateMaxClassCodeLinesEnabled();
+        });
+
+        // 监听性能模式配置变更
+        performanceModeCheckBox.addActionListener(e -> {
+            // 当启用/禁用性能模式时，更新显示统计信息复选框的可用性和提示文本颜色
+            updateShowProviderStatisticsEnabled();
+
+            // 更新性能模式复选框本身的提示文本颜色
+            JBLabel performanceModeHintLabel = checkBoxHintLabelMap.get(performanceModeCheckBox);
+            if (performanceModeHintLabel != null) {
+                updateHintLabelColor(performanceModeHintLabel, performanceModeCheckBox.isSelected());
+            }
+        });
+
+        // 监听显示统计信息复选框状态变化，更新其提示文本颜色
+        // 注意：只有当性能模式启用时，提示文本颜色才根据复选框状态更新
+        // 需要移除 createCheckBoxWithHint 中添加的默认监听器，然后添加自定义逻辑
+        // 但由于 createCheckBoxWithHint 已经添加了监听器，我们在这里再次添加
+        // 监听器会按顺序执行，我们需要确保逻辑正确
+        showProviderStatisticsCheckBox.addActionListener(e -> {
+            // 调用 updateShowProviderStatisticsEnabled 来统一处理
+            // 这样可以确保提示文本颜色正确更新
+            updateShowProviderStatisticsEnabled();
         });
     }
 
@@ -1092,7 +1319,7 @@ public class JavaDocSettingsPanel {
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
         settings.generateForField = generateForFieldCheckBox.isSelected();
         settings.skipExisting = skipExistingCheckBox.isSelected();
-        settings.optimizeClassCode = optimizeClassCodeCheckBox.isSelected();
+        settings.enableCodeCompression = enableCodeCompressionCheckBox.isSelected();
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
 
         // 语言支持
@@ -1148,11 +1375,16 @@ public class JavaDocSettingsPanel {
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
         generateForFieldCheckBox.setSelected(settings.generateForField);
         skipExistingCheckBox.setSelected(settings.skipExisting);
-        optimizeClassCodeCheckBox.setSelected(settings.optimizeClassCode);
+        enableCodeCompressionCheckBox.setSelected(settings.enableCodeCompression);
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
 
-        // 根据代码优化设置更新最大行数输入框的可用性
-        maxClassCodeLinesSpinner.setEnabled(settings.optimizeClassCode);
+        // 根据代码压缩设置更新最大行数输入框的可用性
+        updateMaxClassCodeLinesEnabled();
+
+        // 根据性能模式设置更新显示统计信息复选框的可用性
+        performanceModeCheckBox.setSelected(settings.performanceMode);
+        showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
+        updateShowProviderStatisticsEnabled();
 
         // 语言支持
         javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
@@ -1167,8 +1399,9 @@ public class JavaDocSettingsPanel {
         topKSpinner.setValue(settings.topK);
         presencePenaltySpinner.setValue(settings.presencePenalty);
         verboseLoggingCheckBox.setSelected(settings.verboseLogging);
-        performanceModeCheckBox.setSelected(settings.performanceMode);
-        showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
+
+        // 更新所有复选框的提示文本颜色（必须在所有复选框状态设置完成后调用）
+        updateAllCheckBoxHintColors();
 
         // Prompt 配置 - 加载到 Tab 页
         systemPromptTextArea.setText(settings.systemPromptTemplate);
