@@ -68,7 +68,6 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("DuplicatedCode")
 @Slf4j
 public class GenerateJavaDocForFileAction extends AnAction {
-
     /**
      * 执行动作
      *

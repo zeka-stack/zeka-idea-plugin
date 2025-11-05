@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.action;
 
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
+import com.intellij.ide.presentation.Presentation;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -17,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
+import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
@@ -68,6 +70,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
+@Presentation(icon = "AllIcons.Actions.IntentionBulb")
 public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction {
 
     /**
@@ -113,14 +116,15 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
      *   <li>验证文件类型（必须是 Java 文件）</li>
      *   <li>智能定位元素</li>
      *   <li>排除文件级别的操作</li>
-     *   <li>检查元素是否已有文档</li>
+     *   <li>检查元素是否已有文档（如果允许覆盖则忽略）</li>
      * </ol>
      *
      * <p>显示策略：
      * <ul>
      *   <li>只在 Java 文件中显示</li>
      *   <li>只在可添加文档的元素上显示</li>
-     *   <li>只在元素没有文档时显示</li>
+     *   <li>如果 overrideExisting=false，只在元素没有文档时显示</li>
+     *   <li>如果 overrideExisting=true，无论是否有文档都显示</li>
      *   <li>不处理文件级别的操作</li>
      * </ul>
      *
@@ -151,13 +155,23 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
             return false;
         }
 
-        // 4. 检查是否已有 JavaDoc
-        if (locateResult.element() instanceof PsiDocCommentOwner docOwner) {
-            // 如果已有 JavaDoc，不显示此 Action
-            return docOwner.getDocComment() == null;
+        // 4. 检查元素是否可以有 JavaDoc
+        if (!(locateResult.element() instanceof PsiDocCommentOwner docOwner)) {
+            return false;
         }
 
-        return true;
+        // 5. 获取配置：是否允许覆盖现有文档
+        SettingsState settings = SettingsState.getInstance();
+        boolean overrideExisting = settings.overrideExisting;
+
+        // 6. 根据 overrideExisting 设置决定是否显示
+        if (overrideExisting) {
+            // 允许覆盖：无论是否已有 JavaDoc 都显示
+            return true;
+        } else {
+            // 不允许覆盖：只在没有 JavaDoc 时显示
+            return docOwner.getDocComment() == null;
+        }
     }
 
     /**

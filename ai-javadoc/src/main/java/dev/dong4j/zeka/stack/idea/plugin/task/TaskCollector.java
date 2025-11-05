@@ -379,7 +379,18 @@ public class TaskCollector {
                                          @NotNull DocumentationTask.TaskType type) {
         // 获取代码，包含已有的 JavaDoc 注释
         String code = getCodeWithComment(element);
-        String filePath = element.getContainingFile().getVirtualFile().getPath();
+
+        // 获取文件路径，处理 VirtualFile 为 null 的情况（例如 Scratch 文件）
+        PsiFile containingFile = element.getContainingFile();
+        String filePath;
+        VirtualFile virtualFile = containingFile.getVirtualFile();
+        if (virtualFile != null) {
+            filePath = virtualFile.getPath();
+        } else {
+            // 如果 VirtualFile 为 null，使用文件名作为标识
+            filePath = containingFile.getName();
+        }
+        
         return new DocumentationTask(element, code, type, filePath);
     }
 
