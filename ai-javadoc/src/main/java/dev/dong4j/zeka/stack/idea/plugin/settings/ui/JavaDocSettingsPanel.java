@@ -877,7 +877,10 @@ public class JavaDocSettingsPanel {
                 SettingsState tempSettings = new SettingsState();
                 tempSettings.providerType = providerType;
                 tempSettings.baseUrl = baseUrl;
-                tempSettings.apiKey = new String(apiKeyField.getPassword());
+
+                // 设置 API Key 到 PasswordSafe
+                String apiKey = new String(apiKeyField.getPassword());
+                tempSettings.setDefaultApiKey(apiKey);
                 tempSettings.configurationVerified = true;
 
                 AIServiceProvider provider = AIServiceFactory.createProvider(tempSettings);
@@ -1026,7 +1029,10 @@ public class JavaDocSettingsPanel {
                 SettingsState tempSettings = new SettingsState();
                 tempSettings.providerType = providerType;
                 tempSettings.baseUrl = baseUrl;
-                tempSettings.apiKey = new String(apiKeyField.getPassword());
+
+                // 设置 API Key 到 PasswordSafe
+                String apiKey = new String(apiKeyField.getPassword());
+                tempSettings.setDefaultApiKey(apiKey);
                 tempSettings.configurationVerified = true;
 
                 AIServiceProvider provider = AIServiceFactory.createProvider(tempSettings);
@@ -1116,7 +1122,10 @@ public class JavaDocSettingsPanel {
             // 使用已保存的配置
             baseUrlField.setText(savedConfig.baseUrl);
             modelComboBox.setSelectedItem(savedConfig.modelName);
-            apiKeyField.setText(savedConfig.apiKey);
+
+            // 从 PasswordSafe 读取 API Key
+            String apiKey = SettingsState.getApiKey(savedConfig.uuid);
+            apiKeyField.setText(apiKey != null ? apiKey : "");
         } else {
             // 使用枚举中的默认配置
             baseUrlField.setText(providerType.getDefaultBaseUrl());
@@ -1280,9 +1289,14 @@ public class JavaDocSettingsPanel {
             currentSettings.providerType,
             currentSettings.modelName,
             currentSettings.baseUrl,
-            currentSettings.apiKey,
             true
         );
+
+        // 将 API Key 存储到 PasswordSafe
+        String apiKey = currentSettings.getDefaultApiKey();
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            SettingsState.setApiKey(providerConfig.uuid, apiKey);
+        }
 
         settings.availableProviders.add(providerConfig);
     }
@@ -1291,20 +1305,29 @@ public class JavaDocSettingsPanel {
         SettingsState settings = SettingsState.getInstance();
         SettingsState currentSettings = getSettings();
 
-        // 从可用提供商列表中移除相同的配置（基于 providerId、modelName、apiKey 和 baseUrl 的 MD5）
-        settings.availableProviders.removeIf(config ->
-                                                 ProviderConfigUtils.areEqual(
-                                                     config.providerType != null ? config.providerType.getProviderId() : null,
-                                                     config.modelName,
-                                                     config.apiKey,
-                                                     config.baseUrl,
-                                                     currentSettings.providerType != null ? currentSettings.providerType.getProviderId()
-                                                                                          : null,
-                                                     currentSettings.modelName,
-                                                     currentSettings.apiKey,
-                                                     currentSettings.baseUrl
-                                                                             )
-                                            );
+        // 从可用提供商列表中移除相同的配置（基于 providerId、modelName、baseUrl 和 apiKey 比较）
+        String currentApiKey = currentSettings.getDefaultApiKey();
+        settings.availableProviders.removeIf(config -> {
+            // 比较 provider、model 和 baseUrl
+            boolean basicMatch = ProviderConfigUtils.areEqual(
+                config.providerType != null ? config.providerType.getProviderId() : null,
+                config.modelName,
+                null, // 不再使用 apiKey 作为比较依据
+                config.baseUrl,
+                currentSettings.providerType != null ? currentSettings.providerType.getProviderId() : null,
+                currentSettings.modelName,
+                null, // 不再使用 apiKey 作为比较依据
+                currentSettings.baseUrl
+                                                             );
+
+            // 如果基本配置匹配，还需要比较 API Key
+            if (basicMatch) {
+                String configApiKey = SettingsState.getApiKey(config.uuid);
+                return (configApiKey == null && currentApiKey == null) ||
+                       (configApiKey != null && configApiKey.equals(currentApiKey));
+            }
+            return false;
+        });
     }
 
     /**
@@ -1337,7 +1360,10 @@ public class JavaDocSettingsPanel {
         Object selectedModel = modelComboBox.getEditor().getItem();
         settings.modelName = selectedModel != null ? selectedModel.toString().trim() : "";
         settings.setBaseUrl(baseUrlField.getText().trim()); // 使用标准化方法
-        settings.apiKey = new String(apiKeyField.getPassword()).trim();
+
+        // 将 API Key 存储到 PasswordSafe
+        String apiKey = new String(apiKeyField.getPassword()).trim();
+        settings.setDefaultApiKey(apiKey);
 
         // 设置验证状态
         settings.configurationVerified = this.configurationVerified;
@@ -1393,7 +1419,10 @@ public class JavaDocSettingsPanel {
         updateModelList();
         modelComboBox.setSelectedItem(settings.modelName);
         baseUrlField.setText(settings.baseUrl);
-        apiKeyField.setText(settings.apiKey);
+
+        // 从 PasswordSafe 读取 API Key
+        String apiKey = settings.getDefaultApiKey();
+        apiKeyField.setText(apiKey != null ? apiKey : "");
 
         // 加载验证状态
         this.configurationVerified = settings.configurationVerified;

@@ -154,8 +154,11 @@ public class AIServiceFactory {
             tempSettings.providerType = providerConfig.providerType;
             tempSettings.modelName = providerConfig.modelName;
             tempSettings.baseUrl = providerConfig.baseUrl;
-            tempSettings.apiKey = providerConfig.apiKey;
             tempSettings.configurationVerified = providerConfig.configurationVerified;
+
+            // 从 PasswordSafe 获取 API Key 并设置到临时配置中
+            String apiKey = SettingsState.getApiKey(providerConfig.uuid);
+            tempSettings.setDefaultApiKey(apiKey);
 
             return providerClass.getDeclaredConstructor(SettingsState.class)
                 .newInstance(tempSettings);

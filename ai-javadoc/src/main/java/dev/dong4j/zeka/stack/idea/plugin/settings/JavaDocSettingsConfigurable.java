@@ -169,9 +169,17 @@ public class JavaDocSettingsConfigurable implements Configurable {
         if (!currentSettings.baseUrl.equals(panelSettings.baseUrl)) {
             return true;
         }
-        if (!currentSettings.apiKey.equals(panelSettings.apiKey)) {
+
+        // 比较 API Key（从 PasswordSafe 读取）
+        String currentApiKey = currentSettings.getDefaultApiKey();
+        String panelApiKey = panelSettings.getDefaultApiKey();
+        if (currentApiKey == null && panelApiKey != null) {
             return true;
         }
+        if (currentApiKey != null && !currentApiKey.equals(panelApiKey)) {
+            return true;
+        }
+        
         if (currentSettings.configurationVerified != panelSettings.configurationVerified) {
             return true;
         }
@@ -278,7 +286,9 @@ public class JavaDocSettingsConfigurable implements Configurable {
         currentSettings.providerType = panelSettings.providerType;
         currentSettings.modelName = panelSettings.modelName;
         currentSettings.baseUrl = panelSettings.baseUrl;
-        currentSettings.apiKey = panelSettings.apiKey;
+
+        // 应用 API Key（已在 getSettings() 中存储到 PasswordSafe）
+        // 这里只需要同步验证状态
         currentSettings.configurationVerified = panelSettings.configurationVerified;
 
         currentSettings.generateForClass = panelSettings.generateForClass;
@@ -394,9 +404,11 @@ public class JavaDocSettingsConfigurable implements Configurable {
         }
 
         // 检查是否需要 API Key
-        if (settings.requiresApiKey() &&
-            (settings.apiKey == null || settings.apiKey.trim().isEmpty())) {
-            return false;
+        if (settings.requiresApiKey()) {
+            String apiKey = settings.getDefaultApiKey();
+            if (apiKey == null || apiKey.trim().isEmpty()) {
+                return false;
+            }
         }
 
         // 检查数值范围

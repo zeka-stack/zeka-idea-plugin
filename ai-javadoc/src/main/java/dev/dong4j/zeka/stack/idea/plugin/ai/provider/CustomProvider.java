@@ -187,7 +187,8 @@ public class CustomProvider extends AICompatibleProvider {
                                            );
         }
 
-        if (settings.apiKey == null || settings.apiKey.trim().isEmpty()) {
+        String apiKey = settings.getDefaultApiKey();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
             return ValidationResult.failure(
                 "API Key 不能为空",
                 "请提供自定义服务的 API Key"

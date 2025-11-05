@@ -280,7 +280,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         try {
             // 检查API Key配置
             if (requiresApiKey()) {
-                String apiKey = settings.apiKey;
+                String apiKey = settings.getDefaultApiKey();
                 if (apiKey == null || apiKey.trim().isEmpty()) {
                     throw new AIServiceException("Failed to build request headers: API Key is required but not configured",
                                                  AIServiceException.ErrorCode.CONFIGURATION_ERROR);
@@ -348,7 +348,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
                     // 设置Authorization头（如果需要）
                     if (requiresApiKey()) {
-                        connection.setRequestProperty("Authorization", "Bearer " + settings.apiKey);
+                        String apiKey = settings.getDefaultApiKey();
+                        connection.setRequestProperty("Authorization", "Bearer " + apiKey);
                     }
                 })
                 .connect(request -> {
@@ -947,7 +948,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
             // 检查API Key配置
             if (requiresApiKey()) {
-                String apiKey = settings.apiKey;
+                String apiKey = settings.getDefaultApiKey();
                 if (apiKey == null || apiKey.trim().isEmpty()) {
                     LOG.warn("API Key is required but not configured for provider: " + getProviderId());
                     return new ArrayList<>();
@@ -970,7 +971,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
                     // 设置Authorization头（如果需要）
                     if (requiresApiKey()) {
-                        connection.setRequestProperty("Authorization", "Bearer " + settings.apiKey);
+                        String apiKey = settings.getDefaultApiKey();
+                        connection.setRequestProperty("Authorization", "Bearer " + apiKey);
                     }
                 })
                 .connect(HttpRequests.Request::readString);

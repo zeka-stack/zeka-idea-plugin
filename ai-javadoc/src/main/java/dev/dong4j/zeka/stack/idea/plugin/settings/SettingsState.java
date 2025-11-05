@@ -1,5 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
+import com.intellij.credentialStore.CredentialAttributes;
+import com.intellij.credentialStore.CredentialAttributesKt;
+import com.intellij.credentialStore.Credentials;
+import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
@@ -15,6 +19,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
@@ -58,6 +63,17 @@ import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
     storages = @Storage("zeka.stack.ai.javadoc.xml")
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
+
+    // ==================== PasswordSafe 相关常量 ====================
+
+    /** PasswordSafe 服务名称 */
+    private static final String PASSWORD_SAFE_SERVICE_NAME = "AI Javadoc";
+
+    /** PasswordSafe 默认服务商的存储键名 */
+    private static final String PASSWORD_SAFE_KEY_DEFAULT = "AI_JAVADOC_API_KEY_DEFAULT";
+
+    /** PasswordSafe 存储键名前缀 */
+    private static final String PASSWORD_SAFE_KEY_PREFIX = "AI_JAVADOC_API_KEY_";
 
     // ==================== AI 提供商配置 ====================
 
@@ -105,25 +121,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIServiceProvider#getDefaultBaseUrl()
      */
     public String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-
-    /**
-     * API Key
-     *
-     * <p>访问 AI 服务所需的 API 密钥。
-     * 某些本地服务（如 Ollama）不需要此密钥。
-     *
-     * <p>安全考虑:
-     * <ul>
-     *   <li>敏感信息，应谨慎处理</li>
-     *   <li>建议使用 PasswordSafe 存储（未来优化）</li>
-     *   <li>在日志中应脱敏显示</li>
-     * </ul>
-     *
-     * <p>默认值: "" (空字符串)
-     *
-     * @see AIServiceProvider#requiresApiKey()
-     */
-    public String apiKey = "";
 
     /**
      * 配置是否已通过测试验证
@@ -366,14 +363,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 服务提供商配置信息
      */
     public static class ProviderConfig {
+        /** 唯一标识符，用于关联 PasswordSafe 中的 API 密钥 */
+        public String uuid;
         /** 提供商标识符 */
         public AIProviderType providerType;
         /** 模型名称 */
         public String modelName;
         /** 基础请求地址 */
         public String baseUrl;
-        /** API 密钥，用于身份验证和接口调用 */
-        public String apiKey;
         /** 配置是否已验证的标志 */
         public boolean configurationVerified;
         /** 最近一次验证的时间戳，单位为毫秒 */
@@ -382,26 +379,28 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         /**
          * 默认构造函数, 必须要
          * <p>
-         * 初始化 ProviderConfig 实例的默认构造函数
+         * 初始化 ProviderConfig 实例的默认构造函数，自动生成 UUID
          */
-        public ProviderConfig() {}
+        public ProviderConfig() {
+            this.uuid = UUID.randomUUID().toString();
+        }
 
         /**
          * 构造一个 ProviderConfig 对象
          * <p>
-         * 初始化 ProviderConfig 实例，设置提供者ID、模型名称、基础URL、API密钥、配置验证状态，并记录最后一次验证时间
+         * 初始化 ProviderConfig 实例，设置提供者ID、模型名称、基础URL、配置验证状态，并记录最后一次验证时间
+         * API 密钥将通过 PasswordSafe 单独存储
          *
          * @param providerType          提供者ID
          * @param modelName             模型名称
          * @param baseUrl               基础URL
-         * @param apiKey                API密钥
          * @param configurationVerified 配置是否已验证
          */
-        public ProviderConfig(AIProviderType providerType, String modelName, String baseUrl, String apiKey, boolean configurationVerified) {
+        public ProviderConfig(AIProviderType providerType, String modelName, String baseUrl, boolean configurationVerified) {
+            this.uuid = UUID.randomUUID().toString();
             this.providerType = providerType;
             this.modelName = modelName;
             this.baseUrl = baseUrl;
-            this.apiKey = apiKey;
             this.configurationVerified = configurationVerified;
             this.lastVerifiedTime = System.currentTimeMillis();
         }
@@ -874,7 +873,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         }
 
         // 检查是否需要 API Key
-        return !requiresApiKey() || (apiKey != null && !apiKey.trim().isEmpty());
+        if (!requiresApiKey()) {
+            return true;
+        }
+
+        String apiKey = getDefaultApiKey();
+        return apiKey != null && !apiKey.trim().isEmpty();
     }
 
     /**
@@ -937,7 +941,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         providerType = AIProviderType.QIANWEN;
         modelName = AIProviderType.QIANWEN.getDefaultModel();
         baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
-        apiKey = "";
+        // 清空默认服务商的 API 密钥
+        setDefaultApiKey("");
         configurationVerified = false;
 
         supportedLanguages = new HashSet<>();
@@ -1038,6 +1043,139 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public void setBaseUrl(@NotNull String baseUrl) {
         this.baseUrl = normalizeBaseUrl(baseUrl);
+    }
+
+    // ==================== PasswordSafe API Key 管理方法 ====================
+
+    /**
+     * 创建 CredentialAttributes
+     * <p>
+     * 为指定的键名创建凭证属性对象，用于 PasswordSafe 存储和读取
+     *
+     * @param key 存储键名
+     * @return CredentialAttributes 对象
+     */
+    @NotNull
+    private static CredentialAttributes createCredentialAttributes(@NotNull String key) {
+        return new CredentialAttributes(
+            CredentialAttributesKt.generateServiceName(PASSWORD_SAFE_SERVICE_NAME, key)
+        );
+    }
+
+    /**
+     * 获取默认服务商的 API Key
+     * <p>
+     * 从 PasswordSafe 中读取默认服务商的 API 密钥
+     *
+     * @return API Key，如果不存在则返回 null
+     */
+    @Nullable
+    public String getDefaultApiKey() {
+        Credentials credentials = PasswordSafe.getInstance().get(
+            createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT)
+                                                                );
+        return credentials != null ? credentials.getPasswordAsString() : null;
+    }
+
+    /**
+     * 设置默认服务商的 API Key
+     * <p>
+     * 将默认服务商的 API 密钥存储到 PasswordSafe 中
+     *
+     * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
+     */
+    public void setDefaultApiKey(@Nullable String apiKey) {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            // 如果 apiKey 为空，删除已存储的密钥
+            PasswordSafe.getInstance().set(
+                createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
+                null
+                                          );
+        } else {
+            // 存储 API 密钥
+            PasswordSafe.getInstance().set(
+                createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
+                new Credentials("default", apiKey)
+                                          );
+        }
+    }
+
+    /**
+     * 获取指定 ProviderConfig 的 API Key
+     * <p>
+     * 从 PasswordSafe 中读取指定提供商配置的 API 密钥
+     *
+     * @param uuid 提供商配置的 UUID
+     * @return API Key，如果不存在则返回 null
+     */
+    @Nullable
+    public static String getApiKey(@Nullable String uuid) {
+        if (uuid == null || uuid.trim().isEmpty()) {
+            return null;
+        }
+
+        Credentials credentials = PasswordSafe.getInstance().get(
+            createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid)
+                                                                );
+        return credentials != null ? credentials.getPasswordAsString() : null;
+    }
+
+    /**
+     * 设置指定 ProviderConfig 的 API Key
+     * <p>
+     * 将指定提供商配置的 API 密钥存储到 PasswordSafe 中
+     *
+     * @param uuid   提供商配置的 UUID
+     * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
+     */
+    public static void setApiKey(@Nullable String uuid, @Nullable String apiKey) {
+        if (uuid == null || uuid.trim().isEmpty()) {
+            return;
+        }
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            // 如果 apiKey 为空，删除已存储的密钥
+            PasswordSafe.getInstance().set(
+                createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid),
+                null
+                                          );
+        } else {
+            // 存储 API 密钥
+            PasswordSafe.getInstance().set(
+                createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid),
+                new Credentials(uuid, apiKey)
+                                          );
+        }
+    }
+
+    /**
+     * 删除指定 ProviderConfig 的 API Key
+     * <p>
+     * 从 PasswordSafe 中删除指定提供商配置的 API 密钥
+     *
+     * @param uuid 提供商配置的 UUID
+     */
+    public static void deleteApiKey(@Nullable String uuid) {
+        if (uuid == null || uuid.trim().isEmpty()) {
+            return;
+        }
+
+        PasswordSafe.getInstance().set(
+            createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid),
+            null
+                                      );
+    }
+
+    /**
+     * 删除默认服务商的 API Key
+     * <p>
+     * 从 PasswordSafe 中删除默认服务商的 API 密钥
+     */
+    public void deleteDefaultApiKey() {
+        PasswordSafe.getInstance().set(
+            createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
+            null
+                                      );
     }
 }
 
