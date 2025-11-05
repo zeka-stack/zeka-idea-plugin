@@ -6,9 +6,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,8 +19,10 @@ import java.util.concurrent.TimeUnit;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
+import dev.dong4j.zeka.stack.idea.plugin.util.TokenCounter;
 
 /**
  * OpenAI 兼容的服务提供商抽象类
@@ -60,8 +64,13 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     /** AI 兼容提供者日志记录器 */
     private static final Logger LOG = Logger.getInstance(AICompatibleProvider.class);
 
+    /** ThreadLocal 存储当前项目实例，用于 Console 日志输出 */
+    private static final ThreadLocal<Project> CURRENT_PROJECT = new ThreadLocal<>();
+
     /** 用户界面设置状态对象 */
     protected final SettingsState settings;
+    /** 提供商配置信息，用于存储和管理提供商相关的配置参数 */
+    protected final SettingsState.ProviderConfig providerConfig;
 
     /**
      * 初始化 AI 兼容提供者
@@ -70,8 +79,109 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      *
      * @param settings 设置状态对象，用于配置 AI 兼容提供者的相关参数
      */
-    protected AICompatibleProvider(SettingsState settings) {
+    protected AICompatibleProvider(SettingsState settings, SettingsState.ProviderConfig providerConfig) {
         this.settings = settings;
+        this.providerConfig = providerConfig;
+    }
+
+    /**
+     * 获取当前AI服务提供商的ID
+     * <p>
+     * 返回AI服务提供商的唯一标识符，该标识符由AIProviderType枚举中的LM_STUDIO类型定义。
+     *
+     * @return AI服务提供商的ID
+     */
+    @Override
+    @NotNull
+    public String getProviderId() {
+        return providerConfig.providerType.getProviderId();
+    }
+
+    /**
+     * 获取当前AI服务提供商的名称
+     * <p>
+     * 返回AI服务提供商的显示名称，该名称由AIProviderType枚举中的LM_STUDIO值提供。
+     *
+     * @return AI服务提供商的显示名称
+     */
+    @Override
+    @NotNull
+    public String getProviderName() {
+        return providerConfig.providerType.getDisplayName();
+    }
+
+    /**
+     * 获取当前AI提供者支持的模型列表
+     * <p>
+     * 调用AI提供者类型对应的获取支持模型方法，返回支持的模型名称列表
+     *
+     * @return 支持的模型名称列表
+     */
+    @Override
+    @NotNull
+    public List<String> getSupportedModels() {
+        return providerConfig.providerType.getSupportedModels();
+    }
+
+    /**
+     * 获取默认模型名称
+     * <p>
+     * 返回当前AI提供者默认的模型名称。
+     *
+     * @return 默认模型名称
+     */
+    @Override
+    @NotNull
+    public String getDefaultModel() {
+        return providerConfig.providerType.getDefaultModel();
+    }
+
+    /**
+     * 获取默认的基础URL
+     * <p>
+     * 返回AI服务提供商类型LM_STUDIO对应的基础URL。
+     *
+     * @return 默认的基础URL
+     */
+    @Override
+    @NotNull
+    public String getDefaultBaseUrl() {
+        return providerConfig.providerType.getDefaultBaseUrl();
+    }
+
+    /**
+     * 判断当前AI服务提供商是否需要API密钥
+     * <p>
+     * 调用对应AI服务提供商的requiresApiKey方法，返回是否需要API密钥
+     *
+     * @return 是否需要API密钥
+     */
+    @Override
+    public boolean requiresApiKey() {
+        return providerConfig.providerType.requiresApiKey();
+    }
+
+    /**
+     * 设置当前项目实例（用于 Console 日志输出）
+     *
+     * @param project 项目实例
+     */
+    public static void setCurrentProject(@Nullable Project project) {
+        if (project != null) {
+            CURRENT_PROJECT.set(project);
+        } else {
+            CURRENT_PROJECT.remove();
+        }
+    }
+
+    /**
+     * 获取当前项目实例
+     *
+     * @return 项目实例，如果不存在返回 null
+     */
+    @Nullable
+    protected static Project getCurrentProject() {
+        return CURRENT_PROJECT.get();
     }
 
     /**
@@ -181,7 +291,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     protected String sendRequest(String prompt) throws AIServiceException {
         JsonObject body = buildRequestBody(prompt);
-        return sendRequestWithBody(body, "AI Request", prompt.length(), this::parseResponse);
+        // 非设置页面调用, 使用持久化配置
+        String apiKey = SettingsState.getApiKey(providerConfig.md5);
+        return sendRequestWithBody(body, "AI Request", TokenCounter.estimateTokens(prompt), apiKey, this::parseResponse);
     }
 
     /**
@@ -210,9 +322,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @return AI 服务的响应内容
      * @throws AIServiceException 当验证请求失败时抛出
      */
-    protected String sendValidationRequest() throws AIServiceException {
+    protected String sendValidationRequest(String apiKey) throws AIServiceException {
         JsonObject body = buildValidationRequestBody();
-        return sendRequestWithBody(body, "Validation Request", 0, this::parseValidationResponse);
+        return sendRequestWithBody(body, "Validation Request", 0, apiKey, this::parseValidationResponse);
     }
 
     /**
@@ -246,30 +358,69 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @return 解析后的响应结果字符串
      * @throws AIServiceException 如果发生配置错误、网络错误、响应无效或未知错误
      */
-    private String sendRequestWithBody(JsonObject body, String logPrefix, int promptLength,
+    private String sendRequestWithBody(JsonObject body,
+                                       String logPrefix,
+                                       int promptLength,
+                                       String apiKey,
                                        ResponseParser responseParser) throws AIServiceException {
         try {
-            // 检查API Key配置
+            // 根据不同的客户端判断是否检查 apikey
             if (requiresApiKey()) {
-                String apiKey = settings.apiKey;
                 if (apiKey == null || apiKey.trim().isEmpty()) {
-                    throw new AIServiceException("Failed to build request headers: API Key is required but not configured",
+                    throw new AIServiceException("需要 API 密钥但未进行配置",
                                                  AIServiceException.ErrorCode.CONFIGURATION_ERROR);
                 }
             }
 
-            String url = settings.baseUrl + "/chat/completions";
+            String url = providerConfig.baseUrl + "/chat/completions";
             String requestBody = body.toString();
 
             // 调试日志：记录请求信息
             if (settings.verboseLogging) {
                 LOG.trace("=== " + logPrefix + " ===");
                 LOG.trace("URL: " + url);
-                LOG.trace("Model: " + settings.modelName);
+                LOG.trace("Model: " + providerConfig.modelName);
                 LOG.trace("Request Body: " + truncateForLog(requestBody,
                                                             "Validation Request".equals(logPrefix) ? 500 : 1000));
                 if (promptLength > 0) {
                     LOG.trace("Prompt Length: " + promptLength + " characters");
+                }
+            }
+
+            // Console 日志：输出请求信息（仅非验证请求）
+            if (!"Validation Request".equals(logPrefix)) {
+                Project project = getCurrentProject();
+                if (project != null) {
+                    // 输出供应商和模型
+                    JavaDocConsoleView.printWithTimestamp(project, String.format("供应商: %s 模型: %s [%s性能模式] [%s代码压缩]",
+                                                                                 getProviderName(),
+                                                                                 providerConfig.modelName,
+                                                                                 settings.performanceMode ? "启用" : "关闭",
+                                                                                 settings.enableCodeCompression ? "启用" : "关闭"));
+                    JavaDocConsoleView.print(project, "");
+
+                    // 输出 System Prompt
+                    String systemPrompt = getSystemPrompt();
+                    JavaDocConsoleView.print(project, "=== System Prompt ===");
+                    JavaDocConsoleView.print(project, systemPrompt);
+                    JavaDocConsoleView.print(project, "");
+
+                    // 输出 User Prompt（从 body 中提取）
+                    JsonArray messages = body.getAsJsonArray("messages");
+                    if (messages != null && messages.size() >= 2) {
+                        JsonObject userMessage = messages.get(1).getAsJsonObject();
+                        if (userMessage.has("content")) {
+                            String userPrompt = userMessage.get("content").getAsString();
+                            JavaDocConsoleView.print(project, "=== User Prompt ===");
+                            JavaDocConsoleView.print(project, userPrompt);
+                            JavaDocConsoleView.print(project, "");
+                        }
+                    }
+
+                    // 输出原始请求
+                    JavaDocConsoleView.print(project, "=== 原始请求 ===");
+                    JavaDocConsoleView.print(project, requestBody);
+                    JavaDocConsoleView.print(project, "");
                 }
             }
 
@@ -281,9 +432,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     connection.setReadTimeout(settings.timeout * 2); // 读取超时是连接超时的2倍
 
                     // 设置Authorization头（如果需要）
-                    if (requiresApiKey()) {
-                        connection.setRequestProperty("Authorization", "Bearer " + settings.apiKey);
-                    }
+                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
                 })
                 .connect(request -> {
                     // 写入请求体
@@ -299,6 +448,16 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                                                              "Validation".equals(logPrefix) ? 1000 : 2000));
             }
 
+            // Console 日志：输出原始响应（仅非验证请求）
+            if (!"Validation Request".equals(logPrefix)) {
+                Project project = getCurrentProject();
+                if (project != null) {
+                    JavaDocConsoleView.print(project, "=== 原始响应 ===");
+                    JavaDocConsoleView.print(project, responseBody);
+                    JavaDocConsoleView.print(project, "");
+                }
+            }
+
             if (!responseBody.trim().isEmpty()) {
                 String result = responseParser.parse(responseBody);
 
@@ -307,7 +466,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     LOG.trace("Parsed Result:\n" + truncateForLog(result,
                                                                   "Validation".equals(logPrefix) ? 200 : 1000));
                 }
-
                 return result;
             }
 
@@ -386,6 +544,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @return 构建好的 JSON 请求体
      */
     public JsonObject buildRequestBody(String prompt) {
+
         // 创建 system 消息
         JsonObject systemMessage = new JsonObject();
         systemMessage.addProperty("role", "system");
@@ -397,7 +556,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         userMessage.addProperty("content", prompt);
 
         JsonObject body = new JsonObject();
-        body.addProperty("model", settings.modelName);
+        body.addProperty("model", providerConfig.modelName);
         // ollama 的参数
         body.addProperty("think", false);
         // openapi 兼容的参数
@@ -501,7 +660,24 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 .get("content").getAsString()
                 .trim();
 
+            // 解析并输出 usage 信息
+            Project project = getCurrentProject();
+            if (project != null && json.has("usage")) {
+                JsonObject usage = json.getAsJsonObject("usage");
+                int promptTokens = usage.has("prompt_tokens") ? usage.get("prompt_tokens").getAsInt() : 0;
+                int completionTokens = usage.has("completion_tokens") ? usage.get("completion_tokens").getAsInt() : 0;
+                int totalTokens = usage.has("total_tokens") ? usage.get("total_tokens").getAsInt() : 0;
+                JavaDocConsoleView.print(project, "=== Token 使用统计 ===");
+
+                JavaDocConsoleView.print(project, String.format("供应商: %s 模型: %s | Token 使用: 请求 %d | 响应 %d | 总计 %d",
+                                                                getProviderName(),
+                                                                providerConfig.modelName,
+                                                                promptTokens, completionTokens, totalTokens));
+                JavaDocConsoleView.print(project, "");
+            }
+
             // 过滤思考数据，只保留实际内容
+
             return filterThinkingContent(content);
         } catch (Exception e) {
             LOG.info("Failed to parse AI response: " + responseBody, e);
@@ -666,30 +842,32 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @return Prompt 模板字符串，包含 %s 占位符用于代码插入
      */
     protected String loadPromptTemplate(DocumentationTask.TaskType type, String language) {
-        String template;
         // 根据文档类型选择相应的模板
-        String defaultTemplate = switch (type) {
+        String template;
+        String defaultTemplate;
+
+        switch (type) {
             case CLASS, INTERFACE, ENUM -> {
                 template = settings.classPromptTemplate;
-                yield SettingsState.getDefaultClassPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultClassPromptTemplate();
             }
             case FIELD -> {
                 template = settings.fieldPromptTemplate;
-                yield SettingsState.getDefaultFieldPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultFieldPromptTemplate();
             }
             case TEST_METHOD -> {
                 template = settings.testPromptTemplate;
-                yield SettingsState.getDefaultTestPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultTestPromptTemplate();
             }
             default -> {
                 template = settings.methodPromptTemplate;
-                yield SettingsState.getDefaultMethodPromptTemplate();
+                defaultTemplate = SettingsState.getDefaultMethodPromptTemplate();
             }
-        };
-
+        }
 
         // 如果用户没有配置或配置为空，使用默认模板
-        if (template == null || template.trim().isEmpty()) {
+        // 使用 isBlank() 检查：null、空字符串、只包含空白字符（包括空白行）的情况
+        if (template == null || template.isBlank()) {
             return defaultTemplate;
         }
 
@@ -706,18 +884,19 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     @NotNull
     @Override
-    public ValidationResult validateConfiguration() {
+    public ValidationResult validateConfiguration(String apiKey) {
         try {
+
             if (settings.verboseLogging) {
                 LOG.debug("Starting configuration validation for provider: " + getProviderId());
-                LOG.debug("Base URL: " + settings.baseUrl);
-                LOG.debug("Model: " + settings.modelName);
+                LOG.debug("Base URL: " + providerConfig.baseUrl);
+                LOG.debug("Model: " + providerConfig.modelName);
             }
 
-            String response = sendValidationRequest();
+            String response = sendValidationRequest(apiKey);
 
             if (response != null && !response.isEmpty()) {
-                String successMessage = "连接成功！提供商: " + getProviderName() + ", 模型: " + settings.modelName;
+                String successMessage = "连接成功！提供商: " + getProviderName() + ", 模型: " + providerConfig.modelName;
                 if (settings.verboseLogging) {
                     LOG.debug("Configuration validation successful");
                 }
@@ -729,7 +908,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             }
         } catch (AIServiceException e) {
             String errorMessage = "配置验证失败";
-            String errorDetails = getDetailedErrorMessage(e);
+            String errorDetails = AIServiceException.build(e);
             LOG.warn("Configuration validation failed: " + errorDetails, e);
             return ValidationResult.failure(errorMessage, errorDetails, e);
         } catch (Exception e) {
@@ -788,7 +967,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         userMessage.addProperty("content", "ping");
 
         JsonObject body = new JsonObject();
-        body.addProperty("model", settings.modelName);
+        body.addProperty("model", providerConfig.modelName);
         // ollama 的参数
         body.addProperty("think", false);
         // openapi 兼容的参数
@@ -806,32 +985,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         body.addProperty("max_tokens", 32);
         body.addProperty("top_p", 0.9);
         return body;
-    }
-
-    /**
-     * 获取详细的错误消息
-     *
-     * @param e AI 服务异常
-     * @return 详细的错误消息
-     */
-    @NotNull
-    private String getDetailedErrorMessage(@NotNull AIServiceException e) {
-        AIServiceException.ErrorCode errorCode = e.getErrorCode();
-        String details = e.getMessage();
-
-        if (errorCode != null) {
-            return switch (errorCode) {
-                case INVALID_API_KEY -> "API Key 无效或已过期。请检查并更新您的 API Key。";
-                case RATE_LIMIT -> "请求频率超限。请稍后再试或升级您的服务套餐。";
-                case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用。请稍后重试或检查服务状态。";
-                case NETWORK_ERROR -> "网络连接失败。请检查网络连接或 Base URL 是否正确。\n详情: " + details;
-                case CONFIGURATION_ERROR -> "配置错误: Model " + details;
-                case INVALID_RESPONSE -> "服务返回的数据格式错误。可能是模型名称不正确或服务异常。";
-                default -> details;
-            };
-        }
-
-        return details != null ? details : "未知错误";
     }
 
     /**
@@ -861,23 +1014,23 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     @NotNull
     @Override
-    public List<String> getAvailableModels() {
+    public List<String> getAvailableModels(String apiKey) {
         try {
+
             if (settings.verboseLogging) {
                 LOG.debug("Fetching available models from provider: " + getProviderId());
-                LOG.debug("Base URL: " + settings.baseUrl);
+                LOG.debug("Base URL: " + providerConfig.baseUrl);
             }
 
             // 检查API Key配置
             if (requiresApiKey()) {
-                String apiKey = settings.apiKey;
                 if (apiKey == null || apiKey.trim().isEmpty()) {
                     LOG.warn("API Key is required but not configured for provider: " + getProviderId());
                     return new ArrayList<>();
                 }
             }
 
-            String url = settings.baseUrl + "/models";
+            String url = providerConfig.baseUrl + "/models";
 
             if (settings.verboseLogging) {
                 LOG.debug("Requesting models from: " + url);
@@ -892,9 +1045,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     connection.setReadTimeout(settings.timeout * 2); // 读取超时是连接超时的2倍
 
                     // 设置Authorization头（如果需要）
-                    if (requiresApiKey()) {
-                        connection.setRequestProperty("Authorization", "Bearer " + settings.apiKey);
-                    }
+                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
                 })
                 .connect(HttpRequests.Request::readString);
 

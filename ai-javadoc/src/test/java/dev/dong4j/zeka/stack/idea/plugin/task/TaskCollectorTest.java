@@ -131,7 +131,7 @@ public class TaskCollectorTest {
         realSettings.generateForClass = true;
         realSettings.generateForMethod = true;
         realSettings.generateForField = true;
-        realSettings.skipExisting = false;
+        realSettings.overrideExisting = true;
 
         // Mock Application 和 SettingsState
         try (MockedStatic<ApplicationManager> mockedAppManager = mockStatic(ApplicationManager.class);
@@ -302,8 +302,7 @@ public class TaskCollectorTest {
     @Test
     @DisplayName("测试跳过已有文档的元素")
     void testCollectFromElement_skipExisting() {
-        realSettings.skipExisting = true;
-
+        realSettings.overrideExisting = false;
         // Mock 方法已有文档
         PsiDocCommentOwner methodWithDoc = mock(PsiDocCommentOwner.class, withSettings()
             .extraInterfaces(PsiMethod.class));
@@ -330,7 +329,7 @@ public class TaskCollectorTest {
     @Test
     @DisplayName("测试不跳过已有文档的元素")
     void testCollectFromElement_notSkipExisting() {
-        realSettings.skipExisting = false;
+        realSettings.overrideExisting = true;
 
         // Mock 方法已有文档
         PsiDocCommentOwner methodWithDoc = mock(PsiDocCommentOwner.class, withSettings()

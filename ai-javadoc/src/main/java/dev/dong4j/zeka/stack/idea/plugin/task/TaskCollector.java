@@ -1,7 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.task;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.JavaRecursiveElementVisitor;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
@@ -12,6 +14,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
 
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor;
 
 /**
  * 任务收集器
@@ -138,7 +142,7 @@ public class TaskCollector {
      *   <li>generateForClass：是否为类生成文档</li>
      *   <li>generateForMethod：是否为方法生成文档</li>
      *   <li>generateForField：是否为字段生成文档</li>
-     *   <li>skipExisting：是否跳过已有文档的元素</li>
+     *   <li>overrideExisting：是否覆盖已有注释（false=跳过，true=覆盖）</li>
      * </ul>
      *
      * @param psiClass PSI 类对象
@@ -326,6 +330,9 @@ public class TaskCollector {
      * <p>
      * 该方法会递归遍历指定目录下的所有子目录和文件，对于每个Java文件，调用
      * collectFromVirtualFile 方法收集文档任务，并将结果添加到任务列表中。
+     * <p>
+     * 使用 VfsUtilCore.visitChildrenRecursively() 来安全地遍历目录结构，
+     * 避免因循环符号链接导致的无限递归问题。
      *
      * @param directory 要收集的目录对象
      * @param tasks     用于存储收集到的文档任务的列表
@@ -336,13 +343,15 @@ public class TaskCollector {
             return;
         }
 
-        for (VirtualFile child : directory.getChildren()) {
-            if (child.isDirectory()) {
-                collectFromDirectoryRecursive(child, tasks);
-            } else if (isJavaFile(child)) {
-                tasks.addAll(collectFromVirtualFile(child));
+        VfsUtilCore.visitChildrenRecursively(directory, new VirtualFileVisitor<Void>() {
+            @Override
+            public boolean visitFile(@NotNull VirtualFile file) {
+                if (!file.isDirectory() && isJavaFile(file)) {
+                    tasks.addAll(collectFromVirtualFile(file));
+                }
+                return true;
             }
-        }
+        });
     }
 
     /**
@@ -370,7 +379,18 @@ public class TaskCollector {
                                          @NotNull DocumentationTask.TaskType type) {
         // 获取代码，包含已有的 JavaDoc 注释
         String code = getCodeWithComment(element);
-        String filePath = element.getContainingFile().getVirtualFile().getPath();
+
+        // 获取文件路径，处理 VirtualFile 为 null 的情况（例如 Scratch 文件）
+        PsiFile containingFile = element.getContainingFile();
+        String filePath;
+        VirtualFile virtualFile = containingFile.getVirtualFile();
+        if (virtualFile != null) {
+            filePath = virtualFile.getPath();
+        } else {
+            // 如果 VirtualFile 为 null，使用文件名作为标识
+            filePath = containingFile.getName();
+        }
+        
         return new DocumentationTask(element, code, type, filePath);
     }
 
@@ -388,6 +408,13 @@ public class TaskCollector {
      *   <li>如果优化后超过 1000 行，会进行截取</li>
      * </ul>
      *
+     * <p>对于方法和字段级别的代码，如果启用了代码压缩，会进行压缩处理：
+     * <ul>
+     *   <li>删除所有注释（Javadoc、块注释、单行注释）</li>
+     *   <li>删除多余空格和空行</li>
+     *   <li>缩进压缩到最小层级（每层 1 个空格）</li>
+     * </ul>
+     *
      * <p>设计考虑：
      * <ul>
      *   <li>保持代码的完整性</li>
@@ -403,12 +430,23 @@ public class TaskCollector {
     private String getCodeWithComment(@NotNull PsiElement element) {
         String originalCode = element.getText();
 
-        // 如果是类级别的代码且启用了优化，进行优化以减少 token 消耗
-        if (element instanceof PsiClass && settings.optimizeClassCode) {
-            return optimizeClassCode(originalCode);
+        if (!settings.enableCodeCompression) {
+            // 其他情况返回格式化后的代码
+            return originalCode;
         }
 
-        // 其他类型的代码直接返回
+        // 格式化副本, 不能直接操作原始的 PSI 元素, 因为该方法在 read-action 中调用, 所以拷贝一个副本来执行格式化
+        final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element.copy());
+
+        // 类级别的代码使用 optimizeClassCode 方法
+        if (element instanceof PsiClass) {
+            // todo-dong4j : (2025.11.4 20:27) [删除 import 语句]
+            return AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()));
+        }
+        // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
+        if (element instanceof PsiMethod || element instanceof PsiField) {
+            return AiCodePreprocessor.preprocess(reformat.getText());
+        }
         return originalCode;
     }
 
@@ -476,26 +514,31 @@ public class TaskCollector {
      * 判断是否应该为元素生成文档
      *
      * <p>根据用户配置决定是否为指定元素生成文档。
-     * 主要检查 skipExisting 配置项，如果启用则跳过已有文档的元素。
+     * 主要检查 overrideExisting 配置项，如果为 false（默认）则跳过已有文档的元素。
      *
      * <p>检查逻辑：
      * <ol>
-     *   <li>如果 skipExisting 为 false，总是返回 true</li>
-     *   <li>如果 skipExisting 为 true 且元素支持文档：
+     *   <li>如果 overrideExisting 为 true，总是返回 true（覆盖已有注释）</li>
+     *   <li>如果 overrideExisting 为 false（默认）且元素支持文档：
      *     <ul>
      *       <li>检查元素是否已有 JavaDoc 注释</li>
-     *       <li>如果已有注释返回 false，否则返回 true</li>
+     *       <li>如果已有注释返回 false（跳过），否则返回 true（生成）</li>
      *     </ul>
      *   </li>
      * </ol>
      *
      * @param element PSI 元素
      * @return 如果应该生成文档返回 true，否则返回 false
-     * @see SettingsState#skipExisting
+     * @see SettingsState#overrideExisting
      */
     private boolean shouldGenerateForElement(@NotNull PsiElement element) {
-        // 如果配置为跳过已有文档，检查是否已有文档
-        if (settings.skipExisting && element instanceof PsiDocCommentOwner) {
+        // 如果配置为覆盖已有注释，总是生成
+        if (settings.overrideExisting) {
+            return true;
+        }
+
+        // 如果配置为跳过已有文档（默认），检查是否已有文档
+        if (element instanceof PsiDocCommentOwner) {
             PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
             return docComment == null;
         }

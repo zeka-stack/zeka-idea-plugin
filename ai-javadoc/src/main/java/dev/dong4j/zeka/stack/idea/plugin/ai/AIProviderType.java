@@ -34,6 +34,31 @@ import java.util.List;
 public enum AIProviderType {
 
     /**
+     * 自定义服务提供商
+     *
+     * <p>兼容 OpenAI API 的自定义服务提供商。
+     * 支持任何提供 OpenAI 兼容 API 的服务。
+     *
+     * <p>特点：
+     * <ul>
+     *   <li>兼容 OpenAI API</li>
+     *   <li>支持多种第三方服务</li>
+     *   <li>需要 API Key</li>
+     *   <li>高度可定制</li>
+     * </ul>
+     */
+    CUSTOM(
+        "custom",
+        "OpenAI API",
+        "https://api.openai.com/v1",
+        "gpt-3.5-turbo",
+        true,
+        true,
+        List.of(
+            "qwen3-8b")
+    ),
+
+    /**
      * 通义千问服务提供商
      *
      * <p>阿里云提供的 AI 服务，支持多种模型。
@@ -49,16 +74,46 @@ public enum AIProviderType {
      */
     QIANWEN(
         "qianwen",
-        "通义千问 (QianWen)",
+        "通义千问",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "qwen3-8b",
         true,
+        false,
         Arrays.asList(
             "qwen3-32b",
             "qwen3-14b",
             "qwen3-8b",
             "qwen3-4b"
                      )
+    ),
+
+    /**
+     * 硅基流动服务提供商
+     *
+     * <p>硅基流动提供的 AI 服务，支持多种开源和商业模型。
+     * 提供 OpenAI 兼容的 API 接口。
+     *
+     * <p>特点：
+     * <ul>
+     *   <li>兼容 OpenAI API</li>
+     *   <li>支持多种开源模型</li>
+     *   <li>需要 API Key</li>
+     *   <li>性能稳定</li>
+     *   <li>价格合理</li>
+     * </ul>
+     */
+    SILICONFLOW(
+        "siliconflow",
+        "硅基流动",
+        "https://api.siliconflow.cn/v1",
+        "Qwen/Qwen3-8B",
+        true,
+        false,
+        List.of(
+            "Qwen/Qwen3-8B",
+            "Qwen/Qwen2.5-14B-Instruct",
+            "THUDM/glm-4-9b-chat"
+               )
     ),
 
     /**
@@ -81,14 +136,14 @@ public enum AIProviderType {
         "http://localhost:11434/v1",
         "qwen:7b",
         false,
+        true,
         Arrays.asList(
             "gpt-oss:120b-cloud",
             "gpt-oss:20b-cloud",
             "qwen3-coder:480b-cloud",
             "glm-4.6:cloud",
             "deepseek-r1:14b",
-            "qwen3-8b"
-                     )
+            "qwen3-8b")
     ),
 
     /**
@@ -108,64 +163,13 @@ public enum AIProviderType {
      */
     LM_STUDIO(
         "lmstudio",
-        "LM Studio (本地)",
+        "LM Studio",
         "http://localhost:1234/v1",
         "gpt-3.5-turbo",
         false,
-        List.of(
-            "qwen3-8b"
-               )
-    ),
-
-    /**
-     * 硅基流动服务提供商
-     *
-     * <p>硅基流动提供的 AI 服务，支持多种开源和商业模型。
-     * 提供 OpenAI 兼容的 API 接口。
-     *
-     * <p>特点：
-     * <ul>
-     *   <li>兼容 OpenAI API</li>
-     *   <li>支持多种开源模型</li>
-     *   <li>需要 API Key</li>
-     *   <li>性能稳定</li>
-     *   <li>价格合理</li>
-     * </ul>
-     */
-    SILICONFLOW(
-        "siliconflow",
-        "硅基流动 (SiliconFlow)",
-        "https://api.siliconflow.cn/v1",
-        "deepseek-chat",
         true,
         List.of(
-            "qwen3-8b"
-               )
-    ),
-
-    /**
-     * 自定义服务提供商
-     *
-     * <p>兼容 OpenAI API 的自定义服务提供商。
-     * 支持任何提供 OpenAI 兼容 API 的服务。
-     *
-     * <p>特点：
-     * <ul>
-     *   <li>兼容 OpenAI API</li>
-     *   <li>支持多种第三方服务</li>
-     *   <li>需要 API Key</li>
-     *   <li>高度可定制</li>
-     * </ul>
-     */
-    CUSTOM(
-        "custom",
-        "自定义服务 (OpenAI 兼容)",
-        "https://api.openai.com/v1",
-        "gpt-3.5-turbo",
-        true,
-        List.of(
-            "qwen3-8b"
-               )
+            "qwen3-8b")
     );
 
     /**
@@ -209,6 +213,15 @@ public enum AIProviderType {
     private final boolean requiresApiKey;
 
     /**
+     * Base URL 是否可编辑
+     *
+     * <p>标识该提供商的 Base URL 是否允许用户修改。
+     * 某些官方服务（如通义千问、硅基流动）的 Base URL 是固定的，不允许修改。
+     * 本地服务（如 Ollama、LM Studio）和自定义服务的 Base URL 可以修改。
+     */
+    private final boolean baseUrlEditable;
+
+    /**
      * 支持的模型列表
      *
      * <p>该提供商支持的模型名称列表。
@@ -224,6 +237,7 @@ public enum AIProviderType {
      * @param defaultBaseUrl  默认 Base URL
      * @param defaultModel    默认模型
      * @param requiresApiKey  是否需要 API Key
+     * @param baseUrlEditable Base URL 是否可编辑
      * @param supportedModels 支持的模型列表
      */
     AIProviderType(@NotNull String providerId,
@@ -231,12 +245,14 @@ public enum AIProviderType {
                    @NotNull String defaultBaseUrl,
                    @NotNull String defaultModel,
                    boolean requiresApiKey,
+                   boolean baseUrlEditable,
                    @NotNull List<String> supportedModels) {
         this.providerId = providerId;
         this.displayName = displayName;
         this.defaultBaseUrl = defaultBaseUrl;
         this.defaultModel = defaultModel;
         this.requiresApiKey = requiresApiKey;
+        this.baseUrlEditable = baseUrlEditable;
         this.supportedModels = supportedModels;
     }
 
@@ -287,6 +303,15 @@ public enum AIProviderType {
      */
     public boolean requiresApiKey() {
         return requiresApiKey;
+    }
+
+    /**
+     * Base URL 是否可编辑
+     *
+     * @return 如果 Base URL 可编辑返回 true
+     */
+    public boolean isBaseUrlEditable() {
+        return baseUrlEditable;
     }
 
     /**

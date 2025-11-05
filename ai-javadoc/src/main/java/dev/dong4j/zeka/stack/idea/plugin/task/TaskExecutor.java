@@ -7,6 +7,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiDocumentManager;
@@ -33,7 +34,9 @@ import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.Getter;
@@ -307,6 +310,15 @@ public class TaskExecutor {
     private boolean processTasksSequentially(@NotNull List<DocumentationTask> tasks) {
         int totalTasks = tasks.size();
 
+        // 设置 ThreadLocal project，供 AICompatibleProvider 使用
+        if (aiService instanceof AICompatibleProvider) {
+            AICompatibleProvider.setCurrentProject(project);
+        }
+
+        // Console 日志：任务开始
+        JavaDocConsoleView.printWithTimestamp(project, String.format("========== 开始生成文档 任务总数: %s ==========", totalTasks));
+        JavaDocConsoleView.print(project, "");
+
         for (int i = 0; i < totalTasks && !indicator.isCanceled(); i++) {
             DocumentationTask task = tasks.get(i);
 
@@ -329,6 +341,16 @@ public class TaskExecutor {
 
         log.info("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                  completedCount.get(), failedCount.get(), skippedCount.get());
+
+        // Console 日志：任务完成统计
+        JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
+        JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
+                                                               completedCount.get(), failedCount.get(), skippedCount.get()));
+
+        // 清理 ThreadLocal
+        if (aiService instanceof AICompatibleProvider) {
+            AICompatibleProvider.setCurrentProject(null);
+        }
 
         return true;
     }
@@ -356,8 +378,7 @@ public class TaskExecutor {
 
         // 为每个提供商创建统计对象
         Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
-        for (int i = 0; i < availableProviders.size(); i++) {
-            AIServiceProvider provider = availableProviders.get(i);
+        for (AIServiceProvider provider : availableProviders) {
             String providerName = provider.getProviderName();
             providerStats.put(providerName, new ProviderStatistics(providerName));
         }
@@ -394,6 +415,16 @@ public class TaskExecutor {
 
             log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                      completedCount.get(), failedCount.get(), skippedCount.get());
+
+            // Console 日志：任务完成统计
+            JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
+            JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
+                                                                   completedCount.get(), failedCount.get(), skippedCount.get()));
+
+            // 清理 ThreadLocal
+            if (aiService instanceof AICompatibleProvider) {
+                AICompatibleProvider.setCurrentProject(null);
+            }
 
             return true;
 
@@ -465,11 +496,28 @@ public class TaskExecutor {
         try {
             task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
 
+            // Console 日志：任务开始（仅详细日志模式）
+            int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
+            // PSI 访问必须在 read-action 中进行
+            VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
+                                                                                            task.getElement().getContainingFile().getVirtualFile()
+                                                                                       );
+            if (virtualFile != null) {
+                String taskInfo = String.format("========== 任务 %d: %s %s ==========",
+                                                currentTaskNum,
+                                                task.getType().name(),
+                                                task.getFilePath());
+                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
+                JavaDocConsoleView.print(project, "");
+            }
+
             // 检查是否应该跳过
             if (shouldSkip(task)) {
                 task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
                 skippedCount.incrementAndGet();
                 stats.incrementSkipped();
+                JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -481,6 +529,8 @@ public class TaskExecutor {
                 task.setErrorMessage("生成的文档为空");
                 failedCount.incrementAndGet();
                 stats.incrementFailed();
+                JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -492,19 +542,32 @@ public class TaskExecutor {
             completedCount.incrementAndGet();
             stats.incrementCompleted();
 
+            // Console 日志：任务完成
+            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
+            JavaDocConsoleView.print(project, "");
+
         } catch (AIServiceException e) {
-            String errorMessage = getAIServiceErrorMessage(e);
+            String errorMessage = AIServiceException.build(e);
             log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
             failedCount.incrementAndGet();
             stats.incrementFailed();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
+            JavaDocConsoleView.print(project, "");
+            
         } catch (Exception e) {
             log.info("处理任务失败: {}", task, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
             failedCount.incrementAndGet();
             stats.incrementFailed();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
+            JavaDocConsoleView.print(project, "");
         }
     }
 
@@ -661,10 +724,27 @@ public class TaskExecutor {
         try {
             task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
 
+            // Console 日志：任务开始（仅详细日志模式）
+            int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
+            // PSI 访问必须在 read-action 中进行
+            VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
+                                                                                            task.getElement().getContainingFile().getVirtualFile()
+                                                                                       );
+            if (virtualFile != null) {
+                String taskInfo = String.format("========== 任务 %d: %s %s ==========",
+                                                currentTaskNum,
+                                                task.getType().name(),
+                                                task.getFilePath());
+                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
+                JavaDocConsoleView.print(project, "");
+            }
+
             // 检查是否应该跳过
             if (shouldSkip(task)) {
                 task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
                 skippedCount.incrementAndGet();
+                JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -675,6 +755,8 @@ public class TaskExecutor {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);
                 task.setErrorMessage("生成的文档为空");
                 failedCount.incrementAndGet();
+                JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
+                JavaDocConsoleView.print(project, "");
                 return;
             }
 
@@ -685,13 +767,21 @@ public class TaskExecutor {
             task.setResult(documentation);
             completedCount.incrementAndGet();
 
+            // Console 日志：任务完成
+            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
+            JavaDocConsoleView.print(project, "");
+
         } catch (AIServiceException e) {
             // AI 服务异常 - 提供友好的错误提示
-            String errorMessage = getAIServiceErrorMessage(e);
+            String errorMessage = AIServiceException.build(e);
             log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
             failedCount.incrementAndGet();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
+            JavaDocConsoleView.print(project, "");
 
             // 只在第一次失败时显示通知，避免过多通知
             if (failedCount.get() == 1) {
@@ -705,33 +795,11 @@ public class TaskExecutor {
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
             failedCount.incrementAndGet();
+
+            // Console 日志：错误
+            JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
+            JavaDocConsoleView.print(project, "");
         }
-    }
-
-    /**
-     * 将 AI 服务异常转换为友好的错误消息
-     *
-     * <p>根据异常类型生成用户友好的错误提示信息。
-     *
-     * @param e AI 服务异常
-     * @return 友好的错误消息
-     */
-    private String getAIServiceErrorMessage(AIServiceException e) {
-        AIServiceException.ErrorCode errorCode = e.getErrorCode();
-
-        if (errorCode == null) {
-            return "AI 服务调用失败: " + e.getMessage();
-        }
-
-        return switch (errorCode) {
-            case INVALID_API_KEY -> "API Key 无效，请在设置中检查并更新 API Key";
-            case RATE_LIMIT -> "请求频率过高，请稍后再试";
-            case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用，请稍后再试";
-            case NETWORK_ERROR -> "网络连接失败，请检查网络连接或服务器地址";
-            case CONFIGURATION_ERROR -> "配置错误: " + e.getMessage();
-            case INVALID_RESPONSE -> "AI 服务返回的数据格式错误";
-            default -> "AI 服务调用失败: " + e.getMessage();
-        };
     }
 
     /**
@@ -742,9 +810,15 @@ public class TaskExecutor {
      *
      * <p>跳过条件：
      * <ul>
-     *   <li>skipExisting 配置为 true</li>
+     *   <li>overrideExisting 配置为 false（默认）</li>
      *   <li>元素支持文档（PsiDocCommentOwner）</li>
      *   <li>元素已有 JavaDoc 注释</li>
+     * </ul>
+     *
+     * <p>逻辑说明：
+     * <ul>
+     *   <li>overrideExisting = false（默认）：跳过已有注释的元素</li>
+     *   <li>overrideExisting = true：覆盖已有注释，不跳过</li>
      * </ul>
      *
      * <p>线程安全：
@@ -755,10 +829,11 @@ public class TaskExecutor {
      *
      * @param task 文档生成任务
      * @return 如果应该跳过返回 true，否则返回 false
-     * @see SettingsState#skipExisting
+     * @see SettingsState#overrideExisting
      */
     private boolean shouldSkip(@NotNull DocumentationTask task) {
-        if (!settings.skipExisting) {
+        // 如果配置为覆盖已有注释，则不跳过
+        if (settings.overrideExisting) {
             return false;
         }
 
@@ -878,9 +953,25 @@ public class TaskExecutor {
                         PsiFile psiFile = element.getContainingFile();
                         if (psiFile != null) {
                             int endPosition = lineStartPosition + javadoc.length() + 1;
-                            CodeStyleManager.getInstance(project)
-                                .reformatText(psiFile, lineStartPosition, endPosition);
+                            CodeStyleManager.getInstance(project).reformatText(psiFile, lineStartPosition, endPosition);
                         }
+
+                        // Console 日志：输出最终插入的 JavaDoc（仅详细日志模式）
+                        JavaDocConsoleView.printWithTimestamp(project, "=== 最终插入的 JavaDoc ===");
+                        JavaDocConsoleView.print(project, javadoc);
+                        JavaDocConsoleView.print(project, "");
+
+                        // 输出可点击跳转的代码位置
+                        VirtualFile virtualFile = element.getContainingFile().getVirtualFile();
+                        if (virtualFile != null) {
+                            String fileName = virtualFile.getName();
+                            int line = lineNumber + 1; // 行号从 1 开始显示
+                            String locationMessage = String.format("==>>: %s:%d", fileName, line);
+
+                            // 使用可点击的超链接格式输出
+                            JavaDocConsoleView.printHyperlink(project, locationMessage, virtualFile, lineNumber);
+                        }
+                        JavaDocConsoleView.print(project, "");
 
                     } catch (Exception e) {
                         log.info("插入文档失败", e);
@@ -1105,6 +1196,17 @@ public class TaskExecutor {
          */
         public int getTotal() {
             return completed + failed + skipped;
+        }
+
+        /**
+         * 判断是否已执行过任务
+         * <p>
+         * 检查当前对象中已完成或跳过的任务总数是否大于0，若大于0则返回true，表示已执行过任务
+         *
+         * @return 是否已执行过任务
+         */
+        public boolean isRunned() {
+            return completed + skipped > 0;
         }
 
         /**

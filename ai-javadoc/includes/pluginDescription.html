@@ -5,44 +5,25 @@
 <br/>
 <br/>
 <h2>AI Javadoc: You Know, for Javaer, Fun</h2>
-<p>Automatically generate high-quality JavaDoc comments for Java projects using AI services. This plugin supports multiple AI providers
-    including QianWen (Alibaba Cloud) and Ollama local models.</p>
+<p>专为批量生成符合规范的 JavaDoc 注释而设计，满足公司标准和 Checkstyle 检测要求。
+    与通用 AI 工具或简单翻译工具不同，本插件专门针对快速、准确地为整个项目生成 JavaDoc 进行了优化。</p>
 
-<h3>Core Features</h3>
+<h3>为什么选择这个插件？</h3>
+<p>当需要为不符合规范的项目添加标准的 JavaDoc 时，通常会遇到以下问题：</p>
 <ul>
-    <li><b>Multiple AI Providers</b>: Support for QianWen, Ollama and other AI services</li>
-    <li><b>Flexible Triggering</b>: Available via shortcuts, right-click menus, Generate menu and more</li>
-    <li><b>Batch Processing</b>: Generate documentation for entire files or directories</li>
-    <li><b>Smart Recognition</b>: Automatically identify classes, methods, test methods and other elements</li>
-    <li><b>Asynchronous Processing</b>: Background processing without blocking the IDE</li>
-    <li><b>Progress Display</b>: Real-time progress and result statistics</li>
+    <li><b>翻译工具（如 EasyDoc）</b>：只是翻译现有注释，生成的内容没有实际意义</li>
+    <li><b>仅格式生成器</b>：只生成规范的 JavaDoc 格式，注释内容没有任何意义</li>
+    <li><b>通用 AI 工具</b>：功能太重，批量处理整个项目时速度非常慢，且不一定能一次完成</li>
 </ul>
-
-<h3>Usage</h3>
-<ul>
-    <li>Shortcut: Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (Mac)</li>
-    <li>Editor right-click menu → Generate Javadoc with AI</li>
-    <li>File/Directory right-click menu → Generate Javadoc with AI</li>
-    <li>Generate menu: Cmd+N / Alt+Insert → JavaDoc with AI</li>
-    <li>Quick fix: Option+Enter / Alt+Enter → Generate Javadoc with AI</li>
-</ul>
-
-<h3>Configuration</h3>
-<p>Configuration path: Settings → Tools → AI Javadoc</p>
-<ul>
-    <li>Select AI provider (QianWen/Ollama)</li>
-    <li>Configure model and API Key</li>
-    <li>Customize generation options</li>
-</ul>
-
-<h3>中文说明</h3>
-<p>使用 AI 为 Java 项目自动生成高质量的 JavaDoc 注释。支持通义千问、Ollama 等多种 AI 服务提供商。</p>
+<p><b>本插件通过结合 AI 生成有意义的注释内容与优化的批量处理能力</b>，专门针对企业级 JavaDoc 合规任务而设计，完美解决了这些问题。</p>
 
 <h3>核心功能</h3>
 <ul>
-    <li><b>多种 AI 提供商支持</b>：支持通义千问、Ollama 等多种 AI 服务</li>
+    <li><b>有意义的 AI 生成注释</b>：使用 AI 理解代码并生成有意义的 JavaDoc，而非仅生成格式模板</li>
+    <li><b>快速批量处理</b>：针对整个项目快速处理进行了优化，支持并行处理和性能模式</li>
+    <li><b>合规导向</b>：生成符合 Checkstyle 和公司标准的 JavaDoc</li>
+    <li><b>多种 AI 提供商支持</b>：支持通义千问、Ollama、OpenAI 等多种 AI 服务</li>
     <li><b>灵活的触发方式</b>：可通过快捷键、右键菜单、Generate 菜单等多种方式触发</li>
-    <li><b>批量处理</b>：支持为整个文件、目录批量生成文档</li>
     <li><b>智能识别</b>：自动识别类、方法、测试方法等不同元素</li>
     <li><b>异步处理</b>：后台处理，不阻塞 IDE</li>
     <li><b>进度显示</b>：实时显示处理进度和结果统计</li>
@@ -61,6 +42,78 @@
 <p>配置路径：Settings → Tools → AI Javadoc</p>
 <ul>
     <li>选择 AI 提供商（通义千问/Ollama）</li>
-    <li>配置模型和 API Key</li>
+    <li>配置模型和 API Key（使用系统级加密存储，安全可靠）</li>
     <li>自定义生成选项</li>
+</ul>
+
+<h3>安全特性</h3>
+<ul>
+    <li><b>API Key 加密存储</b>：使用 IntelliJ Platform 的 PasswordSafe 机制，API Key 不会保存到配置文件中</li>
+    <li><b>系统级加密</b>：
+        <ul>
+            <li>macOS：使用 Keychain Access（钥匙串）</li>
+            <li>Linux：使用 GNOME Keyring 或 KWallet</li>
+            <li>Windows：使用 Credential Manager</li>
+        </ul>
+    </li>
+    <li><b>自动迁移</b>：旧版本配置中的 API Key 会自动迁移到加密存储，确保向后兼容</li>
+</ul>
+
+<p>Specialized tool for batch generating compliant JavaDoc comments that meet company standards and Checkstyle requirements.
+    Unlike generic AI tools or simple translation tools, this plugin is optimized specifically for fast, accurate JavaDoc generation across
+    entire projects.</p>
+
+<h3>Why This Plugin?</h3>
+<p>When refactoring legacy projects to meet JavaDoc standards, you face common challenges:</p>
+<ul>
+    <li><b>Translation tools (like EasyDoc)</b>: Only translate existing comments, producing meaningless documentation</li>
+    <li><b>Format-only generators</b>: Create proper JavaDoc structure but with empty or meaningless content</li>
+    <li><b>Generic AI tools</b>: Too heavy and slow for batch processing, often fail to complete large projects</li>
+</ul>
+<p><b>This plugin solves these problems</b> by combining AI-powered meaningful content generation with optimized batch processing,
+    specifically designed for enterprise-scale JavaDoc compliance tasks.</p>
+
+<h3>Core Features</h3>
+<ul>
+    <li><b>Meaningful AI-Generated Comments</b>: Uses AI to understand code and generate meaningful JavaDoc, not just format templates</li>
+    <li><b>Fast Batch Processing</b>: Optimized for processing entire projects quickly, supporting parallel processing and performance mode
+    </li>
+    <li><b>Compliance-Focused</b>: Generates JavaDoc that meets Checkstyle and company standards</li>
+    <li><b>Multiple AI Providers</b>: Support for QianWen, Ollama and other AI services</li>
+    <li><b>Flexible Triggering</b>: Available via shortcuts, right-click menus, Generate menu and more</li>
+    <li><b>Smart Recognition</b>: Automatically identify classes, methods, test methods and other elements</li>
+    <li><b>Asynchronous Processing</b>: Background processing without blocking the IDE</li>
+    <li><b>Progress Display</b>: Real-time progress and result statistics</li>
+</ul>
+
+<h3>Usage</h3>
+<ul>
+    <li>Shortcut: Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (Mac)</li>
+    <li>Editor right-click menu → Generate Javadoc with AI</li>
+    <li>File/Directory right-click menu → Generate Javadoc with AI</li>
+    <li>Generate menu: Cmd+N / Alt+Insert → JavaDoc with AI</li>
+    <li>Quick fix: Option+Enter / Alt+Enter → Generate Javadoc with AI</li>
+</ul>
+
+<h3>Configuration</h3>
+<p>Configuration path: Settings → Tools → AI Javadoc</p>
+<ul>
+    <li>Select AI provider (QianWen/Ollama)</li>
+    <li>Configure model and API Key (encrypted storage using system-level keychain)</li>
+    <li>Customize generation options</li>
+</ul>
+
+<h3>Security Features</h3>
+<ul>
+    <li><b>Encrypted API Key Storage</b>: Uses IntelliJ Platform's PasswordSafe mechanism, API Keys are never saved to configuration files
+    </li>
+    <li><b>System-Level Encryption</b>:
+        <ul>
+            <li>macOS: Keychain Access</li>
+            <li>Linux: GNOME Keyring or KWallet</li>
+            <li>Windows: Credential Manager</li>
+        </ul>
+    </li>
+    <li><b>Automatic Migration</b>: API Keys from older versions are automatically migrated to encrypted storage for backward compatibility
+    </li>
 </ul>

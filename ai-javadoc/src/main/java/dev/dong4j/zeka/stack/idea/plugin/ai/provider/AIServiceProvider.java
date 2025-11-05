@@ -105,7 +105,7 @@ public interface AIServiceProvider {
      * @see ValidationResult
      */
     @NotNull
-    ValidationResult validateConfiguration();
+    ValidationResult validateConfiguration(String apiKey);
 
     /**
      * 获取提供商标识符
@@ -202,10 +202,8 @@ public interface AIServiceProvider {
 
     /**
      * 获取可用的模型列表
-     *
-     * <p>通过调用提供商的 API 接口获取当前可用的模型列表。
-     * 这个方法会实际调用远程服务，获取最新的模型信息。
-     * 与 getSupportedModels() 不同，这个方法返回的是实时数据。
+     * <p>
+     * 通过调用提供商的 API 接口获取当前可用的模型列表。该方法会实际调用远程服务，获取最新的模型信息。与 getSupportedModels() 不同，该方法返回的是实时数据。
      *
      * <p>使用场景：
      * <ul>
@@ -229,11 +227,12 @@ public interface AIServiceProvider {
      *   <li>通义千问: GET {baseUrl}/models</li>
      * </ul>
      *
+     * @param apiKey 用于调用 API 的密钥
      * @return 可用模型名称列表，如果获取失败返回空列表
      * @see #getSupportedModels()
      */
     @NotNull
-    List<String> getAvailableModels();
+    List<String> getAvailableModels(String apiKey);
 
     /**
      * 是否需要 API Key

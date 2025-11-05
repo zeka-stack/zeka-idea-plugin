@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.ai;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.CustomProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.LMStudioProvider;
@@ -15,7 +17,6 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.provider.OllamaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.QianWenProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.SiliconFlowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
  * AI 服务工厂
@@ -93,64 +94,60 @@ public class AIServiceFactory {
      * @param settings 配置状态，包含用户选择的提供商和其他配置
      * @return AI 服务提供商实例，创建失败返回 null
      */
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     public static AIServiceProvider createProvider(@NotNull SettingsState settings) {
-        String providerId = settings.aiProvider;
+        AIProviderType providerType = settings.providerType;
 
-        // 检查配置是否已通过验证
-        if (!settings.configurationVerified) {
-            String error = JavaDocBundle.message("error.configuration.not.verified");
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).warn(error);
-            return null;
-        }
+        // 从 default 获取
+        final SettingsState.ProviderConfig defaultProviderConfig = settings.getDefaultProviderConfig(providerType);
 
-        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerId);
-        if (providerClass == null) {
-            String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
-            String error = "不支持的 AI 提供商: " + providerId + "。当前支持的提供商：" + supportedProviders;
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
-            return null;
-        }
-
-        try {
-            return providerClass.getDeclaredConstructor(SettingsState.class)
-                .newInstance(settings);
-        } catch (Exception e) {
-            String error = "创建 AI 提供商失败: " + providerId + "。请检查配置是否正确。";
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
-            return null;
-        }
+        return createProvider(settings, defaultProviderConfig);
     }
 
     /**
-     * 根据提供商配置创建服务提供商实例
+     * 根据提供的配置创建 AI 服务提供商实例
+     * <p>
+     * 该方法根据给定的配置信息尝试创建对应的 AI 服务提供商实例。如果配置无效或不支持的提供商类型，将返回 null。
      *
-     * @param providerConfig 提供商配置
+     * @param currentSettings 当前设置状态
+     * @param providerConfig  AI 服务提供商配置信息
      * @return AI 服务提供商实例，创建失败返回 null
+     * @throws IllegalArgumentException 如果配置参数无效
+     * @see AICompatibleProvider#AICompatibleProvider(SettingsState, SettingsState.ProviderConfig)
      */
-    @org.jetbrains.annotations.Nullable
-    public static AIServiceProvider createProvider(@NotNull SettingsState.ProviderConfig providerConfig) {
-        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerConfig.providerId);
+    @Nullable
+    public static AIServiceProvider createProvider(SettingsState currentSettings, @NotNull SettingsState.ProviderConfig providerConfig) {
+        if (providerConfig.providerType == null) {
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Provider ID is null");
+            return null;
+        }
+
+        // 验证是否为合法的服务提供商
+        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerConfig.providerType.getProviderId());
         if (providerClass == null) {
             String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
-            String error = "不支持的 AI 提供商: " + providerConfig.providerId + "。当前支持的提供商：" + supportedProviders;
+            String error = "不支持的 AI 提供商: " + providerConfig.providerType.getProviderId() + "。当前支持的提供商：" + supportedProviders;
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
             return null;
         }
 
-        try {
-            // 创建临时的SettingsState用于创建提供商实例
-            SettingsState tempSettings = new SettingsState();
-            tempSettings.aiProvider = providerConfig.providerId;
-            tempSettings.modelName = providerConfig.modelName;
-            tempSettings.baseUrl = providerConfig.baseUrl;
-            tempSettings.apiKey = providerConfig.apiKey;
-            tempSettings.configurationVerified = providerConfig.configurationVerified;
+        // 检查必要配置项
+        if (providerConfig.baseUrl == null || providerConfig.baseUrl.trim().isEmpty()) {
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Base URL 不能为空,请提供自定义服务的 API 地址");
+            return null;
+        }
 
-            return providerClass.getDeclaredConstructor(SettingsState.class)
-                .newInstance(tempSettings);
+        if (providerConfig.modelName == null || providerConfig.modelName.trim().isEmpty()) {
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("模型名称不能为空, 请指定要使用的模型名称");
+            return null;
+        }
+
+        try {
+            // 调用构造完成实例化, 对应到 AICompatibleProvider 子类的构造
+            return providerClass.getDeclaredConstructor(SettingsState.class, SettingsState.ProviderConfig.class)
+                .newInstance(currentSettings, providerConfig);
         } catch (Exception e) {
-            String error = "创建 AI 提供商失败: " + providerConfig.providerId + "。请检查配置是否正确。";
+            String error = "创建 AI 提供商失败: " + providerConfig.providerType.getProviderId() + "。请检查配置是否正确。";
             com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
             return null;
         }
@@ -271,7 +268,6 @@ public class AIServiceFactory {
      * </pre>
      *
      * @return 可用的服务提供商列表，如果没有可用的提供商则返回空列表
-     * @see #createProvider(SettingsState)
      */
     @NotNull
     public static List<AIServiceProvider> getAvailableProviders() {
@@ -285,7 +281,7 @@ public class AIServiceFactory {
 
         // 为每个配置创建提供商实例
         for (SettingsState.ProviderConfig config : availableConfigs) {
-            AIServiceProvider provider = createProvider(config);
+            AIServiceProvider provider = createProvider(settings, config);
             if (provider != null) {
                 providers.add(provider);
             }
@@ -311,9 +307,8 @@ public class AIServiceFactory {
      */
     public static boolean hasAvailableProvider() {
         SettingsState settings = SettingsState.getInstance();
-        return settings.configurationVerified
-               && settings.aiProvider != null
-               && isProviderSupported(settings.aiProvider);
+        return settings.providerType != null
+               && isProviderSupported(settings.providerType.getProviderId());
     }
 
     /**
