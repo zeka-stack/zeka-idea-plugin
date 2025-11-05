@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
@@ -67,8 +66,8 @@ public class CustomProvider extends AICompatibleProvider {
      *
      * @param settings 用于初始化的设置状态对象
      */
-    public CustomProvider(SettingsState settings) {
-        super(settings);
+    public CustomProvider(SettingsState settings, SettingsState.ProviderConfig providerConfig) {
+        super(settings, providerConfig);
     }
 
     /**
@@ -81,7 +80,7 @@ public class CustomProvider extends AICompatibleProvider {
     @NotNull
     @Override
     public String getProviderId() {
-        return AIProviderType.CUSTOM.getProviderId();
+        return providerConfig.providerType.getProviderId();
     }
 
     /**
@@ -158,51 +157,5 @@ public class CustomProvider extends AICompatibleProvider {
     @Override
     public boolean requiresApiKey() {
         return AIProviderType.CUSTOM.requiresApiKey();
-    }
-
-    /**
-     * 验证配置是否正确
-     *
-     * <p>对自定义服务提供商进行特殊的配置验证。
-     * 检查必要的配置项是否完整，然后调用父类的验证方法。
-     *
-     * <p>验证要求：
-     * <ul>
-     *   <li>Base URL 不能为空</li>
-     *   <li>API Key 不能为空</li>
-     *   <li>模型名称不能为空</li>
-     *   <li>服务必须可访问</li>
-     * </ul>
-     *
-     * @return 验证结果
-     */
-    @NotNull
-    @Override
-    public ValidationResult validateConfiguration() {
-        // 检查必要配置项
-        if (settings.baseUrl == null || settings.baseUrl.trim().isEmpty()) {
-            return ValidationResult.failure(
-                "Base URL 不能为空",
-                "请提供自定义服务的 API 地址"
-                                           );
-        }
-
-        String apiKey = settings.getDefaultApiKey();
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            return ValidationResult.failure(
-                "API Key 不能为空",
-                "请提供自定义服务的 API Key"
-                                           );
-        }
-
-        if (settings.modelName == null || settings.modelName.trim().isEmpty()) {
-            return ValidationResult.failure(
-                "模型名称不能为空",
-                "请指定要使用的模型名称"
-                                           );
-        }
-
-        // 调用父类验证方法
-        return super.validateConfiguration();
     }
 }

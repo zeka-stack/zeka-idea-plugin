@@ -53,8 +53,8 @@ public class QianWenProvider extends AICompatibleProvider {
      *
      * @param settings 用于初始化的设置状态对象
      */
-    public QianWenProvider(SettingsState settings) {
-        super(settings);
+    public QianWenProvider(SettingsState settings, SettingsState.ProviderConfig providerConfig) {
+        super(settings, providerConfig);
     }
 
     /**

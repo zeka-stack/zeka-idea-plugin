@@ -12,19 +12,19 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
-import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 
@@ -69,9 +69,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /** PasswordSafe 服务名称 */
     private static final String PASSWORD_SAFE_SERVICE_NAME = "AI Javadoc";
 
-    /** PasswordSafe 默认服务商的存储键名 */
-    private static final String PASSWORD_SAFE_KEY_DEFAULT = "AI_JAVADOC_API_KEY_DEFAULT";
-
     /** PasswordSafe 存储键名前缀 */
     private static final String PASSWORD_SAFE_KEY_PREFIX = "AI_JAVADOC_API_KEY_";
 
@@ -92,60 +89,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: QIANWEN
      *
-     * @see AIServiceFactory#createProvider(SettingsState)
      * @see AIProviderType
      */
     public AIProviderType providerType = AIProviderType.QIANWEN;
-
-    /**
-     * 模型名称
-     *
-     * <p>指定使用的 AI 模型名称。
-     * 不同的提供商支持不同的模型。
-     *
-     * <p>默认值: "qwen3-8b" (通义千问8B模型)
-     *
-     * @see AIServiceProvider#getSupportedModels()
-     */
-    public String modelName = "qwen3-8b";
-
-    /**
-     * API Base URL
-     *
-     * <p>AI 服务的 API 基础地址。
-     * 不同提供商有不同的默认地址。
-     * 系统会自动处理末尾的斜杠，确保URL格式正确。
-     *
-     * <p>默认值: "<a href="https://dashscope.aliyuncs.com/compatible-mode/v1">...</a>" (通义千问)
-     *
-     * @see AIServiceProvider#getDefaultBaseUrl()
-     */
-    public String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-
-    /**
-     * 配置是否已通过测试验证
-     *
-     * <p>标记当前配置是否已通过连接测试。
-     * 只有通过测试的配置才能被用于生成文档。
-     *
-     * <p>验证要求:
-     * <ul>
-     *   <li>API Key 有效（如果需要）</li>
-     *   <li>Base URL 可访问</li>
-     *   <li>模型可用</li>
-     *   <li>能够成功调用 AI 服务</li>
-     * </ul>
-     *
-     * <p>状态管理:
-     * <ul>
-     *   <li>测试成功时设置为 true</li>
-     *   <li>修改关键配置时重置为 false</li>
-     *   <li>初始状态为 false</li>
-     * </ul>
-     *
-     * <p>默认值: false
-     */
-    public boolean configurationVerified = false;
 
     // ==================== 功能配置 ====================
 
@@ -355,16 +301,42 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>存储所有已配置且通过验证的AI服务提供商信息。
      * 每个提供商包含其配置信息和验证状态。
      *
+     * <p>用途：用于性能模式中的并行处理，同一服务商可以有多个不同配置
+     *
      * <p>默认值: 空集合
      */
     public List<ProviderConfig> availableProviders = new LinkedList<>();
+
+    /**
+     * 默认服务提供商配置映射
+     *
+     * <p>存储每个服务商类型的默认配置，Key 为服务商类型，Value 为对应的配置。
+     *
+     * <p>用途：
+     * <ul>
+     *   <li>切换服务商时加载对应的默认配置</li>
+     *   <li>保持每个服务商类型的配置独立</li>
+     *   <li>避免切换服务商时丢失 API Key</li>
+     *   <li>区别于 availableProviders（可有多个相同服务商）</li>
+     * </ul>
+     *
+     * <p>设计说明：
+     * <ul>
+     *   <li>每个服务商类型只有一个默认配置</li>
+     *   <li>UUID 在创建时生成并保持不变</li>
+     *   <li>API Key 通过 PasswordSafe 存储，使用 UUID 关联</li>
+     * </ul>
+     *
+     * <p>默认值: 空 Map
+     */
+    public Map<AIProviderType, ProviderConfig> defaultProviders = new HashMap<>();
 
     /**
      * 服务提供商配置信息
      */
     public static class ProviderConfig {
         /** 唯一标识符，用于关联 PasswordSafe 中的 API 密钥 */
-        public String uuid;
+        public String md5;
         /** 提供商标识符 */
         public AIProviderType providerType;
         /** 模型名称 */
@@ -372,32 +344,29 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         /** 基础请求地址 */
         public String baseUrl;
         /** 配置是否已验证的标志 */
-        public boolean configurationVerified;
+        public boolean configurationVerified = true;
         /** 最近一次验证的时间戳，单位为毫秒 */
         public long lastVerifiedTime;
 
-        /**
-         * 默认构造函数, 必须要
-         * <p>
-         * 初始化 ProviderConfig 实例的默认构造函数，自动生成 UUID
-         */
-        public ProviderConfig() {
-            this.uuid = UUID.randomUUID().toString();
-        }
+        public ProviderConfig() {}
 
         /**
-         * 构造一个 ProviderConfig 对象
+         * 构造一个 ProviderConfig 对象（指定 UUID）
          * <p>
-         * 初始化 ProviderConfig 实例，设置提供者ID、模型名称、基础URL、配置验证状态，并记录最后一次验证时间
+         * 初始化 ProviderConfig 实例，允许指定 UUID（用于复用已有的 UUID）
          * API 密钥将通过 PasswordSafe 单独存储
          *
-         * @param providerType          提供者ID
-         * @param modelName             模型名称
-         * @param baseUrl               基础URL
-         * @param configurationVerified 配置是否已验证
+         * @param apiKey       API 密钥，如果为 null 则自动生成
+         * @param providerType 提供者ID
+         * @param modelName    模型名称
+         * @param baseUrl      基础URL
          */
-        public ProviderConfig(AIProviderType providerType, String modelName, String baseUrl, boolean configurationVerified) {
-            this.uuid = UUID.randomUUID().toString();
+        public ProviderConfig(@Nullable String apiKey,
+                              AIProviderType providerType,
+                              String modelName,
+                              String baseUrl,
+                              boolean configurationVerified) {
+            this.md5 = buildMd5(apiKey);
             this.providerType = providerType;
             this.modelName = modelName;
             this.baseUrl = baseUrl;
@@ -405,6 +374,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             this.lastVerifiedTime = System.currentTimeMillis();
         }
 
+        public String buildMd5(String apiKey) {
+            return DigestUtils.md5Hex(String.format("%s|%s|%s|%s", providerType, baseUrl, modelName, apiKey));
+        }
     }
 
     /**
@@ -858,28 +830,31 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 如果配置有效返回 true
      * @see #requiresApiKey()
      */
-    public boolean isValid() {
-        // 检查必需字段
-        if (providerType == null) {
-            return false;
-        }
-
-        if (modelName == null || modelName.trim().isEmpty()) {
-            return false;
-        }
-
-        if (baseUrl == null || baseUrl.trim().isEmpty()) {
-            return false;
-        }
-
-        // 检查是否需要 API Key
-        if (!requiresApiKey()) {
-            return true;
-        }
-
-        String apiKey = getDefaultApiKey();
-        return apiKey != null && !apiKey.trim().isEmpty();
-    }
+    // public boolean isValid() {
+    //     // 检查必需字段
+    //     if (providerType == null) {
+    //         return false;
+    //     }
+    //
+    //     // 从 defaultProviders 获取当前服务商的配置
+    //     ProviderConfig defaultConfig = getDefaultProviderConfig(providerType);
+    //
+    //     if (defaultConfig.modelName == null || defaultConfig.modelName.trim().isEmpty()) {
+    //         return false;
+    //     }
+    //
+    //     if (defaultConfig.baseUrl == null || defaultConfig.baseUrl.trim().isEmpty()) {
+    //         return false;
+    //     }
+    //
+    //     // 检查是否需要 API Key
+    //     if (!requiresApiKey()) {
+    //         return true;
+    //     }
+    //
+    //     String apiKey = getDefaultApiKey();
+    //     return apiKey != null && !apiKey.trim().isEmpty();
+    // }
 
     /**
      * 当前配置是否需要 API Key
@@ -932,6 +907,38 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
+     * 获取指定服务商类型的默认配置
+     * <p>
+     * 如果指定的服务商类型不存在默认配置，则自动创建一个新的配置并初始化为该服务商的默认值
+     *
+     * @param providerType 服务商类型
+     * @return 默认配置，永不为 null
+     */
+    @NotNull
+    public ProviderConfig getDefaultProviderConfig(@NotNull AIProviderType providerType) {
+        return defaultProviders.computeIfAbsent(providerType, type -> new ProviderConfig(
+            "".trim(),
+            type,
+            type.getDefaultModel(),
+            type.getDefaultBaseUrl(),
+            false
+        ));
+    }
+
+    /**
+     * 更新指定服务商类型的默认配置
+     * <p>
+     * 将给定的配置保存为指定服务商类型的默认配置，如果已存在则覆盖
+     *
+     * @param providerType 服务商类型
+     * @param config       配置信息
+     */
+    public void updateDefaultProviderConfig(@NotNull AIProviderType providerType,
+                                            @NotNull ProviderConfig config) {
+        defaultProviders.put(providerType, config);
+    }
+
+    /**
      * 将当前配置重置为默认值
      * <p>
      * 该方法会将所有配置参数恢复到初始默认状态，包括AI提供者、模型名称、基础URL、API密钥等，
@@ -939,11 +946,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public void resetToDefaults() {
         providerType = AIProviderType.QIANWEN;
-        modelName = AIProviderType.QIANWEN.getDefaultModel();
-        baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
-        // 清空默认服务商的 API 密钥
-        setDefaultApiKey("");
-        configurationVerified = false;
+
+        // 重置 defaultProviders 中当前服务商的配置
+        ProviderConfig defaultConfig = getDefaultProviderConfig(AIProviderType.QIANWEN);
+        defaultConfig.modelName = AIProviderType.QIANWEN.getDefaultModel();
+        defaultConfig.baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
+        defaultConfig.configurationVerified = false;
+        updateDefaultProviderConfig(AIProviderType.QIANWEN, defaultConfig);
 
         supportedLanguages = new HashSet<>();
         supportedLanguages.add("java");
@@ -1033,18 +1042,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         return normalized;
     }
 
-    /**
-     * 设置 Base URL（自动标准化）
-     *
-     * <p>设置 Base URL 时自动进行标准化处理，
-     * 确保 URL 格式正确。
-     *
-     * @param baseUrl 要设置的 Base URL
-     */
-    public void setBaseUrl(@NotNull String baseUrl) {
-        this.baseUrl = normalizeBaseUrl(baseUrl);
-    }
-
     // ==================== PasswordSafe API Key 管理方法 ====================
 
     /**
@@ -1069,36 +1066,36 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * @return API Key，如果不存在则返回 null
      */
-    @Nullable
-    public String getDefaultApiKey() {
-        Credentials credentials = PasswordSafe.getInstance().get(
-            createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT)
-                                                                );
-        return credentials != null ? credentials.getPasswordAsString() : null;
-    }
-
-    /**
-     * 设置默认服务商的 API Key
-     * <p>
-     * 将默认服务商的 API 密钥存储到 PasswordSafe 中
-     *
-     * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
-     */
-    public void setDefaultApiKey(@Nullable String apiKey) {
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            // 如果 apiKey 为空，删除已存储的密钥
-            PasswordSafe.getInstance().set(
-                createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
-                null
-                                          );
-        } else {
-            // 存储 API 密钥
-            PasswordSafe.getInstance().set(
-                createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
-                new Credentials("default", apiKey)
-                                          );
-        }
-    }
+    // @Nullable
+    // public String getDefaultApiKey1() {
+    //     Credentials credentials = PasswordSafe.getInstance().get(
+    //         createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT)
+    //                                                             );
+    //     return credentials != null ? credentials.getPasswordAsString() : null;
+    // }
+    //
+    // /**
+    //  * 设置默认服务商的 API Key
+    //  * <p>
+    //  * 将默认服务商的 API 密钥存储到 PasswordSafe 中
+    //  *
+    //  * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
+    //  */
+    // public void setDefaultApiKey1(@Nullable String apiKey) {
+    //     if (apiKey == null || apiKey.trim().isEmpty()) {
+    //         // 如果 apiKey 为空，删除已存储的密钥
+    //         PasswordSafe.getInstance().set(
+    //             createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
+    //             null
+    //                                       );
+    //     } else {
+    //         // 存储 API 密钥
+    //         PasswordSafe.getInstance().set(
+    //             createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
+    //             new Credentials("default", apiKey)
+    //                                       );
+    //     }
+    // }
 
     /**
      * 获取指定 ProviderConfig 的 API Key
@@ -1171,11 +1168,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>
      * 从 PasswordSafe 中删除默认服务商的 API 密钥
      */
-    public void deleteDefaultApiKey() {
-        PasswordSafe.getInstance().set(
-            createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
-            null
-                                      );
-    }
+    // public void deleteDefaultApiKey() {
+    //     PasswordSafe.getInstance().set(
+    //         createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
+    //         null
+    //                                   );
+    // }
 }
 

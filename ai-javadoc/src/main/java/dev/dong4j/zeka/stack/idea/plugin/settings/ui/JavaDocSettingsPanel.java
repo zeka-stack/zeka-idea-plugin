@@ -34,7 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
-import dev.dong4j.zeka.stack.idea.plugin.util.ProviderConfigUtils;
+import lombok.Getter;
 
 /**
  * JavaDoc 设置面板 UI
@@ -58,6 +58,7 @@ public class JavaDocSettingsPanel {
     /** 基础 URL 输入框 */
     private JBTextField baseUrlField;
     /** API 密钥输入框 */
+    @Getter
     private JBPasswordField apiKeyField;
     /** 测试连接按钮 */
     private JButton testConnectionButton;
@@ -325,10 +326,10 @@ public class JavaDocSettingsPanel {
         rightPanel.add(refreshModelsButton, BorderLayout.WEST);
         rightPanel.add(testConnectionButton, BorderLayout.CENTER);
 
-        JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.model.hint"));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        rightPanel.add(hintLabel, BorderLayout.EAST);
+        // JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.model.hint"));
+        // hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
+        // hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        // rightPanel.add(hintLabel, BorderLayout.EAST);
 
         panel.add(rightPanel, BorderLayout.EAST);
 
@@ -823,9 +824,9 @@ public class JavaDocSettingsPanel {
         }
 
         // 设置提示文本
-        if (modelComboBox.getEditor() != null && modelComboBox.getEditor().getEditorComponent() instanceof JTextField textField) {
-            textField.setToolTipText(JavaDocBundle.message("settings.model.hint"));
-        }
+        // if (modelComboBox.getEditor() != null && modelComboBox.getEditor().getEditorComponent() instanceof JTextField textField) {
+        //     textField.setToolTipText(JavaDocBundle.message("settings.model.hint"));
+        // }
     }
 
     /**
@@ -874,16 +875,13 @@ public class JavaDocSettingsPanel {
         // 在后台线程中获取模型列表
         new Thread(() -> {
             try {
-                SettingsState tempSettings = new SettingsState();
-                tempSettings.providerType = providerType;
-                tempSettings.baseUrl = baseUrl;
+                // 简单测试, 只需要一个默认配置即可
+                SettingsState testSettings = new SettingsState();
+                // 使用设置面板的当前配置创建一个服务提供商配置
+                SettingsState.ProviderConfig snapshotProviderConfig = getProviderConfigSnapshot();
+                AIServiceProvider provider = AIServiceFactory.createProvider(testSettings, snapshotProviderConfig);
 
-                // 设置 API Key 到 PasswordSafe
-                String apiKey = new String(apiKeyField.getPassword());
-                tempSettings.setDefaultApiKey(apiKey);
-                tempSettings.configurationVerified = true;
-
-                AIServiceProvider provider = AIServiceFactory.createProvider(tempSettings);
+                // 检查提供商创建是否成功
                 if (provider == null) {
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(
@@ -898,7 +896,7 @@ public class JavaDocSettingsPanel {
                     return;
                 }
 
-                List<String> availableModels = provider.getAvailableModels();
+                List<String> availableModels = provider.getAvailableModels(new String(apiKeyField.getPassword()).trim());
 
                 // 在 UI 线程中更新下拉框
                 SwingUtilities.invokeLater(() -> {
@@ -977,120 +975,6 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 更新可用的模型列表
-     *
-     * <p>当用户输入了 Base URL 和 API Key（如果需要）后，
-     * 尝试从 AI 服务提供商获取实际的可用模型列表。
-     * 这个方法会调用提供商的 getAvailableModels() 方法。
-     *
-     * <p>更新策略：
-     * <ul>
-     *   <li>检查是否已输入必要的配置信息</li>
-     *   <li>创建临时的提供商实例</li>
-     *   <li>调用 getAvailableModels() 获取实际模型列表</li>
-     *   <li>更新下拉框内容</li>
-     *   <li>保持用户当前选择的模型（如果仍然可用）</li>
-     * </ul>
-     *
-     * <p>错误处理：
-     * <ul>
-     *   <li>网络错误：静默失败，保持当前模型列表</li>
-     *   <li>认证错误：静默失败，保持当前模型列表</li>
-     *   <li>解析错误：静默失败，保持当前模型列表</li>
-     * </ul>
-     */
-    private void updateAvailableModels() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        String baseUrl = baseUrlField.getText().trim();
-
-        if (displayName == null || baseUrl.isEmpty()) {
-            return;
-        }
-
-        // 将显示名称转换为提供商标识符
-        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
-        if (providerId == null) {
-            return;
-        }
-
-        // 检查是否需要 API Key
-        AIProviderType providerType = AIProviderType.fromProviderId(providerId);
-        boolean needsApiKey = providerType != null && providerType.requiresApiKey();
-        if (needsApiKey && apiKeyField.getPassword().length == 0) {
-            return;
-        }
-
-        // 保存当前选择的模型
-        String currentModel = (String) modelComboBox.getSelectedItem();
-
-        // 在后台线程中获取模型列表
-        new Thread(() -> {
-            try {
-                SettingsState tempSettings = new SettingsState();
-                tempSettings.providerType = providerType;
-                tempSettings.baseUrl = baseUrl;
-
-                // 设置 API Key 到 PasswordSafe
-                String apiKey = new String(apiKeyField.getPassword());
-                tempSettings.setDefaultApiKey(apiKey);
-                tempSettings.configurationVerified = true;
-
-                AIServiceProvider provider = AIServiceFactory.createProvider(tempSettings);
-                if (provider == null) {
-                    return;
-                }
-
-                List<String> availableModels = provider.getAvailableModels();
-
-                // 在 UI 线程中更新下拉框
-                SwingUtilities.invokeLater(() -> {
-                    if (!availableModels.isEmpty()) {
-                        // 清空当前列表
-                        modelComboBox.removeAllItems();
-
-                        // 添加可用模型
-                        for (String model : availableModels) {
-                            modelComboBox.addItem(model);
-                        }
-
-                        // 尝试恢复用户之前选择的模型
-                        if (currentModel != null && !currentModel.trim().isEmpty()) {
-                            // 检查当前模型是否在可用列表中
-                            boolean found = false;
-                            for (String model : availableModels) {
-                                if (model.equals(currentModel)) {
-                                    found = true;
-                                    break;
-                                }
-                            }
-
-                            if (found) {
-                                modelComboBox.setSelectedItem(currentModel);
-                            } else {
-                                // 如果当前模型不可用，选择第一个可用模型
-                                modelComboBox.setSelectedIndex(0);
-                            }
-                        } else {
-                            // 如果没有当前选择，使用默认模型
-                            modelComboBox.setSelectedItem(provider.getDefaultModel());
-                        }
-
-                        // 更新提示文本
-                        if (modelComboBox.getEditor() != null &&
-                            modelComboBox.getEditor().getEditorComponent() instanceof JTextField textField) {
-                            textField.setToolTipText("从服务提供商获取的可用模型列表");
-                        }
-                    }
-                });
-
-            } catch (Exception e) {
-                // 静默失败，保持当前模型列表
-                // 在实际应用中，可以考虑显示一个非阻塞的提示
-            }
-        }).start();
-    }
-
-    /**
      * 更新默认值配置，根据选择的提供者设置对应的配置信息
      * <p>
      * 该方法首先获取当前选择的显示名称，将其转换为对应的提供者标识符。如果标识符有效，则获取对应的提供者类型。
@@ -1114,24 +998,21 @@ public class JavaDocSettingsPanel {
             return;
         }
 
-        // 优先使用已保存的配置，如果没有则使用默认配置
-        SettingsState savedSettings = SettingsState.getInstance();
-        SettingsState.ProviderConfig savedConfig = findSavedProviderConfig(providerId);
+        // 从 defaultProviders 获取该服务商类型的默认配置
+        // 这样可以确保切换服务商时不会丢失该服务商的配置信息（包括 API Key）
+        SettingsState settings = SettingsState.getInstance();
+        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(providerType);
 
-        if (savedConfig != null) {
-            // 使用已保存的配置
-            baseUrlField.setText(savedConfig.baseUrl);
-            modelComboBox.setSelectedItem(savedConfig.modelName);
+        // 加载配置到 UI
+        baseUrlField.setText(defaultConfig.baseUrl);
+        modelComboBox.setSelectedItem(defaultConfig.modelName);
 
-            // 从 PasswordSafe 读取 API Key
-            String apiKey = SettingsState.getApiKey(savedConfig.uuid);
-            apiKeyField.setText(apiKey != null ? apiKey : "");
-        } else {
-            // 使用枚举中的默认配置
-            baseUrlField.setText(providerType.getDefaultBaseUrl());
-            modelComboBox.setSelectedItem(providerType.getDefaultModel());
-            apiKeyField.setText(""); // API Key 默认为空
-        }
+        // 从 PasswordSafe 读取 API Key（使用 defaultConfig 的 UUID）
+        String apiKey = SettingsState.getApiKey(defaultConfig.md5);
+        apiKeyField.setText(apiKey != null ? apiKey : "");
+
+        // 加载验证状态
+        this.configurationVerified = defaultConfig.configurationVerified;
     }
 
     /**
@@ -1181,10 +1062,11 @@ public class JavaDocSettingsPanel {
      * 在测试过程中，会临时允许创建未验证的提供商，测试完成后会根据结果更新配置状态。
      */
     private void testConnection() {
-        SettingsState testSettings = getSettings();
-        // 临时允许创建未验证的提供商用于测试
-        testSettings.configurationVerified = true;
-        AIServiceProvider provider = AIServiceFactory.createProvider(testSettings);
+        // 简单测试, 只需要一个默认配置即可
+        SettingsState testSettings = new SettingsState();
+        // 使用设置面板的当前配置创建一个服务提供商配置
+        SettingsState.ProviderConfig snapshotProviderConfig = getProviderConfigSnapshot();
+        AIServiceProvider provider = AIServiceFactory.createProvider(testSettings, snapshotProviderConfig);
 
         // 检查提供商创建是否成功
         if (provider == null) {
@@ -1203,7 +1085,7 @@ public class JavaDocSettingsPanel {
         // 在后台线程测试
         new Thread(() -> {
             try {
-                ValidationResult result = provider.validateConfiguration();
+                ValidationResult result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
 
                 SwingUtilities.invokeLater(() -> {
                     if (result.isSuccess()) {
@@ -1211,7 +1093,7 @@ public class JavaDocSettingsPanel {
                         markConfigurationAsVerified();
 
                         // 添加到可用提供商列表
-                        addToAvailableProviders();
+                        addToAvailableProviders(snapshotProviderConfig);
 
                         JOptionPane.showMessageDialog(
                             mainPanel,
@@ -1224,7 +1106,7 @@ public class JavaDocSettingsPanel {
                         markConfigurationAsUnverified();
 
                         // 从可用提供商列表中移除
-                        removeFromAvailableProviders();
+                        removeFromAvailableProviders(snapshotProviderConfig);
 
                         // 构建详细的错误消息
                         String errorMessage = result.getMessage();
@@ -1249,7 +1131,7 @@ public class JavaDocSettingsPanel {
                     markConfigurationAsUnverified();
 
                     // 从可用提供商列表中移除
-                    removeFromAvailableProviders();
+                    removeFromAvailableProviders(snapshotProviderConfig);
 
                     String errorMessage = JavaDocBundle.message("settings.test.connection.error", e.getMessage());
                     JOptionPane.showMessageDialog(
@@ -1277,64 +1159,59 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 将当前配置添加到可用提供商列表
+     * 测试通过后将当前配置添加到可用提供商列表
+     * <p>
+     * 使用 defaultProviders 的 UUID 创建配置，确保 API Key 正确关联
      */
-    private void addToAvailableProviders() {
+    private void addToAvailableProviders(SettingsState.ProviderConfig snapshotProviderConfig) {
         SettingsState settings = SettingsState.getInstance();
-        SettingsState currentSettings = getSettings();
-        removeFromAvailableProviders();
 
-        // 创建提供商配置
-        SettingsState.ProviderConfig providerConfig = new SettingsState.ProviderConfig(
-            currentSettings.providerType,
-            currentSettings.modelName,
-            currentSettings.baseUrl,
-            true
-        );
-
-        // 将 API Key 存储到 PasswordSafe
-        String apiKey = currentSettings.getDefaultApiKey();
-        if (apiKey != null && !apiKey.trim().isEmpty()) {
-            SettingsState.setApiKey(providerConfig.uuid, apiKey);
+        // 将 API Key 存储到 PasswordSafe（使用默认配置的 UUID）
+        String apiKey = new String(apiKeyField.getPassword()).trim();
+        if (!apiKey.trim().isEmpty()) {
+            SettingsState.setApiKey(snapshotProviderConfig.md5, apiKey);
         }
 
-        settings.availableProviders.add(providerConfig);
+        // 先删除相同的配置
+        removeFromAvailableProviders(snapshotProviderConfig);
+        settings.availableProviders.add(snapshotProviderConfig);
     }
 
-    private void removeFromAvailableProviders() {
+    /**
+     * 从可用提供者列表中移除指定的配置项
+     * <p>
+     * 根据提供的配置项的 MD5 值，从全局设置中的可用提供者列表中移除匹配的配置项
+     *
+     * @param snapshotProviderConfig 要移除的配置项
+     */
+    private void removeFromAvailableProviders(SettingsState.ProviderConfig snapshotProviderConfig) {
         SettingsState settings = SettingsState.getInstance();
-        SettingsState currentSettings = getSettings();
-
-        // 从可用提供商列表中移除相同的配置（基于 providerId、modelName、baseUrl 和 apiKey 比较）
-        String currentApiKey = currentSettings.getDefaultApiKey();
-        settings.availableProviders.removeIf(config -> {
-            // 比较 provider、model 和 baseUrl
-            boolean basicMatch = ProviderConfigUtils.areEqual(
-                config.providerType != null ? config.providerType.getProviderId() : null,
-                config.modelName,
-                null, // 不再使用 apiKey 作为比较依据
-                config.baseUrl,
-                currentSettings.providerType != null ? currentSettings.providerType.getProviderId() : null,
-                currentSettings.modelName,
-                null, // 不再使用 apiKey 作为比较依据
-                currentSettings.baseUrl
-                                                             );
-
-            // 如果基本配置匹配，还需要比较 API Key
-            if (basicMatch) {
-                String configApiKey = SettingsState.getApiKey(config.uuid);
-                return (configApiKey == null && currentApiKey == null) ||
-                       (configApiKey != null && configApiKey.equals(currentApiKey));
-            }
-            return false;
-        });
+        settings.availableProviders.removeIf(config -> config.md5.equals(snapshotProviderConfig.md5));
     }
 
     /**
      * 标记配置为已验证
+     * <p>
+     * 测试连接成功后调用，更新内部验证状态并同步到 defaultProviders
      */
     private void markConfigurationAsVerified() {
         this.configurationVerified = true;
+
+        // 更新 defaultProviders 中的验证状态
+        SettingsState settings = SettingsState.getInstance();
+        String displayName = (String) providerComboBox.getSelectedItem();
+        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
+        AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
+
+        if (providerType != null) {
+            SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(providerType);
+            defaultConfig.configurationVerified = true;
+            defaultConfig.modelName = modelComboBox.getEditor().getItem().toString().trim();
+            defaultConfig.baseUrl = baseUrlField.getText().trim();
+            defaultConfig.lastVerifiedTime = System.currentTimeMillis();
+
+            settings.updateDefaultProviderConfig(providerType, defaultConfig);
+        }
     }
 
     /**
@@ -1342,6 +1219,35 @@ public class JavaDocSettingsPanel {
      */
     private void markConfigurationAsUnverified() {
         this.configurationVerified = false;
+    }
+
+
+    /**
+     * 在设置页面中获取未保存的提供商配置(快照)
+     * <p>
+     * 该方法用于从界面组件中提取当前的 AI 提供商配置信息，包括提供商类型、模型名称、基础 URL 等，并生成一个配置快照对象。
+     * 同时，如果 API Key 不为空，会将其存储到 PasswordSafe 中。
+     *
+     * @return 包含当前 AI 提供商配置信息的 SettingsState.ProviderConfig 对象
+     */
+    public SettingsState.ProviderConfig getProviderConfigSnapshot() {
+        // 将 API Key 存储到 PasswordSafe（使用默认配置的 UUID）
+        String apiKey = new String(apiKeyField.getPassword()).trim();
+
+        // AI 提供商配置 - 将显示名称转换为提供商标识符
+        String displayName = (String) providerComboBox.getSelectedItem();
+        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
+
+        // 获取用户输入的模型名称（可能是从列表选择的，也可能是手动输入的）
+        Object selectedModel = modelComboBox.getEditor().getItem();
+
+        return new SettingsState.ProviderConfig(
+            apiKey,
+            providerId != null ? AIProviderType.fromProviderId(providerId) : null,
+            selectedModel != null ? selectedModel.toString().trim() : "",
+            SettingsState.normalizeBaseUrl(baseUrlField.getText().trim()),
+            true
+        );
     }
 
     /**
@@ -1356,17 +1262,22 @@ public class JavaDocSettingsPanel {
         String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
         AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
         settings.providerType = providerType != null ? providerType : AIProviderType.QIANWEN;
+
+        // 直接更新 defaultProviders 中当前服务商的配置
+        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(settings.providerType);
+        
         // 获取用户输入的模型名称（可能是从列表选择的，也可能是手动输入的）
         Object selectedModel = modelComboBox.getEditor().getItem();
-        settings.modelName = selectedModel != null ? selectedModel.toString().trim() : "";
-        settings.setBaseUrl(baseUrlField.getText().trim()); // 使用标准化方法
+        defaultConfig.modelName = selectedModel != null ? selectedModel.toString().trim() : "";
 
-        // 将 API Key 存储到 PasswordSafe
-        String apiKey = new String(apiKeyField.getPassword()).trim();
-        settings.setDefaultApiKey(apiKey);
-
+        // 设置 baseUrl（使用标准化方法）
+        defaultConfig.baseUrl = SettingsState.normalizeBaseUrl(baseUrlField.getText().trim());
+        
         // 设置验证状态
-        settings.configurationVerified = this.configurationVerified;
+        defaultConfig.configurationVerified = this.configurationVerified;
+
+        // 更新 defaultProviders
+        settings.updateDefaultProviderConfig(settings.providerType, defaultConfig);
 
         // 功能配置
         settings.generateForClass = generateForClassCheckBox.isSelected();
@@ -1417,15 +1328,18 @@ public class JavaDocSettingsPanel {
         String displayName = providerType.getDisplayName();
         providerComboBox.setSelectedItem(displayName);
         updateModelList();
-        modelComboBox.setSelectedItem(settings.modelName);
-        baseUrlField.setText(settings.baseUrl);
 
-        // 从 PasswordSafe 读取 API Key
-        String apiKey = settings.getDefaultApiKey();
+        // 从 defaultProviders 获取当前服务商的配置
+        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(providerType);
+        modelComboBox.setSelectedItem(defaultConfig.modelName);
+        baseUrlField.setText(defaultConfig.baseUrl);
+
+        // 使用默认配置的 UUID 读取 API Key
+        String apiKey = SettingsState.getApiKey(defaultConfig.md5);
         apiKeyField.setText(apiKey != null ? apiKey : "");
 
         // 加载验证状态
-        this.configurationVerified = settings.configurationVerified;
+        this.configurationVerified = defaultConfig.configurationVerified;
 
         // 功能配置
         generateForClassCheckBox.setSelected(settings.generateForClass);

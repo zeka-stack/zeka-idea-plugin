@@ -104,10 +104,12 @@ public enum AIProviderType {
         "siliconflow",
         "硅基流动",
         "https://api.siliconflow.cn/v1",
-        "deepseek-chat",
+        "Qwen/Qwen3-8B",
         true,
         List.of(
-            "qwen3-8b"
+            "Qwen/Qwen3-8B",
+            "Qwen/Qwen2.5-14B-Instruct",
+            "THUDM/glm-4-9b-chat"
                )
     ),
 

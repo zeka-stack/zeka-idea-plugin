@@ -69,8 +69,8 @@ public class OllamaProvider extends AICompatibleProvider {
      *
      * @param settings 用于初始化的配置状态对象
      */
-    public OllamaProvider(SettingsState settings) {
-        super(settings);
+    public OllamaProvider(SettingsState settings, SettingsState.ProviderConfig providerConfig) {
+        super(settings, providerConfig);
     }
 
     /**
@@ -193,10 +193,10 @@ public class OllamaProvider extends AICompatibleProvider {
      */
     @NotNull
     @Override
-    public List<String> getAvailableModels() {
+    public List<String> getAvailableModels(String apiKey) {
         try {
             // 调用父类方法获取模型列表
-            List<String> models = super.getAvailableModels();
+            List<String> models = super.getAvailableModels(apiKey);
 
             // 如果父类方法失败，尝试解析 Ollama 特定格式
             if (models.isEmpty()) {

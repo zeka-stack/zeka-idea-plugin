@@ -577,7 +577,7 @@ public class AIProviderHttpIntegrationTest {
                                .setBody("{\"choices\": [{\"message\": {\"content\": \"OK\"}}]}")
                                .addHeader("Content-Type", "application/json"));
 
-        ValidationResult isValid = provider.validateConfiguration();
+        ValidationResult isValid = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
 
         assertThat(isValid.isSuccess()).isTrue();
     }
@@ -598,7 +598,7 @@ public class AIProviderHttpIntegrationTest {
                                .setResponseCode(401)
                                .setBody("{\"error\": {\"message\": \"Invalid credentials\"}}"));
 
-        ValidationResult isValid = provider.validateConfiguration();
+        ValidationResult isValid = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
 
         assertThat(isValid.isSuccess()).isFalse();
     }

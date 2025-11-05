@@ -158,7 +158,7 @@ public class AIServiceProviderTest {
         AIServiceProvider provider = new QianWenProvider(settings);
 
         // 千问需要 API Key，配置验证应该失败
-        ValidationResult isValid = provider.validateConfiguration();
+        ValidationResult isValid = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
         assertThat(isValid.isSuccess()).isFalse();
 
         // 设置有效的 API Key

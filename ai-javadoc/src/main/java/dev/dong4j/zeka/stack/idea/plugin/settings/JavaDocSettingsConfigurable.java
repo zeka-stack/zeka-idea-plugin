@@ -163,24 +163,12 @@ public class JavaDocSettingsConfigurable implements Configurable {
         if (!currentSettings.providerType.equals(panelSettings.providerType)) {
             return true;
         }
-        if (!currentSettings.modelName.equals(panelSettings.modelName)) {
-            return true;
-        }
-        if (!currentSettings.baseUrl.equals(panelSettings.baseUrl)) {
-            return true;
-        }
 
-        // 比较 API Key（从 PasswordSafe 读取）
-        String currentApiKey = currentSettings.getDefaultApiKey();
-        String panelApiKey = panelSettings.getDefaultApiKey();
-        if (currentApiKey == null && panelApiKey != null) {
-            return true;
-        }
-        if (currentApiKey != null && !currentApiKey.equals(panelApiKey)) {
-            return true;
-        }
-        
-        if (currentSettings.configurationVerified != panelSettings.configurationVerified) {
+        // 从 defaultProviders 获取当前服务商的配置进行比较
+        SettingsState.ProviderConfig currentConfig = currentSettings.getDefaultProviderConfig(currentSettings.providerType);
+        SettingsState.ProviderConfig panelConfig = panelSettings.getDefaultProviderConfig(panelSettings.providerType);
+
+        if (!currentConfig.md5.equals(panelConfig.md5)) {
             return true;
         }
 
@@ -213,6 +201,15 @@ public class JavaDocSettingsConfigurable implements Configurable {
             return true;
         }
         if (currentSettings.maxTokens != panelSettings.maxTokens) {
+            return true;
+        }
+        if (currentSettings.topP != panelSettings.topP) {
+            return true;
+        }
+        if (currentSettings.topK != panelSettings.topK) {
+            return true;
+        }
+        if (currentSettings.presencePenalty != panelSettings.presencePenalty) {
             return true;
         }
         if (currentSettings.performanceMode != panelSettings.performanceMode) {
@@ -284,12 +281,13 @@ public class JavaDocSettingsConfigurable implements Configurable {
         // 应用配置
         SettingsState currentSettings = SettingsState.getInstance();
         currentSettings.providerType = panelSettings.providerType;
-        currentSettings.modelName = panelSettings.modelName;
-        currentSettings.baseUrl = panelSettings.baseUrl;
 
-        // 应用 API Key（已在 getSettings() 中存储到 PasswordSafe）
-        // 这里只需要同步验证状态
-        currentSettings.configurationVerified = panelSettings.configurationVerified;
+        // 将 panelSettings 中的 defaultProviders 复制到 currentSettings
+        currentSettings.defaultProviders.putAll(panelSettings.defaultProviders);
+
+        // 将 availableProviders 也同步过来（避免丢失）
+        currentSettings.availableProviders.clear();
+        currentSettings.availableProviders.addAll(panelSettings.availableProviders);
 
         currentSettings.generateForClass = panelSettings.generateForClass;
         currentSettings.generateForMethod = panelSettings.generateForMethod;
@@ -302,6 +300,9 @@ public class JavaDocSettingsConfigurable implements Configurable {
         currentSettings.timeout = panelSettings.timeout;
         currentSettings.temperature = panelSettings.temperature;
         currentSettings.maxTokens = panelSettings.maxTokens;
+        currentSettings.topP = panelSettings.topP;
+        currentSettings.topK = panelSettings.topK;
+        currentSettings.presencePenalty = panelSettings.presencePenalty;
         currentSettings.performanceMode = panelSettings.performanceMode;
         currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
         currentSettings.verboseLogging = panelSettings.verboseLogging;
@@ -314,6 +315,7 @@ public class JavaDocSettingsConfigurable implements Configurable {
         currentSettings.testPromptTemplate = panelSettings.testPromptTemplate;
 
         currentSettings.supportedLanguages = panelSettings.supportedLanguages;
+
     }
 
     /**
@@ -388,27 +390,21 @@ public class JavaDocSettingsConfigurable implements Configurable {
      * @return 如果配置有效返回 true，否则返回 false
      * @see SettingsState#requiresApiKey()
      */
-    @SuppressWarnings("D")
     private boolean validateSettings(SettingsState settings) {
         // 检查必填字段
         if (settings.providerType == null) {
             return false;
         }
 
-        if (settings.modelName == null || settings.modelName.trim().isEmpty()) {
+        // 从 defaultProviders 获取当前服务商的配置
+        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(settings.providerType);
+
+        if (defaultConfig.modelName == null || defaultConfig.modelName.trim().isEmpty()) {
             return false;
         }
 
-        if (settings.baseUrl == null || settings.baseUrl.trim().isEmpty()) {
+        if (defaultConfig.baseUrl == null || defaultConfig.baseUrl.trim().isEmpty()) {
             return false;
-        }
-
-        // 检查是否需要 API Key
-        if (settings.requiresApiKey()) {
-            String apiKey = settings.getDefaultApiKey();
-            if (apiKey == null || apiKey.trim().isEmpty()) {
-                return false;
-            }
         }
 
         // 检查数值范围

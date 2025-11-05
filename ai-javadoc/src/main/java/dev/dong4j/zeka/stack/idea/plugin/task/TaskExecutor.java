@@ -377,8 +377,7 @@ public class TaskExecutor {
 
         // 为每个提供商创建统计对象
         Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
-        for (int i = 0; i < availableProviders.size(); i++) {
-            AIServiceProvider provider = availableProviders.get(i);
+        for (AIServiceProvider provider : availableProviders) {
             String providerName = provider.getProviderName();
             providerStats.put(providerName, new ProviderStatistics(providerName));
         }

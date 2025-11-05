@@ -571,7 +571,7 @@ public class TaskExecutorIntegrationTest extends MyBasePlatformTestCase {
          */
         @NotNull
         @Override
-        public ValidationResult validateConfiguration() {
+        public ValidationResult validateConfiguration(String apiKey) {
             return ValidationResult.success("for test");
         }
 
@@ -661,7 +661,7 @@ public class TaskExecutorIntegrationTest extends MyBasePlatformTestCase {
          */
         @NotNull
         @Override
-        public List<String> getAvailableModels() {
+        public List<String> getAvailableModels(String apiKey) {
             return List.of("mock-model-1", "mock-model-2");
         }
     }

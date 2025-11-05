@@ -72,8 +72,8 @@ public class LMStudioProvider extends AICompatibleProvider {
      *
      * @param settings 配置状态
      */
-    public LMStudioProvider(@NotNull SettingsState settings) {
-        super(settings);
+    public LMStudioProvider(@NotNull SettingsState settings, SettingsState.ProviderConfig providerConfig) {
+        super(settings, providerConfig);
     }
 
     /**
