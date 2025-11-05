@@ -84,6 +84,83 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     }
 
     /**
+     * 获取当前AI服务提供商的ID
+     * <p>
+     * 返回AI服务提供商的唯一标识符，该标识符由AIProviderType枚举中的LM_STUDIO类型定义。
+     *
+     * @return AI服务提供商的ID
+     */
+    @Override
+    @NotNull
+    public String getProviderId() {
+        return providerConfig.providerType.getProviderId();
+    }
+
+    /**
+     * 获取当前AI服务提供商的名称
+     * <p>
+     * 返回AI服务提供商的显示名称，该名称由AIProviderType枚举中的LM_STUDIO值提供。
+     *
+     * @return AI服务提供商的显示名称
+     */
+    @Override
+    @NotNull
+    public String getProviderName() {
+        return providerConfig.providerType.getDisplayName();
+    }
+
+    /**
+     * 获取当前AI提供者支持的模型列表
+     * <p>
+     * 调用AI提供者类型对应的获取支持模型方法，返回支持的模型名称列表
+     *
+     * @return 支持的模型名称列表
+     */
+    @Override
+    @NotNull
+    public List<String> getSupportedModels() {
+        return providerConfig.providerType.getSupportedModels();
+    }
+
+    /**
+     * 获取默认模型名称
+     * <p>
+     * 返回当前AI提供者默认的模型名称。
+     *
+     * @return 默认模型名称
+     */
+    @Override
+    @NotNull
+    public String getDefaultModel() {
+        return providerConfig.providerType.getDefaultModel();
+    }
+
+    /**
+     * 获取默认的基础URL
+     * <p>
+     * 返回AI服务提供商类型LM_STUDIO对应的基础URL。
+     *
+     * @return 默认的基础URL
+     */
+    @Override
+    @NotNull
+    public String getDefaultBaseUrl() {
+        return providerConfig.providerType.getDefaultBaseUrl();
+    }
+
+    /**
+     * 判断当前AI服务提供商是否需要API密钥
+     * <p>
+     * 调用对应AI服务提供商的requiresApiKey方法，返回是否需要API密钥
+     *
+     * @return 是否需要API密钥
+     */
+    @Override
+    public boolean requiresApiKey() {
+        return providerConfig.providerType.requiresApiKey();
+    }
+
+    /**
      * 设置当前项目实例（用于 Console 日志输出）
      *
      * @param project 项目实例

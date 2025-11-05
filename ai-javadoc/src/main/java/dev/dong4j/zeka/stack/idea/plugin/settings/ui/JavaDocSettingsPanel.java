@@ -16,6 +16,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -133,6 +134,9 @@ public class JavaDocSettingsPanel {
     public JavaDocSettingsPanel() {
         createUI();
         setupListeners();
+        // 初始化字段的可用性和可编辑状态
+        updateApiKeyFieldEnabled();
+        updateBaseUrlFieldEditable();
     }
 
     /**
@@ -738,7 +742,8 @@ public class JavaDocSettingsPanel {
         providerComboBox.addActionListener(e -> {
             updateModelList();
             updateDefaultValues();
-            updateApiKeyVisibility();
+            updateApiKeyFieldEnabled();
+            updateBaseUrlFieldEditable();
             // 关键配置修改，清除验证状态
             markConfigurationAsUnverified();
         });
@@ -1034,12 +1039,13 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 更新API密钥的可见性状态
+     * 更新 API Key 字段的可用状态
      * <p>
-     * 根据下拉框中选择的提供商显示名称，判断是否需要显示API密钥字段和测试连接按钮。
-     * 如果选择的提供商为空，则禁用API密钥字段和测试连接按钮；否则根据提供商类型决定是否启用相关控件。
+     * 根据当前选择的提供商类型，设置 API Key 字段是否可用。
+     * 某些本地服务（如 Ollama、LM Studio）不需要 API Key，这些服务的 API Key 字段会被禁用。
+     * 其他需要认证的服务（如通义千问、硅基流动、自定义服务）的 API Key 字段会被启用。
      */
-    private void updateApiKeyVisibility() {
+    private void updateApiKeyFieldEnabled() {
         String displayName = (String) providerComboBox.getSelectedItem();
         if (displayName == null) {
             apiKeyField.setEnabled(false);
@@ -1050,9 +1056,34 @@ public class JavaDocSettingsPanel {
         // 将显示名称转换为提供商标识符
         String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
         AIProviderType providerType = providerId == null ? null : AIProviderType.fromProviderId(providerId);
+
+        // 根据提供商类型的 requiresApiKey 属性设置可用性
         boolean requiresKey = providerType != null && providerType.requiresApiKey();
         apiKeyField.setEnabled(requiresKey);
         testConnectionButton.setEnabled(true);
+    }
+
+    /**
+     * 更新 Base URL 字段的可编辑状态
+     * <p>
+     * 根据当前选择的提供商类型，设置 Base URL 字段是否可编辑。
+     * 某些官方服务（如通义千问、硅基流动）的 Base URL 是固定的，不允许修改。
+     * 本地服务（如 Ollama、LM Studio）和自定义服务的 Base URL 可以修改。
+     */
+    private void updateBaseUrlFieldEditable() {
+        String displayName = (String) providerComboBox.getSelectedItem();
+        if (displayName == null) {
+            baseUrlField.setEditable(false);
+            return;
+        }
+
+        // 将显示名称转换为提供商标识符
+        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
+        AIProviderType providerType = providerId == null ? null : AIProviderType.fromProviderId(providerId);
+
+        // 根据提供商类型的 baseUrlEditable 属性设置可编辑性
+        boolean editable = providerType != null && providerType.isBaseUrlEditable();
+        baseUrlField.setEditable(editable);
     }
 
     /**
@@ -1204,13 +1235,25 @@ public class JavaDocSettingsPanel {
         AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
 
         if (providerType != null) {
-            SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(providerType);
-            defaultConfig.configurationVerified = true;
-            defaultConfig.modelName = modelComboBox.getEditor().getItem().toString().trim();
-            defaultConfig.baseUrl = baseUrlField.getText().trim();
-            defaultConfig.lastVerifiedTime = System.currentTimeMillis();
+            // 获取当前的 API Key
+            String apiKey = new String(apiKeyField.getPassword()).trim();
 
-            settings.updateDefaultProviderConfig(providerType, defaultConfig);
+            // 使用当前配置创建新的 ProviderConfig，确保 md5 正确生成
+            SettingsState.ProviderConfig newConfig = new SettingsState.ProviderConfig(
+                apiKey,
+                providerType,
+                modelComboBox.getEditor().getItem().toString().trim(),
+                SettingsState.normalizeBaseUrl(baseUrlField.getText().trim()),
+                true
+            );
+
+            // 将 API Key 存储到 PasswordSafe（使用新配置的 md5）
+            if (!apiKey.isEmpty()) {
+                SettingsState.setApiKey(newConfig.md5, apiKey);
+            }
+
+            // 更新 defaultProviders
+            settings.updateDefaultProviderConfig(providerType, newConfig);
         }
     }
 
@@ -1256,6 +1299,19 @@ public class JavaDocSettingsPanel {
     @NotNull
     public SettingsState getSettings() {
         SettingsState settings = new SettingsState();
+
+        // 从全局配置中深拷贝 availableProviders 和 defaultProviders，避免对象引用共享
+        SettingsState globalSettings = SettingsState.getInstance();
+
+        // 深拷贝 availableProviders（避免修改全局配置）
+        for (SettingsState.ProviderConfig config : globalSettings.availableProviders) {
+            settings.availableProviders.add(new SettingsState.ProviderConfig(config));
+        }
+
+        // 深拷贝 defaultProviders（避免修改全局配置）
+        for (Map.Entry<AIProviderType, SettingsState.ProviderConfig> entry : globalSettings.defaultProviders.entrySet()) {
+            settings.defaultProviders.put(entry.getKey(), new SettingsState.ProviderConfig(entry.getValue()));
+        }
 
         // AI 提供商配置 - 将显示名称转换为提供商标识符
         String displayName = (String) providerComboBox.getSelectedItem();
@@ -1381,7 +1437,8 @@ public class JavaDocSettingsPanel {
         fieldPromptTextArea.setText(settings.fieldPromptTemplate);
         testPromptTextArea.setText(settings.testPromptTemplate);
 
-        updateApiKeyVisibility();
+        updateApiKeyFieldEnabled();
+        updateBaseUrlFieldEditable();
     }
 }
 

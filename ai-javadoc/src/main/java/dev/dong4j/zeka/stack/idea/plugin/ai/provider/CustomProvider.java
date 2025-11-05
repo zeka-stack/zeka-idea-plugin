@@ -1,10 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.ai.provider;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
-
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
@@ -70,92 +65,4 @@ public class CustomProvider extends AICompatibleProvider {
         super(settings, providerConfig);
     }
 
-    /**
-     * 获取自定义AI提供者的ID
-     * <p>
-     * 返回自定义AI提供者对应的唯一标识符
-     *
-     * @return 自定义AI提供者的ID
-     */
-    @NotNull
-    @Override
-    public String getProviderId() {
-        return providerConfig.providerType.getProviderId();
-    }
-
-    /**
-     * 获取当前AI服务提供商的名称
-     * <p>
-     * 返回AI服务提供商的显示名称，该名称由AIProviderType.CUSTOM对应的枚举项提供。
-     *
-     * @return AI服务提供商的显示名称
-     */
-    @NotNull
-    @Override
-    public String getProviderName() {
-        return AIProviderType.CUSTOM.getDisplayName();
-    }
-
-    /**
-     * 返回推荐的模型列表
-     *
-     * <p>返回推荐的常用模型列表，供用户在设置界面中选择。
-     * 这些模型经过测试，能够很好地支持文档生成任务。
-     *
-     * <p>注意：这只是推荐列表，用户可以使用任何服务提供商支持的模型。
-     * 建议查看服务提供商文档了解支持的模型列表。
-     *
-     * @return 推荐的模型列表（作为参考）
-     */
-    @NotNull
-    @Override
-    public List<String> getSupportedModels() {
-        return AIProviderType.CUSTOM.getSupportedModels();
-    }
-
-    /**
-     * 获取默认模型
-     *
-     * <p>返回推荐的默认模型。
-     *
-     * @return 默认模型名称
-     */
-    @NotNull
-    @Override
-    public String getDefaultModel() {
-        return AIProviderType.CUSTOM.getDefaultModel();
-    }
-
-    /**
-     * 获取默认 Base URL
-     * <p>
-     * 返回 OpenAI 官方 API 地址作为默认值。
-     * 用户可以根据实际使用的服务提供商修改此地址。
-     * <p>
-     * 常见 Base URL 示例：
-     * <p>
-     * - OpenAI: <a href="https://api.openai.com/v1">...</a>
-     * - Azure OpenAI: <a href="https://your-resource.openai.azure.com/openai/deployments/your-deployment">...</a>
-     * - 自部署服务: <a href="http://localhost:8000/v1">...</a>
-     *
-     * @return 默认 Base URL
-     */
-    @NotNull
-    @Override
-    public String getDefaultBaseUrl() {
-        return AIProviderType.CUSTOM.getDefaultBaseUrl();
-    }
-
-    /**
-     * 是否需要 API Key
-     *
-     * <p>自定义服务提供商需要 API Key 进行身份验证。
-     * 几乎所有兼容 OpenAI API 的服务都需要 API Key。
-     *
-     * @return 总是返回 true
-     */
-    @Override
-    public boolean requiresApiKey() {
-        return AIProviderType.CUSTOM.requiresApiKey();
-    }
 }

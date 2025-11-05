@@ -351,6 +351,22 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         public ProviderConfig() {}
 
         /**
+         * 复制构造函数，创建 ProviderConfig 的深拷贝
+         * <p>
+         * 用于避免对象引用共享导致的意外修改
+         *
+         * @param source 源配置对象
+         */
+        public ProviderConfig(ProviderConfig source) {
+            this.md5 = source.md5;
+            this.providerType = source.providerType;
+            this.modelName = source.modelName;
+            this.baseUrl = source.baseUrl;
+            this.configurationVerified = source.configurationVerified;
+            this.lastVerifiedTime = source.lastVerifiedTime;
+        }
+
+        /**
          * 构造一个 ProviderConfig 对象（指定 UUID）
          * <p>
          * 初始化 ProviderConfig 实例，允许指定 UUID（用于复用已有的 UUID）
@@ -366,10 +382,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                               String modelName,
                               String baseUrl,
                               boolean configurationVerified) {
-            this.md5 = buildMd5(apiKey);
             this.providerType = providerType;
             this.modelName = modelName;
             this.baseUrl = baseUrl;
+            this.md5 = buildMd5(apiKey);
             this.configurationVerified = configurationVerified;
             this.lastVerifiedTime = System.currentTimeMillis();
         }

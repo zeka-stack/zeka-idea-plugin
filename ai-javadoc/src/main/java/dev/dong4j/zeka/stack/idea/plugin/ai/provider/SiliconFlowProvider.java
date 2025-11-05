@@ -2,9 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.ai.provider;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
@@ -75,80 +72,4 @@ public class SiliconFlowProvider extends AICompatibleProvider {
         super(settings, providerConfig);
     }
 
-    /**
-     * 获取AI服务提供商的ID
-     * <p>
-     * 返回当前AI服务提供商的唯一标识符
-     *
-     * @return AI服务提供商的ID
-     */
-    @Override
-    @NotNull
-    public String getProviderId() {
-        return AIProviderType.SILICONFLOW.getProviderId();
-    }
-
-    /**
-     * 获取AI服务提供商名称
-     * <p>
-     * 返回当前AI服务提供商的显示名称
-     *
-     * @return AI服务提供商名称
-     */
-    @Override
-    @NotNull
-    public String getProviderName() {
-        return AIProviderType.SILICONFLOW.getDisplayName();
-    }
-
-    /**
-     * 获取当前AI服务支持的模型列表
-     * <p>
-     * 调用AI服务提供商的接口，返回当前支持的所有模型名称列表
-     *
-     * @return 支持的模型名称列表
-     */
-    @Override
-    @NotNull
-    public List<String> getSupportedModels() {
-        return AIProviderType.SILICONFLOW.getSupportedModels();
-    }
-
-    /**
-     * 获取默认模型名称
-     * <p>
-     * 调用 AIProviderType.SILICONFLOW 的 getDefaultModel 方法，返回默认模型名称。
-     *
-     * @return 默认模型名称
-     */
-    @Override
-    @NotNull
-    public String getDefaultModel() {
-        return AIProviderType.SILICONFLOW.getDefaultModel();
-    }
-
-    /**
-     * 获取默认的基础URL
-     * <p>
-     * 返回AI服务提供商默认的基础URL地址。
-     *
-     * @return 默认的基础URL
-     */
-    @Override
-    @NotNull
-    public String getDefaultBaseUrl() {
-        return AIProviderType.SILICONFLOW.getDefaultBaseUrl();
-    }
-
-    /**
-     * 判断当前AI服务提供商是否需要API密钥
-     * <p>
-     * 调用对应AI服务提供商的requiresApiKey方法，判断是否需要API密钥
-     *
-     * @return 是否需要API密钥
-     */
-    @Override
-    public boolean requiresApiKey() {
-        return AIProviderType.SILICONFLOW.requiresApiKey();
-    }
 }

@@ -53,6 +53,7 @@ public enum AIProviderType {
         "https://api.openai.com/v1",
         "gpt-3.5-turbo",
         true,
+        true,
         List.of(
             "qwen3-8b")
     ),
@@ -77,6 +78,7 @@ public enum AIProviderType {
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "qwen3-8b",
         true,
+        false,
         Arrays.asList(
             "qwen3-32b",
             "qwen3-14b",
@@ -106,6 +108,7 @@ public enum AIProviderType {
         "https://api.siliconflow.cn/v1",
         "Qwen/Qwen3-8B",
         true,
+        false,
         List.of(
             "Qwen/Qwen3-8B",
             "Qwen/Qwen2.5-14B-Instruct",
@@ -133,6 +136,7 @@ public enum AIProviderType {
         "http://localhost:11434/v1",
         "qwen:7b",
         false,
+        true,
         Arrays.asList(
             "gpt-oss:120b-cloud",
             "gpt-oss:20b-cloud",
@@ -163,6 +167,7 @@ public enum AIProviderType {
         "http://localhost:1234/v1",
         "gpt-3.5-turbo",
         false,
+        true,
         List.of(
             "qwen3-8b")
     );
@@ -208,6 +213,15 @@ public enum AIProviderType {
     private final boolean requiresApiKey;
 
     /**
+     * Base URL 是否可编辑
+     *
+     * <p>标识该提供商的 Base URL 是否允许用户修改。
+     * 某些官方服务（如通义千问、硅基流动）的 Base URL 是固定的，不允许修改。
+     * 本地服务（如 Ollama、LM Studio）和自定义服务的 Base URL 可以修改。
+     */
+    private final boolean baseUrlEditable;
+
+    /**
      * 支持的模型列表
      *
      * <p>该提供商支持的模型名称列表。
@@ -223,6 +237,7 @@ public enum AIProviderType {
      * @param defaultBaseUrl  默认 Base URL
      * @param defaultModel    默认模型
      * @param requiresApiKey  是否需要 API Key
+     * @param baseUrlEditable Base URL 是否可编辑
      * @param supportedModels 支持的模型列表
      */
     AIProviderType(@NotNull String providerId,
@@ -230,12 +245,14 @@ public enum AIProviderType {
                    @NotNull String defaultBaseUrl,
                    @NotNull String defaultModel,
                    boolean requiresApiKey,
+                   boolean baseUrlEditable,
                    @NotNull List<String> supportedModels) {
         this.providerId = providerId;
         this.displayName = displayName;
         this.defaultBaseUrl = defaultBaseUrl;
         this.defaultModel = defaultModel;
         this.requiresApiKey = requiresApiKey;
+        this.baseUrlEditable = baseUrlEditable;
         this.supportedModels = supportedModels;
     }
 
@@ -286,6 +303,15 @@ public enum AIProviderType {
      */
     public boolean requiresApiKey() {
         return requiresApiKey;
+    }
+
+    /**
+     * Base URL 是否可编辑
+     *
+     * @return 如果 Base URL 可编辑返回 true
+     */
+    public boolean isBaseUrlEditable() {
+        return baseUrlEditable;
     }
 
     /**

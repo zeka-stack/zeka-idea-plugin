@@ -17,7 +17,6 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.provider.OllamaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.QianWenProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.SiliconFlowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
  * AI 服务工厂
@@ -102,28 +101,7 @@ public class AIServiceFactory {
         // 从 default 获取
         final SettingsState.ProviderConfig defaultProviderConfig = settings.getDefaultProviderConfig(providerType);
 
-        // 检查配置是否已通过验证
-        if (!defaultProviderConfig.configurationVerified) {
-            String error = JavaDocBundle.message("error.configuration.not.verified");
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).warn(error);
-            return null;
-        }
-
-        Class<? extends AIServiceProvider> providerClass = PROVIDERS.get(providerType.getProviderId());
-        if (providerClass == null) {
-            String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
-            String error = "不支持的 AI 提供商: " + providerType.getProviderId() + "。当前支持的提供商：" + supportedProviders;
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
-            return null;
-        }
-
-        try {
-            return providerClass.getDeclaredConstructor(SettingsState.class).newInstance(settings);
-        } catch (Exception e) {
-            String error = "创建 AI 提供商失败: " + providerType.getProviderId() + "。请检查配置是否正确。";
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
-            return null;
-        }
+        return createProvider(settings, defaultProviderConfig);
     }
 
     /**
