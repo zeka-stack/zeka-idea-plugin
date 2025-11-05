@@ -498,12 +498,18 @@ public class TaskExecutor {
 
             // Console 日志：任务开始（仅详细日志模式）
             int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
-            String taskInfo = String.format("========== 任务 %d: %s %s ==========",
-                                            currentTaskNum,
-                                            task.getType().name(),
-                                            task.getFilePath());
-            JavaDocConsoleView.printWithTimestamp(project, taskInfo);
-            JavaDocConsoleView.print(project, "");
+            // PSI 访问必须在 read-action 中进行
+            VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
+                                                                                            task.getElement().getContainingFile().getVirtualFile()
+                                                                                       );
+            if (virtualFile != null) {
+                String taskInfo = String.format("========== 任务 %d: %s %s ==========",
+                                                currentTaskNum,
+                                                task.getType().name(),
+                                                task.getFilePath());
+                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
+                JavaDocConsoleView.print(project, "");
+            }
 
             // 检查是否应该跳过
             if (shouldSkip(task)) {
@@ -541,7 +547,7 @@ public class TaskExecutor {
             JavaDocConsoleView.print(project, "");
 
         } catch (AIServiceException e) {
-            String errorMessage = getAIServiceErrorMessage(e);
+            String errorMessage = AIServiceException.build(e);
             log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
@@ -720,12 +726,18 @@ public class TaskExecutor {
 
             // Console 日志：任务开始（仅详细日志模式）
             int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
-            String taskInfo = String.format("========== 任务 %d: %s %s ==========",
-                                            currentTaskNum,
-                                            task.getType().name(),
-                                            task.getFilePath());
-            JavaDocConsoleView.printWithTimestamp(project, taskInfo);
-            JavaDocConsoleView.print(project, "");
+            // PSI 访问必须在 read-action 中进行
+            VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
+                                                                                            task.getElement().getContainingFile().getVirtualFile()
+                                                                                       );
+            if (virtualFile != null) {
+                String taskInfo = String.format("========== 任务 %d: %s %s ==========",
+                                                currentTaskNum,
+                                                task.getType().name(),
+                                                task.getFilePath());
+                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
+                JavaDocConsoleView.print(project, "");
+            }
 
             // 检查是否应该跳过
             if (shouldSkip(task)) {
@@ -761,7 +773,7 @@ public class TaskExecutor {
 
         } catch (AIServiceException e) {
             // AI 服务异常 - 提供友好的错误提示
-            String errorMessage = getAIServiceErrorMessage(e);
+            String errorMessage = AIServiceException.build(e);
             log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
@@ -788,32 +800,6 @@ public class TaskExecutor {
             JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
             JavaDocConsoleView.print(project, "");
         }
-    }
-
-    /**
-     * 将 AI 服务异常转换为友好的错误消息
-     *
-     * <p>根据异常类型生成用户友好的错误提示信息。
-     *
-     * @param e AI 服务异常
-     * @return 友好的错误消息
-     */
-    private String getAIServiceErrorMessage(AIServiceException e) {
-        AIServiceException.ErrorCode errorCode = e.getErrorCode();
-
-        if (errorCode == null) {
-            return "AI 服务调用失败: " + e.getMessage();
-        }
-
-        return switch (errorCode) {
-            case INVALID_API_KEY -> "API Key 无效，请在设置中检查并更新 API Key";
-            case RATE_LIMIT -> "请求频率过高，请稍后再试";
-            case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用，请稍后再试";
-            case NETWORK_ERROR -> "网络连接失败，请检查网络连接或服务器地址";
-            case CONFIGURATION_ERROR -> "配置错误: " + e.getMessage();
-            case INVALID_RESPONSE -> "AI 服务返回的数据格式错误";
-            default -> "AI 服务调用失败: " + e.getMessage();
-        };
     }
 
     /**
@@ -1210,6 +1196,17 @@ public class TaskExecutor {
          */
         public int getTotal() {
             return completed + failed + skipped;
+        }
+
+        /**
+         * 判断是否已执行过任务
+         * <p>
+         * 检查当前对象中已完成或跳过的任务总数是否大于0，若大于0则返回true，表示已执行过任务
+         *
+         * @return 是否已执行过任务
+         */
+        public boolean isRunned() {
+            return completed + skipped > 0;
         }
 
         /**

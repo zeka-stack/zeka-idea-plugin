@@ -367,6 +367,65 @@ public final class JavaDocConsoleView implements Disposable {
     }
 
     /**
+     * 输出带时间戳的可点击超链接（内部方法）
+     * <p>
+     * 输出一个带时间戳的可点击超链接，点击后跳转到指定文件的指定行。
+     * 仅在 verboseLogging 启用时输出。
+     *
+     * @param message     消息内容
+     * @param virtualFile 目标文件
+     * @param line        目标行号（从 0 开始）
+     */
+    private void printHyperlinkWithTimestamp(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
+        if (verboseLoggingDisable()) {
+            return;
+        }
+
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ConsoleView console = getConsoleView();
+            if (console != null) {
+                // 输出时间戳
+                String timestamp = "[" + TIME_FORMAT.format(new Date()) + "] ";
+                console.print(timestamp, ConsoleViewContentType.NORMAL_OUTPUT);
+
+                // 创建超链接信息
+                HyperlinkInfo hyperlinkInfo = project1 -> {
+                    // 打开文件并跳转到指定行
+                    new OpenFileDescriptor(project, virtualFile, line, 0).navigate(true);
+                };
+
+                // 输出带超链接的消息
+                console.printHyperlink(message, hyperlinkInfo);
+                console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
+                showToolWindow();
+            }
+        });
+    }
+
+    /**
+     * 输出带时间戳的可点击超链接（静态方法）
+     * <p>
+     * 输出一个带时间戳的可点击超链接，点击后跳转到指定文件的指定行。
+     * 仅在 verboseLogging 启用时输出。
+     *
+     * @param project     项目实例
+     * @param message     消息内容
+     * @param virtualFile 目标文件
+     * @param line        目标行号（从 0 开始）
+     */
+    public static void printHyperlinkWithTimestamp(Project project, @NotNull String message,
+                                                   @NotNull VirtualFile virtualFile, int line) {
+        if (project == null) {
+            return;
+        }
+        try {
+            getInstance(project).printHyperlinkWithTimestamp(message, virtualFile, line);
+        } catch (Exception e) {
+            // 忽略异常，避免影响主功能
+        }
+    }
+
+    /**
      * 释放资源
      * <p>
      * 由 IntelliJ Platform 在项目关闭时自动调用。

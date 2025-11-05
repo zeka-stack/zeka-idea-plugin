@@ -22,6 +22,7 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
+import dev.dong4j.zeka.stack.idea.plugin.util.TokenCounter;
 
 /**
  * OpenAI 兼容的服务提供商抽象类
@@ -292,7 +293,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         JsonObject body = buildRequestBody(prompt);
         // 非设置页面调用, 使用持久化配置
         String apiKey = SettingsState.getApiKey(providerConfig.md5);
-        return sendRequestWithBody(body, "AI Request", prompt.length(), apiKey, this::parseResponse);
+        return sendRequestWithBody(body, "AI Request", TokenCounter.estimateTokens(prompt), apiKey, this::parseResponse);
     }
 
     /**
@@ -366,7 +367,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             // 根据不同的客户端判断是否检查 apikey
             if (requiresApiKey()) {
                 if (apiKey == null || apiKey.trim().isEmpty()) {
-                    throw new AIServiceException("Failed to build request headers: API Key is required but not configured",
+                    throw new AIServiceException("需要 API 密钥但未进行配置",
                                                  AIServiceException.ErrorCode.CONFIGURATION_ERROR);
                 }
             }
@@ -659,7 +660,24 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 .get("content").getAsString()
                 .trim();
 
+            // 解析并输出 usage 信息
+            Project project = getCurrentProject();
+            if (project != null && json.has("usage")) {
+                JsonObject usage = json.getAsJsonObject("usage");
+                int promptTokens = usage.has("prompt_tokens") ? usage.get("prompt_tokens").getAsInt() : 0;
+                int completionTokens = usage.has("completion_tokens") ? usage.get("completion_tokens").getAsInt() : 0;
+                int totalTokens = usage.has("total_tokens") ? usage.get("total_tokens").getAsInt() : 0;
+                JavaDocConsoleView.print(project, "=== Token 使用统计 ===");
+
+                JavaDocConsoleView.print(project, String.format("供应商: %s 模型: %s | Token 使用: 请求 %d | 响应 %d | 总计 %d",
+                                                                getProviderName(),
+                                                                providerConfig.modelName,
+                                                                promptTokens, completionTokens, totalTokens));
+                JavaDocConsoleView.print(project, "");
+            }
+
             // 过滤思考数据，只保留实际内容
+
             return filterThinkingContent(content);
         } catch (Exception e) {
             LOG.info("Failed to parse AI response: " + responseBody, e);
@@ -890,7 +908,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             }
         } catch (AIServiceException e) {
             String errorMessage = "配置验证失败";
-            String errorDetails = getDetailedErrorMessage(e);
+            String errorDetails = AIServiceException.build(e);
             LOG.warn("Configuration validation failed: " + errorDetails, e);
             return ValidationResult.failure(errorMessage, errorDetails, e);
         } catch (Exception e) {
@@ -967,32 +985,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         body.addProperty("max_tokens", 32);
         body.addProperty("top_p", 0.9);
         return body;
-    }
-
-    /**
-     * 获取详细的错误消息
-     *
-     * @param e AI 服务异常
-     * @return 详细的错误消息
-     */
-    @NotNull
-    private String getDetailedErrorMessage(@NotNull AIServiceException e) {
-        AIServiceException.ErrorCode errorCode = e.getErrorCode();
-        String details = e.getMessage();
-
-        if (errorCode != null) {
-            return switch (errorCode) {
-                case INVALID_API_KEY -> "API Key 无效或已过期。请检查并更新您的 API Key。";
-                case RATE_LIMIT -> "请求频率超限。请稍后再试或升级您的服务套餐。";
-                case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用。请稍后重试或检查服务状态。";
-                case NETWORK_ERROR -> "网络连接失败。请检查网络连接或 Base URL 是否正确。\n详情: " + details;
-                case CONFIGURATION_ERROR -> "配置错误: Model " + details;
-                case INVALID_RESPONSE -> "服务返回的数据格式错误。可能是模型名称不正确或服务异常。";
-                default -> details;
-            };
-        }
-
-        return details != null ? details : "未知错误";
     }
 
     /**

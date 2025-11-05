@@ -94,7 +94,10 @@ public class GenerateJavaDocForSelectionAction extends AnAction {
 
         // 使用服务生成文档，带自定义完成回调
         service.generateDocumentation(project, tasks, "选中文件", stats -> {
-            showCompletionMessage(project, stats);
+            // 只有正常执行过才显示通知, 比如没有配置正确的情况下, 会同时出现这个通知和配置错误的通知, 所以这里需要先判断一下
+            if (stats.isRunned()) {
+                showCompletionMessage(project, stats);
+            }
         });
     }
 

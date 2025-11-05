@@ -97,6 +97,26 @@ public class AIServiceException extends Exception {
     }
 
     /**
+     * 重写 fillInStackTrace 方法以禁用堆栈跟踪
+     * <p>
+     * 对于业务异常，通常不需要完整的堆栈跟踪信息。
+     * 禁用堆栈跟踪可以：
+     * <ul>
+     *   <li>提高性能（避免收集堆栈信息的开销）</li>
+     *   <li>使日志更简洁（只显示错误消息，不显示堆栈）</li>
+     *   <li>减少日志文件大小</li>
+     * </ul>
+     *
+     * @return 当前异常对象，不包含堆栈跟踪信息
+     */
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        // 返回 this 而不调用 super.fillInStackTrace()
+        // 这样就不会收集堆栈跟踪信息
+        return this;
+    }
+
+    /**
      * 判断是否应该重试
      *
      * @return 如果错误是临时性的可以重试，返回 true
@@ -106,6 +126,25 @@ public class AIServiceException extends Exception {
                || errorCode == ErrorCode.TIMEOUT
                || errorCode == ErrorCode.RATE_LIMIT
                || errorCode == ErrorCode.SERVICE_UNAVAILABLE;
+    }
+
+
+    public static String build(AIServiceException e) {
+        AIServiceException.ErrorCode errorCode = e.getErrorCode();
+
+        if (errorCode == null) {
+            return "AI 服务调用失败: " + e.getMessage();
+        }
+
+        return switch (errorCode) {
+            case INVALID_API_KEY -> "API Key 无效，请在设置中检查并更新 API Key";
+            case RATE_LIMIT -> "请求频率过高，请稍后再试";
+            case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用，请稍后再试";
+            case NETWORK_ERROR -> "网络连接失败，请检查网络连接或服务器地址";
+            case CONFIGURATION_ERROR -> "配置错误: " + e.getMessage();
+            case INVALID_RESPONSE -> "服务返回的数据格式错误。可能是模型名称不正确或服务异常";
+            default -> "AI 服务调用失败: " + e.getMessage();
+        };
     }
 }
 

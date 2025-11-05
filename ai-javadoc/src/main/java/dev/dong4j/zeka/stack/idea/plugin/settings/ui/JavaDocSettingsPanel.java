@@ -15,6 +15,7 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -360,39 +361,28 @@ public class JavaDocSettingsPanel {
     /**
      * 创建模型配置面板
      * <p>
-     * 用于构建包含模型选择下拉框和右侧按钮的面板，包含刷新模型按钮、测试连接按钮以及提示标签。
+     * 用于构建包含模型选择下拉框和测试连接按钮的面板。
      *
      * @return 模型配置面板
      */
     private JPanel createModelPanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.add(modelComboBox, BorderLayout.CENTER);
-
-        // 创建右侧按钮面板
-        JPanel rightPanel = new JPanel(new BorderLayout(5, 0));
-        rightPanel.add(refreshModelsButton, BorderLayout.WEST);
-        rightPanel.add(testConnectionButton, BorderLayout.CENTER);
-
-        // JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.model.hint"));
-        // hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        // hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        // rightPanel.add(hintLabel, BorderLayout.EAST);
-
-        panel.add(rightPanel, BorderLayout.EAST);
-
+        panel.add(testConnectionButton, BorderLayout.EAST);
         return panel;
     }
 
     /**
      * 创建API密钥输入面板
      * <p>
-     * 初始化并返回一个包含API密钥输入字段的面板，使用BorderLayout布局。
+     * 初始化并返回一个包含API密钥输入字段和"获取最新模型"按钮的面板。
      *
-     * @return 包含API密钥输入字段的面板
+     * @return 包含API密钥输入字段和按钮的面板
      */
     private JPanel createApiKeyPanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.add(apiKeyField, BorderLayout.CENTER);
+        panel.add(refreshModelsButton, BorderLayout.EAST);
         return panel;
     }
 
@@ -894,7 +884,7 @@ public class JavaDocSettingsPanel {
 
         if (displayName == null || baseUrl.isEmpty()) {
             JOptionPane.showMessageDialog(
-                mainPanel,
+                getParentWindow(),
                 JavaDocBundle.message("error.base.url.missing"),
                 JavaDocBundle.message("settings.error.title"),
                 JOptionPane.WARNING_MESSAGE
@@ -913,7 +903,7 @@ public class JavaDocSettingsPanel {
         boolean needsApiKey = providerType != null && providerType.requiresApiKey();
         if (needsApiKey && apiKeyField.getPassword().length == 0) {
             JOptionPane.showMessageDialog(
-                mainPanel,
+                getParentWindow(),
                 JavaDocBundle.message("error.api.key.missing"),
                 JavaDocBundle.message("settings.error.title"),
                 JOptionPane.WARNING_MESSAGE
@@ -938,7 +928,7 @@ public class JavaDocSettingsPanel {
                 if (provider == null) {
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(
-                            mainPanel,
+                            getParentWindow(),
                             "创建 AI 服务提供商失败，请检查配置是否正确",
                             JavaDocBundle.message("settings.error.title"),
                             JOptionPane.ERROR_MESSAGE
@@ -950,6 +940,9 @@ public class JavaDocSettingsPanel {
                 }
 
                 List<String> availableModels = provider.getAvailableModels(new String(apiKeyField.getPassword()).trim());
+
+                // 按名称排序模型列表
+                availableModels.sort(String::compareToIgnoreCase);
 
                 // 在 UI 线程中更新下拉框
                 SwingUtilities.invokeLater(() -> {
@@ -994,14 +987,14 @@ public class JavaDocSettingsPanel {
                         }
 
                         JOptionPane.showMessageDialog(
-                            mainPanel,
+                            getParentWindow(),
                             "成功获取到 " + availableModels.size() + " 个可用模型",
                             JavaDocBundle.message("settings.test.result.title"),
                             JOptionPane.INFORMATION_MESSAGE
                                                      );
                     } else {
                         JOptionPane.showMessageDialog(
-                            mainPanel,
+                            getParentWindow(),
                             "未获取到可用模型，请检查配置是否正确",
                             JavaDocBundle.message("settings.error.title"),
                             JOptionPane.WARNING_MESSAGE
@@ -1015,7 +1008,7 @@ public class JavaDocSettingsPanel {
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
                     JOptionPane.showMessageDialog(
-                        mainPanel,
+                        getParentWindow(),
                         "获取模型列表失败: " + e.getMessage(),
                         JavaDocBundle.message("settings.error.title"),
                         JOptionPane.ERROR_MESSAGE
@@ -1150,7 +1143,7 @@ public class JavaDocSettingsPanel {
         // 检查提供商创建是否成功
         if (provider == null) {
             JOptionPane.showMessageDialog(
-                mainPanel,
+                getParentWindow(),
                 "创建 AI 服务提供商失败，请检查配置是否正确（提供商、模型、Base URL 等）",
                 JavaDocBundle.message("settings.error.title"),
                 JOptionPane.ERROR_MESSAGE
@@ -1175,7 +1168,7 @@ public class JavaDocSettingsPanel {
                         addToAvailableProviders(snapshotProviderConfig);
 
                         JOptionPane.showMessageDialog(
-                            mainPanel,
+                            getParentWindow(),
                             result.getMessage(),
                             JavaDocBundle.message("settings.test.result.title"),
                             JOptionPane.INFORMATION_MESSAGE
@@ -1195,7 +1188,7 @@ public class JavaDocSettingsPanel {
                         }
 
                         JOptionPane.showMessageDialog(
-                            mainPanel,
+                            getParentWindow(),
                             errorMessage,
                             JavaDocBundle.message("settings.test.result.title"),
                             JOptionPane.ERROR_MESSAGE
@@ -1214,7 +1207,7 @@ public class JavaDocSettingsPanel {
 
                     String errorMessage = JavaDocBundle.message("settings.test.connection.error", e.getMessage());
                     JOptionPane.showMessageDialog(
-                        mainPanel,
+                        getParentWindow(),
                         errorMessage,
                         JavaDocBundle.message("settings.test.result.title"),
                         JOptionPane.ERROR_MESSAGE
@@ -1235,6 +1228,17 @@ public class JavaDocSettingsPanel {
      */
     public JPanel getPanel() {
         return mainPanel;
+    }
+
+    /**
+     * 获取对话框的父窗口
+     * <p>
+     * 用于确保 JOptionPane 对话框能够正确居中显示在设置窗口中。
+     *
+     * @return 包含主面板的顶层窗口，如果无法获取则返回 null
+     */
+    private Component getParentWindow() {
+        return SwingUtilities.getWindowAncestor(mainPanel);
     }
 
     /**
@@ -1342,7 +1346,7 @@ public class JavaDocSettingsPanel {
     private void clearAllAvailableProviders() {
         if (availableProvidersTableModel.getRowCount() == 0) {
             JOptionPane.showMessageDialog(
-                mainPanel,
+                getParentWindow(),
                 "列表为空，无需清空",
                 "提示",
                 JOptionPane.INFORMATION_MESSAGE
@@ -1383,7 +1387,7 @@ public class JavaDocSettingsPanel {
 
         // 显示成功消息
         JOptionPane.showMessageDialog(
-            mainPanel,
+            getParentWindow(),
             "已成功清空所有可用服务商配置",
             "清空成功",
             JOptionPane.INFORMATION_MESSAGE
