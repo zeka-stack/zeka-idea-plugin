@@ -7,6 +7,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiDocumentManager;
@@ -972,6 +973,18 @@ public class TaskExecutor {
                         // Console 日志：输出最终插入的 JavaDoc（仅详细日志模式）
                         JavaDocConsoleView.printWithTimestamp(project, "=== 最终插入的 JavaDoc ===");
                         JavaDocConsoleView.print(project, javadoc);
+                        JavaDocConsoleView.print(project, "");
+
+                        // 输出可点击跳转的代码位置
+                        VirtualFile virtualFile = element.getContainingFile().getVirtualFile();
+                        if (virtualFile != null) {
+                            String fileName = virtualFile.getName();
+                            int line = lineNumber + 1; // 行号从 1 开始显示
+                            String locationMessage = String.format("==>>: %s:%d", fileName, line);
+
+                            // 使用可点击的超链接格式输出
+                            JavaDocConsoleView.printHyperlink(project, locationMessage, virtualFile, lineNumber);
+                        }
                         JavaDocConsoleView.print(project, "");
 
                     } catch (Exception e) {

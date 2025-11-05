@@ -1,12 +1,14 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPasswordField;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
@@ -14,6 +16,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +33,7 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
@@ -65,6 +71,16 @@ public class JavaDocSettingsPanel {
     private JButton testConnectionButton;
     /** 刷新模型按钮 */
     private JButton refreshModelsButton;
+
+    // 可用服务商列表相关组件
+    /** 显示可用服务商列表的复选框 */
+    private JBCheckBox showAvailableProvidersCheckBox;
+    /** 可用服务商列表表格 */
+    private JBTable availableProvidersTable;
+    /** 可用服务商列表面板（包含表格和工具栏） */
+    private JPanel availableProvidersPanel;
+    /** 可用服务商列表表格模型 */
+    private AvailableProvidersTableModel availableProvidersTableModel;
 
     // 验证状态标记
     /** 配置是否已验证的标记 */
@@ -166,6 +182,31 @@ public class JavaDocSettingsPanel {
         refreshModelsButton = new JButton(JavaDocBundle.message("settings.refresh.models"));
         refreshModelsButton.addActionListener(e -> refreshAvailableModels());
 
+        // 创建可用服务商列表组件
+        showAvailableProvidersCheckBox = new JBCheckBox("显示可用服务商");
+        availableProvidersTableModel = new AvailableProvidersTableModel();
+        availableProvidersTable = new JBTable(availableProvidersTableModel);
+        availableProvidersTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
+
+        // 创建带工具栏的面板
+        ToolbarDecorator decorator = ToolbarDecorator.createDecorator(availableProvidersTable)
+            .setRemoveAction(button -> {
+                int selectedRow = availableProvidersTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    removeAvailableProvider(selectedRow);
+                }
+            })
+            .addExtraAction(new com.intellij.ui.AnActionButton("清空全部",
+                                                               com.intellij.icons.AllIcons.Actions.GC) {
+                @Override
+                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                    clearAllAvailableProviders();
+                }
+            });
+
+        availableProvidersPanel = decorator.createPanel();
+        availableProvidersPanel.setVisible(false); // 默认隐藏
+
         // 功能配置
         generateForClassCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.class"));
         generateForMethodCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.method"));
@@ -205,6 +246,8 @@ public class JavaDocSettingsPanel {
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.api.key.label")), createApiKeyPanel())
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.model.label")), createModelPanel())
+            .addComponent(showAvailableProvidersCheckBox)
+            .addComponent(availableProvidersPanel)
             .addSeparator(10)
 
             .addComponent(new JBLabel(JavaDocBundle.message("settings.generation.options")))
@@ -785,6 +828,11 @@ public class JavaDocSettingsPanel {
             // 这样可以确保提示文本颜色正确更新
             updateShowProviderStatisticsEnabled();
         });
+
+        // 监听显示可用服务商复选框状态变化
+        showAvailableProvidersCheckBox.addActionListener(e -> {
+            availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected());
+        });
     }
 
     /**
@@ -1203,9 +1251,18 @@ public class JavaDocSettingsPanel {
             SettingsState.setApiKey(snapshotProviderConfig.md5, apiKey);
         }
 
+        // 设置默认备注为当前时间
+        if (snapshotProviderConfig.remark == null || snapshotProviderConfig.remark.trim().isEmpty()) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
+            snapshotProviderConfig.remark = dateFormat.format(new Date());
+        }
+
         // 先删除相同的配置
         removeFromAvailableProviders(snapshotProviderConfig);
         settings.availableProviders.add(snapshotProviderConfig);
+
+        // 更新表格显示
+        availableProvidersTableModel.setData(settings.availableProviders);
     }
 
     /**
@@ -1218,6 +1275,119 @@ public class JavaDocSettingsPanel {
     private void removeFromAvailableProviders(SettingsState.ProviderConfig snapshotProviderConfig) {
         SettingsState settings = SettingsState.getInstance();
         settings.availableProviders.removeIf(config -> config.md5.equals(snapshotProviderConfig.md5));
+
+        // 同步更新表格显示
+        availableProvidersTableModel.setData(settings.availableProviders);
+    }
+
+    /**
+     * 删除表格中选中的服务商配置
+     * <p>
+     * 该方法会：
+     * 1. 从表格模型中删除选中的行
+     * 2. 从全局配置中删除对应的配置
+     * 3. 从 PasswordSafe 中删除对应的 API Key
+     *
+     * @param selectedRow 选中的行索引
+     */
+    private void removeAvailableProvider(int selectedRow) {
+        if (selectedRow < 0 || selectedRow >= availableProvidersTableModel.getRowCount()) {
+            return;
+        }
+
+        // 获取要删除的配置
+        List<SettingsState.ProviderConfig> data = availableProvidersTableModel.getData();
+        SettingsState.ProviderConfig configToRemove = data.get(selectedRow);
+
+        // 确认删除
+        String providerName = configToRemove.providerType != null ?
+                              configToRemove.providerType.getDisplayName() : "未知";
+        String modelName = configToRemove.modelName != null ? configToRemove.modelName : "未知";
+
+        int result = JOptionPane.showConfirmDialog(
+            mainPanel,
+            String.format("确定要删除服务商 \"%s - %s\" 吗？", providerName, modelName),
+            "确认删除",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+                                                  );
+
+        if (result != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // 从 PasswordSafe 中删除 API Key
+        if (configToRemove.md5 != null && !configToRemove.md5.trim().isEmpty()) {
+            SettingsState.deleteApiKey(configToRemove.md5);
+        }
+
+        // 从全局配置中删除
+        SettingsState settings = SettingsState.getInstance();
+        settings.availableProviders.removeIf(config ->
+                                                 config.md5 != null && config.md5.equals(configToRemove.md5));
+
+        // 从表格模型中删除
+        availableProvidersTableModel.removeRow(selectedRow);
+    }
+
+    /**
+     * 清空所有可用服务商配置
+     * <p>
+     * 该方法会：
+     * 1. 显示确认对话框
+     * 2. 从表格模型中清空所有数据
+     * 3. 从全局配置中清空所有配置
+     * 4. 批量从 PasswordSafe 中删除所有 API Key
+     */
+    private void clearAllAvailableProviders() {
+        if (availableProvidersTableModel.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(
+                mainPanel,
+                "列表为空，无需清空",
+                "提示",
+                JOptionPane.INFORMATION_MESSAGE
+                                         );
+            return;
+        }
+
+        // 确认清空
+        int result = JOptionPane.showConfirmDialog(
+            mainPanel,
+            String.format("确定要清空所有 %d 个可用服务商吗？\n此操作将删除所有已保存的配置和 API Key！",
+                          availableProvidersTableModel.getRowCount()),
+            "确认清空",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+                                                  );
+
+        if (result != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        // 获取所有配置以删除对应的 API Key
+        List<SettingsState.ProviderConfig> allConfigs = availableProvidersTableModel.getData();
+
+        // 批量从 PasswordSafe 中删除 API Key
+        for (SettingsState.ProviderConfig config : allConfigs) {
+            if (config.md5 != null && !config.md5.trim().isEmpty()) {
+                SettingsState.deleteApiKey(config.md5);
+            }
+        }
+
+        // 从全局配置中清空
+        SettingsState settings = SettingsState.getInstance();
+        settings.availableProviders.clear();
+
+        // 从表格模型中清空
+        availableProvidersTableModel.clearAll();
+
+        // 显示成功消息
+        JOptionPane.showMessageDialog(
+            mainPanel,
+            "已成功清空所有可用服务商配置",
+            "清空成功",
+            JOptionPane.INFORMATION_MESSAGE
+                                     );
     }
 
     /**
@@ -1303,10 +1473,8 @@ public class JavaDocSettingsPanel {
         // 从全局配置中深拷贝 availableProviders 和 defaultProviders，避免对象引用共享
         SettingsState globalSettings = SettingsState.getInstance();
 
-        // 深拷贝 availableProviders（避免修改全局配置）
-        for (SettingsState.ProviderConfig config : globalSettings.availableProviders) {
-            settings.availableProviders.add(new SettingsState.ProviderConfig(config));
-        }
+        // 从表格模型中获取 availableProviders（包含用户在表格中编辑的备注）
+        settings.availableProviders.addAll(availableProvidersTableModel.getData());
 
         // 深拷贝 defaultProviders（避免修改全局配置）
         for (Map.Entry<AIProviderType, SettingsState.ProviderConfig> entry : globalSettings.defaultProviders.entrySet()) {
@@ -1397,6 +1565,9 @@ public class JavaDocSettingsPanel {
         // 加载验证状态
         this.configurationVerified = defaultConfig.configurationVerified;
 
+        // 加载可用服务商列表
+        availableProvidersTableModel.setData(settings.availableProviders);
+
         // 功能配置
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
@@ -1439,6 +1610,85 @@ public class JavaDocSettingsPanel {
 
         updateApiKeyFieldEnabled();
         updateBaseUrlFieldEditable();
+    }
+
+    /**
+     * 可用服务商列表的表格模型
+     * <p>
+     * 用于在表格中显示已验证的服务商配置信息
+     */
+    private static class AvailableProvidersTableModel extends AbstractTableModel {
+        private final String[] columnNames = {"服务商", "模型", "备注"};
+        private final List<SettingsState.ProviderConfig> data;
+
+        public AvailableProvidersTableModel() {
+            this.data = new ArrayList<>();
+        }
+
+        public void setData(List<SettingsState.ProviderConfig> newData) {
+            this.data.clear();
+            this.data.addAll(newData);
+            fireTableDataChanged();
+        }
+
+        public List<SettingsState.ProviderConfig> getData() {
+            return new ArrayList<>(data);
+        }
+
+        public void removeRow(int row) {
+            if (row >= 0 && row < data.size()) {
+                data.remove(row);
+                fireTableRowsDeleted(row, row);
+            }
+        }
+
+        public void clearAll() {
+            int size = data.size();
+            if (size > 0) {
+                data.clear();
+                fireTableRowsDeleted(0, size - 1);
+            }
+        }
+
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnNames.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return columnNames[column];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            SettingsState.ProviderConfig config = data.get(rowIndex);
+            return switch (columnIndex) {
+                case 0 -> config.providerType != null ? config.providerType.getDisplayName() : "";
+                case 1 -> config.modelName != null ? config.modelName : "";
+                case 2 -> config.remark != null ? config.remark : "";
+                default -> "";
+            };
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            // 只有备注列可以编辑
+            return columnIndex == 2;
+        }
+
+        @Override
+        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+            if (columnIndex == 2 && rowIndex >= 0 && rowIndex < data.size()) {
+                data.get(rowIndex).remark = aValue != null ? aValue.toString() : "";
+                fireTableCellUpdated(rowIndex, columnIndex);
+            }
+        }
     }
 }
 

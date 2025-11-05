@@ -347,6 +347,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         public boolean configurationVerified = true;
         /** 最近一次验证的时间戳，单位为毫秒 */
         public long lastVerifiedTime;
+        /** 备注信息，默认为添加时间 */
+        public String remark;
 
         public ProviderConfig() {}
 
@@ -364,6 +366,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             this.baseUrl = source.baseUrl;
             this.configurationVerified = source.configurationVerified;
             this.lastVerifiedTime = source.lastVerifiedTime;
+            this.remark = source.remark;
         }
 
         /**
