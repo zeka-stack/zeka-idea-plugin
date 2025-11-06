@@ -45,15 +45,16 @@ class AICompatibleProviderMessageTest {
     @BeforeEach
     void setUp() {
         settings = new SettingsState();
-        settings.providerType = AIProviderType.CUSTOM.getProviderId();
-        settings.baseUrl = "https://api.openai.com/v1";
-        settings.apiKey = "test-api-key";
-        settings.modelName = "gpt-3.5-turbo";
+        settings.providerType = AIProviderType.CUSTOM;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.baseUrl = "https://api.openai.com/v1";
+        config.modelName = "gpt-3.5-turbo";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
         settings.temperature = 0.1;
         settings.maxTokens = 1000;
-        settings.configurationVerified = true;
 
-        provider = new CustomProvider(settings);
+        provider = new CustomProvider(settings, config);
     }
 
     /**
@@ -64,8 +65,6 @@ class AICompatibleProviderMessageTest {
      * 预期结果：请求体应包含正确的模型类型、温度值、最大令牌数以及包含 system 和 user 消息的数组
      * <p>
      * 特别说明：测试中会验证 system 消息内容是否包含“专业的 Java 开发工程师”和“JavaDoc 注释”关键词
-     * <p>
-     * 关联方法：{@link provider#buildRequestBody(String)}
      */
     @Test
     void testBuildRequestBodyStructure() {
@@ -103,8 +102,6 @@ class AICompatibleProviderMessageTest {
      * <p>
      * 测试场景：验证系统提示词是否包含指定的关键内容
      * 预期结果：系统提示词应包含 "专业的 Java 开发工程师"、"JavaDoc 注释" 和 "中文" 等关键词，并且长度应超过 50
-     * <p>
-     * 注意：该测试依赖于 {@link Provider#getSystemPrompt()} 方法的实现
      */
     @Test
     void testGetSystemPrompt() {
@@ -120,7 +117,6 @@ class AICompatibleProviderMessageTest {
     /**
      * 测试系统提示词的一致性
      * <p>
-     * 测试场景：多次调用 {@link PromptProvider#getSystemPrompt()} 方法
      * 预期结果：每次调用返回的内容应保持一致
      * <p>
      * 说明：该测试用于验证系统提示词在多次调用时是否保持不变，确保其稳定性

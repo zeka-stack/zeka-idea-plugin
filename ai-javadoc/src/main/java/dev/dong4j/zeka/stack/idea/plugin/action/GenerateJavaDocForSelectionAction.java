@@ -95,9 +95,7 @@ public class GenerateJavaDocForSelectionAction extends AnAction {
         // 使用服务生成文档，带自定义完成回调
         service.generateDocumentation(project, tasks, "选中文件", stats -> {
             // 只有正常执行过才显示通知, 比如没有配置正确的情况下, 会同时出现这个通知和配置错误的通知, 所以这里需要先判断一下
-            if (stats.isRunned()) {
-                showCompletionMessage(project, stats);
-            }
+            showCompletionMessage(project, stats);
         });
     }
 
@@ -168,14 +166,16 @@ public class GenerateJavaDocForSelectionAction extends AnAction {
      * @param stats   任务统计信息，包含完成、失败和跳过任务的数量
      */
     private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats) {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            String content = JavaDocBundle.message("notification.target.completion.format",
-                                                   JavaDocBundle.message("notification.generation.complete"),
-                                                   stats.completed(),
-                                                   stats.failed(),
-                                                   stats.skipped());
-            NotificationUtil.notifyInfo(project, JavaDocBundle.message("notification.title"), content);
-        });
+        if (stats.isRunned()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                String content = JavaDocBundle.message("notification.target.completion.format",
+                                                       JavaDocBundle.message("notification.generation.complete"),
+                                                       stats.completed(),
+                                                       stats.failed(),
+                                                       stats.skipped());
+                NotificationUtil.notifyInfo(project, JavaDocBundle.message("notification.title"), content);
+            });
+        }
     }
 }
 

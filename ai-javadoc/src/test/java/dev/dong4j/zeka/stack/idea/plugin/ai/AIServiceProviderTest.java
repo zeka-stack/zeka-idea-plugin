@@ -59,12 +59,13 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试千问 Provider 实现")
     void testQianWenProvider_implementation() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "test-key";
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen-max";
+        config.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        SettingsState.setApiKey(config.md5, "test-key");
 
-        AIServiceProvider provider = new QianWenProvider(settings);
+        AIServiceProvider provider = new QianWenProvider(settings, config);
 
         // 测试基本属性
         assertThat(provider.getProviderId()).isEqualTo(AIProviderType.QIANWEN.getProviderId());
@@ -92,12 +93,12 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Ollama Provider 实现")
     void testOllamaProvider_implementation() {
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "";
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
 
-        AIServiceProvider provider = new OllamaProvider(settings);
+        AIServiceProvider provider = new OllamaProvider(settings, config);
 
         // 测试基本属性
         assertThat(provider.getProviderId()).isEqualTo(AIProviderType.OLLAMA.getProviderId());
@@ -150,20 +151,20 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试千问 Provider 的配置验证")
     void testQianWenProvider_configurationValidation() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = ""; // 空 API Key
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen-max";
+        config.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
-        AIServiceProvider provider = new QianWenProvider(settings);
+        AIServiceProvider provider = new QianWenProvider(settings, config);
 
         // 千问需要 API Key，配置验证应该失败
-        ValidationResult isValid = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        ValidationResult isValid = provider.validateConfiguration("");
         assertThat(isValid.isSuccess()).isFalse();
 
         // 设置有效的 API Key
-        settings.apiKey = "valid-key";
-        AIServiceProvider validProvider = new QianWenProvider(settings);
+        SettingsState.setApiKey(config.md5, "valid-key");
+        AIServiceProvider validProvider = new QianWenProvider(settings, config);
         // 注意：实际验证可能需要网络请求，这里只测试基本逻辑
         // 在实际环境中可能会失败，因为 API Key 不是真实的
     }
@@ -179,12 +180,12 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Ollama Provider 的配置验证")
     void testOllamaProvider_configurationValidation() {
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = ""; // Ollama 不需要 API Key
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
 
-        AIServiceProvider provider = new OllamaProvider(settings);
+        AIServiceProvider provider = new OllamaProvider(settings, config);
 
         // Ollama 不需要 API Key，所以即使为空也可以通过基本验证
         assertThat(provider.requiresApiKey()).isFalse();
@@ -202,13 +203,15 @@ public class AIServiceProviderTest {
     @DisplayName("测试 Provider 支持的模型列表不为空")
     void testProvider_supportedModels_notEmpty() {
         // 测试千问
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        AIServiceProvider qianwen = new QianWenProvider(settings);
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig qianwenConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        AIServiceProvider qianwen = new QianWenProvider(settings, qianwenConfig);
         assertThat(qianwen.getSupportedModels()).isNotEmpty();
 
         // 测试 Ollama
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        AIServiceProvider ollama = new OllamaProvider(settings);
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig ollamaConfig = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        AIServiceProvider ollama = new OllamaProvider(settings, ollamaConfig);
         assertThat(ollama.getSupportedModels()).isNotEmpty();
 
     }
@@ -222,8 +225,10 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Provider ID 唯一性")
     void testProvider_uniqueIds() {
-        AIServiceProvider qianwen = new QianWenProvider(settings);
-        AIServiceProvider ollama = new OllamaProvider(settings);
+        SettingsState.ProviderConfig qianwenConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        SettingsState.ProviderConfig ollamaConfig = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        AIServiceProvider qianwen = new QianWenProvider(settings, qianwenConfig);
+        AIServiceProvider ollama = new OllamaProvider(settings, ollamaConfig);
 
         String qianwenId = qianwen.getProviderId();
         String ollamaId = ollama.getProviderId();
@@ -241,8 +246,10 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Provider 名称不为空")
     void testProvider_names_notEmpty() {
-        AIServiceProvider qianwen = new QianWenProvider(settings);
-        AIServiceProvider ollama = new OllamaProvider(settings);
+        SettingsState.ProviderConfig qianwenConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        SettingsState.ProviderConfig ollamaConfig = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        AIServiceProvider qianwen = new QianWenProvider(settings, qianwenConfig);
+        AIServiceProvider ollama = new OllamaProvider(settings, ollamaConfig);
 
         assertThat(qianwen.getProviderName()).isNotEmpty();
         assertThat(ollama.getProviderName()).isNotEmpty();
@@ -259,7 +266,8 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Provider 默认配置")
     void testProvider_defaultConfiguration() {
-        AIServiceProvider qianwen = new QianWenProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        AIServiceProvider qianwen = new QianWenProvider(settings, config);
 
         String defaultModel = qianwen.getDefaultModel();
         String defaultBaseUrl = qianwen.getDefaultBaseUrl();
@@ -282,7 +290,8 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Ollama Provider 默认配置")
     void testOllamaProvider_defaultConfiguration() {
-        AIServiceProvider ollama = new OllamaProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        AIServiceProvider ollama = new OllamaProvider(settings, config);
 
         String defaultBaseUrl = ollama.getDefaultBaseUrl();
 
@@ -302,7 +311,8 @@ public class AIServiceProviderTest {
     @Test
     @DisplayName("测试 Provider 支持的模型包含默认模型")
     void testProvider_supportedModels_containsDefault() {
-        AIServiceProvider qianwen = new QianWenProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        AIServiceProvider qianwen = new QianWenProvider(settings, config);
 
         String defaultModel = qianwen.getDefaultModel();
         List<String> supportedModels = qianwen.getSupportedModels();

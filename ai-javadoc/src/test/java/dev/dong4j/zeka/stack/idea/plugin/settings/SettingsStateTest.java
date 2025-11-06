@@ -46,15 +46,21 @@ public class SettingsStateTest {
     @Test
     @DisplayName("测试默认配置值")
     void testDefaultValues() {
-        assertThat(settings.providerType).isEqualTo(AIProviderType.QIANWEN.getProviderId());
-        assertThat(settings.modelName).isEqualTo("qwen3-8b");
-        assertThat(settings.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
-        assertThat(settings.apiKey).isEmpty();
+        assertThat(settings.providerType).isEqualTo(AIProviderType.QIANWEN);
+
+        // 从 defaultProviders 获取配置
+        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        assertThat(defaultConfig.modelName).isEqualTo("qwen3-8b");
+        assertThat(defaultConfig.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
+
+        // API Key 从 PasswordSafe 获取
+        String apiKey = SettingsState.getApiKey(defaultConfig.md5);
+        assertThat(apiKey).isNullOrEmpty();
 
         // 功能配置
         assertThat(settings.generateForClass).isTrue();
         assertThat(settings.generateForMethod).isTrue();
-        assertThat(settings.generateForField).isFalse();
+        assertThat(settings.generateForField).isTrue();
         assertThat(settings.overrideExisting).isFalse();
         // 高级配置
         assertThat(settings.maxRetries).isEqualTo(3);
@@ -73,134 +79,62 @@ public class SettingsStateTest {
     }
 
     /**
-     * 测试配置验证功能
+     * 测试 ProviderConfig 的基本功能
      * <p>
-     * 测试场景：当配置信息有效时
-     * 预期结果：应返回配置有效
-     * <p>
-     * 特殊说明：测试中设置的配置参数包括有效的 AI 提供商 ID、模型名称、基础 URL 和 API 密钥
+     * 测试场景：创建和获取 ProviderConfig 配置
+     * 预期结果：能够正确创建和获取配置信息
      */
     @Test
-    @DisplayName("测试配置验证 - 有效配置")
-    void testIsValid_withValidConfiguration() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "valid-api-key";
+    @DisplayName("测试 ProviderConfig 配置管理")
+    void testProviderConfig() {
+        settings.providerType = AIProviderType.QIANWEN;
 
-        assertThat(settings.isValid()).isTrue();
+        // 获取或创建配置
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen-max";
+        config.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+
+        // 设置 API Key
+        SettingsState.setApiKey(config.md5, "valid-api-key");
+
+        // 验证配置
+        assertThat(config.providerType).isEqualTo(AIProviderType.QIANWEN);
+        assertThat(config.modelName).isEqualTo("qwen-max");
+        assertThat(config.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
+
+        // 验证 API Key
+        String retrievedApiKey = SettingsState.getApiKey(config.md5);
+        assertThat(retrievedApiKey).isEqualTo("valid-api-key");
     }
 
     /**
-     * 测试配置验证功能
+     * 测试不同提供商的配置隔离
      * <p>
-     * 测试场景：缺少 AI Provider 配置时
-     * 预期结果：配置应被视为无效
-     * <p>
-     * 说明：该测试验证当 AI Provider 字段为空时，配置校验逻辑能正确识别并返回 false
+     * 测试场景：为不同的 AI 提供商设置不同的配置
+     * 预期结果：配置应该相互独立，互不影响
      */
     @Test
-    @DisplayName("测试配置验证 - 缺少 AI Provider")
-    void testIsValid_withMissingAIProvider() {
-        settings.providerType = "";
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "valid-api-key";
+    @DisplayName("测试不同提供商的配置隔离")
+    void testProviderConfigIsolation() {
+        // 配置 QianWen
+        SettingsState.ProviderConfig qianwenConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        qianwenConfig.modelName = "qwen-max";
+        qianwenConfig.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        SettingsState.setApiKey(qianwenConfig.md5, "qianwen-key");
 
-        assertThat(settings.isValid()).isFalse();
-    }
+        // 配置 Ollama
+        SettingsState.ProviderConfig ollamaConfig = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        ollamaConfig.modelName = "llama2";
+        ollamaConfig.baseUrl = "http://localhost:11434";
 
-    /**
-     * 测试配置验证功能，验证当模型名称缺失时的处理逻辑
-     * <p>
-     * 测试场景：AI提供者设置为通义千问，模型名称为空字符串，其余配置正常
-     * 预期结果：配置应被判定为无效
-     */
-    @Test
-    @DisplayName("测试配置验证 - 缺少模型名称")
-    void testIsValid_withMissingModelName() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "valid-api-key";
+        // 验证配置隔离
+        assertThat(qianwenConfig.modelName).isEqualTo("qwen-max");
+        assertThat(ollamaConfig.modelName).isEqualTo("llama2");
+        assertThat(qianwenConfig.baseUrl).isNotEqualTo(ollamaConfig.baseUrl);
 
-        assertThat(settings.isValid()).isFalse();
-    }
-
-    /**
-     * 测试配置验证功能 - 缺少 Base URL 场景
-     * <p>
-     * 测试场景：AI 提供商设置为通义千问，模型名称为 qwen-max，但 Base URL 为空
-     * 预期结果：配置验证应返回 false
-     * <p>
-     * 该测试用于验证当 Base URL 为空时，配置有效性检查能正确识别为无效配置
-     */
-    @Test
-    @DisplayName("测试配置验证 - 缺少 Base URL")
-    void testIsValid_withMissingBaseUrl() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "";
-        settings.apiKey = "valid-api-key";
-
-        assertThat(settings.isValid()).isFalse();
-    }
-
-    /**
-     * 测试配置验证功能
-     * <p>
-     * 测试场景：当 API Key 为空且该 API Key 是必需时
-     * 预期结果：配置应被判定为无效
-     * <p>
-     * 说明：测试中设置 AI 服务提供商为 Qianwen，模型名称为 qwen-max，基础 URL 为阿里云 DashScope 兼容模式地址，但 API Key 为空，验证配置是否有效
-     */
-    @Test
-    @DisplayName("测试配置验证 - 缺少 API Key（需要时）")
-    void testIsValid_withMissingApiKey_whenRequired() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId(); // 需要 API Key
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "";
-
-        assertThat(settings.isValid()).isFalse();
-    }
-
-    /**
-     * 测试配置验证功能
-     * <p>
-     * 测试场景：当 AI 提供商为 Ollama 且 API Key 为空时
-     * 预期结果：配置应被视为有效
-     * <p>
-     * 说明：Ollama 无需 API Key，因此在此场景下验证应通过
-     */
-    @Test
-    @DisplayName("测试配置验证 - Ollama 不需要 API Key")
-    void testIsValid_withOllama_noApiKeyRequired() {
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "";
-
-        assertThat(settings.isValid()).isTrue();
-    }
-
-    /**
-     * 测试是否需要 API Key 的功能
-     * <p>
-     * 测试场景：当 AI 提供商为通义千问时，验证是否需要 API Key
-     * 预期结果：应返回 true
-     * <p>
-     * 测试场景：当 AI 提供商为 Ollama 时，验证是否需要 API Key
-     * 预期结果：应返回 false
-     */
-    @Test
-    @DisplayName("测试是否需要 API Key")
-    void testRequiresApiKey() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        assertThat(settings.requiresApiKey()).isTrue();
-
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        assertThat(settings.requiresApiKey()).isFalse();
+        // 验证 API Key 隔离
+        assertThat(SettingsState.getApiKey(qianwenConfig.md5)).isEqualTo("qianwen-key");
+        assertThat(SettingsState.getApiKey(ollamaConfig.md5)).isNullOrEmpty();
     }
 
     /**
@@ -233,13 +167,14 @@ public class SettingsStateTest {
     @DisplayName("测试重置为默认配置")
     void testResetToDefaults() {
         // 修改配置
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "test-key";
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
+        SettingsState.setApiKey(config.md5, "test-key");
         settings.generateForClass = false;
         settings.generateForMethod = false;
-        settings.generateForField = true;
+        settings.generateForField = false;
         settings.maxRetries = 5;
         settings.temperature = 0.5;
         settings.topP = 0.5;
@@ -250,13 +185,13 @@ public class SettingsStateTest {
         settings.resetToDefaults();
 
         // 验证
-        assertThat(settings.providerType).isEqualTo(AIProviderType.QIANWEN.getProviderId());
-        assertThat(settings.modelName).isEqualTo("qwen3-8b");
-        assertThat(settings.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
-        assertThat(settings.apiKey).isEmpty();
+        assertThat(settings.providerType).isEqualTo(AIProviderType.QIANWEN);
+        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        assertThat(defaultConfig.modelName).isEqualTo("qwen3-8b");
+        assertThat(defaultConfig.baseUrl).isEqualTo("https://dashscope.aliyuncs.com/compatible-mode/v1");
         assertThat(settings.generateForClass).isTrue();
         assertThat(settings.generateForMethod).isTrue();
-        assertThat(settings.generateForField).isFalse();
+        assertThat(settings.generateForField).isTrue();
         assertThat(settings.maxRetries).isEqualTo(3);
         assertThat(settings.temperature).isEqualTo(0.1);
         assertThat(settings.topP).isEqualTo(0.9);
@@ -277,10 +212,11 @@ public class SettingsStateTest {
     @DisplayName("测试配置复制")
     void testCopy() {
         // 设置原始配置
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "test-key";
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
+        SettingsState.setApiKey(config.md5, "test-key");
         settings.generateForField = true;
         settings.maxRetries = 5;
         settings.temperature = 0.5;
@@ -293,9 +229,9 @@ public class SettingsStateTest {
 
         // 验证复制的值
         assertThat(copy.providerType).isEqualTo(settings.providerType);
-        assertThat(copy.modelName).isEqualTo(settings.modelName);
-        assertThat(copy.baseUrl).isEqualTo(settings.baseUrl);
-        assertThat(copy.apiKey).isEqualTo(settings.apiKey);
+        SettingsState.ProviderConfig copyConfig = copy.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        assertThat(copyConfig.modelName).isEqualTo(config.modelName);
+        assertThat(copyConfig.baseUrl).isEqualTo(config.baseUrl);
         assertThat(copy.generateForField).isEqualTo(settings.generateForField);
         assertThat(copy.maxRetries).isEqualTo(settings.maxRetries);
         assertThat(copy.temperature).isEqualTo(settings.temperature);
@@ -307,8 +243,8 @@ public class SettingsStateTest {
         assertThat(copy).isNotSameAs(settings);
 
         // 修改副本不影响原始对象
-        copy.providerType = AIProviderType.QIANWEN.getProviderId();
-        assertThat(settings.providerType).isEqualTo(AIProviderType.OLLAMA.getProviderId());
+        copy.providerType = AIProviderType.QIANWEN;
+        assertThat(settings.providerType).isEqualTo(AIProviderType.OLLAMA);
     }
 
     /**
@@ -375,8 +311,9 @@ public class SettingsStateTest {
     @DisplayName("测试持久化状态")
     void testPersistentState() {
         // 修改配置
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
         settings.generateForField = true;
 
         // 获取状态
@@ -384,27 +321,29 @@ public class SettingsStateTest {
 
         // 验证状态是同一个对象
         assertThat(state).isSameAs(settings);
-        assertThat(state.providerType).isEqualTo(AIProviderType.OLLAMA.getProviderId());
-        assertThat(state.modelName).isEqualTo("llama2");
+        assertThat(state.providerType).isEqualTo(AIProviderType.OLLAMA);
+        SettingsState.ProviderConfig stateConfig = state.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        assertThat(stateConfig.modelName).isEqualTo("llama2");
         assertThat(state.generateForField).isTrue();
     }
 
     /**
      * 测试加载状态功能
      * <p>
-     * 测试场景：验证从 {@link SettingsState} 对象加载配置参数到 {@link Settings} 实例的正确性
+     * 测试场景：验证从 {@link SettingsState} 对象加载配置参数到 {@link SettingsState} 实例的正确性
      * 预期结果：所有配置参数应被正确设置并匹配预期值
      * <p>
-     * 特殊说明：测试需要创建一个包含完整配置信息的 {@link SettingsState} 实例，并调用 {@link Settings#loadState(SettingsState)} 方法进行加载
+     * 特殊说明：测试需要创建一个包含完整配置信息的 {@link SettingsState} 实例，并调用 {@link SettingsState#loadState(SettingsState)} 方法进行加载
      */
     @Test
     @DisplayName("测试加载状态")
     void testLoadState() {
         // 创建新的状态
         SettingsState newState = new SettingsState();
-        newState.providerType = AIProviderType.OLLAMA.getProviderId();
-        newState.modelName = "llama2";
-        newState.baseUrl = "http://localhost:11434";
+        newState.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = newState.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
         newState.generateForField = true;
         newState.maxRetries = 5;
         newState.topP = 0.5;
@@ -415,9 +354,10 @@ public class SettingsStateTest {
         settings.loadState(newState);
 
         // 验证加载的值
-        assertThat(settings.providerType).isEqualTo(AIProviderType.OLLAMA.getProviderId());
-        assertThat(settings.modelName).isEqualTo("llama2");
-        assertThat(settings.baseUrl).isEqualTo("http://localhost:11434");
+        assertThat(settings.providerType).isEqualTo(AIProviderType.OLLAMA);
+        SettingsState.ProviderConfig loadedConfig = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        assertThat(loadedConfig.modelName).isEqualTo("llama2");
+        assertThat(loadedConfig.baseUrl).isEqualTo("http://localhost:11434");
         assertThat(settings.generateForField).isTrue();
         assertThat(settings.maxRetries).isEqualTo(5);
         assertThat(settings.topP).isEqualTo(0.5);

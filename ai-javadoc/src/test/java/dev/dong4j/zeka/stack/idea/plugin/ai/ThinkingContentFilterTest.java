@@ -43,14 +43,15 @@ class ThinkingContentFilterTest {
     @BeforeEach
     void setUp() {
         settings = new SettingsState();
-        settings.providerType = AIProviderType.CUSTOM.getProviderId();
-        settings.baseUrl = "https://api.openai.com/v1";
-        settings.apiKey = "test-api-key";
-        settings.modelName = "gpt-3.5-turbo";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.CUSTOM;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(settings.providerType);
+        config.baseUrl = "https://api.openai.com/v1";
+        SettingsState.setApiKey(config.md5, "test-api-key");
+        config.modelName = "gpt-3.5-turbo";
+        config.configurationVerified = true;
         settings.verboseLogging = true;
 
-        provider = new CustomProvider(settings);
+        provider = new CustomProvider(settings, config);
     }
 
     /**

@@ -56,7 +56,7 @@ public class NotificationUtil {
      *
      * @see #getNotificationGroup()
      */
-    private static final String NOTIFICATION_GROUP_ID = "AI Javadoc Notifications";
+    public static final String NOTIFICATION_GROUP_ID = "AI Javadoc Notifications";
 
     /**
      * 获取通知组

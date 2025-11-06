@@ -207,6 +207,11 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element)
         throws IncorrectOperationException {
 
+        // 如果处于预览模式，则直接返回，不执行任何会产生副作用的操作, 只有在真实执行意图操作时才执行完整的处理流程
+        if (com.intellij.codeInsight.intention.preview.IntentionPreviewUtils.isPreviewElement(element)) {
+            return;
+        }
+
         PsiFile psiFile = element.getContainingFile();
 
         if (!(psiFile instanceof PsiJavaFile)) {
@@ -238,10 +243,7 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
 
         // 使用服务生成文档，带自定义完成回调
         service.generateDocumentation(project, tasks, elementDesc, stats -> {
-            // 如果只有一个任务且成功，不显示统计（用户体验更好）
-            if (tasks.size() > 1) {
-                showCompletionMessage(project, stats, elementDesc);
-            }
+            showCompletionMessage(project, stats, elementDesc);
         });
     }
 
@@ -258,11 +260,13 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
      * @see NotificationUtil#notifyTargetCompletion(Project, String, int, int, int)
      */
     private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats, String target) {
-        ApplicationManager.getApplication().invokeLater(() -> NotificationUtil.notifyTargetCompletion(project,
-                                                                                                      target,
-                                                                                                      stats.completed(),
-                                                                                                      stats.failed(),
-                                                                                                      stats.skipped()));
+        if (stats.isRunned()) {
+            ApplicationManager.getApplication().invokeLater(() -> NotificationUtil.notifyTargetCompletion(project,
+                                                                                                          target,
+                                                                                                          stats.completed(),
+                                                                                                          stats.failed(),
+                                                                                                          stats.skipped()));
+        }
     }
 }
 

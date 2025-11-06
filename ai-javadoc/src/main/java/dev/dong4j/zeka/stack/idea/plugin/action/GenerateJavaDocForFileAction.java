@@ -200,9 +200,11 @@ public class GenerateJavaDocForFileAction extends AnAction {
      * @see NotificationUtil#notifyTargetCompletion(Project, String, int, int, int)
      */
     private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats, String target) {
-        ApplicationManager.getApplication().invokeLater(() -> {
-            NotificationUtil.notifyTargetCompletion(project, target, stats.completed(), stats.failed(), stats.skipped());
-        });
+        if (stats.isRunned()) {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                NotificationUtil.notifyTargetCompletion(project, target, stats.completed(), stats.failed(), stats.skipped());
+            });
+        }
     }
 }
 

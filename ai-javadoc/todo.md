@@ -24,3 +24,4 @@
   如果 javadoc 注释中已有 @author 就不要改了(优化提示词)
 - [ ] 增加非标准 javadoc 标签, 比如 @date
 - [ ] @since 优化: 读取 maven pom.xml 文件中的版本号
+- [ ] 任务完成后, 在控制台输出总 Token 使用量统计
