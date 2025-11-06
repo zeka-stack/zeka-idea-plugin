@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.task;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
@@ -17,7 +18,6 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
 
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -453,8 +453,7 @@ public class TaskCollector {
         } catch (Exception e) {
             return originalCode;
         }
-
-        return StringUtils.isBlank(reformatCode) ? originalCode : reformatCode;
+        return StringUtil.isEmpty(reformatCode) ? originalCode : reformatCode;
     }
 
     /**
