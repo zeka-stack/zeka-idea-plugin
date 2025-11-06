@@ -2,10 +2,10 @@ package dev.dong4j.zeka.stack.idea.plugin.action;
 
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
-import com.intellij.ide.presentation.Presentation;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Iconable;
 import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -17,6 +17,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
@@ -25,6 +27,7 @@ import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
+import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -70,8 +73,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-@Presentation(icon = "AllIcons.Actions.IntentionBulb")
-public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction {
+public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction implements Iconable {
 
     /**
      * 获取 Action 显示的文本
@@ -103,6 +105,20 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     @Override
     public String getFamilyName() {
         return JavaDocBundle.message("plugin.name");
+    }
+
+    /**
+     * 获取图标
+     * <p>
+     * 返回图片上传的图标
+     *
+     * @param flags 图标标志
+     * @return 图标对象
+     * @since 2.2.0
+     */
+    @Override
+    public Icon getIcon(@Iconable.IconFlags int flags) {
+        return AIJicons.AIJ_16;
     }
 
     /**

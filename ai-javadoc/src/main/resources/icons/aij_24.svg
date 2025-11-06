@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
-     data-darkreader-inline-fill="" width="32" height="32">
+     data-darkreader-inline-fill="" width="24" height="24">
     <path d="M509.441408 1022.464a193.6128 193.6128 0 0 1-92.0064-23.1168L104.807808 830.0288C47.361408 798.0544 12.443008 741.4528 12.801408 680.5248V342.016c0-60.8512 34.5344-117.4784 91.9552-149.504L417.435008 23.1168a194.7136 194.7136 0 0 1 184.0128 0L914.177408 192.512c57.4208 32.1024 92.2368 88.6528 92.0064 149.504v338.5088c0 60.8512-34.5344 117.5296-92.0064 149.504l-312.704 169.3184a193.1776 193.1776 0 0 1-92.0064 23.1168z"
           fill="#1EDAB5"
           style="--darkreader-inline-fill: var(--darkreader-background-1edab5, #35aa8c);">
@@ -14,3 +14,4 @@
           style="--darkreader-inline-fill: var(--darkreader-background-ffffff, #1a1b1a);">
     </path>
 </svg>
+
