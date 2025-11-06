@@ -2,10 +2,10 @@ package dev.dong4j.zeka.stack.idea.plugin.action;
 
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
-import com.intellij.ide.presentation.Presentation;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Iconable;
 import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -17,6 +17,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
@@ -25,6 +27,7 @@ import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
+import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -70,8 +73,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-@Presentation(icon = "AllIcons.Actions.IntentionBulb")
-public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction {
+public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction implements Iconable {
 
     /**
      * 获取 Action 显示的文本
@@ -103,6 +105,20 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     @Override
     public String getFamilyName() {
         return JavaDocBundle.message("plugin.name");
+    }
+
+    /**
+     * 获取图标
+     * <p>
+     * 返回图片上传的图标
+     *
+     * @param flags 图标标志
+     * @return 图标对象
+     * @since 2.2.0
+     */
+    @Override
+    public Icon getIcon(@Iconable.IconFlags int flags) {
+        return AIJicons.AIJ_16;
     }
 
     /**
@@ -207,6 +223,11 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     public void invoke(@NotNull Project project, Editor editor, @NotNull PsiElement element)
         throws IncorrectOperationException {
 
+        // 如果处于预览模式，则直接返回，不执行任何会产生副作用的操作, 只有在真实执行意图操作时才执行完整的处理流程
+        if (com.intellij.codeInsight.intention.preview.IntentionPreviewUtils.isPreviewElement(element)) {
+            return;
+        }
+
         PsiFile psiFile = element.getContainingFile();
 
         if (!(psiFile instanceof PsiJavaFile)) {
@@ -238,10 +259,7 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
 
         // 使用服务生成文档，带自定义完成回调
         service.generateDocumentation(project, tasks, elementDesc, stats -> {
-            // 如果只有一个任务且成功，不显示统计（用户体验更好）
-            if (tasks.size() > 1) {
-                showCompletionMessage(project, stats, elementDesc);
-            }
+            showCompletionMessage(project, stats, elementDesc);
         });
     }
 
@@ -258,11 +276,13 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
      * @see NotificationUtil#notifyTargetCompletion(Project, String, int, int, int)
      */
     private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats, String target) {
-        ApplicationManager.getApplication().invokeLater(() -> NotificationUtil.notifyTargetCompletion(project,
-                                                                                                      target,
-                                                                                                      stats.completed(),
-                                                                                                      stats.failed(),
-                                                                                                      stats.skipped()));
+        if (stats.isRunned()) {
+            ApplicationManager.getApplication().invokeLater(() -> NotificationUtil.notifyTargetCompletion(project,
+                                                                                                          target,
+                                                                                                          stats.completed(),
+                                                                                                          stats.failed(),
+                                                                                                          stats.skipped()));
+        }
     }
 }
 

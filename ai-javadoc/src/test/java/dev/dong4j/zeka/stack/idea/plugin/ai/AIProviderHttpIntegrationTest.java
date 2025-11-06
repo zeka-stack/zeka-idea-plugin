@@ -60,10 +60,11 @@ public class AIProviderHttpIntegrationTest {
 
         // 配置 Settings
         settings = new SettingsState();
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = mockServer.url("/").toString().replaceAll("/$", "");
-        settings.apiKey = "test-api-key";
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.modelName = "qwen-max";
+        config.baseUrl = mockServer.url("/").toString().replaceAll("/$", "");
+        SettingsState.setApiKey(config.md5, "test-api-key");
         settings.maxRetries = 3;
         settings.waitDuration = 100; // 缩短重试等待时间以加快测试
         settings.temperature = 0.1;
@@ -71,7 +72,7 @@ public class AIProviderHttpIntegrationTest {
         settings.verboseLogging = true; // 启用详细日志以便调试
 
         // 创建 Provider
-        provider = new QianWenProvider(settings);
+        provider = new QianWenProvider(settings, config);
     }
 
     /**
@@ -93,8 +94,6 @@ public class AIProviderHttpIntegrationTest {
      * <p>
      * 测试场景：调用文档生成接口并模拟 OpenAI 格式的响应
      * 预期结果：返回的文档注释应包含指定的测试方法内容，并且请求参数和返回值注释应正确
-     * <p>
-     * 测试过程中需要模拟 API 响应，验证生成的文档是否包含指定的注释内容，如 {@link #testMethod(String)} 方法的注释
      * <p>
      * 此外，还需验证请求是否正确发送至指定路径，并包含正确的请求头和请求体参数
      */
@@ -391,8 +390,6 @@ public class AIProviderHttpIntegrationTest {
      * 预期结果：应抛出 AIServiceException 异常，且错误码为 INVALID_RESPONSE
      * <p>
      * 该测试通过模拟服务器返回一个不包含必需字段的响应，验证生成文档时是否能正确识别并抛出异常
-     * <p>
-     * 关联方法：{@link provider#generateDocumentation(String, DocumentationTask.TaskType, String)}
      */
     @Test
     @DisplayName("测试响应格式错误 - 缺少必需字段")
@@ -496,11 +493,11 @@ public class AIProviderHttpIntegrationTest {
     @DisplayName("测试 Ollama Provider - 不需要 API Key")
     void testOllamaProviderWithoutApiKey() throws Exception {
         // 配置 Ollama Provider
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "qwen:7b";
-        settings.apiKey = ""; // Ollama 不需要 API Key
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen:7b";
 
-        AIServiceProvider ollamaProvider = new OllamaProvider(settings);
+        AIServiceProvider ollamaProvider = new OllamaProvider(settings, config);
 
         String mockResponse = """
             {
@@ -537,7 +534,6 @@ public class AIProviderHttpIntegrationTest {
      * 预期结果：应触发超时异常，验证超时机制是否正常工作
      * <p>
      * 注意：当前实现未配置超时，测试可能需要修改源代码支持
-     * 可参考 {@link OpenAICompatibleProvider} 中的 RestTemplate 配置进行调整
      */
     @Test
     @DisplayName("测试请求超时")
@@ -577,7 +573,7 @@ public class AIProviderHttpIntegrationTest {
                                .setBody("{\"choices\": [{\"message\": {\"content\": \"OK\"}}]}")
                                .addHeader("Content-Type", "application/json"));
 
-        ValidationResult isValid = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        ValidationResult isValid = provider.validateConfiguration("");
 
         assertThat(isValid.isSuccess()).isTrue();
     }
@@ -587,8 +583,6 @@ public class AIProviderHttpIntegrationTest {
      * <p>
      * 测试场景：模拟服务器返回 401 错误响应，表示验证失败
      * 预期结果：验证结果应为失败状态
-     * <p>
-     * 该测试用于验证当配置验证接口接收到无效凭证时，{@link Provider#validateConfiguration()} 方法是否能正确返回验证失败的结果
      */
     @Test
     @DisplayName("测试配置验证失败")
@@ -598,7 +592,7 @@ public class AIProviderHttpIntegrationTest {
                                .setResponseCode(401)
                                .setBody("{\"error\": {\"message\": \"Invalid credentials\"}}"));
 
-        ValidationResult isValid = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        ValidationResult isValid = provider.validateConfiguration("");
 
         assertThat(isValid.isSuccess()).isFalse();
     }

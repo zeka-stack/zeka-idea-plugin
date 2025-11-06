@@ -39,15 +39,16 @@ class SystemPromptTest {
     @BeforeEach
     void setUp() {
         settings = new SettingsState();
-        settings.providerType = AIProviderType.CUSTOM.getProviderId();
-        settings.baseUrl = "https://api.openai.com/v1";
-        settings.apiKey = "test-api-key";
-        settings.modelName = "gpt-3.5-turbo";
+        settings.providerType = AIProviderType.CUSTOM;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.baseUrl = "https://api.openai.com/v1";
+        config.modelName = "gpt-3.5-turbo";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
         settings.temperature = 0.1;
         settings.maxTokens = 1000;
-        settings.configurationVerified = true;
 
-        provider = new CustomProvider(settings);
+        provider = new CustomProvider(settings, config);
     }
 
     /**

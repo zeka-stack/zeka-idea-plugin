@@ -1,6 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.service;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationAction;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -11,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.function.Consumer;
 
+import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -94,10 +101,21 @@ public class DocumentationGenerationService {
 
                     // 检查 AI 服务是否可用
                     if (!executor.isServiceAvailable()) {
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            NotificationUtil.notifyErrorMessage(project,
-                                                                "AI 服务配置错误，请在设置中检查 API Key、Base URL 等配置是否正确");
+                        Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
+                                                                     JavaDocBundle.message("notification.error.title"),
+                                                                     "AI 服务配置错误，请在设置中检查 API Key、Base URL 等配置是否正确",
+                                                                     NotificationType.ERROR);
+                        // 添加设置动作
+                        notification.addAction(new NotificationAction(JavaDocBundle.message("notification.error.message.config")) {
+                            @Override
+                            public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
+                                JavaDocSettingsConfigurable configurable = new JavaDocSettingsConfigurable();
+                                // 打开设置面板
+                                ShowSettingsUtil.getInstance().editConfigurable(project, configurable);
+                                notification.expire();
+                            }
                         });
+                        Notifications.Bus.notify(notification, project);
                         return;
                     }
 

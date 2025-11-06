@@ -41,13 +41,14 @@ class CustomProviderTest {
     @BeforeEach
     void setUp() {
         settings = new SettingsState();
-        settings.providerType = AIProviderType.CUSTOM.getProviderId();
-        settings.baseUrl = "https://api.openai.com/v1";
-        settings.apiKey = "test-api-key";
-        settings.modelName = "gpt-3.5-turbo";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.CUSTOM;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.baseUrl = "https://api.openai.com/v1";
+        config.modelName = "gpt-3.5-turbo";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
 
-        provider = new CustomProvider(settings);
+        provider = new CustomProvider(settings, config);
     }
 
     /**
@@ -133,7 +134,9 @@ class CustomProviderTest {
     @Test
     void testValidateConfigurationWithValidSettings() {
         // 注意：这个测试不会真正发送网络请求，只是测试配置验证逻辑
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        String apiKey = SettingsState.getApiKey(config.md5);
+        var result = provider.validateConfiguration(apiKey);
 
         // 由于没有真实的网络连接，这个测试可能会失败
         // 但我们可以测试配置验证的基本逻辑
@@ -150,10 +153,12 @@ class CustomProviderTest {
      */
     @Test
     void testValidateConfigurationWithEmptyBaseUrl() {
-        settings.baseUrl = "";
-        provider = new CustomProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.baseUrl = "";
+        provider = new CustomProvider(settings, config);
 
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        String apiKey = SettingsState.getApiKey(config.md5);
+        var result = provider.validateConfiguration(apiKey);
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("Base URL 不能为空"));
     }
@@ -164,14 +169,15 @@ class CustomProviderTest {
      * 测试场景：设置空的 API Key 并创建 CustomProvider 实例
      * 预期结果：验证结果应失败，并提示 "API Key 不能为空"
      * <p>
-     * 注意：测试中修改了 settings.apiKey 的值，需确保测试环境隔离
+     * 注意：测试中修改了 API Key 的值，需确保测试环境隔离
      */
     @Test
     void testValidateConfigurationWithEmptyApiKey() {
-        settings.apiKey = "";
-        provider = new CustomProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        SettingsState.setApiKey(config.md5, "");
+        provider = new CustomProvider(settings, config);
 
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        var result = provider.validateConfiguration("");
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("API Key 不能为空"));
     }
@@ -186,10 +192,12 @@ class CustomProviderTest {
      */
     @Test
     void testValidateConfigurationWithEmptyModelName() {
-        settings.modelName = "";
-        provider = new CustomProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.modelName = "";
+        provider = new CustomProvider(settings, config);
 
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        String apiKey = SettingsState.getApiKey(config.md5);
+        var result = provider.validateConfiguration(apiKey);
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("模型名称不能为空"));
     }
@@ -202,10 +210,12 @@ class CustomProviderTest {
      */
     @Test
     void testValidateConfigurationWithNullBaseUrl() {
-        settings.baseUrl = null;
-        provider = new CustomProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.baseUrl = null;
+        provider = new CustomProvider(settings, config);
 
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        String apiKey = SettingsState.getApiKey(config.md5);
+        var result = provider.validateConfiguration(apiKey);
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("Base URL 不能为空"));
     }
@@ -218,10 +228,11 @@ class CustomProviderTest {
      */
     @Test
     void testValidateConfigurationWithNullApiKey() {
-        settings.apiKey = null;
-        provider = new CustomProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        SettingsState.setApiKey(config.md5, null);
+        provider = new CustomProvider(settings, config);
 
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        var result = provider.validateConfiguration(null);
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("API Key 不能为空"));
     }
@@ -234,10 +245,12 @@ class CustomProviderTest {
      */
     @Test
     void testValidateConfigurationWithNullModelName() {
-        settings.modelName = null;
-        provider = new CustomProvider(settings);
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.CUSTOM);
+        config.modelName = null;
+        provider = new CustomProvider(settings, config);
 
-        var result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
+        String apiKey = SettingsState.getApiKey(config.md5);
+        var result = provider.validateConfiguration(apiKey);
         assertFalse(result.isSuccess());
         assertTrue(result.getMessage().contains("模型名称不能为空"));
     }

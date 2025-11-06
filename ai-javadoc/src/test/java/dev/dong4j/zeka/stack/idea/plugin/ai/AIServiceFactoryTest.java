@@ -55,11 +55,12 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建千问提供商")
     void testCreateProvider_qianwen() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "test-api-key";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen-max";
+        config.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
 
         AIServiceProvider provider = AIServiceFactory.createProvider(settings);
 
@@ -79,11 +80,11 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建 Ollama 提供商")
     void testCreateProvider_ollama() {
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
+        config.configurationVerified = true;
 
         AIServiceProvider provider = AIServiceFactory.createProvider(settings);
 
@@ -103,11 +104,11 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建 LM Studio 提供商")
     void testCreateProvider_lmstudio() {
-        settings.providerType = AIProviderType.LM_STUDIO.getProviderId();
-        settings.modelName = "gpt-3.5-turbo";
-        settings.baseUrl = "http://localhost:1234/v1";
-        settings.apiKey = "";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.LM_STUDIO;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.LM_STUDIO);
+        config.modelName = "gpt-3.5-turbo";
+        config.baseUrl = "http://localhost:1234/v1";
+        config.configurationVerified = true;
 
         AIServiceProvider provider = AIServiceFactory.createProvider(settings);
 
@@ -127,11 +128,12 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建硅基流动提供商")
     void testCreateProvider_siliconflow() {
-        settings.providerType = AIProviderType.SILICONFLOW.getProviderId();
-        settings.modelName = "deepseek-chat";
-        settings.baseUrl = "https://api.siliconflow.cn/v1";
-        settings.apiKey = "test-api-key";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.SILICONFLOW;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.SILICONFLOW);
+        config.modelName = "deepseek-chat";
+        config.baseUrl = "https://api.siliconflow.cn/v1";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
 
         AIServiceProvider provider = AIServiceFactory.createProvider(settings);
 
@@ -317,11 +319,12 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建的提供商实例配置正确 - 千问")
     void testCreatedProvider_hasCorrectConfiguration_qianwen() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "test-api-key";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen-max";
+        config.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
 
         AIServiceProvider provider = AIServiceFactory.createProvider(settings);
 
@@ -344,11 +347,11 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试创建的提供商实例配置正确 - Ollama")
     void testCreatedProvider_hasCorrectConfiguration_ollama() {
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        config.modelName = "llama2";
+        config.baseUrl = "http://localhost:11434";
+        config.configurationVerified = true;
 
         AIServiceProvider provider = AIServiceFactory.createProvider(settings);
 
@@ -371,11 +374,12 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试多次创建提供商实例")
     void testCreateMultipleInstances() {
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "test-api-key";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig config = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        config.modelName = "qwen-max";
+        config.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        config.configurationVerified = true;
+        SettingsState.setApiKey(config.md5, "test-api-key");
 
         AIServiceProvider provider1 = AIServiceFactory.createProvider(settings);
         AIServiceProvider provider2 = AIServiceFactory.createProvider(settings);
@@ -399,21 +403,22 @@ public class AIServiceFactoryTest {
     @DisplayName("测试切换提供商")
     void testSwitchProviders() {
         // 创建千问提供商
-        settings.providerType = AIProviderType.QIANWEN.getProviderId();
-        settings.modelName = "qwen-max";
-        settings.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
-        settings.apiKey = "test-api-key";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.QIANWEN;
+        SettingsState.ProviderConfig qianwenConfig = settings.getDefaultProviderConfig(AIProviderType.QIANWEN);
+        qianwenConfig.modelName = "qwen-max";
+        qianwenConfig.baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+        qianwenConfig.configurationVerified = true;
+        SettingsState.setApiKey(qianwenConfig.md5, "test-api-key");
         AIServiceProvider qianwenProvider = AIServiceFactory.createProvider(settings);
 
         assertThat(qianwenProvider.getProviderId()).isEqualTo(AIProviderType.QIANWEN.getProviderId());
 
         // 切换到 Ollama
-        settings.providerType = AIProviderType.OLLAMA.getProviderId();
-        settings.modelName = "llama2";
-        settings.baseUrl = "http://localhost:11434";
-        settings.apiKey = "";
-        settings.configurationVerified = true;
+        settings.providerType = AIProviderType.OLLAMA;
+        SettingsState.ProviderConfig ollamaConfig = settings.getDefaultProviderConfig(AIProviderType.OLLAMA);
+        ollamaConfig.modelName = "llama2";
+        ollamaConfig.baseUrl = "http://localhost:11434";
+        ollamaConfig.configurationVerified = true;
         AIServiceProvider ollamaProvider = AIServiceFactory.createProvider(settings);
 
         assertThat(ollamaProvider.getProviderId()).isEqualTo(AIProviderType.OLLAMA.getProviderId());

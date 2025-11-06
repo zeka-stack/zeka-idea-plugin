@@ -2,8 +2,11 @@ package dev.dong4j.zeka.stack.idea.plugin.settings;
 
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
+import com.intellij.openapi.options.SearchableConfigurable;
 
 import org.jetbrains.annotations.Nls;
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.JComponent;
@@ -43,7 +46,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
  * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")
-public class JavaDocSettingsConfigurable implements Configurable {
+public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
     /**
      * 设置面板 UI 组件
@@ -57,15 +60,18 @@ public class JavaDocSettingsConfigurable implements Configurable {
     private JavaDocSettingsPanel settingsPanel;
 
     /**
-     * 原始配置状态
+     * 获取插件的唯一标识符
+     * <p>
+     * 返回该插件在系统中的唯一标识字符串，用于识别和区分不同的插件。
      *
-     * <p>保存应用配置前的原始状态，
-     * 用于比较和检测配置变更。
-     *
-     * @see #isModified()
-     * @see SettingsState
+     * @return 插件的唯一标识符
      */
-    private SettingsState originalSettings;
+    @NotNull
+    @NonNls
+    @Override
+    public String getId() {
+        return "zeka.stack.idea.plugin.aij";
+    }
 
     /**
      * 获取显示名称
@@ -422,5 +428,6 @@ public class JavaDocSettingsConfigurable implements Configurable {
 
         return settings.maxTokens >= 100 && settings.maxTokens <= 10000;
     }
+
 }
 

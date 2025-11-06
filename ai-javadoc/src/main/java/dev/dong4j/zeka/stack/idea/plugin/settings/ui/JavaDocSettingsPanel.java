@@ -1,5 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
@@ -184,7 +187,7 @@ public class JavaDocSettingsPanel {
         refreshModelsButton.addActionListener(e -> refreshAvailableModels());
 
         // 创建可用服务商列表组件
-        showAvailableProvidersCheckBox = new JBCheckBox("显示可用服务商");
+        showAvailableProvidersCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.available.providers"));
         availableProvidersTableModel = new AvailableProvidersTableModel();
         availableProvidersTable = new JBTable(availableProvidersTableModel);
         availableProvidersTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
@@ -196,12 +199,18 @@ public class JavaDocSettingsPanel {
                 if (selectedRow >= 0) {
                     removeAvailableProvider(selectedRow);
                 }
-            })
-            .addExtraAction(new com.intellij.ui.AnActionButton("清空全部",
-                                                               com.intellij.icons.AllIcons.Actions.GC) {
+            }).addExtraAction(new AnAction("清空全部",
+                                           "清空所有可用服务商配置",
+                                           com.intellij.icons.AllIcons.Actions.GC) {
                 @Override
-                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                public void actionPerformed(@NotNull AnActionEvent e) {
                     clearAllAvailableProviders();
+                }
+
+                @Override
+                public @NotNull ActionUpdateThread getActionUpdateThread() {
+                    // 在后台线程中执行 update，避免阻塞 EDT
+                    return ActionUpdateThread.BGT;
                 }
             });
 
@@ -247,7 +256,7 @@ public class JavaDocSettingsPanel {
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.api.key.label")), createApiKeyPanel())
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.model.label")), createModelPanel())
-            .addComponent(showAvailableProvidersCheckBox)
+            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
             .addComponent(availableProvidersPanel)
             .addSeparator(10)
 
@@ -865,11 +874,6 @@ public class JavaDocSettingsPanel {
         } else {
             modelComboBox.setSelectedItem(providerType.getDefaultModel());
         }
-
-        // 设置提示文本
-        // if (modelComboBox.getEditor() != null && modelComboBox.getEditor().getEditorComponent() instanceof JTextField textField) {
-        //     textField.setToolTipText(JavaDocBundle.message("settings.model.hint"));
-        // }
     }
 
     /**
@@ -1309,7 +1313,7 @@ public class JavaDocSettingsPanel {
         String modelName = configToRemove.modelName != null ? configToRemove.modelName : "未知";
 
         int result = JOptionPane.showConfirmDialog(
-            mainPanel,
+            getParentWindow(),
             String.format("确定要删除服务商 \"%s - %s\" 吗？", providerName, modelName),
             "确认删除",
             JOptionPane.YES_NO_OPTION,
@@ -1318,11 +1322,6 @@ public class JavaDocSettingsPanel {
 
         if (result != JOptionPane.YES_OPTION) {
             return;
-        }
-
-        // 从 PasswordSafe 中删除 API Key
-        if (configToRemove.md5 != null && !configToRemove.md5.trim().isEmpty()) {
-            SettingsState.deleteApiKey(configToRemove.md5);
         }
 
         // 从全局配置中删除
@@ -1345,19 +1344,13 @@ public class JavaDocSettingsPanel {
      */
     private void clearAllAvailableProviders() {
         if (availableProvidersTableModel.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(
-                getParentWindow(),
-                "列表为空，无需清空",
-                "提示",
-                JOptionPane.INFORMATION_MESSAGE
-                                         );
             return;
         }
 
         // 确认清空
         int result = JOptionPane.showConfirmDialog(
-            mainPanel,
-            String.format("确定要清空所有 %d 个可用服务商吗？\n此操作将删除所有已保存的配置和 API Key！",
+            getParentWindow(),
+            String.format("确定要清空所有可用服务商吗(%s 个)？\n此操作将删除所有已保存的配置和 API Key！",
                           availableProvidersTableModel.getRowCount()),
             "确认清空",
             JOptionPane.YES_NO_OPTION,
@@ -1385,13 +1378,6 @@ public class JavaDocSettingsPanel {
         // 从表格模型中清空
         availableProvidersTableModel.clearAll();
 
-        // 显示成功消息
-        JOptionPane.showMessageDialog(
-            getParentWindow(),
-            "已成功清空所有可用服务商配置",
-            "清空成功",
-            JOptionPane.INFORMATION_MESSAGE
-                                     );
     }
 
     /**

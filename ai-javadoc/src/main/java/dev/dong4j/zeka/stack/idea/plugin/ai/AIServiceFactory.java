@@ -118,7 +118,7 @@ public class AIServiceFactory {
     @Nullable
     public static AIServiceProvider createProvider(SettingsState currentSettings, @NotNull SettingsState.ProviderConfig providerConfig) {
         if (providerConfig.providerType == null) {
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Provider ID is null");
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).info("Provider ID is null");
             return null;
         }
 
@@ -127,18 +127,13 @@ public class AIServiceFactory {
         if (providerClass == null) {
             String supportedProviders = String.join(", ", AIProviderType.getAllProviderIds());
             String error = "不支持的 AI 提供商: " + providerConfig.providerType.getProviderId() + "。当前支持的提供商：" + supportedProviders;
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error);
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).info(error);
             return null;
         }
 
         // 检查必要配置项
-        if (providerConfig.baseUrl == null || providerConfig.baseUrl.trim().isEmpty()) {
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("Base URL 不能为空,请提供自定义服务的 API 地址");
-            return null;
-        }
-
-        if (providerConfig.modelName == null || providerConfig.modelName.trim().isEmpty()) {
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error("模型名称不能为空, 请指定要使用的模型名称");
+        if (!providerConfig.configurationVerified) {
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).info("服务商未正确配置, 需要通过连接测试才能使用");
             return null;
         }
 
@@ -148,7 +143,7 @@ public class AIServiceFactory {
                 .newInstance(currentSettings, providerConfig);
         } catch (Exception e) {
             String error = "创建 AI 提供商失败: " + providerConfig.providerType.getProviderId() + "。请检查配置是否正确。";
-            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).error(error, e);
+            com.intellij.openapi.diagnostic.Logger.getInstance(AIServiceFactory.class).info(error, e);
             return null;
         }
     }
