@@ -17,6 +17,7 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
 
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -390,7 +391,7 @@ public class TaskCollector {
             // 如果 VirtualFile 为 null，使用文件名作为标识
             filePath = containingFile.getName();
         }
-        
+
         return new DocumentationTask(element, code, type, filePath);
     }
 
@@ -431,23 +432,29 @@ public class TaskCollector {
         String originalCode = element.getText();
 
         if (!settings.enableCodeCompression) {
-            // 其他情况返回格式化后的代码
+            // 未启用代码压缩时返回原始代码
             return originalCode;
         }
 
-        // 格式化副本, 不能直接操作原始的 PSI 元素, 因为该方法在 read-action 中调用, 所以拷贝一个副本来执行格式化
-        final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element.copy());
+        String reformatCode = "";
+        // 不同的 IDEA 版本可能会出现格式化异常
+        try {
+            // 格式化副本, 不能直接操作原始的 PSI 元素, 因为该方法在 read-action 中调用, 所以拷贝一个副本来执行格式化
+            final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element.copy());
 
-        // 类级别的代码使用 optimizeClassCode 方法
-        if (element instanceof PsiClass) {
-            // todo-dong4j : (2025.11.4 20:27) [删除 import 语句]
-            return AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()));
+            // 类级别的代码使用 optimizeClassCode 方法
+            if (element instanceof PsiClass) {
+                reformatCode = AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()));
+            }
+            // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
+            if (element instanceof PsiMethod || element instanceof PsiField) {
+                reformatCode = AiCodePreprocessor.preprocess(reformat.getText());
+            }
+        } catch (Exception e) {
+            return originalCode;
         }
-        // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
-        if (element instanceof PsiMethod || element instanceof PsiField) {
-            return AiCodePreprocessor.preprocess(reformat.getText());
-        }
-        return originalCode;
+
+        return StringUtils.isBlank(reformatCode) ? originalCode : reformatCode;
     }
 
     /**
