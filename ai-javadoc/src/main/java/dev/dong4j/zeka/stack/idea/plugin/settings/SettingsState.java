@@ -473,6 +473,19 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean showCustomJavaDocTags = false;
 
+    /**
+     * 是否显示高级设置
+     *
+     * <p>控制设置页面中高级设置区域的显示/隐藏。
+     * 高级设置包括模型参数设置和 Prompt 模板配置。
+     * 用户可以通过复选框控制是否显示高级设置，减少设置页面长度。
+     *
+     * <p>默认值: false（默认隐藏，减少页面长度）
+     *
+     * @since 1.4.0
+     */
+    public boolean showAdvancedSettings = false;
+
     // ==================== Prompt 配置 ====================
 
     /**

@@ -280,6 +280,9 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.showCustomJavaDocTags != panelSettings.showCustomJavaDocTags) {
             return true;
         }
+        if (currentSettings.showAdvancedSettings != panelSettings.showAdvancedSettings) {
+            return true;
+        }
 
         return !currentSettings.supportedLanguages.equals(panelSettings.supportedLanguages);
     }
@@ -370,6 +373,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         // 保存自定义 JavaDoc 标签配置
         currentSettings.customJavaDocTags = panelSettings.customJavaDocTags;
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
+        currentSettings.showAdvancedSettings = panelSettings.showAdvancedSettings;
 
         // 触发标签同步（需要在写操作中执行）
         ApplicationManager.getApplication().invokeLater(() -> {

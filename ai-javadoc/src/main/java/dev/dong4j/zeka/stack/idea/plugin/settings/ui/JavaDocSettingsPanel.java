@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -37,6 +38,7 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
@@ -119,6 +121,12 @@ public class JavaDocSettingsPanel {
     private JPanel customJavaDocTagsPanel;
     /** 自定义 JavaDoc 标签列表表格模型 */
     private CustomJavaDocTagsTableModel customJavaDocTagsTableModel;
+
+    // 高级设置
+    /** 显示高级设置的复选框 */
+    private JBCheckBox showAdvancedSettingsCheckBox;
+    /** 高级设置容器面板（用于控制可见性） */
+    private JPanel advancedSettingsPanel;
 
     // 高级配置
     /** 最大重试次数的下拉选择器 */
@@ -294,49 +302,66 @@ public class JavaDocSettingsPanel {
         fieldPromptTextArea = new JTextArea(10, 50);
         testPromptTextArea = new JTextArea(10, 50);
 
+        // 创建高级设置复选框
+        showAdvancedSettingsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.advanced.settings.show"));
+
+        // 创建高级设置容器面板
+        advancedSettingsPanel = new JPanel(new BorderLayout());
+        advancedSettingsPanel.setVisible(false); // 默认隐藏
+
+        // 构建高级设置面板内容
+        JPanel advancedSettingsContent = FormBuilder.createFormBuilder()
+            // 模型参数设置
+            .addComponent(createModelParamsPanel())
+            .addSeparator(10)
+            // Prompt 模板与提示词
+            .addComponent(createPromptTemplatesPanel())
+            .getPanel();
+
+        advancedSettingsPanel.add(advancedSettingsContent, BorderLayout.NORTH);
+
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()
+            // 第一组：基础连接配置（API 接入）
+            .addComponent(createBasicConnectionConfigPanel())
+            .addSeparator(10)
+
+            // 第二组：高级设置（可折叠）
+            .addComponent(showAdvancedSettingsCheckBox)
+            .addComponent(advancedSettingsPanel)
+            .addSeparator(10)
+
+            // 第三组：支持的语言
+            .addComponent(createLanguageSupportPanel())
+            .addSeparator(10)
+
+            // 第四组：生成规则配置
+            .addComponent(createGenerationRulesPanel())
+            .addSeparator(10)
+
+            // 第五组：其他设置
+            .addComponent(createOtherSettingsPanel())
+
+            .addComponentFillVertically(new JPanel(), 0)
+            .getPanel();
+
+        mainPanel.setBorder(JBUI.Borders.empty(10));
+    }
+
+    /**
+     * 创建基础连接配置面板
+     *
+     * <p>创建一个包含基础连接配置所有组件的面板，并添加边框。
+     *
+     * @return 基础连接配置面板
+     */
+    private JPanel createBasicConnectionConfigPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.provider.label")), providerComboBox)
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.api.key.label")), createApiKeyPanel())
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.model.label")), createModelPanel())
-            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
-            .addComponent(availableProvidersPanel)
             .addSeparator(10)
-
-            .addComponent(new JBLabel(JavaDocBundle.message("settings.generation.options")))
-            .addComponent(createGenerationOptionsPanel())
-            .addComponent(createCodeCompressionSubConfigPanel())
-            .addSeparator(10)
-
-            .addComponent(new JBLabel(JavaDocBundle.message("settings.language.support")))
-            .addComponent(javaCheckBox)
-            .addComponent(kotlinCheckBox)
-            .addSeparator(10)
-
-            .addComponent(showCustomJavaDocTagsCheckBox)
-            .addComponent(customJavaDocTagsPanel)
-            .addSeparator(10)
-
-            .addComponent(new JBLabel(JavaDocBundle.message("settings.model.config")))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.tokens")),
-                                 createAdvancedConfigPanel(maxTokensSpinner,
-                                                           "settings.max.tokens.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.temperature")),
-                                 createAdvancedConfigPanel(temperatureSpinner
-                                     , "settings.temperature.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.top.p")),
-                                 createAdvancedConfigPanel(topPSpinner,
-                                                           "settings.top.p.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.top.k")),
-                                 createAdvancedConfigPanel(topKSpinner,
-                                                           "settings.top.k.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.presence.penalty")),
-                                 createAdvancedConfigPanel(presencePenaltySpinner,
-                                                           "settings.presence.penalty.hint"))
-            .addSeparator(10)
-
-            .addComponent(new JBLabel(JavaDocBundle.message("settings.advanced.config")))
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.retries")),
                                  createAdvancedConfigPanel(maxRetriesSpinner,
                                                            "settings.max.retries.hint"))
@@ -346,20 +371,183 @@ public class JavaDocSettingsPanel {
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
             .addComponent(createPerformanceModeSubConfigPanel())
-            .addSeparator(10)
-
-            .addComponent(new JBLabel(JavaDocBundle.message("settings.prompt.templates")))
-            .addComponent(new JBLabel(JavaDocBundle.message("settings.prompt.hint")))
-            .addComponent(createPromptTabbedPane())
-
-            .addComponentFillVertically(new JPanel(), 0)
             .getPanel();
 
-        mainPanel.setBorder(JBUI.Borders.empty(10));
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message("settings.basic.connection.config")
+                                                                    );
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建模型参数设置面板
+     *
+     * <p>创建一个包含模型参数设置所有组件的面板，并添加边框。
+     *
+     * @return 模型参数设置面板
+     */
+    private JPanel createModelParamsPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.tokens")),
+                                 createAdvancedConfigPanel(maxTokensSpinner,
+                                                           "settings.max.tokens.hint"))
+            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.temperature")),
+                                 createAdvancedConfigPanel(temperatureSpinner,
+                                                           "settings.temperature.hint"))
+            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.top.p")),
+                                 createAdvancedConfigPanel(topPSpinner,
+                                                           "settings.top.p.hint"))
+            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.top.k")),
+                                 createAdvancedConfigPanel(topKSpinner,
+                                                           "settings.top.k.hint"))
+            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.presence.penalty")),
+                                 createAdvancedConfigPanel(presencePenaltySpinner,
+                                                           "settings.presence.penalty.hint"))
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message("settings.advanced.settings.model.params")
+                                                                    );
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建 Prompt 模板与提示词面板
+     *
+     * <p>创建一个包含 Prompt 模板与提示词所有组件的面板，并添加边框。
+     *
+     * @return Prompt 模板与提示词面板
+     */
+    private JPanel createPromptTemplatesPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(new JBLabel("  " + JavaDocBundle.message("settings.prompt.hint")))
+            .addComponent(createPromptTabbedPane())
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message("settings.advanced.settings.prompt.templates")
+                                                                    );
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建语言支持面板
+     *
+     * <p>创建一个包含语言支持复选框的面板，用于选择支持哪些编程语言，并添加边框。
+     *
+     * @return 语言支持面板
+     */
+    private JPanel createLanguageSupportPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(javaCheckBox)
+            .addComponent(kotlinCheckBox)
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message("settings.language.support")
+                                                                    );
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建生成规则配置面板
+     *
+     * <p>创建一个包含生成规则配置的面板，包括：
+     * <ul>
+     *   <li>生成选项（类/方法/字段）</li>
+     *   <li>覆盖已有注释</li>
+     *   <li>代码压缩配置</li>
+     * </ul>
+     * 并添加边框。
+     *
+     * @return 生成规则配置面板
+     */
+    private JPanel createGenerationRulesPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(createGenerationOptionsPanel())
+            .addComponent(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"))
+            .addComponent(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"))
+            .addComponent(createCodeCompressionSubConfigPanel())
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message("settings.generation.rules.config")
+                                                                    );
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建其他设置面板
+     *
+     * <p>创建一个包含其他设置所有组件的面板，并添加边框。
+     *
+     * @return 其他设置面板
+     */
+    private JPanel createOtherSettingsPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(showCustomJavaDocTagsCheckBox)
+            .addComponent(customJavaDocTagsPanel)
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message("settings.other.settings")
+                                                                    );
+        panel.setBorder(titledBorder);
+
+        return panel;
     }
 
     /**
      * 创建生成选项面板
+     *
+     * <p>创建一个包含生成选项复选框的面板，用于选择要为哪些类型的元素生成文档。
+     * 面板包含3个复选框水平排列（类、方法、字段）。
      *
      * @return 生成选项面板
      */
@@ -367,50 +555,21 @@ public class JavaDocSettingsPanel {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new java.awt.BorderLayout());
 
-        // 第一行：3个复选框水平排列
-        JBCheckBox[] firstRowCheckBoxes = {
+        // 3个复选框水平排列
+        JBCheckBox[] checkBoxes = {
             generateForClassCheckBox,
             generateForMethodCheckBox,
             generateForFieldCheckBox
         };
 
-        String[] firstRowHintKeys = {
+        String[] hintKeys = {
             "settings.generate.for.class.hint",
             "settings.generate.for.method.hint",
             "settings.generate.for.field.hint"
         };
 
-        JPanel firstRowPanel = createHorizontalCheckBoxPanel(firstRowCheckBoxes, firstRowHintKeys, 3);
-        mainPanel.add(firstRowPanel, java.awt.BorderLayout.NORTH);
-
-        // 第二行：2个复选框垂直排列，调整间距
-        JPanel secondRowPanel = new JPanel();
-        secondRowPanel.setLayout(new java.awt.BorderLayout());
-        secondRowPanel.setBorder(JBUI.Borders.emptyTop(8)); // 与第一行保持适当间距
-
-        // 创建垂直布局的面板，控制复选框之间的间距
-        JPanel verticalPanel = new JPanel();
-        verticalPanel.setLayout(new java.awt.BorderLayout());
-
-        // 创建内部垂直面板
-        JPanel innerPanel = new JPanel();
-        innerPanel.setLayout(new java.awt.BorderLayout());
-
-        innerPanel.add(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"), java.awt.BorderLayout.NORTH);
-
-        // 添加间距面板
-        JPanel spacingPanel = new JPanel();
-        spacingPanel.setPreferredSize(new java.awt.Dimension(0, 8)); // 8像素高度间距
-        innerPanel.add(spacingPanel, java.awt.BorderLayout.CENTER);
-
-        innerPanel.add(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"),
-                       java.awt.BorderLayout.SOUTH);
-
-        verticalPanel.add(innerPanel, java.awt.BorderLayout.NORTH);
-
-        secondRowPanel.add(verticalPanel, java.awt.BorderLayout.CENTER);
-
-        mainPanel.add(secondRowPanel, java.awt.BorderLayout.SOUTH);
+        JPanel checkBoxPanel = createHorizontalCheckBoxPanel(checkBoxes, hintKeys, 3);
+        mainPanel.add(checkBoxPanel, java.awt.BorderLayout.NORTH);
 
         return mainPanel;
     }
@@ -565,12 +724,12 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 创建性能模式的子配置面板（显示统计信息）
+     * 创建性能模式的子配置面板（显示统计信息和可用服务商）
      * <p>
-     * 该显示统计信息配置作为性能模式的子配置，会向右缩进2个空格。
-     * 当性能模式复选框被勾选时，该配置才可用。
+     * 该面板包含性能模式的子配置，会向右缩进2个空格。
+     * 当性能模式复选框被勾选时，这些配置才可用。
      *
-     * @return 包含显示统计信息配置的面板
+     * @return 包含性能模式子配置的面板
      */
     private JPanel createPerformanceModeSubConfigPanel() {
         JPanel panel = new JPanel(new BorderLayout());
@@ -579,13 +738,19 @@ public class JavaDocSettingsPanel {
         JPanel indentPanel = new JPanel(new BorderLayout());
         indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
 
-        // 创建复选框面板
-        JPanel checkBoxPanel = createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint");
-        indentPanel.add(checkBoxPanel, BorderLayout.CENTER);
+        // 创建垂直布局面板，包含两个复选框
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
+            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
+            .addComponent(availableProvidersPanel)
+            .getPanel();
+
+        indentPanel.add(contentPanel, BorderLayout.CENTER);
         panel.add(indentPanel, BorderLayout.CENTER);
 
         // 初始状态：根据性能模式复选框的状态设置可用性
         updateShowProviderStatisticsEnabled();
+        updateShowAvailableProvidersEnabled();
 
         return panel;
     }
@@ -657,6 +822,31 @@ public class JavaDocSettingsPanel {
     }
 
     /**
+     * 更新显示可用服务商复选框的可用性
+     * <p>
+     * 根据性能模式复选框的状态，设置显示可用服务商复选框的可用性和提示文本颜色。
+     * 当性能模式未启用时，显示可用服务商复选框及其提示文本都会显示为禁用状态。
+     */
+    private void updateShowAvailableProvidersEnabled() {
+        boolean enabled = performanceModeCheckBox.isSelected();
+        showAvailableProvidersCheckBox.setEnabled(enabled);
+
+        // 更新显示可用服务商复选框的提示文本颜色
+        // 如果性能模式未启用，提示文本显示为禁用状态
+        // 如果性能模式启用，则根据显示可用服务商复选框的状态更新颜色
+        JBLabel hintLabel = checkBoxHintLabelMap.get(showAvailableProvidersCheckBox);
+        if (hintLabel != null) {
+            if (enabled) {
+                // 性能模式启用时，根据显示可用服务商复选框的状态更新颜色
+                updateHintLabelColor(hintLabel, showAvailableProvidersCheckBox.isSelected());
+            } else {
+                // 性能模式未启用时，提示文本显示为禁用状态
+                hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            }
+        }
+    }
+
+    /**
      * 更新所有复选框的提示文本颜色
      * <p>
      * 根据每个复选框的当前选中状态，更新对应的提示文本颜色。
@@ -664,14 +854,14 @@ public class JavaDocSettingsPanel {
      *
      * <p>特殊处理：
      * <ul>
-     *   <li>显示统计信息复选框：如果性能模式未启用，提示文本显示为禁用状态</li>
+     *   <li>显示统计信息和显示可用服务商复选框：如果性能模式未启用，提示文本显示为禁用状态</li>
      *   <li>其他复选框：根据复选框的选中状态更新颜色</li>
      * </ul>
      */
     private void updateAllCheckBoxHintColors() {
         checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> {
-            // 显示统计信息复选框需要特殊处理
-            if (checkBox == showProviderStatisticsCheckBox) {
+            // 显示统计信息和显示可用服务商复选框需要特殊处理
+            if (checkBox == showProviderStatisticsCheckBox || checkBox == showAvailableProvidersCheckBox) {
                 // 如果性能模式未启用，提示文本显示为禁用状态
                 if (!performanceModeCheckBox.isSelected()) {
                     hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
@@ -857,12 +1047,22 @@ public class JavaDocSettingsPanel {
         performanceModeCheckBox.addActionListener(e -> {
             // 当启用/禁用性能模式时，更新显示统计信息复选框的可用性和提示文本颜色
             updateShowProviderStatisticsEnabled();
+            // 更新显示可用服务商复选框的可用性和提示文本颜色
+            updateShowAvailableProvidersEnabled();
 
             // 更新性能模式复选框本身的提示文本颜色
             JBLabel performanceModeHintLabel = checkBoxHintLabelMap.get(performanceModeCheckBox);
             if (performanceModeHintLabel != null) {
                 updateHintLabelColor(performanceModeHintLabel, performanceModeCheckBox.isSelected());
             }
+        });
+
+        // 监听高级设置复选框状态变化，控制高级设置面板的显示/隐藏
+        showAdvancedSettingsCheckBox.addActionListener(e -> {
+            boolean selected = showAdvancedSettingsCheckBox.isSelected();
+            advancedSettingsPanel.setVisible(selected);
+            mainPanel.revalidate();
+            mainPanel.repaint();
         });
 
         // 监听显示统计信息复选框状态变化，更新其提示文本颜色
@@ -876,8 +1076,12 @@ public class JavaDocSettingsPanel {
             updateShowProviderStatisticsEnabled();
         });
 
-        // 监听显示可用服务商复选框状态变化
+        // 监听显示可用服务商复选框状态变化，更新其提示文本颜色和面板可见性
         showAvailableProvidersCheckBox.addActionListener(e -> {
+            // 调用 updateShowAvailableProvidersEnabled 来统一处理
+            // 这样可以确保提示文本颜色正确更新
+            updateShowAvailableProvidersEnabled();
+            // 控制可用服务商面板的显示/隐藏
             availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected());
         });
 
@@ -1607,6 +1811,9 @@ public class JavaDocSettingsPanel {
         settings.customJavaDocTags = customJavaDocTagsTableModel.getData();
         settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
 
+        // 高级设置显示状态
+        settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
+
         return settings;
     }
 
@@ -1651,6 +1858,7 @@ public class JavaDocSettingsPanel {
         performanceModeCheckBox.setSelected(settings.performanceMode);
         showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
         updateShowProviderStatisticsEnabled();
+        updateShowAvailableProvidersEnabled();
 
         // 语言支持
         javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
@@ -1680,6 +1888,10 @@ public class JavaDocSettingsPanel {
         customJavaDocTagsTableModel.setData(settings.customJavaDocTags);
         showCustomJavaDocTagsCheckBox.setSelected(settings.showCustomJavaDocTags);
         customJavaDocTagsPanel.setVisible(settings.showCustomJavaDocTags);
+
+        // 高级设置显示状态
+        showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
+        advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
 
         updateApiKeyFieldEnabled();
         updateBaseUrlFieldEditable();
