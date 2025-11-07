@@ -38,6 +38,7 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -945,11 +946,14 @@ public class TaskExecutor {
                             javadoc = javadoc + "\n */";
                         }
 
-                        // 5. 插入新 JavaDoc
+                        // 5. 格式化 JavaDoc 内容（中英文空格、标点符号）
+                        javadoc = formatJavaDocContent(javadoc);
+
+                        // 6. 插入新 JavaDoc
                         document.insertString(lineStartPosition, javadoc + "\n");
                         PsiDocumentManager.getInstance(project).commitDocument(document);
 
-                        // 6. 格式化插入的 JavaDoc
+                        // 7. 格式化插入的 JavaDoc
                         PsiFile psiFile = element.getContainingFile();
                         if (psiFile != null) {
                             int endPosition = lineStartPosition + javadoc.length() + 1;
@@ -1139,6 +1143,27 @@ public class TaskExecutor {
             return ((PsiField) element).getModifierList().getTextRange().getStartOffset();
         }
         return element.getTextRange().getStartOffset();
+    }
+
+    /**
+     * 格式化 JavaDoc 内容
+     *
+     * <p>对 JavaDoc 注释进行格式化处理：
+     * <ul>
+     *   <li>在中英文之间添加空格</li>
+     *   <li>将中文标点符号替换为英文标点符号</li>
+     * </ul>
+     *
+     * @param javadoc 原始 JavaDoc 文本
+     * @return 格式化后的 JavaDoc 文本
+     */
+    @NotNull
+    private String formatJavaDocContent(@NotNull String javadoc) {
+        if (javadoc.isEmpty()) {
+            return javadoc;
+        }
+
+        return JavaDocFormatter.format(javadoc);
     }
 
     /**
