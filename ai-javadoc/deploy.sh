@@ -24,12 +24,17 @@ echo "开始发布与部署 ai-javadoc"
 echo "================================"
 
 # 参数解析：
+# -v 指定版本号，会先调用 update_version.sh 更新版本号
 # -l 仅部署 landing.html
 # -z 仅上传 zip 到阿里云
+VERSION=""
 only_landing=false
 only_zip=false
-while getopts ":lz" opt; do
+while getopts ":v:lz" opt; do
     case $opt in
+        v)
+            VERSION="$OPTARG"
+            ;;
         l)
             only_landing=true
             ;;
@@ -37,13 +42,34 @@ while getopts ":lz" opt; do
             only_zip=true
             ;;
         \?)
-            echo "用法: $0 [-l] [-z]"
-            echo "  -l 仅部署 landing.html"
-            echo "  -z 仅上传 zip 到阿里云"
+            echo "用法: $0 [-v <version>] [-l] [-z]"
+            echo "  -v <version>  指定版本号，会先调用 update_version.sh 更新版本号 (例如: -v 1.5.0)"
+            echo "  -l           仅部署 landing.html"
+            echo "  -z           仅上传 zip 到阿里云"
+            exit 1
+            ;;
+        :)
+            echo "错误: 选项 -$OPTARG 需要参数"
+            echo "用法: $0 [-v <version>] [-l] [-z]"
             exit 1
             ;;
     esac
 done
+
+# 如果指定了版本号，先更新版本号
+if [ -n "$VERSION" ]; then
+    echo "[0/3] 更新版本号为 $VERSION ..."
+    UPDATE_VERSION_SCRIPT="$SCRIPT_DIR/update_version.sh"
+    if [ ! -f "$UPDATE_VERSION_SCRIPT" ]; then
+        echo "错误: 找不到 $UPDATE_VERSION_SCRIPT 文件"
+        exit 1
+    fi
+    
+    # 调用 update_version.sh 更新版本号
+    bash "$UPDATE_VERSION_SCRIPT" "$VERSION"
+    echo "✓ 版本号已更新为 $VERSION"
+    echo ""
+fi
 
 # 根据参数决定执行哪些步骤
 do_publish=true
