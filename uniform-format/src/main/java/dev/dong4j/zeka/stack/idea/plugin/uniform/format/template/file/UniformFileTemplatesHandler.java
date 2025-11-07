@@ -55,7 +55,7 @@ public class UniformFileTemplatesHandler implements StartupActivity {
         FileTemplate defaultTemplate =
             FileTemplateManager.getInstance(project).getDefaultTemplate(FileTemplateManager.FILE_HEADER_TEMPLATE_NAME);
 
-        if (!defaultTemplate.getText().trim().contains("成都返空汇网络技术有限公司")) {
+        if (!defaultTemplate.getText().trim().contains("Zeka.Stack")) {
             templateManager.removeTemplate(defaultTemplate);
 
             String author = getCurrentUserName();

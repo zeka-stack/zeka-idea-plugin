@@ -174,7 +174,27 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         SettingsState.ProviderConfig currentConfig = currentSettings.getDefaultProviderConfig(currentSettings.providerType);
         SettingsState.ProviderConfig panelConfig = panelSettings.getDefaultProviderConfig(panelSettings.providerType);
 
+        // 比较模型名称
+        String currentModelName = currentConfig.modelName != null ? currentConfig.modelName : "";
+        String panelModelName = panelConfig.modelName != null ? panelConfig.modelName : "";
+        if (!currentModelName.equals(panelModelName)) {
+            return true;
+        }
+
+        // 比较 Base URL
+        String currentBaseUrl = currentConfig.baseUrl != null ? currentConfig.baseUrl : "";
+        String panelBaseUrl = panelConfig.baseUrl != null ? panelConfig.baseUrl : "";
+        if (!currentBaseUrl.equals(panelBaseUrl)) {
+            return true;
+        }
+
+        // 比较 API Key (通过 md5)
         if (!currentConfig.md5.equals(panelConfig.md5)) {
+            return true;
+        }
+
+        // 比较验证状态
+        if (currentConfig.configurationVerified != panelConfig.configurationVerified) {
             return true;
         }
 
@@ -290,6 +310,15 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         // 将 panelSettings 中的 defaultProviders 复制到 currentSettings
         currentSettings.defaultProviders.putAll(panelSettings.defaultProviders);
+
+        // 保存当前服务商的 API Key 到 PasswordSafe（只在真正应用配置时保存，避免频繁写入）
+        // 注意：getSettings() 中已经计算了正确的 md5，但还没有保存 API Key
+        // 这里从 UI 中获取当前服务商的 API Key 并保存到 PasswordSafe
+        SettingsState.ProviderConfig currentConfig = panelSettings.getDefaultProviderConfig(panelSettings.providerType);
+        String apiKey = new String(settingsPanel.getApiKeyField().getPassword()).trim();
+        if (!apiKey.isEmpty()) {
+            SettingsState.setApiKey(currentConfig.md5, apiKey);
+        }
 
         // 将 availableProviders 也同步过来（避免丢失）
         currentSettings.availableProviders.clear();

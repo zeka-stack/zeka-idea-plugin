@@ -1249,6 +1249,9 @@ public class JavaDocSettingsPanel {
      * 测试通过后将当前配置添加到可用提供商列表
      * <p>
      * 使用 defaultProviders 的 UUID 创建配置，确保 API Key 正确关联
+     * <p>
+     * 测试通过后，除了添加到 availableProviders，还要更新 defaultProviders 中当前服务商的配置，
+     * 确保即使用户没有点击 Apply，配置也能被保存。
      */
     private void addToAvailableProviders(SettingsState.ProviderConfig snapshotProviderConfig) {
         SettingsState settings = SettingsState.getInstance();
@@ -1271,6 +1274,18 @@ public class JavaDocSettingsPanel {
 
         // 更新表格显示
         availableProvidersTableModel.setData(settings.availableProviders);
+
+        // 更新 defaultProviders 中当前服务商的配置，确保配置被保存
+        // 使用 snapshotProviderConfig 的 providerType，确保配置一致
+        if (snapshotProviderConfig.providerType != null) {
+            // 使用 snapshotProviderConfig 的副本，但更新验证状态为当前状态
+            SettingsState.ProviderConfig defaultConfig = new SettingsState.ProviderConfig(snapshotProviderConfig);
+            defaultConfig.configurationVerified = this.configurationVerified;
+
+            // 更新 defaultProviders 中当前服务商的配置
+            // 这样确保即使用户没有点击 Apply，配置也能被保存
+            settings.updateDefaultProviderConfig(snapshotProviderConfig.providerType, defaultConfig);
+        }
     }
 
     /**
@@ -1486,6 +1501,12 @@ public class JavaDocSettingsPanel {
 
         // 设置 baseUrl（使用标准化方法）
         defaultConfig.baseUrl = SettingsState.normalizeBaseUrl(baseUrlField.getText().trim());
+
+        // 获取 API Key 并更新 md5（因为 md5 是基于 providerType、baseUrl、modelName 和 apiKey 计算的）
+        // 注意：这里只计算 md5，不保存 API Key 到 PasswordSafe
+        // API Key 的保存应该在 apply() 方法中统一处理，避免在 isModified() 频繁调用时重复保存
+        String apiKey = new String(apiKeyField.getPassword()).trim();
+        defaultConfig.md5 = defaultConfig.buildMd5(apiKey);
         
         // 设置验证状态
         defaultConfig.configurationVerified = this.configurationVerified;
