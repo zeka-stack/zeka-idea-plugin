@@ -16,12 +16,14 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
@@ -430,6 +432,47 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean verboseLogging = false;
 
+    // ==================== JavaDoc 标签配置 ====================
+
+    /**
+     * 自定义 JavaDoc 标签列表
+     *
+     * <p>用户可以在设置页面配置自定义的 JavaDoc 标签。
+     * 这些标签会被自动注册到 JavadocDeclarationInspection 中，
+     * 使得 IntelliJ IDEA 不会将这些标签标记为未知标签。
+     *
+     * <p>标签格式：
+     * <ul>
+     *   <li>标签名称不包含 @ 符号</li>
+     *   <li>标签名称不区分大小写</li>
+     *   <li>标签名称不能包含逗号、空格等特殊字符</li>
+     * </ul>
+     *
+     * <p>默认值: ["date", "email"]
+     * <p>首次加载配置时，如果列表为空，会自动添加默认的 "date" 和 "email" 标签。
+     *
+     * <p>示例：
+     * <pre>
+     * customJavaDocTags = ["date", "email", "custom"]
+     * </pre>
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar
+     * @since 1.3.4
+     */
+    public List<String> customJavaDocTags = new ArrayList<>();
+
+    /**
+     * 是否显示自定义 JavaDoc 标签配置面板
+     *
+     * <p>控制设置页面中自定义 JavaDoc 标签配置表格的显示/隐藏。
+     * 用户可以通过复选框控制是否显示标签管理表格，减少设置页面长度。
+     *
+     * <p>默认值: false（默认隐藏，减少页面长度）
+     *
+     * @since 1.4.0
+     */
+    public boolean showCustomJavaDocTags = false;
+
     // ==================== Prompt 配置 ====================
 
     /**
@@ -828,6 +871,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
+
+        // 初始化默认的自定义 JavaDoc 标签（仅在配置为空时）
+        if (customJavaDocTags == null || customJavaDocTags.isEmpty()) {
+            customJavaDocTags = new ArrayList<>();
+            customJavaDocTags.add("date");
+            customJavaDocTags.add("email");
+        }
     }
 
     // ==================== 辅助方法 ====================
@@ -911,6 +961,56 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean isLanguageSupported(String language) {
         return supportedLanguages != null && supportedLanguages.contains(language.toLowerCase());
+    }
+
+    /**
+     * 获取自定义 JavaDoc 标签列表（去重、去空、转小写）
+     *
+     * <p>对标签列表进行规范化处理：
+     * <ul>
+     *   <li>去除空字符串和 null 值</li>
+     *   <li>去除重复标签</li>
+     *   <li>转换为小写（标签不区分大小写）</li>
+     *   <li>去除前后空格</li>
+     * </ul>
+     *
+     * @return 规范化后的标签列表
+     */
+    @NotNull
+    public List<String> getNormalizedCustomJavaDocTags() {
+        if (customJavaDocTags == null) {
+            return new ArrayList<>();
+        }
+
+        return customJavaDocTags.stream()
+            .filter(tag -> tag != null && !tag.trim().isEmpty())
+            .map(String::trim)
+            .map(String::toLowerCase)
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 验证标签名称是否有效
+     *
+     * <p>标签名称规则：
+     * <ul>
+     *   <li>不能为空</li>
+     *   <li>只能包含字母、数字、下划线、连字符</li>
+     *   <li>不能包含空格、逗号等特殊字符</li>
+     * </ul>
+     *
+     * @param tagName 标签名称
+     * @return 如果标签名称有效返回 true
+     */
+    public static boolean isValidTagName(@Nullable String tagName) {
+        if (tagName == null || tagName.trim().isEmpty()) {
+            return false;
+        }
+
+        // 标签名称只能包含字母、数字、下划线、连字符
+        return tagName.matches("^[a-zA-Z0-9_-]+$");
     }
 
     /**

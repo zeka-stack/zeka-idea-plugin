@@ -1,16 +1,22 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 import javax.swing.JComponent;
 
+import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar;
 import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -265,6 +271,16 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
             return true;
         }
 
+        // 比较自定义 JavaDoc 标签
+        List<String> currentTags = currentSettings.getNormalizedCustomJavaDocTags();
+        List<String> panelTags = panelSettings.getNormalizedCustomJavaDocTags();
+        if (!currentTags.equals(panelTags)) {
+            return true;
+        }
+        if (currentSettings.showCustomJavaDocTags != panelSettings.showCustomJavaDocTags) {
+            return true;
+        }
+
         return !currentSettings.supportedLanguages.equals(panelSettings.supportedLanguages);
     }
 
@@ -351,6 +367,19 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         currentSettings.supportedLanguages = panelSettings.supportedLanguages;
 
+        // 保存自定义 JavaDoc 标签配置
+        currentSettings.customJavaDocTags = panelSettings.customJavaDocTags;
+        currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
+
+        // 触发标签同步（需要在写操作中执行）
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ApplicationManager.getApplication().runWriteAction(() -> {
+                Project project = ProjectManager.getInstance().getDefaultProject();
+                if (project != null && !project.isDisposed()) {
+                    CustomJavaDocTagRegistrar.syncCustomTags(project);
+                }
+            });
+        });
     }
 
     /**

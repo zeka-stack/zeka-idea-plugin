@@ -110,6 +110,16 @@ public class JavaDocSettingsPanel {
     /** Kotlin 语言支持开关控件 */
     private JBCheckBox kotlinCheckBox;
 
+    // JavaDoc 标签配置
+    /** 显示自定义 JavaDoc 标签的复选框 */
+    private JBCheckBox showCustomJavaDocTagsCheckBox;
+    /** 自定义 JavaDoc 标签列表表格 */
+    private JBTable customJavaDocTagsTable;
+    /** 自定义 JavaDoc 标签列表面板（包含表格和工具栏） */
+    private JPanel customJavaDocTagsPanel;
+    /** 自定义 JavaDoc 标签列表表格模型 */
+    private CustomJavaDocTagsTableModel customJavaDocTagsTableModel;
+
     // 高级配置
     /** 最大重试次数的下拉选择器 */
     private JSpinner maxRetriesSpinner;
@@ -231,6 +241,40 @@ public class JavaDocSettingsPanel {
         kotlinCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.kotlin"));
         kotlinCheckBox.setEnabled(false);
 
+        // 创建自定义 JavaDoc 标签组件
+        showCustomJavaDocTagsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.custom.javadoc.tags"));
+        customJavaDocTagsTableModel = new CustomJavaDocTagsTableModel();
+        customJavaDocTagsTable = new JBTable(customJavaDocTagsTableModel);
+        customJavaDocTagsTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
+
+        // 创建带工具栏的面板
+        ToolbarDecorator tagsDecorator = ToolbarDecorator.createDecorator(customJavaDocTagsTable)
+            .setAddAction(button -> {
+                addCustomJavaDocTag();
+            })
+            .setRemoveAction(button -> {
+                int selectedRow = customJavaDocTagsTable.getSelectedRow();
+                if (selectedRow >= 0) {
+                    removeCustomJavaDocTag(selectedRow);
+                }
+            })
+            .addExtraAction(new AnAction(JavaDocBundle.message("settings.custom.javadoc.tags.clear.all"),
+                                         JavaDocBundle.message("settings.custom.javadoc.tags.clear.all.description"),
+                                         com.intellij.icons.AllIcons.Actions.GC) {
+                @Override
+                public void actionPerformed(@NotNull AnActionEvent e) {
+                    clearAllCustomJavaDocTags();
+                }
+
+                @Override
+                public @NotNull ActionUpdateThread getActionUpdateThread() {
+                    return ActionUpdateThread.BGT;
+                }
+            });
+
+        customJavaDocTagsPanel = tagsDecorator.createPanel();
+        // 可见性将在 loadSettings 中根据配置设置
+
         // 高级配置
         maxRetriesSpinner = new JSpinner(new SpinnerNumberModel(3, 0, 10, 1));
         timeoutSpinner = new JSpinner(new SpinnerNumberModel(30000, 1000, 300000, 1000));
@@ -268,6 +312,10 @@ public class JavaDocSettingsPanel {
             .addComponent(new JBLabel(JavaDocBundle.message("settings.language.support")))
             .addComponent(javaCheckBox)
             .addComponent(kotlinCheckBox)
+            .addSeparator(10)
+
+            .addComponent(showCustomJavaDocTagsCheckBox)
+            .addComponent(customJavaDocTagsPanel)
             .addSeparator(10)
 
             .addComponent(new JBLabel(JavaDocBundle.message("settings.model.config")))
@@ -831,6 +879,11 @@ public class JavaDocSettingsPanel {
         // 监听显示可用服务商复选框状态变化
         showAvailableProvidersCheckBox.addActionListener(e -> {
             availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected());
+        });
+
+        // 监听显示自定义 JavaDoc 标签复选框状态变化
+        showCustomJavaDocTagsCheckBox.addActionListener(e -> {
+            customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected());
         });
     }
 
@@ -1550,6 +1603,10 @@ public class JavaDocSettingsPanel {
         settings.fieldPromptTemplate = fieldPromptTextArea.getText().trim();
         settings.testPromptTemplate = testPromptTextArea.getText().trim();
 
+        // 自定义 JavaDoc 标签配置
+        settings.customJavaDocTags = customJavaDocTagsTableModel.getData();
+        settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
+
         return settings;
     }
 
@@ -1619,8 +1676,101 @@ public class JavaDocSettingsPanel {
         fieldPromptTextArea.setText(settings.fieldPromptTemplate);
         testPromptTextArea.setText(settings.testPromptTemplate);
 
+        // 加载自定义 JavaDoc 标签配置
+        customJavaDocTagsTableModel.setData(settings.customJavaDocTags);
+        showCustomJavaDocTagsCheckBox.setSelected(settings.showCustomJavaDocTags);
+        customJavaDocTagsPanel.setVisible(settings.showCustomJavaDocTags);
+
         updateApiKeyFieldEnabled();
         updateBaseUrlFieldEditable();
+    }
+
+    /**
+     * 添加自定义 JavaDoc 标签
+     */
+    private void addCustomJavaDocTag() {
+        String tagName = JOptionPane.showInputDialog(
+            getParentWindow(),
+            JavaDocBundle.message("settings.custom.javadoc.tags.add.prompt"),
+            JavaDocBundle.message("settings.custom.javadoc.tags.add.title"),
+            JOptionPane.QUESTION_MESSAGE
+                                                    );
+
+        if (tagName != null && !tagName.trim().isEmpty()) {
+            tagName = tagName.trim();
+
+            // 验证标签名称
+            if (!SettingsState.isValidTagName(tagName)) {
+                JOptionPane.showMessageDialog(
+                    getParentWindow(),
+                    JavaDocBundle.message("settings.custom.javadoc.tags.invalid.name", tagName),
+                    JavaDocBundle.message("settings.error.title"),
+                    JOptionPane.ERROR_MESSAGE
+                                             );
+                return;
+            }
+
+            // 检查是否已存在
+            List<String> currentTags = customJavaDocTagsTableModel.getData();
+            String tagNameLower = tagName.toLowerCase();
+            if (currentTags.stream().anyMatch(t -> t.toLowerCase().equals(tagNameLower))) {
+                JOptionPane.showMessageDialog(
+                    getParentWindow(),
+                    JavaDocBundle.message("settings.custom.javadoc.tags.already.exists", tagName),
+                    JavaDocBundle.message("settings.error.title"),
+                    JOptionPane.WARNING_MESSAGE
+                                             );
+                return;
+            }
+
+            // 添加到表格
+            customJavaDocTagsTableModel.addTag(tagName);
+        }
+    }
+
+    /**
+     * 删除自定义 JavaDoc 标签
+     */
+    private void removeCustomJavaDocTag(int selectedRow) {
+        if (selectedRow < 0 || selectedRow >= customJavaDocTagsTableModel.getRowCount()) {
+            return;
+        }
+
+        String tagName = customJavaDocTagsTableModel.getData().get(selectedRow);
+
+        int result = JOptionPane.showConfirmDialog(
+            getParentWindow(),
+            JavaDocBundle.message("settings.custom.javadoc.tags.delete.confirm", tagName),
+            JavaDocBundle.message("settings.custom.javadoc.tags.delete.title"),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+                                                  );
+
+        if (result == JOptionPane.YES_OPTION) {
+            customJavaDocTagsTableModel.removeRow(selectedRow);
+        }
+    }
+
+    /**
+     * 清空所有自定义 JavaDoc 标签
+     */
+    private void clearAllCustomJavaDocTags() {
+        if (customJavaDocTagsTableModel.getRowCount() == 0) {
+            return;
+        }
+
+        int result = JOptionPane.showConfirmDialog(
+            getParentWindow(),
+            JavaDocBundle.message("settings.custom.javadoc.tags.clear.confirm",
+                                  customJavaDocTagsTableModel.getRowCount()),
+            JavaDocBundle.message("settings.custom.javadoc.tags.clear.title"),
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+                                                  );
+
+        if (result == JOptionPane.YES_OPTION) {
+            customJavaDocTagsTableModel.clearAll();
+        }
     }
 
     /**
@@ -1697,6 +1847,103 @@ public class JavaDocSettingsPanel {
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             if (columnIndex == 2 && rowIndex >= 0 && rowIndex < data.size()) {
                 data.get(rowIndex).remark = aValue != null ? aValue.toString() : "";
+                fireTableCellUpdated(rowIndex, columnIndex);
+            }
+        }
+    }
+
+    /**
+     * 自定义 JavaDoc 标签列表的表格模型
+     */
+    private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
+        private final String[] columnNames = {JavaDocBundle.message("settings.custom.javadoc.tags.column.name")};
+        private final List<String> data;
+
+        public CustomJavaDocTagsTableModel() {
+            this.data = new ArrayList<>();
+        }
+
+        public void setData(List<String> newData) {
+            this.data.clear();
+            if (newData != null) {
+                this.data.addAll(newData);
+            }
+            fireTableDataChanged();
+        }
+
+        public List<String> getData() {
+            return new ArrayList<>(data);
+        }
+
+        public void addTag(String tagName) {
+            data.add(tagName);
+            fireTableRowsInserted(data.size() - 1, data.size() - 1);
+        }
+
+        public void removeRow(int row) {
+            if (row >= 0 && row < data.size()) {
+                data.remove(row);
+                fireTableRowsDeleted(row, row);
+            }
+        }
+
+        public void clearAll() {
+            int size = data.size();
+            if (size > 0) {
+                data.clear();
+                fireTableRowsDeleted(0, size - 1);
+            }
+        }
+
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnNames.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return columnNames[column];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            if (rowIndex >= 0 && rowIndex < data.size()) {
+                return data.get(rowIndex);
+            }
+            return "";
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return true; // 允许编辑标签名称
+        }
+
+        @Override
+        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+            if (rowIndex >= 0 && rowIndex < data.size() && aValue != null) {
+                String newTagName = aValue.toString().trim();
+
+                // 验证标签名称
+                if (!SettingsState.isValidTagName(newTagName)) {
+                    // 可以显示错误提示，这里简单处理为不更新
+                    return;
+                }
+
+                // 检查是否与其他标签重复
+                String newTagNameLower = newTagName.toLowerCase();
+                for (int i = 0; i < data.size(); i++) {
+                    if (i != rowIndex && data.get(i).toLowerCase().equals(newTagNameLower)) {
+                        // 重复标签，不更新
+                        return;
+                    }
+                }
+
+                data.set(rowIndex, newTagName);
                 fireTableCellUpdated(rowIndex, columnIndex);
             }
         }
