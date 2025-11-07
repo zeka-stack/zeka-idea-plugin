@@ -8,6 +8,8 @@
 - [实现细节](#实现细节)
 - [用户交互流程](#用户交互流程)
 - [技术难点与解决方案](#技术难点与解决方案)
+- [实现问题与解决方案](#实现问题与解决方案)
+- [实际实现总结](#实际实现总结)
 - [实现步骤](#实现步骤)
 - [注意事项](#注意事项)
 
@@ -155,25 +157,31 @@ public class CommitJavaDocGenerator {
 
 #### 1.1 注册方式
 
-**方案 A：使用 CommitToolbarAction（推荐）**
+**实际采用的方案：使用 AnAction + Action Group**
 
 ```java
-// 在 plugin.xml 中注册
-<extensions defaultExtensionNs="com.intellij">
-    <commitToolbarAction 
-        implementation="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"/>
-</extensions>
+// Action 类继承 AnAction
+public class CommitJavaDocAction extends AnAction {
+    // 实现代码
+}
 ```
 
-**方案 B：使用 VcsCheckinHandlerFactory**
-
-```java
-// 在 plugin.xml 中注册
-<extensions defaultExtensionNs="com.intellij">
-    <vcs.checkinHandlerFactory 
-        implementation="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocCheckinHandlerFactory"/>
-</extensions>
+```xml
+<!-- 在 plugin.xml 的 <actions> 中注册 -->
+<actions>
+    <action id="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+            class="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+            icon="/icons/aij_16.svg">
+        <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+    </action>
+</actions>
 ```
+
+**注意事项**：
+
+- `CommitToolbarAction` 类不存在，不能使用
+- `commitToolbarAction` 扩展点也不存在
+- 如果 `Vcs.MessageActionGroup` 不存在，可以不指定 group-id，按钮会出现在 "Other" 组中
 
 #### 1.2 按钮显示逻辑
 
@@ -185,13 +193,16 @@ public class CommitJavaDocGenerator {
 
 #### 2.1 获取提交文件
 
-```java
-// 通过 CommitContext 获取
-CommitContext commitContext = ...;
-Collection<Change> changes = commitContext.getChanges();
+**注意**：在后台线程中访问 VCS 数据需要使用 read-action。
 
-// 或通过 VcsChangesUtil
-Collection<Change> changes = VcsChangesUtil.getAllChanges(project);
+```java
+// 在后台线程中，使用 read-action 访问 ChangeListManager
+Collection<Change> changes = ApplicationManager.getApplication().runReadAction(
+    (Computable<Collection<Change>>) () -> {
+        ChangeListManager changeListManager = ChangeListManager.getInstance(project);
+        return changeListManager.getDefaultChangeList().getChanges();
+    }
+);
 ```
 
 #### 2.2 过滤 Java 文件
@@ -219,18 +230,20 @@ List<Integer> changedLines = getChangedLines(change);
 
 #### 3.2 定位代码元素
 
-```java
-// 通过行号定位 PsiElement
-PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
-Document document = PsiDocumentManager.getInstance(project).getDocument(psiFile);
+**注意**：在后台线程中访问 PSI 需要使用 read-action。
 
-// 根据变更行号找到对应的元素
-for (int lineNumber : changedLines) {
-    int offset = document.getLineStartOffset(lineNumber);
-    PsiElement element = psiFile.findElementAt(offset);
-    // 向上查找类、方法、字段等
-    PsiElement target = findTargetElement(element);
-}
+```java
+// 在后台线程中，使用 read-action 访问 PSI
+List<DocumentationTask> fileTasks = ApplicationManager.getApplication().runReadAction(
+    (Computable<List<DocumentationTask>>) () -> {
+        PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
+        if (psiFile instanceof PsiJavaFile) {
+            TaskCollector collector = new TaskCollector(project);
+            return collector.collectFromFile(psiFile);
+        }
+        return new ArrayList<>();
+    }
+);
 ```
 
 ### 4. Javadoc 缺失检测
@@ -412,9 +425,10 @@ changeListManager.addFileToChangelist(file, changeListManager.getDefaultChangeLi
 
 **解决方案**：
 
-- 使用 `CommitToolbarAction` 扩展点（IntelliJ 2020.3+）
-- 或使用 `VcsCheckinHandlerFactory` 注册检查处理器
-- 或使用 `CommitMessageProvider` 在提交消息区域添加按钮
+- **实际采用**：使用标准的 `AnAction` 类，在 `<actions>` 中注册
+- 使用 `group-id="Vcs.MessageActionGroup"` 添加到提交消息区域
+- 如果该组不存在，可以不指定 group-id，按钮会出现在 "Other" 组中
+- **注意**：`CommitToolbarAction` 类和 `commitToolbarAction` 扩展点都不存在，不能使用
 
 ### 难点 6：性能优化
 
@@ -426,6 +440,214 @@ changeListManager.addFileToChangelist(file, changeListManager.getDefaultChangeLi
 - 使用 `ProgressManager` 显示进度，避免阻塞 UI
 - 分批处理文件，避免一次性处理过多文件
 - 缓存已检测的文件，避免重复检测
+
+---
+
+## 实现问题与解决方案
+
+在实际实现过程中，遇到以下问题并已解决：
+
+### 问题 1：CommitToolbarAction 类不存在
+
+**错误信息**：
+
+```
+错误: 找不到符号
+import com.intellij.openapi.vcs.changes.CommitToolbarAction;
+```
+
+**原因**：
+
+- `CommitToolbarAction` 不是公开的 API，无法直接使用
+- 方案文档中提到的扩展点 `commitToolbarAction` 也不存在
+
+**解决方案**：
+
+- 使用标准的 `AnAction` 类继承
+- 在 `plugin.xml` 的 `<actions>` 中注册，使用 `group-id="Vcs.MessageActionGroup"` 添加到提交消息区域
+- 如果 `Vcs.MessageActionGroup` 也不存在，可以不指定 group-id，让按钮出现在 "Other" 组中
+
+**最终实现**：
+
+```java
+public class CommitJavaDocAction extends AnAction {
+    // 实现代码
+}
+```
+
+```xml
+<actions>
+    <action id="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+            class="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+            icon="/icons/aij_16.svg">
+        <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+    </action>
+</actions>
+```
+
+### 问题 2：VCS 模块依赖缺失
+
+**错误信息**：
+
+```
+错误: 找不到符号
+import com.intellij.openapi.vcs.changes.Change;
+```
+
+**原因**：
+
+- 使用了 VCS 相关的 API，但没有在 `plugin.xml` 中声明依赖
+
+**解决方案**：
+
+- 在 `plugin.xml` 中添加 `com.intellij.modules.vcs` 依赖
+
+**最终实现**：
+
+```xml
+<depends>com.intellij.modules.platform</depends>
+<depends>com.intellij.modules.java</depends>
+<depends>com.intellij.modules.vcs</depends>
+```
+
+### 问题 3：线程安全问题 - Read Action
+
+**错误信息**：
+
+```
+java.lang.Throwable: Read access is allowed from inside read-action (or EDT) only
+```
+
+**原因**：
+
+- 在后台线程（`ActionUpdateThread.BGT`）中直接访问 VCS 和 PSI 数据
+- `ChangeListManager`、`Change`、`PsiManager` 等 API 需要在 read-action 中访问
+
+**解决方案**：
+
+- 使用 `ApplicationManager.getApplication().runReadAction()` 包装所有 VCS 和 PSI 访问
+- 使用 `Computable<T>` 接口显式指定返回类型
+
+**最终实现**：
+
+在 `CommitJavaDocAction.update()` 中：
+
+```java
+boolean hasJavaFiles = ApplicationManager.getApplication().runReadAction(
+    (Computable<Boolean>) () -> hasJavaFileChanges(project)
+);
+```
+
+在 `CommitJavaDocGenerator.detectMissingJavaDoc()` 中：
+
+```java
+List<DocumentationTask> fileTasks = ApplicationManager.getApplication().runReadAction(
+    (Computable<List<DocumentationTask>>) () -> {
+        PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
+        if (psiFile instanceof PsiJavaFile) {
+            return collector.collectFromFile(psiFile);
+        }
+        return new ArrayList<>();
+    }
+);
+```
+
+### 问题 4：类型推断歧义
+
+**错误信息**：
+
+```
+错误: 对runReadAction的引用不明确
+Application 中的方法 <T#1>runReadAction(Computable<T#1>) 和 
+Application 中的方法 <T#2,E>runReadAction(ThrowableComputable<T#2,E>) 都匹配
+```
+
+**原因**：
+
+- `runReadAction` 有两个重载方法，使用 lambda 表达式时编译器无法确定使用哪个
+
+**解决方案**：
+
+- 显式指定 `Computable<T>` 类型
+- 导入 `com.intellij.openapi.util.Computable` 接口
+
+**最终实现**：
+
+```java
+import com.intellij.openapi.util.Computable;
+
+// 显式指定类型
+List<DocumentationTask> fileTasks = ApplicationManager.getApplication().runReadAction(
+    (Computable<List<DocumentationTask>>) () -> {
+        // 代码
+    }
+);
+```
+
+### 问题 5：Action Group 不存在
+
+**错误信息**：
+
+```
+group with id "Vcs.CommitToolbar" isn't registered; 
+action will be added to the "Other" group
+```
+
+**原因**：
+
+- `Vcs.CommitToolbar` 组 ID 不存在
+
+**解决方案**：
+
+- 尝试使用 `Vcs.MessageActionGroup`（提交消息区域的组）
+- 如果该组也不存在，可以不指定 group-id，让按钮出现在 "Other" 组中
+- 用户可以通过自定义工具栏手动添加按钮
+
+**最终实现**：
+
+```xml
+<action id="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+        class="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+        icon="/icons/aij_16.svg">
+    <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+</action>
+```
+
+---
+
+## 实际实现总结
+
+### 最终采用的方案
+
+1. **Action 类**：继承 `AnAction`，而不是不存在的 `CommitToolbarAction`
+2. **注册方式**：在 `<actions>` 中注册，使用 `Vcs.MessageActionGroup` 组
+3. **线程安全**：所有 VCS 和 PSI 访问都使用 `runReadAction` 包装
+4. **依赖声明**：添加 `com.intellij.modules.vcs` 依赖
+
+### 关键代码模式
+
+**线程安全的 VCS 访问**：
+
+```java
+Collection<Change> changes = ApplicationManager.getApplication().runReadAction(
+    (Computable<Collection<Change>>) () -> {
+        ChangeListManager changeListManager = ChangeListManager.getInstance(project);
+        return changeListManager.getDefaultChangeList().getChanges();
+    }
+);
+```
+
+**线程安全的 PSI 访问**：
+
+```java
+List<DocumentationTask> tasks = ApplicationManager.getApplication().runReadAction(
+    (Computable<List<DocumentationTask>>) () -> {
+        PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
+        // 处理 PSI 数据
+        return collector.collectFromFile(psiFile);
+    }
+);
+```
 
 ---
 
@@ -509,9 +731,10 @@ changeListManager.addFileToChangelist(file, changeListManager.getDefaultChangeLi
 
 ### 1. 兼容性
 
-- **IntelliJ 版本**：`CommitToolbarAction` 在 2020.3+ 版本可用
+- **IntelliJ 版本**：支持 2022.3+ 版本（实际测试基于 2022.3）
 - **Git 集成**：需要确保项目已配置 Git
 - **Java 插件**：需要 Java 插件支持
+- **VCS 模块**：需要在 `plugin.xml` 中声明 `com.intellij.modules.vcs` 依赖
 
 ### 2. 性能考虑
 
