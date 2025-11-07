@@ -486,6 +486,32 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean showAdvancedSettings = false;
 
+    /**
+     * 是否在中英文之间添加空格
+     *
+     * <p>控制是否在格式化 JavaDoc 时，在中文字符和英文字符/数字之间自动添加空格。
+     * 例如："这是一个User类" 会格式化为 "这是一个 User 类"。
+     *
+     * <p>默认值: true（默认启用，提升可读性）
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter
+     * @since 1.4.0
+     */
+    public boolean addSpaceBetweenChineseAndEnglish = true;
+
+    /**
+     * 是否将中文标点符号转换为英文标点符号
+     *
+     * <p>控制是否在格式化 JavaDoc 时，将中文标点符号替换为对应的英文标点符号。
+     * 例如："这是一个类，用于处理数据。" 会格式化为 "这是一个类, 用于处理数据."。
+     *
+     * <p>默认值: true（默认启用，符合 JavaDoc 规范）
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter
+     * @since 1.4.0
+     */
+    public boolean replaceChinesePunctuation = true;
+
     // ==================== Prompt 配置 ====================
 
     /**
@@ -1095,6 +1121,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         overrideExisting = false;
         enableCodeCompression = false;
         maxClassCodeLines = 1000;
+        addSpaceBetweenChineseAndEnglish = true;
+        replaceChinesePunctuation = true;
 
         maxRetries = 2;
         timeout = 10000;

@@ -946,7 +946,7 @@ public class TaskExecutor {
                             javadoc = javadoc + "\n */";
                         }
 
-                        // 5. 格式化 JavaDoc 内容（中英文空格、标点符号）
+                        // 5. 格式化 JavaDoc 内容（根据配置进行格式化）
                         javadoc = formatJavaDocContent(javadoc);
 
                         // 6. 插入新 JavaDoc
@@ -1148,10 +1148,10 @@ public class TaskExecutor {
     /**
      * 格式化 JavaDoc 内容
      *
-     * <p>对 JavaDoc 注释进行格式化处理：
+     * <p>对 JavaDoc 注释进行格式化处理，根据用户配置决定是否执行各项格式化操作：
      * <ul>
-     *   <li>在中英文之间添加空格</li>
-     *   <li>将中文标点符号替换为英文标点符号</li>
+     *   <li>在中英文之间添加空格（如果配置启用）</li>
+     *   <li>将中文标点符号替换为英文标点符号（如果配置启用）</li>
      * </ul>
      *
      * @param javadoc 原始 JavaDoc 文本
@@ -1163,7 +1163,11 @@ public class TaskExecutor {
             return javadoc;
         }
 
-        return JavaDocFormatter.format(javadoc);
+        return JavaDocFormatter.format(
+            javadoc,
+            settings.addSpaceBetweenChineseAndEnglish,
+            settings.replaceChinesePunctuation
+                                      );
     }
 
     /**

@@ -2,8 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.util;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.regex.Pattern;
-
 /**
  * JavaDoc 文本格式化工具类
  *
@@ -26,19 +24,10 @@ import java.util.regex.Pattern;
  * @since 1.4.0
  */
 public final class JavaDocFormatter {
-
     /**
-     * 中文字符正则表达式（包括中文标点）
-     */
-    private static final Pattern CHINESE_PATTERN = Pattern.compile("[\\u4E00-\\u9FA5\\u3000-\\u303F\\uFF00-\\uFFEF]");
-
-    /**
-     * 英文字母和数字正则表达式
-     */
-    private static final Pattern ENGLISH_PATTERN = Pattern.compile("[a-zA-Z0-9]");
-
-    /**
-     * 中文标点符号映射表
+     * 中英文标点符号映射表
+     * <p>
+     * 用于将中文标点转换为对应的英文标点符号
      */
     private static final String[][] PUNCTUATION_MAP = {
         {"，", ","},   // 中文逗号 -> 英文逗号
@@ -58,6 +47,13 @@ public final class JavaDocFormatter {
     };
 
     /**
+     * Pangu 实例，用于处理文本相关的操作
+     * <p>
+     * 该实例在类加载时初始化，提供全局可用的文本处理功能
+     */
+    private static final Pangu pangu = new Pangu();
+
+    /**
      * 私有构造函数，防止实例化
      */
     private JavaDocFormatter() {
@@ -69,8 +65,8 @@ public final class JavaDocFormatter {
      *
      * <p>对 AI 生成的 JavaDoc 文本进行格式化处理：
      * <ol>
-     *   <li>在中英文之间添加空格</li>
-     *   <li>将中文标点符号替换为英文标点符号</li>
+     *   <li>在中英文之间添加空格（可选）</li>
+     *   <li>将中文标点符号替换为英文标点符号（可选）</li>
      * </ol>
      *
      * <p>处理示例：
@@ -84,15 +80,38 @@ public final class JavaDocFormatter {
      */
     @NotNull
     public static String format(@NotNull String text) {
+        return format(text, true, true);
+    }
+
+    /**
+     * 格式化 JavaDoc 文本（支持配置）
+     *
+     * <p>对 AI 生成的 JavaDoc 文本进行格式化处理，根据配置决定是否执行各项格式化操作。
+     *
+     * @param text                             原始 JavaDoc 文本
+     * @param addSpaceBetweenChineseAndEnglish 是否在中英文之间添加空格
+     * @param replaceChinesePunctuation        是否将中文标点符号替换为英文标点符号
+     * @return 格式化后的文本
+     */
+    @NotNull
+    public static String format(@NotNull String text,
+                                boolean addSpaceBetweenChineseAndEnglish,
+                                boolean replaceChinesePunctuation) {
         if (text.isEmpty()) {
             return text;
         }
 
+        String result = text;
+
         // 1. 替换中文标点符号为英文标点符号
-        String result = replaceChinesePunctuation(text);
+        if (replaceChinesePunctuation) {
+            result = replaceChinesePunctuation(result);
+        }
 
         // 2. 在中英文之间添加空格
-        result = addSpaceBetweenChineseAndEnglish(result);
+        if (addSpaceBetweenChineseAndEnglish) {
+            result = pangu.spacingText(result);
+        }
 
         return result;
     }
@@ -110,94 +129,6 @@ public final class JavaDocFormatter {
             result = result.replace(mapping[0], mapping[1]);
         }
         return result;
-    }
-
-    /**
-     * 在中英文之间添加空格
-     *
-     * <p>处理规则：
-     * <ul>
-     *   <li>中文 + 英文/数字 -> 中文 + 空格 + 英文/数字</li>
-     *   <li>英文/数字 + 中文 -> 英文/数字 + 空格 + 中文</li>
-     *   <li>避免在 @ 符号和标签名之间添加空格（如 @param、@return）</li>
-     *   <li>避免重复添加空格</li>
-     * </ul>
-     *
-     * @param text 原始文本
-     * @return 添加空格后的文本
-     */
-    @NotNull
-    private static String addSpaceBetweenChineseAndEnglish(@NotNull String text) {
-        if (text.isEmpty()) {
-            return text;
-        }
-
-        StringBuilder result = new StringBuilder();
-        char[] chars = text.toCharArray();
-
-        for (int i = 0; i < chars.length; i++) {
-            char current = chars[i];
-            result.append(current);
-
-            // 如果当前字符是 @ 符号，跳过后续的标签名，避免在 @param、@return 等标签中添加空格
-            if (current == '@') {
-                // 跳过 @ 后面的标签名（通常是字母），但不添加空格
-                int j = i + 1;
-                while (j < chars.length && Character.isLetter(chars[j])) {
-                    result.append(chars[j]);
-                    j++;
-                }
-                // 更新索引，跳过已处理的字符
-                i = j - 1;
-                continue;
-            }
-
-            // 如果当前字符是中文，检查下一个字符
-            if (i < chars.length - 1 && isChinese(current)) {
-                char next = chars[i + 1];
-                // 如果下一个字符是英文或数字，添加空格
-                if (isEnglishOrDigit(next)) {
-                    // 检查是否已经有空格
-                    if (result.length() == 0 || result.charAt(result.length() - 1) != ' ') {
-                        result.append(' ');
-                    }
-                }
-            }
-            // 如果当前字符是英文或数字，检查下一个字符
-            else if (i < chars.length - 1 && isEnglishOrDigit(current)) {
-                char next = chars[i + 1];
-                // 如果下一个字符是中文，添加空格
-                if (isChinese(next)) {
-                    // 检查是否已经有空格
-                    if (result.length() == 0 || result.charAt(result.length() - 1) != ' ') {
-                        result.append(' ');
-                    }
-                }
-            }
-        }
-
-        // 清理多余的空格（连续的空格合并为一个）
-        return result.toString().replaceAll(" {2,}", " ");
-    }
-
-    /**
-     * 判断字符是否为中文字符
-     *
-     * @param c 字符
-     * @return 如果是中文字符返回 true
-     */
-    private static boolean isChinese(char c) {
-        return CHINESE_PATTERN.matcher(String.valueOf(c)).matches();
-    }
-
-    /**
-     * 判断字符是否为英文字母或数字
-     *
-     * @param c 字符
-     * @return 如果是英文字母或数字返回 true
-     */
-    private static boolean isEnglishOrDigit(char c) {
-        return ENGLISH_PATTERN.matcher(String.valueOf(c)).matches();
     }
 }
 

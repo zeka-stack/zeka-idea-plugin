@@ -103,6 +103,10 @@ public class JavaDocSettingsPanel {
     private JBCheckBox overrideExistingCheckBox;
     /** 启用代码压缩的复选框 */
     private JBCheckBox enableCodeCompressionCheckBox;
+    /** 在中英文间添加空格复选框 */
+    private JBCheckBox addSpaceBetweenChineseAndEnglishCheckBox;
+    /** 将中文标点符号转为英文标点符号复选框 */
+    private JBCheckBox replaceChinesePunctuationCheckBox;
     /** 最大类代码行数设置控件 */
     private JSpinner maxClassCodeLinesSpinner;
 
@@ -242,6 +246,8 @@ public class JavaDocSettingsPanel {
         overrideExistingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.override.existing"));
         enableCodeCompressionCheckBox = new JBCheckBox(JavaDocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
+        addSpaceBetweenChineseAndEnglishCheckBox = new JBCheckBox(JavaDocBundle.message("settings.add.space.between.chinese.and.english"));
+        replaceChinesePunctuationCheckBox = new JBCheckBox(JavaDocBundle.message("settings.replace.chinese.punctuation"));
 
         // 语言支持
         javaCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.java"));
@@ -500,6 +506,9 @@ public class JavaDocSettingsPanel {
             .addComponent(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"))
             .addComponent(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"))
             .addComponent(createCodeCompressionSubConfigPanel())
+            .addComponent(createCheckBoxWithHint(addSpaceBetweenChineseAndEnglishCheckBox, "settings.add.space.between.chinese.and" +
+                                                                                           ".english.hint"))
+            .addComponent(createCheckBoxWithHint(replaceChinesePunctuationCheckBox, "settings.replace.chinese.punctuation.hint"))
             .getPanel();
 
         // 创建带边框的面板
@@ -1778,6 +1787,8 @@ public class JavaDocSettingsPanel {
         settings.overrideExisting = overrideExistingCheckBox.isSelected();
         settings.enableCodeCompression = enableCodeCompressionCheckBox.isSelected();
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
+        settings.addSpaceBetweenChineseAndEnglish = addSpaceBetweenChineseAndEnglishCheckBox.isSelected();
+        settings.replaceChinesePunctuation = replaceChinesePunctuationCheckBox.isSelected();
 
         // 语言支持
         settings.supportedLanguages = new HashSet<>();
@@ -1850,6 +1861,8 @@ public class JavaDocSettingsPanel {
         overrideExistingCheckBox.setSelected(settings.overrideExisting);
         enableCodeCompressionCheckBox.setSelected(settings.enableCodeCompression);
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
+        addSpaceBetweenChineseAndEnglishCheckBox.setSelected(settings.addSpaceBetweenChineseAndEnglish);
+        replaceChinesePunctuationCheckBox.setSelected(settings.replaceChinesePunctuation);
 
         // 根据代码压缩设置更新最大行数输入框的可用性
         updateMaxClassCodeLinesEnabled();
