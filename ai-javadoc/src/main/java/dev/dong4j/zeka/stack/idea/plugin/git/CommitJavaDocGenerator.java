@@ -83,44 +83,6 @@ public class CommitJavaDocGenerator {
                  */
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
-                    List<DocumentationTask> tasks = detectMissingJavaDoc(javaFiles, indicator);
-                    if (tasks.isEmpty()) {
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            NotificationUtil.notifyNoTask(project,
-                                                          JavaDocBundle.message("commit.no.missing.javadoc"));
-                        });
-                        return;
-                    }
-                    int classCount = 0;
-                    int methodCount = 0;
-                    int fieldCount = 0;
-                    for (DocumentationTask task : tasks) {
-                        switch (task.getType()) {
-                            case CLASS -> classCount++;
-                            case METHOD, TEST_METHOD -> methodCount++;
-                            case FIELD -> fieldCount++;
-                        }
-                    }
-                    final int finalClassCount = classCount;
-                    final int finalMethodCount = methodCount;
-                    final int finalFieldCount = fieldCount;
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        String message = buildDetectionMessage(finalClassCount, finalMethodCount, finalFieldCount);
-                        int result = Messages.showYesNoDialog(
-                            project,
-                            message,
-                            JavaDocBundle.message("commit.detection.title"),
-                            Messages.getQuestionIcon());
-                        if (result != Messages.YES) {
-                            return;
-                        }
-                        generateDocumentation(tasks);
-                    });
-                }
- */
-
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
                     // 检测缺少 JavaDoc 的元素
                     List<DocumentationTask> tasks = detectMissingJavaDoc(javaFiles, indicator);
 
@@ -196,8 +158,8 @@ public class CommitJavaDocGenerator {
                 (Computable<List<DocumentationTask>>) () -> {
                     PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
                     if (psiFile instanceof PsiJavaFile) {
-                        // 使用 TaskCollector 收集任务（会自动过滤已有 JavaDoc 的元素）
-                        return collector.collectFromFile(psiFile);
+                        // 使用专门的方法收集缺失 JavaDoc 的任务（忽略 overrideExisting 配置）
+                        return collector.collectMissingJavaDocFromFile(psiFile);
                     }
                     return new ArrayList<>();
                 }

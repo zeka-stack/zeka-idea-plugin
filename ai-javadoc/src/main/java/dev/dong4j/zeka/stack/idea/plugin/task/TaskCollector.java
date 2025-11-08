@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor;
@@ -189,6 +190,90 @@ public class TaskCollector {
     }
 
     /**
+     * 从 PSI 文件收集任务（通用方法）
+     *
+     * <p>使用 JavaRecursiveElementVisitor 递归遍历文件中的所有元素，
+     * 为符合条件的类、方法、字段创建文档生成任务。
+     *
+     * <p>遍历流程：
+     * <ol>
+     *   <li>检查文件是否为 Java 文件</li>
+     *   <li>使用 visitor 模式遍历所有元素</li>
+     *   <li>使用提供的判断条件决定是否为元素创建任务</li>
+     * </ol>
+     *
+     * <p>Visitor 处理：
+     * <ul>
+     *   <li>visitClass：处理类元素</li>
+     *   <li>visitMethod：处理方法元素（区分普通方法和测试方法）</li>
+     *   <li>visitField：处理字段元素</li>
+     * </ul>
+     *
+     * @param psiFile          PSI 文件对象
+     * @param elementPredicate 元素判断条件，用于决定是否为元素生成文档任务
+     * @return 文档生成任务列表
+     * @see JavaRecursiveElementVisitor
+     */
+    @NotNull
+    private List<DocumentationTask> collectFromFileInternal(@NotNull PsiFile psiFile,
+                                                            @NotNull Predicate<PsiElement> elementPredicate) {
+        List<DocumentationTask> tasks = new ArrayList<>();
+
+        if (!(psiFile instanceof PsiJavaFile)) {
+            return tasks;
+        }
+
+        psiFile.accept(new JavaRecursiveElementVisitor() {
+            /**
+             * 访问类元素并根据配置和判断条件决定是否生成文档任务
+             *
+             * @param aClass 被访问的类元素
+             */
+            @Override
+            public void visitClass(@NotNull PsiClass aClass) {
+                super.visitClass(aClass);
+
+                if (settings.generateForClass && elementPredicate.test(aClass)) {
+                    tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
+                }
+            }
+
+            /**
+             * 处理方法节点，根据配置和判断条件决定是否生成文档任务
+             *
+             * @param method 被访问的方法节点
+             */
+            @Override
+            public void visitMethod(@NotNull PsiMethod method) {
+                super.visitMethod(method);
+
+                if (settings.generateForMethod && elementPredicate.test(method)) {
+                    DocumentationTask.TaskType type = isTestMethod(method)
+                                                      ? DocumentationTask.TaskType.TEST_METHOD
+                                                      : DocumentationTask.TaskType.METHOD;
+                    tasks.add(createTask(method, type));
+                }
+            }
+
+            /**
+             * 处理字段元素，根据配置和判断条件决定是否生成文档任务
+             *
+             * @param field 被访问的字段元素
+             */
+            @Override
+            public void visitField(@NotNull PsiField field) {
+                super.visitField(field);
+
+                if (settings.generateForField && elementPredicate.test(field)) {
+                    tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+                }
+            }
+        });
+
+        return tasks;
+    }
+
+    /**
      * 从 PSI 文件收集任务
      *
      * <p>使用 JavaRecursiveElementVisitor 递归遍历文件中的所有元素，
@@ -208,72 +293,50 @@ public class TaskCollector {
      *   <li>visitField：处理字段元素</li>
      * </ul>
      *
+     * <p>判断条件：
+     * <ul>
+     *   <li>根据用户配置（generateForClass、generateForMethod、generateForField）决定是否处理</li>
+     *   <li>根据 overrideExisting 配置决定是否覆盖已有文档</li>
+     * </ul>
+     *
      * @param psiFile PSI 文件对象
      * @return 文档生成任务列表
+     * @see #collectMissingJavaDocFromFile(PsiFile)
      * @see JavaRecursiveElementVisitor
      */
     @NotNull
     public List<DocumentationTask> collectFromFile(@NotNull PsiFile psiFile) {
-        List<DocumentationTask> tasks = new ArrayList<>();
+        return collectFromFileInternal(psiFile, this::shouldGenerateForElement);
+    }
 
-        if (!(psiFile instanceof PsiJavaFile)) {
-            return tasks;
-        }
-
-        psiFile.accept(new JavaRecursiveElementVisitor() {
-            /**
-             * 访问类元素并根据配置决定是否生成文档任务
-             * <p>
-             * 当访问到类元素时，若配置启用类文档生成且该类满足生成条件，则创建一个类文档生成任务并添加到任务列表中。
-             *
-             * @param aClass 被访问的类元素
-             */
-            @Override
-            public void visitClass(@NotNull PsiClass aClass) {
-                super.visitClass(aClass);
-
-                if (settings.generateForClass && shouldGenerateForElement(aClass)) {
-                    tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
-                }
-            }
-
-            /**
-             * 处理方法节点，根据配置决定是否生成文档任务
-             * <p>
-             * 遍历方法节点，若配置允许为方法生成文档且满足条件，则创建文档任务并添加到任务列表中
-             *
-             * @param method 被访问的方法节点
-             */
-            @Override
-            public void visitMethod(@NotNull PsiMethod method) {
-                super.visitMethod(method);
-
-                if (settings.generateForMethod && shouldGenerateForElement(method)) {
-                    DocumentationTask.TaskType type = isTestMethod(method)
-                                                      ? DocumentationTask.TaskType.TEST_METHOD
-                                                      : DocumentationTask.TaskType.METHOD;
-                    tasks.add(createTask(method, type));
-                }
-            }
-
-            /**
-             * 处理字段元素，根据配置决定是否生成文档任务
-             * <p>
-             * 当启用字段文档生成且字段满足条件时，创建并添加文档生成任务
-             *
-             * @param field 被访问的字段元素
-             */
-            @Override
-            public void visitField(@NotNull PsiField field) {
-                super.visitField(field);
-
-                if (settings.generateForField && shouldGenerateForElement(field)) {
-                    tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
-                }
-            }
-        });
-
-        return tasks;
+    /**
+     * 从 PSI 文件收集缺失 JavaDoc 的任务
+     *
+     * <p>专门用于 Git 提交场景，只收集没有 JavaDoc 的元素，
+     * 忽略 overrideExisting 配置，确保只为缺失文档的元素生成任务。
+     *
+     * <p>与 collectFromFile 的区别：
+     * <ul>
+     *   <li>强制只收集没有 JavaDoc 的元素</li>
+     *   <li>忽略 overrideExisting 配置</li>
+     *   <li>适用于提交前的文档检查场景</li>
+     * </ul>
+     *
+     * <p>遍历流程：
+     * <ol>
+     *   <li>检查文件是否为 Java 文件</li>
+     *   <li>使用 visitor 模式遍历所有元素</li>
+     *   <li>只收集没有 JavaDoc 的元素</li>
+     * </ol>
+     *
+     * @param psiFile PSI 文件对象
+     * @return 缺失 JavaDoc 的文档生成任务列表
+     * @see #collectFromFile(PsiFile)
+     * @see JavaRecursiveElementVisitor
+     */
+    @NotNull
+    public List<DocumentationTask> collectMissingJavaDocFromFile(@NotNull PsiFile psiFile) {
+        return collectFromFileInternal(psiFile, this::hasNoJavaDoc);
     }
 
     /**
@@ -522,6 +585,31 @@ public class TaskCollector {
     }
 
     /**
+     * 判断元素是否没有 JavaDoc 注释
+     *
+     * <p>专门用于检查元素是否缺失 JavaDoc 注释，
+     * 忽略 overrideExisting 配置，只检查元素是否已有文档。
+     *
+     * <p>检查逻辑：
+     * <ul>
+     *   <li>如果元素支持文档注释（PsiDocCommentOwner），检查是否有 JavaDoc</li>
+     *   <li>如果没有 JavaDoc 返回 true，否则返回 false</li>
+     *   <li>如果元素不支持文档注释，返回 true（允许处理）</li>
+     * </ul>
+     *
+     * @param element PSI 元素
+     * @return 如果元素没有 JavaDoc 返回 true，否则返回 false
+     * @see #shouldGenerateForElement(PsiElement)
+     */
+    private boolean hasNoJavaDoc(@NotNull PsiElement element) {
+        if (element instanceof PsiDocCommentOwner) {
+            PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
+            return docComment == null;
+        }
+        return true;
+    }
+
+    /**
      * 判断是否应该为元素生成文档
      *
      * <p>根据用户配置决定是否为指定元素生成文档。
@@ -541,6 +629,7 @@ public class TaskCollector {
      * @param element PSI 元素
      * @return 如果应该生成文档返回 true，否则返回 false
      * @see SettingsState#overrideExisting
+     * @see #hasNoJavaDoc(PsiElement)
      */
     private boolean shouldGenerateForElement(@NotNull PsiElement element) {
         // 如果配置为覆盖已有注释，总是生成
@@ -548,13 +637,8 @@ public class TaskCollector {
             return true;
         }
 
-        // 如果配置为跳过已有文档（默认），检查是否已有文档
-        if (element instanceof PsiDocCommentOwner) {
-            PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
-            return docComment == null;
-        }
-
-        return true;
+        // 如果不允许覆盖已有注释，检查是否存在文档
+        return hasNoJavaDoc(element);
     }
 
     /**
