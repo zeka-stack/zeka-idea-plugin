@@ -61,8 +61,8 @@
     <actions>
         <!-- Git 提交工具栏操作 -->
         <!-- 使用 Vcs.MessageActionGroup 添加到提交消息区域 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForCommitAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForCommitAction"
                 icon="/icons/aij_16.svg">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
         </action>

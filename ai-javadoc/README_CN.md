@@ -166,7 +166,6 @@ dong4j dong4j@gmail.com
 
 ## 相关文档
 
-- [项目技术解析文档](docs/项目技术解析文档.md) - 详细的技术架构和实现说明
 - [IDEA Plugin 开发文档](docs/IDEA_Plugin_开发文档.md) - IntelliJ IDEA 插件开发完整指南
 - [English README](README.md) - English version of this document
 
@@ -298,10 +297,9 @@ A: 根据您的需求选择：
 
 如果您遇到问题或有任何疑问，请：
 
-1. 查看[项目技术解析文档](docs/项目技术解析文档.md)
-2. 查看[IDEA Plugin 开发文档](docs/IDEA_Plugin_开发文档.md)
-3. 在 [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues) 上提交问题
-4. 发送邮件至 dong4j@gmail.com
+1. 查看[IDEA Plugin 开发文档](docs/IDEA_Plugin_开发文档.md)
+2. 在 [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues) 上提交问题
+3. 发送邮件至 dong4j@gmail.com
 
 ## 致谢
 

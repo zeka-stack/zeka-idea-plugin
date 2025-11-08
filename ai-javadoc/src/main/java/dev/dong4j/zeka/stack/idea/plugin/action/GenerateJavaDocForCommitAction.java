@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.git;
+package dev.dong4j.zeka.stack.idea.plugin.action;
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.4.0
  */
 @Slf4j
-public class CommitJavaDocAction extends AnAction {
+public class GenerateJavaDocForCommitAction extends AnAction {
 
     /**
      * 更新动作状态

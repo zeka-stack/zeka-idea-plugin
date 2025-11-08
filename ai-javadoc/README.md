@@ -173,7 +173,6 @@ dong4j dong4j@gmail.com
 
 ## Related Documentation
 
-- [Project Technical Analysis Document](docs/项目技术解析文档.md) - Detailed technical architecture and implementation guide
 - [IDEA Plugin Development Guide](docs/IDEA_Plugin_开发文档.md) - Complete guide for IntelliJ IDEA plugin development
 - [Chinese README](README_CN.md) - Chinese version of this document
 
@@ -307,10 +306,9 @@ Please check the LICENSE file in the project root directory.
 
 If you encounter problems or have any questions, please:
 
-1. Check [Project Technical Analysis Document](docs/项目技术解析文档.md)
-2. Check [IDEA Plugin Development Guide](docs/IDEA_Plugin_开发文档.md)
-3. Submit issues on [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues)
-4. Send email to dong4j@gmail.com
+1. Check [IDEA Plugin Development Guide](docs/IDEA_Plugin_开发文档.md)
+2. Submit issues on [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues)
+3. Send email to dong4j@gmail.com
 
 ## Acknowledgments
 

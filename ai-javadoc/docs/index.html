@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>IntelliJ AI Javadoc 插件文档</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="description" content="IntelliJ AI Javadoc 插件完整文档">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify/lib/themes/vue.css">
+    <style>
+        /* 增大正文字体 */
+        .markdown-section {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        /* 标题字体也适当增大 */
+        .markdown-section h1 {
+            font-size: 2.2em;
+        }
+
+        .markdown-section h2 {
+            font-size: 1.8em;
+        }
+
+        .markdown-section h3 {
+            font-size: 1.5em;
+        }
+
+        .markdown-section h4 {
+            font-size: 1.3em;
+        }
+
+        /* 代码块字体 */
+        .markdown-section pre {
+            font-size: 14px;
+        }
+
+        .markdown-section code {
+            font-size: 14px;
+        }
+
+        /* 列表字体 */
+        .markdown-section ul,
+        .markdown-section ol {
+            font-size: 16px;
+        }
+
+        /* 表格字体 */
+        .markdown-section table {
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+<div id="app">加载中...</div>
+<script>
+  window.$docsify = {
+    name: 'IntelliJ AI Javadoc 插件文档',
+    repo: '',
+    loadSidebar: true,
+    subMaxLevel: 3,
+    auto2top: true,
+    coverpage: false,
+    notFoundPage: true,
+    search: {
+      maxAge: 86400000, // 过期时间，单位毫秒，默认一天
+      paths: 'auto',
+      placeholder: '搜索文档...',
+      noData: '找不到结果!',
+      depth: 6
+    },
+    pagination: {
+      previousText: '上一章节',
+      nextText: '下一章节',
+      crossChapter: true,
+      crossChapterText: true,
+    },
+    plugins: [
+      function (hook, vm) {
+        hook.beforeEach(function (html) {
+          // 处理图片路径
+          return html.replace(/\.\/imgs\//g, './imgs/');
+        });
+      }
+    ]
+  }
+</script>
+<!-- Docsify v4 -->
+<script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+<!-- 搜索插件 -->
+<script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+<!-- 分页插件 -->
+<script src="//cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+<!-- 代码高亮 -->
+<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-java.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-xml.min.js"></script>
+</body>
+</html>
+

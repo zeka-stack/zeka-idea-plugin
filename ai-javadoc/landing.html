@@ -66,6 +66,39 @@
             background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
             background-size: 50px 50px;
             animation: float 20s infinite linear;
+            pointer-events: none; /* 允许点击穿透 */
+            z-index: 0;
+        }
+
+        .doc-link {
+            margin-top: 25px;
+            text-align: center;
+            position: relative;
+            z-index: 1; /* 确保按钮在伪元素之上 */
+        }
+
+        .btn-doc {
+            display: inline-block;
+            padding: 12px 35px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 30px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 2; /* 确保按钮在最上层 */
+            cursor: pointer;
+        }
+
+        .btn-doc:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+            background: white;
+            border-color: white;
         }
 
         @keyframes float {
@@ -429,6 +462,11 @@
         </div>
         <p class="subtitle">智能 AI 驱动的 Java 文档自动生成工具</p>
         <span class="version-badge">🚀 Version 1.4.x</span>
+        <div class="doc-link">
+            <a href="https://aij.dong4j.site/docs" target="_blank" class="btn-doc">
+                📚 查看用户手册
+            </a>
+        </div>
     </div>
 
     <!-- Features -->

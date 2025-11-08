@@ -63,6 +63,18 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         process(project, editor, psiFile, needEditor);
     }
 
+    /**
+     * 处理生成 JavaDoc 的逻辑
+     * <p>
+     * 根据传入的项目, 编辑器,Psi 文件和是否需要编辑器标志, 判断是否生成 JavaDoc.
+     * 如果文件不是 Java 文件, 则直接返回. 若需要编辑器但未提供, 则记录日志并返回.
+     * 否则, 根据编辑器是否存在, 定位 Psi 元素并收集文档任务, 最后调用生成文档方法.
+     *
+     * @param project    项目对象
+     * @param editor     编辑器对象
+     * @param psiFile    Psi 文件对象
+     * @param needEditor 是否需要编辑器
+     */
     protected void process(@NotNull Project project,
                            Editor editor,
                            @NotNull PsiFile psiFile,
@@ -107,14 +119,14 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
     }
 
     /**
-     * 生成文档
-     *
-     * <p>统一的文档生成逻辑，包括任务检查和文档生成服务调用。
+     * 生成文档信息
+     * <p>
+     * 检查任务列表是否为空, 若为空则返回 false; 否则调用服务生成文档.
      *
      * @param project           项目对象
-     * @param tasks             文档生成任务列表
-     * @param targetDescription 目标描述（用于进度显示）
-     * @return 如果成功生成返回 true，否则返回 false
+     * @param tasks             任务列表
+     * @param targetDescription 目标描述信息
+     * @return 若任务列表为空返回 false, 否则返回 true
      */
     protected boolean generateDocumentation(@NotNull Project project,
                                             @NotNull List<DocumentationTask> tasks,
