@@ -73,15 +73,15 @@
         </action>
 
         <!-- 编辑器右键菜单 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFileAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFileAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForEditorAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForEditorAction"
                 icon="/icons/aij_16.svg">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
         <!-- 项目视图右键菜单 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForSelectionAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForSelectionAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFilesAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFilesAction"
                 icon="/icons/aij_16.svg">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>

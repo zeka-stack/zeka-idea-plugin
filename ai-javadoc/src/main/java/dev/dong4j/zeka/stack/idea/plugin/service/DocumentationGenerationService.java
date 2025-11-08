@@ -139,20 +139,6 @@ public class DocumentationGenerationService {
     }
 
     /**
-     * 生成文档（简化版本）
-     *
-     * <p>使用默认的目标描述和标准的完成通知。
-     *
-     * @param project 项目对象
-     * @param tasks   文档生成任务列表
-     */
-    public void generateDocumentation(@NotNull Project project, @NotNull List<DocumentationTask> tasks) {
-        generateDocumentation(project, tasks, "文档", stats -> {
-            NotificationUtil.notifyCompletion(project, stats.completed(), stats.failed(), stats.skipped());
-        });
-    }
-
-    /**
      * 生成文档（带目标描述）
      *
      * <p>使用指定的目标描述和标准的完成通知。
@@ -165,6 +151,11 @@ public class DocumentationGenerationService {
                                       @NotNull List<DocumentationTask> tasks,
                                       @NotNull String targetDescription) {
         generateDocumentation(project, tasks, targetDescription, stats -> {
+            if (stats.isRunned()) {
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    NotificationUtil.notifyTargetCompletion(project, targetDescription, stats.completed(), stats.failed(), stats.skipped());
+                });
+            }
             NotificationUtil.notifyCompletion(project, stats.completed(), stats.failed(), stats.skipped());
         });
     }

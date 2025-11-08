@@ -114,22 +114,22 @@ public class GenerateJavaDocShortcutAction extends AnAction {
         TaskCollector collector = new TaskCollector(project);
         List<DocumentationTask> tasks;
 
-        if (editor != null) {
+        String elementDesc = "文件";
+        if (editor == null) {
+            // 如果在项目树的文件上使用快捷键则为整个文件生成 javadoc
+            tasks = collector.collectFromFile(psiFile);
+        } else {
             PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
-
             if (locateResult == null) {
                 log.warn("无法定位到有效的 PSI 元素");
                 return;
             }
 
-            String elementDesc = PsiElementLocator.getElementDescription(locateResult.element());
+            elementDesc = PsiElementLocator.getElementDescription(locateResult.element());
             log.info("智能定位到: {}", elementDesc);
 
             // 根据定位结果收集任务
             tasks = collector.collectFromElement(locateResult.element());
-        } else {
-            // 没有编辑器（不应该发生），使用整个文件
-            tasks = collector.collectFromFile(psiFile);
         }
 
         // 使用文档生成服务处理任务
@@ -141,7 +141,7 @@ public class GenerateJavaDocShortcutAction extends AnAction {
         log.info("收集到 {} 个任务", tasks.size());
 
         // 使用服务生成文档
-        service.generateDocumentation(project, tasks);
+        service.generateDocumentation(project, tasks, elementDesc);
     }
 
     /**

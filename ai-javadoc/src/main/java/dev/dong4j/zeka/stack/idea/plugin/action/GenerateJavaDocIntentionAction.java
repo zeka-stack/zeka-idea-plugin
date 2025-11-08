@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.action;
 
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Iconable;
@@ -255,34 +254,9 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
             return;
         }
 
-        log.info("收集到 {} 个任务", tasks.size());
-
         // 使用服务生成文档，带自定义完成回调
-        service.generateDocumentation(project, tasks, elementDesc, stats -> {
-            showCompletionMessage(project, stats, elementDesc);
-        });
+        service.generateDocumentation(project, tasks, elementDesc);
     }
 
-    /**
-     * 显示完成消息
-     *
-     * <p>在事件调度线程中显示任务完成的通知消息。
-     * 包含目标描述和详细的统计信息。
-     * 只在处理多个任务时显示，避免单个任务的成功通知干扰用户。
-     *
-     * @param project 项目对象
-     * @param stats   任务统计信息
-     * @param target  目标描述
-     * @see NotificationUtil#notifyTargetCompletion(Project, String, int, int, int)
-     */
-    private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats, String target) {
-        if (stats.isRunned()) {
-            ApplicationManager.getApplication().invokeLater(() -> NotificationUtil.notifyTargetCompletion(project,
-                                                                                                          target,
-                                                                                                          stats.completed(),
-                                                                                                          stats.failed(),
-                                                                                                          stats.skipped()));
-        }
-    }
 }
 

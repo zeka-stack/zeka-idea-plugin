@@ -4,7 +4,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -17,9 +16,7 @@ import java.util.List;
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
-import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
-import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -37,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings("DuplicatedCode")
 @Slf4j
-public class GenerateJavaDocForSelectionAction extends AnAction {
+public class GenerateJavaDocForFilesAction extends AnAction {
 
     /**
      * 处理动作事件，用于为选中的文件或目录生成 JavaDoc 注释
@@ -93,10 +90,7 @@ public class GenerateJavaDocForSelectionAction extends AnAction {
         }
 
         // 使用服务生成文档，带自定义完成回调
-        service.generateDocumentation(project, tasks, "选中文件", stats -> {
-            // 只有正常执行过才显示通知, 比如没有配置正确的情况下, 会同时出现这个通知和配置错误的通知, 所以这里需要先判断一下
-            showCompletionMessage(project, stats);
-        });
+        service.generateDocumentation(project, tasks, "选中文件");
     }
 
     /**
@@ -157,25 +151,5 @@ public class GenerateJavaDocForSelectionAction extends AnAction {
         return "java".equalsIgnoreCase(file.getExtension());
     }
 
-    /**
-     * 显示文档生成完成的通知消息
-     * <p>
-     * 该方法用于在文档生成完成后，向用户显示一条通知消息，提示生成任务的完成情况。
-     *
-     * @param project 项目对象，用于通知的上下文
-     * @param stats   任务统计信息，包含完成、失败和跳过任务的数量
-     */
-    private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats) {
-        if (stats.isRunned()) {
-            ApplicationManager.getApplication().invokeLater(() -> {
-                String content = JavaDocBundle.message("notification.target.completion.format",
-                                                       JavaDocBundle.message("notification.generation.complete"),
-                                                       stats.completed(),
-                                                       stats.failed(),
-                                                       stats.skipped());
-                NotificationUtil.notifyInfo(project, JavaDocBundle.message("notification.title"), content);
-            });
-        }
-    }
 }
 

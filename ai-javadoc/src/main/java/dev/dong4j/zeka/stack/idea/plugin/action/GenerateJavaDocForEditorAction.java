@@ -4,7 +4,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
@@ -20,7 +19,6 @@ import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
-import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,7 +65,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings("DuplicatedCode")
 @Slf4j
-public class GenerateJavaDocForFileAction extends AnAction {
+public class GenerateJavaDocForEditorAction extends AnAction {
     /**
      * 执行动作
      *
@@ -105,28 +103,27 @@ public class GenerateJavaDocForFileAction extends AnAction {
             return;
         }
 
-        log.info("为文件生成 JavaDoc: {}", psiFile.getName());
+        log.info("为正在编辑的 Java 文件生成 JavaDoc: {}", psiFile.getName());
+
+        if (editor == null) {
+            // 没有编辑器, 直接退出逻辑
+            log.info("[编辑器右键菜单] 没有编辑器对象, 退出逻辑");
+            return;
+        }
+
+        PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
+        if (locateResult == null) {
+            // 无法定位，直接退出逻辑
+            log.info("[编辑器右键菜单] 无法定位，退出逻辑");
+            return;
+        }
 
         // 智能定位：根据光标位置确定要生成文档的元素
         TaskCollector collector = new TaskCollector(project);
         List<DocumentationTask> tasks;
-        String targetDescription = "文件";
-
-        if (editor != null) {
-            PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
-
-            if (locateResult != null) {
-                targetDescription = PsiElementLocator.getElementDescription(locateResult.element());
-                log.info("智能定位到: {}", targetDescription);
-                tasks = collector.collectFromElement(locateResult.element());
-            } else {
-                // 无法定位，为整个文件生成
-                tasks = collector.collectFromFile(psiFile);
-            }
-        } else {
-            // 没有编辑器，为整个文件生成
-            tasks = collector.collectFromFile(psiFile);
-        }
+        String targetDescription = PsiElementLocator.getElementDescription(locateResult.element());
+        log.info("智能定位到: {}", targetDescription);
+        tasks = collector.collectFromElement(locateResult.element());
 
         // 使用文档生成服务处理任务
         DocumentationGenerationService service = new DocumentationGenerationService();
@@ -134,12 +131,8 @@ public class GenerateJavaDocForFileAction extends AnAction {
             return;
         }
 
-        String finalTargetDesc = targetDescription;
-
         // 使用服务生成文档，带自定义完成回调
-        service.generateDocumentation(project, tasks, finalTargetDesc, stats -> {
-            showCompletionMessage(project, stats, finalTargetDesc);
-        });
+        service.generateDocumentation(project, tasks, targetDescription);
     }
 
     /**
@@ -180,31 +173,6 @@ public class GenerateJavaDocForFileAction extends AnAction {
         e.getPresentation().setEnabled(psiFile instanceof PsiJavaFile);
         e.getPresentation().setText(JavaDocBundle.message("action.generate.javadoc"));
         e.getPresentation().setDescription(JavaDocBundle.message("action.generate.javadoc.file.description"));
-    }
-
-    /**
-     * 显示完成消息
-     *
-     * <p>在事件调度线程中显示任务完成的通知消息。
-     * 包含目标描述和详细的统计信息。
-     *
-     * <p>与 GenerateJavaDocGenerateAction 的区别：
-     * <ul>
-     *   <li>使用 notifyTargetCompletion 显示目标信息</li>
-     *   <li>包含目标描述（如"方法: getX()"）</li>
-     * </ul>
-     *
-     * @param project 项目对象
-     * @param stats   任务统计信息
-     * @param target  目标描述
-     * @see NotificationUtil#notifyTargetCompletion(Project, String, int, int, int)
-     */
-    private void showCompletionMessage(Project project, TaskExecutor.TaskStatistics stats, String target) {
-        if (stats.isRunned()) {
-            ApplicationManager.getApplication().invokeLater(() -> {
-                NotificationUtil.notifyTargetCompletion(project, target, stats.completed(), stats.failed(), stats.skipped());
-            });
-        }
     }
 }
 

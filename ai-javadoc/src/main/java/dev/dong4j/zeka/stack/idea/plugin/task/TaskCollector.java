@@ -96,6 +96,7 @@ public class TaskCollector {
      * @see #collectFromClass(PsiClass, List)
      * @see #collectFromFile(PsiFile)
      */
+    @SuppressWarnings("D")
     @NotNull
     public List<DocumentationTask> collectFromElement(@NotNull PsiElement element) {
         List<DocumentationTask> tasks = new ArrayList<>();
@@ -115,7 +116,11 @@ public class TaskCollector {
             }
         } else if (element instanceof PsiClass psiClass) {
             // 为类及其所有成员生成
-            collectFromClass(psiClass, tasks);
+            // collectFromClass(psiClass, tasks);
+            // 2025.11.08 只为类本身生成
+            if (settings.generateForClass && shouldGenerateForElement(psiClass)) {
+                tasks.add(createTask(psiClass, DocumentationTask.TaskType.CLASS));
+            }
         } else if (element instanceof PsiFile) {
             // 为整个文件生成
             return collectFromFile((PsiFile) element);

@@ -5,7 +5,7 @@
 ### 警告日志
 
 ```
-WARN - #c.i.o.a.i.PreCachedDataContext - 'virtualFileArray' is requested on EDT by GenerateJavaDocForSelectionAction#update@ProjectViewPopup (dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForSelectionAction). See ActionUpdateThread javadoc.
+WARN - #c.i.o.a.i.PreCachedDataContext - 'virtualFileArray' is requested on EDT by GenerateJavaDocForSelectionAction#update@ProjectViewPopup (dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFilesAction). See ActionUpdateThread javadoc.
 ```
 
 ### 问题分析

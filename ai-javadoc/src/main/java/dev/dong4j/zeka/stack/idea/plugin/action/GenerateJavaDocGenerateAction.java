@@ -68,20 +68,6 @@ import lombok.extern.slf4j.Slf4j;
 public class GenerateJavaDocGenerateAction extends AnAction {
 
     /**
-     * 构造函数
-     *
-     * <p>初始化 Action，设置显示文本和描述。
-     * 使用 JavaDocBundle 获取国际化消息，支持多语言。
-     *
-     * @see JavaDocBundle
-     */
-    public GenerateJavaDocGenerateAction() {
-        super(JavaDocBundle.messagePointer("action.generate.javadoc"),
-              JavaDocBundle.messagePointer("action.generate.javadoc.description"),
-              null);
-    }
-
-    /**
      * 执行动作
      *
      * <p>当用户从 Generate 菜单选择此选项时调用。
@@ -121,34 +107,31 @@ public class GenerateJavaDocGenerateAction extends AnAction {
 
         log.info("通过 Generate 菜单为文件生成 JavaDoc: {}", psiFile.getName());
 
+        if (editor == null) {
+            // 没有编辑器, 直接退出逻辑
+            log.info("[编辑器 Generate 菜单] 没有编辑器对象, 退出逻辑");
+            return;
+        }
+
+        PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
+        if (locateResult == null) {
+            // 无法定位，直接退出逻辑
+            log.info("[编辑器 Generate 菜单] 无法定位，退出逻辑");
+            return;
+        }
+
         // 智能定位：根据光标位置确定要生成文档的元素
         TaskCollector collector = new TaskCollector(project);
         List<DocumentationTask> tasks;
-        String targetDescription = "文件";
-
-        if (editor != null) {
-            PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
-
-            if (locateResult != null) {
-                targetDescription = PsiElementLocator.getElementDescription(locateResult.element());
-                log.info("智能定位到: {}", targetDescription);
-                tasks = collector.collectFromElement(locateResult.element());
-            } else {
-                // 无法定位，为整个文件生成
-                tasks = collector.collectFromFile(psiFile);
-            }
-        } else {
-            // 没有编辑器，为整个文件生成
-            tasks = collector.collectFromFile(psiFile);
-        }
+        String targetDescription = PsiElementLocator.getElementDescription(locateResult.element());
+        log.info("智能定位到: {}", targetDescription);
+        tasks = collector.collectFromElement(locateResult.element());
 
         // 使用文档生成服务处理任务
         DocumentationGenerationService service = new DocumentationGenerationService();
         if (service.checkEmptyTasks(project, tasks, JavaDocBundle.message("notification.no.task.default"))) {
             return;
         }
-
-        log.info("收集到 {} 个任务", tasks.size());
 
         // 使用服务生成文档
         service.generateDocumentation(project, tasks, targetDescription);
