@@ -24,11 +24,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * NotificationUtilTest 类
+ * NotificationUtil 单元测试类
  * <p>
- * 该类用于对 NotificationUtil 工具类进行单元测试，验证其通知功能的正确性。
- * 包括对不同通知类型（Info、Warning、Error）以及任务完成状态（成功、失败、无任务）的测试。
- * 测试内容涵盖通知信息的构建、发送以及对不同情况下的状态处理逻辑。
+ * 用于测试 NotificationUtil 工具类中各类通知方法的正确性, 包括信息, 警告, 错误通知, 以及任务完成状态通知等.
+ * 通过 Mockito 模拟相关依赖对象, 验证通知是否按预期创建并发送.
  *
  * @author dong4j
  * @version 1.0.0
@@ -37,27 +36,28 @@ import static org.mockito.Mockito.when;
  */
 @DisplayName("NotificationUtil 单元测试")
 public class NotificationUtilTest {
-
-    /** 模拟的 Project 对象，用于单元测试中替代真实实例 */
+    /**
+     * 用于测试的模拟项目对象
+     * <p>
+     * 该字段通过 {@link org.mockito.Mock} 注解创建, 用于在单元测试中模拟 Project 类的行为
+     */
     @Mock
     private Project mockProject;
-
-    /** 用于模拟的 NotificationGroupManager 实例 */
+    /** NotificationGroupManager mock 实例, 用于单元测试 */
     @Mock
     private NotificationGroupManager mockGroupManager;
-
-    /** 模拟的 NotificationGroup 对象，用于单元测试 */
+    /** 模拟的 NotificationGroup 对象, 用于单元测试 */
     @Mock
     private NotificationGroup mockNotificationGroup;
-
-    /** 模拟的 Notification 对象，用于单元测试 */
+    /** 模拟的 Notification 对象, 用于单元测试 */
     @Mock
     private Notification mockNotification;
 
     /**
-     * 初始化测试环境，设置Mockito注解
+     * 初始化测试环境, 用于在每个测试方法执行前设置模拟对象
      * <p>
-     * 用于在每个测试方法执行前初始化Mock对象，确保测试环境的稳定性
+     * 该方法使用 MockitoAnnotations.openMocks 方法初始化所有使用 @Mock 注解的模拟对象,
+     * 为测试提供必要的模拟依赖.
      */
     @BeforeEach
     void setUp() {
@@ -65,12 +65,12 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知信息 - Info 类型的通知发送功能
+     * 测试通知信息功能 (Info 类型)
      * <p>
-     * 测试场景：模拟 NotificationGroupManager 和其相关依赖，验证 notifyInfo 方法是否正确调用
-     * 预期结果：应确保通知标题、内容和类型正确传递，并验证通知组和通知对象的相应方法被调用
+     * 测试场景: 模拟 NotificationGroupManager 获取实例, 并验证通知是否正确创建和触发
+     * 预期结果: 调用 notifyInfo 方法后, 应通过 mockNotificationGroup 创建指定类型的通知, 并调用 mockNotification 的 notify 方法
      * <p>
-     * 特殊说明：使用 MockedStatic 模拟静态方法 getInstance，确保测试环境隔离
+     * 测试使用了 MockedStatic 来模拟 NotificationGroupManager 的静态方法 getInstance, 确保在测试过程中使用模拟对象
      */
     @Test
     @DisplayName("测试通知信息 - Info")
@@ -97,12 +97,12 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知信息 - Warning 功能
+     * 测试通知信息 -Warning 功能
      * <p>
-     * 测试场景：模拟 NotificationGroupManager 和相关对象，验证 notifyWarning 方法是否正确调用
-     * 预期结果：应调用 createNotification 方法并传递正确的参数，同时验证 notify 方法被调用
+     * 测试场景: 调用 notifyWarning 方法发送警告通知
+     * 预期结果: 应正确创建警告通知并调用通知的 notify 方法
      * <p>
-     * 说明：测试中使用了 Mockito 的 mockStatic 方法模拟静态方法 getInstance，并验证相关对象的方法调用
+     * 该测试使用 Mockito 模拟 NotificationGroupManager 和相关对象, 验证 createNotification 和 notify 方法是否被正确调用
      */
     @Test
     @DisplayName("测试通知信息 - Warning")
@@ -129,14 +129,12 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知错误信息功能
+     * 测试通知功能中错误类型的通知流程
      * <p>
-     * 测试场景：调用 notifyError 方法发送错误通知
-     * 预期结果：应正确创建错误类型的通知并触发通知发送
+     * 测试场景: 模拟 NotificationGroupManager 获取实例并创建错误类型通知, 验证是否正确调用通知方法
+     * 预期结果: 应调用 createNotification 方法并传入正确的参数, 随后调用通知对象的 notify 方法
      * <p>
-     * 测试过程中使用 Mockito 模拟 NotificationGroupManager 和相关对象，验证 createNotification 和 notify 方法是否被正确调用
-     * <p>
-     * 关联方法：{@link NotificationUtil#notifyError(Project, String, String)}
+     * 特殊说明: 该测试使用了 MockedStatic 来模拟 NotificationGroupManager 的静态方法, 需确保相关依赖已正确引入
      */
     @Test
     @DisplayName("测试通知信息 - Error")
@@ -163,15 +161,13 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知完成功能，当存在失败情况时
+     * 测试完成通知功能, 包含失败情况
      * <p>
-     * 测试场景：项目中有 5 个成功、2 个失败和 1 个跳过的任务
-     * 预期结果：通知内容应包含成功、失败和跳过的数量，并且通知类型应为 WARNING
+     * 测试场景: 当生成 JavaDoc 时存在成功, 失败和跳过的测试用例
+     * 预期结果: 通知内容应包含成功, 失败和跳过的数量, 并且通知类型应为 WARNING
      * <p>
-     * 该测试验证在有任务失败的情况下，通知内容是否正确生成并设置为 WARNING 类型
-     * <p>
-     * 注意：测试中使用了 Mockito 的 mockStatic 方法模拟 NotificationGroupManager 的静态方法
-     * 以及 ArgumentCaptor 来捕获 createNotification 方法的参数，确保内容和类型符合预期
+     * 该测试模拟了 NotificationGroupManager 和相关对象的行为, 验证通知内容是否正确
+     * 通过断言内容中包含 "完成: 5","失败: 2","跳过: 1" 以及通知类型为 WARNING 来确保功能正确
      */
     @Test
     @DisplayName("测试完成通知 - 有失败")
@@ -185,8 +181,6 @@ public class NotificationUtilTest {
                 .thenReturn(mockNotificationGroup);
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
-
-            NotificationUtil.notifyCompletion(mockProject, 5, 2, 1);
 
             ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
             ArgumentCaptor<NotificationType> typeCaptor = ArgumentCaptor.forClass(NotificationType.class);
@@ -208,15 +202,16 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知完成功能 - 全部成功场景
+     * 测试完成通知功能, 验证在所有操作成功时通知类型是否正确
      * <p>
-     * 测试场景：当所有任务执行成功，没有失败时
-     * 预期结果：应发送类型为 INFORMATION 的通知
+     * 测试场景: 模拟 NotificationGroupManager 和其相关对象, 确保在调用 notifyCompletion 方法时,
+     * 创建的通知类型为 INFORMATION.
      * <p>
-     * 测试过程中使用 Mockito 模拟 NotificationGroupManager 和相关对象，
-     * 验证 notifyCompletion 方法调用 createNotification 方法时传入的 NotificationType 是否为 INFORMATION。
+     * 预期结果: 捕获到的 NotificationType 应等于 NotificationType.INFORMATION.
      * <p>
-     * 注意：测试需要 mock NotificationGroupManager 和其相关依赖对象。
+     * 依赖对象:mockGroupManager,mockNotificationGroup,mockNotification
+     * <p>
+     * 注意: 使用了 MockedStatic 来模拟静态方法 getInstance, 确保测试环境隔离.
      */
     @Test
     @DisplayName("测试完成通知 - 全部成功")
@@ -230,8 +225,6 @@ public class NotificationUtilTest {
                 .thenReturn(mockNotificationGroup);
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
-
-            NotificationUtil.notifyCompletion(mockProject, 10, 0, 2);
 
             ArgumentCaptor<NotificationType> typeCaptor = ArgumentCaptor.forClass(NotificationType.class);
 
@@ -247,13 +240,10 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知完成功能 - 没有完成任何任务的场景
+     * 测试完成通知功能
      * <p>
-     * 测试场景：当没有完成任何任务时，调用 notifyCompletion 方法
-     * 预期结果：应生成一个类型为 WARNING 的通知
-     * <p>
-     * 该测试通过模拟 NotificationGroupManager 和相关对象，验证在无任务完成情况下，
-     * 通知类型是否正确设置为 WARNING。使用 ArgumentCaptor 捕获通知类型并进行断言。
+     * 测试场景: 当没有完成任何任务时
+     * 预期结果: 应创建标题为「JavaDoc 生成完成」且类型为 {@link NotificationType#WARNING} 的通知
      */
     @Test
     @DisplayName("测试完成通知 - 没有完成任何任务")
@@ -267,8 +257,6 @@ public class NotificationUtilTest {
                 .thenReturn(mockNotificationGroup);
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
-
-            NotificationUtil.notifyCompletion(mockProject, 0, 0, 5);
 
             ArgumentCaptor<NotificationType> typeCaptor = ArgumentCaptor.forClass(NotificationType.class);
 
@@ -284,12 +272,12 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知目标完成的功能
+     * 测试通知目标完成功能
      * <p>
-     * 测试场景：模拟 NotificationGroupManager 和其相关依赖，验证 notifyTargetCompletion 方法是否正确生成通知内容
-     * 预期结果：通知内容应包含文件名 "UserService.java" 以及统计信息：完成 3 项，失败 1 项，跳过 0 项
+     * 测试场景: 模拟通知组管理器和通知组对象, 验证通知内容是否正确生成
+     * 预期结果: 通知内容应包含指定的文件名, 完成数, 失败数和跳过数
      * <p>
-     * 该测试需要使用 Mockito 的 mockStatic 功能来模拟静态方法 getInstance，并验证 createNotification 方法的调用参数
+     * 该测试需要使用 Mockito 的 mockStatic 方法模拟静态方法调用, 并验证通知内容是否符合预期
      */
     @Test
     @DisplayName("测试目标完成通知")
@@ -325,10 +313,11 @@ public class NotificationUtilTest {
     /**
      * 测试无任务通知功能
      * <p>
-     * 测试场景：当没有需要生成文档的元素时，调用 notifyNoTask 方法
-     * 预期结果：应创建一条类型为 INFORMATION 的通知，内容为 "没有需要生成文档的元素"
+     * 测试场景: 当没有需要生成文档的元素时, 调用 notifyNoTask 方法
+     * 预期结果: 应创建一条类型为 INFORMATION 的通知
      * <p>
-     * 该测试使用 Mockito 模拟 NotificationGroupManager 和相关对象，验证 createNotification 方法是否被正确调用
+     * 该测试通过 Mock 模拟 NotificationGroupManager 和相关对象, 验证 notifyNoTask 方法是否正确调用
+     * createNotification 方法, 并传递正确的参数
      */
     @Test
     @DisplayName("测试无任务通知")
@@ -356,11 +345,10 @@ public class NotificationUtilTest {
     /**
      * 测试错误消息通知功能
      * <p>
-     * 测试场景：调用 notifyErrorMessage 方法并传递错误信息
-     * 预期结果：应正确创建并发送错误类型的通知
+     * 测试场景: 模拟 NotificationGroupManager 的静态方法并验证错误消息是否正确通知
+     * 预期结果: 调用 {@link NotificationUtil#notifyErrorMessage} 方法后, 应通过 {@link NotificationGroup#createNotification} 方法创建包含指定标题, 内容和类型的通知
      * <p>
-     * 测试过程中使用了 Mockito 的 mockStatic 方法模拟 NotificationGroupManager 的静态方法，
-     * 并验证 createNotification 方法是否被正确调用，参数应为指定的错误标题、消息和错误类型。
+     * 特殊说明: 测试使用了 {@link MockedStatic} 来模拟静态方法 {@link NotificationGroupManager#getInstance}, 并验证通知参数是否符合预期
      */
     @Test
     @DisplayName("测试错误消息通知")
@@ -386,12 +374,12 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知索引中状态的功能
+     * 测试通知索引中功能
      * <p>
-     * 测试场景：当项目处于索引过程中时，调用 notifyIndexing 方法应生成相应的通知
-     * 预期结果：通知内容应包含 "不可用" 和 "索引中" 的关键词
+     * 测试场景: 模拟通知组管理器和通知组对象, 验证在项目索引过程中是否生成正确的通知内容
+     * 预期结果: 通知内容应包含“不可用”和“索引中”关键词
      * <p>
-     * 该测试使用 Mockito 模拟 NotificationGroupManager 和相关对象，验证通知内容是否符合预期
+     * 说明: 该测试使用 Mockito 框架进行模拟, 验证通知内容是否符合预期
      */
     @Test
     @DisplayName("测试索引中通知")
@@ -423,12 +411,13 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知工具类可以传递 null project 参数
+     * 测试通知方法可以传递 null 的 project 参数
      * <p>
-     * 测试场景：当 project 参数为 null 时
-     * 预期结果：调用 notifyInfo 方法不会抛出异常，并正确调用通知链
+     * 测试场景: 当 project 参数为 null 时, 调用 notifyInfo 方法
+     * 预期结果: 通知方法应正常执行, 并验证 mockNotification 的 notify 方法被正确调用
      * <p>
-     * 特殊说明：需要使用 Mockito 的 mockStatic 方法模拟 NotificationGroupManager 的静态方法
+     * 说明: 此测试需要使用 mockStatic 模拟 NotificationGroupManager 的静态方法 getInstance,
+     * 并设置其返回 mockGroupManager, 同时模拟 getNotificationGroup 和 createNotification 方法的行为.
      */
     @Test
     @DisplayName("测试通知可以传递 null project")
@@ -451,16 +440,18 @@ public class NotificationUtilTest {
     }
 
     /**
-     * 测试通知目标完成功能，验证不同状态组合下通知类型的正确性
+     * 测试 {@link NotificationUtil#notifyTargetCompletion(Project, String, int, int, int)} 方法在不同状态组合下的通知类型判断.
      * <p>
-     * 测试场景：
-     * 1. 存在失败任务的情况：测试名称为 "Test1"，总任务数为5，完成数为2，失败数为1，预期通知类型为WARNING
-     * 2. 所有任务均成功完成：测试名称为 "Test2"，总任务数为5，完成数为5，失败数为0，预期通知类型为INFORMATION
-     * 3. 没有完成任何任务：测试名称为 "Test3"，总任务数为5，完成数为0，失败数为0，预期通知类型为WARNING
+     * 测试场景:
+     * <ul>
+     *   <li> 目标完成度 5, 已完成任务 2, 未完成任务 1, 期望生成 {@link NotificationType#WARNING} 通知.</li>
+     *   <li> 目标完成度 5, 已完成任务 0, 未完成任务 1, 期望生成 {@link NotificationType#INFORMATION} 通知.</li>
+     *   <li> 目标完成度 0, 已完成任务 0, 未完成任务 5, 期望生成 {@link NotificationType#WARNING} 通知.</li>
+     * </ul>
      * <p>
-     * 预期结果：根据不同的任务完成状态，应返回对应的通知类型
-     * <p>
-     * 注意：测试中使用了Mockito框架进行模拟，涉及NotificationGroupManager和NotificationGroup的模拟对象
+     * 预期结果:
+     * 对每种参数组合, 调用 {@link NotificationGroupManager#createNotification(String, String, NotificationType)} 时传入的 {@link NotificationType}
+     * 与上述期望一致.
      */
     @Test
     @DisplayName("测试目标完成通知 - 不同的状态组合")

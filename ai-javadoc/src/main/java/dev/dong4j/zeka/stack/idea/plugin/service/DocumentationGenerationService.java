@@ -25,52 +25,27 @@ import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 文档生成服务
- *
- * <p>提供统一的文档生成服务，消除各个 Action 类中的重复代码。
- * 封装了进度管理、任务执行、错误处理和结果通知等通用逻辑。
- *
- * <p>主要功能：
- * <ul>
- *   <li>统一的进度管理</li>
- *   <li>AI 服务可用性检查</li>
- *   <li>任务执行和错误处理</li>
- *   <li>结果通知回调</li>
- * </ul>
- *
- * <p>使用示例：
- * <pre>
- * DocumentationGenerationService service = new DocumentationGenerationService();
- * service.generateDocumentation(project, tasks, "目标描述", (stats) -> {
- *     // 处理完成回调
- *     NotificationUtil.notifyCompletion(project, stats.completed(), stats.failed(), stats.skipped());
- * });
- * </pre>
+ * 文档生成服务类
+ * <p>
+ * 提供文档生成相关的业务逻辑处理, 包括任务执行, 进度管理, 错误通知等功能. 该类主要负责协调文档生成流程, 调用任务执行器处理具体任务, 并在生成完成后通知用户结果.
  *
  * @author dong4j
  * @version 1.0.0
+ * @date 2025.10.24
  * @since 1.0.0
  */
 @Slf4j
 public class DocumentationGenerationService {
-
     /**
-     * 生成文档
+     * 生成文档的主方法, 执行文档生成任务并处理结果
+     * <p>
+     * 该方法接收项目, 任务列表, 目标描述和任务完成回调, 如果任务列表为空则直接返回.
+     * 否则, 开始文档生成流程, 处理任务并根据结果调用回调.
      *
-     * <p>在后台任务中执行文档生成，提供统一的进度管理和错误处理。
-     *
-     * <p>执行流程：
-     * <ol>
-     *   <li>创建后台任务</li>
-     *   <li>检查 AI 服务可用性</li>
-     *   <li>执行文档生成任务</li>
-     *   <li>调用完成回调</li>
-     * </ol>
-     *
-     * @param project           项目对象
+     * @param project           项目对象, 用于获取项目相关资源
      * @param tasks             文档生成任务列表
-     * @param targetDescription 目标描述（用于进度显示）
-     * @param onComplete        完成回调，接收任务统计信息
+     * @param targetDescription 目标描述, 用于标识生成文档的目标
+     * @param onComplete        任务完成后的回调函数, 接收任务执行统计信息
      */
     public void generateDocumentation(@NotNull Project project,
                                       @NotNull List<DocumentationTask> tasks,
@@ -88,12 +63,12 @@ public class DocumentationGenerationService {
         ProgressManager.getInstance().run(
             new Task.Backgroundable(project, buildProgressTitle(targetDescription), true) {
                 /**
-                 * 执行文档生成任务，处理任务队列并更新进度指示器
+                 * 执行文档生成任务, 根据进度指示器更新状态并处理任务结果
                  * <p>
-                 * 该方法用于启动文档生成任务，检查 AI 服务是否可用，执行任务队列，并根据任务执行结果
-                 * 提供相应的反馈和回调处理。
+                 * 该方法用于启动文档生成任务, 检查 AI 服务是否可用, 若不可用则提示配置错误;
+                 * 若可用则执行任务, 并根据任务执行结果通知用户.
                  *
-                 * @param indicator 进度指示器，用于显示任务执行进度
+                 * @param indicator 进度指示器, 用于显示任务执行进度
                  */
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
@@ -107,6 +82,14 @@ public class DocumentationGenerationService {
                                                                      NotificationType.ERROR);
                         // 添加设置动作
                         notification.addAction(new NotificationAction(JavaDocBundle.message("notification.error.message.config")) {
+                            /**
+                             * 处理动作事件, 用于显示 JavaDoc 设置配置界面并关闭通知
+                             * <p>
+                             * 该方法在接收到动作事件时, 创建 JavaDoc 设置配置界面并打开编辑窗口, 随后关闭传入的通知
+                             *
+                             * @param e            动作事件对象, 包含触发动作的相关信息
+                             * @param notification 通知对象, 用于在操作完成后关闭通知
+                             */
                             @Override
                             public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
                                 JavaDocSettingsConfigurable configurable = new JavaDocSettingsConfigurable();
@@ -139,13 +122,13 @@ public class DocumentationGenerationService {
     }
 
     /**
-     * 生成文档（带目标描述）
+     * 生成项目文档并通知任务完成状态
+     * <p>
+     * 根据指定的项目, 任务列表和目标描述生成文档, 并在任务执行完成后通过通知机制告知用户任务完成情况.
      *
-     * <p>使用指定的目标描述和标准的完成通知。
-     *
-     * @param project           项目对象
-     * @param tasks             文档生成任务列表
-     * @param targetDescription 目标描述
+     * @param project           项目对象, 用于标识文档生成的项目
+     * @param tasks             任务列表, 包含需要执行的文档生成任务
+     * @param targetDescription 目标描述, 用于通知中的说明信息
      */
     public void generateDocumentation(@NotNull Project project,
                                       @NotNull List<DocumentationTask> tasks,
@@ -156,17 +139,16 @@ public class DocumentationGenerationService {
                     NotificationUtil.notifyTargetCompletion(project, targetDescription, stats.completed(), stats.failed(), stats.skipped());
                 });
             }
-            NotificationUtil.notifyCompletion(project, stats.completed(), stats.failed(), stats.skipped());
         });
     }
 
     /**
-     * 构建进度标题
+     * 构建进度标题字符串
+     * <p>
+     * 根据目标描述生成进度标题, 若目标描述不是“文档”且不为空, 则在基础标题后添加描述内容.
      *
-     * <p>根据目标描述构建进度对话框的标题。
-     *
-     * @param targetDescription 目标描述
-     * @return 进度标题
+     * @param targetDescription 目标描述信息
+     * @return 生成的进度标题字符串
      */
     @NotNull
     private String buildProgressTitle(@NotNull String targetDescription) {
@@ -181,14 +163,14 @@ public class DocumentationGenerationService {
     }
 
     /**
-     * 检查任务是否为空
-     *
-     * <p>检查任务列表是否为空，如果为空则显示相应的通知。
+     * 检查任务列表是否为空, 若为空则发送通知并返回 true
+     * <p>
+     * 该方法用于判断传入的任务列表是否为空, 若为空则调用通知工具发送提示信息, 并返回 true.
      *
      * @param project 项目对象
      * @param tasks   任务列表
-     * @param message 空任务时的提示消息
-     * @return 如果任务为空返回 true
+     * @param message 提示信息内容
+     * @return 若任务列表为空返回 true, 否则返回 false
      */
     public boolean checkEmptyTasks(@NotNull Project project, @NotNull List<DocumentationTask> tasks, @NotNull String message) {
         if (tasks.isEmpty()) {
