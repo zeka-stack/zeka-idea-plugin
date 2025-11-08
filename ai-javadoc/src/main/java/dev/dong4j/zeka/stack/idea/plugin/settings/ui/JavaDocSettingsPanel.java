@@ -302,11 +302,12 @@ public class JavaDocSettingsPanel {
         showProviderStatisticsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.provider.statistics"));
 
         // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
-        systemPromptTextArea = new JTextArea(10, 50);
-        classPromptTextArea = new JTextArea(10, 50);
-        methodPromptTextArea = new JTextArea(10, 50);
-        fieldPromptTextArea = new JTextArea(10, 50);
-        testPromptTextArea = new JTextArea(10, 50);
+        // 增加初始高度：15行（原来10行），宽度保持50列不变
+        systemPromptTextArea = new JTextArea(15, 50);
+        classPromptTextArea = new JTextArea(15, 50);
+        methodPromptTextArea = new JTextArea(15, 50);
+        fieldPromptTextArea = new JTextArea(15, 50);
+        testPromptTextArea = new JTextArea(15, 50);
 
         // 创建高级设置复选框
         showAdvancedSettingsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.advanced.settings.show"));
@@ -506,9 +507,11 @@ public class JavaDocSettingsPanel {
             .addComponent(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"))
             .addComponent(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"))
             .addComponent(createCodeCompressionSubConfigPanel())
-            .addComponent(createCheckBoxWithHint(addSpaceBetweenChineseAndEnglishCheckBox, "settings.add.space.between.chinese.and" +
-                                                                                           ".english.hint"))
-            .addComponent(createCheckBoxWithHint(replaceChinesePunctuationCheckBox, "settings.replace.chinese.punctuation.hint"))
+            .addComponent(
+                createCheckBoxWithHint(addSpaceBetweenChineseAndEnglishCheckBox,
+                                       "settings.add.space.between.chinese.and.english.hint"))
+            .addComponent(createCheckBoxWithHint(replaceChinesePunctuationCheckBox,
+                                                 "settings.replace.chinese.punctuation.hint"))
             .getPanel();
 
         // 创建带边框的面板
@@ -938,7 +941,8 @@ public class JavaDocSettingsPanel {
     private JBTabbedPane createPromptTabbedPane() {
         // Prompt 配置 - Tab 页
         JBTabbedPane promptTabbedPane = new JBTabbedPane();
-        promptTabbedPane.setPreferredSize(new Dimension(600, 200));
+        // 增加 Tab 页的高度：宽度保持600不变，高度从200增加到400
+        promptTabbedPane.setPreferredSize(new Dimension(600, 400));
 
         // 创建各个 Tab 页
         promptTabbedPane.addTab(JavaDocBundle.message("settings.prompt.tab.system"), createPromptTab(systemPromptTextArea, "system"));
@@ -967,6 +971,24 @@ public class JavaDocSettingsPanel {
         textArea.setWrapStyleWord(true);
         textArea.setToolTipText(JavaDocBundle.message("settings.prompt." + promptType + ".tooltip"));
 
+        // 添加文档监听器，根据内容自动调整大小
+        textArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                adjustTextAreaSize(textArea);
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                adjustTextAreaSize(textArea);
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                adjustTextAreaSize(textArea);
+            }
+        });
+
         // 创建滚动面板，并添加边框以在四周留出空间
         JBScrollPane scrollPane = new JBScrollPane(textArea);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -981,7 +1003,46 @@ public class JavaDocSettingsPanel {
         resetButton.addActionListener(e -> resetPromptToDefault(promptType, textArea));
         tabPanel.add(resetButton, BorderLayout.SOUTH);
 
+        // 初始化时根据内容调整大小
+        SwingUtilities.invokeLater(() -> adjustTextAreaSize(textArea));
+
         return tabPanel;
+    }
+
+    /**
+     * 根据文本内容自动调整文本区域的大小
+     * <p>
+     * 该方法会根据文本内容的行数自动调整文本区域的行数，但会设置最小和最大行数限制。
+     * 最小行数：15行（初始大小）
+     * 最大行数：50行（避免占用过多空间）
+     *
+     * @param textArea 要调整大小的文本区域
+     */
+    private void adjustTextAreaSize(JTextArea textArea) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 计算文本的行数
+                int lineCount = textArea.getLineCount();
+
+                // 设置最小和最大行数限制
+                int minRows = 15;  // 最小行数
+                int maxRows = 50;   // 最大行数
+
+                // 计算实际需要的行数（至少显示所有内容，但不超过最大值）
+                int rows = Math.max(minRows, Math.min(lineCount, maxRows));
+
+                // 如果行数发生变化，更新文本区域的行数
+                if (rows != textArea.getRows()) {
+                    textArea.setRows(rows);
+                    // 触发父容器重新布局
+                    if (textArea.getParent() != null) {
+                        textArea.getParent().revalidate();
+                    }
+                }
+            } catch (Exception e) {
+                // 静默处理异常，避免影响功能
+            }
+        });
     }
 
     /**
