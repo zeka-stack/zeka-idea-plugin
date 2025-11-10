@@ -16,6 +16,7 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -1385,11 +1386,40 @@ public class JavaDocSettingsPanel {
         modelComboBox.setSelectedItem(defaultConfig.modelName);
 
         // 从 PasswordSafe 读取 API Key（使用 defaultConfig 的 UUID）
-        String apiKey = SettingsState.getApiKey(defaultConfig.md5);
-        apiKeyField.setText(apiKey != null ? apiKey : "");
+        // 异步加载 PasswordSafe 中的 API Key
+        loadApiKeyForProvider(defaultConfig, providerId);
 
         // 加载验证状态
         this.configurationVerified = defaultConfig.configurationVerified;
+    }
+
+    /**
+     * 异步加载指定提供商配置的 API Key，并在 UI 中更新显示
+     *
+     * @param providerConfig     提供商配置
+     * @param expectedProviderId 当前期望的提供商标识符
+     */
+    private void loadApiKeyForProvider(@NotNull SettingsState.ProviderConfig providerConfig,
+                                       @NotNull String expectedProviderId) {
+        apiKeyField.setText("");
+
+        if (providerConfig.md5 == null || providerConfig.md5.trim().isEmpty()) {
+            return;
+        }
+
+        SettingsState.loadApiKeyAsync(providerConfig.md5, apiKey -> {
+            String currentProviderId = getSelectedProviderId();
+            if (!expectedProviderId.equals(currentProviderId)) {
+                return;
+            }
+            apiKeyField.setText(apiKey != null ? apiKey : "");
+        });
+    }
+
+    @Nullable
+    private String getSelectedProviderId() {
+        String displayName = (String) providerComboBox.getSelectedItem();
+        return displayName == null ? null : AIProviderType.getProviderIdByDisplayName(displayName);
     }
 
     /**
@@ -1905,9 +1935,8 @@ public class JavaDocSettingsPanel {
         modelComboBox.setSelectedItem(defaultConfig.modelName);
         baseUrlField.setText(defaultConfig.baseUrl);
 
-        // 使用默认配置的 UUID 读取 API Key
-        String apiKey = SettingsState.getApiKey(defaultConfig.md5);
-        apiKeyField.setText(apiKey != null ? apiKey : "");
+        // 异步加载 PasswordSafe 中的 API Key
+        loadApiKeyForProvider(defaultConfig, providerType.getProviderId());
 
         // 加载验证状态
         this.configurationVerified = defaultConfig.configurationVerified;

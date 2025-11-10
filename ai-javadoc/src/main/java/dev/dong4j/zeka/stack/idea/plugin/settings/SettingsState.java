@@ -4,7 +4,9 @@ import com.intellij.credentialStore.CredentialAttributes;
 import com.intellij.credentialStore.CredentialAttributesKt;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.ide.passwordSafe.PasswordSafe;
+import com.intellij.openapi.application.Application;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -23,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
@@ -922,49 +925,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     // ==================== 辅助方法 ====================
 
     /**
-     * 验证配置是否有效
-     *
-     * <p>检查必需配置项是否完整且有效。
-     * 用于保存配置前的验证。
-     *
-     * <p>验证内容:
-     * <ul>
-     *   <li>AI 提供商 ID 不为空</li>
-     *   <li>模型名称不为空</li>
-     *   <li>Base URL 不为空</li>
-     *   <li>如需要 API Key 则不为空</li>
-     * </ul>
-     *
-     * @return 如果配置有效返回 true
-     * @see #requiresApiKey()
-     */
-    // public boolean isValid() {
-    //     // 检查必需字段
-    //     if (providerType == null) {
-    //         return false;
-    //     }
-    //
-    //     // 从 defaultProviders 获取当前服务商的配置
-    //     ProviderConfig defaultConfig = getDefaultProviderConfig(providerType);
-    //
-    //     if (defaultConfig.modelName == null || defaultConfig.modelName.trim().isEmpty()) {
-    //         return false;
-    //     }
-    //
-    //     if (defaultConfig.baseUrl == null || defaultConfig.baseUrl.trim().isEmpty()) {
-    //         return false;
-    //     }
-    //
-    //     // 检查是否需要 API Key
-    //     if (!requiresApiKey()) {
-    //         return true;
-    //     }
-    //
-    //     String apiKey = getDefaultApiKey();
-    //     return apiKey != null && !apiKey.trim().isEmpty();
-    // }
-
-    /**
      * 当前配置是否需要 API Key
      *
      * <p>根据当前选择的 AI 提供商判断是否需要 API Key。
@@ -1220,44 +1180,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
-     * 获取默认服务商的 API Key
-     * <p>
-     * 从 PasswordSafe 中读取默认服务商的 API 密钥
-     *
-     * @return API Key，如果不存在则返回 null
-     */
-    // @Nullable
-    // public String getDefaultApiKey1() {
-    //     Credentials credentials = PasswordSafe.getInstance().get(
-    //         createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT)
-    //                                                             );
-    //     return credentials != null ? credentials.getPasswordAsString() : null;
-    // }
-    //
-    // /**
-    //  * 设置默认服务商的 API Key
-    //  * <p>
-    //  * 将默认服务商的 API 密钥存储到 PasswordSafe 中
-    //  *
-    //  * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
-    //  */
-    // public void setDefaultApiKey1(@Nullable String apiKey) {
-    //     if (apiKey == null || apiKey.trim().isEmpty()) {
-    //         // 如果 apiKey 为空，删除已存储的密钥
-    //         PasswordSafe.getInstance().set(
-    //             createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
-    //             null
-    //                                       );
-    //     } else {
-    //         // 存储 API 密钥
-    //         PasswordSafe.getInstance().set(
-    //             createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
-    //             new Credentials("default", apiKey)
-    //                                       );
-    //     }
-    // }
-
-    /**
      * 获取指定 ProviderConfig 的 API Key
      * <p>
      * 从 PasswordSafe 中读取指定提供商配置的 API 密钥
@@ -1267,6 +1189,39 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     @Nullable
     public static String getApiKey(@Nullable String uuid) {
+        return doGetApiKey(uuid);
+    }
+
+    /**
+     * 异步获取指定 ProviderConfig 的 API Key
+     * <p>
+     * 该方法会在后台线程中访问 PasswordSafe，并在 EDT 中回调结果。
+     *
+     * @param uuid     提供商配置的 UUID
+     * @param callback 获取完成后的回调，参数为 API Key（可能为 null）
+     */
+    public static void loadApiKeyAsync(@Nullable String uuid, @NotNull Consumer<String> callback) {
+        Application application = ApplicationManager.getApplication();
+
+        if (application == null) {
+            callback.accept(doGetApiKey(uuid));
+            return;
+        }
+
+        String normalizedUuid = uuid == null ? "" : uuid.trim();
+        if (normalizedUuid.isEmpty()) {
+            application.invokeLater(() -> callback.accept(null), ModalityState.any());
+            return;
+        }
+
+        application.executeOnPooledThread(() -> {
+            String apiKey = doGetApiKey(normalizedUuid);
+            application.invokeLater(() -> callback.accept(apiKey), ModalityState.any());
+        });
+    }
+
+    @Nullable
+    private static String doGetApiKey(@Nullable String uuid) {
         if (uuid == null || uuid.trim().isEmpty()) {
             return null;
         }
@@ -1323,16 +1278,5 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                                       );
     }
 
-    /**
-     * 删除默认服务商的 API Key
-     * <p>
-     * 从 PasswordSafe 中删除默认服务商的 API 密钥
-     */
-    // public void deleteDefaultApiKey() {
-    //     PasswordSafe.getInstance().set(
-    //         createCredentialAttributes(PASSWORD_SAFE_KEY_DEFAULT),
-    //         null
-    //                                   );
-    // }
 }
 
