@@ -222,8 +222,8 @@ public class JavaDocSettingsPanel {
                 if (selectedRow >= 0) {
                     removeAvailableProvider(selectedRow);
                 }
-            }).addExtraAction(new AnAction("清空全部",
-                                           "清空所有可用服务商配置",
+            }).addExtraAction(new AnAction(JavaDocBundle.message("settings.available.providers.clear.all"),
+                                           JavaDocBundle.message("settings.available.providers.clear.all.description"),
                                            com.intellij.icons.AllIcons.Actions.GC) {
                 @Override
                 public void actionPerformed(@NotNull AnActionEvent e) {
@@ -231,9 +231,16 @@ public class JavaDocSettingsPanel {
                 }
 
                 @Override
+                public void update(@NotNull AnActionEvent e) {
+                    // 根据表格状态启用/禁用按钮
+                    boolean hasData = availableProvidersTableModel.getRowCount() > 0;
+                    e.getPresentation().setEnabled(hasData);
+                }
+
+                @Override
                 public @NotNull ActionUpdateThread getActionUpdateThread() {
-                    // 在后台线程中执行 update，避免阻塞 EDT
-                    return ActionUpdateThread.BGT;
+                    // 需要访问 Swing 组件（表格模型），必须在 EDT 中执行
+                    return ActionUpdateThread.EDT;
                 }
             });
 
@@ -282,8 +289,16 @@ public class JavaDocSettingsPanel {
                 }
 
                 @Override
+                public void update(@NotNull AnActionEvent e) {
+                    // 根据表格状态启用/禁用按钮
+                    boolean hasData = customJavaDocTagsTableModel.getRowCount() > 0;
+                    e.getPresentation().setEnabled(hasData);
+                }
+
+                @Override
                 public @NotNull ActionUpdateThread getActionUpdateThread() {
-                    return ActionUpdateThread.BGT;
+                    // 需要访问 Swing 组件（表格模型），必须在 EDT 中执行
+                    return ActionUpdateThread.EDT;
                 }
             });
 
@@ -1261,7 +1276,7 @@ public class JavaDocSettingsPanel {
                     SwingUtilities.invokeLater(() -> {
                         JOptionPane.showMessageDialog(
                             getParentWindow(),
-                            "创建 AI 服务提供商失败，请检查配置是否正确",
+                            JavaDocBundle.message("settings.error.provider.create.failed"),
                             JavaDocBundle.message("settings.error.title"),
                             JOptionPane.ERROR_MESSAGE
                                                      );
@@ -1315,19 +1330,19 @@ public class JavaDocSettingsPanel {
                         // 更新提示文本
                         if (modelComboBox.getEditor() != null &&
                             modelComboBox.getEditor().getEditorComponent() instanceof JTextField textField) {
-                            textField.setToolTipText("从服务提供商获取的可用模型列表");
+                            textField.setToolTipText(JavaDocBundle.message("settings.refresh.models.tooltip"));
                         }
 
                         JOptionPane.showMessageDialog(
                             getParentWindow(),
-                            "成功获取到 " + availableModels.size() + " 个可用模型",
+                            JavaDocBundle.message("settings.refresh.models.success", availableModels.size()),
                             JavaDocBundle.message("settings.test.result.title"),
                             JOptionPane.INFORMATION_MESSAGE
                                                      );
                     } else {
                         JOptionPane.showMessageDialog(
                             getParentWindow(),
-                            "未获取到可用模型，请检查配置是否正确",
+                            JavaDocBundle.message("settings.refresh.models.empty"),
                             JavaDocBundle.message("settings.error.title"),
                             JOptionPane.WARNING_MESSAGE
                                                      );
@@ -1341,7 +1356,7 @@ public class JavaDocSettingsPanel {
                 SwingUtilities.invokeLater(() -> {
                     JOptionPane.showMessageDialog(
                         getParentWindow(),
-                        "获取模型列表失败: " + e.getMessage(),
+                        JavaDocBundle.message("settings.refresh.models.failed", e.getMessage()),
                         JavaDocBundle.message("settings.error.title"),
                         JOptionPane.ERROR_MESSAGE
                                                  );
@@ -1505,7 +1520,7 @@ public class JavaDocSettingsPanel {
         if (provider == null) {
             JOptionPane.showMessageDialog(
                 getParentWindow(),
-                "创建 AI 服务提供商失败，请检查配置是否正确（提供商、模型、Base URL 等）",
+                JavaDocBundle.message("settings.error.provider.create.failed.details"),
                 JavaDocBundle.message("settings.error.title"),
                 JOptionPane.ERROR_MESSAGE
                                          );
@@ -1545,7 +1560,7 @@ public class JavaDocSettingsPanel {
                         String errorMessage = result.getMessage();
                         String errorDetails = result.getErrorDetails();
                         if (errorDetails != null && !errorDetails.isEmpty()) {
-                            errorMessage = errorMessage + "\n\n详细信息:\n" + errorDetails;
+                            errorMessage = errorMessage + "\n\n" + JavaDocBundle.message("settings.error.details") + "\n" + errorDetails;
                         }
 
                         JOptionPane.showMessageDialog(
@@ -1681,13 +1696,14 @@ public class JavaDocSettingsPanel {
 
         // 确认删除
         String providerName = configToRemove.providerType != null ?
-                              configToRemove.providerType.getDisplayName() : "未知";
-        String modelName = configToRemove.modelName != null ? configToRemove.modelName : "未知";
+                              configToRemove.providerType.getDisplayName() : JavaDocBundle.message("settings.available.providers.unknown");
+        String modelName = configToRemove.modelName != null ? configToRemove.modelName : JavaDocBundle.message("settings.available" +
+                                                                                                               ".providers.unknown");
 
         int result = JOptionPane.showConfirmDialog(
             getParentWindow(),
-            String.format("确定要删除服务商 \"%s - %s\" 吗？", providerName, modelName),
-            "确认删除",
+            JavaDocBundle.message("settings.available.providers.delete.confirm", providerName, modelName),
+            JavaDocBundle.message("settings.available.providers.delete.title"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
                                                   );
@@ -1722,9 +1738,9 @@ public class JavaDocSettingsPanel {
         // 确认清空
         int result = JOptionPane.showConfirmDialog(
             getParentWindow(),
-            String.format("确定要清空所有可用服务商吗(%s 个)？\n此操作将删除所有已保存的配置和 API Key！",
-                          availableProvidersTableModel.getRowCount()),
-            "确认清空",
+            JavaDocBundle.message("settings.available.providers.clear.confirm",
+                                  availableProvidersTableModel.getRowCount()),
+            JavaDocBundle.message("settings.available.providers.clear.title"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
                                                   );
@@ -2094,7 +2110,11 @@ public class JavaDocSettingsPanel {
      * 用于在表格中显示已验证的服务商配置信息
      */
     private static class AvailableProvidersTableModel extends AbstractTableModel {
-        private final String[] columnNames = {"服务商", "模型", "备注"};
+        private final String[] columnNames = {
+            JavaDocBundle.message("settings.available.providers.column.provider"),
+            JavaDocBundle.message("settings.available.providers.column.model"),
+            JavaDocBundle.message("settings.available.providers.column.remark")
+        };
         private final List<SettingsState.ProviderConfig> data;
 
         public AvailableProvidersTableModel() {

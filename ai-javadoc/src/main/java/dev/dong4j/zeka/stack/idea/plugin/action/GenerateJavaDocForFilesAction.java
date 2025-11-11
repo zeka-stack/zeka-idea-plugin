@@ -4,6 +4,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -17,6 +18,7 @@ import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -51,7 +53,13 @@ public class GenerateJavaDocForFilesAction extends AnAction {
         Project project = e.getProject();
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
 
-        if (project == null || files == null || files.length == 0) {
+        if (project == null || project.isDisposed() || files == null || files.length == 0) {
+            return;
+        }
+
+        // 检查项目是否处于 Dumb Mode（索引模式）
+        if (DumbService.isDumb(project)) {
+            NotificationUtil.notifyIndexing(project);
             return;
         }
 
@@ -96,47 +104,35 @@ public class GenerateJavaDocForFilesAction extends AnAction {
     /**
      * 获取用于更新操作的线程类型
      * <p>
-     * 返回在后台线程中执行更新操作的线程类型，以避免阻塞事件调度线程（EDT）。
+     * 必须在 EDT 中执行，因为需要访问 VIRTUAL_FILE_ARRAY 数据键。
+     * VIRTUAL_FILE_ARRAY 只能在 EDT 线程中安全访问。
      *
-     * @return 更新操作所使用的线程类型
+     * @return ActionUpdateThread.EDT 事件调度线程
      */
     @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
-        // 在后台线程中执行 update，避免阻塞 EDT
-        return ActionUpdateThread.BGT;
+        // 必须在 EDT 中执行，因为 VIRTUAL_FILE_ARRAY 只能在 EDT 中访问
+        return ActionUpdateThread.EDT;
     }
 
     /**
-     * 更新操作的呈现信息，根据选中的文件状态启用或禁用操作，并设置操作文本和描述
+     * 更新操作的呈现信息, 设置文本和描述为生成 JavaDoc 的相关提示
      * <p>
-     * 该方法用于在用户执行操作前，根据当前选中的文件状态更新操作的可用性、文本和描述信息。
+     * 该方法用于在 IDE 中更新动作的显示文本和描述, 用于提示用户生成 JavaDoc
      *
-     * @param e 事件对象，包含操作上下文信息
+     * @param e 事件对象, 包含当前操作的相关信息
      */
     @Override
     public void update(@NotNull AnActionEvent e) {
-        VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-        boolean enabled = files != null && files.length > 0 && hasJavaFiles(files);
-        e.getPresentation().setEnabled(enabled);
+        Project project = e.getProject();
+
+        // 检查项目状态
+        if (project == null || project.isDisposed() || DumbService.isDumb(project)) {
+            return;
+        }
+
         e.getPresentation().setText(JavaDocBundle.message("action.generate.javadoc"));
         e.getPresentation().setDescription(JavaDocBundle.message("action.generate.javadoc.selection.description"));
-    }
-
-    /**
-     * 判断给定的文件数组中是否存在Java文件
-     * <p>
-     * 遍历文件数组，检查每个文件是否为目录或Java文件，若存在则返回true
-     *
-     * @param files 文件数组
-     * @return 如果存在Java文件则返回true，否则返回false
-     */
-    private boolean hasJavaFiles(VirtualFile[] files) {
-        for (VirtualFile file : files) {
-            if (file.isDirectory() || isJavaFile(file)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

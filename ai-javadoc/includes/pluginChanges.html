@@ -1,3 +1,15 @@
+<h3>1.4.3</h3>
+<ul>
+    <li>修复设置页面中清空按钮的 ActionUpdateThread 使用问题，将线程类型从 BGT 改为 EDT，确保访问 Swing 组件时线程安全</li>
+    <li>优化清空按钮的启用状态，根据表格数据动态启用/禁用，提升用户体验</li>
+</ul>
+<h3>1.4.3</h3>
+<ul>
+    <li>Fixed ActionUpdateThread usage issue for clear buttons on settings page, changed thread type from BGT to EDT to ensure thread safety
+        when accessing Swing components
+    </li>
+    <li>Optimized clear button enabled state, dynamically enable/disable based on table data, improving user experience</li>
+</ul>
 <h3>1.4.2</h3>
 <ul>
     <li>修复设置页面在 EDT 上读取 API Key 导致 SlowOperations 异常的问题，改为后台线程加载并在 UI 线程更新</li>
