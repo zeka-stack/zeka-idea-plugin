@@ -47,6 +47,10 @@
                     anchor="bottom"
                     icon="/icons/aij_16.svg"/>
 
+        <!-- 状态栏默认服务商控件 -->
+        <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIProviderStatusBarWidgetFactory"
+                                order="first" id="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIProviderStatusBarWidget"/>
+
         <!-- Intention Action (Option+Enter / Alt+Enter 快捷菜单) -->
         <intentionAction>
             <language>JAVA</language>

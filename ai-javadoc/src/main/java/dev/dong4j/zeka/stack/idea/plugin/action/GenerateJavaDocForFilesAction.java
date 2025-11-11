@@ -98,7 +98,7 @@ public class GenerateJavaDocForFilesAction extends AnAction {
         }
 
         // 使用服务生成文档，带自定义完成回调
-        service.generateDocumentation(project, tasks, "选中文件");
+        service.generateDocumentation(project, tasks, JavaDocBundle.message("task.target.selection"));
     }
 
     /**

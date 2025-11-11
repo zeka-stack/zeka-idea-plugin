@@ -1,13 +1,20 @@
 package dev.dong4j.zeka.stack.idea.plugin.util;
 
 import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
+import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
  * 通知工具类
@@ -130,11 +137,11 @@ public class NotificationUtil {
      */
     public static void notifyTargetCompletion(@Nullable Project project, @NotNull String target,
                                               int completed, int failed, int skipped) {
-        String content = JavaDocBundle.message("notification.target.completion.format", target, completed, failed, skipped);
-
-        final NotificationType type = getNotificationType(completed, failed);
-
-        notify(project, JavaDocBundle.message("notification.generation.complete"), content, type);
+        if (SettingsState.getInstance().verboseLogging) {
+            String content = JavaDocBundle.message("notification.target.completion.format", target, completed, failed, skipped);
+            final NotificationType type = getNotificationType(completed, failed);
+            notify(project, JavaDocBundle.message("notification.generation.complete"), content, type);
+        }
     }
 
     /**
@@ -173,6 +180,35 @@ public class NotificationUtil {
         notify(project, JavaDocBundle.message("notification.title"),
                JavaDocBundle.message("notification.indexing.warning"),
                NotificationType.WARNING);
+    }
+
+    /**
+     * 向通知中添加可配置的面板操作项
+     * <p>
+     * 为指定的通知添加一个操作项, 点击该操作项将打开 JavaDoc 设置配置面板, 并使通知消失
+     *
+     * @param notification 要添加操作项的通知对象
+     * @param project      项目对象, 用于关联配置面板和项目
+     */
+    public static void addOpenConfigurablePanelAction(Notification notification, Project project) {
+        notification.addAction(new NotificationAction(JavaDocBundle.message("notification.error.message.config")) {
+            /**
+             * 处理动作事件, 用于显示 JavaDoc 设置配置界面并关闭通知
+             * <p>
+             * 该方法在接收到动作事件时, 创建 JavaDoc 设置配置界面并打开编辑窗口, 随后关闭传入的通知
+             *
+             * @param e            动作事件对象, 包含触发动作的相关信息
+             * @param notification 通知对象, 用于在操作完成后关闭通知
+             */
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
+                JavaDocSettingsConfigurable configurable = new JavaDocSettingsConfigurable();
+                // 打开设置面板
+                ShowSettingsUtil.getInstance().editConfigurable(project, configurable);
+                notification.expire();
+            }
+        });
+        Notifications.Bus.notify(notification, project);
     }
 }
 
