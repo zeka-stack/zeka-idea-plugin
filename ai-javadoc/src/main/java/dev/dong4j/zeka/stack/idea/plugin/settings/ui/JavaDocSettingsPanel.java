@@ -4,6 +4,8 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.Gray;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -19,21 +21,32 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
@@ -41,6 +54,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
@@ -92,6 +106,8 @@ public class JavaDocSettingsPanel {
     // 验证状态标记
     /** 配置是否已验证的标记 */
     private boolean configurationVerified = false;
+    /** 刷新模型状态：true=成功，false=失败，null=未刷新（默认黄色） */
+    private Boolean refreshModelsSuccess = null;
 
     // 功能配置
     /** 生成针对类的复选框 */
@@ -191,6 +207,8 @@ public class JavaDocSettingsPanel {
     private void createUI() {
         // AI 提供商配置
         providerComboBox = new ComboBox<>(AIProviderType.getAllDisplayNames().toArray(new String[0]));
+        // 设置自定义渲染器，显示图标+名称
+        providerComboBox.setRenderer(new ProviderListCellRenderer());
 
         // 创建可编辑的模型下拉框，用户可以输入任何模型名称
         modelComboBox = new ComboBox<>();
@@ -208,12 +226,16 @@ public class JavaDocSettingsPanel {
 
         refreshModelsButton = new JButton(JavaDocBundle.message("settings.refresh.models"));
         refreshModelsButton.addActionListener(e -> refreshAvailableModels());
+        // 初始化刷新按钮状态为黄色（未刷新）
+        updateRefreshButtonState();
 
         // 创建可用服务商列表组件
         showAvailableProvidersCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.available.providers"));
         availableProvidersTableModel = new AvailableProvidersTableModel();
         availableProvidersTable = new JBTable(availableProvidersTableModel);
         availableProvidersTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
+        // 为第一列（提供商列）设置自定义渲染器，显示图标+名称
+        availableProvidersTable.getColumnModel().getColumn(0).setCellRenderer(new ProviderTableCellRenderer());
 
         // 创建带工具栏的面板
         ToolbarDecorator decorator = ToolbarDecorator.createDecorator(availableProvidersTable)
@@ -1107,21 +1129,23 @@ public class JavaDocSettingsPanel {
         // 提供商变更时更新模型列表和默认值
         providerComboBox.addActionListener(e -> {
             updateModelList();
-            updateDefaultValues();
+            updateDefaultValues(); // 这个方法会加载新服务商的配置和验证状态，并更新按钮状态
             updateApiKeyFieldEnabled();
             updateBaseUrlFieldEditable();
-            // 关键配置修改，清除验证状态
-            markConfigurationAsUnverified();
+            // 切换服务商时，重置刷新按钮状态为黄色（未刷新）
+            refreshModelsSuccess = null;
+            updateRefreshButtonState();
+            // 注意：不在这里清除验证状态，因为 updateDefaultValues() 已经根据新服务商的配置状态更新了
         });
 
-        // Base URL 变更时清除验证状态
-        baseUrlField.addActionListener(e -> markConfigurationAsUnverified());
+        // Base URL 变更时检查配置状态
+        baseUrlField.addActionListener(e -> checkConfigurationStatus());
 
-        // API Key 变更时清除验证状态
-        apiKeyField.addActionListener(e -> markConfigurationAsUnverified());
+        // API Key 变更时检查配置状态
+        apiKeyField.addActionListener(e -> checkConfigurationStatus());
 
-        // 模型选择变更时清除验证状态
-        modelComboBox.addActionListener(e -> markConfigurationAsUnverified());
+        // 模型选择变更时检查配置状态
+        modelComboBox.addActionListener(e -> checkConfigurationStatus());
 
         // 监听代码压缩配置变更
         enableCodeCompressionCheckBox.addActionListener(e -> {
@@ -1261,6 +1285,8 @@ public class JavaDocSettingsPanel {
         // 设置按钮状态
         refreshModelsButton.setEnabled(false);
         refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models.testing"));
+        // 测试中时显示灰色圆点
+        refreshModelsButton.setIcon(createStatusDotIcon(Gray._158)); // Material Design Grey 500
 
         // 在后台线程中获取模型列表
         new Thread(() -> {
@@ -1274,14 +1300,20 @@ public class JavaDocSettingsPanel {
                 // 检查提供商创建是否成功
                 if (provider == null) {
                     SwingUtilities.invokeLater(() -> {
+                        // 使用服务商图标
+                        Icon providerIcon = getCurrentProviderIcon();
                         JOptionPane.showMessageDialog(
                             getParentWindow(),
                             JavaDocBundle.message("settings.error.provider.create.failed"),
                             JavaDocBundle.message("settings.error.title"),
-                            JOptionPane.ERROR_MESSAGE
+                            JOptionPane.ERROR_MESSAGE,
+                            providerIcon
                                                      );
                         refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models"));
                         refreshModelsButton.setEnabled(true);
+                        // 刷新失败，设置为红色
+                        refreshModelsSuccess = false;
+                        updateRefreshButtonState();
                     });
                     return;
                 }
@@ -1333,35 +1365,42 @@ public class JavaDocSettingsPanel {
                             textField.setToolTipText(JavaDocBundle.message("settings.refresh.models.tooltip"));
                         }
 
-                        JOptionPane.showMessageDialog(
-                            getParentWindow(),
-                            JavaDocBundle.message("settings.refresh.models.success", availableModels.size()),
-                            JavaDocBundle.message("settings.test.result.title"),
-                            JOptionPane.INFORMATION_MESSAGE
-                                                     );
+                        // 刷新成功，设置为绿色（不显示消息框）
+                        refreshModelsSuccess = true;
                     } else {
+                        // 模型列表为空，视为失败，使用服务商图标
+                        Icon providerIcon = getCurrentProviderIcon();
                         JOptionPane.showMessageDialog(
                             getParentWindow(),
                             JavaDocBundle.message("settings.refresh.models.empty"),
                             JavaDocBundle.message("settings.error.title"),
-                            JOptionPane.WARNING_MESSAGE
+                            JOptionPane.WARNING_MESSAGE,
+                            providerIcon
                                                      );
+                        refreshModelsSuccess = false;
                     }
 
                     refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models"));
                     refreshModelsButton.setEnabled(true);
+                    updateRefreshButtonState();
                 });
 
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
+                    // 使用服务商图标
+                    Icon providerIcon = getCurrentProviderIcon();
                     JOptionPane.showMessageDialog(
                         getParentWindow(),
                         JavaDocBundle.message("settings.refresh.models.failed", e.getMessage()),
                         JavaDocBundle.message("settings.error.title"),
-                        JOptionPane.ERROR_MESSAGE
+                        JOptionPane.ERROR_MESSAGE,
+                        providerIcon
                                                  );
                     refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models"));
                     refreshModelsButton.setEnabled(true);
+                    // 刷新失败，设置为红色
+                    refreshModelsSuccess = false;
+                    updateRefreshButtonState();
                 });
             }
         }).start();
@@ -1406,6 +1445,9 @@ public class JavaDocSettingsPanel {
 
         // 加载验证状态
         this.configurationVerified = defaultConfig.configurationVerified;
+
+        // 更新测试按钮状态
+        updateTestButtonState();
     }
 
     /**
@@ -1428,6 +1470,8 @@ public class JavaDocSettingsPanel {
                 return;
             }
             apiKeyField.setText(apiKey != null ? apiKey : "");
+            // API Key 加载完成后，检查配置状态
+            checkConfigurationStatus();
         });
     }
 
@@ -1529,6 +1573,8 @@ public class JavaDocSettingsPanel {
 
         testConnectionButton.setEnabled(false);
         testConnectionButton.setText(JavaDocBundle.message("settings.test.connection.testing"));
+        // 测试中时显示灰色圆点
+        testConnectionButton.setIcon(createStatusDotIcon(Gray._158)); // Material Design Grey 500
 
         // 在后台线程测试
         new Thread(() -> {
@@ -1542,13 +1588,6 @@ public class JavaDocSettingsPanel {
 
                         // 添加到可用提供商列表
                         addToAvailableProviders(snapshotProviderConfig);
-
-                        JOptionPane.showMessageDialog(
-                            getParentWindow(),
-                            result.getMessage(),
-                            JavaDocBundle.message("settings.test.result.title"),
-                            JOptionPane.INFORMATION_MESSAGE
-                                                     );
                     } else {
                         // 测试失败，清除验证状态
                         markConfigurationAsUnverified();
@@ -1563,15 +1602,20 @@ public class JavaDocSettingsPanel {
                             errorMessage = errorMessage + "\n\n" + JavaDocBundle.message("settings.error.details") + "\n" + errorDetails;
                         }
 
+                        // 测试失败时仍然显示错误消息，使用服务商图标
+                        Icon providerIcon = getCurrentProviderIcon();
                         JOptionPane.showMessageDialog(
                             getParentWindow(),
                             errorMessage,
                             JavaDocBundle.message("settings.test.result.title"),
-                            JOptionPane.ERROR_MESSAGE
+                            JOptionPane.ERROR_MESSAGE,
+                            providerIcon
                                                      );
                     }
                     testConnectionButton.setText(JavaDocBundle.message("settings.test.connection"));
                     testConnectionButton.setEnabled(true);
+                    // 更新按钮状态
+                    updateTestButtonState();
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
@@ -1582,14 +1626,19 @@ public class JavaDocSettingsPanel {
                     removeFromAvailableProviders(snapshotProviderConfig);
 
                     String errorMessage = JavaDocBundle.message("settings.test.connection.error", e.getMessage());
+                    // 使用服务商图标
+                    Icon providerIcon = getCurrentProviderIcon();
                     JOptionPane.showMessageDialog(
                         getParentWindow(),
                         errorMessage,
                         JavaDocBundle.message("settings.test.result.title"),
-                        JOptionPane.ERROR_MESSAGE
+                        JOptionPane.ERROR_MESSAGE,
+                        providerIcon
                                                  );
                     testConnectionButton.setText(JavaDocBundle.message("settings.test.connection"));
                     testConnectionButton.setEnabled(true);
+                    // 更新按钮状态
+                    updateTestButtonState();
                 });
             }
         }).start();
@@ -1803,6 +1852,9 @@ public class JavaDocSettingsPanel {
             // 更新 defaultProviders
             settings.updateDefaultProviderConfig(providerType, newConfig);
         }
+
+        // 更新按钮状态
+        updateTestButtonState();
     }
 
     /**
@@ -1810,6 +1862,142 @@ public class JavaDocSettingsPanel {
      */
     private void markConfigurationAsUnverified() {
         this.configurationVerified = false;
+        // 更新按钮状态
+        updateTestButtonState();
+    }
+
+    /**
+     * 检查当前配置状态
+     * <p>
+     * 当用户修改配置时，检查当前配置是否与已保存的已验证配置匹配。
+     * 如果匹配，恢复验证状态；如果不匹配，清除验证状态。
+     */
+    private void checkConfigurationStatus() {
+        // 获取当前配置快照
+        SettingsState.ProviderConfig currentConfig = getProviderConfigSnapshot();
+
+        // 获取当前服务商类型
+        String displayName = (String) providerComboBox.getSelectedItem();
+        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
+        AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
+
+        if (providerType == null) {
+            markConfigurationAsUnverified();
+            return;
+        }
+
+        // 从 defaultProviders 获取已保存的配置
+        SettingsState settings = SettingsState.getInstance();
+        SettingsState.ProviderConfig savedConfig = settings.getDefaultProviderConfig(providerType);
+
+        // 比较配置是否匹配（比较 Base URL、模型名称和 API Key 的 md5）
+        boolean configMatches = savedConfig.configurationVerified &&
+                                Objects.equals(SettingsState.normalizeBaseUrl(currentConfig.baseUrl),
+                                               SettingsState.normalizeBaseUrl(savedConfig.baseUrl)) &&
+                                Objects.equals(currentConfig.modelName, savedConfig.modelName) &&
+                                Objects.equals(currentConfig.md5, savedConfig.md5);
+
+        // 配置匹配，恢复验证状态
+        // 配置不匹配，清除验证状态
+        this.configurationVerified = configMatches;
+
+        // 更新按钮状态
+        updateTestButtonState();
+    }
+
+    /**
+     * 更新测试按钮的状态显示
+     * <p>
+     * 根据 configurationVerified 状态在按钮上显示小圆点图标：
+     * - 绿色圆点：配置已验证（可用）
+     * - 红色圆点：配置未验证（不可用）
+     */
+    private void updateTestButtonState() {
+        if (testConnectionButton == null) {
+            return;
+        }
+
+        if (configurationVerified) {
+            // 绿色圆点表示可用
+            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color()))); // Material Design Green 500
+        } else {
+            // 红色圆点表示不可用
+            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color()))); // Material Design Red 500
+        }
+
+        // 恢复按钮默认样式
+        testConnectionButton.setOpaque(false);
+        testConnectionButton.setContentAreaFilled(true);
+    }
+
+    /**
+     * 创建状态指示圆点图标
+     * <p>
+     * 创建一个小的圆点图标，用于在按钮上显示状态。
+     *
+     * @param color 圆点颜色
+     * @return 圆点图标
+     */
+    private Icon createStatusDotIcon(Color color) {
+        // 圆点尺寸：8x8 像素
+        int size = 8;
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = image.createGraphics();
+
+        // 设置高质量渲染
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        // 绘制圆点
+        g2d.setColor(color);
+        g2d.fillOval(0, 0, size, size);
+
+        g2d.dispose();
+        return new ImageIcon(image);
+    }
+
+    /**
+     * 更新刷新模型按钮的状态显示
+     * <p>
+     * 根据 refreshModelsSuccess 状态在按钮上显示小圆点图标：
+     * - 黄色圆点：未刷新（默认状态）
+     * - 绿色圆点：刷新成功
+     * - 红色圆点：刷新失败
+     */
+    private void updateRefreshButtonState() {
+        if (refreshModelsButton == null) {
+            return;
+        }
+
+        if (refreshModelsSuccess == null) {
+            // 未刷新，显示黄色圆点
+            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(255, 193, 7), new Color()))); // Material Design Amber 500
+        } else if (refreshModelsSuccess) {
+            // 刷新成功，显示绿色圆点
+            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color()))); // Material Design Green 500
+        } else {
+            // 刷新失败，显示红色圆点
+            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color()))); // Material Design Red 500
+        }
+    }
+
+    /**
+     * 获取当前选择的服务商图标（64x64）
+     * <p>
+     * 用于在错误消息框中显示服务商大图标。
+     *
+     * @return 当前服务商的大图标，如果未找到返回 null
+     */
+    @Nullable
+    private Icon getCurrentProviderIcon() {
+        if (providerComboBox == null) {
+            return null;
+        }
+        String displayName = (String) providerComboBox.getSelectedItem();
+        if (displayName == null) {
+            return null;
+        }
+        return AIProviderType.getLargeIconByDisplayName(displayName);
     }
 
 
@@ -1956,6 +2144,13 @@ public class JavaDocSettingsPanel {
 
         // 加载验证状态
         this.configurationVerified = defaultConfig.configurationVerified;
+
+        // 更新测试按钮状态
+        updateTestButtonState();
+
+        // 初始化刷新按钮状态为黄色（未刷新）
+        refreshModelsSuccess = null;
+        updateRefreshButtonState();
 
         // 加载可用服务商列表
         availableProvidersTableModel.setData(settings.availableProviders);
@@ -2165,11 +2360,24 @@ public class JavaDocSettingsPanel {
         public Object getValueAt(int rowIndex, int columnIndex) {
             SettingsState.ProviderConfig config = data.get(rowIndex);
             return switch (columnIndex) {
-                case 0 -> config.providerType != null ? config.providerType.getDisplayName() : "";
+                case 0 -> config; // 返回 ProviderConfig 对象，供渲染器使用
                 case 1 -> config.modelName != null ? config.modelName : "";
                 case 2 -> config.remark != null ? config.remark : "";
                 default -> "";
             };
+        }
+
+        /**
+         * 获取指定行的 ProviderConfig 对象
+         *
+         * @param rowIndex 行索引
+         * @return ProviderConfig 对象
+         */
+        public SettingsState.ProviderConfig getProviderConfig(int rowIndex) {
+            if (rowIndex >= 0 && rowIndex < data.size()) {
+                return data.get(rowIndex);
+            }
+            return null;
         }
 
         @Override
@@ -2281,6 +2489,91 @@ public class JavaDocSettingsPanel {
                 data.set(rowIndex, newTagName);
                 fireTableCellUpdated(rowIndex, columnIndex);
             }
+        }
+    }
+
+    /**
+     * AI 提供商下拉列表单元格渲染器
+     * <p>
+     * 用于在下拉列表中显示图标+名称的组合。
+     * 每个提供商项都会显示对应的图标和显示名称。
+     * 图标大小已统一为 16x16 像素（在 SVG 文件中设置）。
+     *
+     * @author dong4j
+     * @version 1.5.0
+     * @since 1.5.0
+     */
+    private static class ProviderListCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list,
+                                                      Object value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(
+                list, value, index, isSelected, cellHasFocus);
+
+            if (value instanceof String displayName) {
+                // 设置文本
+                label.setText(displayName);
+                // 获取对应的图标（SVG 文件已统一为 16x16）
+                Icon icon = AIProviderType.getIconByDisplayName(displayName);
+                if (icon != null) {
+                    label.setIcon(icon);
+                    // 设置图标和文本之间的间距
+                    label.setIconTextGap(8);
+                }
+            }
+
+            return label;
+        }
+    }
+
+    /**
+     * 可用服务商表格提供商列的单元格渲染器
+     * <p>
+     * 用于在表格中显示图标+名称的组合。
+     * 显示提供商的图标和显示名称。
+     * 图标大小已统一为 16x16 像素（在 SVG 文件中设置）。
+     *
+     * @author dong4j
+     * @version 1.5.0
+     * @since 1.5.0
+     */
+    private class ProviderTableCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table,
+                                                       Object value,
+                                                       boolean isSelected,
+                                                       boolean hasFocus,
+                                                       int row,
+                                                       int column) {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(
+                table, value, isSelected, hasFocus, row, column);
+
+            // 从表格模型获取 ProviderConfig
+            if (value instanceof SettingsState.ProviderConfig config) {
+                // 设置文本
+                String displayName = config.providerType != null ?
+                                     config.providerType.getDisplayName() : "";
+                label.setText(displayName);
+
+                // 获取对应的图标（SVG 文件已统一为 16x16）
+                if (config.providerType != null) {
+                    Icon icon = config.providerType.getIcon();
+                    if (icon != null) {
+                        label.setIcon(icon);
+                        // 设置图标和文本之间的间距
+                        label.setIconTextGap(8);
+                    } else {
+                        label.setIcon(null);
+                    }
+                } else {
+                    label.setIcon(null);
+                }
+            }
+
+            return label;
         }
     }
 }

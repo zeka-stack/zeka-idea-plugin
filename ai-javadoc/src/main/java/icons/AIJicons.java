@@ -63,4 +63,78 @@ public class AIJicons {
      * 用于：设置面板、对话框、大图标显示
      */
     public static final Icon AIJ_32 = load("/icons/aij_32.svg");
+
+    // ========== AI 提供商图标 - 用于下拉列表 (16x16) ==========
+
+    /**
+     * OpenAI API 提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_CHATGPT = load("/icons/chatgpt.svg");
+
+    /**
+     * 通义千问提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_QWEN = load("/icons/qwen.svg");
+
+    /**
+     * 硅基流动提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_SILICONFLOW = load("/icons/siliconflow.svg");
+
+    /**
+     * Ollama 提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_OLLAMA = load("/icons/ollama.svg");
+
+    /**
+     * LM Studio 提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_LMSTUDIO = load("/icons/lmstudio.svg");
+
+    // ========== AI 提供商图标 - 用于对话框/错误提示框 (64x64) ==========
+
+    /**
+     * OpenAI API 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_CHATGPT_64 = load("/icons/chatgpt_64.svg");
+
+    /**
+     * 通义千问提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_QWEN_64 = load("/icons/qwen_64.svg");
+
+    /**
+     * 硅基流动提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_SILICONFLOW_64 = load("/icons/siliconflow_64.svg");
+
+    /**
+     * Ollama 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_OLLAMA_64 = load("/icons/ollama_64.svg");
+
+    /**
+     * LM Studio 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_LMSTUDIO_64 = load("/icons/lmstudio_64.svg");
 }

@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.swing.Icon;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
@@ -125,7 +126,13 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
         String displayText = AIProviderStatusBarWidgetModel.getCurrentProviderDisplayName(settings);
         String tooltip = JavaDocBundle.message("statusbar.provider.tooltip", displayText);
         WidgetState state = new WidgetState(tooltip, displayText, true);
-        state.setIcon(AIJicons.AIJ_16);
+
+        // 获取当前提供商的图标
+        AIProviderType providerType = settings.providerType != null ? settings.providerType : AIProviderType.QIANWEN;
+        Icon providerIcon = providerType.getIcon();
+        // 如果提供商有图标则使用，否则使用插件主图标
+        state.setIcon(providerIcon != null ? providerIcon : AIJicons.AIJ_16);
+        
         return state;
     }
 
@@ -160,6 +167,12 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
                 @NotNull
                 @Override
                 public Icon getIconFor(SettingsState.ProviderConfig value) {
+                    // 根据提供商类型获取对应的图标
+                    if (value != null && value.providerType != null) {
+                        Icon providerIcon = value.providerType.getIcon();
+                        // 如果提供商有图标则使用，否则使用插件主图标
+                        return providerIcon != null ? providerIcon : AIJicons.AIJ_16;
+                    }
                     return AIJicons.AIJ_16;
                 }
 

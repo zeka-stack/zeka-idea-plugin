@@ -1,9 +1,14 @@
 package dev.dong4j.zeka.stack.idea.plugin.ai;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+
+import javax.swing.Icon;
+
+import icons.AIJicons;
 
 /**
  * AI 服务提供商类型枚举
@@ -409,5 +414,91 @@ public enum AIProviderType {
     public static String getDisplayNameByProviderId(@NotNull String providerId) {
         AIProviderType providerType = fromProviderId(providerId);
         return providerType != null ? providerType.getDisplayName() : null;
+    }
+
+    /**
+     * 获取提供商的图标
+     *
+     * <p>用于在 UI 界面中显示提供商的图标。
+     * 返回对应提供商的图标资源。
+     *
+     * @return 提供商的图标，如果未找到返回 null
+     */
+    @Nullable
+    public Icon getIcon() {
+        return switch (this) {
+            case CUSTOM -> AIJicons.PROVIDER_CHATGPT;
+            case QIANWEN -> AIJicons.PROVIDER_QWEN;
+            case SILICONFLOW -> AIJicons.PROVIDER_SILICONFLOW;
+            case OLLAMA -> AIJicons.PROVIDER_OLLAMA;
+            case LM_STUDIO -> AIJicons.PROVIDER_LMSTUDIO;
+        };
+    }
+
+    /**
+     * 获取提供商的大图标（64x64）
+     *
+     * <p>用于在对话框、错误提示框等需要大图标的场景中显示提供商的图标。
+     * 返回对应提供商的64x64图标资源。
+     *
+     * @return 提供商的大图标，如果未找到返回 null
+     */
+    @Nullable
+    public Icon getLargeIcon() {
+        return switch (this) {
+            case CUSTOM -> AIJicons.PROVIDER_CHATGPT_64;
+            case QIANWEN -> AIJicons.PROVIDER_QWEN_64;
+            case SILICONFLOW -> AIJicons.PROVIDER_SILICONFLOW_64;
+            case OLLAMA -> AIJicons.PROVIDER_OLLAMA_64;
+            case LM_STUDIO -> AIJicons.PROVIDER_LMSTUDIO_64;
+        };
+    }
+
+    /**
+     * 根据显示名称获取提供商图标
+     *
+     * <p>用于从 UI 界面选择的显示名称获取对应的图标。
+     * 提供 UI 界面和图标资源之间的转换支持。
+     *
+     * @param displayName 显示名称
+     * @return 对应的提供商图标，如果未找到返回 null
+     */
+    @Nullable
+    public static Icon getIconByDisplayName(@NotNull String displayName) {
+        AIProviderType providerType = fromDisplayName(displayName);
+        return providerType != null ? providerType.getIcon() : null;
+    }
+
+    /**
+     * 根据显示名称获取提供商大图标（64x64）
+     *
+     * <p>用于从 UI 界面选择的显示名称获取对应的大图标。
+     * 提供 UI 界面和图标资源之间的转换支持，用于对话框、错误提示框等场景。
+     *
+     * @param displayName 显示名称
+     * @return 对应的提供商大图标，如果未找到返回 null
+     */
+    @Nullable
+    public static Icon getLargeIconByDisplayName(@NotNull String displayName) {
+        AIProviderType providerType = fromDisplayName(displayName);
+        return providerType != null ? providerType.getLargeIcon() : null;
+    }
+
+    /**
+     * 根据显示名称获取枚举值
+     *
+     * <p>用于从 UI 界面选择的显示名称转换为枚举值。
+     *
+     * @param displayName 显示名称
+     * @return 对应的枚举值，如果未找到返回 null
+     */
+    @Nullable
+    private static AIProviderType fromDisplayName(@NotNull String displayName) {
+        for (AIProviderType type : values()) {
+            if (type.displayName.equals(displayName)) {
+                return type;
+            }
+        }
+        return null;
     }
 }
