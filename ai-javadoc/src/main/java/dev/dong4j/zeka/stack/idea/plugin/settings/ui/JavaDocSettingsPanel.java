@@ -15,6 +15,7 @@ import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
+import com.intellij.util.ui.ImageUtil;
 import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
@@ -293,9 +294,7 @@ public class JavaDocSettingsPanel {
 
         // 创建带工具栏的面板
         ToolbarDecorator tagsDecorator = ToolbarDecorator.createDecorator(customJavaDocTagsTable)
-            .setAddAction(button -> {
-                addCustomJavaDocTag();
-            })
+            .setAddAction(button -> addCustomJavaDocTag())
             .setRemoveAction(button -> {
                 int selectedRow = customJavaDocTagsTable.getSelectedRow();
                 if (selectedRow >= 0) {
@@ -1196,9 +1195,7 @@ public class JavaDocSettingsPanel {
         });
 
         // 监听显示自定义 JavaDoc 标签复选框状态变化
-        showCustomJavaDocTagsCheckBox.addActionListener(e -> {
-            customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected());
-        });
+        showCustomJavaDocTagsCheckBox.addActionListener(e -> customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected()));
     }
 
     /**
@@ -1891,15 +1888,14 @@ public class JavaDocSettingsPanel {
         SettingsState.ProviderConfig savedConfig = settings.getDefaultProviderConfig(providerType);
 
         // 比较配置是否匹配（比较 Base URL、模型名称和 API Key 的 md5）
-        boolean configMatches = savedConfig.configurationVerified &&
-                                Objects.equals(SettingsState.normalizeBaseUrl(currentConfig.baseUrl),
-                                               SettingsState.normalizeBaseUrl(savedConfig.baseUrl)) &&
-                                Objects.equals(currentConfig.modelName, savedConfig.modelName) &&
-                                Objects.equals(currentConfig.md5, savedConfig.md5);
 
         // 配置匹配，恢复验证状态
         // 配置不匹配，清除验证状态
-        this.configurationVerified = configMatches;
+        this.configurationVerified = savedConfig.configurationVerified &&
+                                     Objects.equals(SettingsState.normalizeBaseUrl(currentConfig.baseUrl),
+                                               SettingsState.normalizeBaseUrl(savedConfig.baseUrl)) &&
+                                     Objects.equals(currentConfig.modelName, savedConfig.modelName) &&
+                                     Objects.equals(currentConfig.md5, savedConfig.md5);
 
         // 更新按钮状态
         updateTestButtonState();
@@ -1919,10 +1915,12 @@ public class JavaDocSettingsPanel {
 
         if (configurationVerified) {
             // 绿色圆点表示可用
-            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color()))); // Material Design Green 500
+            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80)))); // Material
+            // Design Green 500
         } else {
             // 红色圆点表示不可用
-            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color()))); // Material Design Red 500
+            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54)))); // Material
+            // Design Red 500
         }
 
         // 恢复按钮默认样式
@@ -1939,9 +1937,9 @@ public class JavaDocSettingsPanel {
      * @return 圆点图标
      */
     private Icon createStatusDotIcon(Color color) {
-        // 圆点尺寸：8x8 像素
-        int size = 8;
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        // 圆点尺寸：4x4 像素
+        int size = 4;
+        BufferedImage image = ImageUtil.createImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
 
         // 设置高质量渲染
@@ -1971,13 +1969,16 @@ public class JavaDocSettingsPanel {
 
         if (refreshModelsSuccess == null) {
             // 未刷新，显示黄色圆点
-            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(255, 193, 7), new Color()))); // Material Design Amber 500
+            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(255, 193, 7), new Color(255, 193, 7)))); // Material
+            // Design Amber 500
         } else if (refreshModelsSuccess) {
             // 刷新成功，显示绿色圆点
-            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color()))); // Material Design Green 500
+            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80)))); // Material
+            // Design Green 500
         } else {
             // 刷新失败，显示红色圆点
-            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color()))); // Material Design Red 500
+            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54)))); // Material
+            // Design Red 500
         }
     }
 
@@ -2540,7 +2541,7 @@ public class JavaDocSettingsPanel {
      * @version 1.5.0
      * @since 1.5.0
      */
-    private class ProviderTableCellRenderer extends DefaultTableCellRenderer {
+    private static class ProviderTableCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table,
                                                        Object value,
