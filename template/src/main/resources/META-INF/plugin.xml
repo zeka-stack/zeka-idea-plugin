@@ -57,13 +57,15 @@
         <applicationService serviceImplementation="com.example.plugin.settings.SettingsState"/>
 
         <!-- 设置面板 -->
+        <!--suppress PluginXmlI18n -->
         <projectConfigurable
                 parentId="tools"
                 instance="com.example.plugin.settings.ExampleSettingsConfigurable"
                 id="com.example.plugin.settings.ExampleSettingsConfigurable"
                 displayName="Example Plugin"/>
 
-        <!-- 通知组 -->
+        <!-- 通知组 com.example.plugin.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
+        <!--suppress PluginXmlI18n -->
         <notificationGroup id="Example Plugin Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>

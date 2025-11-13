@@ -1,4 +1,4 @@
-package com.example.plugin.util;
+package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroup;
@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
  * 提供统一的通知功能, 用于在项目中展示不同级别的通知信息, 如信息, 警告和错误等.
  * 支持根据不同的任务状态生成对应的通知内容, 并通过指定的项目上下文进行展示.
  *
- * @author Example
+ * @author dong4j
  * @version 1.0.0
  * @since 1.0.0
  */
@@ -25,7 +25,7 @@ public class NotificationUtil {
      * <p>
      * 用于标识一组与插件相关的通知
      */
-    public static final String NOTIFICATION_GROUP_ID = "Example Plugin Notifications";
+    public static final String NOTIFICATION_GROUP_ID = "AI Changelog Notifications";
 
     /**
      * 获取指定 ID 的通知组
@@ -88,7 +88,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void showInfo(@Nullable Project project, @NotNull String message) {
-        notify(project, "Example Plugin", message, NotificationType.INFORMATION);
+        notify(project, "AI Changelog", message, NotificationType.INFORMATION);
     }
 
     /**
@@ -100,7 +100,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void showWarning(@Nullable Project project, @NotNull String message) {
-        notify(project, "Example Plugin", message, NotificationType.WARNING);
+        notify(project, "AI Changelog", message, NotificationType.WARNING);
     }
 
     /**
@@ -112,7 +112,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void showError(@Nullable Project project, @NotNull String message) {
-        notify(project, "Example Plugin", message, NotificationType.ERROR);
+        notify(project, "AI Changelog", message, NotificationType.ERROR);
     }
 
     /**

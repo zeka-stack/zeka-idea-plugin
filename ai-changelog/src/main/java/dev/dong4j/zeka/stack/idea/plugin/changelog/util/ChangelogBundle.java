@@ -1,4 +1,4 @@
-package com.example.plugin.util;
+package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
 import com.intellij.DynamicBundle;
 
@@ -33,17 +33,17 @@ import java.util.function.Supplier;
  *
  * <p>使用方法：
  * <pre>
- * String message = ExampleBundle.message("notification.title");
- * String formatted = ExampleBundle.message("notification.completion.format", completed, failed, skipped);
- * Supplier<String> messageSupplier = ExampleBundle.messagePointer("action.example.shortcut");
+     * String message = ChangelogBundle.message("notification.title");
+     * String formatted = ChangelogBundle.message("notification.completion.format", completed, failed, skipped);
+     * Supplier<String> messageSupplier = ChangelogBundle.messagePointer("action.generate.changelog");
  * </pre>
  *
- * @author Example
+ * @author dong4j
  * @version 1.0.0
  * @see DynamicBundle
  * @since 1.0.0
  */
-public class ExampleBundle extends DynamicBundle {
+public class ChangelogBundle extends DynamicBundle {
 
     /** 消息资源包名称，用于加载国际化消息 */
     @NonNls
@@ -52,13 +52,13 @@ public class ExampleBundle extends DynamicBundle {
     /**
      * 单例实例
      *
-     * <p>ExampleBundle 的全局唯一实例。
+     * <p>ChangelogBundle 的全局唯一实例。
      * 采用饿汉式单例模式，线程安全。
      *
      * @see #message(String, Object...)
      * @see #messagePointer(String, Object...)
      */
-    private static final ExampleBundle INSTANCE = new ExampleBundle();
+    private static final ChangelogBundle INSTANCE = new ChangelogBundle();
 
     /**
      * 私有构造函数
@@ -68,7 +68,7 @@ public class ExampleBundle extends DynamicBundle {
      *
      * @see DynamicBundle#DynamicBundle(String)
      */
-    private ExampleBundle() {
+    private ChangelogBundle() {
         super(BUNDLE);
     }
 
@@ -87,8 +87,8 @@ public class ExampleBundle extends DynamicBundle {
      *
      * <p>示例：
      * <pre>
-     * String title = ExampleBundle.message("notification.title");
-     * String format = ExampleBundle.message("notification.completion.format", 5, 0, 2);
+     * String title = ChangelogBundle.message("notification.title");
+     * String format = ChangelogBundle.message("notification.completion.format", 5, 0, 2);
      * </pre>
      *
      * @param key    资源键，对应 messages.properties 中的键
@@ -117,7 +117,7 @@ public class ExampleBundle extends DynamicBundle {
      *
      * <p>示例：
      * <pre>
-     * Supplier<String> titleSupplier = ExampleBundle.messagePointer("action.example.shortcut");
+     * Supplier<String> titleSupplier = ChangelogBundle.messagePointer("action.generate.changelog");
      * AnAction action = new AnAction(titleSupplier, descriptionSupplier, icon);
      * </pre>
      *
