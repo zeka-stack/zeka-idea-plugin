@@ -45,8 +45,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
+    /** 项目对象, 用于表示当前操作所关联的项目信息 */
     private final Project project;
+    /**
+     * 状态栏适配器
+     * <p>
+     * 用于管理 AI 提供商状态栏的显示和更新
+     *
+     * @see AIProviderStatusBarAdapter
+     */
     private final AIProviderStatusBarAdapter adapter;
+    /** 状态栏组件, 用于显示应用运行状态和相关信息 */
     private StatusBar statusBar;
 
     /**
@@ -73,6 +82,13 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
         return new AIProviderStatusBarWidget(project, adapter);
     }
 
+    /**
+     * 注册自定义监听器
+     * <p>
+     * 用于注册自定义的监听器, 以实现特定的业务逻辑或事件处理.
+     *
+     * @since 1.0
+     */
     @Override
     protected void registerCustomListeners() {
         // 当前不存在需要订阅的事件，使用默认行为即可
@@ -111,6 +127,15 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
         statusBar = null;
     }
 
+    /**
+     * 获取状态栏小部件的当前状态.
+     * <p>
+     * 根据当前 AI 提供者信息构造 {@link WidgetState}, 包括显示文本, 工具提示和图标.
+     * 该方法不使用传入的 {@code file} 参数, 仅根据适配器内部状态生成状态.
+     *
+     * @param file 当前文件 (可为空), 此方法不使用该参数
+     * @return 包含当前 AI 提供者信息的 {@link WidgetState}, 永不为 {@code null}
+     */
     @Override
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
         String displayText = AIProviderStatusBarWidgetModel.getCurrentProviderDisplayName(adapter);
@@ -126,6 +151,16 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
         return state;
     }
 
+    /**
+     * 创建用于选择 AI 提供商的弹出窗口
+     * <p>
+     * 根据当前数据上下文构建 AI 提供商列表, 并创建一个可交互的弹出窗口供用户选择.
+     * 如果没有可用的提供商, 则显示错误通知并返回 null.
+     *
+     * @param context 数据上下文, 用于获取相关数据
+     * @return 创建的弹出窗口, 若没有可用提供商则返回 null
+     * @since 1.0
+     */
     @Override
     protected @Nullable ListPopup createPopup(@NotNull DataContext context) {
         List<AIProviderConfig> providers = AIProviderStatusBarWidgetModel.buildProviderItems(adapter);
@@ -142,16 +177,38 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
         BaseListPopupStep<AIProviderConfig> step =
             new BaseListPopupStep<>(adapter.getMessage("statusbar.provider.popup.title"), providers) {
+                /**
+                 * 判断是否启用了助记符导航功能
+                 * <p>
+                 * 该方法返回一个布尔值, 表示当前是否启用了通过助记符进行导航的功能.
+                 *
+                 * @return 如果启用了助记符导航则返回 true, 否则返回 false
+                 */
                 @Override
                 public boolean isMnemonicsNavigationEnabled() {
                     return true;
                 }
 
+                /**
+                 * 判断是否启用速度搜索功能
+                 * <p>
+                 * 返回一个布尔值, 表示速度搜索功能是否已启用
+                 *
+                 * @return 是否启用速度搜索功能
+                 */
                 @Override
                 public boolean isSpeedSearchEnabled() {
                     return true;
                 }
 
+                /**
+                 * 根据 AIProviderConfig 获取对应的图标
+                 * <p>
+                 * 根据传入的 AIProviderConfig 对象的 providerType 获取对应的图标, 若图标不存在则返回适配器的默认图标
+                 *
+                 * @param value AIProviderConfig 对象, 用于获取 providerType
+                 * @return 对应的图标, 若图标不存在则返回适配器的默认图标
+                 */
                 @NotNull
                 @Override
                 public Icon getIconFor(AIProviderConfig value) {
@@ -164,11 +221,29 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
                     return adapter.getMainIcon();
                 }
 
+                /**
+                 * 根据 AI 提供者配置获取对应的文本显示内容
+                 * <p>
+                 * 该方法用于根据传入的 AI 提供者配置对象, 获取其在状态栏中显示的文本描述.
+                 *
+                 * @param value AI 提供者配置对象
+                 * @return AI 提供者对应的文本显示内容
+                 * @since 1.0
+                 */
                 @Override
                 public @NotNull String getTextFor(AIProviderConfig value) {
                     return AIProviderStatusBarWidgetModel.getProviderDisplayText(value);
                 }
 
+                /**
+                 * 处理用户选择的 AI 提供者配置
+                 * <p>
+                 * 当用户最终选择了一个 AI 提供者配置时, 执行相应的处理逻辑.
+                 *
+                 * @param selectedValue 用户选择的 AI 提供者配置
+                 * @param finalChoice   是否为最终选择
+                 * @return 返回 {@code FINAL_CHOICE} 表示处理完成
+                 */
                 @Override
                 public PopupStep<?> onChosen(AIProviderConfig selectedValue, boolean finalChoice) {
                     if (finalChoice && selectedValue != null) {
@@ -177,6 +252,13 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
                     return FINAL_CHOICE;
                 }
 
+                /**
+                 * 获取默认选项的索引值
+                 * <p>
+                 * 返回配置中默认选项对应的索引值
+                 *
+                 * @return 默认选项的索引值
+                 */
                 @Override
                 public int getDefaultOptionIndex() {
                     return defaultIndex;

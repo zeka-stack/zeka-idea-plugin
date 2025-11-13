@@ -47,6 +47,8 @@
     <idea-version since-build="223" until-build="252.*"/>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.vcs</depends>
+    <depends optional="true">Git4Idea</depends>
 
     <!-- 国际化资源文件 -->
     <resource-bundle>messages</resource-bundle>
@@ -70,36 +72,17 @@
         <notificationGroup id="AI Changelog Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
-
-        <!-- Intention Action (Option+Enter / Alt+Enter 快捷菜单) -->
-        <intentionAction>
-            <language>JAVA</language>
-            <className>dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogIntentionAction</className>
-            <category>AI Changelog</category>
-            <descriptionDirectoryName>GenerateChangelogIntention</descriptionDirectoryName>
-        </intentionAction>
     </extensions>
 
     <!-- 插件定义的动作 -->
     <actions>
-        <!-- 快捷键入口 (Ctrl+Shift+C / Cmd+Shift+C) -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogShortcutAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogShortcutAction">
-            <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl C"/>
-        </action>
-
-        <!-- 编辑器右键菜单 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForEditorAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForEditorAction"
+        <!-- Git Log 工具窗口右键菜单 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
+                text="Generate Changelog with AI"
+                description="Generate changelog from selected commits using AI"
                 icon="AllIcons.Actions.IntentionBulb">
-            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
-        </action>
-
-        <!-- 项目视图右键菜单 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForFilesAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForFilesAction"
-                icon="AllIcons.Actions.IntentionBulb">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>

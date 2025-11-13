@@ -19,8 +19,11 @@ import org.jetbrains.annotations.NotNull;
  */
 public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory {
 
+    /** AI 提供商状态栏适配器, 用于管理 AI 提供商在状态栏中的显示和交互逻辑 */
     private final AIProviderStatusBarAdapter adapter;
+    /** 界面组件唯一标识符 */
     private final String widgetId;
+    /** 显示名称 */
     private final String displayName;
 
     /**

@@ -20,7 +20,7 @@ public class ChangelogSettingsConfigurable implements Configurable {
 
     @Override
     public @Nls(capitalization = Nls.Capitalization.Title) String getDisplayName() {
-        return "Example Plugin";
+        return "AI Changelog";
     }
 
     @Override

@@ -13,6 +13,7 @@ import java.util.List;
  */
 public enum AIProviderType {
 
+    /** 定义一个自定义的模型配置, 用于指定使用 OpenAI API 的 gpt-3.5-turbo 模型, 支持流式输出和工具调用 */
     CUSTOM(
         "custom",
         "OpenAI API",
@@ -23,6 +24,13 @@ public enum AIProviderType {
         List.of("gpt-3.5-turbo", "gpt-4o-mini")
     ),
 
+    /**
+     * 通义千问模型的标识信息
+     * <p>
+     * 包含模型名称, 别名, 图标地址, 默认模型版本, 是否启用, 是否为默认模型以及支持的模型版本列表
+     *
+     * @see QIANWEN
+     */
     QIANWEN(
         "qianwen",
         "通义千问",
@@ -33,6 +41,7 @@ public enum AIProviderType {
         Arrays.asList("qwen3-32b", "qwen3-14b", "qwen3-8b", "qwen3-4b")
     ),
 
+    /** 模型名称 */
     SILICONFLOW(
         "siliconflow",
         "硅基流动",
@@ -43,6 +52,13 @@ public enum AIProviderType {
         List.of("Qwen/Qwen3-8B", "Qwen/Qwen2.5-14B-Instruct", "THUDM/glm-4-9b-chat")
     ),
 
+    /** 唯一标识符 */
+    /** 友好显示名称 */
+    /** 服务器基础 URL */
+    /** 默认模型名称 */
+    /** 是否启用 */
+    /** 是否为默认选项 */
+    /** 支持的模型列表 */
     OLLAMA(
         "ollama",
         "Ollama",
@@ -53,6 +69,7 @@ public enum AIProviderType {
         Arrays.asList("gpt-oss:120b-cloud", "deepseek-r1:14b", "qwen3-8b")
     ),
 
+    /** LM Studio 模型配置信息 */
     LM_STUDIO(
         "lmstudio",
         "LM Studio",
@@ -63,14 +80,46 @@ public enum AIProviderType {
         List.of("qwen3-8b")
     );
 
+    /** 服务提供方唯一标识符 */
     private final String providerId;
+    /**
+     * 显示名称
+     * <p>
+     * 用于表示该对象的可读名称, 通常用于展示给用户
+     */
     private final String displayName;
+    /** 默认基础 URL */
     private final String defaultBaseUrl;
+    /**
+     * 默认模型名称或标识
+     * <p>
+     * 用于指定系统在未明确指定模型时使用的默认模型
+     */
     private final String defaultModel;
+    /** 是否需要 API 密钥 */
     private final boolean requiresApiKey;
+    /** 基础 URL 是否可编辑 */
     private final boolean baseUrlEditable;
+    /**
+     * 支持的模型列表
+     * <p>
+     * 该字段存储当前系统或组件所支持的模型名称或标识符
+     */
     private final List<String> supportedModels;
 
+    /**
+     * 构造一个 AI 服务提供商类型对象
+     * <p>
+     * 初始化 AI 服务提供商的配置信息, 包括提供商 ID, 显示名称, 默认基础 URL, 默认模型, 是否需要 API 密钥, 基础 URL 是否可编辑以及支持的模型列表
+     *
+     * @param providerId      提供商唯一标识符
+     * @param displayName     提供商显示名称
+     * @param defaultBaseUrl  默认基础 URL
+     * @param defaultModel    默认模型
+     * @param requiresApiKey  是否需要 API 密钥
+     * @param baseUrlEditable 基础 URL 是否可编辑
+     * @param supportedModels 支持的模型列表
+     */
     AIProviderType(@NotNull String providerId,
                    @NotNull String displayName,
                    @NotNull String defaultBaseUrl,
@@ -87,39 +136,97 @@ public enum AIProviderType {
         this.supportedModels = supportedModels;
     }
 
+    /**
+     * 获取提供者 ID
+     * <p>
+     * 返回当前对象的提供者标识字符串
+     *
+     * @return 提供者 ID
+     */
     @NotNull
     public String getProviderId() {
         return providerId;
     }
 
+    /**
+     * 获取显示名称
+     * <p>
+     * 返回当前对象的显示名称属性值.
+     *
+     * @return 显示名称
+     */
     @NotNull
     public String getDisplayName() {
         return displayName;
     }
 
+    /**
+     * 获取默认的基础 URL
+     * <p>
+     * 返回系统配置中的默认基础 URL 值
+     *
+     * @return 默认的基础 URL
+     */
     @NotNull
     public String getDefaultBaseUrl() {
         return defaultBaseUrl;
     }
 
+    /**
+     * 获取默认模型
+     * <p>
+     * 返回当前设置的默认模型名称
+     *
+     * @return 默认模型名称
+     */
     @NotNull
     public String getDefaultModel() {
         return defaultModel;
     }
 
+    /**
+     * 判断是否需要 API 密钥
+     * <p>
+     * 返回一个布尔值, 表示当前操作是否需要 API 密钥进行验证.
+     *
+     * @return 如果需要 API 密钥则返回 true, 否则返回 false
+     */
     public boolean requiresApiKey() {
         return requiresApiKey;
     }
 
+    /**
+     * 判断基础 URL 是否可编辑
+     * <p>
+     * 当返回 {@code true} 时表示基础 URL 可以被修改; 返回 {@code false} 表示不可修改.
+     *
+     * @return {@code true} 表示可编辑,{@code false} 表示不可编辑
+     */
     public boolean isBaseUrlEditable() {
         return baseUrlEditable;
     }
 
+    /**
+     * 获取当前支持的模型列表
+     * <p>
+     * 返回系统当前支持的所有模型名称列表
+     *
+     * @return 支持的模型名称列表
+     */
     @NotNull
     public List<String> getSupportedModels() {
         return supportedModels;
     }
 
+    /**
+     * 根据提供商 ID 查找对应的 AI 提供商类型
+     * <p>
+     * 遍历所有 AI 提供商类型, 查找与给定提供商 ID 匹配的类型.
+     *
+     * @param providerId 提供商 ID, 不能为空
+     * @return 匹配的 AI 提供商类型, 若未找到则返回 null
+     * @throws NullPointerException 如果 providerId 为 null 时调用此方法
+     */
     @Nullable
     public static AIProviderType fromProviderId(@NotNull String providerId) {
         for (AIProviderType type : values()) {
@@ -130,6 +237,14 @@ public enum AIProviderType {
         return null;
     }
 
+    /**
+     * 根据显示名称获取对应的 AI 服务提供商类型
+     * <p>
+     * 遍历所有 AI 服务提供商类型, 查找与指定显示名称匹配的类型, 若找到则返回该类型, 否则返回 null.
+     *
+     * @param displayName 显示名称
+     * @return 对应的 AI 服务提供商类型, 若未找到则返回 null
+     */
     @Nullable
     public static AIProviderType fromDisplayName(@NotNull String displayName) {
         for (AIProviderType type : values()) {
@@ -140,23 +255,54 @@ public enum AIProviderType {
         return null;
     }
 
+    /**
+     * 根据显示名称获取对应的提供者 ID.
+     * <p>
+     * 该方法首先调用 {@link AIProviderType#fromDisplayName(String)} 将传入的显示名称转换为 {@link AIProviderType} 枚举,
+     * 然后返回该枚举的 {@code providerId}. 如果没有匹配的枚举, 方法将返回 {@code null}.
+     *
+     * @param displayName 显示名称, 不能为空
+     * @return 对应的提供者 ID; 若不存在匹配的提供者, 则返回 {@code null}
+     */
     @Nullable
     public static String getProviderIdByDisplayName(@NotNull String displayName) {
         AIProviderType type = fromDisplayName(displayName);
         return type != null ? type.providerId : null;
     }
 
+    /**
+     * 根据提供者 ID 获取显示名称
+     * <p>
+     * 通过提供者 ID 查找对应的 AI 提供者类型, 并返回其显示名称. 如果类型不存在, 则返回 null.
+     *
+     * @param providerId 提供者 ID
+     * @return AI 提供者的显示名称, 若类型不存在则返回 null
+     */
     @Nullable
     public static String getDisplayNameByProviderId(@NotNull String providerId) {
         AIProviderType type = fromProviderId(providerId);
         return type != null ? type.displayName : null;
     }
 
+    /**
+     * 获取所有提供商的 ID 列表
+     * <p>
+     * 遍历所有枚举值, 并提取每个提供商的 ID, 返回包含所有提供商 ID 的列表.
+     *
+     * @return 包含所有提供商 ID 的列表
+     */
     @NotNull
     public static List<String> getAllProviderIds() {
         return Arrays.stream(values()).map(AIProviderType::getProviderId).toList();
     }
 
+    /**
+     * 获取所有 AI 提供者的显示名称列表
+     * <p>
+     * 遍历所有 AI 提供者枚举值, 获取每个枚举实例的显示名称, 并返回名称列表
+     *
+     * @return 所有 AI 提供者的显示名称列表
+     */
     @NotNull
     public static List<String> getAllDisplayNames() {
         return Arrays.stream(values()).map(AIProviderType::getDisplayName).toList();

@@ -18,9 +18,26 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
  */
 public final class AIServiceFactory {
 
+    /**
+     * 私有构造函数, 用于防止外部实例化
+     * <p>
+     * 该构造函数仅在内部使用, 确保 AIServiceFactory 类只能通过静态方法创建实例
+     */
     private AIServiceFactory() {
     }
 
+    /**
+     * 创建 AI 服务提供者实例
+     * <p>
+     * 根据提供的 {@link AIProviderConfig},{@link AIModelParameters} 与 {@link AIRuntimeSettings} 创建
+     * {@link AIServiceProvider} 对象. 该方法内部调用带有更多参数的重载方法, 传入 {@code null}
+     * 的扩展配置以及 {@code false} 的兼容性标志.
+     *
+     * @param config          AI 提供者配置, 不能为空
+     * @param modelParameters 模型参数, 不能为空
+     * @param runtimeSettings 运行时设置, 不能为空
+     * @return 创建的 {@link AIServiceProvider} 实例; 若创建失败则返回 {@code null}
+     */
     @Nullable
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @NotNull AIModelParameters modelParameters,
@@ -28,6 +45,18 @@ public final class AIServiceFactory {
         return createProvider(config, modelParameters, runtimeSettings, null, false);
     }
 
+    /**
+     * 创建 AI 服务提供者实例
+     * <p>
+     * 使用指定的配置, 模型参数, 运行时设置和控制台日志器创建 AI 服务提供者.
+     * 该方法内部调用另一个重载方法, 并传递默认的重试标志值.
+     *
+     * @param config          非空的 AI 提供者配置
+     * @param modelParameters 非空的 AI 模型参数
+     * @param runtimeSettings 非空的 AI 运行时设置
+     * @param consoleLogger   可为空的控制台日志器
+     * @return 创建的 AI 服务提供者实例, 可能为 null
+     */
     @Nullable
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @NotNull AIModelParameters modelParameters,
@@ -36,6 +65,19 @@ public final class AIServiceFactory {
         return createProvider(config, modelParameters, runtimeSettings, consoleLogger, false);
     }
 
+    /**
+     * 根据配置信息创建对应的 AI 服务提供者实例
+     * <p>
+     * 根据传入的配置, 模型参数, 运行时设置以及日志记录器创建相应的 AI 服务提供者.
+     * 如果未指定提供者类型, 则默认使用 QIANWEN 类型.
+     *
+     * @param config          提供者配置信息, 不能为空
+     * @param modelParameters 模型参数信息, 不能为空
+     * @param runtimeSettings 运行时设置信息, 不能为空
+     * @param consoleLogger   控制台日志记录器, 可以为 null
+     * @param performanceMode 性能模式开关, 用于控制是否启用性能优化
+     * @return 创建的 AI 服务提供者实例, 可能为 null
+     */
     @Nullable
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @NotNull AIModelParameters modelParameters,

@@ -20,6 +20,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
  */
 public final class AIProviderStatusBarWidgetModel {
 
+    /**
+     * 私有构造函数, 防止外部直接创建 {@link AIProviderStatusBarWidgetModel} 实例.
+     */
     private AIProviderStatusBarWidgetModel() {
     }
 

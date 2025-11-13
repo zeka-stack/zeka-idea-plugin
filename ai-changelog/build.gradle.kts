@@ -9,6 +9,9 @@ version = providers.gradleProperty("pluginVersion").get()
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://repo.eclipse.org/content/groups/releases/")
+    }
 
     intellijPlatform {
         defaultRepositories()
@@ -79,9 +82,17 @@ dependencies {
 
     implementation("dev.dong4j:ai-common:1.0.0")
 
+    // JGit for Git operations (排除 SLF4J 依赖，使用 IntelliJ 平台的日志框架)
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
+    // JGit SSH support (optional, but may be needed)
+    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:6.8.0.202311291450-r") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
+
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
-    compileOnly("org.slf4j:slf4j-simple:2.0.13")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")

@@ -105,6 +105,14 @@ public class AIServiceException extends Exception {
                || errorCode == ErrorCode.SERVICE_UNAVAILABLE;
     }
 
+    /**
+     * 根据给定的 AIServiceException 构建对应的错误信息字符串
+     * <p>
+     * 该方法会根据异常中包含的错误码返回对应的错误提示信息. 如果错误码为空, 则返回通用的失败信息.
+     *
+     * @param e AIServiceException 异常对象, 包含错误码和错误信息
+     * @return 构建后的错误信息字符串
+     */
     public static String build(AIServiceException e) {
         ErrorCode errorCode = e.getErrorCode();
 

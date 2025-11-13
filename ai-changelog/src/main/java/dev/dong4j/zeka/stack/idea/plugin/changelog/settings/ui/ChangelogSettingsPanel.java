@@ -14,12 +14,14 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
+import lombok.Getter;
 
 /**
  * 插件设置面板 UI
  */
 public class ChangelogSettingsPanel {
 
+    @Getter
     private final JPanel mainPanel;
     private final AICredentialManager credentialManager;
     private final AIProviderConfigPanel providerConfigPanel;
@@ -51,10 +53,6 @@ public class ChangelogSettingsPanel {
         mainPanel.setBorder(JBUI.Borders.empty(10));
     }
 
-    public JPanel getMainPanel() {
-        return mainPanel;
-    }
-
     public boolean isModified(SettingsState settings, AIProviderSettings providerSettings) {
         if (!exampleTextTextField.getText().equals(settings.getExampleText())
                 || enableFeatureCheckBox.isSelected() != settings.isEnableFeature()
@@ -64,7 +62,7 @@ public class ChangelogSettingsPanel {
             || !timeoutTextField.getText().equals(String.valueOf(settings.getTimeout()))) {
             return true;
         }
-        return providerConfigPanel.isModified(providerSettings);
+        return !providerSettings.contentEquals(providerConfigPanel.getSettings());
     }
 
     public void apply(SettingsState settings, AIProviderSettings providerSettings) {
@@ -89,10 +87,11 @@ public class ChangelogSettingsPanel {
         AIProviderSettings updated = providerConfigPanel.getSettings();
         providerSettings.applyFrom(updated);
 
+        // 保存 API Key
         AIProviderConfig selectedConfig = providerSettings.defaultProviders.get(providerSettings.providerType);
         if (selectedConfig != null && selectedConfig.credentialId != null) {
             String apiKey = providerConfigPanel.getCurrentApiKey();
-            if (apiKey != null && !apiKey.isBlank()) {
+            if (!apiKey.isEmpty()) {
                 credentialManager.setApiKey(selectedConfig.credentialId, apiKey);
             } else {
                 credentialManager.deleteApiKey(selectedConfig.credentialId);

@@ -156,6 +156,9 @@ public final class AICommonIcons {
         };
     }
 
+    /**
+     * 私有构造函数, 防止外部实例化
+     */
     private AICommonIcons() {
         // 工具类，禁止实例化
     }
