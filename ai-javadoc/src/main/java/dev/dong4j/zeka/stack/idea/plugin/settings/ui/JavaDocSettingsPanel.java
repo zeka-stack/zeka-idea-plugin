@@ -34,9 +34,6 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -98,27 +95,6 @@ public class JavaDocSettingsPanel {
     /** 高级设置容器面板（用于控制可见性） */
     private JPanel advancedSettingsPanel;
 
-    // 高级配置
-    /** 最大重试次数的下拉选择器 */
-    private JSpinner maxRetriesSpinner;
-    /** 超时时间选择器，用于设置请求超时时间 */
-    private JSpinner timeoutSpinner;
-    /** 温度选择下拉框 */
-    private JSpinner temperatureSpinner;
-    /** 最大令牌数输入控件 */
-    private JSpinner maxTokensSpinner;
-    /** 顶部参数的下拉选择器控件 */
-    private JSpinner topPSpinner;
-    /** 用于选择 Top K 值的下拉框组件 */
-    private JSpinner topKSpinner;
-    /** 偏差惩罚系数调节器，用于设置生成文本时的偏差惩罚值 */
-    private JSpinner presencePenaltySpinner;
-    /** 日志详细模式复选框，用于控制是否输出详细日志信息 */
-    private JBCheckBox verboseLoggingCheckBox;
-    /** 性能模式复选框，用于启用或禁用性能优化模式 */
-    private JBCheckBox performanceModeCheckBox;
-    /** 显示提供商统计信息复选框 */
-    private JBCheckBox showProviderStatisticsCheckBox;
 
     /** 系统提示文本区域，用于显示或编辑系统提示内容 */
     public JTextArea systemPromptTextArea;
@@ -213,18 +189,6 @@ public class JavaDocSettingsPanel {
         customJavaDocTagsPanel = tagsDecorator.createPanel();
         // 可见性将在 loadSettings 中根据配置设置
 
-        // 高级配置
-        maxRetriesSpinner = new JSpinner(new SpinnerNumberModel(3, 0, 10, 1));
-        timeoutSpinner = new JSpinner(new SpinnerNumberModel(30000, 1000, 300000, 1000));
-        temperatureSpinner = new JSpinner(new SpinnerNumberModel(0.1, 0.0, 2.0, 0.1));
-        maxTokensSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 10000, 100));
-        topPSpinner = new JSpinner(new SpinnerNumberModel(0.9, 0.0, 1.0, 0.1));
-        topKSpinner = new JSpinner(new SpinnerNumberModel(50, 1, 100, 1));
-        presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.1, -2.0, 2.0, 0.1));
-        verboseLoggingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.verbose.logging"));
-        performanceModeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.performance.mode"));
-        showProviderStatisticsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.provider.statistics"));
-
         // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
         // 增加初始高度：15行（原来10行），宽度保持50列不变
         systemPromptTextArea = new JTextArea(15, 50);
@@ -234,17 +198,14 @@ public class JavaDocSettingsPanel {
         testPromptTextArea = new JTextArea(15, 50);
 
         // 创建高级设置复选框
-        showAdvancedSettingsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.advanced.settings.show"));
+        showAdvancedSettingsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.prompt.settings.show"));
 
         // 创建高级设置容器面板
         advancedSettingsPanel = new JPanel(new BorderLayout());
         advancedSettingsPanel.setVisible(false); // 默认隐藏
 
-        // 构建高级设置面板内容
+        // 构建高级设置面板内容（只包含 Prompt 模板，AI 配置已在 AIProviderConfigPanel 中）
         JPanel advancedSettingsContent = FormBuilder.createFormBuilder()
-            // 模型参数设置
-            .addComponent(createModelParamsPanel())
-            .addSeparator(10)
             // Prompt 模板与提示词
             .addComponent(createPromptTemplatesPanel())
             .getPanel();
@@ -282,74 +243,19 @@ public class JavaDocSettingsPanel {
     /**
      * 创建基础连接配置面板
      *
-     * <p>创建一个包含基础连接配置所有组件的面板，并添加边框。
+     * <p>直接使用 AIProviderConfigPanel，它已经包含了所有 AI 相关的配置（连接配置、基础配置、高级配置）。
      *
      * @return 基础连接配置面板
      */
     private JPanel createBasicConnectionConfigPanel() {
-        JPanel runtimePanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.retries")),
-                                 createAdvancedConfigPanel(maxRetriesSpinner,
-                                                           "settings.max.retries.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.timeout")),
-                                 createAdvancedConfigPanel(timeoutSpinner,
-                                                           "settings.timeout.hint"))
-            .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
-            .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
-            .addComponent(createPerformanceModeSubConfigPanel())
-            .getPanel();
-
-        JPanel contentPanel = new JPanel(new BorderLayout(0, 12));
-        contentPanel.add(providerConfigPanel.getPanel(), BorderLayout.NORTH);
-        contentPanel.add(runtimePanel, BorderLayout.CENTER);
-
         JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.add(contentPanel, BorderLayout.CENTER);
+        wrapper.add(providerConfigPanel.getPanel(), BorderLayout.CENTER);
         wrapper.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
             JavaDocBundle.message("settings.basic.connection.config")));
         return wrapper;
     }
 
-    /**
-     * 创建模型参数设置面板
-     *
-     * <p>创建一个包含模型参数设置所有组件的面板，并添加边框。
-     *
-     * @return 模型参数设置面板
-     */
-    private JPanel createModelParamsPanel() {
-        JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.tokens")),
-                                 createAdvancedConfigPanel(maxTokensSpinner,
-                                                           "settings.max.tokens.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.temperature")),
-                                 createAdvancedConfigPanel(temperatureSpinner,
-                                                           "settings.temperature.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.top.p")),
-                                 createAdvancedConfigPanel(topPSpinner,
-                                                           "settings.top.p.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.top.k")),
-                                 createAdvancedConfigPanel(topKSpinner,
-                                                           "settings.top.k.hint"))
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.presence.penalty")),
-                                 createAdvancedConfigPanel(presencePenaltySpinner,
-                                                           "settings.presence.penalty.hint"))
-            .getPanel();
-
-        // 创建带边框的面板
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
-
-        // 添加带标题的边框
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.advanced.settings.model.params")
-                                                                    );
-        panel.setBorder(titledBorder);
-
-        return panel;
-    }
 
     /**
      * 创建 Prompt 模板与提示词面板
@@ -564,10 +470,7 @@ public class JavaDocSettingsPanel {
         updateHintLabelColor(hintLabel, checkBox.isSelected());
 
         // 监听复选框状态变化，动态更新提示文本颜色
-        // 注意：显示统计信息复选框的监听器在 setupListeners 中添加，因为它需要特殊处理
-        if (checkBox != showProviderStatisticsCheckBox) {
-            checkBox.addActionListener(e -> updateHintLabelColor(hintLabel, checkBox.isSelected()));
-        }
+        checkBox.addActionListener(e -> updateHintLabelColor(hintLabel, checkBox.isSelected()));
 
         panel.add(hintLabel, BorderLayout.CENTER);
 
@@ -624,31 +527,6 @@ public class JavaDocSettingsPanel {
         return panel;
     }
 
-    /**
-     * 创建性能模式的子配置面板（显示统计信息和可用服务商）
-     * <p>
-     * 该面板包含性能模式的子配置，会向右缩进2个空格。
-     * 当性能模式复选框被勾选时，这些配置才可用。
-     *
-     * @return 包含性能模式子配置的面板
-     */
-    private JPanel createPerformanceModeSubConfigPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        JPanel indentPanel = new JPanel(new BorderLayout());
-        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
-
-        JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
-            .getPanel();
-
-        indentPanel.add(contentPanel, BorderLayout.CENTER);
-        panel.add(indentPanel, BorderLayout.CENTER);
-
-        updateShowProviderStatisticsEnabled();
-
-        return panel;
-    }
 
     /**
      * 更新提示标签的颜色
@@ -692,54 +570,14 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 更新显示统计信息复选框的可用性
-     * <p>
-     * 根据性能模式复选框的状态，设置显示统计信息复选框的可用性和提示文本颜色。
-     * 当性能模式未启用时，显示统计信息复选框及其提示文本都会显示为禁用状态。
-     */
-    private void updateShowProviderStatisticsEnabled() {
-        boolean enabled = performanceModeCheckBox.isSelected();
-        showProviderStatisticsCheckBox.setEnabled(enabled);
-
-        // 更新显示统计信息复选框的提示文本颜色
-        // 如果性能模式未启用，提示文本显示为禁用状态
-        // 如果性能模式启用，则根据显示统计信息复选框的状态更新颜色
-        JBLabel hintLabel = checkBoxHintLabelMap.get(showProviderStatisticsCheckBox);
-        if (hintLabel != null) {
-            if (enabled) {
-                // 性能模式启用时，根据显示统计信息复选框的状态更新颜色
-                updateHintLabelColor(hintLabel, showProviderStatisticsCheckBox.isSelected());
-            } else {
-                // 性能模式未启用时，提示文本显示为禁用状态
-                hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            }
-        }
-    }
-
-    /**
      * 更新所有复选框的提示文本颜色
      * <p>
      * 根据每个复选框的当前选中状态，更新对应的提示文本颜色。
      * 用于在加载设置时初始化提示文本的颜色。
-     *
-     * <p>特殊处理：
-     * <ul>
-     *   <li>显示统计信息和显示可用服务商复选框：如果性能模式未启用，提示文本显示为禁用状态</li>
-     *   <li>其他复选框：根据复选框的选中状态更新颜色</li>
-     * </ul>
      */
     private void updateAllCheckBoxHintColors() {
-        checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> {
-            if (checkBox == showProviderStatisticsCheckBox) {
-                if (!performanceModeCheckBox.isSelected()) {
-                    hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-                } else {
-                    updateHintLabelColor(hintLabel, checkBox.isSelected());
-                }
-            } else {
-                updateHintLabelColor(hintLabel, checkBox.isSelected());
-            }
-        });
+        checkBoxHintLabelMap.forEach((checkBox, hintLabel) ->
+                                         updateHintLabelColor(hintLabel, checkBox.isSelected()));
     }
 
     /**
@@ -944,22 +782,12 @@ public class JavaDocSettingsPanel {
     private void setupListeners() {
         enableCodeCompressionCheckBox.addActionListener(e -> updateMaxClassCodeLinesEnabled());
 
-        performanceModeCheckBox.addActionListener(e -> {
-            updateShowProviderStatisticsEnabled();
-            JBLabel performanceModeHintLabel = checkBoxHintLabelMap.get(performanceModeCheckBox);
-            if (performanceModeHintLabel != null) {
-                updateHintLabelColor(performanceModeHintLabel, performanceModeCheckBox.isSelected());
-            }
-        });
-
         showAdvancedSettingsCheckBox.addActionListener(e -> {
             boolean selected = showAdvancedSettingsCheckBox.isSelected();
             advancedSettingsPanel.setVisible(selected);
             mainPanel.revalidate();
             mainPanel.repaint();
         });
-
-        showProviderStatisticsCheckBox.addActionListener(e -> updateShowProviderStatisticsEnabled());
 
         showCustomJavaDocTagsCheckBox.addActionListener(e ->
                                                             customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected())
@@ -970,23 +798,8 @@ public class JavaDocSettingsPanel {
     public SettingsState getSettings() {
         SettingsState settings = new SettingsState();
 
-        AIProviderSettings providerSettings = providerConfigPanel.getSettings();
-        AIModelParameters modelParameters = providerSettings.modelParameters;
-        modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
-        modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
-        modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
-        modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
-        modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
-
-        AIRuntimeSettings runtimeSettings = providerSettings.runtimeSettings;
-        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
-        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
-        runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
-
-        providerSettings.performanceMode = performanceModeCheckBox.isSelected();
-        providerSettings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
-
-        settings.providerSettings = providerSettings;
+        // 直接从 AIProviderConfigPanel 获取所有 AI 配置
+        settings.providerSettings = providerConfigPanel.getSettings();
 
         settings.generateForClass = generateForClassCheckBox.isSelected();
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
@@ -1024,23 +837,8 @@ public class JavaDocSettingsPanel {
 
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
-        AIProviderSettings providerSettings = settings.providerSettings;
-        providerConfigPanel.loadSettings(providerSettings);
-
-        AIModelParameters modelParameters = providerSettings.modelParameters;
-        temperatureSpinner.setValue(modelParameters.temperature);
-        maxTokensSpinner.setValue(modelParameters.maxTokens);
-        topPSpinner.setValue(modelParameters.topP);
-        topKSpinner.setValue(modelParameters.topK);
-        presencePenaltySpinner.setValue(modelParameters.presencePenalty);
-
-        AIRuntimeSettings runtimeSettings = providerSettings.runtimeSettings;
-        maxRetriesSpinner.setValue(runtimeSettings.maxRetries);
-        timeoutSpinner.setValue(runtimeSettings.timeout);
-        verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
-
-        performanceModeCheckBox.setSelected(providerSettings.performanceMode);
-        showProviderStatisticsCheckBox.setSelected(providerSettings.showProviderStatistics);
+        // 直接使用 AIProviderConfigPanel 加载所有 AI 配置
+        providerConfigPanel.loadSettings(settings.providerSettings);
 
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
@@ -1052,7 +850,6 @@ public class JavaDocSettingsPanel {
         replaceChinesePunctuationCheckBox.setSelected(settings.replaceChinesePunctuation);
 
         updateMaxClassCodeLinesEnabled();
-        updateShowProviderStatisticsEnabled();
 
         javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
         kotlinCheckBox.setSelected(settings.supportedLanguages.contains("kotlin"));

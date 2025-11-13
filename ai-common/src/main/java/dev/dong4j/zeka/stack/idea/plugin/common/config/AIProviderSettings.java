@@ -25,6 +25,8 @@ public class AIProviderSettings {
 
     public boolean performanceMode = false;
     public boolean showProviderStatistics = false;
+    public boolean showAdvancedSettings = false;
+    public boolean showAvailableProviders = false;
 
     public AIProviderSettings copy() {
         AIProviderSettings settings = new AIProviderSettings();
@@ -44,6 +46,8 @@ public class AIProviderSettings {
 
         settings.performanceMode = this.performanceMode;
         settings.showProviderStatistics = this.showProviderStatistics;
+        settings.showAdvancedSettings = this.showAdvancedSettings;
+        settings.showAvailableProviders = this.showAvailableProviders;
         return settings;
     }
 
@@ -101,13 +105,18 @@ public class AIProviderSettings {
 
         this.performanceMode = source.performanceMode;
         this.showProviderStatistics = source.showProviderStatistics;
+        this.showAdvancedSettings = source.showAdvancedSettings;
+        this.showAvailableProviders = source.showAvailableProviders;
     }
 
     public boolean contentEquals(@NotNull AIProviderSettings other) {
         if (providerType != other.providerType) {
             return false;
         }
-        if (performanceMode != other.performanceMode || showProviderStatistics != other.showProviderStatistics) {
+        if (performanceMode != other.performanceMode
+            || showProviderStatistics != other.showProviderStatistics
+            || showAdvancedSettings != other.showAdvancedSettings
+            || showAvailableProviders != other.showAvailableProviders) {
             return false;
         }
 

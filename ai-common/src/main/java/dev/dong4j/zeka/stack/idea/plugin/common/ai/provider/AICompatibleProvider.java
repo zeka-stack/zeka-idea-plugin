@@ -78,12 +78,10 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                                   @Nullable AIResponseListener listener) throws AIServiceException {
         AIRuntimeSettings runtime = runtimeSettings;
         int attempts = 0;
-        AIServiceException lastException = null;
         while (attempts < Math.max(1, runtime.maxRetries)) {
             try {
                 return sendRequest(buildRequestBody(request), apiKey, listener, request.promptTokenEstimate(), false);
             } catch (AIServiceException e) {
-                lastException = e;
                 attempts++;
                 if (!e.isRetryable() || attempts >= Math.max(1, runtime.maxRetries)) {
                     break;
@@ -100,15 +98,17 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 }
             }
         }
-        throw lastException != null ? lastException :
-              new AIServiceException("AI 服务调用失败", AIServiceException.ErrorCode.UNKNOWN_ERROR);
+        throw new AIServiceException("AI 服务调用失败", AIServiceException.ErrorCode.UNKNOWN_ERROR);
+
     }
 
     @Override
     @NotNull
     public ValidationResult validateConfiguration(@Nullable String apiKey) {
         try {
-            String response = sendRequest(buildValidationRequestBody(), apiKey, null, 0, true);
+            AIChatRequest request = new AIChatRequest("i say ping, you say pong",
+                                                      "ping", 0);
+            String response = sendRequest(buildRequestBody(request), apiKey, null, 0, true);
             if (!response.isEmpty()) {
                 return ValidationResult.success("连接成功！提供商: " + getProviderType().getDisplayName() +
                                                 ", 模型: " + getModelName());
@@ -128,6 +128,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
+        LOG.info("getAvailableModels called, baseUrl=" + config.baseUrl + ", requiresApiKey=" + requiresApiKey());
         try {
             if (requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
                 return new ArrayList<>();
@@ -135,11 +136,10 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
             String url = config.baseUrl + "/models";
             String responseBody = HttpRequests.request(url)
-                .connect(request -> {
-                    HttpURLConnection connection = (HttpURLConnection) request.getConnection();
-                    tuneConnection(connection, apiKey);
-                    return request.readString();
-                });
+                .tuner(connection -> {
+                    tuneConnection((HttpURLConnection) connection, apiKey);
+                })
+                .connect(HttpRequests.Request::readString);
 
             if (!responseBody.trim().isEmpty()) {
                 return parseModelsResponse(responseBody);
@@ -186,31 +186,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         body.addProperty("top_k", params.topK);
         body.addProperty("presence_penalty", params.presencePenalty);
 
-        return body;
-    }
-
-    private JsonObject buildValidationRequestBody() {
-        JsonObject systemMessage = new JsonObject();
-        systemMessage.addProperty("role", "system");
-        systemMessage.addProperty("content", "i say ping, you say pong");
-
-        JsonObject userMessage = new JsonObject();
-        userMessage.addProperty("role", "user");
-        userMessage.addProperty("content", "ping");
-
-        JsonArray messagesArray = new JsonArray();
-        messagesArray.add(systemMessage);
-        messagesArray.add(userMessage);
-
-        JsonObject body = new JsonObject();
-        body.addProperty("model", config.modelName);
-        body.addProperty("think", false);
-        body.addProperty("enable_thinking", false);
-        body.addProperty("stream", false);
-        body.add("messages", messagesArray);
-        body.addProperty("temperature", 0.1);
-        body.addProperty("max_tokens", 32);
-        body.addProperty("top_p", 0.9);
         return body;
     }
 
@@ -287,6 +262,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     }
 
     private void tuneConnection(HttpURLConnection connection, @Nullable String apiKey) {
+        LOG.info(">>> tuneConnection called, apiKey != null: " + (apiKey != null));
         AIRuntimeSettings runtime = runtimeSettings;
         connection.setConnectTimeout(runtime.timeout);
         connection.setReadTimeout(runtime.timeout * 2);
@@ -328,17 +304,11 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             if (json.has("usage")) {
                 JsonObject usage = json.getAsJsonObject("usage");
                 if (usage.has("completion_tokens") && usage.get("completion_tokens").getAsInt() > 0) {
-                    if (runtimeSettings.verboseLogging) {
-                        LOG.debug("Validation successful: response has choices");
-                    }
                     return "OK";
                 }
             }
 
             if (json.has("choices") && !json.getAsJsonArray("choices").isEmpty()) {
-                if (runtimeSettings.verboseLogging) {
-                    LOG.debug("Validation successful: response has choices");
-                }
                 return "OK";
             }
 

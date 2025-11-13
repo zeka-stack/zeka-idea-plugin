@@ -41,8 +41,11 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
@@ -52,13 +55,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
  * 可复用的 AI 提供商配置面板。
  */
+@SuppressWarnings("D")
 public final class AIProviderConfigPanel {
 
     private final AICredentialManager credentialManager;
@@ -77,6 +83,25 @@ public final class AIProviderConfigPanel {
     private JPanel availableProvidersPanel;
     private JBTable availableProvidersTable;
     private AvailableProvidersTableModel availableProvidersTableModel;
+
+    // 基础配置组件
+    private JBCheckBox verboseLoggingCheckBox;
+    private JBCheckBox performanceModeCheckBox;
+    private JBCheckBox showProviderStatisticsCheckBox;
+
+    // 高级配置组件
+    private JBCheckBox showAdvancedSettingsCheckBox;
+    private JPanel advancedSettingsContentPanel;
+    private JSpinner maxRetriesSpinner;
+    private JSpinner timeoutSpinner;
+    private JSpinner temperatureSpinner;
+    private JSpinner maxTokensSpinner;
+    private JSpinner topPSpinner;
+    private JSpinner topKSpinner;
+    private JSpinner presencePenaltySpinner;
+
+    // 保存复选框和提示标签的映射关系，用于更新提示文本颜色
+    private final java.util.Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new java.util.HashMap<>();
 
     private Boolean configurationVerified = Boolean.FALSE;
     private Boolean refreshModelsSuccess = null;
@@ -103,6 +128,7 @@ public final class AIProviderConfigPanel {
     public void loadSettings(@NotNull AIProviderSettings settings) {
         this.workingSettings = settings.copy();
 
+        // 加载连接配置
         providerComboBox.setSelectedItem(workingSettings.providerType.getDisplayName());
         updateModelList();
 
@@ -117,16 +143,41 @@ public final class AIProviderConfigPanel {
         refreshModelsSuccess = null;
         updateRefreshButtonState();
 
+        // 加载基础配置
+        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
+        verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
+        performanceModeCheckBox.setSelected(workingSettings.performanceMode);
+        showProviderStatisticsCheckBox.setSelected(workingSettings.showProviderStatistics);
+        updatePerformanceModeSubConfigEnabled();
+
+        // 更新提示文本颜色（根据复选框的选中状态）
+        updateCheckBoxHintColors();
+
+        // 加载高级配置
+        showAdvancedSettingsCheckBox.setSelected(workingSettings.showAdvancedSettings);
+        if (advancedSettingsContentPanel != null) {
+            advancedSettingsContentPanel.setVisible(workingSettings.showAdvancedSettings);
+        }
+        maxRetriesSpinner.setValue(runtimeSettings.maxRetries);
+        timeoutSpinner.setValue(runtimeSettings.timeout);
+        AIModelParameters modelParameters = workingSettings.modelParameters;
+        temperatureSpinner.setValue(modelParameters.temperature);
+        maxTokensSpinner.setValue(modelParameters.maxTokens);
+        topPSpinner.setValue(modelParameters.topP);
+        topKSpinner.setValue(modelParameters.topK);
+        presencePenaltySpinner.setValue(modelParameters.presencePenalty);
+
+        // 加载可用服务商
         availableProvidersTableModel.setData(workingSettings.availableProviders);
-        boolean visible = !workingSettings.availableProviders.isEmpty();
-        showAvailableProvidersCheckBox.setSelected(visible);
-        availableProvidersPanel.setVisible(visible);
+        showAvailableProvidersCheckBox.setSelected(workingSettings.showAvailableProviders);
+        availableProvidersPanel.setVisible(workingSettings.showAvailableProviders);
     }
 
     @NotNull
     public AIProviderSettings getSettings() {
         AIProviderSettings copy = workingSettings.copy();
 
+        // 保存连接配置
         AIProviderType providerType = resolveSelectedProviderType();
         copy.providerType = providerType;
 
@@ -141,49 +192,31 @@ public final class AIProviderConfigPanel {
         copy.availableProviders.clear();
         availableProvidersTableModel.getData().forEach(copy::addAvailableProvider);
 
+        // 保存基础配置
+        AIRuntimeSettings runtimeSettings = copy.runtimeSettings;
+        runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
+        copy.performanceMode = performanceModeCheckBox.isSelected();
+        copy.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
+        copy.showAvailableProviders = showAvailableProvidersCheckBox.isSelected();
+
+        // 保存高级配置
+        copy.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
+        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
+        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
+        AIModelParameters modelParameters = copy.modelParameters;
+        modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
+        modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
+        modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
+        modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
+        modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
+
         return copy;
     }
 
     public boolean isModified(@NotNull AIProviderSettings baseline) {
         AIProviderSettings latest = getSettings();
-        AIProviderSettings expected = baseline.copy();
-        // 提供商类型
-        if (latest.providerType != expected.providerType) {
-            return true;
-        }
-
-        AIProviderConfig latestConfig = latest.getDefaultProviderConfig(latest.providerType);
-        AIProviderConfig expectedConfig = expected.getDefaultProviderConfig(expected.providerType);
-        if (!Objects.equals(latestConfig.modelName, expectedConfig.modelName)) {
-            return true;
-        }
-        if (!Objects.equals(latestConfig.baseUrl, expectedConfig.baseUrl)) {
-            return true;
-        }
-        if (latestConfig.configurationVerified != expectedConfig.configurationVerified) {
-            return true;
-        }
-        if (!Objects.equals(latestConfig.credentialId, expectedConfig.credentialId)) {
-            return true;
-        }
-
-        if (latest.availableProviders.size() != expected.availableProviders.size()) {
-            return true;
-        }
-        for (int i = 0; i < latest.availableProviders.size(); i++) {
-            AIProviderConfig a = latest.availableProviders.get(i);
-            AIProviderConfig b = expected.availableProviders.get(i);
-            if (!Objects.equals(a.providerType, b.providerType)
-                || !Objects.equals(a.modelName, b.modelName)
-                || !Objects.equals(a.baseUrl, b.baseUrl)
-                || !Objects.equals(a.credentialId, b.credentialId)
-                || !Objects.equals(a.remark, b.remark)
-                || a.configurationVerified != b.configurationVerified) {
-                return true;
-            }
-        }
-
-        return false;
+        // 使用 contentEquals 进行完整比较，包括基础配置和高级配置
+        return !latest.contentEquals(baseline);
     }
 
     @NotNull
@@ -192,6 +225,7 @@ public final class AIProviderConfigPanel {
     }
 
     private void createUI() {
+        // 初始化连接配置组件
         providerComboBox = new ComboBox<>(AIProviderType.getAllDisplayNames().toArray(new String[0]));
         providerComboBox.setRenderer(new ProviderListCellRenderer());
 
@@ -208,6 +242,32 @@ public final class AIProviderConfigPanel {
         refreshModelsButton = new JButton(AICommonBundle.message("settings.refresh.models"));
         updateRefreshButtonState();
 
+        // 初始化基础配置组件
+        verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
+        performanceModeCheckBox = new JBCheckBox(AICommonBundle.message("settings.performance.mode"));
+        showProviderStatisticsCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.provider.statistics"));
+
+        // 初始化高级配置组件
+        showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
+        maxRetriesSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 10, 1));
+        timeoutSpinner = new JSpinner(new SpinnerNumberModel(10000, 1000, 300000, 1000));
+        temperatureSpinner = new JSpinner(new SpinnerNumberModel(0.1, 0.0, 2.0, 0.1));
+        maxTokensSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 10000, 100));
+        topPSpinner = new JSpinner(new SpinnerNumberModel(0.9, 0.0, 1.0, 0.1));
+        topKSpinner = new JSpinner(new SpinnerNumberModel(50, 1, 100, 1));
+        presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.0, -2.0, 2.0, 0.1));
+
+        // 设置所有 JSpinner 的长度一致
+        Dimension spinnerSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
+        maxRetriesSpinner.setPreferredSize(spinnerSize);
+        timeoutSpinner.setPreferredSize(spinnerSize);
+        temperatureSpinner.setPreferredSize(spinnerSize);
+        maxTokensSpinner.setPreferredSize(spinnerSize);
+        topPSpinner.setPreferredSize(spinnerSize);
+        topKSpinner.setPreferredSize(spinnerSize);
+        presencePenaltySpinner.setPreferredSize(spinnerSize);
+
+        // 初始化可用服务商表格
         availableProvidersTableModel = new AvailableProvidersTableModel();
         availableProvidersTable = new JBTable(availableProvidersTableModel);
         availableProvidersTable.setPreferredScrollableViewportSize(new Dimension(480, 120));
@@ -238,38 +298,187 @@ public final class AIProviderConfigPanel {
 
         showAvailableProvidersCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.available.providers"));
 
-        JPanel providerSection = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.provider.label")), providerComboBox)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.model.label")), createModelPanel())
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.api.key.label")), createApiKeyPanel())
+        // 创建 3 个子面板
+        JPanel connectionPanel = createConnectionPanel();
+        JPanel basicPanel = createBasicPanel();
+        JPanel advancedPanel = createAdvancedPanel();
+
+        // 初始化高级设置面板的可见性
+        if (advancedSettingsContentPanel != null) {
+            advancedSettingsContentPanel.setVisible(workingSettings.showAdvancedSettings);
+        }
+
+        // 组合成主面板
+        mainPanel = FormBuilder.createFormBuilder()
+            .addComponent(connectionPanel)
             .addSeparator(10)
-            .addComponent(showAvailableProvidersCheckBox)
-            .addComponent(availableProvidersPanel)
+            .addComponent(basicPanel)
+            .addSeparator(10)
+            .addComponent(advancedPanel)
+            .addComponentFillVertically(new JPanel(), 0)
             .getPanel();
-
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.add(providerSection, BorderLayout.CENTER);
-        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.basic.connection.config")));
-
-        mainPanel = new JPanel(new BorderLayout());
-        mainPanel.add(wrapper, BorderLayout.NORTH);
         mainPanel.setBorder(JBUI.Borders.empty(8));
     }
 
-    private JPanel createModelPanel() {
+    private JPanel createConnectionPanel() {
+        // 连接配置布局：
+        // - AI 服务商下拉框（单独一行）
+        // - 基础 URL（单独一行）
+        // - API Key 和 刷新模型按钮（同一行）
+        // - 模型选择框 和 测试按钮（同一行）
+
+        // 设置 AI 服务商下拉框的宽度为 50 像素
+        Dimension providerComboBoxSize = new Dimension(300, providerComboBox.getPreferredSize().height);
+        providerComboBox.setPreferredSize(providerComboBoxSize);
+        providerComboBox.setMaximumSize(providerComboBoxSize);
+
+        JPanel apiKeyPanel = new JPanel(new BorderLayout(5, 0));
+        apiKeyPanel.add(apiKeyField, BorderLayout.CENTER);
+        apiKeyPanel.add(refreshModelsButton, BorderLayout.EAST);
+
+        JPanel modelPanel = new JPanel(new BorderLayout(5, 0));
+        modelPanel.add(modelComboBox, BorderLayout.CENTER);
+        modelPanel.add(testConnectionButton, BorderLayout.EAST);
+
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.provider.label")), providerComboBox)
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
+            .getPanel();
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(panel, BorderLayout.CENTER);
+        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.basic.connection.config")));
+        return wrapper;
+    }
+
+    private JPanel createBasicPanel() {
+        // 基础配置包括：
+        // - 详细日志
+        // - 性能模式
+        // - 联动的任务结果展示（showProviderStatistics）- 子配置，缩进2个空格
+        // - 显示可用服务商 - 子配置，缩进2个空格
+
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
+            .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
+            .addComponent(createPerformanceModeSubConfigPanel())
+            .getPanel();
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(panel, BorderLayout.CENTER);
+        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.basic.config")));
+        return wrapper;
+    }
+
+    private JPanel createPerformanceModeSubConfigPanel() {
+        // 性能模式的子配置面板，包含显示任务统计和显示可用服务商
+        // 需要向右缩进2个空格（约22像素）
+        JPanel indentPanel = new JPanel(new BorderLayout());
+        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
+
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
+            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
+            .addComponent(availableProvidersPanel)
+            .getPanel();
+
+        indentPanel.add(contentPanel, BorderLayout.CENTER);
+        return indentPanel;
+    }
+
+    private JPanel createAdvancedPanel() {
+        // 高级配置包括：
+        // - 最大重试次数（在最大Token数上面）
+        // - 请求超时时间（在最大Token数上面）
+        // - 最大 Token 数
+        // - 温度
+        // - Top-p
+        // - Top-k
+        // - 存在惩罚
+
+        // 创建高级配置内容面板
+        advancedSettingsContentPanel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.max.retries")),
+                                 createSpinnerWithHint(maxRetriesSpinner, "settings.max.retries.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.timeout")),
+                                 createSpinnerWithHint(timeoutSpinner, "settings.timeout.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.max.tokens")),
+                                 createSpinnerWithHint(maxTokensSpinner, "settings.max.tokens.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.temperature")),
+                                 createSpinnerWithHint(temperatureSpinner, "settings.temperature.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.top.p")),
+                                 createSpinnerWithHint(topPSpinner, "settings.top.p.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.top.k")),
+                                 createSpinnerWithHint(topKSpinner, "settings.top.k.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.presence.penalty")),
+                                 createSpinnerWithHint(presencePenaltySpinner, "settings.presence.penalty.hint"))
+            .getPanel();
+        advancedSettingsContentPanel.setVisible(false); // 默认隐藏
+
+        // 创建主面板，包含复选框和内容面板
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(showAdvancedSettingsCheckBox, "settings.advanced.settings.show.hint"))
+            .addComponent(advancedSettingsContentPanel)
+            .getPanel();
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(panel, BorderLayout.CENTER);
+        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.advanced.config")));
+        return wrapper;
+    }
+
+    private JPanel createSpinnerWithHint(JSpinner spinner, String hintKey) {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
-        panel.add(modelComboBox, BorderLayout.CENTER);
-        panel.add(testConnectionButton, BorderLayout.EAST);
+        panel.add(spinner, BorderLayout.WEST);
+
+        JBLabel hintLabel = new JBLabel(AICommonBundle.message(hintKey));
+        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
+        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        hintLabel.setPreferredSize(new Dimension(300, hintLabel.getPreferredSize().height));
+        panel.add(hintLabel, BorderLayout.CENTER);
+
         return panel;
     }
 
-    private JPanel createApiKeyPanel() {
+    private JPanel createCheckBoxWithHint(JBCheckBox checkBox, String hintKey) {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
-        panel.add(apiKeyField, BorderLayout.CENTER);
-        panel.add(refreshModelsButton, BorderLayout.EAST);
+        panel.add(checkBox, BorderLayout.WEST);
+
+        JBLabel hintLabel = new JBLabel(AICommonBundle.message(hintKey));
+        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
+        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
+        panel.add(hintLabel, BorderLayout.CENTER);
+
+        // 保存映射关系，用于后续更新颜色
+        checkBoxHintLabelMap.put(checkBox, hintLabel);
+
+        // 根据复选框状态设置提示文本颜色
+        updateHintLabelColor(hintLabel, checkBox.isSelected());
+
+        // 监听复选框状态变化，动态更新提示文本颜色
+        checkBox.addActionListener(e -> updateHintLabelColor(hintLabel, checkBox.isSelected()));
+
         return panel;
     }
+
+    private void updateHintLabelColor(JBLabel hintLabel, boolean selected) {
+        if (selected) {
+            hintLabel.setForeground(UIManager.getColor("Label.foreground"));
+        } else {
+            hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        }
+    }
+
+    private void updateCheckBoxHintColors() {
+        // 更新所有复选框的提示文本颜色
+        checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> {
+            updateHintLabelColor(hintLabel, checkBox.isSelected());
+        });
+    }
+
 
     private void setupListeners() {
         providerComboBox.addActionListener(e -> {
@@ -277,11 +486,50 @@ public final class AIProviderConfigPanel {
             loadDefaultProviderConfig();
         });
 
-        showAvailableProvidersCheckBox.addActionListener(e ->
-                                                             availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected()));
+        showAvailableProvidersCheckBox.addActionListener(e -> {
+            availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected());
+        });
+
+        showAdvancedSettingsCheckBox.addActionListener(e -> {
+            if (advancedSettingsContentPanel != null) {
+                advancedSettingsContentPanel.setVisible(showAdvancedSettingsCheckBox.isSelected());
+            }
+        });
+
+        performanceModeCheckBox.addActionListener(e -> updatePerformanceModeSubConfigEnabled());
 
         testConnectionButton.addActionListener(e -> testConnection());
         refreshModelsButton.addActionListener(e -> refreshModels());
+    }
+
+    private void updatePerformanceModeSubConfigEnabled() {
+        boolean enabled = performanceModeCheckBox.isSelected();
+        showProviderStatisticsCheckBox.setEnabled(enabled);
+        showAvailableProvidersCheckBox.setEnabled(enabled);
+        if (!enabled) {
+            showProviderStatisticsCheckBox.setSelected(false);
+            showAvailableProvidersCheckBox.setSelected(false);
+            availableProvidersPanel.setVisible(false);
+        }
+
+        // 更新提示文本颜色
+        JBLabel statisticsHintLabel = checkBoxHintLabelMap.get(showProviderStatisticsCheckBox);
+        if (statisticsHintLabel != null) {
+            if (enabled) {
+                updateHintLabelColor(statisticsHintLabel, showProviderStatisticsCheckBox.isSelected());
+            } else {
+                statisticsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            }
+        }
+
+        JBLabel availableProvidersHintLabel = checkBoxHintLabelMap.get(showAvailableProvidersCheckBox);
+        if (availableProvidersHintLabel != null) {
+            if (enabled) {
+                updateHintLabelColor(availableProvidersHintLabel, showAvailableProvidersCheckBox.isSelected());
+            } else {
+                availableProvidersHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            }
+        }
     }
 
     private void updateModelList() {
@@ -399,6 +647,8 @@ public final class AIProviderConfigPanel {
         AIProviderSettings snapshot = workingSettings.copy();
         snapshot.providerType = providerType;
         AIProviderConfig config = snapshot.getDefaultProviderConfig(providerType);
+        // 确保 providerType 被正确设置
+        config.providerType = providerType;
         config.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
         config.baseUrl = normalizeBaseUrl(baseUrlField.getText());
         config.updateCredentialId(getCurrentApiKey());
@@ -422,13 +672,32 @@ public final class AIProviderConfigPanel {
             return;
         }
 
+        // 验证配置
+        String baseUrl = normalizeBaseUrl(baseUrlField.getText());
+        if (baseUrl.isEmpty()) {
+            JOptionPane.showMessageDialog(mainPanel,
+                                          AICommonBundle.message("settings.error.base.url.missing"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String apiKey = getCurrentApiKey();
+        if (providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
+            JOptionPane.showMessageDialog(mainPanel,
+                                          AICommonBundle.message("settings.error.api.key.missing"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         refreshModelsButton.setEnabled(false);
         refreshModelsButton.setText(AICommonBundle.message("settings.refresh.models.testing"));
         refreshModelsButton.setIcon(createStatusDotIcon(Gray._158));
 
         new Thread(() -> {
             try {
-                List<String> models = provider.getAvailableModels(getCurrentApiKey());
+                List<String> models = provider.getAvailableModels(apiKey);
                 models.sort(String::compareToIgnoreCase);
                 SwingUtilities.invokeLater(() -> {
                     modelComboBox.removeAllItems();
@@ -442,8 +711,15 @@ public final class AIProviderConfigPanel {
                                                       JOptionPane.INFORMATION_MESSAGE);
                     } else {
                         refreshModelsSuccess = false;
+                        // 如果模型列表为空，可能是配置错误或网络问题
+                        String errorMessage = AICommonBundle.message("settings.refresh.models.empty");
+                        if (providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
+                            errorMessage = AICommonBundle.message("settings.error.api.key.missing");
+                        } else if (baseUrl.isEmpty()) {
+                            errorMessage = AICommonBundle.message("settings.error.base.url.missing");
+                        }
                         JOptionPane.showMessageDialog(mainPanel,
-                                                      AICommonBundle.message("settings.refresh.models.empty"),
+                                                      errorMessage,
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.WARNING_MESSAGE);
                     }
@@ -453,8 +729,12 @@ public final class AIProviderConfigPanel {
                 SwingUtilities.invokeLater(() -> {
                     refreshModelsSuccess = false;
                     updateRefreshButtonState();
+                    String errorMessage = e.getMessage();
+                    if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                        errorMessage = e.getClass().getSimpleName();
+                    }
                     JOptionPane.showMessageDialog(mainPanel,
-                                                  AICommonBundle.message("settings.refresh.models.failed", e.getMessage()),
+                                                  AICommonBundle.message("settings.refresh.models.failed", errorMessage),
                                                   AICommonBundle.message("settings.error.title"),
                                                   JOptionPane.ERROR_MESSAGE);
                 });
@@ -558,7 +838,7 @@ public final class AIProviderConfigPanel {
     }
 
     private Icon createStatusDotIcon(Color color) {
-        int size = 6;
+        int size = 4;
         BufferedImage image = ImageUtil.createImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
