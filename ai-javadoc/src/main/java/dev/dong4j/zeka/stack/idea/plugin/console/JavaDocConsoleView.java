@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
  * AI Javadoc Console 视图
@@ -213,6 +214,63 @@ public final class JavaDocConsoleView implements Disposable {
                 showToolWindow();
             }
         });
+    }
+
+    /**
+     * 输出欢迎信息（不受 verboseLogging 控制）
+     * <p>
+     * 用于在控制台初始化时显示欢迎信息和使用说明。
+     *
+     * @param message     消息内容
+     * @param contentType 内容类型
+     */
+    private void printWelcome(@NotNull String message, @NotNull ConsoleViewContentType contentType) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ConsoleView console = getConsoleView();
+            if (console != null) {
+                console.print(message, contentType);
+                showToolWindow();
+            }
+        });
+    }
+
+    /**
+     * 输出欢迎信息和使用说明（不受 verboseLogging 控制）
+     * <p>
+     * 在控制台初始化时显示插件的欢迎信息、使用方式和提示。
+     */
+    @SuppressWarnings("DuplicatedCode")
+    public void printWelcomeMessage() {
+        printWelcome("╔════════════════════════════════════════════════════════════════╗\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome("║          " + JavaDocBundle.message("console.welcome.title") + "                   ║\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome("╚════════════════════════════════════════════════════════════════╝\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome("", ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.usage.title") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.usage.shortcut") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.usage.editor.menu") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.usage.file.menu") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.usage.generate.menu") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.usage.quick.fix") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome("", ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.tips.title") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.tips.verbose.logging") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.tips.performance.mode") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome(JavaDocBundle.message("console.welcome.tips.code.location") + "\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
+        printWelcome("────────────────────────────────────────────────────────────────\n",
+                     ConsoleViewContentType.NORMAL_OUTPUT);
     }
 
 

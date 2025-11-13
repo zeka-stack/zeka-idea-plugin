@@ -39,6 +39,15 @@ public class JavaDocConsoleToolWindowFactory implements ToolWindowFactory, DumbA
         toolWindow.getContentManager().addContent(content);
 
         // 输出欢迎信息
-        consoleView.print("======================================================\n");
+        printWelcomeMessage(consoleView);
+    }
+
+    /**
+     * 输出欢迎信息和使用说明
+     *
+     * @param consoleView 控制台视图实例
+     */
+    private void printWelcomeMessage(@NotNull JavaDocConsoleView consoleView) {
+        consoleView.printWelcomeMessage();
     }
 }
