@@ -49,6 +49,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractGenerateJavaDocAction extends AnAction {
 
+    /**
+     * 处理动作事件, 根据条件执行相应的处理逻辑
+     * <p>
+     * 该方法首先检查项目是否有效, 若无效则直接返回. 接着获取当前 PsiFile 和 Editor 对象, 若 PsiFile 为空则返回. 最后调用 process 方法进行实际处理.
+     *
+     * @param e          动作事件对象, 用于获取项目,PsiFile 和 Editor 等信息
+     * @param needEditor 是否需要 Editor 对象参与处理
+     */
     public void process(@NotNull AnActionEvent e, boolean needEditor) {
         Project project = e.getProject();
         if (project == null || project.isDisposed() || isDumbMode(project)) {

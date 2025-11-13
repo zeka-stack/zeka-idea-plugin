@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.statusbar;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -51,14 +50,6 @@ public interface AIProviderStatusBarAdapter {
      */
     void switchDefaultProvider(@NotNull AIProviderType providerType, @NotNull AIProviderConfig config);
 
-    /**
-     * 获取提供商图标（16x16）
-     *
-     * @param providerType 提供商类型
-     * @return 图标，如果未找到返回 null
-     */
-    @Nullable
-    Icon getProviderIcon(@Nullable AIProviderType providerType);
 
     /**
      * 获取插件主图标（16x16）

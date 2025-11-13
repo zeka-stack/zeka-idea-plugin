@@ -321,6 +321,14 @@ public final class TokenCounter {
             return totalChars > 0 && (double) codeSymbols / totalChars > 0.1;
         }
 
+        /**
+         * 返回当前对象的字符串表示形式
+         * <p>
+         * 格式化输出当前对象的统计信息, 包括总词数, 字符数, 中文字符数及占比, 英文单词数, 行数, 平均每行词数以及是否为代码的判断结果.
+         *
+         * @return 格式化后的字符串表示
+         * @since 1.0
+         */
         @Override
         public String toString() {
             return String.format(

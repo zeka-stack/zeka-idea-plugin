@@ -122,6 +122,13 @@ public class JavaDocSettingsPanel {
         setupListeners();
     }
 
+    /**
+     * 获取主面板
+     * <p>
+     * 返回用于显示主要内容的面板组件
+     *
+     * @return 主面板组件
+     */
     public JPanel getPanel() {
         return mainPanel;
     }
@@ -167,11 +174,25 @@ public class JavaDocSettingsPanel {
             .addExtraAction(new AnAction(JavaDocBundle.message("settings.custom.javadoc.tags.clear.all"),
                                          JavaDocBundle.message("settings.custom.javadoc.tags.clear.all.description"),
                                          com.intellij.icons.AllIcons.Actions.GC) {
+                /**
+                 * 处理动作事件, 清除所有自定义的 JavaDoc 标签
+                 * <p>
+                 * 该方法用于响应动作事件, 执行清除自定义 JavaDoc 标签的操作
+                 *
+                 * @param e 动作事件对象
+                 */
                 @Override
                 public void actionPerformed(@NotNull AnActionEvent e) {
                     clearAllCustomJavaDocTags();
                 }
 
+                /**
+                 * 根据表格数据状态更新操作按钮的启用状态
+                 * <p>
+                 * 检查自定义 JavaDoc 标签表格中是否有数据行, 若有则启用按钮, 否则禁用
+                 *
+                 * @param e 动作事件对象, 包含操作相关的上下文信息
+                 */
                 @Override
                 public void update(@NotNull AnActionEvent e) {
                     // 根据表格状态启用/禁用按钮
@@ -179,6 +200,13 @@ public class JavaDocSettingsPanel {
                     e.getPresentation().setEnabled(hasData);
                 }
 
+                /**
+                 * 获取动作更新线程
+                 * <p>
+                 * 返回用于更新动作的线程, 该线程为事件调度线程 (EDT)
+                 *
+                 * @return 动作更新线程
+                 */
                 @Override
                 public @NotNull ActionUpdateThread getActionUpdateThread() {
                     // 需要访问 Swing 组件（表格模型），必须在 EDT 中执行
@@ -665,16 +693,38 @@ public class JavaDocSettingsPanel {
 
         // 添加文档监听器，根据内容自动调整大小
         textArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            /**
+             * 处理文档事件, 调整文本区域大小
+             * <p>
+             * 当文档事件发生时, 调用 adjustTextAreaSize 方法调整文本区域的大小
+             *
+             * @param e 文档事件对象
+             */
             @Override
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(textArea);
             }
 
+            /**
+             * 文档更新时触发的回调方法.
+             * <p>
+             * 当文本域的内容发生变化时, 该方法会被调用,
+             * 并通过 {@link #adjustTextAreaSize(javax.swing.JTextArea)} 方法动态调整文本域的尺寸.
+             *
+             * @param e 文档事件, 包含更新的相关信息
+             */
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(textArea);
             }
 
+            /**
+             * 处理文档内容变化事件, 调整文本区域大小
+             * <p>
+             * 当文本区域内容发生变化时, 调用 adjustTextAreaSize 方法调整其尺寸
+             *
+             * @param e 文档变化事件对象
+             */
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(textArea);
@@ -794,6 +844,15 @@ public class JavaDocSettingsPanel {
                                                        );
     }
 
+    /**
+     * 获取当前设置状态对象, 用于保存用户配置的各类设置信息.
+     * <p>
+     * 该方法会从界面组件中读取用户选择的配置项, 并将其封装到 SettingsState 对象中.
+     * 包括提供者设置, 生成选项, 语言支持, 提示模板, 自定义 JavaDoc 标签等.
+     *
+     * @return 当前设置状态对象
+     * @since 1.0
+     */
     @NotNull
     public SettingsState getSettings() {
         SettingsState settings = new SettingsState();
@@ -831,10 +890,25 @@ public class JavaDocSettingsPanel {
         return settings;
     }
 
+    /**
+     * 获取当前使用的 API 密钥
+     * <p>
+     * 调用配置面板获取当前设置的 API 密钥值
+     *
+     * @return 当前 API 密钥字符串
+     */
     public String getCurrentApiKey() {
         return providerConfigPanel.getCurrentApiKey();
     }
 
+    /**
+     * 加载设置配置到界面组件中
+     * <p>
+     * 将传入的 SettingsState 对象中的配置信息同步到各个 UI 控件中, 包括生成选项, 代码压缩设置,
+     * 提示模板, 自定义 JavaDoc 标签等高级设置.
+     *
+     * @param settings 包含所有设置信息的 SettingsState 对象
+     */
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
         // 直接使用 AIProviderConfigPanel 加载所有 AI 配置
@@ -870,10 +944,25 @@ public class JavaDocSettingsPanel {
         updateAllCheckBoxHintColors();
     }
 
+    /**
+     * 获取主面板所在的顶级窗口
+     * <p>
+     * 使用 Swing 工具类查找主面板的顶级窗口祖先
+     *
+     * @return 主面板所在的顶级窗口, 若未找到则返回 null
+     */
     private java.awt.Window getParentWindow() {
         return SwingUtilities.getWindowAncestor(mainPanel);
     }
 
+    /**
+     * 添加自定义 JavaDoc 标签
+     * <p>
+     * 该方法弹出输入框提示用户输入自定义标签名称, 随后对输入进行合法性校验
+     * (使用 {@link SettingsState#isValidTagName(String)}), 并检查当前标签列表中是否已存在相同名称 (不区分大小写).<br>
+     * 若输入合法且标签不存在, 则将该标签添加到 {@link CustomJavaDocTagsTableModel} 中;<br>
+     * 否则根据不同情况弹出相应的错误或警告对话框.
+     */
     private void addCustomJavaDocTag() {
         String tagName = JOptionPane.showInputDialog(
             getParentWindow(),
@@ -963,13 +1052,35 @@ public class JavaDocSettingsPanel {
      * 自定义 JavaDoc 标签列表的表格模型
      */
     private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
+        /**
+         * 列名数组, 用于显示自定义 JavaDoc 标签的设置界面
+         * <p>
+         * 数组中的元素通过 JavaDocBundle 获取国际化字符串
+         */
         private final String[] columnNames = {JavaDocBundle.message("settings.custom.javadoc.tags.column.name")};
+        /** 数据列表 */
         private final List<String> data;
 
+        /**
+         * 构造函数, 初始化 CustomJavaDocTagsTableModel 实例
+         * <p>
+         * 创建一个空的表格模型, 用于展示 JavaDoc 标签信息
+         *
+         * @since 1.0
+         */
         public CustomJavaDocTagsTableModel() {
             this.data = new ArrayList<>();
         }
 
+        /**
+         * 设置新的数据列表并触发表格数据变更事件
+         * <p>
+         * 清除当前数据列表, 若传入的 newData 不为 null, 则将新数据添加到当前数据列表中, 并触发表格数据变更事件.
+         *
+         * @param newData 要设置的新数据列表
+         * @throws NullPointerException 如果 newData 为 null 时未正确处理 (但实际代码中已处理)
+         * @since 1.0
+         */
         public void setData(List<String> newData) {
             this.data.clear();
             if (newData != null) {
@@ -978,15 +1089,37 @@ public class JavaDocSettingsPanel {
             fireTableDataChanged();
         }
 
+        /**
+         * 获取数据列表
+         * <p>
+         * 返回数据的副本列表
+         *
+         * @return 数据列表
+         */
         public List<String> getData() {
             return new ArrayList<>(data);
         }
 
+        /**
+         * 添加一个标签到数据集合中, 并通知表格数据已更新
+         * <p>
+         * 该方法将指定的标签名称添加到内部数据集合, 并触发表格行插入事件以更新界面.
+         *
+         * @param tagName 要添加的标签名称
+         */
         public void addTag(String tagName) {
             data.add(tagName);
             fireTableRowsInserted(data.size() - 1, data.size() - 1);
         }
 
+        /**
+         * 删除指定行的数据并通知表格视图更新.
+         *
+         * <p> 该方法首先检查传入的行索引是否在合法范围内 (0 ≤ row < data.size()). 若合法, 则从内部数据集合中移除对应行, 并通过 {@code fireTableRowsDeleted} 通知表格模型行已被删除, 从而触发视图刷新
+         * .</p>
+         *
+         * @param row 要删除的行索引, 基于 0 的索引
+         */
         public void removeRow(int row) {
             if (row >= 0 && row < data.size()) {
                 data.remove(row);
@@ -994,6 +1127,13 @@ public class JavaDocSettingsPanel {
             }
         }
 
+        /**
+         * 清除所有数据并通知表格数据已删除
+         * <p>
+         * 该方法会清除数据集合中的所有元素, 并触发表格数据删除的事件通知.
+         *
+         * @since 1.0
+         */
         public void clearAll() {
             int size = data.size();
             if (size > 0) {
@@ -1002,21 +1142,52 @@ public class JavaDocSettingsPanel {
             }
         }
 
+        /**
+         * 获取数据行数
+         * <p>
+         * 返回数据集合中的元素数量
+         *
+         * @return 数据行数
+         */
         @Override
         public int getRowCount() {
             return data.size();
         }
 
+        /**
+         * 获取列的数量
+         * <p>
+         * 返回当前列名数组中的列数, 即表格的列数.
+         *
+         * @return 列的数量
+         */
         @Override
         public int getColumnCount() {
             return columnNames.length;
         }
 
+        /**
+         * 根据列索引获取列名称
+         * <p>
+         * 通过指定的列索引从列名称数组中获取对应的列名称
+         *
+         * @param column 列索引
+         * @return 对应的列名称
+         */
         @Override
         public String getColumnName(int column) {
             return columnNames[column];
         }
 
+        /**
+         * 获取表格中指定行和列的单元格值
+         * <p>
+         * 根据行索引和列索引返回对应的数据值, 若行索引超出范围或数据为空, 则返回空字符串
+         *
+         * @param rowIndex    行索引
+         * @param columnIndex 列索引
+         * @return 表格单元格的值
+         */
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             if (rowIndex >= 0 && rowIndex < data.size()) {
@@ -1025,11 +1196,30 @@ public class JavaDocSettingsPanel {
             return "";
         }
 
+        /**
+         * 判断指定单元格是否可编辑
+         * <p>
+         * 该方法用于确定表格中指定行和列的单元格是否允许用户进行编辑操作.
+         *
+         * @param rowIndex    表格中的行索引
+         * @param columnIndex 表格中的列索引
+         * @return 如果单元格可编辑则返回 true, 否则返回 false
+         */
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
             return true; // 允许编辑标签名称
         }
 
+        /**
+         * 设置表格指定单元格的值.
+         * <p>
+         * 仅当行索引在有效范围内且传入值不为 {@code null} 时才会进行处理. 方法会将传入值转换为字符串, 去除首尾空白, 并通过 {@link SettingsState#isValidTagName(String)} 进行合法性校验.
+         * 若校验失败或与表中其它行 (不区分大小写) 存在相同标签, 则不做任何修改. 校验通过后, 将新值写入内部数据集合, 并触发表格单元格更新事件.
+         *
+         * @param aValue      要设置的新值, 通常为 {@link String}, 但方法接受任何对象并调用 {@link Object#toString()}.
+         * @param rowIndex    行索引, 必须在 0 与 {@link #data} 的大小之间.
+         * @param columnIndex 列索引, 用于通知表格更新.
+         */
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             if (rowIndex >= 0 && rowIndex < data.size() && aValue != null) {

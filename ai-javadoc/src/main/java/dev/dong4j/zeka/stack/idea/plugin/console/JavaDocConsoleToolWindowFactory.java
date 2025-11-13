@@ -21,6 +21,14 @@ import org.jetbrains.annotations.NotNull;
  */
 public class JavaDocConsoleToolWindowFactory implements ToolWindowFactory, DumbAware {
 
+    /**
+     * 初始化并添加 Java 文档控制台内容到工具窗口
+     * <p>
+     * 该方法用于创建 Java 文档控制台视图, 并将其内容添加到指定的工具窗口中.
+     *
+     * @param project    项目对象, 用于获取控制台视图实例
+     * @param toolWindow 工具窗口对象, 用于添加控制台内容
+     */
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
         JavaDocConsoleView consoleView = JavaDocConsoleView.getInstance(project);

@@ -413,6 +413,14 @@ public class TaskCollector {
         }
 
         VfsUtilCore.visitChildrenRecursively(directory, new VirtualFileVisitor<Void>() {
+            /**
+             * 访问指定的文件并收集相关任务
+             * <p>
+             * 如果文件不是目录且是 Java 文件, 则从该文件中收集任务并添加到任务列表中.
+             *
+             * @param file 要访问的虚拟文件
+             * @return 总是返回 true, 表示继续访问其他文件
+             */
             @Override
             public boolean visitFile(@NotNull VirtualFile file) {
                 if (!file.isDirectory() && isJavaFile(file)) {

@@ -22,6 +22,7 @@ import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -118,7 +119,7 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
         // 获取当前提供商的图标
         AIProviderType providerType = adapter.getCurrentProviderType();
-        Icon providerIcon = adapter.getProviderIcon(providerType);
+        Icon providerIcon = AICommonIcons.getProviderIcon(providerType);
         // 如果提供商有图标则使用，否则使用插件主图标
         state.setIcon(providerIcon != null ? providerIcon : adapter.getMainIcon());
         
@@ -156,7 +157,7 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
                 public Icon getIconFor(AIProviderConfig value) {
                     // 根据提供商类型获取对应的图标
                     if (value != null && value.providerType != null) {
-                        Icon providerIcon = adapter.getProviderIcon(value.providerType);
+                        Icon providerIcon = AICommonIcons.getProviderIcon(value.providerType);
                         // 如果提供商有图标则使用，否则使用插件主图标
                         return providerIcon != null ? providerIcon : adapter.getMainIcon();
                     }

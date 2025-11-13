@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.SwingUtilities;
 
+import dev.dong4j.zeka.stack.idea.plugin.ai.AIConsoleLoggerImpl;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIRequestComposer;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -43,6 +44,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +86,7 @@ import lombok.extern.slf4j.Slf4j;
  * @version 1.0.0
  * @since 1.0.0
  */
+@SuppressWarnings("D")
 @Slf4j
 public class TaskExecutor {
 
@@ -245,6 +248,23 @@ public class TaskExecutor {
         }
     }
 
+    /**
+     * ProviderRuntime 记录类
+     * <p>
+     * 用于封装 AI 服务提供商, 对应的 API 密钥以及运行时统计信息. 该记录类在运行时
+     * 维护与 AI 服务提供商相关的核心数据, 便于统一管理和访问.<br>
+     * 典型使用场景包括:<br>
+     * <ul>
+     *   <li> 在多租户环境下为每个租户维护独立的 API 密钥.</li>
+     *   <li> 收集并统计每个服务提供商的调用次数, 错误率等指标.</li>
+     *   <li> 在服务调用链路中传递提供商信息, 支持动态切换或降级.</li>
+     * </ul>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @date 2025.10.24
+     * @since 1.0.0
+     */
     private record ProviderRuntime(AIServiceProvider provider, String apiKey, ProviderStatistics statistics) {
     }
 
@@ -259,11 +279,14 @@ public class TaskExecutor {
         this.indicator = indicator;
         this.settings = SettingsState.getInstance();
         this.providerSettings = this.settings.providerSettings;
+        AIConsoleLoggerImpl consoleLogger = new AIConsoleLoggerImpl(project);
         AIProviderConfig defaultConfig = providerSettings.getDefaultProviderConfig(providerSettings.providerType);
         if (defaultConfig.configurationVerified) {
             this.aiService = AIServiceFactory.createProvider(defaultConfig,
                                                              providerSettings.modelParameters,
-                                                             providerSettings.runtimeSettings);
+                                                             providerSettings.runtimeSettings,
+                                                             consoleLogger,
+                                                             providerSettings.performanceMode);
             this.apiKey = credentialManager.getApiKey(defaultConfig.credentialId);
         } else {
             this.aiService = null;
@@ -359,7 +382,7 @@ public class TaskExecutor {
         }
 
         indicator.setFraction(1.0);
-        indicator.setText("处理完成");
+        indicator.setText(JavaDocBundle.message("task.progress.completed"));
 
         log.info("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                  completedCount.get(), failedCount.get(), skippedCount.get());
@@ -410,7 +433,7 @@ public class TaskExecutor {
             runtimes.forEach(runtime -> runtime.statistics().finish());
 
             indicator.setFraction(1.0);
-            indicator.setText("处理完成");
+            indicator.setText(JavaDocBundle.message("task.progress.completed"));
 
             if (providerSettings.showProviderStatistics) {
                 Map<String, ProviderStatistics> stats = new ConcurrentHashMap<>();
@@ -439,20 +462,38 @@ public class TaskExecutor {
         }
     }
 
+    /**
+     * 根据提供的配置创建 ProviderRuntime 实例
+     * <p>
+     * 验证配置是否已通过验证, 若未通过则返回 null. 否则, 使用配置创建 AI 服务提供者, 并结合 API 密钥和统计信息生成 ProviderRuntime 对象.
+     *
+     * @param config AI 提供者的配置信息
+     * @return 创建的 ProviderRuntime 实例, 若配置未通过验证则返回 null
+     * @throws NullPointerException 若 config 为 null
+     */
     private ProviderRuntime createRuntime(@NotNull AIProviderConfig config) {
         if (!config.configurationVerified) {
             return null;
         }
+        AIConsoleLoggerImpl consoleLogger = new AIConsoleLoggerImpl(project);
         AIServiceProvider provider = AIServiceFactory.createProvider(config,
                                                                      providerSettings.modelParameters,
-                                                                     providerSettings.runtimeSettings);
-        if (provider == null) {
-            return null;
-        }
+                                                                     providerSettings.runtimeSettings,
+                                                                     consoleLogger,
+                                                                     providerSettings.performanceMode);
         String key = credentialManager.getApiKey(config.credentialId);
         return new ProviderRuntime(provider, key, new ProviderStatistics(provider.getProviderType().getDisplayName()));
     }
 
+    /**
+     * 处理带有提供者的任务列表
+     * <p>
+     * 遍历任务列表, 逐个处理每个任务, 并在处理过程中更新进度指示器的状态.
+     *
+     * @param tasks     任务列表
+     * @param runtime   提供者运行时信息
+     * @param taskIndex 任务索引, 用于控制任务处理的顺序和进度
+     */
     private void processTasksWithProvider(@NotNull List<DocumentationTask> tasks,
                                           @NotNull ProviderRuntime runtime,
                                           @NotNull AtomicInteger taskIndex) {
@@ -515,6 +556,27 @@ public class TaskExecutor {
             }
 
             AIChatRequest request = AIRequestComposer.compose(settings, task);
+
+            // 输出代码位置信息（可点击链接）
+            if (virtualFile != null && settings.providerSettings.runtimeSettings.verboseLogging) {
+                PsiElement element = task.getElement();
+                ApplicationManager.getApplication().runReadAction(() -> {
+                    try {
+                        Document document = FileDocumentManager.getInstance()
+                            .getDocument(element.getContainingFile().getVirtualFile());
+                        if (document != null) {
+                            int startOffset = element.getTextRange().getStartOffset();
+                            int lineNumber = document.getLineNumber(startOffset);
+                            String fileName = virtualFile.getName();
+                            String locationMessage = String.format("处理代码位置: %s:%d", fileName, lineNumber + 1);
+                            JavaDocConsoleView.printHyperlink(project, locationMessage, virtualFile, lineNumber);
+                        }
+                    } catch (Exception e) {
+                        // 忽略异常，避免影响主功能
+                    }
+                });
+            }
+            
             String documentation = provider.generateContent(request, apiKey, null);
 
             if (documentation.trim().isEmpty()) {

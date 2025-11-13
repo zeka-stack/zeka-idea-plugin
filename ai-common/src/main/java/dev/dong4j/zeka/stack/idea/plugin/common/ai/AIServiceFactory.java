@@ -25,13 +25,30 @@ public final class AIServiceFactory {
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @NotNull AIModelParameters modelParameters,
                                                    @NotNull AIRuntimeSettings runtimeSettings) {
+        return createProvider(config, modelParameters, runtimeSettings, null, false);
+    }
+
+    @Nullable
+    public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
+                                                   @NotNull AIModelParameters modelParameters,
+                                                   @NotNull AIRuntimeSettings runtimeSettings,
+                                                   @Nullable AIConsoleLogger consoleLogger) {
+        return createProvider(config, modelParameters, runtimeSettings, consoleLogger, false);
+    }
+
+    @Nullable
+    public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
+                                                   @NotNull AIModelParameters modelParameters,
+                                                   @NotNull AIRuntimeSettings runtimeSettings,
+                                                   @Nullable AIConsoleLogger consoleLogger,
+                                                   boolean performanceMode) {
         AIProviderType providerType = config.providerType != null ? config.providerType : AIProviderType.QIANWEN;
         return switch (providerType) {
-            case CUSTOM -> new CustomProvider(config, modelParameters, runtimeSettings);
-            case QIANWEN -> new QianWenProvider(config, modelParameters, runtimeSettings);
-            case SILICONFLOW -> new SiliconFlowProvider(config, modelParameters, runtimeSettings);
-            case OLLAMA -> new OllamaProvider(config, modelParameters, runtimeSettings);
-            case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings);
+            case CUSTOM -> new CustomProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
+            case QIANWEN -> new QianWenProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
+            case SILICONFLOW -> new SiliconFlowProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
+            case OLLAMA -> new OllamaProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
+            case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
         };
     }
 }

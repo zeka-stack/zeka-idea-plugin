@@ -59,6 +59,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
@@ -697,13 +698,23 @@ public final class AIProviderConfigPanel {
 
         new Thread(() -> {
             try {
+                // 保存当前选择的模型名称
+                String currentModelName = getSelectedModelName();
                 List<String> models = provider.getAvailableModels(apiKey);
                 models.sort(String::compareToIgnoreCase);
                 SwingUtilities.invokeLater(() -> {
                     modelComboBox.removeAllItems();
                     if (!models.isEmpty()) {
                         models.forEach(modelComboBox::addItem);
-                        modelComboBox.setSelectedItem(models.get(0));
+                        // 优先选择默认模型名称，如果不存在则选择第一个
+                        String defaultModelName = config.modelName;
+                        if (defaultModelName != null && !defaultModelName.trim().isEmpty() && models.contains(defaultModelName)) {
+                            modelComboBox.setSelectedItem(defaultModelName);
+                        } else if (currentModelName != null && !currentModelName.trim().isEmpty() && models.contains(currentModelName)) {
+                            modelComboBox.setSelectedItem(currentModelName);
+                        } else {
+                            modelComboBox.setSelectedItem(models.get(0));
+                        }
                         refreshModelsSuccess = true;
                         JOptionPane.showMessageDialog(mainPanel,
                                                       AICommonBundle.message("settings.refresh.models.success", models.size()),
@@ -855,6 +866,21 @@ public final class AIProviderConfigPanel {
     }
 
     @NotNull
+    private String getSelectedModelName() {
+        Object selected = modelComboBox.getSelectedItem();
+        if (selected != null) {
+            return selected.toString().trim();
+        }
+        Object editorItem = modelComboBox.getEditor().getItem();
+        if (editorItem != null) {
+            return editorItem.toString().trim();
+        }
+        AIProviderType providerType = resolveSelectedProviderType();
+        AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
+        return config.modelName != null ? config.modelName : "";
+    }
+
+    @NotNull
     private static String normalizeBaseUrl(@Nullable String baseUrl) {
         if (baseUrl == null || baseUrl.isBlank()) {
             return "";
@@ -862,18 +888,26 @@ public final class AIProviderConfigPanel {
         return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 
-    private static class ProviderListCellRenderer extends DefaultListCellRenderer {
+    private class ProviderListCellRenderer extends DefaultListCellRenderer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof String displayName) {
                 label.setText(displayName);
+                // 设置图标
+                AIProviderType providerType = AIProviderType.fromDisplayName(displayName);
+                if (providerType != null) {
+                    Icon icon = AICommonIcons.getProviderIcon(providerType);
+                    if (icon != null) {
+                        label.setIcon(icon);
+                    }
+                }
             }
             return label;
         }
     }
 
-    private static class ProviderTableCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    private class ProviderTableCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row,
                                                        int column) {
@@ -882,6 +916,13 @@ public final class AIProviderConfigPanel {
                 String displayName = config.providerType != null ? config.providerType.getDisplayName() : AICommonBundle.message(
                     "settings.available.providers.unknown");
                 label.setText(displayName);
+                // 设置图标
+                if (config.providerType != null) {
+                    Icon icon = AICommonIcons.getProviderIcon(config.providerType);
+                    if (icon != null) {
+                        label.setIcon(icon);
+                    }
+                }
             }
             return component;
         }

@@ -856,6 +856,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         return doGetApiKey(uuid);
     }
 
+    /**
+     * 根据指定的 UUID 获取 API 密钥
+     * <p>
+     * 如果提供的 UUID 为空或仅包含空白字符, 则返回 null. 否则, 从密码保险箱中查找对应的凭证, 并返回密码作为 API 密钥.
+     *
+     * @param uuid 用于查找凭证的 UUID, 可以为 null
+     * @return 对应的 API 密钥, 如果未找到凭证或 UUID 无效则返回 null
+     */
     @Nullable
     private static String doGetApiKey(@Nullable String uuid) {
         if (uuid == null || uuid.trim().isEmpty()) {
