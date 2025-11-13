@@ -3,67 +3,43 @@ package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.ui.ComboBox;
-import com.intellij.ui.Gray;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.JBPasswordField;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTabbedPane;
-import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
-import com.intellij.util.ui.ImageUtil;
 import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 import javax.swing.BorderFactory;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
-import javax.swing.JTable;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
-import dev.dong4j.zeka.stack.idea.plugin.ai.ValidationResult;
-import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
-import lombok.Getter;
 
 /**
  * JavaDoc 设置面板 UI
@@ -79,36 +55,8 @@ public class JavaDocSettingsPanel {
     /** 主界面主面板，用于承载主要功能组件和布局 */
     private JPanel mainPanel;
 
-    // AI 提供商配置
-    /** AI 服务商下拉选择框 */
-    private ComboBox<String> providerComboBox;
-    /** 模型下拉框组件，用于选择不同的模型 */
-    private ComboBox<String> modelComboBox;
-    /** 基础 URL 输入框 */
-    private JBTextField baseUrlField;
-    /** API 密钥输入框 */
-    @Getter
-    private JBPasswordField apiKeyField;
-    /** 测试连接按钮 */
-    private JButton testConnectionButton;
-    /** 刷新模型按钮 */
-    private JButton refreshModelsButton;
-
-    // 可用服务商列表相关组件
-    /** 显示可用服务商列表的复选框 */
-    private JBCheckBox showAvailableProvidersCheckBox;
-    /** 可用服务商列表表格 */
-    private JBTable availableProvidersTable;
-    /** 可用服务商列表面板（包含表格和工具栏） */
-    private JPanel availableProvidersPanel;
-    /** 可用服务商列表表格模型 */
-    private AvailableProvidersTableModel availableProvidersTableModel;
-
-    // 验证状态标记
-    /** 配置是否已验证的标记 */
-    private boolean configurationVerified = false;
-    /** 刷新模型状态：true=成功，false=失败，null=未刷新（默认黄色） */
-    private Boolean refreshModelsSuccess = null;
+    /** 通用 AI 提供商配置面板 */
+    private final AIProviderConfigPanel providerConfigPanel;
 
     // 功能配置
     /** 生成针对类的复选框 */
@@ -192,11 +140,14 @@ public class JavaDocSettingsPanel {
      * 调用创建用户界面和设置事件监听器的方法，完成面板的初始化
      */
     public JavaDocSettingsPanel() {
+        AICredentialManager credentialManager = new AICredentialManager("AI Javadoc", "AI_JAVADOC_API_KEY_");
+        this.providerConfigPanel = new AIProviderConfigPanel(credentialManager);
         createUI();
         setupListeners();
-        // 初始化字段的可用性和可编辑状态
-        updateApiKeyFieldEnabled();
-        updateBaseUrlFieldEditable();
+    }
+
+    public JPanel getPanel() {
+        return mainPanel;
     }
 
     /**
@@ -206,70 +157,6 @@ public class JavaDocSettingsPanel {
      * 连接测试按钮、模型刷新按钮、生成选项、语言支持、高级配置参数以及提示模板区域。
      */
     private void createUI() {
-        // AI 提供商配置
-        providerComboBox = new ComboBox<>(AIProviderType.getAllDisplayNames().toArray(new String[0]));
-        // 设置自定义渲染器，显示图标+名称
-        providerComboBox.setRenderer(new ProviderListCellRenderer());
-
-        // 创建可编辑的模型下拉框，用户可以输入任何模型名称
-        modelComboBox = new ComboBox<>();
-        modelComboBox.setEditable(true);  // 允许用户输入自定义模型名称
-        updateModelList();
-
-        baseUrlField = new JBTextField();
-        baseUrlField.setToolTipText(JavaDocBundle.message("settings.base.url.tooltip"));
-
-        apiKeyField = new JBPasswordField();
-        apiKeyField.setToolTipText(JavaDocBundle.message("settings.api.key.tooltip"));
-
-        testConnectionButton = new JButton(JavaDocBundle.message("settings.test.connection"));
-        testConnectionButton.addActionListener(e -> testConnection());
-
-        refreshModelsButton = new JButton(JavaDocBundle.message("settings.refresh.models"));
-        refreshModelsButton.addActionListener(e -> refreshAvailableModels());
-        // 初始化刷新按钮状态为黄色（未刷新）
-        updateRefreshButtonState();
-
-        // 创建可用服务商列表组件
-        showAvailableProvidersCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.available.providers"));
-        availableProvidersTableModel = new AvailableProvidersTableModel();
-        availableProvidersTable = new JBTable(availableProvidersTableModel);
-        availableProvidersTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
-        // 为第一列（提供商列）设置自定义渲染器，显示图标+名称
-        availableProvidersTable.getColumnModel().getColumn(0).setCellRenderer(new ProviderTableCellRenderer());
-
-        // 创建带工具栏的面板
-        ToolbarDecorator decorator = ToolbarDecorator.createDecorator(availableProvidersTable)
-            .setRemoveAction(button -> {
-                int selectedRow = availableProvidersTable.getSelectedRow();
-                if (selectedRow >= 0) {
-                    removeAvailableProvider(selectedRow);
-                }
-            }).addExtraAction(new AnAction(JavaDocBundle.message("settings.available.providers.clear.all"),
-                                           JavaDocBundle.message("settings.available.providers.clear.all.description"),
-                                           com.intellij.icons.AllIcons.Actions.GC) {
-                @Override
-                public void actionPerformed(@NotNull AnActionEvent e) {
-                    clearAllAvailableProviders();
-                }
-
-                @Override
-                public void update(@NotNull AnActionEvent e) {
-                    // 根据表格状态启用/禁用按钮
-                    boolean hasData = availableProvidersTableModel.getRowCount() > 0;
-                    e.getPresentation().setEnabled(hasData);
-                }
-
-                @Override
-                public @NotNull ActionUpdateThread getActionUpdateThread() {
-                    // 需要访问 Swing 组件（表格模型），必须在 EDT 中执行
-                    return ActionUpdateThread.EDT;
-                }
-            });
-
-        availableProvidersPanel = decorator.createPanel();
-        availableProvidersPanel.setVisible(false); // 默认隐藏
-
         // 功能配置
         generateForClassCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.class"));
         generateForMethodCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.method"));
@@ -400,12 +287,7 @@ public class JavaDocSettingsPanel {
      * @return 基础连接配置面板
      */
     private JPanel createBasicConnectionConfigPanel() {
-        JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.provider.label")), providerComboBox)
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.base.url.label")), baseUrlField)
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.api.key.label")), createApiKeyPanel())
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.model.label")), createModelPanel())
-            .addSeparator(10)
+        JPanel runtimePanel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.max.retries")),
                                  createAdvancedConfigPanel(maxRetriesSpinner,
                                                            "settings.max.retries.hint"))
@@ -417,18 +299,16 @@ public class JavaDocSettingsPanel {
             .addComponent(createPerformanceModeSubConfigPanel())
             .getPanel();
 
-        // 创建带边框的面板
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 12));
+        contentPanel.add(providerConfigPanel.getPanel(), BorderLayout.NORTH);
+        contentPanel.add(runtimePanel, BorderLayout.CENTER);
 
-        // 添加带标题的边框
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(contentPanel, BorderLayout.CENTER);
+        wrapper.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.basic.connection.config")
-                                                                    );
-        panel.setBorder(titledBorder);
-
-        return panel;
+            JavaDocBundle.message("settings.basic.connection.config")));
+        return wrapper;
     }
 
     /**
@@ -624,34 +504,6 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 创建模型配置面板
-     * <p>
-     * 用于构建包含模型选择下拉框和测试连接按钮的面板。
-     *
-     * @return 模型配置面板
-     */
-    private JPanel createModelPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 0));
-        panel.add(modelComboBox, BorderLayout.CENTER);
-        panel.add(testConnectionButton, BorderLayout.EAST);
-        return panel;
-    }
-
-    /**
-     * 创建API密钥输入面板
-     * <p>
-     * 初始化并返回一个包含API密钥输入字段和"获取最新模型"按钮的面板。
-     *
-     * @return 包含API密钥输入字段和按钮的面板
-     */
-    private JPanel createApiKeyPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 0));
-        panel.add(apiKeyField, BorderLayout.CENTER);
-        panel.add(refreshModelsButton, BorderLayout.EAST);
-        return panel;
-    }
-
-    /**
      * 创建高级配置面板，包含一个带宽度限制的 JSpinner 和提示标签
      * <p>
      * 该方法用于构建一个布局面板，左侧放置一个设置宽度的 JSpinner 控件，右侧放置一个带有提示信息的标签。
@@ -783,23 +635,17 @@ public class JavaDocSettingsPanel {
     private JPanel createPerformanceModeSubConfigPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        // 添加左侧缩进（2个空格，约22像素）
         JPanel indentPanel = new JPanel(new BorderLayout());
         indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
 
-        // 创建垂直布局面板，包含两个复选框
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
-            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
-            .addComponent(availableProvidersPanel)
             .getPanel();
 
         indentPanel.add(contentPanel, BorderLayout.CENTER);
         panel.add(indentPanel, BorderLayout.CENTER);
 
-        // 初始状态：根据性能模式复选框的状态设置可用性
         updateShowProviderStatisticsEnabled();
-        updateShowAvailableProvidersEnabled();
 
         return panel;
     }
@@ -871,31 +717,6 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 更新显示可用服务商复选框的可用性
-     * <p>
-     * 根据性能模式复选框的状态，设置显示可用服务商复选框的可用性和提示文本颜色。
-     * 当性能模式未启用时，显示可用服务商复选框及其提示文本都会显示为禁用状态。
-     */
-    private void updateShowAvailableProvidersEnabled() {
-        boolean enabled = performanceModeCheckBox.isSelected();
-        showAvailableProvidersCheckBox.setEnabled(enabled);
-
-        // 更新显示可用服务商复选框的提示文本颜色
-        // 如果性能模式未启用，提示文本显示为禁用状态
-        // 如果性能模式启用，则根据显示可用服务商复选框的状态更新颜色
-        JBLabel hintLabel = checkBoxHintLabelMap.get(showAvailableProvidersCheckBox);
-        if (hintLabel != null) {
-            if (enabled) {
-                // 性能模式启用时，根据显示可用服务商复选框的状态更新颜色
-                updateHintLabelColor(hintLabel, showAvailableProvidersCheckBox.isSelected());
-            } else {
-                // 性能模式未启用时，提示文本显示为禁用状态
-                hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            }
-        }
-    }
-
-    /**
      * 更新所有复选框的提示文本颜色
      * <p>
      * 根据每个复选框的当前选中状态，更新对应的提示文本颜色。
@@ -909,17 +730,13 @@ public class JavaDocSettingsPanel {
      */
     private void updateAllCheckBoxHintColors() {
         checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> {
-            // 显示统计信息和显示可用服务商复选框需要特殊处理
-            if (checkBox == showProviderStatisticsCheckBox || checkBox == showAvailableProvidersCheckBox) {
-                // 如果性能模式未启用，提示文本显示为禁用状态
+            if (checkBox == showProviderStatisticsCheckBox) {
                 if (!performanceModeCheckBox.isSelected()) {
                     hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
                 } else {
-                    // 性能模式启用时，根据复选框状态更新颜色
                     updateHintLabelColor(hintLabel, checkBox.isSelected());
                 }
             } else {
-                // 其他复选框根据选中状态更新颜色
                 updateHintLabelColor(hintLabel, checkBox.isSelected());
             }
         });
@@ -1125,48 +942,16 @@ public class JavaDocSettingsPanel {
      * 包括提供商、Base URL、API Key、模型选择以及代码优化配置等变化的监听。
      */
     private void setupListeners() {
-        // 提供商变更时更新模型列表和默认值
-        providerComboBox.addActionListener(e -> {
-            updateModelList();
-            updateDefaultValues(); // 这个方法会加载新服务商的配置和验证状态，并更新按钮状态
-            updateApiKeyFieldEnabled();
-            updateBaseUrlFieldEditable();
-            // 切换服务商时，重置刷新按钮状态为黄色（未刷新）
-            refreshModelsSuccess = null;
-            updateRefreshButtonState();
-            // 注意：不在这里清除验证状态，因为 updateDefaultValues() 已经根据新服务商的配置状态更新了
-        });
+        enableCodeCompressionCheckBox.addActionListener(e -> updateMaxClassCodeLinesEnabled());
 
-        // Base URL 变更时检查配置状态
-        baseUrlField.addActionListener(e -> checkConfigurationStatus());
-
-        // API Key 变更时检查配置状态
-        apiKeyField.addActionListener(e -> checkConfigurationStatus());
-
-        // 模型选择变更时检查配置状态
-        modelComboBox.addActionListener(e -> checkConfigurationStatus());
-
-        // 监听代码压缩配置变更
-        enableCodeCompressionCheckBox.addActionListener(e -> {
-            // 当启用/禁用代码压缩时，更新最大行数输入框的可用性
-            updateMaxClassCodeLinesEnabled();
-        });
-
-        // 监听性能模式配置变更
         performanceModeCheckBox.addActionListener(e -> {
-            // 当启用/禁用性能模式时，更新显示统计信息复选框的可用性和提示文本颜色
             updateShowProviderStatisticsEnabled();
-            // 更新显示可用服务商复选框的可用性和提示文本颜色
-            updateShowAvailableProvidersEnabled();
-
-            // 更新性能模式复选框本身的提示文本颜色
             JBLabel performanceModeHintLabel = checkBoxHintLabelMap.get(performanceModeCheckBox);
             if (performanceModeHintLabel != null) {
                 updateHintLabelColor(performanceModeHintLabel, performanceModeCheckBox.isSelected());
             }
         });
 
-        // 监听高级设置复选框状态变化，控制高级设置面板的显示/隐藏
         showAdvancedSettingsCheckBox.addActionListener(e -> {
             boolean selected = showAdvancedSettingsCheckBox.isSelected();
             advancedSettingsPanel.setVisible(selected);
@@ -1174,909 +959,35 @@ public class JavaDocSettingsPanel {
             mainPanel.repaint();
         });
 
-        // 监听显示统计信息复选框状态变化，更新其提示文本颜色
-        // 注意：只有当性能模式启用时，提示文本颜色才根据复选框状态更新
-        // 需要移除 createCheckBoxWithHint 中添加的默认监听器，然后添加自定义逻辑
-        // 但由于 createCheckBoxWithHint 已经添加了监听器，我们在这里再次添加
-        // 监听器会按顺序执行，我们需要确保逻辑正确
-        showProviderStatisticsCheckBox.addActionListener(e -> {
-            // 调用 updateShowProviderStatisticsEnabled 来统一处理
-            // 这样可以确保提示文本颜色正确更新
-            updateShowProviderStatisticsEnabled();
-        });
+        showProviderStatisticsCheckBox.addActionListener(e -> updateShowProviderStatisticsEnabled());
 
-        // 监听显示可用服务商复选框状态变化，更新其提示文本颜色和面板可见性
-        showAvailableProvidersCheckBox.addActionListener(e -> {
-            // 调用 updateShowAvailableProvidersEnabled 来统一处理
-            // 这样可以确保提示文本颜色正确更新
-            updateShowAvailableProvidersEnabled();
-            // 控制可用服务商面板的显示/隐藏
-            availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected());
-        });
-
-        // 监听显示自定义 JavaDoc 标签复选框状态变化
-        showCustomJavaDocTagsCheckBox.addActionListener(e -> customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected()));
+        showCustomJavaDocTagsCheckBox.addActionListener(e ->
+                                                            customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected())
+                                                       );
     }
 
-    /**
-     * 更新模型列表，根据选择的提供商标识符加载对应的模型选项
-     * <p>
-     * 该方法首先获取用户选择的提供商显示名称，将其转换为对应的提供商标识符。
-     * 然后根据该标识符获取对应的提供商类型，并加载该类型支持的所有模型。
-     * 最后将用户之前选择的模型恢复到下拉框中，若为空则使用默认模型。
-     * 同时设置模型输入框的提示文本。
-     */
-    private void updateModelList() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        if (displayName == null) {
-            return;
-        }
-
-        // 将显示名称转换为提供商标识符
-        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
-        if (providerId == null) {
-            return;
-        }
-
-        AIProviderType providerType = AIProviderType.fromProviderId(providerId);
-        if (providerType == null) {
-            return;
-        }
-
-        // 保存当前输入的模型名称
-        String currentModel = (String) modelComboBox.getSelectedItem();
-
-        // 清空并添加推荐的模型列表（仅作为参考）
-        modelComboBox.removeAllItems();
-        for (String model : providerType.getSupportedModels()) {
-            modelComboBox.addItem(model);
-        }
-
-        // 恢复用户之前输入的值，如果为空则使用默认值
-        if (currentModel != null && !currentModel.trim().isEmpty()) {
-            modelComboBox.setSelectedItem(currentModel);
-        } else {
-            modelComboBox.setSelectedItem(providerType.getDefaultModel());
-        }
-    }
-
-    /**
-     * 刷新可用模型列表（用户手动触发）
-     *
-     * <p>当用户点击"获取最新模型"按钮时调用此方法。
-     * 会显示加载状态，并在完成后恢复按钮状态。
-     */
-    private void refreshAvailableModels() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        String baseUrl = baseUrlField.getText().trim();
-
-        if (displayName == null || baseUrl.isEmpty()) {
-            JOptionPane.showMessageDialog(
-                getParentWindow(),
-                JavaDocBundle.message("error.base.url.missing"),
-                JavaDocBundle.message("settings.error.title"),
-                JOptionPane.WARNING_MESSAGE
-                                         );
-            return;
-        }
-
-        // 将显示名称转换为提供商标识符
-        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
-        if (providerId == null) {
-            return;
-        }
-
-        // 检查是否需要 API Key
-        AIProviderType providerType = AIProviderType.fromProviderId(providerId);
-        boolean needsApiKey = providerType != null && providerType.requiresApiKey();
-        if (needsApiKey && apiKeyField.getPassword().length == 0) {
-            JOptionPane.showMessageDialog(
-                getParentWindow(),
-                JavaDocBundle.message("error.api.key.missing"),
-                JavaDocBundle.message("settings.error.title"),
-                JOptionPane.WARNING_MESSAGE
-                                         );
-            return;
-        }
-
-        // 设置按钮状态
-        refreshModelsButton.setEnabled(false);
-        refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models.testing"));
-        // 测试中时显示灰色圆点
-        refreshModelsButton.setIcon(createStatusDotIcon(Gray._158)); // Material Design Grey 500
-
-        // 在后台线程中获取模型列表
-        new Thread(() -> {
-            try {
-                // 简单测试, 只需要一个默认配置即可
-                SettingsState testSettings = new SettingsState();
-                // 使用设置面板的当前配置创建一个服务提供商配置
-                SettingsState.ProviderConfig snapshotProviderConfig = getProviderConfigSnapshot();
-                AIServiceProvider provider = AIServiceFactory.createProvider(testSettings, snapshotProviderConfig);
-
-                // 检查提供商创建是否成功
-                if (provider == null) {
-                    SwingUtilities.invokeLater(() -> {
-                        // 使用服务商图标
-                        Icon providerIcon = getCurrentProviderIcon();
-                        JOptionPane.showMessageDialog(
-                            getParentWindow(),
-                            JavaDocBundle.message("settings.error.provider.create.failed"),
-                            JavaDocBundle.message("settings.error.title"),
-                            JOptionPane.ERROR_MESSAGE,
-                            providerIcon
-                                                     );
-                        refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models"));
-                        refreshModelsButton.setEnabled(true);
-                        // 刷新失败，设置为红色
-                        refreshModelsSuccess = false;
-                        updateRefreshButtonState();
-                    });
-                    return;
-                }
-
-                List<String> availableModels = provider.getAvailableModels(new String(apiKeyField.getPassword()).trim());
-
-                // 按名称排序模型列表
-                availableModels.sort(String::compareToIgnoreCase);
-
-                // 在 UI 线程中更新下拉框
-                SwingUtilities.invokeLater(() -> {
-                    if (!availableModels.isEmpty()) {
-                        // 保存当前选择的模型
-                        String currentModel = (String) modelComboBox.getSelectedItem();
-
-                        // 清空当前列表
-                        modelComboBox.removeAllItems();
-
-                        // 添加可用模型
-                        for (String model : availableModels) {
-                            modelComboBox.addItem(model);
-                        }
-
-                        // 尝试恢复用户之前选择的模型
-                        if (currentModel != null && !currentModel.trim().isEmpty()) {
-                            // 检查当前模型是否在可用列表中
-                            boolean found = false;
-                            for (String model : availableModels) {
-                                if (model.equals(currentModel)) {
-                                    found = true;
-                                    break;
-                                }
-                            }
-
-                            if (found) {
-                                modelComboBox.setSelectedItem(currentModel);
-                            } else {
-                                // 如果当前模型不可用，选择第一个可用模型
-                                modelComboBox.setSelectedIndex(0);
-                            }
-                        } else {
-                            // 如果没有当前选择，使用默认模型
-                            modelComboBox.setSelectedItem(provider.getDefaultModel());
-                        }
-
-                        // 更新提示文本
-                        if (modelComboBox.getEditor() != null &&
-                            modelComboBox.getEditor().getEditorComponent() instanceof JTextField textField) {
-                            textField.setToolTipText(JavaDocBundle.message("settings.refresh.models.tooltip"));
-                        }
-
-                        // 刷新成功，设置为绿色（不显示消息框）
-                        refreshModelsSuccess = true;
-                    } else {
-                        // 模型列表为空，视为失败，使用服务商图标
-                        Icon providerIcon = getCurrentProviderIcon();
-                        JOptionPane.showMessageDialog(
-                            getParentWindow(),
-                            JavaDocBundle.message("settings.refresh.models.empty"),
-                            JavaDocBundle.message("settings.error.title"),
-                            JOptionPane.WARNING_MESSAGE,
-                            providerIcon
-                                                     );
-                        refreshModelsSuccess = false;
-                    }
-
-                    refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models"));
-                    refreshModelsButton.setEnabled(true);
-                    updateRefreshButtonState();
-                });
-
-            } catch (Exception e) {
-                SwingUtilities.invokeLater(() -> {
-                    // 使用服务商图标
-                    Icon providerIcon = getCurrentProviderIcon();
-                    JOptionPane.showMessageDialog(
-                        getParentWindow(),
-                        JavaDocBundle.message("settings.refresh.models.failed", e.getMessage()),
-                        JavaDocBundle.message("settings.error.title"),
-                        JOptionPane.ERROR_MESSAGE,
-                        providerIcon
-                                                 );
-                    refreshModelsButton.setText(JavaDocBundle.message("settings.refresh.models"));
-                    refreshModelsButton.setEnabled(true);
-                    // 刷新失败，设置为红色
-                    refreshModelsSuccess = false;
-                    updateRefreshButtonState();
-                });
-            }
-        }).start();
-    }
-
-    /**
-     * 更新默认值配置，根据选择的提供者设置对应的配置信息
-     * <p>
-     * 该方法首先获取当前选择的显示名称，将其转换为对应的提供者标识符。如果标识符有效，则获取对应的提供者类型。
-     * 接着，尝试从已保存的配置中查找对应的配置信息，如果存在则使用该配置；否则使用提供者类型中的默认配置。
-     * 最后，将配置信息填充到对应的 UI 控件中。
-     */
-    private void updateDefaultValues() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        if (displayName == null) {
-            return;
-        }
-
-        // 将显示名称转换为提供商标识符
-        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
-        if (providerId == null) {
-            return;
-        }
-
-        AIProviderType providerType = AIProviderType.fromProviderId(providerId);
-        if (providerType == null) {
-            return;
-        }
-
-        // 从 defaultProviders 获取该服务商类型的默认配置
-        // 这样可以确保切换服务商时不会丢失该服务商的配置信息（包括 API Key）
-        SettingsState settings = SettingsState.getInstance();
-        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(providerType);
-
-        // 加载配置到 UI
-        baseUrlField.setText(defaultConfig.baseUrl);
-        modelComboBox.setSelectedItem(defaultConfig.modelName);
-
-        // 从 PasswordSafe 读取 API Key（使用 defaultConfig 的 UUID）
-        // 异步加载 PasswordSafe 中的 API Key
-        loadApiKeyForProvider(defaultConfig, providerId);
-
-        // 加载验证状态
-        this.configurationVerified = defaultConfig.configurationVerified;
-
-        // 更新测试按钮状态
-        updateTestButtonState();
-    }
-
-    /**
-     * 异步加载指定提供商配置的 API Key，并在 UI 中更新显示
-     *
-     * @param providerConfig     提供商配置
-     * @param expectedProviderId 当前期望的提供商标识符
-     */
-    private void loadApiKeyForProvider(@NotNull SettingsState.ProviderConfig providerConfig,
-                                       @NotNull String expectedProviderId) {
-        apiKeyField.setText("");
-
-        if (providerConfig.md5 == null || providerConfig.md5.trim().isEmpty()) {
-            return;
-        }
-
-        SettingsState.loadApiKeyAsync(providerConfig.md5, apiKey -> {
-            String currentProviderId = getSelectedProviderId();
-            if (!expectedProviderId.equals(currentProviderId)) {
-                return;
-            }
-            apiKeyField.setText(apiKey != null ? apiKey : "");
-            // API Key 加载完成后，检查配置状态
-            checkConfigurationStatus();
-        });
-    }
-
-    @Nullable
-    private String getSelectedProviderId() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        return displayName == null ? null : AIProviderType.getProviderIdByDisplayName(displayName);
-    }
-
-    /**
-     * 查找已保存的提供商配置
-     *
-     * @param providerId 提供商ID
-     * @return 已保存的配置，如果没有找到则返回null
-     */
-    private SettingsState.ProviderConfig findSavedProviderConfig(String providerId) {
-        SettingsState settings = SettingsState.getInstance();
-        // 优先查找已验证的配置，如果没有则查找所有配置（包括未验证的）
-        return settings.getAvailableProviders().stream()
-            .filter(config -> config.providerType != null && providerId.equals(config.providerType.getProviderId()))
-            .findFirst()
-            .orElse(settings.availableProviders.stream()
-                        .filter(config -> config.providerType != null && providerId.equals(config.providerType.getProviderId()))
-                        .findFirst()
-                        .orElse(null));
-    }
-
-    /**
-     * 更新 API Key 字段的可用状态
-     * <p>
-     * 根据当前选择的提供商类型，设置 API Key 字段是否可用。
-     * 某些本地服务（如 Ollama、LM Studio）不需要 API Key，这些服务的 API Key 字段会被禁用。
-     * 其他需要认证的服务（如通义千问、硅基流动、自定义服务）的 API Key 字段会被启用。
-     */
-    private void updateApiKeyFieldEnabled() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        if (displayName == null) {
-            apiKeyField.setEnabled(false);
-            testConnectionButton.setEnabled(false);
-            return;
-        }
-
-        // 将显示名称转换为提供商标识符
-        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
-        AIProviderType providerType = providerId == null ? null : AIProviderType.fromProviderId(providerId);
-
-        // 根据提供商类型的 requiresApiKey 属性设置可用性
-        boolean requiresKey = providerType != null && providerType.requiresApiKey();
-        apiKeyField.setEnabled(requiresKey);
-        testConnectionButton.setEnabled(true);
-    }
-
-    /**
-     * 更新 Base URL 字段的可编辑状态
-     * <p>
-     * 根据当前选择的提供商类型，设置 Base URL 字段是否可编辑。
-     * 某些官方服务（如通义千问、硅基流动）的 Base URL 是固定的，不允许修改。
-     * 本地服务（如 Ollama、LM Studio）和自定义服务的 Base URL 可以修改。
-     */
-    private void updateBaseUrlFieldEditable() {
-        String displayName = (String) providerComboBox.getSelectedItem();
-        if (displayName == null) {
-            baseUrlField.setEditable(false);
-            return;
-        }
-
-        // 将显示名称转换为提供商标识符
-        String providerId = AIProviderType.getProviderIdByDisplayName(displayName);
-        AIProviderType providerType = providerId == null ? null : AIProviderType.fromProviderId(providerId);
-
-        // 根据提供商类型的 baseUrlEditable 属性设置可编辑性
-        boolean editable = providerType != null && providerType.isBaseUrlEditable();
-        baseUrlField.setEditable(editable);
-    }
-
-    /**
-     * 测试与 AI 服务提供商的连接
-     * <p>
-     * 该方法用于验证当前配置是否能够成功创建 AI 服务提供商，并测试其配置是否有效。
-     * 在测试过程中，会临时允许创建未验证的提供商，测试完成后会根据结果更新配置状态。
-     */
-    private void testConnection() {
-        // 简单测试, 只需要一个默认配置即可
-        SettingsState testSettings = new SettingsState();
-        // 使用设置面板的当前配置创建一个服务提供商配置
-        SettingsState.ProviderConfig snapshotProviderConfig = getProviderConfigSnapshot();
-        AIServiceProvider provider = AIServiceFactory.createProvider(testSettings, snapshotProviderConfig);
-
-        // 检查提供商创建是否成功
-        if (provider == null) {
-            JOptionPane.showMessageDialog(
-                getParentWindow(),
-                JavaDocBundle.message("settings.error.provider.create.failed.details"),
-                JavaDocBundle.message("settings.error.title"),
-                JOptionPane.ERROR_MESSAGE
-                                         );
-            return;
-        }
-
-        testConnectionButton.setEnabled(false);
-        testConnectionButton.setText(JavaDocBundle.message("settings.test.connection.testing"));
-        // 测试中时显示灰色圆点
-        testConnectionButton.setIcon(createStatusDotIcon(Gray._158)); // Material Design Grey 500
-
-        // 在后台线程测试
-        new Thread(() -> {
-            try {
-                ValidationResult result = provider.validateConfiguration(new String(apiKeyField.getPassword()).trim());
-
-                SwingUtilities.invokeLater(() -> {
-                    if (result.isSuccess()) {
-                        // 测试成功，标记配置为已验证
-                        markConfigurationAsVerified();
-
-                        // 添加到可用提供商列表
-                        addToAvailableProviders(snapshotProviderConfig);
-                    } else {
-                        // 测试失败，清除验证状态
-                        markConfigurationAsUnverified();
-
-                        // 从可用提供商列表中移除
-                        removeFromAvailableProviders(snapshotProviderConfig);
-
-                        // 构建详细的错误消息
-                        String errorMessage = result.getMessage();
-                        String errorDetails = result.getErrorDetails();
-                        if (errorDetails != null && !errorDetails.isEmpty()) {
-                            errorMessage = errorMessage + "\n\n" + JavaDocBundle.message("settings.error.details") + "\n" + errorDetails;
-                        }
-
-                        // 测试失败时仍然显示错误消息，使用服务商图标
-                        Icon providerIcon = getCurrentProviderIcon();
-                        JOptionPane.showMessageDialog(
-                            getParentWindow(),
-                            errorMessage,
-                            JavaDocBundle.message("settings.test.result.title"),
-                            JOptionPane.ERROR_MESSAGE,
-                            providerIcon
-                                                     );
-                    }
-                    testConnectionButton.setText(JavaDocBundle.message("settings.test.connection"));
-                    testConnectionButton.setEnabled(true);
-                    // 更新按钮状态
-                    updateTestButtonState();
-                });
-            } catch (Exception e) {
-                SwingUtilities.invokeLater(() -> {
-                    // 测试异常，清除验证状态
-                    markConfigurationAsUnverified();
-
-                    // 从可用提供商列表中移除
-                    removeFromAvailableProviders(snapshotProviderConfig);
-
-                    String errorMessage = JavaDocBundle.message("settings.test.connection.error", e.getMessage());
-                    // 使用服务商图标
-                    Icon providerIcon = getCurrentProviderIcon();
-                    JOptionPane.showMessageDialog(
-                        getParentWindow(),
-                        errorMessage,
-                        JavaDocBundle.message("settings.test.result.title"),
-                        JOptionPane.ERROR_MESSAGE,
-                        providerIcon
-                                                 );
-                    testConnectionButton.setText(JavaDocBundle.message("settings.test.connection"));
-                    testConnectionButton.setEnabled(true);
-                    // 更新按钮状态
-                    updateTestButtonState();
-                });
-            }
-        }).start();
-    }
-
-    /**
-     * 获取主面板组件
-     * <p>
-     * 返回应用程序中主面板的引用，用于界面展示或操作。
-     *
-     * @return 主面板组件
-     */
-    public JPanel getPanel() {
-        return mainPanel;
-    }
-
-    /**
-     * 获取对话框的父窗口
-     * <p>
-     * 用于确保 JOptionPane 对话框能够正确居中显示在设置窗口中。
-     *
-     * @return 包含主面板的顶层窗口，如果无法获取则返回 null
-     */
-    private Component getParentWindow() {
-        return SwingUtilities.getWindowAncestor(mainPanel);
-    }
-
-    /**
-     * 测试通过后将当前配置添加到可用提供商列表
-     * <p>
-     * 使用 defaultProviders 的 UUID 创建配置，确保 API Key 正确关联
-     * <p>
-     * 测试通过后，除了添加到 availableProviders，还要更新 defaultProviders 中当前服务商的配置，
-     * 确保即使用户没有点击 Apply，配置也能被保存。
-     */
-    private void addToAvailableProviders(SettingsState.ProviderConfig snapshotProviderConfig) {
-        SettingsState settings = SettingsState.getInstance();
-
-        // 将 API Key 存储到 PasswordSafe（使用默认配置的 UUID）
-        String apiKey = new String(apiKeyField.getPassword()).trim();
-        if (!apiKey.trim().isEmpty()) {
-            SettingsState.setApiKey(snapshotProviderConfig.md5, apiKey);
-        }
-
-        // 设置默认备注为当前时间
-        if (snapshotProviderConfig.remark == null || snapshotProviderConfig.remark.trim().isEmpty()) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
-            snapshotProviderConfig.remark = dateFormat.format(new Date());
-        }
-
-        // 先删除相同的配置
-        removeFromAvailableProviders(snapshotProviderConfig);
-        settings.availableProviders.add(snapshotProviderConfig);
-
-        // 更新表格显示
-        availableProvidersTableModel.setData(settings.availableProviders);
-
-        // 更新 defaultProviders 中当前服务商的配置，确保配置被保存
-        // 使用 snapshotProviderConfig 的 providerType，确保配置一致
-        if (snapshotProviderConfig.providerType != null) {
-            // 使用 snapshotProviderConfig 的副本，但更新验证状态为当前状态
-            SettingsState.ProviderConfig defaultConfig = new SettingsState.ProviderConfig(snapshotProviderConfig);
-            defaultConfig.configurationVerified = this.configurationVerified;
-
-            // 更新 defaultProviders 中当前服务商的配置
-            // 这样确保即使用户没有点击 Apply，配置也能被保存
-            settings.updateDefaultProviderConfig(snapshotProviderConfig.providerType, defaultConfig);
-        }
-    }
-
-    /**
-     * 从可用提供者列表中移除指定的配置项
-     * <p>
-     * 根据提供的配置项的 MD5 值，从全局设置中的可用提供者列表中移除匹配的配置项
-     *
-     * @param snapshotProviderConfig 要移除的配置项
-     */
-    private void removeFromAvailableProviders(SettingsState.ProviderConfig snapshotProviderConfig) {
-        SettingsState settings = SettingsState.getInstance();
-        settings.availableProviders.removeIf(config -> config.md5.equals(snapshotProviderConfig.md5));
-
-        // 同步更新表格显示
-        availableProvidersTableModel.setData(settings.availableProviders);
-    }
-
-    /**
-     * 删除表格中选中的服务商配置
-     * <p>
-     * 该方法会：
-     * 1. 从表格模型中删除选中的行
-     * 2. 从全局配置中删除对应的配置
-     * 3. 从 PasswordSafe 中删除对应的 API Key
-     *
-     * @param selectedRow 选中的行索引
-     */
-    private void removeAvailableProvider(int selectedRow) {
-        if (selectedRow < 0 || selectedRow >= availableProvidersTableModel.getRowCount()) {
-            return;
-        }
-
-        // 获取要删除的配置
-        List<SettingsState.ProviderConfig> data = availableProvidersTableModel.getData();
-        SettingsState.ProviderConfig configToRemove = data.get(selectedRow);
-
-        // 确认删除
-        String providerName = configToRemove.providerType != null ?
-                              configToRemove.providerType.getDisplayName() : JavaDocBundle.message("settings.available.providers.unknown");
-        String modelName = configToRemove.modelName != null ? configToRemove.modelName : JavaDocBundle.message("settings.available" +
-                                                                                                               ".providers.unknown");
-
-        int result = JOptionPane.showConfirmDialog(
-            getParentWindow(),
-            JavaDocBundle.message("settings.available.providers.delete.confirm", providerName, modelName),
-            JavaDocBundle.message("settings.available.providers.delete.title"),
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-                                                  );
-
-        if (result != JOptionPane.YES_OPTION) {
-            return;
-        }
-
-        // 从全局配置中删除
-        SettingsState settings = SettingsState.getInstance();
-        settings.availableProviders.removeIf(config ->
-                                                 config.md5 != null && config.md5.equals(configToRemove.md5));
-
-        // 从表格模型中删除
-        availableProvidersTableModel.removeRow(selectedRow);
-    }
-
-    /**
-     * 清空所有可用服务商配置
-     * <p>
-     * 该方法会：
-     * 1. 显示确认对话框
-     * 2. 从表格模型中清空所有数据
-     * 3. 从全局配置中清空所有配置
-     * 4. 批量从 PasswordSafe 中删除所有 API Key
-     */
-    private void clearAllAvailableProviders() {
-        if (availableProvidersTableModel.getRowCount() == 0) {
-            return;
-        }
-
-        // 确认清空
-        int result = JOptionPane.showConfirmDialog(
-            getParentWindow(),
-            JavaDocBundle.message("settings.available.providers.clear.confirm",
-                                  availableProvidersTableModel.getRowCount()),
-            JavaDocBundle.message("settings.available.providers.clear.title"),
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-                                                  );
-
-        if (result != JOptionPane.YES_OPTION) {
-            return;
-        }
-
-        // 获取所有配置以删除对应的 API Key
-        List<SettingsState.ProviderConfig> allConfigs = availableProvidersTableModel.getData();
-
-        // 批量从 PasswordSafe 中删除 API Key
-        for (SettingsState.ProviderConfig config : allConfigs) {
-            if (config.md5 != null && !config.md5.trim().isEmpty()) {
-                SettingsState.deleteApiKey(config.md5);
-            }
-        }
-
-        // 从全局配置中清空
-        SettingsState settings = SettingsState.getInstance();
-        settings.availableProviders.clear();
-
-        // 从表格模型中清空
-        availableProvidersTableModel.clearAll();
-
-    }
-
-    /**
-     * 标记配置为已验证
-     * <p>
-     * 测试连接成功后调用，更新内部验证状态并同步到 defaultProviders
-     */
-    private void markConfigurationAsVerified() {
-        this.configurationVerified = true;
-
-        // 更新 defaultProviders 中的验证状态
-        SettingsState settings = SettingsState.getInstance();
-        String displayName = (String) providerComboBox.getSelectedItem();
-        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
-        AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
-
-        if (providerType != null) {
-            // 获取当前的 API Key
-            String apiKey = new String(apiKeyField.getPassword()).trim();
-
-            // 使用当前配置创建新的 ProviderConfig，确保 md5 正确生成
-            SettingsState.ProviderConfig newConfig = new SettingsState.ProviderConfig(
-                apiKey,
-                providerType,
-                modelComboBox.getEditor().getItem().toString().trim(),
-                SettingsState.normalizeBaseUrl(baseUrlField.getText().trim()),
-                true
-            );
-
-            // 将 API Key 存储到 PasswordSafe（使用新配置的 md5）
-            if (!apiKey.isEmpty()) {
-                SettingsState.setApiKey(newConfig.md5, apiKey);
-            }
-
-            // 更新 defaultProviders
-            settings.updateDefaultProviderConfig(providerType, newConfig);
-        }
-
-        // 更新按钮状态
-        updateTestButtonState();
-    }
-
-    /**
-     * 标记配置为未验证
-     */
-    private void markConfigurationAsUnverified() {
-        this.configurationVerified = false;
-        // 更新按钮状态
-        updateTestButtonState();
-    }
-
-    /**
-     * 检查当前配置状态
-     * <p>
-     * 当用户修改配置时，检查当前配置是否与已保存的已验证配置匹配。
-     * 如果匹配，恢复验证状态；如果不匹配，清除验证状态。
-     */
-    private void checkConfigurationStatus() {
-        // 获取当前配置快照
-        SettingsState.ProviderConfig currentConfig = getProviderConfigSnapshot();
-
-        // 获取当前服务商类型
-        String displayName = (String) providerComboBox.getSelectedItem();
-        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
-        AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
-
-        if (providerType == null) {
-            markConfigurationAsUnverified();
-            return;
-        }
-
-        // 从 defaultProviders 获取已保存的配置
-        SettingsState settings = SettingsState.getInstance();
-        SettingsState.ProviderConfig savedConfig = settings.getDefaultProviderConfig(providerType);
-
-        // 比较配置是否匹配（比较 Base URL、模型名称和 API Key 的 md5）
-
-        // 配置匹配，恢复验证状态
-        // 配置不匹配，清除验证状态
-        this.configurationVerified = savedConfig.configurationVerified &&
-                                     Objects.equals(SettingsState.normalizeBaseUrl(currentConfig.baseUrl),
-                                               SettingsState.normalizeBaseUrl(savedConfig.baseUrl)) &&
-                                     Objects.equals(currentConfig.modelName, savedConfig.modelName) &&
-                                     Objects.equals(currentConfig.md5, savedConfig.md5);
-
-        // 更新按钮状态
-        updateTestButtonState();
-    }
-
-    /**
-     * 更新测试按钮的状态显示
-     * <p>
-     * 根据 configurationVerified 状态在按钮上显示小圆点图标：
-     * - 绿色圆点：配置已验证（可用）
-     * - 红色圆点：配置未验证（不可用）
-     */
-    private void updateTestButtonState() {
-        if (testConnectionButton == null) {
-            return;
-        }
-
-        if (configurationVerified) {
-            // 绿色圆点表示可用
-            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80)))); // Material
-            // Design Green 500
-        } else {
-            // 红色圆点表示不可用
-            testConnectionButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54)))); // Material
-            // Design Red 500
-        }
-
-        // 恢复按钮默认样式
-        testConnectionButton.setOpaque(false);
-        testConnectionButton.setContentAreaFilled(true);
-    }
-
-    /**
-     * 创建状态指示圆点图标
-     * <p>
-     * 创建一个小的圆点图标，用于在按钮上显示状态。
-     *
-     * @param color 圆点颜色
-     * @return 圆点图标
-     */
-    private Icon createStatusDotIcon(Color color) {
-        // 圆点尺寸：4x4 像素
-        int size = 4;
-        BufferedImage image = ImageUtil.createImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = image.createGraphics();
-
-        // 设置高质量渲染
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-
-        // 绘制圆点
-        g2d.setColor(color);
-        g2d.fillOval(0, 0, size, size);
-
-        g2d.dispose();
-        return new ImageIcon(image);
-    }
-
-    /**
-     * 更新刷新模型按钮的状态显示
-     * <p>
-     * 根据 refreshModelsSuccess 状态在按钮上显示小圆点图标：
-     * - 黄色圆点：未刷新（默认状态）
-     * - 绿色圆点：刷新成功
-     * - 红色圆点：刷新失败
-     */
-    private void updateRefreshButtonState() {
-        if (refreshModelsButton == null) {
-            return;
-        }
-
-        if (refreshModelsSuccess == null) {
-            // 未刷新，显示黄色圆点
-            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(255, 193, 7), new Color(255, 193, 7)))); // Material
-            // Design Amber 500
-        } else if (refreshModelsSuccess) {
-            // 刷新成功，显示绿色圆点
-            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80)))); // Material
-            // Design Green 500
-        } else {
-            // 刷新失败，显示红色圆点
-            refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54)))); // Material
-            // Design Red 500
-        }
-    }
-
-    /**
-     * 获取当前选择的服务商图标（64x64）
-     * <p>
-     * 用于在错误消息框中显示服务商大图标。
-     *
-     * @return 当前服务商的大图标，如果未找到返回 null
-     */
-    @Nullable
-    private Icon getCurrentProviderIcon() {
-        if (providerComboBox == null) {
-            return null;
-        }
-        String displayName = (String) providerComboBox.getSelectedItem();
-        if (displayName == null) {
-            return null;
-        }
-        return AIProviderType.getLargeIconByDisplayName(displayName);
-    }
-
-
-    /**
-     * 在设置页面中获取未保存的提供商配置(快照)
-     * <p>
-     * 该方法用于从界面组件中提取当前的 AI 提供商配置信息，包括提供商类型、模型名称、基础 URL 等，并生成一个配置快照对象。
-     * 同时，如果 API Key 不为空，会将其存储到 PasswordSafe 中。
-     *
-     * @return 包含当前 AI 提供商配置信息的 SettingsState.ProviderConfig 对象
-     */
-    public SettingsState.ProviderConfig getProviderConfigSnapshot() {
-        // 将 API Key 存储到 PasswordSafe（使用默认配置的 UUID）
-        String apiKey = new String(apiKeyField.getPassword()).trim();
-
-        // AI 提供商配置 - 将显示名称转换为提供商标识符
-        String displayName = (String) providerComboBox.getSelectedItem();
-        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
-
-        // 获取用户输入的模型名称（可能是从列表选择的，也可能是手动输入的）
-        Object selectedModel = modelComboBox.getEditor().getItem();
-
-        return new SettingsState.ProviderConfig(
-            apiKey,
-            providerId != null ? AIProviderType.fromProviderId(providerId) : null,
-            selectedModel != null ? selectedModel.toString().trim() : "",
-            SettingsState.normalizeBaseUrl(baseUrlField.getText().trim()),
-            true
-        );
-    }
-
-    /**
-     * 从 UI 获取配置
-     */
     @NotNull
     public SettingsState getSettings() {
         SettingsState settings = new SettingsState();
 
-        // 从全局配置中深拷贝 availableProviders 和 defaultProviders，避免对象引用共享
-        SettingsState globalSettings = SettingsState.getInstance();
+        AIProviderSettings providerSettings = providerConfigPanel.getSettings();
+        AIModelParameters modelParameters = providerSettings.modelParameters;
+        modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
+        modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
+        modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
+        modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
+        modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
 
-        // 从表格模型中获取 availableProviders（包含用户在表格中编辑的备注）
-        settings.availableProviders.addAll(availableProvidersTableModel.getData());
+        AIRuntimeSettings runtimeSettings = providerSettings.runtimeSettings;
+        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
+        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
+        runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
 
-        // 深拷贝 defaultProviders（避免修改全局配置）
-        for (Map.Entry<AIProviderType, SettingsState.ProviderConfig> entry : globalSettings.defaultProviders.entrySet()) {
-            settings.defaultProviders.put(entry.getKey(), new SettingsState.ProviderConfig(entry.getValue()));
-        }
+        providerSettings.performanceMode = performanceModeCheckBox.isSelected();
+        providerSettings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
 
-        // AI 提供商配置 - 将显示名称转换为提供商标识符
-        String displayName = (String) providerComboBox.getSelectedItem();
-        String providerId = displayName != null ? AIProviderType.getProviderIdByDisplayName(displayName) : null;
-        AIProviderType providerType = providerId != null ? AIProviderType.fromProviderId(providerId) : null;
-        settings.providerType = providerType != null ? providerType : AIProviderType.QIANWEN;
+        settings.providerSettings = providerSettings;
 
-        // 直接更新 defaultProviders 中当前服务商的配置
-        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(settings.providerType);
-        
-        // 获取用户输入的模型名称（可能是从列表选择的，也可能是手动输入的）
-        Object selectedModel = modelComboBox.getEditor().getItem();
-        defaultConfig.modelName = selectedModel != null ? selectedModel.toString().trim() : "";
-
-        // 设置 baseUrl（使用标准化方法）
-        defaultConfig.baseUrl = SettingsState.normalizeBaseUrl(baseUrlField.getText().trim());
-
-        // 获取 API Key 并更新 md5（因为 md5 是基于 providerType、baseUrl、modelName 和 apiKey 计算的）
-        // 注意：这里只计算 md5，不保存 API Key 到 PasswordSafe
-        // API Key 的保存应该在 apply() 方法中统一处理，避免在 isModified() 频繁调用时重复保存
-        String apiKey = new String(apiKeyField.getPassword()).trim();
-        defaultConfig.md5 = defaultConfig.buildMd5(apiKey);
-        
-        // 设置验证状态
-        defaultConfig.configurationVerified = this.configurationVerified;
-
-        // 更新 defaultProviders
-        settings.updateDefaultProviderConfig(settings.providerType, defaultConfig);
-
-        // 功能配置
         settings.generateForClass = generateForClassCheckBox.isSelected();
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
         settings.generateForField = generateForFieldCheckBox.isSelected();
@@ -2086,7 +997,6 @@ public class JavaDocSettingsPanel {
         settings.addSpaceBetweenChineseAndEnglish = addSpaceBetweenChineseAndEnglishCheckBox.isSelected();
         settings.replaceChinesePunctuation = replaceChinesePunctuationCheckBox.isSelected();
 
-        // 语言支持
         settings.supportedLanguages = new HashSet<>();
         if (javaCheckBox.isSelected()) {
             settings.supportedLanguages.add("java");
@@ -2095,68 +1005,43 @@ public class JavaDocSettingsPanel {
             settings.supportedLanguages.add("kotlin");
         }
 
-        // 高级配置
-        settings.maxRetries = (Integer) maxRetriesSpinner.getValue();
-        settings.timeout = (Integer) timeoutSpinner.getValue();
-        settings.temperature = (Double) temperatureSpinner.getValue();
-        settings.maxTokens = (Integer) maxTokensSpinner.getValue();
-        settings.topP = (Double) topPSpinner.getValue();
-        settings.topK = (Integer) topKSpinner.getValue();
-        settings.presencePenalty = (Double) presencePenaltySpinner.getValue();
-        settings.verboseLogging = verboseLoggingCheckBox.isSelected();
-        settings.performanceMode = performanceModeCheckBox.isSelected();
-        settings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
-
-        // Prompt 配置 - 从 Tab 页获取
         settings.systemPromptTemplate = systemPromptTextArea.getText().trim();
         settings.classPromptTemplate = classPromptTextArea.getText().trim();
         settings.methodPromptTemplate = methodPromptTextArea.getText().trim();
         settings.fieldPromptTemplate = fieldPromptTextArea.getText().trim();
         settings.testPromptTemplate = testPromptTextArea.getText().trim();
 
-        // 自定义 JavaDoc 标签配置
         settings.customJavaDocTags = customJavaDocTagsTableModel.getData();
         settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
-
-        // 高级设置显示状态
         settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
 
         return settings;
     }
 
-    /**
-     * 加载配置到 UI
-     */
+    public String getCurrentApiKey() {
+        return providerConfigPanel.getCurrentApiKey();
+    }
+
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
-        // AI 提供商配置 - 将提供商标识符转换为显示名称
-        AIProviderType providerType = settings.providerType != null ? settings.providerType : AIProviderType.QIANWEN;
-        String displayName = providerType.getDisplayName();
-        providerComboBox.setSelectedItem(displayName);
-        updateModelList();
+        AIProviderSettings providerSettings = settings.providerSettings;
+        providerConfigPanel.loadSettings(providerSettings);
 
-        // 从 defaultProviders 获取当前服务商的配置
-        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(providerType);
-        modelComboBox.setSelectedItem(defaultConfig.modelName);
-        baseUrlField.setText(defaultConfig.baseUrl);
+        AIModelParameters modelParameters = providerSettings.modelParameters;
+        temperatureSpinner.setValue(modelParameters.temperature);
+        maxTokensSpinner.setValue(modelParameters.maxTokens);
+        topPSpinner.setValue(modelParameters.topP);
+        topKSpinner.setValue(modelParameters.topK);
+        presencePenaltySpinner.setValue(modelParameters.presencePenalty);
 
-        // 异步加载 PasswordSafe 中的 API Key
-        loadApiKeyForProvider(defaultConfig, providerType.getProviderId());
+        AIRuntimeSettings runtimeSettings = providerSettings.runtimeSettings;
+        maxRetriesSpinner.setValue(runtimeSettings.maxRetries);
+        timeoutSpinner.setValue(runtimeSettings.timeout);
+        verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
 
-        // 加载验证状态
-        this.configurationVerified = defaultConfig.configurationVerified;
+        performanceModeCheckBox.setSelected(providerSettings.performanceMode);
+        showProviderStatisticsCheckBox.setSelected(providerSettings.showProviderStatistics);
 
-        // 更新测试按钮状态
-        updateTestButtonState();
-
-        // 初始化刷新按钮状态为黄色（未刷新）
-        refreshModelsSuccess = null;
-        updateRefreshButtonState();
-
-        // 加载可用服务商列表
-        availableProvidersTableModel.setData(settings.availableProviders);
-
-        // 功能配置
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
         generateForFieldCheckBox.setSelected(settings.generateForField);
@@ -2166,55 +1051,32 @@ public class JavaDocSettingsPanel {
         addSpaceBetweenChineseAndEnglishCheckBox.setSelected(settings.addSpaceBetweenChineseAndEnglish);
         replaceChinesePunctuationCheckBox.setSelected(settings.replaceChinesePunctuation);
 
-        // 根据代码压缩设置更新最大行数输入框的可用性
         updateMaxClassCodeLinesEnabled();
-
-        // 根据性能模式设置更新显示统计信息复选框的可用性
-        performanceModeCheckBox.setSelected(settings.performanceMode);
-        showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
         updateShowProviderStatisticsEnabled();
-        updateShowAvailableProvidersEnabled();
 
-        // 语言支持
         javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
         kotlinCheckBox.setSelected(settings.supportedLanguages.contains("kotlin"));
 
-        // 高级配置
-        maxRetriesSpinner.setValue(settings.maxRetries);
-        timeoutSpinner.setValue(settings.timeout);
-        temperatureSpinner.setValue(settings.temperature);
-        maxTokensSpinner.setValue(settings.maxTokens);
-        topPSpinner.setValue(settings.topP);
-        topKSpinner.setValue(settings.topK);
-        presencePenaltySpinner.setValue(settings.presencePenalty);
-        verboseLoggingCheckBox.setSelected(settings.verboseLogging);
-
-        // 更新所有复选框的提示文本颜色（必须在所有复选框状态设置完成后调用）
-        updateAllCheckBoxHintColors();
-
-        // Prompt 配置 - 加载到 Tab 页
         systemPromptTextArea.setText(settings.systemPromptTemplate);
         classPromptTextArea.setText(settings.classPromptTemplate);
         methodPromptTextArea.setText(settings.methodPromptTemplate);
         fieldPromptTextArea.setText(settings.fieldPromptTemplate);
         testPromptTextArea.setText(settings.testPromptTemplate);
 
-        // 加载自定义 JavaDoc 标签配置
         customJavaDocTagsTableModel.setData(settings.customJavaDocTags);
         showCustomJavaDocTagsCheckBox.setSelected(settings.showCustomJavaDocTags);
         customJavaDocTagsPanel.setVisible(settings.showCustomJavaDocTags);
 
-        // 高级设置显示状态
         showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
         advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
 
-        updateApiKeyFieldEnabled();
-        updateBaseUrlFieldEditable();
+        updateAllCheckBoxHintColors();
     }
 
-    /**
-     * 添加自定义 JavaDoc 标签
-     */
+    private java.awt.Window getParentWindow() {
+        return SwingUtilities.getWindowAncestor(mainPanel);
+    }
+
     private void addCustomJavaDocTag() {
         String tagName = JOptionPane.showInputDialog(
             getParentWindow(),
@@ -2297,102 +1159,6 @@ public class JavaDocSettingsPanel {
 
         if (result == JOptionPane.YES_OPTION) {
             customJavaDocTagsTableModel.clearAll();
-        }
-    }
-
-    /**
-     * 可用服务商列表的表格模型
-     * <p>
-     * 用于在表格中显示已验证的服务商配置信息
-     */
-    private static class AvailableProvidersTableModel extends AbstractTableModel {
-        private final String[] columnNames = {
-            JavaDocBundle.message("settings.available.providers.column.provider"),
-            JavaDocBundle.message("settings.available.providers.column.model"),
-            JavaDocBundle.message("settings.available.providers.column.remark")
-        };
-        private final List<SettingsState.ProviderConfig> data;
-
-        public AvailableProvidersTableModel() {
-            this.data = new ArrayList<>();
-        }
-
-        public void setData(List<SettingsState.ProviderConfig> newData) {
-            this.data.clear();
-            this.data.addAll(newData);
-            fireTableDataChanged();
-        }
-
-        public List<SettingsState.ProviderConfig> getData() {
-            return new ArrayList<>(data);
-        }
-
-        public void removeRow(int row) {
-            if (row >= 0 && row < data.size()) {
-                data.remove(row);
-                fireTableRowsDeleted(row, row);
-            }
-        }
-
-        public void clearAll() {
-            int size = data.size();
-            if (size > 0) {
-                data.clear();
-                fireTableRowsDeleted(0, size - 1);
-            }
-        }
-
-        @Override
-        public int getRowCount() {
-            return data.size();
-        }
-
-        @Override
-        public int getColumnCount() {
-            return columnNames.length;
-        }
-
-        @Override
-        public String getColumnName(int column) {
-            return columnNames[column];
-        }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            SettingsState.ProviderConfig config = data.get(rowIndex);
-            return switch (columnIndex) {
-                case 0 -> config; // 返回 ProviderConfig 对象，供渲染器使用
-                case 1 -> config.modelName != null ? config.modelName : "";
-                case 2 -> config.remark != null ? config.remark : "";
-                default -> "";
-            };
-        }
-
-        /**
-         * 获取指定行的 ProviderConfig 对象
-         *
-         * @param rowIndex 行索引
-         * @return ProviderConfig 对象
-         */
-        public SettingsState.ProviderConfig getProviderConfig(int rowIndex) {
-            if (rowIndex >= 0 && rowIndex < data.size()) {
-                return data.get(rowIndex);
-            }
-            return null;
-        }
-
-        @Override
-        public boolean isCellEditable(int rowIndex, int columnIndex) {
-            // 只有备注列可以编辑
-            return columnIndex == 2;
-        }
-
-        @Override
-        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-            if (columnIndex == 2 && rowIndex >= 0 && rowIndex < data.size()) {
-                data.get(rowIndex).remark = aValue != null ? aValue.toString() : "";
-                fireTableCellUpdated(rowIndex, columnIndex);
-            }
         }
     }
 
@@ -2493,89 +1259,5 @@ public class JavaDocSettingsPanel {
         }
     }
 
-    /**
-     * AI 提供商下拉列表单元格渲染器
-     * <p>
-     * 用于在下拉列表中显示图标+名称的组合。
-     * 每个提供商项都会显示对应的图标和显示名称。
-     * 图标大小已统一为 16x16 像素（在 SVG 文件中设置）。
-     *
-     * @author dong4j
-     * @version 1.5.0
-     * @since 1.5.0
-     */
-    private static class ProviderListCellRenderer extends DefaultListCellRenderer {
-        @Override
-        public Component getListCellRendererComponent(JList<?> list,
-                                                      Object value,
-                                                      int index,
-                                                      boolean isSelected,
-                                                      boolean cellHasFocus) {
-            JLabel label = (JLabel) super.getListCellRendererComponent(
-                list, value, index, isSelected, cellHasFocus);
-
-            if (value instanceof String displayName) {
-                // 设置文本
-                label.setText(displayName);
-                // 获取对应的图标（SVG 文件已统一为 16x16）
-                Icon icon = AIProviderType.getIconByDisplayName(displayName);
-                if (icon != null) {
-                    label.setIcon(icon);
-                    // 设置图标和文本之间的间距
-                    label.setIconTextGap(8);
-                }
-            }
-
-            return label;
-        }
-    }
-
-    /**
-     * 可用服务商表格提供商列的单元格渲染器
-     * <p>
-     * 用于在表格中显示图标+名称的组合。
-     * 显示提供商的图标和显示名称。
-     * 图标大小已统一为 16x16 像素（在 SVG 文件中设置）。
-     *
-     * @author dong4j
-     * @version 1.5.0
-     * @since 1.5.0
-     */
-    private static class ProviderTableCellRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table,
-                                                       Object value,
-                                                       boolean isSelected,
-                                                       boolean hasFocus,
-                                                       int row,
-                                                       int column) {
-            JLabel label = (JLabel) super.getTableCellRendererComponent(
-                table, value, isSelected, hasFocus, row, column);
-
-            // 从表格模型获取 ProviderConfig
-            if (value instanceof SettingsState.ProviderConfig config) {
-                // 设置文本
-                String displayName = config.providerType != null ?
-                                     config.providerType.getDisplayName() : "";
-                label.setText(displayName);
-
-                // 获取对应的图标（SVG 文件已统一为 16x16）
-                if (config.providerType != null) {
-                    Icon icon = config.providerType.getIcon();
-                    if (icon != null) {
-                        label.setIcon(icon);
-                        // 设置图标和文本之间的间距
-                        label.setIconTextGap(8);
-                    } else {
-                        label.setIcon(null);
-                    }
-                } else {
-                    label.setIcon(null);
-                }
-            }
-
-            return label;
-        }
-    }
 }
 

@@ -16,6 +16,10 @@ import java.util.List;
 
 import javax.swing.JComponent;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar;
 import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -172,35 +176,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         SettingsState panelSettings = settingsPanel.getSettings();
 
         // 比较各个配置项
-        if (!currentSettings.providerType.equals(panelSettings.providerType)) {
-            return true;
-        }
-
-        // 从 defaultProviders 获取当前服务商的配置进行比较
-        SettingsState.ProviderConfig currentConfig = currentSettings.getDefaultProviderConfig(currentSettings.providerType);
-        SettingsState.ProviderConfig panelConfig = panelSettings.getDefaultProviderConfig(panelSettings.providerType);
-
-        // 比较模型名称
-        String currentModelName = currentConfig.modelName != null ? currentConfig.modelName : "";
-        String panelModelName = panelConfig.modelName != null ? panelConfig.modelName : "";
-        if (!currentModelName.equals(panelModelName)) {
-            return true;
-        }
-
-        // 比较 Base URL
-        String currentBaseUrl = currentConfig.baseUrl != null ? currentConfig.baseUrl : "";
-        String panelBaseUrl = panelConfig.baseUrl != null ? panelConfig.baseUrl : "";
-        if (!currentBaseUrl.equals(panelBaseUrl)) {
-            return true;
-        }
-
-        // 比较 API Key (通过 md5)
-        if (!currentConfig.md5.equals(panelConfig.md5)) {
-            return true;
-        }
-
-        // 比较验证状态
-        if (currentConfig.configurationVerified != panelConfig.configurationVerified) {
+        if (!currentSettings.providerSettings.contentEquals(panelSettings.providerSettings)) {
             return true;
         }
 
@@ -220,37 +196,6 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
             return true;
         }
         if (currentSettings.maxClassCodeLines != panelSettings.maxClassCodeLines) {
-            return true;
-        }
-
-        if (currentSettings.maxRetries != panelSettings.maxRetries) {
-            return true;
-        }
-        if (currentSettings.timeout != panelSettings.timeout) {
-            return true;
-        }
-        if (currentSettings.temperature != panelSettings.temperature) {
-            return true;
-        }
-        if (currentSettings.maxTokens != panelSettings.maxTokens) {
-            return true;
-        }
-        if (currentSettings.topP != panelSettings.topP) {
-            return true;
-        }
-        if (currentSettings.topK != panelSettings.topK) {
-            return true;
-        }
-        if (currentSettings.presencePenalty != panelSettings.presencePenalty) {
-            return true;
-        }
-        if (currentSettings.performanceMode != panelSettings.performanceMode) {
-            return true;
-        }
-        if (currentSettings.showProviderStatistics != panelSettings.showProviderStatistics) {
-            return true;
-        }
-        if (currentSettings.verboseLogging != panelSettings.verboseLogging) {
             return true;
         }
 
@@ -331,23 +276,19 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         // 应用配置
         SettingsState currentSettings = SettingsState.getInstance();
-        currentSettings.providerType = panelSettings.providerType;
-
-        // 将 panelSettings 中的 defaultProviders 复制到 currentSettings
-        currentSettings.defaultProviders.putAll(panelSettings.defaultProviders);
+        currentSettings.providerSettings = panelSettings.providerSettings.copy();
 
         // 保存当前服务商的 API Key 到 PasswordSafe（只在真正应用配置时保存，避免频繁写入）
-        // 注意：getSettings() 中已经计算了正确的 md5，但还没有保存 API Key
-        // 这里从 UI 中获取当前服务商的 API Key 并保存到 PasswordSafe
-        SettingsState.ProviderConfig currentConfig = panelSettings.getDefaultProviderConfig(panelSettings.providerType);
-        String apiKey = new String(settingsPanel.getApiKeyField().getPassword()).trim();
+        String apiKey = settingsPanel.getCurrentApiKey();
         if (!apiKey.isEmpty()) {
-            SettingsState.setApiKey(currentConfig.md5, apiKey);
+            AIProviderConfig currentConfig = currentSettings.providerSettings.getDefaultProviderConfig(
+                currentSettings.providerSettings.providerType
+                                                                                                      );
+            if (currentConfig.credentialId != null) {
+                AICredentialManager credentialManager = new AICredentialManager("AI Javadoc", "AI_JAVADOC_API_KEY_");
+                credentialManager.setApiKey(currentConfig.credentialId, apiKey);
+            }
         }
-
-        // 将 availableProviders 也同步过来（避免丢失）
-        currentSettings.availableProviders.clear();
-        currentSettings.availableProviders.addAll(panelSettings.availableProviders);
 
         currentSettings.generateForClass = panelSettings.generateForClass;
         currentSettings.generateForMethod = panelSettings.generateForMethod;
@@ -355,17 +296,6 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.overrideExisting = panelSettings.overrideExisting;
         currentSettings.enableCodeCompression = panelSettings.enableCodeCompression;
         currentSettings.maxClassCodeLines = panelSettings.maxClassCodeLines;
-
-        currentSettings.maxRetries = panelSettings.maxRetries;
-        currentSettings.timeout = panelSettings.timeout;
-        currentSettings.temperature = panelSettings.temperature;
-        currentSettings.maxTokens = panelSettings.maxTokens;
-        currentSettings.topP = panelSettings.topP;
-        currentSettings.topK = panelSettings.topK;
-        currentSettings.presencePenalty = panelSettings.presencePenalty;
-        currentSettings.performanceMode = panelSettings.performanceMode;
-        currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
-        currentSettings.verboseLogging = panelSettings.verboseLogging;
 
         // 保存 Prompt 模板配置
         currentSettings.systemPromptTemplate = panelSettings.systemPromptTemplate;
@@ -387,7 +317,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         ApplicationManager.getApplication().invokeLater(() -> {
             ApplicationManager.getApplication().runWriteAction(() -> {
                 Project project = ProjectManager.getInstance().getDefaultProject();
-                if (project != null && !project.isDisposed()) {
+                if (!project.isDisposed()) {
                     CustomJavaDocTagRegistrar.syncCustomTags(project);
                 }
             });
@@ -468,12 +398,12 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      */
     private boolean validateSettings(SettingsState settings) {
         // 检查必填字段
-        if (settings.providerType == null) {
+        if (settings.providerSettings.providerType == null) {
             return false;
         }
 
         // 从 defaultProviders 获取当前服务商的配置
-        SettingsState.ProviderConfig defaultConfig = settings.getDefaultProviderConfig(settings.providerType);
+        AIProviderConfig defaultConfig = settings.providerSettings.getDefaultProviderConfig(settings.providerSettings.providerType);
 
         if (defaultConfig.modelName == null || defaultConfig.modelName.trim().isEmpty()) {
             return false;
@@ -484,19 +414,21 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         }
 
         // 检查数值范围
-        if (settings.maxRetries < 0 || settings.maxRetries > 10) {
+        AIRuntimeSettings runtimeSettings = settings.providerSettings.runtimeSettings;
+        if (runtimeSettings.maxRetries < 0 || runtimeSettings.maxRetries > 10) {
             return false;
         }
 
-        if (settings.timeout < 1000 || settings.timeout > 300000) {
+        if (runtimeSettings.timeout < 1000 || runtimeSettings.timeout > 300000) {
             return false;
         }
 
-        if (settings.temperature < 0.0 || settings.temperature > 2.0) {
+        AIModelParameters modelParameters = settings.providerSettings.modelParameters;
+        if (modelParameters.temperature < 0.0 || modelParameters.temperature > 2.0) {
             return false;
         }
 
-        return settings.maxTokens >= 100 && settings.maxTokens <= 10000;
+        return modelParameters.maxTokens >= 100 && modelParameters.maxTokens <= 10000;
     }
 
 }

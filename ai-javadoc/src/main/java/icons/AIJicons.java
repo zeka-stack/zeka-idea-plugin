@@ -3,8 +3,11 @@ package icons;
 import com.intellij.openapi.util.IconLoader;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.Icon;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
  * AI Javadoc 插件图标管理类
@@ -137,4 +140,46 @@ public class AIJicons {
      * 用于：错误提示框、对话框
      */
     public static final Icon PROVIDER_LMSTUDIO_64 = load("/icons/lmstudio_64.svg");
+
+    // ========== 工具方法 ==========
+
+    /**
+     * 根据 AIProviderType 获取对应的 16x16 图标
+     *
+     * @param providerType 提供商类型
+     * @return 对应的图标，如果未找到返回 null
+     */
+    @Nullable
+    public static Icon getProviderIcon(@Nullable AIProviderType providerType) {
+        if (providerType == null) {
+            return null;
+        }
+        return switch (providerType) {
+            case CUSTOM -> PROVIDER_CHATGPT;
+            case QIANWEN -> PROVIDER_QWEN;
+            case SILICONFLOW -> PROVIDER_SILICONFLOW;
+            case OLLAMA -> PROVIDER_OLLAMA;
+            case LM_STUDIO -> PROVIDER_LMSTUDIO;
+        };
+    }
+
+    /**
+     * 根据 AIProviderType 获取对应的 64x64 图标
+     *
+     * @param providerType 提供商类型
+     * @return 对应的图标，如果未找到返回 null
+     */
+    @Nullable
+    public static Icon getProviderIcon64(@Nullable AIProviderType providerType) {
+        if (providerType == null) {
+            return null;
+        }
+        return switch (providerType) {
+            case CUSTOM -> PROVIDER_CHATGPT_64;
+            case QIANWEN -> PROVIDER_QWEN_64;
+            case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
+            case OLLAMA -> PROVIDER_OLLAMA_64;
+            case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
+        };
+    }
 }

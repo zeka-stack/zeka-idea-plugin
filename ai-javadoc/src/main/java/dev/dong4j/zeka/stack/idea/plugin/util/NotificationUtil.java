@@ -137,7 +137,7 @@ public class NotificationUtil {
      */
     public static void notifyTargetCompletion(@Nullable Project project, @NotNull String target,
                                               int completed, int failed, int skipped) {
-        if (SettingsState.getInstance().verboseLogging) {
+        if (SettingsState.getInstance().providerSettings.runtimeSettings.verboseLogging) {
             String content = JavaDocBundle.message("notification.target.completion.format", target, completed, failed, skipped);
             final NotificationType type = getNotificationType(completed, failed);
             notify(project, JavaDocBundle.message("notification.generation.complete"), content, type);

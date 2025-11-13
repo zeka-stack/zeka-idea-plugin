@@ -16,7 +16,7 @@
 
 ### 组件结构
 
-- 新增 `dev.dong4j.zeka.stack.idea.plugin.statusbar.AIProviderStatusBarWidgetFactory` 实现 `StatusBarWidgetFactory`，用于注册控件并按项目创建实例。
+- 新增 `dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidgetFactory` 实现 `StatusBarWidgetFactory`，用于注册控件并按项目创建实例。
 - 新增 `AIProviderStatusBarWidget` 继承 `EditorBasedStatusBarPopup`（或 `StatusBarWidget.MultipleTextValuesPresentation`），负责：
     - 构建状态栏展示：`AIJicons.Plugin` + 当前默认服务商显示名（通过 `AIProviderType.getDisplayName()`）。
     - 弹出 `ListPopup` 展示候选项，内容来自 `SettingsState.getAvailableProviders()`，仅包含 `configurationVerified = true` 的配置。
@@ -50,7 +50,7 @@
 ### plugin.xml 变更
 
 - 在 `META-INF/plugin.xml` 注册
-  `<statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIProviderStatusBarWidgetFactory" order="first"/>`。
+  `<statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidgetFactory" order="first"/>`。
 - 如需通知组复用现有 `notificationGroup`，无需新增配置。
 
 ### 线程与性能

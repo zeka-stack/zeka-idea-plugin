@@ -4,13 +4,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
+import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.LMStudioProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.OllamaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.QianWenProvider;
 import dev.dong4j.zeka.stack.idea.plugin.ai.provider.SiliconFlowProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,7 +156,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试获取支持的提供商列表")
     void testGetSupportedProviders() {
-        Set<String> providers = AIServiceFactory.getSupportedProviders();
+        List<String> providers = AIServiceFactory.getSupportedProviders();
 
         assertThat(providers).isNotNull();
         assertThat(providers).isNotEmpty();
@@ -434,7 +436,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试支持的提供商数量")
     void testSupportedProvidersCount() {
-        Set<String> providers = AIServiceFactory.getSupportedProviders();
+        List<String> providers = AIServiceFactory.getSupportedProviders();
         // 目前支持 qianwen 和 ollama
         assertThat(providers.size()).isGreaterThanOrEqualTo(2);
     }
@@ -448,7 +450,7 @@ public class AIServiceFactoryTest {
     @Test
     @DisplayName("测试获取支持的提供商返回不可变集合")
     void testGetSupportedProviders_returnsSetWithExpectedProviders() {
-        Set<String> providers = AIServiceFactory.getSupportedProviders();
+        List<String> providers = AIServiceFactory.getSupportedProviders();
 
         assertThat(providers)
             .isNotNull()

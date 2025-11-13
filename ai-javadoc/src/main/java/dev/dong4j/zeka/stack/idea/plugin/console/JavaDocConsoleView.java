@@ -114,7 +114,7 @@ public final class JavaDocConsoleView implements Disposable {
      * @return 如果启用详细日志返回 true
      */
     public boolean verboseLoggingDisable() {
-        return !settings.verboseLogging;
+        return !settings.providerSettings.runtimeSettings.verboseLogging;
     }
 
     /**

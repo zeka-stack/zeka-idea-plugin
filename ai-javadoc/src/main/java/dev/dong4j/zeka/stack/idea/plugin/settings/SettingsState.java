@@ -4,9 +4,7 @@ import com.intellij.credentialStore.CredentialAttributes;
 import com.intellij.credentialStore.CredentialAttributesKt;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.ide.passwordSafe.PasswordSafe;
-import com.intellij.openapi.application.Application;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -14,23 +12,17 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
-import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 
 /**
@@ -80,23 +72,21 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     // ==================== AI 提供商配置 ====================
 
     /**
-     * AI 服务提供商类型
+     * AI 提供商设置
      *
-     * <p>标识当前使用的 AI 服务提供商。
-     * 决定使用哪个 AIServiceProvider 实现。
-     *
-     * <p>支持的值:
+     * <p>包含所有 AI 提供商相关的配置，包括：
      * <ul>
-     *   <li>QIANWEN: 通义千问服务</li>
-     *   <li>OLLAMA: Ollama 本地服务</li>
-     *   <li>CUSTOM: 自定义服务（兼容 OpenAI API）</li>
+     *   <li>当前默认提供商类型</li>
+     *   <li>默认提供商配置映射</li>
+     *   <li>可用提供商列表</li>
+     *   <li>模型参数（temperature, maxTokens, topP, topK, presencePenalty）</li>
+     *   <li>运行时设置（maxRetries, timeout, waitDuration, verboseLogging）</li>
+     *   <li>性能模式设置</li>
      * </ul>
      *
-     * <p>默认值: QIANWEN
-     *
-     * @see AIProviderType
+     * @see AIProviderSettings
      */
-    public AIProviderType providerType = AIProviderType.QIANWEN;
+    public AIProviderSettings providerSettings = new AIProviderSettings();
 
     // ==================== 功能配置 ====================
 
@@ -208,232 +198,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public int maxClassCodeLines = 1000;
 
-    // ==================== 高级配置 ====================
-
-    /**
-     * 最大重试次数
-     *
-     * <p>AI 服务调用失败时的最大重试次数。
-     * 用于处理网络波动或服务临时不可用。
-     *
-     * <p>默认值: 2
-     *
-     * @see AICompatibleProvider#generateDocumentation(String, DocumentationTask.TaskType, String)
-     */
-    public int maxRetries = 2;
-
-    /**
-     * 请求超时时间（毫秒）
-     *
-     * <p>AI 服务请求的超时时间。
-     * 避免长时间等待影响用户体验。
-     *
-     * <p>默认值: 10000 (10 秒)
-     */
-    public int timeout = 10000;
-
-    /**
-     * 基础等待时间（毫秒）
-     *
-     * <p>重试机制中的基础等待时间。
-     * 实际等待时间 = waitDuration * 2^(attempt-1)
-     *
-     * <p>默认值: 5000 (5 秒)
-     *
-     * @see AICompatibleProvider#generateDocumentation(String, DocumentationTask.TaskType, String)
-     */
-    public long waitDuration = 5000;
-
-    /**
-     * 温度参数
-     *
-     * <p>控制 AI 生成结果的随机性。
-     * 范围 0.0-1.0，较低的值产生更确定的结果。
-     * 对于文档生成，建议使用较低值保证一致性。
-     *
-     * <p>默认值: 0.1 (越低越稳定；注释生成主要是语义重述，不需要太多创造力。)
-     */
-    public double temperature = 0.1;
-
-    /**
-     * 最大 Token 数量
-     *
-     * <p>AI 服务生成响应的最大 token 数量。
-     * 控制生成内容的长度和成本。
-     *
-     * <p>默认值: 1000
-     *
-     * @see <a href="https://help.aliyun.com/zh/dashscope/developer-reference/max_tokens">Max Tokens 说明</a>
-     */
-    public int maxTokens = 1000;
-
-    /**
-     * Top-p 参数
-     *
-     * <p>控制 AI 生成结果的多样性。
-     * 范围 0.0-1.0，较低的值产生更确定的结果。
-     * 与 temperature 配合使用，控制生成内容的随机性。
-     *
-     * <p>默认值: 0.9 (保留高概率词，但允许少量变体（比如不同描述方式）。
-     */
-    public double topP = 0.9;
-
-    /**
-     * Top-k 参数
-     *
-     * <p>限制 AI 在生成下一个 token 时考虑的候选词数量。
-     * 范围 1-100，较低的值产生更确定的结果。
-     * 与 temperature 和 top-p 配合使用，控制生成内容的随机性。
-     *
-     * <p>默认值: 50 (平衡创意与质量)
-     */
-    public int topK = 50;
-
-    /**
-     * Presence Penalty 参数
-     *
-     * <p>控制 AI 避免重复生成相同内容的倾向。
-     * 范围 -2.0 到 2.0，正值减少重复，负值增加重复。
-     * 对于文档生成，建议使用正值避免重复描述。
-     *
-     * <p>默认值: 0.0 (不需要惩罚重复，因为注释模板往往有固定格式。
-     */
-    public double presencePenalty = 0.0;
-
-    /**
-     * 可用的服务提供商列表
-     *
-     * <p>存储所有已配置且通过验证的AI服务提供商信息。
-     * 每个提供商包含其配置信息和验证状态。
-     *
-     * <p>用途：用于性能模式中的并行处理，同一服务商可以有多个不同配置
-     *
-     * <p>默认值: 空集合
-     */
-    public List<ProviderConfig> availableProviders = new LinkedList<>();
-
-    /**
-     * 默认服务提供商配置映射
-     *
-     * <p>存储每个服务商类型的默认配置，Key 为服务商类型，Value 为对应的配置。
-     *
-     * <p>用途：
-     * <ul>
-     *   <li>切换服务商时加载对应的默认配置</li>
-     *   <li>保持每个服务商类型的配置独立</li>
-     *   <li>避免切换服务商时丢失 API Key</li>
-     *   <li>区别于 availableProviders（可有多个相同服务商）</li>
-     * </ul>
-     *
-     * <p>设计说明：
-     * <ul>
-     *   <li>每个服务商类型只有一个默认配置</li>
-     *   <li>UUID 在创建时生成并保持不变</li>
-     *   <li>API Key 通过 PasswordSafe 存储，使用 UUID 关联</li>
-     * </ul>
-     *
-     * <p>默认值: 空 Map
-     */
-    public Map<AIProviderType, ProviderConfig> defaultProviders = new HashMap<>();
-
-    /**
-     * 服务提供商配置信息
-     */
-    public static class ProviderConfig {
-        /** 唯一标识符，用于关联 PasswordSafe 中的 API 密钥 */
-        public String md5;
-        /** 提供商标识符 */
-        public AIProviderType providerType;
-        /** 模型名称 */
-        public String modelName;
-        /** 基础请求地址 */
-        public String baseUrl;
-        /** 配置是否已验证的标志 */
-        public boolean configurationVerified = true;
-        /** 最近一次验证的时间戳，单位为毫秒 */
-        public long lastVerifiedTime;
-        /** 备注信息，默认为添加时间 */
-        public String remark;
-
-        public ProviderConfig() {}
-
-        /**
-         * 复制构造函数，创建 ProviderConfig 的深拷贝
-         * <p>
-         * 用于避免对象引用共享导致的意外修改
-         *
-         * @param source 源配置对象
-         */
-        public ProviderConfig(ProviderConfig source) {
-            this.md5 = source.md5;
-            this.providerType = source.providerType;
-            this.modelName = source.modelName;
-            this.baseUrl = source.baseUrl;
-            this.configurationVerified = source.configurationVerified;
-            this.lastVerifiedTime = source.lastVerifiedTime;
-            this.remark = source.remark;
-        }
-
-        /**
-         * 构造一个 ProviderConfig 对象（指定 UUID）
-         * <p>
-         * 初始化 ProviderConfig 实例，允许指定 UUID（用于复用已有的 UUID）
-         * API 密钥将通过 PasswordSafe 单独存储
-         *
-         * @param apiKey       API 密钥，如果为 null 则自动生成
-         * @param providerType 提供者ID
-         * @param modelName    模型名称
-         * @param baseUrl      基础URL
-         */
-        public ProviderConfig(@Nullable String apiKey,
-                              AIProviderType providerType,
-                              String modelName,
-                              String baseUrl,
-                              boolean configurationVerified) {
-            this.providerType = providerType;
-            this.modelName = modelName;
-            this.baseUrl = baseUrl;
-            this.md5 = buildMd5(apiKey);
-            this.configurationVerified = configurationVerified;
-            this.lastVerifiedTime = System.currentTimeMillis();
-        }
-
-        public String buildMd5(String apiKey) {
-            return DigestUtils.md5Hex(String.format("%s|%s|%s|%s", providerType, baseUrl, modelName, apiKey));
-        }
-    }
-
-    /**
-     * 是否启用性能模式
-     *
-     * <p>性能模式下，当任务数量大于5个时，会使用多个可用的服务提供商进行并行处理。
-     * 这可以显著提高大量文件处理的速度。
-     *
-     * <p>默认值: false
-     */
-    public boolean performanceMode = false;
-
-    /**
-     * 是否显示性能模式统计信息
-     *
-     * <p>控制性能模式完成后是否显示统计信息对话框。
-     * 对话框包含各提供商的处理结果统计。
-     *
-     * <p>默认值: false
-     */
-    public boolean showProviderStatistics = false;
-
-    /**
-     * 是否启用详细日志
-     *
-     * <p>控制是否输出详细的调试日志。
-     * 用于问题排查和开发调试。
-     *
-     * <p>默认值: false
-     *
-     * @see AICompatibleProvider#generateDocumentation(String, DocumentationTask.TaskType, String)
-     */
-    public boolean verboseLogging = false;
 
     // ==================== JavaDoc 标签配置 ====================
 
@@ -940,7 +704,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIProviderType#requiresApiKey()
      */
     public boolean requiresApiKey() {
-        return providerType != null && providerType.requiresApiKey();
+        return providerSettings.providerType != null && providerSettings.providerType.requiresApiKey();
     }
 
     /**
@@ -1013,64 +777,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
-     * 获取可用的提供商配置列表
-     *
-     * @return 已验证的提供商配置列表
-     */
-    @NotNull
-    public List<ProviderConfig> getAvailableProviders() {
-        return availableProviders.stream()
-            .filter(config -> config.configurationVerified)
-            .toList();
-    }
-
-    /**
-     * 获取指定服务商类型的默认配置
-     * <p>
-     * 如果指定的服务商类型不存在默认配置，则自动创建一个新的配置并初始化为该服务商的默认值
-     *
-     * @param providerType 服务商类型
-     * @return 默认配置，永不为 null
-     */
-    @NotNull
-    public ProviderConfig getDefaultProviderConfig(@NotNull AIProviderType providerType) {
-        return defaultProviders.computeIfAbsent(providerType, type -> new ProviderConfig(
-            "".trim(),
-            type,
-            type.getDefaultModel(),
-            type.getDefaultBaseUrl(),
-            false
-        ));
-    }
-
-    /**
-     * 更新指定服务商类型的默认配置
-     * <p>
-     * 将给定的配置保存为指定服务商类型的默认配置，如果已存在则覆盖
-     *
-     * @param providerType 服务商类型
-     * @param config       配置信息
-     */
-    public void updateDefaultProviderConfig(@NotNull AIProviderType providerType,
-                                            @NotNull ProviderConfig config) {
-        defaultProviders.put(providerType, config);
-    }
-
-    /**
      * 将当前配置重置为默认值
      * <p>
      * 该方法会将所有配置参数恢复到初始默认状态，包括AI提供者、模型名称、基础URL、API密钥等，
      * 以及生成配置、重试设置、温度参数、最大令牌数等。
      */
     public void resetToDefaults() {
-        providerType = AIProviderType.QIANWEN;
-
-        // 重置 defaultProviders 中当前服务商的配置
-        ProviderConfig defaultConfig = getDefaultProviderConfig(AIProviderType.QIANWEN);
-        defaultConfig.modelName = AIProviderType.QIANWEN.getDefaultModel();
-        defaultConfig.baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
-        defaultConfig.configurationVerified = false;
-        updateDefaultProviderConfig(AIProviderType.QIANWEN, defaultConfig);
+        // 重置 AI 提供商设置
+        providerSettings = new AIProviderSettings();
 
         supportedLanguages = new HashSet<>();
         supportedLanguages.add("java");
@@ -1083,17 +797,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         maxClassCodeLines = 1000;
         addSpaceBetweenChineseAndEnglish = true;
         replaceChinesePunctuation = true;
-
-        maxRetries = 2;
-        timeout = 10000;
-        waitDuration = 5000;
-        temperature = 0.1;
-        maxTokens = 1000;
-        topP = 0.9;
-        topK = 50;
-        presencePenalty = 0.0;
-        performanceMode = false;
-        verboseLogging = false;
 
         classPromptTemplate = getDefaultClassPromptTemplate();
         methodPromptTemplate = getDefaultMethodPromptTemplate();
@@ -1121,45 +824,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         SettingsState copy = new SettingsState();
         XmlSerializerUtil.copyBean(this, copy);
         return copy;
-    }
-
-    /**
-     * 标准化 Base URL
-     *
-     * <p>确保 Base URL 格式正确，移除末尾的斜杠。
-     * 这样可以避免在拼接 API 路径时出现双斜杠的问题。
-     *
-     * <p>处理规则：
-     * <ul>
-     *   <li>移除末尾的单个或多个斜杠</li>
-     *   <li>保留协议部分（http:// 或 https://）</li>
-     *   <li>处理空字符串和 null 值</li>
-     * </ul>
-     *
-     * <p>示例：
-     * <ul>
-     *   <li>"<a href="https://api.openai.com/v1/">...</a>" → "https://api.openai.com/v1"</li>
-     *   <li>"http://localhost:11434/v1///" → "http://localhost:11434/v1"</li>
-     *   <li>"https://api.example.com" → "https://api.example.com"</li>
-     * </ul>
-     *
-     * @param baseUrl 原始 Base URL
-     * @return 标准化后的 Base URL
-     */
-    @NotNull
-    public static String normalizeBaseUrl(@NotNull String baseUrl) {
-        if (baseUrl.trim().isEmpty()) {
-            return "";
-        }
-
-        String normalized = baseUrl.trim();
-
-        // 移除末尾的斜杠
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-
-        return normalized;
     }
 
     // ==================== PasswordSafe API Key 管理方法 ====================
@@ -1190,34 +854,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @Nullable
     public static String getApiKey(@Nullable String uuid) {
         return doGetApiKey(uuid);
-    }
-
-    /**
-     * 异步获取指定 ProviderConfig 的 API Key
-     * <p>
-     * 该方法会在后台线程中访问 PasswordSafe，并在 EDT 中回调结果。
-     *
-     * @param uuid     提供商配置的 UUID
-     * @param callback 获取完成后的回调，参数为 API Key（可能为 null）
-     */
-    public static void loadApiKeyAsync(@Nullable String uuid, @NotNull Consumer<String> callback) {
-        Application application = ApplicationManager.getApplication();
-
-        if (application == null) {
-            callback.accept(doGetApiKey(uuid));
-            return;
-        }
-
-        String normalizedUuid = uuid == null ? "" : uuid.trim();
-        if (normalizedUuid.isEmpty()) {
-            application.invokeLater(() -> callback.accept(null), ModalityState.any());
-            return;
-        }
-
-        application.executeOnPooledThread(() -> {
-            String apiKey = doGetApiKey(normalizedUuid);
-            application.invokeLater(() -> callback.accept(apiKey), ModalityState.any());
-        });
     }
 
     @Nullable
@@ -1258,24 +894,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 new Credentials(uuid, apiKey)
                                           );
         }
-    }
-
-    /**
-     * 删除指定 ProviderConfig 的 API Key
-     * <p>
-     * 从 PasswordSafe 中删除指定提供商配置的 API 密钥
-     *
-     * @param uuid 提供商配置的 UUID
-     */
-    public static void deleteApiKey(@Nullable String uuid) {
-        if (uuid == null || uuid.trim().isEmpty()) {
-            return;
-        }
-
-        PasswordSafe.getInstance().set(
-            createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid),
-            null
-                                      );
     }
 
 }

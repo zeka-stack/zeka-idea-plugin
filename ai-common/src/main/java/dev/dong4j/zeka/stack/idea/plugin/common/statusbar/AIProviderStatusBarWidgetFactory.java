@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.statusbar;
+package dev.dong4j.zeka.stack.idea.plugin.common.statusbar;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.StatusBar;
@@ -7,8 +7,6 @@ import com.intellij.openapi.wm.StatusBarWidgetFactory;
 
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
-
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
  * 状态栏默认服务商控件工厂
@@ -21,6 +19,25 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
  */
 public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory {
 
+    private final AIProviderStatusBarAdapter adapter;
+    private final String widgetId;
+    private final String displayName;
+
+    /**
+     * 构造工厂
+     *
+     * @param adapter     状态栏适配器
+     * @param widgetId    控件 ID
+     * @param displayName 显示名称
+     */
+    public AIProviderStatusBarWidgetFactory(@NotNull AIProviderStatusBarAdapter adapter,
+                                            @NotNull String widgetId,
+                                            @NotNull String displayName) {
+        this.adapter = adapter;
+        this.widgetId = widgetId;
+        this.displayName = displayName;
+    }
+
     /**
      * 返回状态栏控件工厂标识。
      *
@@ -28,7 +45,7 @@ public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory 
      */
     @Override
     public @NonNls @NotNull String getId() {
-        return AIProviderStatusBarWidget.WIDGET_ID;
+        return widgetId;
     }
 
     /**
@@ -38,7 +55,7 @@ public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory 
      */
     @Override
     public @NotNull String getDisplayName() {
-        return JavaDocBundle.message("statusbar.provider.factory.name");
+        return displayName;
     }
 
     /**
@@ -73,7 +90,7 @@ public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory 
      */
     @Override
     public @NotNull StatusBarWidget createWidget(@NotNull Project project) {
-        return new AIProviderStatusBarWidget(project);
+        return new AIProviderStatusBarWidget(project, adapter);
     }
 
     /**
@@ -86,3 +103,4 @@ public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory 
         widget.dispose();
     }
 }
+

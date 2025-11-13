@@ -5,7 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderStatusBarWidgetModel;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  *   <li>默认服务商切换逻辑</li>
  * </ul>
  */
-class AIProviderStatusBarWidgetModelTest {
+class AIJavadocStatusBarWidgetModelTest {
 
     private SettingsState settings;
 

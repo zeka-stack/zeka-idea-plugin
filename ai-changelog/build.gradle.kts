@@ -77,6 +77,8 @@ dependencies {
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
+    implementation("dev.dong4j:ai-common:1.0.0")
+
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
     compileOnly("org.slf4j:slf4j-simple:2.0.13")

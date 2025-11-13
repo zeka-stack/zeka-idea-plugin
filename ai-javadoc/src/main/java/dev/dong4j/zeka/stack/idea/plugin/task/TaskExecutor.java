@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -32,14 +33,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.SwingUtilities;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceException;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactory;
-import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AICompatibleProvider;
-import dev.dong4j.zeka.stack.idea.plugin.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.ai.AIRequestComposer;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
-import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -89,8 +93,14 @@ public class TaskExecutor {
     private final ProgressIndicator indicator;
     /** 用户设置状态对象，用于存储和管理应用的配置和用户偏好设置 */
     private final SettingsState settings;
-    /** AI 服务提供者实例，用于获取和管理 AI 相关服务 */
+    /** 公共 AI 提供商设置 */
+    private final AIProviderSettings providerSettings;
+    /** 默认 AI 服务提供者 */
     private final AIServiceProvider aiService;
+    /** 默认提供者使用的 API Key */
+    private final String apiKey;
+    /** Credential 管理器 */
+    private final AICredentialManager credentialManager = new AICredentialManager("AI Javadoc", "AI_JAVADOC_API_KEY_");
 
     /** 完成的任务数量计数器，用于记录已成功完成的任务数 */
     private final AtomicInteger completedCount = new AtomicInteger(0);
@@ -235,6 +245,9 @@ public class TaskExecutor {
         }
     }
 
+    private record ProviderRuntime(AIServiceProvider provider, String apiKey, ProviderStatistics statistics) {
+    }
+
     /**
      * 构造任务执行器
      *
@@ -245,7 +258,17 @@ public class TaskExecutor {
         this.project = project;
         this.indicator = indicator;
         this.settings = SettingsState.getInstance();
-        this.aiService = AIServiceFactory.createProvider(settings);
+        this.providerSettings = this.settings.providerSettings;
+        AIProviderConfig defaultConfig = providerSettings.getDefaultProviderConfig(providerSettings.providerType);
+        if (defaultConfig.configurationVerified) {
+            this.aiService = AIServiceFactory.createProvider(defaultConfig,
+                                                             providerSettings.modelParameters,
+                                                             providerSettings.runtimeSettings);
+            this.apiKey = credentialManager.getApiKey(defaultConfig.credentialId);
+        } else {
+            this.aiService = null;
+            this.apiKey = null;
+        }
     }
 
     /**
@@ -280,7 +303,6 @@ public class TaskExecutor {
      * </ul>
      *
      * @param tasks 任务列表
-     * @see #processTask(DocumentationTask)
      */
     public boolean processTasks(@NotNull List<DocumentationTask> tasks) {
         if (tasks.isEmpty()) {
@@ -293,7 +315,7 @@ public class TaskExecutor {
         log.info("开始处理 {} 个文档生成任务", totalTasks);
 
         // 检查是否启用性能模式且任务数量大于5个
-        if (settings.performanceMode && totalTasks > 5) {
+        if (providerSettings.performanceMode && totalTasks > 5) {
             return processTasksInParallel(tasks);
         } else {
             return processTasksSequentially(tasks);
@@ -309,12 +331,11 @@ public class TaskExecutor {
      * @return 始终返回 true，表示处理完成
      */
     private boolean processTasksSequentially(@NotNull List<DocumentationTask> tasks) {
-        int totalTasks = tasks.size();
-
-        // 设置 ThreadLocal project，供 AICompatibleProvider 使用
-        if (aiService instanceof AICompatibleProvider) {
-            AICompatibleProvider.setCurrentProject(project);
+        if (aiService == null) {
+            return false;
         }
+
+        int totalTasks = tasks.size();
 
         // Console 日志：任务开始
         JavaDocConsoleView.printWithTimestamp(project, String.format("========== 开始生成文档 任务总数: %s ==========", totalTasks));
@@ -330,7 +351,7 @@ public class TaskExecutor {
                                             i + 1, totalTasks, task.getFilePath()));
 
             // 处理任务
-            processTask(task);
+            processTask(task, aiService, apiKey);
 
             // 显示统计信息
             indicator.setText2(String.format("完成: %d, 失败: %d, 跳过: %d",
@@ -348,11 +369,6 @@ public class TaskExecutor {
         JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
                                                                completedCount.get(), failedCount.get(), skippedCount.get()));
 
-        // 清理 ThreadLocal
-        if (aiService instanceof AICompatibleProvider) {
-            AICompatibleProvider.setCurrentProject(null);
-        }
-
         return true;
     }
 
@@ -365,70 +381,51 @@ public class TaskExecutor {
      * @return 处理是否成功
      */
     private boolean processTasksInParallel(@NotNull List<DocumentationTask> tasks) {
-        List<AIServiceProvider> availableProviders = AIServiceFactory.getAvailableProviders();
+        List<ProviderRuntime> runtimes = providerSettings.getVerifiedProviders().stream()
+            .map(this::createRuntime)
+            .filter(Objects::nonNull)
+            .toList();
 
-        if (availableProviders.isEmpty()) {
+        if (runtimes.isEmpty()) {
             log.warn("性能模式启用但无可用提供商，回退到顺序处理");
             return processTasksSequentially(tasks);
         }
 
-        log.info("性能模式：使用 {} 个提供商并行处理 {} 个任务", availableProviders.size(), tasks.size());
+        log.info("性能模式：使用 {} 个提供商并行处理 {} 个任务", runtimes.size(), tasks.size());
 
-        // 创建线程池
-        ExecutorService executor = Executors.newFixedThreadPool(availableProviders.size());
-
-        // 为每个提供商创建统计对象
-        Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
-        for (AIServiceProvider provider : availableProviders) {
-            String providerName = provider.getProviderName();
-            providerStats.put(providerName, new ProviderStatistics(providerName));
-        }
+        ExecutorService executor = Executors.newFixedThreadPool(runtimes.size());
 
         try {
-            // 将任务分配给不同的提供商
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             AtomicInteger taskIndex = new AtomicInteger(0);
 
-            for (AIServiceProvider provider : availableProviders) {
-                String providerName = provider.getProviderName();
-                ProviderStatistics stats = providerStats.get(providerName);
-
-                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    processTasksWithProvider(tasks, provider, taskIndex, stats);
-                }, executor);
+            for (ProviderRuntime runtime : runtimes) {
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() ->
+                                                                                processTasksWithProvider(tasks, runtime, taskIndex),
+                                                                            executor);
                 futures.add(future);
             }
 
-            // 等待所有任务完成
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-            // 完成所有统计
-            providerStats.values().forEach(ProviderStatistics::finish);
+            runtimes.forEach(runtime -> runtime.statistics().finish());
 
             indicator.setFraction(1.0);
             indicator.setText("处理完成");
 
-            // 显示每个提供商的统计信息（如果启用）
-            SettingsState settings = SettingsState.getInstance();
-            if (settings.showProviderStatistics) {
-                showProviderStatistics(providerStats);
+            if (providerSettings.showProviderStatistics) {
+                Map<String, ProviderStatistics> stats = new ConcurrentHashMap<>();
+                runtimes.forEach(runtime -> stats.put(runtime.statistics().getProviderName(), runtime.statistics()));
+                showProviderStatistics(stats);
             }
 
             log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                      completedCount.get(), failedCount.get(), skippedCount.get());
 
-            // Console 日志：任务完成统计
             JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
             JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
                                                                    completedCount.get(), failedCount.get(), skippedCount.get()));
 
-            // 清理 ThreadLocal
-            if (aiService instanceof AICompatibleProvider) {
-                AICompatibleProvider.setCurrentProject(null);
-            }
-
             return true;
-
         } finally {
             executor.shutdown();
             try {
@@ -442,22 +439,24 @@ public class TaskExecutor {
         }
     }
 
-    /**
-     * 使用指定提供商处理任务列表
-     * <p>
-     * 遍历任务列表，依次使用指定的AI服务提供商处理每个任务，并更新处理进度和统计信息。
-     *
-     * @param tasks     任务列表，包含需要处理的文档任务
-     * @param provider  AI服务提供商，用于执行具体的任务处理逻辑
-     * @param taskIndex 用于记录当前处理任务索引的原子整数，确保线程安全
-     * @param stats     统计信息对象，用于记录处理过程中的完成、失败和跳过任务数量
-     */
-    private void processTasksWithProvider(@NotNull List<DocumentationTask> tasks,
-                                          @NotNull AIServiceProvider provider,
-                                          @NotNull AtomicInteger taskIndex,
-                                          @NotNull ProviderStatistics stats) {
-        int totalTasks = tasks.size();
+    private ProviderRuntime createRuntime(@NotNull AIProviderConfig config) {
+        if (!config.configurationVerified) {
+            return null;
+        }
+        AIServiceProvider provider = AIServiceFactory.createProvider(config,
+                                                                     providerSettings.modelParameters,
+                                                                     providerSettings.runtimeSettings);
+        if (provider == null) {
+            return null;
+        }
+        String key = credentialManager.getApiKey(config.credentialId);
+        return new ProviderRuntime(provider, key, new ProviderStatistics(provider.getProviderType().getDisplayName()));
+    }
 
+    private void processTasksWithProvider(@NotNull List<DocumentationTask> tasks,
+                                          @NotNull ProviderRuntime runtime,
+                                          @NotNull AtomicInteger taskIndex) {
+        int totalTasks = tasks.size();
         while (taskIndex.get() < totalTasks && !indicator.isCanceled()) {
             int currentIndex = taskIndex.getAndIncrement();
             if (currentIndex >= totalTasks) {
@@ -465,8 +464,6 @@ public class TaskExecutor {
             }
 
             DocumentationTask task = tasks.get(currentIndex);
-
-            // 更新进度
             SwingUtilities.invokeLater(() -> {
                 double fraction = (double) currentIndex / totalTasks;
                 indicator.setFraction(fraction);
@@ -476,30 +473,26 @@ public class TaskExecutor {
                                                  completedCount.get(), failedCount.get(), skippedCount.get()));
             });
 
-            // 处理任务
-            processTaskWithProvider(task, provider, stats);
+            processTaskWithProvider(task, runtime.provider(), runtime.apiKey(), runtime.statistics());
         }
     }
 
     /**
      * 使用指定提供商处理单个任务
-     * <p>
-     * 该方法接收一个任务对象、一个AI服务提供商对象和一个统计对象，用于处理文档生成任务。
-     * 根据任务状态决定是否跳过任务，否则调用提供商生成文档，并根据结果更新任务状态和统计信息。
      *
      * @param task     要处理的文档生成任务对象
      * @param provider 提供文档生成服务的AI服务提供商
+     * @param apiKey   对应配置的 API Key
      * @param stats    用于记录处理统计信息的对象
      */
     private void processTaskWithProvider(@NotNull DocumentationTask task,
                                          @NotNull AIServiceProvider provider,
+                                         String apiKey,
                                          @NotNull ProviderStatistics stats) {
         try {
             task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
 
-            // Console 日志：任务开始（仅详细日志模式）
             int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
-            // PSI 访问必须在 read-action 中进行
             VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
                                                                                             task.getElement().getContainingFile().getVirtualFile()
                                                                                        );
@@ -512,7 +505,6 @@ public class TaskExecutor {
                 JavaDocConsoleView.print(project, "");
             }
 
-            // 检查是否应该跳过
             if (shouldSkip(task)) {
                 task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
                 skippedCount.incrementAndGet();
@@ -522,8 +514,8 @@ public class TaskExecutor {
                 return;
             }
 
-            // 生成文档
-            String documentation = provider.generateDocumentation(task.getCode(), task.getType(), "java");
+            AIChatRequest request = AIRequestComposer.compose(settings, task);
+            String documentation = provider.generateContent(request, apiKey, null);
 
             if (documentation.trim().isEmpty()) {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);
@@ -535,7 +527,6 @@ public class TaskExecutor {
                 return;
             }
 
-            // 插入文档
             insertDocumentation(task, documentation);
 
             task.setStatus(DocumentationTask.TaskStatus.COMPLETED);
@@ -543,7 +534,6 @@ public class TaskExecutor {
             completedCount.incrementAndGet();
             stats.incrementCompleted();
 
-            // Console 日志：任务完成
             JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
             JavaDocConsoleView.print(project, "");
 
@@ -554,19 +544,14 @@ public class TaskExecutor {
             task.setErrorMessage(errorMessage);
             failedCount.incrementAndGet();
             stats.incrementFailed();
-
-            // Console 日志：错误
             JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
             JavaDocConsoleView.print(project, "");
-            
         } catch (Exception e) {
             log.info("处理任务失败: {}", task, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
             failedCount.incrementAndGet();
             stats.incrementFailed();
-
-            // Console 日志：错误
             JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
             JavaDocConsoleView.print(project, "");
         }
@@ -721,86 +706,10 @@ public class TaskExecutor {
      *
      * @param task 要处理的文档生成任务对象
      */
-    private void processTask(@NotNull DocumentationTask task) {
-        try {
-            task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
-
-            // Console 日志：任务开始（仅详细日志模式）
-            int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
-            // PSI 访问必须在 read-action 中进行
-            VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
-                                                                                            task.getElement().getContainingFile().getVirtualFile()
-                                                                                       );
-            if (virtualFile != null) {
-                String taskInfo = String.format("========== 任务 %d: %s %s ==========",
-                                                currentTaskNum,
-                                                task.getType().name(),
-                                                task.getFilePath());
-                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
-                JavaDocConsoleView.print(project, "");
-            }
-
-            // 检查是否应该跳过
-            if (shouldSkip(task)) {
-                task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
-                skippedCount.incrementAndGet();
-                JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
-                JavaDocConsoleView.print(project, "");
-                return;
-            }
-
-            // 生成文档
-            String documentation = generateDocumentation(task);
-
-            if (documentation.trim().isEmpty()) {
-                task.setStatus(DocumentationTask.TaskStatus.FAILED);
-                task.setErrorMessage("生成的文档为空");
-                failedCount.incrementAndGet();
-                JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
-                JavaDocConsoleView.print(project, "");
-                return;
-            }
-
-            // 插入文档
-            insertDocumentation(task, documentation);
-
-            task.setStatus(DocumentationTask.TaskStatus.COMPLETED);
-            task.setResult(documentation);
-            completedCount.incrementAndGet();
-
-            // Console 日志：任务完成
-            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
-            JavaDocConsoleView.print(project, "");
-
-        } catch (AIServiceException e) {
-            // AI 服务异常 - 提供友好的错误提示
-            String errorMessage = AIServiceException.build(e);
-            log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
-            task.setStatus(DocumentationTask.TaskStatus.FAILED);
-            task.setErrorMessage(errorMessage);
-            failedCount.incrementAndGet();
-
-            // Console 日志：错误
-            JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
-            JavaDocConsoleView.print(project, "");
-
-            // 只在第一次失败时显示通知，避免过多通知
-            if (failedCount.get() == 1) {
-                NotificationUtil.notifyErrorMessage(
-                    project,
-                    errorMessage
-                                                   );
-            }
-        } catch (Exception e) {
-            log.info("处理任务失败: {}", task, e);
-            task.setStatus(DocumentationTask.TaskStatus.FAILED);
-            task.setErrorMessage(e.getMessage());
-            failedCount.incrementAndGet();
-
-            // Console 日志：错误
-            JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
-            JavaDocConsoleView.print(project, "");
-        }
+    private void processTask(@NotNull DocumentationTask task,
+                             @NotNull AIServiceProvider provider,
+                             String apiKey) {
+        processTaskWithProvider(task, provider, apiKey, new ProviderStatistics(provider.getProviderType().getDisplayName()));
     }
 
     /**
@@ -833,51 +742,18 @@ public class TaskExecutor {
      * @see SettingsState#overrideExisting
      */
     private boolean shouldSkip(@NotNull DocumentationTask task) {
-        // 如果配置为覆盖已有注释，则不跳过
         if (settings.overrideExisting) {
             return false;
         }
 
-        // PSI 访问必须在 read-action 中
         return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
             PsiElement element = task.getElement();
-
-            // 检查是否已有文档
             if (element instanceof PsiDocCommentOwner) {
                 PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
                 return docComment != null;
             }
-
             return false;
         });
-    }
-
-    /**
-     * 生成文档
-     *
-     * <p>调用 AI 服务提供商生成文档内容。
-     * 将任务类型转换为文档类型，然后调用 AI 服务。
-     *
-     * <p>处理流程：
-     * <ol>
-     *   <li>转换任务类型为文档类型</li>
-     *   <li>调用 AI 服务生成文档</li>
-     *   <li>返回生成的文档内容</li>
-     * </ol>
-     *
-     * <p>异常处理：
-     * <ul>
-     *   <li>AIServiceException 会向上传播</li>
-     *   <li>由调用方统一处理</li>
-     * </ul>
-     *
-     * @param task 文档生成任务
-     * @return 生成的文档内容
-     * @throws AIServiceException 当 AI 服务调用失败时抛出
-     * @see AIServiceProvider#generateDocumentation(String, DocumentationTask.TaskType, String)
-     */
-    private String generateDocumentation(@NotNull DocumentationTask task) throws AIServiceException {
-        return aiService.generateDocumentation(task.getCode(), task.getType(), "java");
     }
 
     /**
@@ -1078,7 +954,7 @@ public class TaskExecutor {
             // 执行删除
             document.deleteString(deleteStart, deleteEnd);
 
-            if (settings.verboseLogging) {
+            if (providerSettings.runtimeSettings.verboseLogging) {
                 log.debug("删除旧注释: 从 {} 到 {} (原注释: {} 到 {})",
                           deleteStart, deleteEnd, startOffset, endOffset);
             }

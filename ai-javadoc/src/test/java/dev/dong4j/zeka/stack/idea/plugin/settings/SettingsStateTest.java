@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

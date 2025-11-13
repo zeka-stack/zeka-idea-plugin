@@ -1,7 +1,5 @@
-package dev.dong4j.zeka.stack.idea.plugin.statusbar;
+package dev.dong4j.zeka.stack.idea.plugin.common.statusbar;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
@@ -22,19 +20,15 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
-import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
-import icons.AIJicons;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * 状态栏默认服务商切换控件
  * <p>
  * 在 IDE 编辑器状态栏展示当前默认 AI 服务商，并支持在列表弹窗中快速切换。
- * 控件显示插件主图标和服务商名称，点击后展示 {@link SettingsState#availableProviders}
- * 中已验证的服务商列表，选中即可更新默认服务商配置。
+ * 控件显示插件主图标和服务商名称，点击后展示可用服务商列表，选中即可更新默认服务商配置。
  *
  * <p>线程模型：
  * <ul>
@@ -50,25 +44,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
-    /**
-     * 控件唯一标识
-     *
-     * <p>用于在状态栏系统中唯一标记该控件，便于刷新和更新。</p>
-     */
-    public static final String WIDGET_ID = "dev.dong4j.zeka.stack.idea.plugin.statusbar.AIProviderStatusBarWidget";
-
     private final Project project;
+    private final AIProviderStatusBarAdapter adapter;
     private StatusBar statusBar;
 
     /**
      * 构造状态栏控件
      *
      * @param project 当前项目
+     * @param adapter 状态栏适配器
      * @since 1.0.0
      */
-    public AIProviderStatusBarWidget(@NotNull Project project) {
+    public AIProviderStatusBarWidget(@NotNull Project project, @NotNull AIProviderStatusBarAdapter adapter) {
         super(project, false);
         this.project = project;
+        this.adapter = adapter;
     }
 
     /**
@@ -79,7 +69,7 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     @Override
     protected @NotNull StatusBarWidget createInstance(@NotNull Project project) {
-        return new AIProviderStatusBarWidget(project);
+        return new AIProviderStatusBarWidget(project, adapter);
     }
 
     @Override
@@ -97,7 +87,7 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     @Override
     public @NotNull String ID() {
-        return WIDGET_ID;
+        return adapter.getClass().getName() + ".AIProviderStatusBarWidget";
     }
 
     /**
@@ -122,38 +112,35 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
     @Override
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
-        SettingsState settings = SettingsState.getInstance();
-        String displayText = AIProviderStatusBarWidgetModel.getCurrentProviderDisplayName(settings);
-        String tooltip = JavaDocBundle.message("statusbar.provider.tooltip", displayText);
+        String displayText = AIProviderStatusBarWidgetModel.getCurrentProviderDisplayName(adapter);
+        String tooltip = adapter.getMessage("statusbar.provider.tooltip", displayText);
         WidgetState state = new WidgetState(tooltip, displayText, true);
 
         // 获取当前提供商的图标
-        AIProviderType providerType = settings.providerType != null ? settings.providerType : AIProviderType.QIANWEN;
-        Icon providerIcon = providerType.getIcon();
+        AIProviderType providerType = adapter.getCurrentProviderType();
+        Icon providerIcon = adapter.getProviderIcon(providerType);
         // 如果提供商有图标则使用，否则使用插件主图标
-        state.setIcon(providerIcon != null ? providerIcon : AIJicons.AIJ_16);
+        state.setIcon(providerIcon != null ? providerIcon : adapter.getMainIcon());
         
         return state;
     }
 
     @Override
     protected @Nullable ListPopup createPopup(@NotNull DataContext context) {
-        SettingsState settings = SettingsState.getInstance();
-        List<SettingsState.ProviderConfig> providers = AIProviderStatusBarWidgetModel.buildProviderItems(settings);
+        List<AIProviderConfig> providers = AIProviderStatusBarWidgetModel.buildProviderItems(adapter);
         if (providers.isEmpty()) {
-            Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
-                                                         JavaDocBundle.message("statusbar.provider.switch.failed.title"),
-                                                         JavaDocBundle.message("statusbar.provider.no.available"),
-                                                         NotificationType.ERROR);
-            // 添加设置动作
-            NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+            adapter.showErrorNotification(
+                project,
+                adapter.getMessage("statusbar.provider.switch.failed.title"),
+                adapter.getMessage("statusbar.provider.no.available")
+                                         );
             return null;
         }
 
-        int defaultIndex = AIProviderStatusBarWidgetModel.findCurrentProviderIndex(providers, settings);
+        int defaultIndex = AIProviderStatusBarWidgetModel.findCurrentProviderIndex(providers, adapter);
 
-        BaseListPopupStep<SettingsState.ProviderConfig> step =
-            new BaseListPopupStep<>(JavaDocBundle.message("statusbar.provider.popup.title"), providers) {
+        BaseListPopupStep<AIProviderConfig> step =
+            new BaseListPopupStep<>(adapter.getMessage("statusbar.provider.popup.title"), providers) {
                 @Override
                 public boolean isMnemonicsNavigationEnabled() {
                     return true;
@@ -166,23 +153,23 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
                 @NotNull
                 @Override
-                public Icon getIconFor(SettingsState.ProviderConfig value) {
+                public Icon getIconFor(AIProviderConfig value) {
                     // 根据提供商类型获取对应的图标
                     if (value != null && value.providerType != null) {
-                        Icon providerIcon = value.providerType.getIcon();
+                        Icon providerIcon = adapter.getProviderIcon(value.providerType);
                         // 如果提供商有图标则使用，否则使用插件主图标
-                        return providerIcon != null ? providerIcon : AIJicons.AIJ_16;
+                        return providerIcon != null ? providerIcon : adapter.getMainIcon();
                     }
-                    return AIJicons.AIJ_16;
+                    return adapter.getMainIcon();
                 }
 
                 @Override
-                public @NotNull String getTextFor(SettingsState.ProviderConfig value) {
+                public @NotNull String getTextFor(AIProviderConfig value) {
                     return AIProviderStatusBarWidgetModel.getProviderDisplayText(value);
                 }
 
                 @Override
-                public PopupStep<?> onChosen(SettingsState.ProviderConfig selectedValue, boolean finalChoice) {
+                public PopupStep<?> onChosen(AIProviderConfig selectedValue, boolean finalChoice) {
                     if (finalChoice && selectedValue != null) {
                         handleSelection(selectedValue);
                     }
@@ -205,7 +192,7 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
      *
      * @param selectedConfig 被选中的服务商配置
      */
-    private void handleSelection(@NotNull SettingsState.ProviderConfig selectedConfig) {
+    private void handleSelection(@NotNull AIProviderConfig selectedConfig) {
         ApplicationManager.getApplication().invokeLater(() -> {
             if (project.isDisposed()) {
                 return;
@@ -213,14 +200,15 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
 
             try {
                 ApplicationManager.getApplication().runWriteAction(() -> {
-                    SettingsState settings = SettingsState.getInstance();
-                    AIProviderStatusBarWidgetModel.switchDefaultProvider(settings, selectedConfig);
+                    AIProviderStatusBarWidgetModel.switchDefaultProvider(adapter, selectedConfig);
                 });
             } catch (Exception exception) {
                 log.error("切换默认服务商失败", exception);
-                NotificationUtil.notifyError(project,
-                                             JavaDocBundle.message("statusbar.provider.switch.failed.title"),
-                                             JavaDocBundle.message("statusbar.provider.switch.failed", exception.getMessage()));
+                adapter.showErrorNotification(
+                    project,
+                    adapter.getMessage("statusbar.provider.switch.failed.title"),
+                    adapter.getMessage("statusbar.provider.switch.failed", exception.getMessage())
+                                             );
             } finally {
                 StatusBar currentStatusBar = statusBar;
                 if (currentStatusBar != null) {
@@ -231,3 +219,4 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
         }, ModalityState.NON_MODAL);
     }
 }
+

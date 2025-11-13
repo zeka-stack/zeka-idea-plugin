@@ -5,8 +5,11 @@ import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.util.xmlb.XmlSerializerUtil;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
  * 插件设置状态管理
@@ -27,6 +30,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public String customPath = "";
     public boolean debugMode = false;
     public int timeout = 5000;
+
+    // AI 提供商配置
+    public AIProviderSettings providerSettings = new AIProviderSettings();
 
     public static SettingsState getInstance() {
         return ApplicationManager.getApplication().getService(SettingsState.class);
