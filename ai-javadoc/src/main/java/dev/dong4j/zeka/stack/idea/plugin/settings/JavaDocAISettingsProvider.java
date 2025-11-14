@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
-import com.intellij.openapi.application.ApplicationManager;
-
 import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
@@ -56,11 +54,5 @@ public final class JavaDocAISettingsProvider implements PluginAISettingsProvider
         return settings.performanceMode;
     }
 
-    /**
-     * 获取服务实例
-     */
-    public static JavaDocAISettingsProvider getInstance() {
-        return ApplicationManager.getApplication().getService(JavaDocAISettingsProvider.class);
-    }
 }
 

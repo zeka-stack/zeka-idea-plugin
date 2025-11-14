@@ -36,6 +36,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
     storages = @Storage("ai-common-settings.xml")
 )
 public class AIProviderSettings implements PersistentStateComponent<AIProviderSettings> {
+    /** 最后选中的服务商类型（用于恢复 UI 状态） */
+    public AIProviderType aiProviderType = AIProviderType.CUSTOM;
     /** 默认支持的 AI 服务提供商及其配置信息 */
     public final Map<AIProviderType, AIProviderConfig> defaultProviders = new EnumMap<>(AIProviderType.class);
     /** 可用的 AI 服务提供商配置列表 */
@@ -173,6 +175,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.showProviderStatistics = this.showProviderStatistics;
         settings.showAdvancedSettings = this.showAdvancedSettings;
         settings.showAvailableProviders = this.showAvailableProviders;
+        settings.aiProviderType = this.aiProviderType;
         return settings;
     }
 
@@ -301,6 +304,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.showProviderStatistics = source.showProviderStatistics;
         this.showAdvancedSettings = source.showAdvancedSettings;
         this.showAvailableProviders = source.showAvailableProviders;
+        this.aiProviderType = source.aiProviderType;
 
         // 如果可用提供商列表有变化，通知监听器并触发持久化
         if (availableProvidersChanged) {

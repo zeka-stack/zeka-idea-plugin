@@ -175,6 +175,9 @@ public final class AIProviderConfigPanel {
 
     /** 当前正在使用的 AI 提供商配置信息 */
     private AIProviderSettings workingSettings = new AIProviderSettings();
+    
+    /** 监听器是否已设置的标志, 用于防止重复添加监听器 */
+    private boolean listenersSetup = false;
 
     /**
      * 构造函数, 用于创建 AI 提供者配置面板
@@ -213,141 +216,6 @@ public final class AIProviderConfigPanel {
     @NotNull
     public JPanel getPanel() {
         return mainPanel;
-    }
-
-    /**
-     * 加载 AI 提供商设置
-     * <p>
-     * 将传入的 {@link AIProviderSettings} 对象复制到工作设置, 并更新 UI 组件的状态, 包括下拉框, 文本框, 复选框等.
-     *
-     * @param settings 要加载的 AI 提供商设置, 不能为空
-     */
-    public void loadSettings(@NotNull AIProviderSettings settings) {
-        this.workingSettings = settings.copy();
-
-        // 加载连接配置
-        // 注意：全局配置不维护 providerType，默认使用 QIANWEN
-        AIProviderType defaultProviderType = AIProviderType.QIANWEN;
-        providerComboBox.setSelectedItem(defaultProviderType.getDisplayName());
-        updateModelList();
-
-        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(defaultProviderType);
-        modelComboBox.setSelectedItem(defaultConfig.modelName);
-        baseUrlField.setText(defaultConfig.baseUrl);
-        configurationVerified = defaultConfig.configurationVerified;
-        updateTestButtonState();
-
-        loadApiKeyAsync(defaultConfig.credentialId, defaultProviderType.getProviderId());
-
-        refreshModelsSuccess = null;
-        updateRefreshButtonState();
-
-        // 加载基础配置
-        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
-        verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
-        performanceModeCheckBox.setSelected(workingSettings.performanceMode);
-        showProviderStatisticsCheckBox.setSelected(workingSettings.showProviderStatistics);
-        updatePerformanceModeSubConfigEnabled();
-
-        // 更新提示文本颜色（根据复选框的选中状态）
-        updateCheckBoxHintColors();
-
-        // 加载高级配置
-        showAdvancedSettingsCheckBox.setSelected(workingSettings.showAdvancedSettings);
-        if (advancedSettingsContentPanel != null) {
-            advancedSettingsContentPanel.setVisible(workingSettings.showAdvancedSettings);
-        }
-        maxRetriesSpinner.setValue(runtimeSettings.maxRetries);
-        timeoutSpinner.setValue(runtimeSettings.timeout);
-        AIModelParameters modelParameters = workingSettings.modelParameters;
-        temperatureSpinner.setValue(modelParameters.temperature);
-        maxTokensSpinner.setValue(modelParameters.maxTokens);
-        topPSpinner.setValue(modelParameters.topP);
-        topKSpinner.setValue(modelParameters.topK);
-        presencePenaltySpinner.setValue(modelParameters.presencePenalty);
-
-        // 加载可用服务商
-        availableProvidersTableModel.setData(workingSettings.availableProviders);
-        showAvailableProvidersCheckBox.setSelected(workingSettings.showAvailableProviders);
-        availableProvidersPanel.setVisible(workingSettings.showAvailableProviders);
-    }
-
-    /**
-     * 获取 AI 提供者的配置设置, 并根据当前界面配置进行更新
-     * <p>
-     * 该方法创建 AIProviderSettings 对象的副本, 设置默认配置, 模型名称, 基础 URL, 配置验证状态,API 密钥等信息, 并更新可用提供者列表和运行时设置.
-     *
-     * @return 更新后的 AI 提供者配置设置对象
-     */
-    @NotNull
-    public AIProviderSettings getSettings() {
-        AIProviderSettings copy = workingSettings.copy();
-
-        // 保存连接配置
-        // 注意：全局配置不维护 providerType，只保存当前编辑的供应商配置到 defaultProviders
-        AIProviderType providerType = resolveSelectedProviderType();
-        // 不再设置 copy.providerType，因为全局配置不维护默认供应商
-
-        AIProviderConfig defaultConfig = copy.getDefaultProviderConfig(providerType);
-        String modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
-        defaultConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
-        defaultConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
-        defaultConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
-
-        // 保存当前编辑的默认提供商的 API Key
-        updateCredentialIdAndSaveApiKey(defaultConfig);
-        copy.updateDefaultProviderConfig(providerType, defaultConfig);
-
-        // 保存可用提供商列表（它们的 API Key 已经在 addAvailableProvider 时保存了）
-        copy.availableProviders.clear();
-        availableProvidersTableModel.getData().forEach(copy::addAvailableProvider);
-
-        // 保存基础配置
-        AIRuntimeSettings runtimeSettings = copy.runtimeSettings;
-        runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
-        copy.performanceMode = performanceModeCheckBox.isSelected();
-        copy.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
-        copy.showAvailableProviders = showAvailableProvidersCheckBox.isSelected();
-
-        // 保存高级配置
-        copy.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
-        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
-        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
-        AIModelParameters modelParameters = copy.modelParameters;
-        modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
-        modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
-        modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
-        modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
-        modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
-
-        return copy;
-    }
-
-    /**
-     * 检查当前设置是否与基准设置不同
-     * <p>
-     * 通过比较当前设置与传入的基准设置, 判断是否有修改
-     *
-     * @param baseline 用于比较的基准设置
-     * @return 如果当前设置与基准设置不同则返回 true, 否则返回 false
-     */
-    public boolean isModified(@NotNull AIProviderSettings baseline) {
-        AIProviderSettings latest = getSettings();
-        // 使用 contentEquals 进行完整比较，包括基础配置和高级配置
-        return !latest.contentEquals(baseline);
-    }
-
-    /**
-     * 获取当前 API 密钥
-     * <p>
-     * 从密码字段中获取当前存储的 API 密钥并返回其字符串表示形式, 去除前后空格.
-     *
-     * @return 当前 API 密钥的字符串形式
-     * @since 1.0
-     */
-    @NotNull
-    public String getCurrentApiKey() {
-        return new String(apiKeyField.getPassword()).trim();
     }
 
     /**
@@ -468,6 +336,144 @@ public final class AIProviderConfigPanel {
     }
 
     /**
+     * 加载 AI 提供商设置
+     * <p>
+     * 将传入的 {@link AIProviderSettings} 对象复制到工作设置, 并更新 UI 组件的状态, 包括下拉框, 文本框, 复选框等.
+     *
+     * @param settings 要加载的 AI 提供商设置, 不能为空
+     */
+    public void loadSettings(@NotNull AIProviderSettings settings) {
+        this.workingSettings = settings.copy();
+
+        // 使用 lastSelectedProviderType 恢复上次选择的提供商，如果没有则使用 CUSTOM 作为默认值
+        AIProviderType defaultProviderType = workingSettings.aiProviderType != null
+            ? workingSettings.aiProviderType
+            : AIProviderType.CUSTOM;
+
+        providerComboBox.setSelectedItem(defaultProviderType.getDisplayName());
+        updateBasicConnectionInfo();
+
+        // 从 defaultProviders Map 中获取配置，如果没有则使用枚举的默认参数初始化
+        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(defaultProviderType);
+        modelComboBox.setSelectedItem(defaultConfig.modelName);
+        baseUrlField.setText(defaultConfig.baseUrl);
+        configurationVerified = defaultConfig.configurationVerified;
+        updateTestButtonState();
+
+        loadApiKeyAsync(defaultConfig.credentialId, defaultProviderType.getProviderId());
+
+        refreshModelsSuccess = null;
+        updateRefreshButtonState();
+
+        // 加载基础配置
+        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
+        verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
+        performanceModeCheckBox.setSelected(workingSettings.performanceMode);
+        showProviderStatisticsCheckBox.setSelected(workingSettings.showProviderStatistics);
+        updatePerformanceModeSubConfigEnabled();
+
+        // 更新提示文本颜色（根据复选框的选中状态）
+        updateCheckBoxHintColors();
+
+        // 加载高级配置
+        showAdvancedSettingsCheckBox.setSelected(workingSettings.showAdvancedSettings);
+        if (advancedSettingsContentPanel != null) {
+            advancedSettingsContentPanel.setVisible(workingSettings.showAdvancedSettings);
+        }
+        maxRetriesSpinner.setValue(runtimeSettings.maxRetries);
+        timeoutSpinner.setValue(runtimeSettings.timeout);
+        AIModelParameters modelParameters = workingSettings.modelParameters;
+        temperatureSpinner.setValue(modelParameters.temperature);
+        maxTokensSpinner.setValue(modelParameters.maxTokens);
+        topPSpinner.setValue(modelParameters.topP);
+        topKSpinner.setValue(modelParameters.topK);
+        presencePenaltySpinner.setValue(modelParameters.presencePenalty);
+
+        // 加载可用服务商
+        availableProvidersTableModel.setData(workingSettings.availableProviders);
+        showAvailableProvidersCheckBox.setSelected(workingSettings.showAvailableProviders);
+        availableProvidersPanel.setVisible(workingSettings.showAvailableProviders);
+    }
+
+    /**
+     * 获取 AI 提供者的配置设置, 并根据当前界面配置进行更新
+     * <p>
+     * 该方法创建 AIProviderSettings 对象的副本, 设置默认配置, 模型名称, 基础 URL, 配置验证状态,API 密钥等信息, 并更新可用提供者列表和运行时设置.
+     *
+     * @return 更新后的 AI 提供者配置设置对象
+     */
+    @NotNull
+    public AIProviderSettings getSettings() {
+        // 直接修改 workingSettings，不需要 copy，因为 applyFrom() 会再次 copy
+        AIProviderType providerType = resolveSelectedProviderType();
+
+        // 保存当前编辑的供应商配置到 defaultProviders Map
+        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
+        String modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
+        defaultConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
+        defaultConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText().trim());
+        defaultConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
+
+        // 保存当前编辑的默认提供商的 API Key
+        updateCredentialIdAndSaveApiKey(defaultConfig);
+        workingSettings.updateDefaultProviderConfig(providerType, defaultConfig);
+
+        // 保存可用提供商列表（它们的 API Key 已经在 addAvailableProvider 时保存了）
+        workingSettings.availableProviders.clear();
+        availableProvidersTableModel.getData().forEach(workingSettings::addAvailableProvider);
+
+        // 保存基础配置
+        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
+        runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
+        workingSettings.performanceMode = performanceModeCheckBox.isSelected();
+        workingSettings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
+        workingSettings.showAvailableProviders = showAvailableProvidersCheckBox.isSelected();
+
+        // 保存高级配置
+        workingSettings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
+        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
+        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
+        AIModelParameters modelParameters = workingSettings.modelParameters;
+        modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
+        modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
+        modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
+        modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
+        modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
+
+        // 保存最后选中的提供商类型
+        workingSettings.aiProviderType = providerType;
+
+        return workingSettings;
+    }
+
+    /**
+     * 检查当前设置是否与基准设置不同
+     * <p>
+     * 通过比较当前设置与传入的基准设置, 判断是否有修改
+     *
+     * @param baseline 用于比较的基准设置
+     * @return 如果当前设置与基准设置不同则返回 true, 否则返回 false
+     */
+    public boolean isModified(@NotNull AIProviderSettings baseline) {
+        AIProviderSettings latest = getSettings();
+        // 使用 contentEquals 进行完整比较，包括基础配置和高级配置
+        return !latest.contentEquals(baseline);
+    }
+
+    /**
+     * 获取当前 API 密钥
+     * <p>
+     * 从密码字段中获取当前存储的 API 密钥并返回其字符串表示形式, 去除前后空格.
+     *
+     * @return 当前 API 密钥的字符串形式
+     * @since 1.0
+     */
+    @NotNull
+    public String getCurrentApiKey() {
+        return new String(apiKeyField.getPassword()).trim();
+    }
+
+    /**
      * 创建连接配置面板
      * <p>
      * 构建并返回一个包含提供者选择框, 基础 URL 输入框,API 密钥输入区域, 模型选择框以及测试连接按钮的面板.
@@ -476,12 +482,6 @@ public final class AIProviderConfigPanel {
      * @return 包含连接配置组件的面板
      */
     private JPanel createConnectionPanel() {
-        // 连接配置布局：
-        // - AI 服务商下拉框（单独一行）
-        // - 基础 URL（单独一行）
-        // - API Key 和 刷新模型按钮（同一行）
-        // - 模型选择框 和 测试按钮（同一行）
-
         // 设置 AI 服务商下拉框的宽度为 50 像素
         Dimension providerComboBoxSize = new Dimension(300, providerComboBox.getPreferredSize().height);
         providerComboBox.setPreferredSize(providerComboBoxSize);
@@ -516,12 +516,6 @@ public final class AIProviderConfigPanel {
      * @return 包含基本配置项的面板
      */
     private JPanel createBasicPanel() {
-        // 基础配置包括：
-        // - 详细日志
-        // - 性能模式
-        // - 联动的任务结果展示（showProviderStatistics）- 子配置，缩进2个空格
-        // - 显示可用服务商 - 子配置，缩进2个空格
-
         JPanel panel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
@@ -566,15 +560,6 @@ public final class AIProviderConfigPanel {
      * @return 包含高级设置内容的面板
      */
     private JPanel createAdvancedPanel() {
-        // 高级配置包括：
-        // - 最大重试次数（在最大Token数上面）
-        // - 请求超时时间（在最大Token数上面）
-        // - 最大 Token 数
-        // - 温度
-        // - Top-p
-        // - Top-k
-        // - 存在惩罚
-
         // 创建高级配置内容面板
         advancedSettingsContentPanel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.max.retries")),
@@ -692,10 +677,18 @@ public final class AIProviderConfigPanel {
      * 初始化各种监听器, 用于响应用户界面组件的事件
      * <p>
      * 为组合框, 复选框和按钮等组件添加动作监听器, 以实现界面交互功能
+     * 使用 listenersSetup 标志确保监听器只添加一次, 避免重复添加
      */
     private void setupListeners() {
+        if (listenersSetup) {
+            return; // 防止重复添加监听器
+        }
+        listenersSetup = true;
+
         providerComboBox.addActionListener(e -> {
-            updateModelList();
+            // 在切换供应商之前, 先保存当前编辑的配置到 defaultProviders Map（包括 API Key）
+            saveCurrentProviderConfig();
+            updateBasicConnectionInfo();
             loadDefaultProviderConfig();
         });
 
@@ -747,32 +740,70 @@ public final class AIProviderConfigPanel {
             }
         }
     }
-
     /**
-     * 更新模型列表
+     * 更新连接信息的基本配置
      * <p>
-     * 根据当前选中的 AI 提供商类型, 获取其支持的模型列表, 并刷新模型下拉框.
-     * 同时根据提供商类型更新基础 URL 的可编辑状态和 API Key 的可用状态.
+     * 解析当前选中的提供商类型, 重新加载支持的模型列表到下拉框中, 并根据当前选中的模型或默认模型设置选中项.
+     * 同时更新基础 URL 的可编辑状态和 API 密钥的启用状态.
      */
-    private void updateModelList() {
+    private void updateBasicConnectionInfo() {
         AIProviderType providerType = resolveSelectedProviderType();
-        List<String> models = providerType.getSupportedModels();
+
+        // 保存当前输入的模型名称
+        String currentModel = (String) modelComboBox.getSelectedItem();
+
+        // 清空并添加推荐的模型列表（仅作为参考）
         modelComboBox.removeAllItems();
-        models.forEach(modelComboBox::addItem);
-        if (!models.isEmpty()) {
-            modelComboBox.setSelectedItem(models.get(0));
+        for (String model : providerType.getSupportedModels()) {
+            modelComboBox.addItem(model);
         }
+
+        // 恢复用户之前输入的值，如果为空则使用默认值
+        if (currentModel != null && !currentModel.trim().isEmpty()) {
+            modelComboBox.setSelectedItem(currentModel);
+        } else {
+            modelComboBox.setSelectedItem(providerType.getDefaultModel());
+        }
+
         updateBaseUrlEditable(providerType);
         updateApiKeyEnabled(providerType);
     }
 
     /**
+     * 保存当前编辑的提供商配置到 defaultProviders Map
+     * <p>
+     * 在切换供应商之前调用, 确保当前编辑的配置（包括 API Key）不会丢失
+     * 配置会保存到 workingSettings.defaultProviders Map 中，持久化时会自动保存
+     */
+    private void saveCurrentProviderConfig() {
+        AIProviderType providerType = resolveSelectedProviderType();
+        // 从 defaultProviders Map 中获取配置，如果没有则使用枚举的默认参数初始化
+        AIProviderConfig currentConfig = workingSettings.getDefaultProviderConfig(providerType);
+        
+        // 保存当前编辑的模型名称和基础 URL
+        String modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
+        currentConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
+        currentConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
+        currentConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
+        
+        // 保存当前编辑的 API Key（只有在需要 API Key 且不为空时才保存）
+        String currentApiKey = getCurrentApiKey();
+        if (providerType.requiresApiKey() && !currentApiKey.trim().isEmpty()) {
+            updateCredentialIdAndSaveApiKey(currentConfig);
+        }
+        // 更新到 defaultProviders Map 中，持久化时会自动保存
+        workingSettings.updateDefaultProviderConfig(providerType, currentConfig);
+    }
+
+    /**
      * 加载默认的 AI 服务提供商配置信息
      * <p>
-     * 该方法用于加载当前选中的 AI 服务提供商的默认配置, 并更新相关界面组件的状态.
+     * 从 defaultProviders Map 中加载当前选中的 AI 服务提供商的配置, 并更新相关界面组件的状态.
+     * 如果 Map 中没有该配置，则使用枚举的默认参数初始化
      */
     private void loadDefaultProviderConfig() {
         AIProviderType providerType = resolveSelectedProviderType();
+        // 从 defaultProviders Map 中获取配置，如果没有则使用枚举的默认参数初始化
         AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
         modelComboBox.setSelectedItem(config.modelName);
         baseUrlField.setText(config.baseUrl);
@@ -814,16 +845,17 @@ public final class AIProviderConfigPanel {
      */
     private void testConnection() {
         AIProviderType providerType = resolveSelectedProviderType();
-        AIProviderSettings snapshot = workingSettings.copy();
-        AIProviderConfig config = snapshot.getDefaultProviderConfig(providerType);
-        config.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
-        config.baseUrl = normalizeBaseUrl(baseUrlField.getText());
-        config.updateCredentialId(getCurrentApiKey());
-        snapshot.updateDefaultProviderConfig(providerType, config);
+        // 直接使用 workingSettings，不需要 copy，因为只是读取配置
+        AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
+        // 创建临时配置用于测试，不修改 workingSettings
+        AIProviderConfig testConfig = config.copy();
+        testConfig.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
+        testConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
+        testConfig.updateCredentialId(getCurrentApiKey());
 
         AIServiceProvider provider;
         try {
-            provider = AIServiceFactory.createProvider(config, snapshot.modelParameters, snapshot.runtimeSettings);
+            provider = AIServiceFactory.createProvider(testConfig, workingSettings.modelParameters, workingSettings.runtimeSettings);
             if (provider == null) {
                 JOptionPane.showMessageDialog(mainPanel,
                                               AICommonBundle.message("settings.error.provider.create.failed.details"),
@@ -850,7 +882,7 @@ public final class AIProviderConfigPanel {
                     if (result.isSuccess()) {
                         configurationVerified = true;
                         updateTestButtonState();
-                        addAvailableProvider(config, providerType);
+                        addAvailableProvider(testConfig, providerType);
                         JOptionPane.showMessageDialog(mainPanel,
                                                       result.getMessage(),
                                                       AICommonBundle.message("settings.test.result.title"),
@@ -858,7 +890,7 @@ public final class AIProviderConfigPanel {
                     } else {
                         configurationVerified = false;
                         updateTestButtonState();
-                        removeAvailableProvider(config.credentialId);
+                        removeAvailableProvider(testConfig.credentialId);
                         JOptionPane.showMessageDialog(mainPanel,
                                                       result.getFullErrorMessage(),
                                                       AICommonBundle.message("settings.test.result.title"),
@@ -869,7 +901,7 @@ public final class AIProviderConfigPanel {
                 SwingUtilities.invokeLater(() -> {
                     configurationVerified = false;
                     updateTestButtonState();
-                    removeAvailableProvider(config.credentialId);
+                    removeAvailableProvider(testConfig.credentialId);
                     JOptionPane.showMessageDialog(mainPanel,
                                                   AICommonBundle.message("settings.test.connection.error", e.getMessage()),
                                                   AICommonBundle.message("settings.test.result.title"),
@@ -898,18 +930,18 @@ public final class AIProviderConfigPanel {
      */
     private void refreshModels() {
         AIProviderType providerType = resolveSelectedProviderType();
-        AIProviderSettings snapshot = workingSettings.copy();
-        AIProviderConfig config = snapshot.getDefaultProviderConfig(providerType);
-        // 确保 providerType 被正确设置
-        config.providerType = providerType;
-        config.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
-        config.baseUrl = normalizeBaseUrl(baseUrlField.getText());
-        config.updateCredentialId(getCurrentApiKey());
-        snapshot.updateDefaultProviderConfig(providerType, config);
+        // 直接使用 workingSettings，不需要 copy，因为只是读取配置
+        AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
+        // 创建临时配置用于刷新，不修改 workingSettings
+        AIProviderConfig refreshConfig = config.copy();
+        refreshConfig.providerType = providerType;
+        refreshConfig.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
+        refreshConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
+        refreshConfig.updateCredentialId(getCurrentApiKey());
 
         AIServiceProvider provider;
         try {
-            provider = AIServiceFactory.createProvider(config, snapshot.modelParameters, snapshot.runtimeSettings);
+            provider = AIServiceFactory.createProvider(refreshConfig, workingSettings.modelParameters, workingSettings.runtimeSettings);
             if (provider == null) {
                 JOptionPane.showMessageDialog(mainPanel,
                                               AICommonBundle.message("settings.error.provider.create.failed"),
@@ -959,7 +991,7 @@ public final class AIProviderConfigPanel {
                     if (!models.isEmpty()) {
                         models.forEach(modelComboBox::addItem);
                         // 优先选择默认模型名称，如果不存在则选择第一个
-                        String defaultModelName = config.modelName;
+                        String defaultModelName = refreshConfig.modelName;
                         if (defaultModelName != null && !defaultModelName.trim().isEmpty() && models.contains(defaultModelName)) {
                             modelComboBox.setSelectedItem(defaultModelName);
                         } else if (!currentModelName.trim().isEmpty() && models.contains(currentModelName)) {
@@ -1212,14 +1244,14 @@ public final class AIProviderConfigPanel {
      * 解析用户选择的 AI 提供者类型
      * <p>
      * 从下拉框中获取选中的显示名称, 并转换为对应的 AIProviderType 枚举值.
-     * 如果显示名称为空或无法转换, 则返回默认的 AIProviderType.QIANWEN.
+     * 如果显示名称为空或无法转换, 则返回默认的 AIProviderType.CUSTOM.
      *
-     * @return 解析后的 AI 提供者类型, 若无法解析则返回 QIANWEN 作为默认值
+     * @return 解析后的 AI 提供者类型, 若无法解析则返回 CUSTOM 作为默认值
      */
     private AIProviderType resolveSelectedProviderType() {
         String displayName = (String) providerComboBox.getSelectedItem();
         AIProviderType type = displayName != null ? AIProviderType.fromDisplayName(displayName) : null;
-        return type != null ? type : AIProviderType.QIANWEN;
+        return type != null ? type : AIProviderType.CUSTOM;
     }
 
     /**

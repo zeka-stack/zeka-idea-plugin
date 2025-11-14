@@ -21,13 +21,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.ProviderConfigUtils;
  */
 public class AIProviderConfig {
     /** AI 服务提供商类型, 默认为通义千问 */
-    public AIProviderType providerType = AIProviderType.QIANWEN;
+    public AIProviderType providerType = AIProviderType.CUSTOM;
     /** 模型名称, 表示当前使用的默认模型 */
-    public String modelName = AIProviderType.QIANWEN.getDefaultModel();
+    public String modelName = AIProviderType.CUSTOM.getDefaultModel();
     /**
-     * 默认的基础 URL, 根据 AIProviderType.QIANWEN 获取
+     * 默认的基础 URL, 根据 AIProviderType.CUSTOM 获取
      */
-    public String baseUrl = AIProviderType.QIANWEN.getDefaultBaseUrl();
+    public String baseUrl = AIProviderType.CUSTOM.getDefaultBaseUrl();
     /** 配置是否已验证的标志位 */
     public boolean configurationVerified;
     /** 最后一次验证时间 */

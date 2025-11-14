@@ -10,7 +10,6 @@ import javax.swing.JScrollPane;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
 import lombok.Getter;
@@ -72,17 +71,6 @@ public class ChangelogSettingsPanel {
 
         AIProviderSettings updated = providerConfigPanel.getSettings();
         providerSettings.applyFrom(updated);
-
-        // 保存 API Key
-        AIProviderConfig selectedConfig = providerSettings.defaultProviders.get(providerSettings.providerType);
-        if (selectedConfig != null && selectedConfig.credentialId != null) {
-            String apiKey = providerConfigPanel.getCurrentApiKey();
-            if (!apiKey.isEmpty()) {
-                credentialManager.setApiKey(selectedConfig.credentialId, apiKey);
-            } else {
-                credentialManager.deleteApiKey(selectedConfig.credentialId);
-            }
-        }
     }
 
     public void reset(SettingsState settings, AIProviderSettings providerSettings) {
