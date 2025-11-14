@@ -101,7 +101,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      */
     private void notifyListeners() {
         // 立即持久化配置，确保第三方插件能够立即看到变更
-        saveState();
+        // saveState();
 
         if (listeners.isEmpty()) {
             return;
@@ -363,6 +363,11 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         if (defaultProviders.size() != other.defaultProviders.size()) {
             return false;
         }
+
+        if(aiProviderType != other.aiProviderType){
+            return false;
+        }
+
         for (Map.Entry<AIProviderType, AIProviderConfig> entry : defaultProviders.entrySet()) {
             AIProviderConfig otherConfig = other.defaultProviders.get(entry.getKey());
             if (otherConfig == null || !entry.getValue().contentEquals(otherConfig)) {

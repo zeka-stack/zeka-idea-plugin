@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.config;
 
 import com.intellij.credentialStore.CredentialAttributes;
+import com.intellij.credentialStore.CredentialAttributesKt;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.application.ApplicationManager;
@@ -124,6 +125,7 @@ public final class AICredentialManager {
     @NotNull
     private CredentialAttributes buildAttributes(@NotNull String credentialId) {
         String key = keyPrefix + Objects.requireNonNull(credentialId);
-        return new CredentialAttributes(serviceName, key);
+        String generatedServiceName = CredentialAttributesKt.generateServiceName(serviceName, key);
+        return new CredentialAttributes(generatedServiceName, key);
     }
 }
