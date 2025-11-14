@@ -293,9 +293,12 @@ public final class AIProviderConfigPanel {
         defaultConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
         defaultConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
         defaultConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
-        defaultConfig.updateCredentialId(getCurrentApiKey());
+
+        // 保存当前编辑的默认提供商的 API Key
+        updateCredentialIdAndSaveApiKey(defaultConfig);
         copy.updateDefaultProviderConfig(providerType, defaultConfig);
 
+        // 保存可用提供商列表（它们的 API Key 已经在 addAvailableProvider 时保存了）
         copy.availableProviders.clear();
         availableProvidersTableModel.getData().forEach(copy::addAvailableProvider);
 
@@ -681,9 +684,7 @@ public final class AIProviderConfigPanel {
      */
     private void updateCheckBoxHintColors() {
         // 更新所有复选框的提示文本颜色
-        checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> {
-            updateHintLabelColor(hintLabel, checkBox.isSelected());
-        });
+        checkBoxHintLabelMap.forEach((checkBox, hintLabel) -> updateHintLabelColor(hintLabel, checkBox.isSelected()));
     }
 
 
@@ -698,9 +699,7 @@ public final class AIProviderConfigPanel {
             loadDefaultProviderConfig();
         });
 
-        showAvailableProvidersCheckBox.addActionListener(e -> {
-            availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected());
-        });
+        showAvailableProvidersCheckBox.addActionListener(e -> availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected()));
 
         showAdvancedSettingsCheckBox.addActionListener(e -> {
             if (advancedSettingsContentPanel != null) {
@@ -1024,10 +1023,33 @@ public final class AIProviderConfigPanel {
         }
         copy.providerType = providerType;
         copy.configurationVerified = true;
+
+        // 确保 credentialId 已设置，并保存 API Key 到 credentialManager
+        updateCredentialIdAndSaveApiKey(copy);
+
+        // 同时更新工作设置和全局实例，确保第三方插件能够立即看到变更
         workingSettings.addAvailableProvider(copy);
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        globalSettings.addAvailableProvider(copy);
+        
         availableProvidersTableModel.setData(workingSettings.availableProviders);
         showAvailableProvidersCheckBox.setSelected(true);
         availableProvidersPanel.setVisible(true);
+    }
+
+    /**
+     * 更新配置的凭证 ID 并保存 API Key
+     * <p>
+     * 获取当前输入的 API Key，更新配置的 credentialId，并将 API Key 保存到 credentialManager 中。
+     *
+     * @param config 要更新的 AI 提供商配置对象
+     */
+    private void updateCredentialIdAndSaveApiKey(@NotNull AIProviderConfig config) {
+        String apiKey = getCurrentApiKey();
+        config.updateCredentialId(apiKey);
+        if (!apiKey.trim().isEmpty() && config.credentialId != null) {
+            credentialManager.setApiKey(config.credentialId, apiKey);
+        }
     }
 
     /**
@@ -1041,7 +1063,11 @@ public final class AIProviderConfigPanel {
         if (credentialId == null || credentialId.trim().isEmpty()) {
             return;
         }
+        // 同时更新工作设置和全局实例，确保第三方插件能够立即看到变更
         workingSettings.removeAvailableProvider(credentialId);
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        globalSettings.removeAvailableProvider(credentialId);
+        
         availableProvidersTableModel.setData(workingSettings.availableProviders);
     }
 
@@ -1089,7 +1115,11 @@ public final class AIProviderConfigPanel {
                                                    JOptionPane.YES_NO_OPTION,
                                                    JOptionPane.WARNING_MESSAGE);
         if (result == JOptionPane.YES_OPTION) {
+            // 同时更新工作设置和全局实例，确保第三方插件能够立即看到变更
             workingSettings.clearAvailableProviders();
+            AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+            globalSettings.clearAvailableProviders();
+            
             availableProvidersTableModel.setData(List.of());
         }
     }

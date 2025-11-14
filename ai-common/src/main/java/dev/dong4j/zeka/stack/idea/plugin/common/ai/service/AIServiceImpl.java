@@ -1,7 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.service;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.components.Service;
+import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
@@ -25,11 +25,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
  * <p>
  * 自动从插件配置中读取默认供应商，从全局配置中读取供应商详情。
  */
-@Service(Service.Level.APP)
 public final class AIServiceImpl implements AIService {
 
     private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER =
         new AICredentialManager("AI Common", "AI_COMMON_");
+
+    /**
+     * 扩展点名称：插件 AI 设置提供者
+     */
+    private static final ExtensionPointName<PluginAISettingsProvider> EP_NAME =
+        ExtensionPointName.create("dev.dong4j.zeka.stack.idea.plugin.common.ai.pluginAISettingsProvider");
 
     @Override
     @NotNull
@@ -106,8 +111,7 @@ public final class AIServiceImpl implements AIService {
             modelParams,
             runtimeSettings,
             null, // 外部插件可以传入自己的日志器
-            performanceMode
-                                                                    );
+            performanceMode);
 
         if (provider == null) {
             throw new AIServiceException("Failed to create AI service provider");
@@ -149,19 +153,88 @@ public final class AIServiceImpl implements AIService {
     /**
      * 获取插件配置
      * <p>
-     * 通过 Project 的 ServiceManager 查找实现了 PluginAISettingsProvider 接口的服务。
-     * 如果找不到，则使用全局默认配置。
+     * 通过扩展点查找调用者插件对应的 PluginAISettingsProvider 实现。
+     * 通过调用栈识别调用者插件，然后从扩展点中找到对应的实现。
+     * 这样可以确保每个插件使用自己的配置，避免多个插件实现同一接口时的冲突。
      */
     @NotNull
     private PluginAISettingsProvider getPluginSettings(@NotNull Project project) {
-        // 方式1：通过 ServiceManager 查找（推荐）
-        PluginAISettingsProvider provider = project.getService(PluginAISettingsProvider.class);
-        if (provider != null) {
-            return provider;
+        // 通过调用栈查找调用者插件的类
+        Class<?> callerClass = findCallerPluginClass();
+        if (callerClass != null) {
+            // 从扩展点中查找所有注册的实现
+            for (PluginAISettingsProvider provider : EP_NAME.getExtensionList()) {
+                // 检查该实现是否属于调用者插件（通过类加载器判断）
+                if (isProviderFromCallerPlugin(provider, callerClass)) {
+                    return provider;
+                }
+            }
         }
 
-        // 方式2：如果找不到，返回默认实现（使用全局配置的默认值）
+        // 如果找不到，返回默认实现（使用全局配置的默认值）
         return new DefaultPluginAISettingsProvider();
+    }
+
+    /**
+     * 通过调用栈查找调用者插件的类
+     * <p>
+     * 跳过 AIServiceImpl 和 AIService 相关的类，找到第一个外部调用者。
+     *
+     * @return 调用者类，如果找不到则返回 null
+     */
+    @Nullable
+    private Class<?> findCallerPluginClass() {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        String thisClassName = AIServiceImpl.class.getName();
+        String serviceClassName = AIService.class.getName();
+
+        for (StackTraceElement element : stackTrace) {
+            String className = element.getClassName();
+            // 跳过当前类、接口类和系统类
+            if (!className.equals(thisClassName) &&
+                !className.equals(serviceClassName) &&
+                !className.startsWith("java.") &&
+                !className.startsWith("sun.") &&
+                !className.startsWith("com.intellij.")) {
+                try {
+                    return Class.forName(className);
+                } catch (ClassNotFoundException ignored) {
+                    // 继续查找下一个
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 检查 Provider 是否属于调用者插件
+     * <p>
+     * 通过比较类加载器来判断 Provider 和调用者是否属于同一个插件。
+     *
+     * @param provider    Provider 实例
+     * @param callerClass 调用者类
+     * @return 如果属于同一个插件返回 true，否则返回 false
+     */
+    private boolean isProviderFromCallerPlugin(@NotNull PluginAISettingsProvider provider,
+                                               @NotNull Class<?> callerClass) {
+        ClassLoader providerClassLoader = provider.getClass().getClassLoader();
+        ClassLoader callerClassLoader = callerClass.getClassLoader();
+
+        // 如果类加载器相同，肯定属于同一个插件
+        if (providerClassLoader == callerClassLoader) {
+            return true;
+        }
+
+        // 如果类加载器不同，检查是否是父子关系（插件类加载器可能有层级关系）
+        // 通过检查调用者类是否能被 Provider 的类加载器加载来判断
+        try {
+            String callerClassName = callerClass.getName();
+            Class<?> loadedClass = providerClassLoader.loadClass(callerClassName);
+            return loadedClass == callerClass;
+        } catch (ClassNotFoundException e) {
+            // 如果无法加载，说明不属于同一个插件
+            return false;
+        }
     }
 
     /**

@@ -3,7 +3,12 @@ package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.options.ShowSettingsUtil;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.HyperlinkLabel;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -16,23 +21,23 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
-import java.awt.Component;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JList;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
-import javax.swing.ListCellRenderer;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -40,7 +45,11 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
+import dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -100,6 +109,10 @@ public class JavaDocSettingsPanel {
     /** 高级设置容器面板（用于控制可见性） */
     private JPanel advancedSettingsPanel;
 
+    /** 类代码最大行数标签，用于控制其可用性 */
+    private JBLabel maxClassCodeLinesLabel;
+    /** 类代码最大行数提示标签，用于控制其可用性 */
+    private JBLabel maxClassCodeLinesHintLabel;
 
     /** 系统提示文本区域，用于显示或编辑系统提示内容 */
     public JTextArea systemPromptTextArea;
@@ -115,6 +128,14 @@ public class JavaDocSettingsPanel {
     /** 存储复选框和提示标签的映射关系，用于更新提示文本颜色 */
     private final java.util.Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new java.util.HashMap<>();
 
+    /** AI 提供商设置变更监听器 */
+    private AIProviderSettingsListener providerSettingsListener;
+
+    /** AI 提供商选择面板（用于动态刷新） */
+    private JPanel aiProviderSelectionPanel;
+
+
+
     /**
      * 构造函数，初始化 JavaDoc 设置面板
      * <p>
@@ -123,6 +144,7 @@ public class JavaDocSettingsPanel {
     public JavaDocSettingsPanel() {
         createUI();
         setupListeners();
+        registerProviderSettingsListener();
     }
 
     /**
@@ -246,7 +268,7 @@ public class JavaDocSettingsPanel {
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()
             // 第一组：AI 提供商选择
-            .addComponent(createAIProviderSelectionPanel())
+            .addComponent(aiProviderSelectionPanel = createAIProviderSelectionPanel())
             .addSeparator(10)
 
             // 第二组：高级设置（可折叠）
@@ -279,15 +301,49 @@ public class JavaDocSettingsPanel {
      * @return AI 提供商选择面板
      */
     private JPanel createAIProviderSelectionPanel() {
-        // 创建供应商下拉框
-        providerComboBox = new ComboBox<>(AIProviderType.values());
-        providerComboBox.setRenderer(new ListCellRenderer<AIProviderType>() {
-            @Override
-            public Component getListCellRendererComponent(JList<? extends AIProviderType> list,
-                                                          AIProviderType value,
-                                                          int index,
-                                                          boolean isSelected,
-                                                          boolean cellHasFocus) {
+        // 从 ai-common 获取可用服务商列表
+        final List<AIProviderType> availableProviderTypes = getAiProviderTypes();
+
+        JPanel panel;
+
+        // 如果没有可用服务商，显示提示信息和跳转链接
+        if (availableProviderTypes.isEmpty()) {
+            // 创建提示信息面板
+            JBLabel warningLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.no.available.warning"));
+            // 使用警告颜色（如果系统不支持，则使用默认的警告颜色）
+            java.awt.Color warningColor = UIManager.getColor("Label.warningForeground");
+            if (warningColor == null) {
+                warningColor = new JBColor(new Color(255, 140, 0), new Color(255, 140, 0)); // 橙色作为警告颜色
+            }
+            warningLabel.setForeground(warningColor);
+
+            // 创建跳转链接
+            HyperlinkLabel linkLabel = new HyperlinkLabel(JavaDocBundle.message("settings.ai.provider.open.ai.common.settings"));
+            linkLabel.addHyperlinkListener(e -> {
+                // 打开 AI Common 设置页面
+                Project project = ProjectManager.getInstance().getDefaultProject();
+                if (!project.isDisposed()) {
+                    ShowSettingsUtil.getInstance().editConfigurable(
+                        project,
+                        new AICommonSettingsConfigurable()
+                                                                   );
+                }
+            });
+
+            // 创建空的下拉框（禁用状态）
+            providerComboBox = new ComboBox<>(new AIProviderType[0]);
+            providerComboBox.setEnabled(false);
+
+            panel = FormBuilder.createFormBuilder()
+                .addComponent(warningLabel)
+                .addComponent(linkLabel)
+                .addComponent(new JBLabel()) // 空行
+                .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.ai.provider") + ":"), providerComboBox)
+                .getPanel();
+        } else {
+            // 创建供应商下拉框
+            providerComboBox = new ComboBox<>(availableProviderTypes.toArray(new AIProviderType[0]));
+            providerComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
 
                 JBLabel label = new JBLabel();
                 if (value != null) {
@@ -304,24 +360,132 @@ public class JavaDocSettingsPanel {
                 }
                 label.setOpaque(true);
                 return label;
-            }
-        });
+            });
 
-        JBLabel providerLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider") + ":");
-        JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.hint"));
-        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
+            JBLabel providerLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider") + ":");
+            JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.hint"));
+            hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
 
-        JPanel panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(providerLabel, providerComboBox)
-            .addComponent(hintLabel)
-            .getPanel();
+            panel = FormBuilder.createFormBuilder()
+                .addLabeledComponent(providerLabel, providerComboBox)
+                .addComponent(hintLabel)
+                .getPanel();
+        }
 
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
             JavaDocBundle.message("settings.ai.provider.selection")));
 
         return panel;
+    }
+
+    /**
+     * 获取已验证的 AI 服务提供商类型列表
+     * <p>
+     * 从全局设置中获取已验证的 AI 服务提供商配置, 并提取其中唯一的提供商类型.
+     *
+     * @return 包含已验证 AI 服务提供商类型的列表
+     */
+    @NotNull
+    private static List<AIProviderType> getAiProviderTypes() {
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        List<AIProviderConfig> verifiedProviders = globalSettings.getVerifiedProviders();
+
+        // 从已验证的提供商配置中提取 AIProviderType 列表
+        List<AIProviderType> availableProviderTypes = new ArrayList<>();
+        if (!verifiedProviders.isEmpty()) {
+            // 使用已验证的提供商
+            for (AIProviderConfig config : verifiedProviders) {
+                if (config.providerType != null && !availableProviderTypes.contains(config.providerType)) {
+                    availableProviderTypes.add(config.providerType);
+                }
+            }
+        }
+        return availableProviderTypes;
+    }
+
+    /**
+     * 注册 AI 提供商设置变更监听器
+     * <p>
+     * 当 AI Common 设置中的可用提供商列表发生变化时，自动刷新下拉列表。
+     */
+    private void registerProviderSettingsListener() {
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        providerSettingsListener = settings -> refreshProviderComboBox();
+        globalSettings.addListener(providerSettingsListener);
+    }
+
+    /**
+     * 刷新提供商下拉框
+     * <p>
+     * 从 AI Common 设置中重新获取可用提供商列表，并更新下拉框内容。
+     * 如果之前没有可用提供商，现在有了，会重新创建面板。
+     */
+    @SuppressWarnings("D")
+    private void refreshProviderComboBox() {
+        if (aiProviderSelectionPanel == null) {
+            return;
+        }
+
+        // 从 ai-common 获取可用服务商列表
+        final List<AIProviderType> availableProviderTypes = getAiProviderTypes();
+
+        // 判断之前是否有可用提供商（通过下拉框是否启用来判断）
+        boolean hadProviders = providerComboBox != null && providerComboBox.isEnabled();
+        boolean hasProviders = !availableProviderTypes.isEmpty();
+
+        // 如果状态没有变化，只需要更新下拉框内容
+        if (hadProviders && hasProviders) {
+            // 保存当前选中的值
+            AIProviderType selectedValue = (AIProviderType) providerComboBox.getSelectedItem();
+
+            // 更新下拉框模型
+            providerComboBox.setModel(new javax.swing.DefaultComboBoxModel<>(availableProviderTypes.toArray(new AIProviderType[0])));
+
+            // 恢复之前选中的值（如果还存在）
+            if (selectedValue != null && availableProviderTypes.contains(selectedValue)) {
+                providerComboBox.setSelectedItem(selectedValue);
+            } else if (!availableProviderTypes.isEmpty()) {
+                // 如果之前选中的值不存在了，选择第一个
+                providerComboBox.setSelectedIndex(0);
+            }
+            return;
+        }
+
+        // 如果状态发生变化（从无到有，或从有到无），需要重新创建整个面板
+        JPanel parent = (JPanel) aiProviderSelectionPanel.getParent();
+        if (parent != null) {
+            int index = -1;
+            for (int i = 0; i < parent.getComponentCount(); i++) {
+                if (parent.getComponent(i) == aiProviderSelectionPanel) {
+                    index = i;
+                    break;
+                }
+            }
+            if (index >= 0) {
+                parent.remove(index);
+                JPanel newPanel = createAIProviderSelectionPanel();
+                aiProviderSelectionPanel = newPanel;
+                parent.add(newPanel, index);
+                parent.revalidate();
+                parent.repaint();
+            }
+        }
+    }
+
+    /**
+     * 释放资源
+     * <p>
+     * 取消注册监听器，避免内存泄漏。
+     * 应该在设置页面关闭时调用。
+     */
+    public void dispose() {
+        if (providerSettingsListener != null) {
+            AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+            globalSettings.removeListener(providerSettingsListener);
+            providerSettingsListener = null;
+        }
     }
 
 
@@ -353,17 +517,22 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 创建语言支持面板
+     * 创建带边框的面板
      *
-     * <p>创建一个包含语言支持复选框的面板，用于选择支持哪些编程语言，并添加边框。
+     * <p>通用方法，用于创建包含任意数量组件的带边框面板。
+     * 将多个组件使用 FormBuilder 添加到内容面板中，
+     * 然后为面板添加带标题的边框。
      *
-     * @return 语言支持面板
+     * @param borderTitle 边框标题的国际化键
+     * @param components  要添加到面板中的组件（可变参数）
+     * @return 带边框的面板
      */
-    private JPanel createLanguageSupportPanel() {
-        JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(javaCheckBox)
-            .addComponent(kotlinCheckBox)
-            .getPanel();
+    private JPanel createPanelWithBorder(String borderTitle, JComponent... components) {
+        FormBuilder formBuilder = FormBuilder.createFormBuilder();
+        for (JComponent component : components) {
+            formBuilder.addComponent(component);
+        }
+        JPanel contentPanel = formBuilder.getPanel();
 
         // 创建带边框的面板
         JPanel panel = new JPanel(new BorderLayout());
@@ -372,12 +541,24 @@ public class JavaDocSettingsPanel {
         // 添加带标题的边框
         TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.language.support")
+            JavaDocBundle.message(borderTitle)
                                                                     );
         panel.setBorder(titledBorder);
 
         return panel;
     }
+
+    /**
+     * 创建语言支持面板
+     *
+     * <p>创建一个包含语言支持复选框的面板，用于选择支持哪些编程语言，并添加边框。
+     *
+     * @return 语言支持面板
+     */
+    private JPanel createLanguageSupportPanel() {
+        return createPanelWithBorder("settings.language.support", javaCheckBox, kotlinCheckBox);
+    }
+
 
     /**
      * 创建生成规则配置面板
@@ -427,23 +608,7 @@ public class JavaDocSettingsPanel {
      * @return 其他设置面板
      */
     private JPanel createOtherSettingsPanel() {
-        JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(showCustomJavaDocTagsCheckBox)
-            .addComponent(customJavaDocTagsPanel)
-            .getPanel();
-
-        // 创建带边框的面板
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
-
-        // 添加带标题的边框
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.other.settings")
-                                                                    );
-        panel.setBorder(titledBorder);
-
-        return panel;
+        return createPanelWithBorder("settings.other.settings", showCustomJavaDocTagsCheckBox, customJavaDocTagsPanel);
     }
 
     /**
@@ -475,33 +640,6 @@ public class JavaDocSettingsPanel {
         mainPanel.add(checkBoxPanel, java.awt.BorderLayout.NORTH);
 
         return mainPanel;
-    }
-
-    /**
-     * 创建高级配置面板，包含一个带宽度限制的 JSpinner 和提示标签
-     * <p>
-     * 该方法用于构建一个布局面板，左侧放置一个设置宽度的 JSpinner 控件，右侧放置一个带有提示信息的标签。
-     * 提示标签的字体大小和颜色会根据系统 UI 设置进行调整。
-     *
-     * @param spinner 用于配置的 JSpinner 控件
-     * @param hintKey 提示信息的键，用于从资源文件中获取对应的提示文本
-     * @return 包含 JSpinner 和提示标签的面板
-     */
-    private JPanel createAdvancedConfigPanel(JSpinner spinner, String hintKey) {
-        JPanel panel = new JPanel(new BorderLayout(5, 0));
-
-        // 固定输入框宽度
-        spinner.setPreferredSize(new Dimension(120, spinner.getPreferredSize().height));
-        panel.add(spinner, BorderLayout.WEST);
-
-        // 提示文本放在右侧，但限制宽度
-        JBLabel hintLabel = new JBLabel(JavaDocBundle.message(hintKey));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        hintLabel.setPreferredSize(new Dimension(300, hintLabel.getPreferredSize().height));
-        panel.add(hintLabel, BorderLayout.CENTER);
-
-        return panel;
     }
 
     /**
@@ -544,12 +682,6 @@ public class JavaDocSettingsPanel {
 
         return panel;
     }
-
-    /** 类代码最大行数标签，用于控制其可用性 */
-    private JBLabel maxClassCodeLinesLabel;
-
-    /** 类代码最大行数提示标签，用于控制其可用性 */
-    private JBLabel maxClassCodeLinesHintLabel;
 
     /**
      * 创建代码压缩的子配置面板（类代码最大行数）
@@ -656,6 +788,7 @@ public class JavaDocSettingsPanel {
      * @param itemsPerRow 每行显示的复选框数量
      * @return 水平排列的复选框面板
      */
+    @SuppressWarnings("SameParameterValue")
     private JPanel createHorizontalCheckBoxPanel(JBCheckBox[] checkBoxes, String[] hintKeys, int itemsPerRow) {
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new java.awt.GridBagLayout());
@@ -847,22 +980,6 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 创建一个带有指定文本区域的滚动面板
-     * <p>
-     * 该方法用于创建一个 JScrollPane 实例，并设置其首选大小和滚动条策略。
-     *
-     * @param textArea 要放入滚动面板中的文本区域
-     * @return 配置好的滚动面板实例
-     */
-    private JScrollPane createScrollPane(JTextArea textArea) {
-        JBScrollPane scrollPane = new JBScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(500, 150));
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        return scrollPane;
-    }
-
-    /**
      * 初始化各种监听器，用于响应用户界面组件的变化
      * <p>
      * 该方法为各个输入组件添加动作监听器，当组件内容发生变化时，触发相应的更新或验证状态清除操作。
@@ -931,17 +1048,6 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 获取当前使用的 API 密钥
-     * <p>
-     * 注意：API 密钥现在在全局设置中管理（Settings → Tools → AI Common）
-     *
-     * @return 空字符串（API 密钥不再在此处管理）
-     */
-    public String getCurrentApiKey() {
-        return "";
-    }
-
-    /**
      * 加载设置配置到界面组件中
      * <p>
      * 将传入的 SettingsState 对象中的配置信息同步到各个 UI 控件中, 包括生成选项, 代码压缩设置,
@@ -952,11 +1058,7 @@ public class JavaDocSettingsPanel {
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
         // 加载供应商选择
-        if (settings.providerType != null) {
-            providerComboBox.setSelectedItem(settings.providerType);
-        } else {
-            providerComboBox.setSelectedItem(AIProviderType.QIANWEN);
-        }
+        providerComboBox.setSelectedItem(Objects.requireNonNullElse(settings.providerType, AIProviderType.QIANWEN));
 
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);

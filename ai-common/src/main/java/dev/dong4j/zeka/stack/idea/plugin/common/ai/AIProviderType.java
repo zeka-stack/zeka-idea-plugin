@@ -6,6 +6,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
 
+import lombok.Getter;
+
 /**
  * AIProviderType 枚举
  * <p>
@@ -18,8 +20,11 @@ import java.util.List;
  * @since 1.0.0
  */
 public enum AIProviderType {
-
-    /** 定义一个自定义的模型配置, 用于指定使用 OpenAI API 的 gpt-3.5-turbo 模型, 支持流式输出和工具调用 */
+    /**
+     * 自定义模型配置
+     * <p>
+     * 用于指定 OpenAI API 的自定义模型参数, 包括模型名称, 支持的模型列表等信息
+     */
     CUSTOM(
         "custom",
         "OpenAI API",
@@ -29,13 +34,10 @@ public enum AIProviderType {
         true,
         List.of("gpt-3.5-turbo", "gpt-4o-mini")
     ),
-
     /**
      * 通义千问模型的标识信息
      * <p>
      * 包含模型名称, 别名, 图标地址, 默认模型版本, 是否启用, 是否为默认模型以及支持的模型版本列表
-     *
-     * @see QIANWEN
      */
     QIANWEN(
         "qianwen",
@@ -46,8 +48,11 @@ public enum AIProviderType {
         false,
         Arrays.asList("qwen3-32b", "qwen3-14b", "qwen3-8b", "qwen3-4b")
     ),
-
-    /** 模型名称 */
+    /**
+     * 硅基流动模型配置
+     * <p>
+     * 包含模型标识符, 中文名称, 模型地址, 是否默认模型, 是否启用, 支持的模型列表等信息
+     */
     SILICONFLOW(
         "siliconflow",
         "硅基流动",
@@ -57,14 +62,11 @@ public enum AIProviderType {
         false,
         List.of("Qwen/Qwen3-8B", "Qwen/Qwen2.5-14B-Instruct", "THUDM/glm-4-9b-chat")
     ),
-
-    /** 唯一标识符 */
-    /** 友好显示名称 */
-    /** 服务器基础 URL */
-    /** 默认模型名称 */
-    /** 是否启用 */
-    /** 是否为默认选项 */
-    /** 支持的模型列表 */
+    /**
+     * Ollama 模型的配置信息
+     * <p>
+     * 包含模型名称, 描述, 基础 URL, 默认模型, 是否启用, 是否为本地模型以及支持的模型列表
+     */
     OLLAMA(
         "ollama",
         "Ollama",
@@ -74,8 +76,11 @@ public enum AIProviderType {
         true,
         Arrays.asList("gpt-oss:120b-cloud", "deepseek-r1:14b", "qwen3-8b")
     ),
-
-    /** LM Studio 模型配置信息 */
+    /**
+     * LM Studio 模型配置
+     * <p>
+     * 用于标识 LM Studio 模型的相关信息, 包括模型名称, 显示名称, 基础 URL, 默认模型名称, 是否启用, 是否需要认证以及支持的模型列表.
+     */
     LM_STUDIO(
         "lmstudio",
         "LM Studio",
@@ -104,7 +109,16 @@ public enum AIProviderType {
     private final String defaultModel;
     /** 是否需要 API 密钥 */
     private final boolean requiresApiKey;
-    /** 基础 URL 是否可编辑 */
+    /**
+     * 基础 URL 是否可编辑
+     * -- GETTER --
+     * 判断基础 URL 是否可编辑
+     * <p>
+     * 当返回
+     * 时表示基础 URL 可以被修改; 返回
+     * 表示不可修改.
+     */
+    @Getter
     private final boolean baseUrlEditable;
     /**
      * 支持的模型列表
@@ -199,17 +213,6 @@ public enum AIProviderType {
      */
     public boolean requiresApiKey() {
         return requiresApiKey;
-    }
-
-    /**
-     * 判断基础 URL 是否可编辑
-     * <p>
-     * 当返回 {@code true} 时表示基础 URL 可以被修改; 返回 {@code false} 表示不可修改.
-     *
-     * @return {@code true} 表示可编辑,{@code false} 表示不可编辑
-     */
-    public boolean isBaseUrlEditable() {
-        return baseUrlEditable;
     }
 
     /**

@@ -14,6 +14,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
@@ -58,6 +59,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     /** 是否显示可用的服务提供商 */
     public boolean showAvailableProviders = false;
 
+    /** 监听器列表（使用 CopyOnWriteArrayList 保证线程安全） */
+    private final List<AIProviderSettingsListener> listeners = new CopyOnWriteArrayList<>();
+
     /**
      * 获取服务实例（单例）
      *
@@ -65,6 +69,61 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      */
     public static AIProviderSettings getInstance() {
         return ApplicationManager.getApplication().getService(AIProviderSettings.class);
+    }
+
+    /**
+     * 添加监听器
+     * <p>
+     * 当可用提供商列表发生变化时，会通知所有已注册的监听器。
+     *
+     * @param listener 监听器实例
+     */
+    public void addListener(@NotNull AIProviderSettingsListener listener) {
+        listeners.add(listener);
+    }
+
+    /**
+     * 移除监听器
+     *
+     * @param listener 要移除的监听器实例
+     */
+    public void removeListener(@NotNull AIProviderSettingsListener listener) {
+        listeners.remove(listener);
+    }
+
+    /**
+     * 通知所有监听器可用提供商列表已发生变化
+     * <p>
+     * 在 EDT 线程中执行监听器回调，确保 UI 更新的线程安全。
+     * 同时触发配置的立即持久化，确保第三方插件能够立即看到变更。
+     */
+    private void notifyListeners() {
+        // 立即持久化配置，确保第三方插件能够立即看到变更
+        saveState();
+
+        if (listeners.isEmpty()) {
+            return;
+        }
+        // 在 EDT 线程中执行监听器回调
+        ApplicationManager.getApplication().invokeLater(() -> {
+            for (AIProviderSettingsListener listener : listeners) {
+                try {
+                    listener.onAvailableProvidersChanged(this);
+                } catch (Exception e) {
+                    // 静默处理异常，避免影响其他监听器
+                }
+            }
+        });
+    }
+
+    /**
+     * 手动触发配置持久化
+     * <p>
+     * 在可用提供商列表发生变更时，立即持久化配置，确保第三方插件能够立即看到变更。
+     * 这样就不需要用户手动点击 Apply 按钮。
+     */
+    private void saveState() {
+        ApplicationManager.getApplication().saveSettings();
     }
 
     /**
@@ -169,6 +228,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     public void addAvailableProvider(@NotNull AIProviderConfig config) {
         availableProviders.removeIf(existing -> Objects.equals(existing.credentialId, config.credentialId));
         availableProviders.add(config.copy());
+        notifyListeners();
     }
 
     /**
@@ -179,7 +239,10 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      * @param credentialId 准则 ID, 可以为 null
      */
     public void removeAvailableProvider(@Nullable String credentialId) {
-        availableProviders.removeIf(config -> Objects.equals(config.credentialId, credentialId));
+        boolean removed = availableProviders.removeIf(config -> Objects.equals(config.credentialId, credentialId));
+        if (removed) {
+            notifyListeners();
+        }
     }
 
     /**
@@ -188,7 +251,10 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      * 该方法用于清空 availableProviders 集合中的所有元素
      */
     public void clearAvailableProviders() {
-        availableProviders.clear();
+        if (!availableProviders.isEmpty()) {
+            availableProviders.clear();
+            notifyListeners();
+        }
     }
 
     /**
@@ -209,6 +275,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      * @param source 源配置对象, 不能为空
      */
     public void applyFrom(@NotNull AIProviderSettings source) {
+        // 检查可用提供商列表是否有变化
+        boolean availableProvidersChanged = !this.availableProviders.equals(source.availableProviders);
+        
         this.defaultProviders.clear();
         source.defaultProviders.forEach((type, config) -> this.defaultProviders.put(type, config.copy()));
 
@@ -232,6 +301,11 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.showProviderStatistics = source.showProviderStatistics;
         this.showAdvancedSettings = source.showAdvancedSettings;
         this.showAvailableProviders = source.showAvailableProviders;
+
+        // 如果可用提供商列表有变化，通知监听器并触发持久化
+        if (availableProvidersChanged) {
+            notifyListeners();
+        }
     }
 
     /**

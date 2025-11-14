@@ -24,7 +24,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- 配置持久化 -->
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState"/>
-        
+
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <projectConfigurable
@@ -61,6 +61,11 @@
             <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
         </intentionAction>
 
+    </extensions>
+
+    <!-- 注册到 ai-common 的扩展点 -->
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <pluginAISettingsProvider implementation="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocAISettingsProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->

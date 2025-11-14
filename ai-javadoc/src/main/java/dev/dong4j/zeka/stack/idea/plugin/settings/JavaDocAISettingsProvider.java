@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
-import com.intellij.openapi.components.Service;
-import com.intellij.openapi.project.Project;
+import com.intellij.openapi.application.ApplicationManager;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -20,14 +19,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
  * @author dong4j
  * @version 1.0.0
  */
-@Service(Service.Level.PROJECT)
 public final class JavaDocAISettingsProvider implements PluginAISettingsProvider {
-
-    private final Project project;
-
-    public JavaDocAISettingsProvider(@NotNull Project project) {
-        this.project = project;
-    }
 
     @Override
     @NotNull
@@ -67,8 +59,8 @@ public final class JavaDocAISettingsProvider implements PluginAISettingsProvider
     /**
      * 获取服务实例
      */
-    public static JavaDocAISettingsProvider getInstance(@NotNull Project project) {
-        return project.getService(JavaDocAISettingsProvider.class);
+    public static JavaDocAISettingsProvider getInstance() {
+        return ApplicationManager.getApplication().getService(JavaDocAISettingsProvider.class);
     }
 }
 

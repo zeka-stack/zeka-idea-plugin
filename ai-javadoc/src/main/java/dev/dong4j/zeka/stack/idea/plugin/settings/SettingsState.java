@@ -1,9 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
-import com.intellij.credentialStore.CredentialAttributes;
-import com.intellij.credentialStore.CredentialAttributesKt;
-import com.intellij.credentialStore.Credentials;
-import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
@@ -62,16 +58,6 @@ import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
     storages = @Storage("zeka.stack.ai.javadoc.xml")
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
-
-    // ==================== PasswordSafe 相关常量 ====================
-
-    /** PasswordSafe 服务名称 */
-    private static final String PASSWORD_SAFE_SERVICE_NAME = "AI Javadoc";
-
-    /** PasswordSafe 存储键名前缀 */
-    private static final String PASSWORD_SAFE_KEY_PREFIX = "AI_JAVADOC_API_KEY_";
-
-    // ==================== AI 提供商配置 ====================
 
     /**
      * 默认 AI 提供商类型
@@ -820,106 +806,5 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         fieldPromptTemplate = getDefaultFieldPromptTemplate();
         testPromptTemplate = getDefaultTestPromptTemplate();
     }
-
-    /**
-     * 创建配置的副本
-     *
-     * <p>创建当前配置的深拷贝副本。
-     * 用于配置比较或临时修改。
-     *
-     * <p>实现方式:
-     * <ul>
-     *   <li>使用 XmlSerializerUtil.copyBean 进行深拷贝</li>
-     *   <li>创建新的 SettingsState 实例</li>
-     * </ul>
-     *
-     * @return 配置副本
-     * @see XmlSerializerUtil#copyBean(Object, Object)
-     */
-    @NotNull
-    public SettingsState copy() {
-        SettingsState copy = new SettingsState();
-        XmlSerializerUtil.copyBean(this, copy);
-        return copy;
-    }
-
-    // ==================== PasswordSafe API Key 管理方法 ====================
-
-    /**
-     * 创建 CredentialAttributes
-     * <p>
-     * 为指定的键名创建凭证属性对象，用于 PasswordSafe 存储和读取
-     *
-     * @param key 存储键名
-     * @return CredentialAttributes 对象
-     */
-    @NotNull
-    private static CredentialAttributes createCredentialAttributes(@NotNull String key) {
-        return new CredentialAttributes(
-            CredentialAttributesKt.generateServiceName(PASSWORD_SAFE_SERVICE_NAME, key)
-        );
-    }
-
-    /**
-     * 获取指定 ProviderConfig 的 API Key
-     * <p>
-     * 从 PasswordSafe 中读取指定提供商配置的 API 密钥
-     *
-     * @param uuid 提供商配置的 UUID
-     * @return API Key，如果不存在则返回 null
-     */
-    @Nullable
-    public static String getApiKey(@Nullable String uuid) {
-        return doGetApiKey(uuid);
-    }
-
-    /**
-     * 根据指定的 UUID 获取 API 密钥
-     * <p>
-     * 如果提供的 UUID 为空或仅包含空白字符, 则返回 null. 否则, 从密码保险箱中查找对应的凭证, 并返回密码作为 API 密钥.
-     *
-     * @param uuid 用于查找凭证的 UUID, 可以为 null
-     * @return 对应的 API 密钥, 如果未找到凭证或 UUID 无效则返回 null
-     */
-    @Nullable
-    private static String doGetApiKey(@Nullable String uuid) {
-        if (uuid == null || uuid.trim().isEmpty()) {
-            return null;
-        }
-
-        Credentials credentials = PasswordSafe.getInstance().get(
-            createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid)
-                                                                );
-        return credentials != null ? credentials.getPasswordAsString() : null;
-    }
-
-    /**
-     * 设置指定 ProviderConfig 的 API Key
-     * <p>
-     * 将指定提供商配置的 API 密钥存储到 PasswordSafe 中
-     *
-     * @param uuid   提供商配置的 UUID
-     * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
-     */
-    public static void setApiKey(@Nullable String uuid, @Nullable String apiKey) {
-        if (uuid == null || uuid.trim().isEmpty()) {
-            return;
-        }
-
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            // 如果 apiKey 为空，删除已存储的密钥
-            PasswordSafe.getInstance().set(
-                createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid),
-                null
-                                          );
-        } else {
-            // 存储 API 密钥
-            PasswordSafe.getInstance().set(
-                createCredentialAttributes(PASSWORD_SAFE_KEY_PREFIX + uuid),
-                new Credentials(uuid, apiKey)
-                                          );
-        }
-    }
-
 }
 
