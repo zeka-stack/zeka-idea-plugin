@@ -226,16 +226,18 @@ public final class AIProviderConfigPanel {
         this.workingSettings = settings.copy();
 
         // 加载连接配置
-        providerComboBox.setSelectedItem(workingSettings.providerType.getDisplayName());
+        // 注意：全局配置不维护 providerType，默认使用 QIANWEN
+        AIProviderType defaultProviderType = AIProviderType.QIANWEN;
+        providerComboBox.setSelectedItem(defaultProviderType.getDisplayName());
         updateModelList();
 
-        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(workingSettings.providerType);
+        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(defaultProviderType);
         modelComboBox.setSelectedItem(defaultConfig.modelName);
         baseUrlField.setText(defaultConfig.baseUrl);
         configurationVerified = defaultConfig.configurationVerified;
         updateTestButtonState();
 
-        loadApiKeyAsync(defaultConfig.credentialId, workingSettings.providerType.getProviderId());
+        loadApiKeyAsync(defaultConfig.credentialId, defaultProviderType.getProviderId());
 
         refreshModelsSuccess = null;
         updateRefreshButtonState();
@@ -282,8 +284,9 @@ public final class AIProviderConfigPanel {
         AIProviderSettings copy = workingSettings.copy();
 
         // 保存连接配置
+        // 注意：全局配置不维护 providerType，只保存当前编辑的供应商配置到 defaultProviders
         AIProviderType providerType = resolveSelectedProviderType();
-        copy.providerType = providerType;
+        // 不再设置 copy.providerType，因为全局配置不维护默认供应商
 
         AIProviderConfig defaultConfig = copy.getDefaultProviderConfig(providerType);
         String modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
@@ -413,8 +416,7 @@ public final class AIProviderConfigPanel {
                 /**
                  * 执行动作时的回调方法.
                  * <p>
-                 * 当用户触发对应的操作时, 该方法会被调用并执行 {@link #clearAllAvailableProviders()},
-                 * 用于清除所有可用的提供者.
+                 * 当用户触发对应的操作时, 该方法会被调用并执行,用于清除所有可用的提供者.
                  *
                  * @param e 触发动作的事件对象, 不能为空
                  */
@@ -676,9 +678,6 @@ public final class AIProviderConfigPanel {
      * 更新所有复选框提示标签的颜色
      * <p>
      * 遍历复选框与提示标签的映射关系, 根据复选框的选中状态更新对应提示标签的颜色
-     *
-     * @param checkBox   复选框对象
-     * @param isSelected 复选框是否被选中
      */
     private void updateCheckBoxHintColors() {
         // 更新所有复选框的提示文本颜色
@@ -692,9 +691,6 @@ public final class AIProviderConfigPanel {
      * 初始化各种监听器, 用于响应用户界面组件的事件
      * <p>
      * 为组合框, 复选框和按钮等组件添加动作监听器, 以实现界面交互功能
-     *
-     * @param 无
-     * @return 无
      */
     private void setupListeners() {
         providerComboBox.addActionListener(e -> {
@@ -722,9 +718,6 @@ public final class AIProviderConfigPanel {
      * 更新性能模式子配置的启用状态
      * <p>
      * 根据性能模式复选框的状态, 启用或禁用相关配置项, 并更新提示标签的显示状态和颜色.
-     *
-     * @param 无参数
-     * @return 无返回值
      */
     private void updatePerformanceModeSubConfigEnabled() {
         boolean enabled = performanceModeCheckBox.isSelected();
@@ -778,9 +771,6 @@ public final class AIProviderConfigPanel {
      * 加载默认的 AI 服务提供商配置信息
      * <p>
      * 该方法用于加载当前选中的 AI 服务提供商的默认配置, 并更新相关界面组件的状态.
-     *
-     * @param providerType 从当前设置中解析出的 AI 服务提供商类型
-     * @return 无返回值
      */
     private void loadDefaultProviderConfig() {
         AIProviderType providerType = resolveSelectedProviderType();
@@ -826,7 +816,6 @@ public final class AIProviderConfigPanel {
     private void testConnection() {
         AIProviderType providerType = resolveSelectedProviderType();
         AIProviderSettings snapshot = workingSettings.copy();
-        snapshot.providerType = providerType;
         AIProviderConfig config = snapshot.getDefaultProviderConfig(providerType);
         config.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
         config.baseUrl = normalizeBaseUrl(baseUrlField.getText());
@@ -911,7 +900,6 @@ public final class AIProviderConfigPanel {
     private void refreshModels() {
         AIProviderType providerType = resolveSelectedProviderType();
         AIProviderSettings snapshot = workingSettings.copy();
-        snapshot.providerType = providerType;
         AIProviderConfig config = snapshot.getDefaultProviderConfig(providerType);
         // 确保 providerType 被正确设置
         config.providerType = providerType;
@@ -949,7 +937,7 @@ public final class AIProviderConfigPanel {
         }
 
         String apiKey = getCurrentApiKey();
-        if (providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
+        if (providerType.requiresApiKey() && apiKey.trim().isEmpty()) {
             JOptionPane.showMessageDialog(mainPanel,
                                           AICommonBundle.message("settings.error.api.key.missing"),
                                           AICommonBundle.message("settings.error.title"),
@@ -975,7 +963,7 @@ public final class AIProviderConfigPanel {
                         String defaultModelName = config.modelName;
                         if (defaultModelName != null && !defaultModelName.trim().isEmpty() && models.contains(defaultModelName)) {
                             modelComboBox.setSelectedItem(defaultModelName);
-                        } else if (currentModelName != null && !currentModelName.trim().isEmpty() && models.contains(currentModelName)) {
+                        } else if (!currentModelName.trim().isEmpty() && models.contains(currentModelName)) {
                             modelComboBox.setSelectedItem(currentModelName);
                         } else {
                             modelComboBox.setSelectedItem(models.get(0));
@@ -989,10 +977,8 @@ public final class AIProviderConfigPanel {
                         refreshModelsSuccess = false;
                         // 如果模型列表为空，可能是配置错误或网络问题
                         String errorMessage = AICommonBundle.message("settings.refresh.models.empty");
-                        if (providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
+                        if (providerType.requiresApiKey() && apiKey.trim().isEmpty()) {
                             errorMessage = AICommonBundle.message("settings.error.api.key.missing");
-                        } else if (baseUrl.isEmpty()) {
-                            errorMessage = AICommonBundle.message("settings.error.base.url.missing");
                         }
                         JOptionPane.showMessageDialog(mainPanel,
                                                       errorMessage,
@@ -1130,9 +1116,6 @@ public final class AIProviderConfigPanel {
      * 更新刷新按钮的状态图标
      * <p>
      * 根据刷新操作的成功状态, 设置按钮的图标颜色. 若 refreshModelsSuccess 为 null, 则使用默认颜色; 若为 true, 使用成功颜色; 若为 false, 使用失败颜色.
-     *
-     * @param refreshModelsButton  刷新按钮组件
-     * @param refreshModelsSuccess 刷新操作是否成功的标志
      */
     private void updateRefreshButtonState() {
         if (refreshModelsButton == null) {
@@ -1258,7 +1241,7 @@ public final class AIProviderConfigPanel {
      * @date 2025.10.24
      * @since 1.0.0
      */
-    private class ProviderListCellRenderer extends DefaultListCellRenderer {
+    private static class ProviderListCellRenderer extends DefaultListCellRenderer {
         /**
          * 为 {@link JList} 提供自定义的单元格渲染器.
          * <p>
@@ -1303,7 +1286,7 @@ public final class AIProviderConfigPanel {
      * @date 2025.10.24
      * @since 1.0.0
      */
-    private class ProviderTableCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+    private static class ProviderTableCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
         /**
          * 自定义表格单元格渲染器, 用于显示 AI 提供者的名称和图标
          * <p>

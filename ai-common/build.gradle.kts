@@ -1,6 +1,5 @@
 plugins {
-    id("java-library")
-    id("maven-publish")
+    id("java")
     id("org.jetbrains.intellij.platform") version "2.1.0"
     id("com.github.sherter.google-java-format") version "0.9"
 }
@@ -8,14 +7,8 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
-java {
-    val javaVersion = providers.gradleProperty("javaVersion").get().toInt()
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(javaVersion))
-    }
-}
-
 repositories {
+    mavenLocal()
     mavenCentral()
 
     intellijPlatform {
@@ -24,22 +17,57 @@ repositories {
 }
 
 intellijPlatform {
-    instrumentCode.set(false)
+    pluginConfiguration {
+        name = providers.gradleProperty("pluginName")
+        version = providers.gradleProperty("pluginVersion")
+
+        description = providers.fileContents(layout.projectDirectory.file("includes/pluginDescription.html")).asText
+        changeNotes = providers.fileContents(layout.projectDirectory.file("includes/pluginChanges.html")).asText
+
+        ideaVersion {
+            sinceBuild = providers.gradleProperty("platformSinceBuild")
+            untilBuild = providers.gradleProperty("platformUntilBuild")
+        }
+    }
+
+    pluginVerification {
+        ides {
+            ide("IC", "2022.3")
+            ide("IC", "2023.1")
+            ide("IC", "2023.2")
+            ide("IC", "2023.3")
+            ide("IC", "2024.1")
+            ide("IC", "2024.2")
+            ide("IC", "2024.3")
+            ide("IC", "2025.1")
+            ide("IC", "2025.2")
+
+            ide("IU", "2022.3")
+            ide("IU", "2023.1")
+            ide("IU", "2023.2")
+            ide("IU", "2023.3")
+            ide("IU", "2024.1")
+            ide("IU", "2024.2")
+            ide("IU", "2024.3")
+            ide("IU", "2025.1")
+            ide("IU", "2025.2")
+        }
+    }
 }
 
 dependencies {
     intellijPlatform {
-        create(
-            providers.gradleProperty("platformType"),
-            providers.gradleProperty("platformVersion")
-        )
+        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
 
         bundledPlugin("com.intellij.java")
+        instrumentationTools()
+        zipSigner()
+        pluginVerifier()
+        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
-    implementation("com.google.code.gson:gson:2.10.1")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
@@ -57,23 +85,25 @@ dependencies {
 }
 
 tasks {
+    val javaVersion = providers.gradleProperty("javaVersion").get()
+
     withType<JavaCompile> {
-        sourceCompatibility = providers.gradleProperty("javaVersion").get()
-        targetCompatibility = providers.gradleProperty("javaVersion").get()
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
+    }
+
+    signPlugin {
+        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
+        privateKey.set(System.getenv("PRIVATE_KEY"))
+        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
+    }
+
+    publishPlugin {
+        token.set(System.getenv("PUBLISH_TOKEN"))
+        channels = providers.gradleProperty("publishChannels").map { listOf(it) }
     }
 
     test {
         useJUnitPlatform()
-    }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
-    repositories {
-        mavenLocal()
     }
 }

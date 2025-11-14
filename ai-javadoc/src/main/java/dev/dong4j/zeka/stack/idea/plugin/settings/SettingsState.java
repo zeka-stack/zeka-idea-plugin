@@ -22,7 +22,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 
 /**
@@ -72,21 +74,33 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     // ==================== AI 提供商配置 ====================
 
     /**
-     * AI 提供商设置
-     *
-     * <p>包含所有 AI 提供商相关的配置，包括：
-     * <ul>
-     *   <li>当前默认提供商类型</li>
-     *   <li>默认提供商配置映射</li>
-     *   <li>可用提供商列表</li>
-     *   <li>模型参数（temperature, maxTokens, topP, topK, presencePenalty）</li>
-     *   <li>运行时设置（maxRetries, timeout, waitDuration, verboseLogging）</li>
-     *   <li>性能模式设置</li>
-     * </ul>
+     * 默认 AI 提供商类型
+     * <p>
+     * 插件使用的默认供应商，从全局可用供应商列表中选取。
+     * 全局供应商配置在 Settings → Tools → AI Common 中管理。
      *
      * @see AIProviderSettings
      */
-    public AIProviderSettings providerSettings = new AIProviderSettings();
+    public AIProviderType providerType = AIProviderType.QIANWEN;
+
+    /**
+     * 模型参数（可选）
+     * <p>
+     * 如果为 null，则使用全局默认值。
+     */
+    public AIModelParameters modelParameters = new AIModelParameters();
+
+    /**
+     * 运行时设置（可选）
+     * <p>
+     * 如果为 null，则使用全局默认值。
+     */
+    public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
+
+    /**
+     * 性能模式开关
+     */
+    public boolean performanceMode = false;
 
     // ==================== 功能配置 ====================
 
@@ -704,7 +718,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIProviderType#requiresApiKey()
      */
     public boolean requiresApiKey() {
-        return providerSettings.providerType != null && providerSettings.providerType.requiresApiKey();
+        return providerType != null && providerType.requiresApiKey();
     }
 
     /**
@@ -784,7 +798,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public void resetToDefaults() {
         // 重置 AI 提供商设置
-        providerSettings = new AIProviderSettings();
+        providerType = AIProviderType.QIANWEN;
+        modelParameters = new AIModelParameters();
+        runtimeSettings = new AIRuntimeSettings();
+        performanceMode = false;
 
         supportedLanguages = new HashSet<>();
         supportedLanguages.add("java");

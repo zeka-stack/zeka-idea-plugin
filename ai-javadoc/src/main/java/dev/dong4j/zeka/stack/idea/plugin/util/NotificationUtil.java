@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
-import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
  * 通知工具类
@@ -137,11 +136,7 @@ public class NotificationUtil {
      */
     public static void notifyTargetCompletion(@Nullable Project project, @NotNull String target,
                                               int completed, int failed, int skipped) {
-        if (SettingsState.getInstance().providerSettings.runtimeSettings.verboseLogging) {
-            String content = JavaDocBundle.message("notification.target.completion.format", target, completed, failed, skipped);
-            final NotificationType type = getNotificationType(completed, failed);
-            notify(project, JavaDocBundle.message("notification.generation.complete"), content, type);
-        }
+        // nothing
     }
 
     /**

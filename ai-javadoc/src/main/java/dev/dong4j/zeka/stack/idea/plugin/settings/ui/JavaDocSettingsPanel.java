@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -15,26 +16,31 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
+import javax.swing.ListCellRenderer;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -46,14 +52,13 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
  * @author dong4j
  * @version 1.0.0
  */
-@SuppressWarnings( {"D", "DuplicatedCode"})
 public class JavaDocSettingsPanel {
 
     /** 主界面主面板，用于承载主要功能组件和布局 */
     private JPanel mainPanel;
 
-    /** 通用 AI 提供商配置面板 */
-    private final AIProviderConfigPanel providerConfigPanel;
+    /** AI 提供商选择下拉框 */
+    private JComboBox<AIProviderType> providerComboBox;
 
     // 功能配置
     /** 生成针对类的复选框 */
@@ -116,8 +121,6 @@ public class JavaDocSettingsPanel {
      * 调用创建用户界面和设置事件监听器的方法，完成面板的初始化
      */
     public JavaDocSettingsPanel() {
-        AICredentialManager credentialManager = new AICredentialManager("AI Javadoc", "AI_JAVADOC_API_KEY_");
-        this.providerConfigPanel = new AIProviderConfigPanel(credentialManager);
         createUI();
         setupListeners();
     }
@@ -242,8 +245,8 @@ public class JavaDocSettingsPanel {
 
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()
-            // 第一组：基础连接配置（API 接入）
-            .addComponent(createBasicConnectionConfigPanel())
+            // 第一组：AI 提供商选择
+            .addComponent(createAIProviderSelectionPanel())
             .addSeparator(10)
 
             // 第二组：高级设置（可折叠）
@@ -269,19 +272,56 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 创建基础连接配置面板
+     * 创建 AI 提供商选择面板
+     * <p>
+     * 只显示供应商选择下拉框，其他 AI 配置在 Settings → Tools → AI Common 中管理。
      *
-     * <p>直接使用 AIProviderConfigPanel，它已经包含了所有 AI 相关的配置（连接配置、基础配置、高级配置）。
-     *
-     * @return 基础连接配置面板
+     * @return AI 提供商选择面板
      */
-    private JPanel createBasicConnectionConfigPanel() {
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.add(providerConfigPanel.getPanel(), BorderLayout.CENTER);
-        wrapper.setBorder(BorderFactory.createTitledBorder(
+    private JPanel createAIProviderSelectionPanel() {
+        // 创建供应商下拉框
+        providerComboBox = new ComboBox<>(AIProviderType.values());
+        providerComboBox.setRenderer(new ListCellRenderer<AIProviderType>() {
+            @Override
+            public Component getListCellRendererComponent(JList<? extends AIProviderType> list,
+                                                          AIProviderType value,
+                                                          int index,
+                                                          boolean isSelected,
+                                                          boolean cellHasFocus) {
+
+                JBLabel label = new JBLabel();
+                if (value != null) {
+                    Icon icon = AICommonIcons.getProviderIcon(value);
+                    label.setIcon(icon);
+                    label.setText(value.getDisplayName());
+                }
+                if (isSelected) {
+                    label.setBackground(list.getSelectionBackground());
+                    label.setForeground(list.getSelectionForeground());
+                } else {
+                    label.setBackground(list.getBackground());
+                    label.setForeground(list.getForeground());
+                }
+                label.setOpaque(true);
+                return label;
+            }
+        });
+
+        JBLabel providerLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider") + ":");
+        JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.hint"));
+        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
+
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(providerLabel, providerComboBox)
+            .addComponent(hintLabel)
+            .getPanel();
+
+        panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.basic.connection.config")));
-        return wrapper;
+            JavaDocBundle.message("settings.ai.provider.selection")));
+
+        return panel;
     }
 
 
@@ -709,7 +749,6 @@ public class JavaDocSettingsPanel {
              * 文档更新时触发的回调方法.
              * <p>
              * 当文本域的内容发生变化时, 该方法会被调用,
-             * 并通过 {@link #adjustTextAreaSize(javax.swing.JTextArea)} 方法动态调整文本域的尺寸.
              *
              * @param e 文档事件, 包含更新的相关信息
              */
@@ -857,8 +896,9 @@ public class JavaDocSettingsPanel {
     public SettingsState getSettings() {
         SettingsState settings = new SettingsState();
 
-        // 直接从 AIProviderConfigPanel 获取所有 AI 配置
-        settings.providerSettings = providerConfigPanel.getSettings();
+        // 获取选择的供应商类型
+        AIProviderType selectedProvider = (AIProviderType) providerComboBox.getSelectedItem();
+        settings.providerType = selectedProvider != null ? selectedProvider : AIProviderType.QIANWEN;
 
         settings.generateForClass = generateForClassCheckBox.isSelected();
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
@@ -893,12 +933,12 @@ public class JavaDocSettingsPanel {
     /**
      * 获取当前使用的 API 密钥
      * <p>
-     * 调用配置面板获取当前设置的 API 密钥值
+     * 注意：API 密钥现在在全局设置中管理（Settings → Tools → AI Common）
      *
-     * @return 当前 API 密钥字符串
+     * @return 空字符串（API 密钥不再在此处管理）
      */
     public String getCurrentApiKey() {
-        return providerConfigPanel.getCurrentApiKey();
+        return "";
     }
 
     /**
@@ -911,8 +951,12 @@ public class JavaDocSettingsPanel {
      */
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
-        // 直接使用 AIProviderConfigPanel 加载所有 AI 配置
-        providerConfigPanel.loadSettings(settings.providerSettings);
+        // 加载供应商选择
+        if (settings.providerType != null) {
+            providerComboBox.setSelectedItem(settings.providerType);
+        } else {
+            providerComboBox.setSelectedItem(AIProviderType.QIANWEN);
+        }
 
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);

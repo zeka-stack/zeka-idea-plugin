@@ -1,5 +1,11 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.config;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.components.PersistentStateComponent;
+import com.intellij.openapi.components.State;
+import com.intellij.openapi.components.Storage;
+import com.intellij.util.xmlb.XmlSerializerUtil;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,19 +18,23 @@ import java.util.Objects;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
- * AI 服务提供商配置类
+ * AI 服务提供商配置类（应用级服务）
  * <p>
- * 用于存储和管理 AI 服务提供商的相关配置信息, 包括默认提供商, 可用提供商, 模型参数, 运行时参数等. 支持配置的复制, 更新, 清除以及比较操作.
+ * 用于存储和管理 AI 服务提供商的相关配置信息, 包括可用提供商, 模型参数, 运行时参数等.
+ * 作为应用级服务，所有插件共享同一份全局配置。
+ * <p>
+ * 注意：全局配置不维护"默认供应商"，每个插件维护自己的默认供应商选择。
  *
  * @author dong4j
  * @version 1.0.0
  * @date 2025.10.24
  * @since 1.0.0
  */
-public class AIProviderSettings {
-
-    /** AI 服务提供商类型, 用于标识当前使用的 AI 服务提供商, 默认为通义千问 */
-    public AIProviderType providerType = AIProviderType.QIANWEN;
+@State(
+    name = "AIProviderSettings",
+    storages = @Storage("ai-common-settings.xml")
+)
+public class AIProviderSettings implements PersistentStateComponent<AIProviderSettings> {
     /** 默认支持的 AI 服务提供商及其配置信息 */
     public final Map<AIProviderType, AIProviderConfig> defaultProviders = new EnumMap<>(AIProviderType.class);
     /** 可用的 AI 服务提供商配置列表 */
@@ -49,6 +59,36 @@ public class AIProviderSettings {
     public boolean showAvailableProviders = false;
 
     /**
+     * 获取服务实例（单例）
+     *
+     * @return AIProviderSettings 实例
+     */
+    public static AIProviderSettings getInstance() {
+        return ApplicationManager.getApplication().getService(AIProviderSettings.class);
+    }
+
+    /**
+     * 获取状态（用于持久化）
+     *
+     * @return 当前状态
+     */
+    @Override
+    @NotNull
+    public AIProviderSettings getState() {
+        return this;
+    }
+
+    /**
+     * 加载状态（用于持久化）
+     *
+     * @param state 要加载的状态
+     */
+    @Override
+    public void loadState(@NotNull AIProviderSettings state) {
+        XmlSerializerUtil.copyBean(state, this);
+    }
+
+    /**
      * 创建并返回当前对象的一个副本
      * <p>
      * 该方法深拷贝当前 AIProviderSettings 对象的所有属性, 包括默认提供者, 可用提供者, 模型参数和运行时设置等.
@@ -57,7 +97,6 @@ public class AIProviderSettings {
      */
     public AIProviderSettings copy() {
         AIProviderSettings settings = new AIProviderSettings();
-        settings.providerType = this.providerType;
         this.defaultProviders.forEach((type, config) -> settings.defaultProviders.put(type, config.copy()));
         this.availableProviders.forEach(config -> settings.availableProviders.add(config.copy()));
         settings.modelParameters.temperature = this.modelParameters.temperature;
@@ -157,7 +196,6 @@ public class AIProviderSettings {
      * <p>
      * 该方法会逐一复制源对象的所有可配置字段, 包括:
      * <ul>
-     *   <li> 提供者类型 {@code providerType}</li>
      *   <li> 默认提供者列表 {@code defaultProviders}</li>
      *   <li> 可用提供者列表 {@code availableProviders}</li>
      *   <li> 模型参数 {@code modelParameters}</li>
@@ -165,12 +203,12 @@ public class AIProviderSettings {
      *   <li> 性能模式, 统计显示与高级设置等布尔标志 </li>
      * </ul>
      * 复制过程中会使用 {@link AIProviderSettings#copy()} 方法生成深拷贝, 确保源对象与目标对象互不影响.
+     * <p>
+     * 注意：不复制 providerType，因为全局配置不维护默认供应商。
      *
      * @param source 源配置对象, 不能为空
      */
     public void applyFrom(@NotNull AIProviderSettings source) {
-        this.providerType = source.providerType;
-
         this.defaultProviders.clear();
         source.defaultProviders.forEach((type, config) -> this.defaultProviders.put(type, config.copy()));
 
@@ -207,9 +245,7 @@ public class AIProviderSettings {
      */
     @SuppressWarnings( {"BooleanMethodIsAlwaysInverted", "D"})
     public boolean contentEquals(@NotNull AIProviderSettings other) {
-        if (providerType != other.providerType) {
-            return false;
-        }
+        // 注意：不比较 providerType，因为全局配置不维护默认供应商
         if (performanceMode != other.performanceMode
             || showProviderStatistics != other.showProviderStatistics
             || showAdvancedSettings != other.showAdvancedSettings

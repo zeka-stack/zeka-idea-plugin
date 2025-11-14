@@ -14,6 +14,7 @@ import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderStatusBarAdapter;
 import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -61,7 +62,7 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
     @NotNull
     public AIProviderType getCurrentProviderType() {
         SettingsState settings = SettingsState.getInstance();
-        return settings.providerSettings.providerType != null ? settings.providerSettings.providerType : AIProviderType.QIANWEN;
+        return settings.providerType != null ? settings.providerType : AIProviderType.QIANWEN;
     }
 
     /**
@@ -76,8 +77,9 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
     @Override
     @NotNull
     public AIProviderConfig getDefaultProviderConfig(@NotNull AIProviderType providerType) {
-        SettingsState settings = SettingsState.getInstance();
-        return settings.providerSettings.getDefaultProviderConfig(providerType);
+        // 从全局配置中获取提供商配置
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        return globalSettings.getDefaultProviderConfig(providerType);
     }
 
     /**
@@ -90,8 +92,9 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
     @Override
     @NotNull
     public List<AIProviderConfig> getAvailableProviders() {
-        SettingsState settings = SettingsState.getInstance();
-        return new ArrayList<>(settings.providerSettings.getVerifiedProviders());
+        // 从全局配置中获取可用提供商列表
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        return new ArrayList<>(globalSettings.getVerifiedProviders());
     }
 
     /**
@@ -104,9 +107,12 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
      */
     @Override
     public void switchDefaultProvider(@NotNull AIProviderType providerType, @NotNull AIProviderConfig config) {
+        // 更新插件配置中的默认提供商选择
         SettingsState settings = SettingsState.getInstance();
-        settings.providerSettings.providerType = providerType;
-        settings.providerSettings.updateDefaultProviderConfig(providerType, config);
+        settings.providerType = providerType;
+        // 更新全局配置中的提供商配置
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        globalSettings.updateDefaultProviderConfig(providerType, config);
     }
 
     /**

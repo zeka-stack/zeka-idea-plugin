@@ -16,13 +16,15 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.modules.vcs</depends>
+    <!-- 依赖 AI Common 插件 -->
+    <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
 
     <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- 配置持久化 -->
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState"/>
-
+        
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <projectConfigurable

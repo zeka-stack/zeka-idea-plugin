@@ -16,10 +16,6 @@ import java.util.List;
 
 import javax.swing.JComponent;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar;
 import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -176,7 +172,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         SettingsState panelSettings = settingsPanel.getSettings();
 
         // 比较各个配置项
-        if (!currentSettings.providerSettings.contentEquals(panelSettings.providerSettings)) {
+        if (currentSettings.providerType != panelSettings.providerType) {
             return true;
         }
 
@@ -276,19 +272,8 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         // 应用配置
         SettingsState currentSettings = SettingsState.getInstance();
-        currentSettings.providerSettings = panelSettings.providerSettings.copy();
-
-        // 保存当前服务商的 API Key 到 PasswordSafe（只在真正应用配置时保存，避免频繁写入）
-        String apiKey = settingsPanel.getCurrentApiKey();
-        if (!apiKey.isEmpty()) {
-            AIProviderConfig currentConfig = currentSettings.providerSettings.getDefaultProviderConfig(
-                currentSettings.providerSettings.providerType
-                                                                                                      );
-            if (currentConfig.credentialId != null) {
-                AICredentialManager credentialManager = new AICredentialManager("AI Javadoc", "AI_JAVADOC_API_KEY_");
-                credentialManager.setApiKey(currentConfig.credentialId, apiKey);
-            }
-        }
+        currentSettings.providerType = panelSettings.providerType;
+        // 注意：API Key 现在在全局设置中管理（Settings → Tools → AI Common）
 
         currentSettings.generateForClass = panelSettings.generateForClass;
         currentSettings.generateForMethod = panelSettings.generateForMethod;
@@ -398,37 +383,10 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      */
     private boolean validateSettings(SettingsState settings) {
         // 检查必填字段
-        if (settings.providerSettings.providerType == null) {
-            return false;
-        }
+        return settings.providerType != null;
 
-        // 从 defaultProviders 获取当前服务商的配置
-        AIProviderConfig defaultConfig = settings.providerSettings.getDefaultProviderConfig(settings.providerSettings.providerType);
-
-        if (defaultConfig.modelName == null || defaultConfig.modelName.trim().isEmpty()) {
-            return false;
-        }
-
-        if (defaultConfig.baseUrl == null || defaultConfig.baseUrl.trim().isEmpty()) {
-            return false;
-        }
-
-        // 检查数值范围
-        AIRuntimeSettings runtimeSettings = settings.providerSettings.runtimeSettings;
-        if (runtimeSettings.maxRetries < 0 || runtimeSettings.maxRetries > 10) {
-            return false;
-        }
-
-        if (runtimeSettings.timeout < 1000 || runtimeSettings.timeout > 300000) {
-            return false;
-        }
-
-        AIModelParameters modelParameters = settings.providerSettings.modelParameters;
-        if (modelParameters.temperature < 0.0 || modelParameters.temperature > 2.0) {
-            return false;
-        }
-
-        return modelParameters.maxTokens >= 100 && modelParameters.maxTokens <= 10000;
+        // 其他验证逻辑（模型参数、运行时设置等）现在在全局设置中验证
+        // 这里只验证插件特定的配置
     }
 
 }
