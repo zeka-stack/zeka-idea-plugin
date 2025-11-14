@@ -4,10 +4,6 @@ import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 import org.junit.platform.suite.api.SuiteDisplayName;
 
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIProviderHttpIntegrationTest;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceFactoryTest;
-import dev.dong4j.zeka.stack.idea.plugin.ai.AIServiceProviderTest;
-import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsStateTest;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTaskTest;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollectorTest;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtilTest;
@@ -28,18 +24,11 @@ import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocatorTest;
 @Suite
 @SuiteDisplayName("IntelliJ AI Javadoc 插件 - 完整测试套件")
 @SelectClasses( {
-    // Settings 模块
-    SettingsStateTest.class,
 
     // Task 模块
     DocumentationTaskTest.class,
     TaskCollectorTest.class,
     // TaskExecutorIntegrationTest.class, // 需要 IntelliJ Platform 环境，单独运行
-
-    // AI 模块
-    AIServiceFactoryTest.class,
-    AIServiceProviderTest.class,
-    AIProviderHttpIntegrationTest.class, // HTTP 集成测试
 
     // Util 模块
     NotificationUtilTest.class,

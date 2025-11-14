@@ -232,8 +232,6 @@ public class PsiElementLocatorTest {
      * <p>
      * 测试场景：当传入一个类对象时
      * 预期结果：应返回格式为“类: 类名”的描述字符串
-     * <p>
-     * 说明：该测试依赖 {@link PsiElementLocator#getElementDescription(Object)} 方法实现
      */
     @Test
     @DisplayName("测试获取元素描述 - 类")
