@@ -70,6 +70,32 @@ public final class ChangelogService {
     }
 
     /**
+     * 从选中的提交记录生成工作日报
+     *
+     * @param commitHashes 提交记录的 hash 列表
+     * @return 生成的工作日报内容（Markdown 格式）
+     */
+    @NotNull
+    public String generateDailyReport(@NotNull List<String> commitHashes) throws Exception {
+        List<CommitInfo> commits = readCommits(commitHashes);
+        String prompt = buildDailyReportPrompt(commits);
+        return callAIService(prompt);
+    }
+
+    /**
+     * 从选中的提交记录生成工作周报
+     *
+     * @param commitHashes 提交记录的 hash 列表
+     * @return 生成的工作周报内容（Markdown 格式）
+     */
+    @NotNull
+    public String generateWeeklyReport(@NotNull List<String> commitHashes) throws Exception {
+        List<CommitInfo> commits = readCommits(commitHashes);
+        String prompt = buildWeeklyReportPrompt(commits);
+        return callAIService(prompt);
+    }
+
+    /**
      * 读取提交记录
      */
     @NotNull
@@ -137,36 +163,69 @@ public final class ChangelogService {
      */
     @NotNull
     private String buildPrompt(@NotNull List<CommitInfo> commits) {
-        StringBuilder prompt = new StringBuilder();
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.changelogTemplate;
 
-        // Instruction
-        prompt.append("Please generate a release changelog based on the following Git commits.\n\n");
-        prompt.append("Requirements:\n");
-        prompt.append("1. Classify the commits into the following categories:\n");
-        prompt.append("   - Features\n");
-        prompt.append("   - Bug Fixes\n");
-        prompt.append("   - Refactors\n");
-        prompt.append("   - Documentation\n");
-        prompt.append("   - Chores / Others\n");
-        prompt.append("2. Each entry should be rewritten as a concise human-readable description.\n");
-        prompt.append("3. Remove meaningless or trivial commits (e.g., \"update code\", \"merge branch\").\n");
-        prompt.append("4. Format the output strictly as Markdown:\n");
-        prompt.append("   - Use level-2 heading for version and date\n");
-        prompt.append("   - Use level-3 heading for each category\n");
-        prompt.append("5. Keep sentences short, objective, and technical.\n");
-        prompt.append("6. Do not include explanations or notes outside of Markdown.\n\n");
-
-        // Context: commits
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        prompt.append("Version: v1.0.0\n");
-        prompt.append("Date: ").append(dateFormat.format(new Date())).append("\n");
-        prompt.append("Commits:\n\n");
-
+        // 构建提交记录列表
+        StringBuilder commitsText = new StringBuilder();
         for (CommitInfo commit : commits) {
-            prompt.append("- ").append(commit.shortMessage).append("\n");
+            commitsText.append("- ").append(commit.shortMessage).append("\n");
         }
 
-        return prompt.toString();
+        // 替换模板变量
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String prompt = template
+            .replace("{version}", "v1.0.0")
+            .replace("{date}", dateFormat.format(new Date()))
+            .replace("{commits}", commitsText.toString().trim());
+
+        return prompt;
+    }
+
+    /**
+     * 组装日报 prompt
+     */
+    @NotNull
+    private String buildDailyReportPrompt(@NotNull List<CommitInfo> commits) {
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.dailyReportTemplate;
+
+        StringBuilder commitsText = new StringBuilder();
+        for (CommitInfo commit : commits) {
+            commitsText.append("- ").append(commit.shortMessage).append("\n");
+        }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        return template
+            .replace("{date}", dateFormat.format(new Date()))
+            .replace("{commits}", commitsText.toString().trim());
+    }
+
+    /**
+     * 组装周报 prompt
+     */
+    @NotNull
+    private String buildWeeklyReportPrompt(@NotNull List<CommitInfo> commits) {
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.weeklyReportTemplate;
+
+        StringBuilder commitsText = new StringBuilder();
+        for (CommitInfo commit : commits) {
+            commitsText.append("- ").append(commit.shortMessage).append("\n");
+        }
+
+        // 计算日期范围
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.set(java.util.Calendar.DAY_OF_WEEK, java.util.Calendar.MONDAY);
+        String weekStart = dateFormat.format(cal.getTime());
+        cal.add(java.util.Calendar.DAY_OF_WEEK, 6);
+        String weekEnd = dateFormat.format(cal.getTime());
+        String dateRange = weekStart + " 至 " + weekEnd;
+
+        return template
+            .replace("{dateRange}", dateRange)
+            .replace("{commits}", commitsText.toString().trim());
     }
 
     /**
@@ -195,13 +254,8 @@ public final class ChangelogService {
             false // performance mode (暂时为 false)
                                                                     );
 
-        // System prompt
-        String systemPrompt = """
-            You are an experienced software release manager and technical writer.
-            Your goal is to generate clear, structured, and concise changelogs for software projects based on Git commit messages.
-            You always output well-formatted Markdown with consistent sections.
-            
-            """;
+        // 使用配置的系统提示词
+        String systemPrompt = settings.systemPrompt;
 
         // 构建请求
         AIChatRequest request = new AIChatRequest(systemPrompt, prompt);

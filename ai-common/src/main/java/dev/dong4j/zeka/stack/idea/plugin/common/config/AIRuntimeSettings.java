@@ -1,7 +1,15 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.config;
 
 /**
- * AI 请求运行时设置。
+ * AI 运行时配置类
+ * <p>
+ * 用于配置 AI 运行时的相关参数, 包括最大重试次数, 超时时间, 等待时长以及是否启用详细日志记录等功能.
+ * 提供了配置信息的拷贝方法, 便于在不同场景下复用配置.
+ *
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public class AIRuntimeSettings {
     /** 最大重试次数, 用于控制在发生异常时最多尝试的次数 */

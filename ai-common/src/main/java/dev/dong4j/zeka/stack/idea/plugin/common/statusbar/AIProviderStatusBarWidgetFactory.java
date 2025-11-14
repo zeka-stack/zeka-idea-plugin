@@ -9,12 +9,14 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 状态栏默认服务商控件工厂
+ * AI 服务提供商状态栏小部件工厂类
  * <p>
- * 负责创建 {@link AIProviderStatusBarWidget} 实例并在插件启动时注册到状态栏。
+ * 用于创建和管理 AI 服务提供商相关的状态栏小部件, 提供状态栏小部件的 ID, 显示名称, 可用性判断以及小部件创建和销毁的功能.
+ * 该类实现了 StatusBarWidgetFactory 接口, 负责根据项目和状态栏信息生成对应的 AI 状态栏小部件.
  *
- * @author dong4j
+ * @author 作者名
  * @version 1.0.0
+ * @date 2025.10.24
  * @since 1.0.0
  */
 public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory {

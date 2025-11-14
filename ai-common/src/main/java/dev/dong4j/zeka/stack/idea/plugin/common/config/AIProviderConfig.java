@@ -9,7 +9,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.ProviderConfigUtils;
 
 /**
- * AI 提供商配置。
+ * AI 提供者配置类
+ * <p>
+ * 用于存储和管理 AI 服务提供商的配置信息, 包括提供商类型, 模型名称, 基础 URL, 凭证 ID 等.
+ * 支持配置复制, 凭证 ID 更新以及配置内容比较等功能, 适用于多 AI 提供商环境下的配置管理.
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public class AIProviderConfig {
     /** AI 服务提供商类型, 默认为通义千问 */

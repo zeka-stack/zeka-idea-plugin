@@ -10,19 +10,15 @@ import javax.swing.Icon;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
- * AI Common 图标管理类
+ * AI 常用图标工具类
  * <p>
- * 用于集中管理 AI 相关的图标资源。
- * 图标文件应放置在 {@code src/main/resources/icons/} 目录下。
+ * 提供 AI 服务提供商相关的图标资源加载和获取功能, 包含不同尺寸的图标资源, 支持根据 AIProviderType 获取对应的图标.
  * <p>
- * 图标尺寸说明：
- * <ul>
- *   <li>16x16 - Toolbar/Action/Menu/ToolWindow（工具栏、动作、菜单、工具窗口）</li>
- *   <li>32x32 - Dialog/Settings（对话框、设置面板）</li>
- *   <li>64x64 - Error/Dialog（错误提示框、对话框）</li>
- * </ul>
+ * 该类通过静态方法加载图标资源, 并提供两个方法用于根据 AIProviderType 获取对应图标, 分别对应常规尺寸和 64 像素尺寸的图标.
  *
- * @author dong4j
+ * @author 作者名
+ * @version 1.0.0
+ * @date 2025.10.24
  * @since 1.0.0
  */
 public final class AICommonIcons {

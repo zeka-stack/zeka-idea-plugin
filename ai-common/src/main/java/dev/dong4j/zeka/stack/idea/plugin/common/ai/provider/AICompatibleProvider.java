@@ -28,7 +28,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * OpenAI 兼容的服务提供商抽象类。
+ * AI 兼容提供者抽象类
+ * <p>
+ * 该类是所有 AI 服务提供者的基类, 用于封装通用的 AI 服务调用逻辑, 包括内容生成, 配置验证, 模型获取等功能. 它支持多种 AI 服务的统一接入, 并提供了日志记录, 重试机制, 请求构建和响应解析等核心能力.
+ * <p>
+ * 该类实现了 {@link AIServiceProvider} 接口, 为具体的 AI 服务提供者 (如 OpenAI, 通义千问等) 提供统一的抽象接口, 便于扩展和维护.
+ *
+ * @author 作者名
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 @SuppressWarnings("D")
 public abstract class AICompatibleProvider implements AIServiceProvider {

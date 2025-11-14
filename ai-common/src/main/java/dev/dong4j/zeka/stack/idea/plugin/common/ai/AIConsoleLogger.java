@@ -5,9 +5,14 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * AI 控制台日志接口
+ * 控制台日志记录接口
  * <p>
- * 用于输出详细的过程日志，包括可点击的代码链接。
+ * 提供多种日志输出方法, 支持带时间戳, 成功信息, 警告信息, 错误信息以及超链接的日志打印, 适用于在控制台或 IDE 控制台中展示不同类型的日志信息, 增强日志的可读性和可交互性.
+ *
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public interface AIConsoleLogger {
     /**

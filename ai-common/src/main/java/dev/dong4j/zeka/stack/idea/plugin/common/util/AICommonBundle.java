@@ -10,7 +10,15 @@ import org.jetbrains.annotations.PropertyKey;
 import java.util.function.Supplier;
 
 /**
- * AI 通用资源包。
+ * AI 通用消息资源包类
+ * <p>
+ * 该类用于封装和提供 AI 相关的通用消息资源, 支持根据键获取对应的本地化消息字符串, 以及获取延迟加载的消息 Supplier 对象.
+ * 继承自 DynamicBundle, 用于动态加载资源文件中的消息内容.
+ *
+ * @author 作者信息未提供
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public final class AICommonBundle extends DynamicBundle {
 

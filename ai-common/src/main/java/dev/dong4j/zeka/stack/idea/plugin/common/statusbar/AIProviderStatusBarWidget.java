@@ -26,20 +26,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 状态栏默认服务商切换控件
+ * AI 服务提供商状态栏小部件
  * <p>
- * 在 IDE 编辑器状态栏展示当前默认 AI 服务商，并支持在列表弹窗中快速切换。
- * 控件显示插件主图标和服务商名称，点击后展示可用服务商列表，选中即可更新默认服务商配置。
+ * 该类用于在 IDE 的状态栏中展示当前 AI 服务提供商的信息, 并提供切换服务商的下拉菜单功能. 支持动态更新状态栏显示内容和图标, 并处理用户选择服务商后的相关操作.
+ * <p>
+ * 该类继承自 EditorBasedStatusBarPopup, 用于创建和管理状态栏弹出窗口, 支持弹出菜单的创建, 显示和交互.
  *
- * <p>线程模型：
- * <ul>
- *   <li>UI 更新通过 {@link ApplicationManager#getApplication()} 调用 {@code invokeLater}</li>
- *   <li>配置写入使用 {@code runWriteAction} 确保线程安全</li>
- * </ul>
- *
- * @author dong4j
+ * @author 作者
  * @version 1.0.0
- * @see EditorBasedStatusBarPopup
+ * @date 2025.10.24
  * @since 1.0.0
  */
 @Slf4j

@@ -10,10 +10,14 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 
 /**
- * AI 提供商状态栏适配器接口
+ * 用于适配 AI 提供者状态栏的接口
  * <p>
- * 用于将通用的状态栏组件与插件特定的配置和 UI 资源解耦。
- * 每个使用状态栏的插件需要实现此接口。
+ * 该接口定义了与 AI 提供者状态栏交互所需的方法, 包括获取当前提供者类型, 默认配置, 可用提供者列表, 切换默认提供者, 获取图标和通知信息等, 适用于在 IDE 状态栏中展示 AI 提供者相关信息的组件.
+ *
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public interface AIProviderStatusBarAdapter {
 

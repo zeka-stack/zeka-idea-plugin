@@ -79,8 +79,22 @@
         <!-- Git Log 工具窗口右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
-                text="Generate Changelog with AI"
-                description="Generate changelog from selected commits using AI"
+                text="使用 AI 生成变更日志"
+                description="根据选中的提交记录使用 AI 生成变更日志"
+                icon="AllIcons.Actions.IntentionBulb">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
+                text="使用 AI 生成工作日报"
+                description="根据选中的提交记录使用 AI 生成工作日报"
+                icon="AllIcons.Actions.IntentionBulb">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
+                text="使用 AI 生成工作周报"
+                description="根据选中的提交记录使用 AI 生成工作周报"
                 icon="AllIcons.Actions.IntentionBulb">
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
         </action>

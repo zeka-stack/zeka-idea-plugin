@@ -12,7 +12,14 @@ import java.util.Objects;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
- * AI 提供商设置集合。
+ * AI 服务提供商配置类
+ * <p>
+ * 用于存储和管理 AI 服务提供商的相关配置信息, 包括默认提供商, 可用提供商, 模型参数, 运行时参数等. 支持配置的复制, 更新, 清除以及比较操作.
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public class AIProviderSettings {
 

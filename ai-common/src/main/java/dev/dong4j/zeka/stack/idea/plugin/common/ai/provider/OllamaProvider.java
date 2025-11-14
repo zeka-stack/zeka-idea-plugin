@@ -18,7 +18,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * Ollama 服务提供商。
+ * Ollama 提供者类
+ * <p>
+ * 该类继承自 AICompatibleProvider, 用于与 Ollama AI 模型进行交互, 提供模型列表获取, 参数解析等功能.
+ * 主要负责从 Ollama 服务中获取可用模型列表, 并根据响应内容解析出模型名称.
+ * 适用于集成 Ollama 作为 AI 模型提供者的场景.
+ *
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public class OllamaProvider extends AICompatibleProvider {
 

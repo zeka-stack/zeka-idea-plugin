@@ -1,9 +1,16 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
 /**
- * AI 服务异常
+ * AI 服务异常类
+ * <p>
+ * 该类用于封装 AI 服务调用过程中可能出现的异常信息, 包含错误码和错误消息. 支持构建具体的异常信息字符串, 便于统一处理和展示异常.
+ * <p>
+ * 包含的错误码用于标识不同的异常类型, 如无效 API Key, 网络错误, 超时, 服务不可用等. 根据错误码, 可以判断异常是否可重试.
  *
- * <p>当 AI 服务调用过程中发生错误时抛出此异常。
+ * @author dong4j
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public class AIServiceException extends Exception {
 
@@ -11,7 +18,15 @@ public class AIServiceException extends Exception {
     private final ErrorCode errorCode;
 
     /**
-     * 错误代码枚举
+     * 错误码枚举
+     * <p>
+     * 定义系统中可能出现的各种错误类型, 用于统一错误处理和日志记录.
+     * 每个枚举值代表一个具体的错误类型, 便于在业务逻辑中进行判断和响应.
+     *
+     * @author 作者名
+     * @version 1.0.0
+     * @date 2025.10.24
+     * @since 1.0.0
      */
     public enum ErrorCode {
         /** API Key 无效或缺失 */

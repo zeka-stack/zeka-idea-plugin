@@ -63,7 +63,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
- * 可复用的 AI 提供商配置面板。
+ * AI 提供者配置面板
+ * <p>
+ * 用于配置和管理 AI 提供者 (如通义千问,OpenAI 等) 的相关参数, 包括基础连接信息, 模型选择, 运行时参数, 高级设置等.
+ * 提供了图形化界面, 支持测试连接, 刷新模型列表, 保存配置等功能, 适用于集成多种 AI 服务提供商的配置管理.
+ *
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 @SuppressWarnings("D")
 public final class AIProviderConfigPanel {
@@ -1243,7 +1251,7 @@ public final class AIProviderConfigPanel {
     /**
      * 提供列表单元格渲染功能的内部类
      * <p>
-     * 继承自 {@link DefaultListCellRenderer}, 用于自定义 {@link JList} 中单元格的显示样式, 主要处理字符串类型的显示名称, 并根据名称设置对应的图标.
+     * 继承自 {@code DefaultListCellRenderer}, 用于自定义 {@code JList} 中单元格的显示样式, 主要处理 {@code AIProviderType} 对应的图标和显示名称的渲染
      *
      * @author 系统生成
      * @version 1.0.0
@@ -1285,13 +1293,12 @@ public final class AIProviderConfigPanel {
     }
 
     /**
-     * 表格单元格渲染器, 用于自定义 AIProviderConfig 数据在表格中的显示样式
+     * 表格单元格渲染器, 用于自定义 AI 提供者配置信息的显示样式
      * <p>
-     * 该类继承自 DefaultTableCellRenderer, 用于渲染表格中每一行的 AIProviderConfig 对象, 根据配置信息设置显示名称和图标.
-     * <p>
-     * 支持显示 providerType 的名称和对应的图标, 若 providerType 为空则显示默认文本.
+     * 该渲染器继承自 DefaultTableCellRenderer, 用于在表格中渲染 AI 提供者配置信息, 包括显示名称和图标.
+     * 当单元格内容为 AIProviderConfig 类型时, 会根据配置信息设置显示名称和对应的图标.
      *
-     * @author dong4j
+     * @author 未知
      * @version 1.0.0
      * @date 2025.10.24
      * @since 1.0.0
@@ -1331,12 +1338,24 @@ public final class AIProviderConfigPanel {
     }
 
     /**
-     * 可用提供者表格模型类
+     * 可用 AI 提供商表格模型
      * <p>
-     * 用于在表格中展示可用的 AI 提供者配置信息, 支持数据的更新, 获取以及表格操作功能.
-     * 提供了对表格列数, 行数, 列名, 单元格值获取和设置等方法的实现, 并支持单元格的编辑功能.
+     * 该类继承自 {@link javax.swing.table.AbstractTableModel}, 用于在 UI 中展示和编辑
+     * {@link AIProviderConfig} 对象列表. 表格包含三列: 提供商, 模型名称和备注, 其中
+     * 备注列可编辑. 所有数据均采用深拷贝方式存储, 保证外部修改不会影响内部状态.
+     * <p>
+     * 主要功能包括:
+     * <ul>
+     *   <li> 设置完整配置列表 ({@link #setData(java.util.List)})</li>
+     *   <li> 获取当前配置列表 ({@link #getData()})</li>
+     *   <li> 按行索引获取单个配置 ({@link #getProviderConfig(int)})</li>
+     *   <li> 支持单元格编辑, 仅允许备注列被修改 </li>
+     * </ul>
+     * <p>
+     * 该模型常用于 AI 配置管理界面, 配合 {@link javax.swing.JTable} 使用, 可实现
+     * 动态展示, 编辑和保存 AI 提供商信息.
      *
-     * @author 作者信息未提供
+     * @author dong4j
      * @version 1.0.0
      * @date 2025.10.24
      * @since 1.0.0

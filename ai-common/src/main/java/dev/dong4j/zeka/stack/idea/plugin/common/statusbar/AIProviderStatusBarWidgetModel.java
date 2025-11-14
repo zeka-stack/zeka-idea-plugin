@@ -9,13 +9,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 
 /**
- * 状态栏服务商切换模型
+ * AI 服务提供商状态栏组件模型类
  * <p>
- * 负责提供状态栏控件所需的数据处理逻辑, 包括当前默认服务商的显示名称、
- * 可用服务商列表构建以及默认服务商切换等功能。
+ * 该类封装了与 AI 服务提供商状态栏组件相关的数据模型和操作方法, 用于获取当前提供商显示名称, 构建可用提供商列表, 查找当前提供商索引以及切换默认提供商等操作.
+ * <p>
+ * 提供了静态方法实现, 确保类不可实例化, 符合工具类设计规范.
  *
- * @author dong4j
+ * @author 作者信息
  * @version 1.0.0
+ * @date 2025.10.24
  * @since 1.0.0
  */
 public final class AIProviderStatusBarWidgetModel {

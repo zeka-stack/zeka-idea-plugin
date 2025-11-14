@@ -7,9 +7,15 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * AI 服务提供商类型枚举
+ * AIProviderType 枚举
+ * <p>
+ * 定义了系统支持的 AI 服务提供商类型, 并为每个提供商提供了默认的基础 URL, 模型, 是否需要 API Key, 是否可编辑基础 URL 以及支持的模型列表等配置信息.
+ * 该枚举可用于统一管理不同 AI 提供商的配置, 方便在调用时根据 providerId 或 displayName 进行快速查找和配置.
  *
- * <p>统一管理所有支持的 AI 服务提供商配置信息，包含默认地址、默认模型和常用模型列表。
+ * @author dong4j
+ * @version 1.0.0
+ * @date 2025.11.14
+ * @since 1.0.0
  */
 public enum AIProviderType {
 

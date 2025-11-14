@@ -4,9 +4,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 配置验证结果
+ * 验证结果封装类
+ * <p>
+ * 用于封装验证操作的结果信息, 包括验证是否成功, 提示信息, 详细错误信息以及异常对象.
+ * 该类提供多种静态方法用于创建成功或失败的验证结果对象, 适用于数据校验, 业务规则验证等场景.
  *
- * <p>封装配置验证的结果信息，包括验证状态、错误消息和详细信息。
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public class ValidationResult {
 

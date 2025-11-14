@@ -13,7 +13,14 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * AI API Key 凭证管理器。
+ * AI 凭据管理类
+ * <p>
+ * 用于管理 AI 服务的 API 密钥, 提供获取, 设置, 删除以及异步加载密钥的功能. 该类通过 CredentialAttributes 标识密钥存储的位置, 并使用 PasswordSafe 工具类进行安全存储和读取.
+ *
+ * @author 未知
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public final class AICredentialManager {
 
