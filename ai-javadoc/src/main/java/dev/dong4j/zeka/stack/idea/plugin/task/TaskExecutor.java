@@ -14,9 +14,11 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
+import com.intellij.psi.util.PsiTreeUtil;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -243,6 +245,112 @@ public class TaskExecutor {
     // }
 
     /**
+     * 获取元素的完整类路径（import 路径）
+     * <p>
+     * 根据元素类型返回对应的完整类路径，用于在进度显示中展示。
+     * <ul>
+     *   <li>如果是类/接口/枚举：直接返回类的全路径（如 com.example.MyClass）</li>
+     *   <li>如果是方法/字段等在类内部的元素：使用点号拼接（如 com.example.MyClass.methodName）</li>
+     * </ul>
+     *
+     * @param element PSI 元素
+     * @return 完整类路径，如果无法获取则返回元素名称
+     */
+    @NotNull
+    private static String getElementQualifiedName(@NotNull PsiElement element) {
+        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+            // 1. 如果是类/接口/枚举，直接返回类的全路径
+            if (element instanceof PsiClass psiClass) {
+                String qualifiedName = psiClass.getQualifiedName();
+                return qualifiedName != null ? qualifiedName : psiClass.getName();
+            }
+
+            // 2. 如果是方法，使用点号拼接：类全路径.方法名
+            if (element instanceof PsiMethod method) {
+                PsiClass containingClass = PsiTreeUtil.getParentOfType(method, PsiClass.class);
+                if (containingClass != null) {
+                    String className = containingClass.getQualifiedName();
+                    if (className != null) {
+                        return className + "." + method.getName();
+                    }
+                    // 如果类没有全路径，使用类名
+                    String classSimpleName = containingClass.getName();
+                    if (classSimpleName != null) {
+                        return classSimpleName + "." + method.getName();
+                    }
+                }
+                return method.getName();
+            }
+
+            // 3. 如果是字段，使用点号拼接：类全路径.字段名
+            if (element instanceof PsiField field) {
+                PsiClass containingClass = PsiTreeUtil.getParentOfType(field, PsiClass.class);
+                if (containingClass != null) {
+                    String className = containingClass.getQualifiedName();
+                    if (className != null) {
+                        return className + "." + field.getName();
+                    }
+                    // 如果类没有全路径，使用类名
+                    String classSimpleName = containingClass.getName();
+                    if (classSimpleName != null) {
+                        return classSimpleName + "." + field.getName();
+                    }
+                }
+                return field.getName();
+            }
+
+            // 4. 如果是文件，尝试获取文件中的第一个类
+            if (element instanceof PsiFile) {
+                if (element instanceof PsiJavaFile javaFile) {
+                    PsiClass[] classes = javaFile.getClasses();
+                    if (classes.length > 0) {
+                        String qualifiedName = classes[0].getQualifiedName();
+                        return qualifiedName != null ? qualifiedName : classes[0].getName();
+                    }
+                }
+                return element.getContainingFile().getName();
+            }
+
+            // 5. 其他情况，尝试查找包含的类
+            PsiClass containingClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
+            if (containingClass != null) {
+                String className = containingClass.getQualifiedName();
+                if (className != null) {
+                    return className + "." + element.getClass().getSimpleName();
+                }
+            }
+
+            return element.getClass().getSimpleName();
+        });
+    }
+
+    /**
+     * 获取任务类型的表情符号
+     *
+     * @param type 任务类型
+     * @return 表情符号
+     */
+    @NotNull
+    private static String getTaskTypeEmoji(@NotNull DocumentationTask.TaskType type) {
+        switch (type) {
+            case CLASS:
+                return "📦";
+            case METHOD:
+                return "⚙️";
+            case TEST_METHOD:
+                return "🧪";
+            case FIELD:
+                return "📝";
+            case INTERFACE:
+                return "🔌";
+            case ENUM:
+                return "🔢";
+            default:
+                return "📄";
+        }
+    }
+
+    /**
      * 进度管理器
      * <p>
      * 统一管理单线程和多线程模式下的进度更新和统计信息。
@@ -251,7 +359,7 @@ public class TaskExecutor {
      * <p>功能：
      * <ul>
      *   <li>单线程模式：使用内部计数器跟踪统计信息</li>
-     *   <li>多线程模式：汇总所有提供商的统计信息</li>
+     *   <li>多线程模式：汇总所有提供商的统计信息，为每个提供商创建子进度指示器</li>
      *   <li>统一更新进度指示器（进度条、文本、统计信息）</li>
      *   <li>线程安全的统计信息访问</li>
      * </ul>
@@ -261,6 +369,8 @@ public class TaskExecutor {
         private final ProgressIndicator indicator;
         /** 总任务数 */
         private final int totalTasks;
+        /** 是否为多线程模式 */
+        private final boolean isParallel;
         /** 单线程模式下的完成计数器 */
         private final AtomicInteger completedCount = new AtomicInteger(0);
         /** 单线程模式下的失败计数器 */
@@ -269,6 +379,8 @@ public class TaskExecutor {
         private final AtomicInteger skippedCount = new AtomicInteger(0);
         /** 多线程模式下的提供商统计信息映射（可选） */
         private final Map<String, ProviderStatistics> providerStats;
+        /** 多线程模式下的提供商进度指示器映射 */
+        private final Map<String, ProgressIndicator> providerIndicators = new ConcurrentHashMap<>();
 
         /**
          * 创建单线程模式的进度管理器
@@ -279,6 +391,7 @@ public class TaskExecutor {
         public ProgressManager(@NotNull ProgressIndicator indicator, int totalTasks) {
             this.indicator = indicator;
             this.totalTasks = totalTasks;
+            this.isParallel = false;
             this.providerStats = null;
         }
 
@@ -294,6 +407,7 @@ public class TaskExecutor {
                                @NotNull Map<String, ProviderStatistics> providerStats) {
             this.indicator = indicator;
             this.totalTasks = totalTasks;
+            this.isParallel = true;
             this.providerStats = providerStats;
         }
 
@@ -303,7 +417,7 @@ public class TaskExecutor {
          * @return 如果是多线程模式返回 true
          */
         public boolean isParallelMode() {
-            return providerStats != null;
+            return isParallel;
         }
 
         /**
@@ -312,7 +426,7 @@ public class TaskExecutor {
          * @return 已完成任务数
          */
         public int getCompletedCount() {
-            if (isParallelMode()) {
+            if (isParallelMode() && providerStats != null) {
                 return providerStats.values().stream()
                     .mapToInt(ProviderStatistics::getCompletedCount)
                     .sum();
@@ -326,7 +440,7 @@ public class TaskExecutor {
          * @return 失败任务数
          */
         public int getFailedCount() {
-            if (isParallelMode()) {
+            if (isParallelMode() && providerStats != null) {
                 return providerStats.values().stream()
                     .mapToInt(ProviderStatistics::getFailedCount)
                     .sum();
@@ -340,23 +454,13 @@ public class TaskExecutor {
          * @return 跳过任务数
          */
         public int getSkippedCount() {
-            if (isParallelMode()) {
+            if (isParallelMode() && providerStats != null) {
                 return providerStats.values().stream()
                     .mapToInt(ProviderStatistics::getSkippedCount)
                     .sum();
             }
             return skippedCount.get();
         }
-
-        /**
-         * 获取总任务数
-         *
-         * @return 总任务数
-         */
-        public int getTotalTasks() {
-            return totalTasks;
-        }
-
         /**
          * 增加已完成任务计数（单线程模式）
          */
@@ -400,21 +504,45 @@ public class TaskExecutor {
             // 更新进度条
             indicator.setFraction(fraction);
 
+            // 获取类的全路径和表情符号
+            String qualifiedName = "";
+            String emoji = "";
+            if (currentTask != null) {
+                qualifiedName = getElementQualifiedName(currentTask.getElement());
+                emoji = getTaskTypeEmoji(currentTask.getType());
+            }
+
             // 更新主文本：显示处理进度
-            if (isParallelMode()) {
-                // 多线程模式：显示已处理的任务数和当前提供商
-                if (providerName != null && !providerName.isEmpty()) {
-                    indicator.setText(String.format("已处理 %d/%d 个任务 [%s]", processed, totalTasks, providerName));
+            // 单线程和多线程模式都显示提供商信息
+            if (providerName != null && !providerName.isEmpty()) {
+                // 显示提供商名称和当前处理的元素详细信息
+                if (!qualifiedName.isEmpty()) {
+                    indicator.setText(String.format("[%s] %s %s (%d/%d)",
+                                                    providerName, emoji, qualifiedName,
+                                                    isParallelMode() ? processed : currentIndex + 1, totalTasks));
+                } else if (currentTask != null) {
+                    // 如果无法获取完整路径，回退到文件路径
+                    indicator.setText(String.format("[%s] %s %s (%d/%d)",
+                                                    providerName, emoji, currentTask.getFilePath(),
+                                                    isParallelMode() ? processed : currentIndex + 1, totalTasks));
                 } else {
-                    indicator.setText(String.format("已处理 %d/%d 个任务", processed, totalTasks));
+                    indicator.setText(String.format("[%s] 已处理 %d/%d 个任务",
+                                                    providerName,
+                                                    isParallelMode() ? processed : currentIndex + 1, totalTasks));
                 }
             } else {
-                // 单线程模式：显示当前正在处理的任务
-                if (currentTask != null) {
-                    indicator.setText(String.format("正在处理 (%d/%d): %s",
-                                                    currentIndex + 1, totalTasks, currentTask.getFilePath()));
+                // 如果没有提供商信息，显示基本进度信息
+                if (currentTask != null && !qualifiedName.isEmpty()) {
+                    indicator.setText(String.format("%s %s (%d/%d)",
+                                                    emoji, qualifiedName,
+                                                    isParallelMode() ? processed : currentIndex + 1, totalTasks));
+                } else if (currentTask != null) {
+                    indicator.setText(String.format("%s %s (%d/%d)",
+                                                    emoji, currentTask.getFilePath(),
+                                                    isParallelMode() ? processed : currentIndex + 1, totalTasks));
                 } else {
-                    indicator.setText(String.format("正在处理 (%d/%d)", currentIndex + 1, totalTasks));
+                    indicator.setText(String.format("正在处理 (%d/%d)",
+                                                    isParallelMode() ? processed : currentIndex + 1, totalTasks));
                 }
             }
 
@@ -438,14 +566,14 @@ public class TaskExecutor {
          * 在多线程模式下，还会显示各提供商的处理情况。
          */
         public void updateStatisticsText() {
-            if (isParallelMode()) {
+            if (isParallelMode() && providerStats != null) {
                 // 多线程模式：显示总体统计和提供商详情
                 StringBuilder statsText = new StringBuilder();
                 statsText.append(String.format("完成: %d, 失败: %d, 跳过: %d",
                                                getCompletedCount(), getFailedCount(), getSkippedCount()));
 
                 // 添加各提供商的详细统计信息
-                if (providerStats.size() > 0) {
+                if (!providerStats.isEmpty()) {
                     statsText.append(" | ");
                     List<String> providerInfo = new ArrayList<>();
                     for (ProviderStatistics stats : providerStats.values()) {
@@ -712,16 +840,26 @@ public class TaskExecutor {
         JavaDocConsoleView.printWithTimestamp(project, String.format("========== 开始生成文档 任务总数: %s ==========", totalTasks));
         JavaDocConsoleView.print(project, "");
 
+        // 获取当前使用的提供商名称
+        String providerName = settings.providerConfig != null
+                              ? settings.providerConfig.providerType.getDisplayName()
+                              : null;
+
         for (int i = 0; i < totalTasks && !indicator.isCanceled(); i++) {
             DocumentationTask task = tasks.get(i);
 
-            // 使用进度管理器更新进度
+            // 任务开始处理时，更新进度显示当前处理的元素和提供商信息
             if (progressManager != null) {
-                progressManager.updateProgress(i, task);
+                progressManager.updateProgress(i, task, providerName);
             }
 
             // 使用当前选中的服务商进行处理
             processTask(task, settings.providerConfig);
+
+            // 任务处理完成后，更新进度显示最新的统计信息
+            if (progressManager != null) {
+                progressManager.updateProgress(i, task, providerName);
+            }
         }
 
         // 使用进度管理器完成进度更新
@@ -916,9 +1054,9 @@ public class TaskExecutor {
      * 如果任务被跳过，则更新状态并增加跳过计数。如果生成文档失败或发生异常，则更新任务状态为失败并记录错误信息。
      * 如果任务成功完成，则更新状态为完成并增加完成计数。
      *
-     * @param task 要处理的文档生成任务对象
+     * @param task     要处理的文档生成任务对象
      * @param provider AI 服务提供商配置
-     * @param stats 提供商统计信息（多线程模式使用，单线程模式为 null）
+     * @param stats    提供商统计信息（多线程模式使用，单线程模式为 null）
      */
     private void processTask(@NotNull DocumentationTask task, @NotNull AIProviderConfig provider, ProviderStatistics stats) {
         try {
