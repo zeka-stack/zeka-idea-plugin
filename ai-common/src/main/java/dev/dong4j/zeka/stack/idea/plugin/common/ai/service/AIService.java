@@ -6,10 +6,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
@@ -23,74 +22,21 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 public interface AIService {
 
     /**
-     * 生成 AI 内容（最简单的方式 - 使用插件配置的默认供应商）
+     * 生成指定项目和请求的 AI 内容
      * <p>
-     * 自动从插件的配置中读取默认供应商，从全局配置中读取供应商详情。
-     * 外部开发者只需要提供提示词和项目对象即可。
+     * 根据提供的项目信息,AI 聊天请求以及可选的配置和监听器生成 AI 响应内容.
      *
-     * @param project      项目对象（用于获取插件配置）
-     * @param systemPrompt 系统提示词
-     * @param userPrompt   用户提示词
-     * @param listener     响应监听器（可选，用于处理请求、响应和 token 使用量）
-     * @return 生成的文本内容
-     * @throws AIServiceException 当生成失败时抛出
-     */
-    @NotNull
-    String generateContent(@NotNull Project project,
-                           @NotNull String systemPrompt,
-                           @NotNull String userPrompt,
-                           @Nullable AIResponseListener listener) throws AIServiceException;
-
-    /**
-     * 生成 AI 内容（使用插件配置的默认供应商）
-     * <p>
-     * 自动从插件的配置中读取默认供应商。
-     *
-     * @param project  项目对象（用于获取插件配置）
-     * @param request  AI 聊天请求
-     * @param listener 响应监听器（可选，用于处理请求、响应和 token 使用量）
-     * @return 生成的文本内容
-     * @throws AIServiceException 当生成失败时抛出
+     * @param project  项目对象, 用于提供上下文信息
+     * @param request  AI 聊天请求, 包含生成内容所需的具体指令或问题
+     * @param config   可选的 AI 提供者配置, 用于自定义 AI 行为
+     * @param listener 可选的 AI 响应监听器, 用于处理生成过程中的事件或结果
+     * @return 生成的 AI 内容字符串
+     * @throws AIServiceException 当 AI 服务调用过程中发生错误时抛出
      */
     @NotNull
     String generateContent(@NotNull Project project,
                            @NotNull AIChatRequest request,
-                           @Nullable AIResponseListener listener) throws AIServiceException;
-
-    /**
-     * 生成 AI 内容（指定供应商类型）
-     * <p>
-     * 临时使用指定的供应商类型，从全局配置中读取该供应商的详情。
-     *
-     * @param project      项目对象
-     * @param providerType 供应商类型（从全局可用列表中选取）
-     * @param request      AI 聊天请求
-     * @param listener     响应监听器（可选，用于处理请求、响应和 token 使用量）
-     * @return 生成的文本内容
-     * @throws AIServiceException 当生成失败时抛出
-     */
-    @NotNull
-    String generateContent(@NotNull Project project,
-                           @NotNull AIProviderType providerType,
-                           @NotNull AIChatRequest request,
-                           @Nullable AIResponseListener listener) throws AIServiceException;
-
-    /**
-     * 生成 AI 内容（自定义配置）
-     * <p>
-     * 支持临时覆盖配置，适合特殊场景。
-     *
-     * @param project  项目对象
-     * @param request  AI 聊天请求
-     * @param config   临时配置（可选，为 null 时使用插件配置的默认供应商）
-     * @param listener 响应监听器（可选，用于处理请求、响应和 token 使用量）
-     * @return 生成的文本内容
-     * @throws AIServiceException 当生成失败时抛出
-     */
-    @NotNull
-    String generateContent(@NotNull Project project,
-                           @NotNull AIChatRequest request,
-                           @Nullable AIServiceConfig config,
+                           @Nullable AIProviderConfig config,
                            @Nullable AIResponseListener listener) throws AIServiceException;
 
     /**
@@ -103,15 +49,5 @@ public interface AIService {
     @NotNull
     AIProviderSettings getGlobalSettings();
 
-    /**
-     * 验证插件配置
-     * <p>
-     * 验证插件配置的默认供应商是否有效。
-     *
-     * @param project 项目对象（用于获取插件配置）
-     * @return 验证结果
-     */
-    @NotNull
-    ValidationResult validatePluginConfiguration(@NotNull Project project);
 }
 

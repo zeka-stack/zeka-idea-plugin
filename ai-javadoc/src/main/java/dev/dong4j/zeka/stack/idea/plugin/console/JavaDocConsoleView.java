@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -42,11 +43,11 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
  * @since 1.0.0
  */
 @Service(Service.Level.PROJECT)
-public final class JavaDocConsoleView implements Disposable {
+public final class JavaDocConsoleView implements Disposable, AIConsoleLogger {
 
     /** 工具窗口 ID */
     public static final String TOOL_WINDOW_ID = "AI Javadoc Console";
-    
+
     /** 时间格式：yyyy.MM.dd HH:mm:ss */
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");
 
@@ -136,7 +137,7 @@ public final class JavaDocConsoleView implements Disposable {
      *
      * @param message 消息内容
      */
-    private void printWithTimestamp(@NotNull String message) {
+    public void printWithTimestamp(@NotNull String message) {
         if (verboseLoggingDisable()) {
             return;
         }
@@ -151,7 +152,7 @@ public final class JavaDocConsoleView implements Disposable {
      *
      * @param message 消息内容
      */
-    void print(@NotNull String message) {
+    public void print(@NotNull String message) {
         if (verboseLoggingDisable()) {
             return;
         }
@@ -165,7 +166,7 @@ public final class JavaDocConsoleView implements Disposable {
      *
      * @param message 消息内容
      */
-    private void printSuccess(@NotNull String message) {
+    public void printSuccess(@NotNull String message) {
         if (verboseLoggingDisable()) {
             return;
         }
@@ -179,7 +180,7 @@ public final class JavaDocConsoleView implements Disposable {
      *
      * @param message 消息内容
      */
-    private void printWarning(@NotNull String message) {
+    public void printWarning(@NotNull String message) {
         if (verboseLoggingDisable()) {
             return;
         }
@@ -193,7 +194,7 @@ public final class JavaDocConsoleView implements Disposable {
      *
      * @param message 消息内容
      */
-    private void printError(@NotNull String message) {
+    public void printError(@NotNull String message) {
         if (verboseLoggingDisable()) {
             return;
         }
@@ -379,7 +380,7 @@ public final class JavaDocConsoleView implements Disposable {
      * @param virtualFile 目标文件
      * @param line        目标行号（从 0 开始）
      */
-    private void printHyperlink(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
+    public void printHyperlink(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
         if (verboseLoggingDisable()) {
             return;
         }
@@ -434,7 +435,7 @@ public final class JavaDocConsoleView implements Disposable {
      * @param virtualFile 目标文件
      * @param line        目标行号（从 0 开始）
      */
-    private void printHyperlinkWithTimestamp(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
+    public void printHyperlinkWithTimestamp(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
         if (verboseLoggingDisable()) {
             return;
         }

@@ -18,6 +18,7 @@ import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
@@ -26,7 +27,6 @@ import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -45,7 +45,6 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
@@ -134,7 +133,6 @@ public class JavaDocSettingsPanel {
 
     /** AI 提供商选择面板（用于动态刷新） */
     private JPanel aiProviderSelectionPanel;
-
 
 
     /**
@@ -1003,8 +1001,7 @@ public class JavaDocSettingsPanel {
         SettingsState settings = new SettingsState();
 
         // 获取选择的供应商类型
-        AIProviderConfig selectedProvider = (AIProviderConfig) providerComboBox.getSelectedItem();
-        settings.providerType = selectedProvider != null ? selectedProvider.providerType : AIProviderType.QIANWEN;
+        settings.providerConfig = (AIProviderConfig) providerComboBox.getSelectedItem();
 
         settings.generateForClass = generateForClassCheckBox.isSelected();
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
@@ -1046,8 +1043,16 @@ public class JavaDocSettingsPanel {
      */
     @SuppressWarnings("DuplicatedCode")
     public void loadSettings(@NotNull SettingsState settings) {
-        // 加载供应商选择
-        providerComboBox.setSelectedItem(Objects.requireNonNullElse(settings.providerType, AIProviderType.QIANWEN));
+        // 从 ai-common 获取可用服务商列表
+
+        if (settings.providerConfig == null) {
+            final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
+            if (CollectionUtils.isNotEmpty(aiProviderTypes)) {
+                providerComboBox.setSelectedItem(aiProviderTypes.get(0));
+            }
+        } else {
+            providerComboBox.setSelectedItem(settings.providerConfig);
+        }
 
         generateForClassCheckBox.setSelected(settings.generateForClass);
         generateForMethodCheckBox.setSelected(settings.generateForMethod);

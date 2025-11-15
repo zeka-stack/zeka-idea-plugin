@@ -172,7 +172,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         SettingsState panelSettings = settingsPanel.getSettings();
 
         // 比较各个配置项
-        if (currentSettings.providerType != panelSettings.providerType) {
+        if (currentSettings.providerConfig != panelSettings.providerConfig) {
             return true;
         }
 
@@ -272,7 +272,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         // 应用配置
         SettingsState currentSettings = SettingsState.getInstance();
-        currentSettings.providerType = panelSettings.providerType;
+        currentSettings.providerConfig = panelSettings.providerConfig;
         // 注意：API Key 现在在全局设置中管理（Settings → Tools → AI Common）
 
         currentSettings.generateForClass = panelSettings.generateForClass;
@@ -386,7 +386,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      */
     private boolean validateSettings(SettingsState settings) {
         // 检查必填字段
-        return settings.providerType != null;
+        return settings.providerConfig != null;
 
         // 其他验证逻辑（模型参数、运行时设置等）现在在全局设置中验证
         // 这里只验证插件特定的配置

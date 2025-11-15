@@ -260,7 +260,7 @@ public class TaskExecutor {
      */
     public boolean isServiceAvailable() {
         try {
-            return aiService != null && aiService.validatePluginConfiguration(project).isSuccess();
+            return aiService != null;
         } catch (Exception e) {
             return false;
         }
@@ -562,7 +562,7 @@ public class TaskExecutor {
             }
 
             // 使用 AIService API 生成内容
-            String documentation = aiService.generateContent(project, request, responseListener);
+            String documentation = aiService.generateContent(project, request, settings.providerConfig, responseListener);
 
             if (documentation.trim().isEmpty()) {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);

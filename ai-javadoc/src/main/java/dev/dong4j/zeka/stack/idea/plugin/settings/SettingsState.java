@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
@@ -67,7 +68,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * @see AIProviderSettings
      */
-    public AIProviderType providerType = AIProviderType.QIANWEN;
+    public AIProviderConfig providerConfig;
 
     /**
      * 模型参数（可选）
@@ -704,7 +705,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIProviderType#requiresApiKey()
      */
     public boolean requiresApiKey() {
-        return providerType != null && providerType.requiresApiKey();
+        return providerConfig != null && providerConfig.providerType.requiresApiKey();
     }
 
     /**
@@ -776,35 +777,5 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         return tagName.matches("^[a-zA-Z0-9_-]+$");
     }
 
-    /**
-     * 将当前配置重置为默认值
-     * <p>
-     * 该方法会将所有配置参数恢复到初始默认状态，包括AI提供者、模型名称、基础URL、API密钥等，
-     * 以及生成配置、重试设置、温度参数、最大令牌数等。
-     */
-    public void resetToDefaults() {
-        // 重置 AI 提供商设置
-        providerType = AIProviderType.QIANWEN;
-        modelParameters = new AIModelParameters();
-        runtimeSettings = new AIRuntimeSettings();
-        performanceMode = false;
-
-        supportedLanguages = new HashSet<>();
-        supportedLanguages.add("java");
-
-        generateForClass = true;
-        generateForMethod = true;
-        generateForField = true;
-        overrideExisting = false;
-        enableCodeCompression = false;
-        maxClassCodeLines = 1000;
-        addSpaceBetweenChineseAndEnglish = true;
-        replaceChinesePunctuation = true;
-
-        classPromptTemplate = getDefaultClassPromptTemplate();
-        methodPromptTemplate = getDefaultMethodPromptTemplate();
-        fieldPromptTemplate = getDefaultFieldPromptTemplate();
-        testPromptTemplate = getDefaultTestPromptTemplate();
-    }
 }
 

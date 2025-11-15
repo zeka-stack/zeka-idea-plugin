@@ -63,11 +63,6 @@
 
     </extensions>
 
-    <!-- 注册到 ai-common 的扩展点 -->
-    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
-        <pluginAISettingsProvider implementation="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocAISettingsProvider"/>
-    </extensions>
-
     <!-- 插件定义的动作 -->
     <actions>
         <!-- Git 提交工具栏操作 -->

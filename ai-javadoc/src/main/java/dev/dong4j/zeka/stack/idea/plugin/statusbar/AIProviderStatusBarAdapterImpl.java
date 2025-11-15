@@ -62,7 +62,7 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
     @NotNull
     public AIProviderType getCurrentProviderType() {
         SettingsState settings = SettingsState.getInstance();
-        return settings.providerType != null ? settings.providerType : AIProviderType.QIANWEN;
+        return settings.providerConfig != null ? settings.providerConfig.providerType : AIProviderType.QIANWEN;
     }
 
     /**
@@ -109,7 +109,7 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
     public void switchDefaultProvider(@NotNull AIProviderType providerType, @NotNull AIProviderConfig config) {
         // 更新插件配置中的默认提供商选择
         SettingsState settings = SettingsState.getInstance();
-        settings.providerType = providerType;
+        settings.providerConfig = config;
         // 更新全局配置中的提供商配置
         AIProviderSettings globalSettings = AIProviderSettings.getInstance();
         globalSettings.updateDefaultProviderConfig(providerType, config);
