@@ -39,6 +39,18 @@ import lombok.extern.slf4j.Slf4j;
 public class GenerateJavaDocForFilesAction extends AnAction {
 
     /**
+     * 构造函数
+     * <p>
+     * 设置动作的默认文本和描述。
+     * 使用 Supplier 延迟加载国际化资源，确保在插件加载时就能正确显示。
+     */
+    public GenerateJavaDocForFilesAction() {
+        super(() -> JavaDocBundle.message("action.generate.javadoc"),
+              () -> JavaDocBundle.message("action.generate.javadoc.selection.description"),
+              null);
+    }
+
+    /**
      * 处理动作事件，用于为选中的文件或目录生成 JavaDoc 注释
      * <p>
      * 该方法首先获取当前项目和选中的文件列表，若项目或文件为空则直接返回。

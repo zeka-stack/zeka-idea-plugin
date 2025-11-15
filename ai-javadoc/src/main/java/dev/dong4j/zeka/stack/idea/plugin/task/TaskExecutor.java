@@ -699,6 +699,14 @@ public class TaskExecutor {
      * 并行处理任务（性能模式）
      * <p>
      * 该方法在性能模式下，利用多个AI服务提供商并行处理任务列表。如果无可用提供商，则回退到顺序处理。
+     * <p>
+     * 线程分配策略：
+     * <ul>
+     *   <li>根据任务数和提供商数量动态计算合适的线程数</li>
+     *   <li>每个提供商可以有多个线程并发处理任务</li>
+     *   <li>并发度 = 总线程数 / 提供商数</li>
+     *   <li>所有线程共享任务队列，从队列中获取任务处理</li>
+     * </ul>
      *
      * @param tasks 任务列表，包含需要处理的文档任务
      * @return 处理是否成功
@@ -711,10 +719,45 @@ public class TaskExecutor {
             return false;
         }
 
-        log.info("性能模式：使用 {} 个提供商并行处理 {} 个任务", aiProviderTypes.size(), tasks.size());
+        int providerCount = aiProviderTypes.size();
+        int taskCount = tasks.size();
 
-        // 创建线程池
-        ExecutorService executor = Executors.newFixedThreadPool(aiProviderTypes.size());
+        // 计算合适的线程数
+        // 策略：根据任务数和提供商数动态计算
+        // - 如果任务数较少（<=10），每个提供商1个线程
+        // - 如果任务数中等（10-50），每个提供商2个线程
+        // - 如果任务数较多（>50），每个提供商3-4个线程
+        int threadsPerProvider;
+        if (taskCount <= 10) {
+            threadsPerProvider = 1;
+        } else if (taskCount <= 50) {
+            threadsPerProvider = 2;
+        } else {
+            // 任务数较多时，每个提供商最多4个线程
+            threadsPerProvider = Math.min(4, Math.max(2, taskCount / (providerCount * 2)));
+        }
+
+        // 计算总线程数
+        int totalThreads = providerCount * threadsPerProvider;
+
+        // 如果总线程数超过任务数，限制总线程数为任务数
+        // 然后重新计算每个提供商的线程数（平均分配，但每个提供商至少1个线程）
+        if (totalThreads > taskCount) {
+            totalThreads = taskCount;
+            // 平均分配线程，每个提供商至少1个线程
+            threadsPerProvider = Math.max(1, totalThreads / providerCount);
+            // 重新计算总线程数（可能因为取整而略小于 taskCount）
+            totalThreads = providerCount * threadsPerProvider;
+        }
+
+        // 计算平均并发度
+        double avgConcurrency = (double) totalThreads / providerCount;
+        log.info("性能模式：使用 {} 个提供商，创建 {} 个线程（平均每个提供商 {} 个线程，平均并发度 {}）并行处理 {} 个任务",
+                 providerCount, totalThreads, String.format("%.1f", avgConcurrency),
+                 String.format("%.1f", avgConcurrency), taskCount);
+
+        // 创建动态大小的线程池
+        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
 
         // 为每个提供商创建统计对象
         Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
@@ -723,19 +766,34 @@ public class TaskExecutor {
         progressManager = new ProgressManager(indicator, tasks.size(), providerStats);
 
         try {
-            // 将任务分配给不同的提供商
+            // 创建所有线程任务
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             AtomicInteger taskIndex = new AtomicInteger(0);
 
-            for (AIProviderConfig provider : aiProviderTypes) {
+            // 计算余数，用于分配额外的线程
+            int remainder = totalThreads % providerCount;
+            int baseThreadsPerProvider = totalThreads / providerCount;
+
+            // 为每个提供商创建多个线程
+            for (int providerIdx = 0; providerIdx < aiProviderTypes.size(); providerIdx++) {
+                AIProviderConfig provider = aiProviderTypes.get(providerIdx);
                 String providerName = provider.providerType.getDisplayName();
                 ProviderStatistics stats = new ProviderStatistics(providerName);
                 providerStats.put(providerName, stats);
 
-                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    processTasksWithProvider(tasks, provider, taskIndex, stats);
-                }, executor);
-                futures.add(future);
+                // 计算当前提供商应该创建的线程数
+                // 前 remainder 个提供商多分配1个线程，以处理余数
+                int currentProviderThreads = baseThreadsPerProvider + (providerIdx < remainder ? 1 : 0);
+
+                log.debug("提供商 {} 分配 {} 个线程", providerName, currentProviderThreads);
+
+                // 为当前提供商创建线程
+                for (int i = 0; i < currentProviderThreads; i++) {
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                        processTasksWithProvider(tasks, provider, taskIndex, stats);
+                    }, executor);
+                    futures.add(future);
+                }
             }
 
             // 等待所有任务完成
