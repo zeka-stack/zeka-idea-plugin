@@ -48,12 +48,10 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      * <p>
      * 用于设置和管理 AI 模型的相关参数
      */
-    public final AIModelParameters modelParameters = new AIModelParameters();
+    public AIModelParameters modelParameters = new AIModelParameters();
     /** AI 运行时设置 */
-    public final AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
+    public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
-    /** 性能模式开关, 开启时优化系统性能, 可能牺牲部分功能细节 */
-    public boolean performanceMode = false;
     /** 是否显示提供商统计信息 */
     public boolean showProviderStatistics = false;
     /** 是否显示高级设置 */
@@ -170,8 +168,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.runtimeSettings.timeout = this.runtimeSettings.timeout;
         settings.runtimeSettings.waitDuration = this.runtimeSettings.waitDuration;
         settings.runtimeSettings.verboseLogging = this.runtimeSettings.verboseLogging;
+        settings.runtimeSettings.performanceMode = this.runtimeSettings.performanceMode;
 
-        settings.performanceMode = this.performanceMode;
         settings.showProviderStatistics = this.showProviderStatistics;
         settings.showAdvancedSettings = this.showAdvancedSettings;
         settings.showAvailableProviders = this.showAvailableProviders;
@@ -299,8 +297,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.runtimeSettings.timeout = sourceRuntime.timeout;
         this.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
         this.runtimeSettings.verboseLogging = sourceRuntime.verboseLogging;
+        this.runtimeSettings.performanceMode = sourceRuntime.performanceMode;
 
-        this.performanceMode = source.performanceMode;
         this.showProviderStatistics = source.showProviderStatistics;
         this.showAdvancedSettings = source.showAdvancedSettings;
         this.showAvailableProviders = source.showAvailableProviders;
@@ -324,8 +322,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     @SuppressWarnings( {"BooleanMethodIsAlwaysInverted", "D"})
     public boolean contentEquals(@NotNull AIProviderSettings other) {
         // 注意：不比较 providerType，因为全局配置不维护默认供应商
-        if (performanceMode != other.performanceMode
-            || showProviderStatistics != other.showProviderStatistics
+        if (showProviderStatistics != other.showProviderStatistics
             || showAdvancedSettings != other.showAdvancedSettings
             || showAvailableProviders != other.showAvailableProviders) {
             return false;
@@ -350,6 +347,10 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         if (runtimeSettings.maxRetries != other.runtimeSettings.maxRetries) {
             return false;
         }
+        if (runtimeSettings.performanceMode != other.runtimeSettings.performanceMode) {
+            return false;
+        }
+
         if (runtimeSettings.timeout != other.runtimeSettings.timeout) {
             return false;
         }

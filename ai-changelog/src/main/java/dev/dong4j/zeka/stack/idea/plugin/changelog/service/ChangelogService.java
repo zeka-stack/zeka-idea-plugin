@@ -250,9 +250,7 @@ public final class ChangelogService {
             config,
             modelParams,
             runtimeSettings,
-            null, // console logger (暂时为 null)
-            false // performance mode (暂时为 false)
-                                                                    );
+            null);
 
         // 使用配置的系统提示词
         String systemPrompt = settings.systemPrompt;

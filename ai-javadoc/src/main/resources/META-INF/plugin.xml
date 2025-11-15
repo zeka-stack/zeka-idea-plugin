@@ -27,7 +27,7 @@
 
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
-        <projectConfigurable
+        <applicationConfigurable
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
@@ -61,6 +61,12 @@
             <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
         </intentionAction>
 
+    </extensions>
+
+    <!-- 注册到 ai-common 的扩展点 -->
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <!-- AI 控制台日志提供者 -->
+        <aiConsoleLoggerProvider implementation="dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIConsoleLoggerProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->

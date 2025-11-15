@@ -5,8 +5,8 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
-import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
  * AI Javadoc 的 AI 响应监听器实现
@@ -20,7 +20,7 @@ public class JavaDocAIResponseListener implements AIResponseListener {
 
     public JavaDocAIResponseListener(@NotNull Project project) {
         this.project = project;
-        this.verboseLogging = SettingsState.getInstance().runtimeSettings.verboseLogging;
+        this.verboseLogging = AIProviderSettings.getInstance().runtimeSettings.verboseLogging;
     }
 
     @Override

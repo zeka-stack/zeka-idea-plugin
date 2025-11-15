@@ -34,21 +34,6 @@ public class OllamaProvider extends AICompatibleProvider {
     /**
      * 构造函数, 用于初始化 OllamaProvider 实例
      * <p>
-     * 通过传入的配置, 模型参数和运行时设置来初始化 OllamaProvider 对象
-     *
-     * @param config          AI 提供商的配置信息
-     * @param modelParameters 模型相关参数
-     * @param runtimeSettings 运行时设置信息
-     */
-    public OllamaProvider(@NotNull AIProviderConfig config,
-                          @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings) {
-        super(config, modelParameters, runtimeSettings);
-    }
-
-    /**
-     * 构造函数, 用于初始化 OllamaProvider 实例
-     * <p>
      * 通过传入的配置, 模型参数, 运行时设置和控制台日志记录器来初始化 OllamaProvider.
      *
      * @param config          AI 提供商的配置信息
@@ -60,27 +45,9 @@ public class OllamaProvider extends AICompatibleProvider {
                           @NotNull AIModelParameters modelParameters,
                           @NotNull AIRuntimeSettings runtimeSettings,
                           @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger, false);
+        super(config, modelParameters, runtimeSettings, consoleLogger);
     }
 
-    /**
-     * 构造一个 OllamaProvider 实例
-     * <p>
-     * 初始化 OllamaProvider, 传入配置信息, 模型参数, 运行时设置, 控制台日志记录器以及性能模式标志.
-     *
-     * @param config          AI 提供商配置信息, 不能为空
-     * @param modelParameters 模型参数, 不能为空
-     * @param runtimeSettings 运行时设置, 不能为空
-     * @param consoleLogger   控制台日志记录器, 可为空
-     * @param performanceMode 是否启用性能模式, 影响运行时行为
-     */
-    public OllamaProvider(@NotNull AIProviderConfig config,
-                          @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings,
-                          @Nullable AIConsoleLogger consoleLogger,
-                          boolean performanceMode) {
-        super(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
-    }
 
     /**
      * 获取可用的模型列表

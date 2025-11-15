@@ -370,7 +370,7 @@ public final class AIProviderConfigPanel {
         // 加载基础配置
         AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
         verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
-        performanceModeCheckBox.setSelected(workingSettings.performanceMode);
+        performanceModeCheckBox.setSelected(runtimeSettings.performanceMode);
         showProviderStatisticsCheckBox.setSelected(workingSettings.showProviderStatistics);
         updatePerformanceModeSubConfigEnabled();
 
@@ -427,14 +427,15 @@ public final class AIProviderConfigPanel {
         // 保存基础配置
         AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
         runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
-        workingSettings.performanceMode = performanceModeCheckBox.isSelected();
+        runtimeSettings.performanceMode = performanceModeCheckBox.isSelected();
+        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
+        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
         workingSettings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
         workingSettings.showAvailableProviders = showAvailableProvidersCheckBox.isSelected();
 
         // 保存高级配置
         workingSettings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
-        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
-        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
+
         AIModelParameters modelParameters = workingSettings.modelParameters;
         modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
         modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
@@ -687,20 +688,13 @@ public final class AIProviderConfigPanel {
         }
         listenersSetup = true;
 
-        providerComboBox.addActionListener(e -> {
-            // 在切换供应商之前, 先保存当前编辑的配置到 defaultProviders Map（包括 API Key）
-            // saveCurrentProviderConfig();
-            // updateBasicConnectionInfo();
-            // loadDefaultProviderConfig();
-        });
-
         providerComboBox.addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
-                System.out.println("当前选择: " + e.getItem());
+                // 处理切换之后的提供者信息
                 updateBasicConnectionInfo();
                 loadDefaultProviderConfig();
             } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-                System.out.println("当前取消选择: " + e.getItem());
+                // 保存切换之前的提供者信息
                 saveCurrentProviderConfig(String.valueOf(e.getItem()));
             }
         });

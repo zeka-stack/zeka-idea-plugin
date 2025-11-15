@@ -13,8 +13,6 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
-
 /**
  * 通知工具类
  * <p>
@@ -197,9 +195,8 @@ public class NotificationUtil {
              */
             @Override
             public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
-                JavaDocSettingsConfigurable configurable = new JavaDocSettingsConfigurable();
                 // 打开设置面板
-                ShowSettingsUtil.getInstance().editConfigurable(project, configurable);
+                ShowSettingsUtil.getInstance().editConfigurable(null, "AI Javadoc");
                 notification.expire();
             }
         });

@@ -16,7 +16,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderStatusBarAdapter;
-import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
@@ -168,7 +167,7 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
      */
     @Override
     public void openSettingsPanel(@NotNull Project project) {
-        ShowSettingsUtil.getInstance().showSettingsDialog(project, JavaDocSettingsConfigurable.class);
+        ShowSettingsUtil.getInstance().editConfigurable(null, "AI Javadoc");
     }
 
     /**

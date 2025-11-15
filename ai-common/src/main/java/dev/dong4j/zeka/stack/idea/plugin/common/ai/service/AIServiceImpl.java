@@ -8,6 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
@@ -27,6 +29,12 @@ public final class AIServiceImpl implements AIService {
     private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER =
         new AICredentialManager("AI Common", "AI_COMMON_");
 
+    /**
+     * AI 控制台日志提供者扩展点名称
+     */
+    private static final ExtensionPointName<AIConsoleLoggerProvider> CONSOLE_LOGGER_PROVIDER_EP_NAME =
+        ExtensionPointName.create("dev.dong4j.zeka.stack.idea.plugin.common.ai.aiConsoleLoggerProvider");
+
     @Override
     @NotNull
     public String generateContent(@NotNull Project project,
@@ -43,14 +51,16 @@ public final class AIServiceImpl implements AIService {
                                              @Nullable AIResponseListener listener) throws AIServiceException {
 
         final AIProviderSettings instance = AIProviderSettings.getInstance();
+        
+        // 从扩展点获取控制台日志记录器
+        AIConsoleLogger consoleLogger = getConsoleLogger(project);
+        
         // 创建服务提供者
         AIServiceProvider provider = AIServiceFactory.createProvider(
             config,
             instance.modelParameters,
             instance.runtimeSettings,
-            null,
-            false
-                                                                    );
+            consoleLogger);
 
         if (provider == null) {
             throw new AIServiceException("Failed to create AI service provider");
@@ -58,6 +68,25 @@ public final class AIServiceImpl implements AIService {
 
         // 生成内容（传递 listener）
         return provider.generateContent(request, GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId), listener);
+    }
+
+    /**
+     * 从扩展点获取控制台日志记录器
+     * <p>
+     * 查找所有注册的 AIConsoleLoggerProvider 扩展点实现，返回第一个非空的日志记录器。
+     *
+     * @param project 项目对象
+     * @return 控制台日志记录器，如果没有找到则返回 null
+     */
+    @Nullable
+    private AIConsoleLogger getConsoleLogger(@NotNull Project project) {
+        for (AIConsoleLoggerProvider provider : CONSOLE_LOGGER_PROVIDER_EP_NAME.getExtensionList()) {
+            AIConsoleLogger logger = provider.getConsoleLogger(project);
+            if (logger != null) {
+                return logger;
+            }
+        }
+        return null;
     }
 
     @Override

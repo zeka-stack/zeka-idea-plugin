@@ -22,6 +22,8 @@ public class AIRuntimeSettings {
     public long waitDuration = 5000;
     /** 是否启用详细日志记录,true 表示启用,false 表示禁用 */
     public boolean verboseLogging = false;
+    /** 性能模式开关, 启用时将优化系统性能, 可能牺牲部分功能细节 */
+    public boolean performanceMode = false;
 
     /**
      * 创建当前运行时设置的副本
@@ -36,6 +38,7 @@ public class AIRuntimeSettings {
         settings.timeout = this.timeout;
         settings.waitDuration = this.waitDuration;
         settings.verboseLogging = this.verboseLogging;
+        settings.performanceMode = this.performanceMode;
         return settings;
     }
 }

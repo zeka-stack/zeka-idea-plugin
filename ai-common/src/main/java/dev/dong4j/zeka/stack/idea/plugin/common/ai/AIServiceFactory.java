@@ -50,27 +50,7 @@ public final class AIServiceFactory {
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @NotNull AIModelParameters modelParameters,
                                                    @NotNull AIRuntimeSettings runtimeSettings) {
-        return createProvider(config, modelParameters, runtimeSettings, null, false);
-    }
-
-    /**
-     * 创建 AI 服务提供者实例
-     * <p>
-     * 使用指定的配置, 模型参数, 运行时设置和控制台日志器创建 AI 服务提供者.
-     * 该方法内部调用另一个重载方法, 并传递默认的重试标志值.
-     *
-     * @param config          非空的 AI 提供者配置
-     * @param modelParameters 非空的 AI 模型参数
-     * @param runtimeSettings 非空的 AI 运行时设置
-     * @param consoleLogger   可为空的控制台日志器
-     * @return 创建的 AI 服务提供者实例, 可能为 null
-     */
-    @Nullable
-    public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
-                                                   @NotNull AIModelParameters modelParameters,
-                                                   @NotNull AIRuntimeSettings runtimeSettings,
-                                                   @Nullable AIConsoleLogger consoleLogger) {
-        return createProvider(config, modelParameters, runtimeSettings, consoleLogger, false);
+        return createProvider(config, modelParameters, runtimeSettings, null);
     }
 
     /**
@@ -90,15 +70,14 @@ public final class AIServiceFactory {
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @NotNull AIModelParameters modelParameters,
                                                    @NotNull AIRuntimeSettings runtimeSettings,
-                                                   @Nullable AIConsoleLogger consoleLogger,
-                                                   boolean performanceMode) {
+                                                   @Nullable AIConsoleLogger consoleLogger) {
         AIProviderType providerType = config.providerType != null ? config.providerType : AIProviderType.QIANWEN;
         return switch (providerType) {
-            case CUSTOM -> new CustomProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
-            case QIANWEN -> new QianWenProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
-            case SILICONFLOW -> new SiliconFlowProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
-            case OLLAMA -> new OllamaProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
-            case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings, consoleLogger, performanceMode);
+            case CUSTOM -> new CustomProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case QIANWEN -> new QianWenProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case SILICONFLOW -> new SiliconFlowProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case OLLAMA -> new OllamaProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings, consoleLogger);
         };
     }
 }

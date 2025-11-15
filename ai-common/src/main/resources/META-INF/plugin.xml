@@ -16,6 +16,13 @@
     <depends>com.intellij.modules.platform</depends>
 
     <!-- 插件定义的扩展点 -->
+    <extensionPoints>
+        <!-- AI 控制台日志提供者扩展点 -->
+        <extensionPoint name="aiConsoleLoggerProvider"
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider"/>
+    </extensionPoints>
+
+    <!-- 插件定义的扩展点 -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- 应用级服务：全局 AI 配置（可用供应商列表） -->
         <applicationService
@@ -26,8 +33,8 @@
                 serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"
                 serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
 
-        <!-- 设置页面：AI Common 的全局配置 -->
-        <projectConfigurable
+        <!-- 设置页面：AI Common 的全局配置（应用级配置） -->
+        <applicationConfigurable
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"

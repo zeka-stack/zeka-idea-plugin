@@ -66,41 +66,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     @Nullable
     protected final AIConsoleLogger consoleLogger;
-    /** 性能模式开关, 启用时将优化系统性能, 可能牺牲部分功能细节 */
-    protected final boolean performanceMode;
-
-    /**
-     * 构造一个兼容的 AI 提供者实例
-     * <p>
-     * 该构造方法用于创建 AICompatibleProvider 的实例, 调用另一个构造方法进行初始化.
-     *
-     * @param config          配置信息, 用于设置 AI 提供者的行为
-     * @param modelParameters 模型参数, 用于指定 AI 模型的运行参数
-     * @param runtimeSettings 运行时设置, 用于控制 AI 提供者的运行环境
-     */
-    protected AICompatibleProvider(@NotNull AIProviderConfig config,
-                                   @NotNull AIModelParameters modelParameters,
-                                   @NotNull AIRuntimeSettings runtimeSettings) {
-        this(config, modelParameters, runtimeSettings, null, false);
-    }
-
-    /**
-     * 构造一个 {@code AICompatibleProvider} 实例.
-     * <p>
-     * 该构造函数使用提供的 {@link AIProviderConfig},{@link AIModelParameters},{@link AIRuntimeSettings} 以及可选的 {@link AIConsoleLogger} 进行初始化,
-     * 并默认将内部标志设为 {@code false}(即不启用强制模式).
-     *
-     * @param config          AI 提供者的配置信息, 不能为空
-     * @param modelParameters AI 模型的参数配置, 不能为空
-     * @param runtimeSettings AI 运行时的设置, 不能为空
-     * @param consoleLogger   用于日志输出的控制台日志器, 可为 {@code null}
-     */
-    protected AICompatibleProvider(@NotNull AIProviderConfig config,
-                                   @NotNull AIModelParameters modelParameters,
-                                   @NotNull AIRuntimeSettings runtimeSettings,
-                                   @Nullable AIConsoleLogger consoleLogger) {
-        this(config, modelParameters, runtimeSettings, consoleLogger, false);
-    }
 
     /**
      * 初始化 AI 兼容性提供者
@@ -116,14 +81,12 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     protected AICompatibleProvider(@NotNull AIProviderConfig config,
                                    @NotNull AIModelParameters modelParameters,
                                    @NotNull AIRuntimeSettings runtimeSettings,
-                                   @Nullable AIConsoleLogger consoleLogger,
-                                   boolean performanceMode) {
+                                   @Nullable AIConsoleLogger consoleLogger) {
         this.config = config.copy();
         this.config.baseUrl = normalizeBaseUrl(this.config.baseUrl);
         this.modelParameters = modelParameters.copy();
         this.runtimeSettings = runtimeSettings.copy();
         this.consoleLogger = consoleLogger;
-        this.performanceMode = performanceMode;
     }
 
     /**
@@ -203,7 +166,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                                               getProviderType().getDisplayName(), getModelName(), getBaseUrl()));
             // 当前开启的配置
             StringBuilder configInfo = new StringBuilder("当前配置: ");
-            if (performanceMode) {
+            if (runtimeSettings.performanceMode) {
                 configInfo.append("性能模式✓");
             }
             if (runtimeSettings.verboseLogging) {
@@ -503,15 +466,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         if (listener != null && !validation) {
             listener.onRequest(getProviderType().getDisplayName(), getModelName(), requestBody, false);
         }
-
-        if (runtimeSettings.verboseLogging) {
-            LOG.trace("=== AI Request ===");
-            LOG.trace(requestBody);
-            if (consoleLogger != null) {
-                consoleLogger.print("=== AI 请求 ===");
-                consoleLogger.print(requestBody);
-            }
-        }
     }
 
     /**
@@ -527,15 +481,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     private void logResponse(@Nullable AIResponseListener listener, String responseBody, boolean validation) {
         if (listener != null && !validation) {
             listener.onResponse(getProviderType().getDisplayName(), getModelName(), responseBody, false);
-        }
-
-        if (runtimeSettings.verboseLogging) {
-            LOG.trace("=== AI Response ===");
-            LOG.trace(responseBody);
-            if (consoleLogger != null) {
-                consoleLogger.print("=== AI 响应 ===");
-                consoleLogger.print(responseBody);
-            }
         }
     }
 
@@ -553,13 +498,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         connection.setReadTimeout(runtime.timeout * 2);
         if (requiresApiKey() && apiKey != null) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.print("已设置 Authorization 头");
-            }
         }
         if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.print("连接超时: " + runtime.timeout + "ms");
-            consoleLogger.print("读取超时: " + (runtime.timeout * 2) + "ms");
+            consoleLogger.print(String.format("连接超时: [%sms] 读取超时: [%sms]", runtime.timeout, (runtime.timeout * 2)));
         }
     }
 

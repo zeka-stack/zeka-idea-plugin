@@ -21,10 +21,12 @@ import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.util.PsiTreeUtil;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -240,10 +242,6 @@ public class TaskExecutor {
         }
     }
 
-    // 注意：性能模式相关代码已暂时注释，后续需要重新实现以支持 AIService API
-    // private record ProviderRuntime(AIServiceProvider provider, String apiKey, ProviderStatistics statistics) {
-    // }
-
     /**
      * 获取元素的完整类路径（import 路径）
      * <p>
@@ -268,35 +266,15 @@ public class TaskExecutor {
             // 2. 如果是方法，使用点号拼接：类全路径.方法名
             if (element instanceof PsiMethod method) {
                 PsiClass containingClass = PsiTreeUtil.getParentOfType(method, PsiClass.class);
-                if (containingClass != null) {
-                    String className = containingClass.getQualifiedName();
-                    if (className != null) {
-                        return className + "." + method.getName();
-                    }
-                    // 如果类没有全路径，使用类名
-                    String classSimpleName = containingClass.getName();
-                    if (classSimpleName != null) {
-                        return classSimpleName + "." + method.getName();
-                    }
-                }
-                return method.getName();
+                final String className = buildClassName(containingClass, method.getName());
+                return Objects.requireNonNullElseGet(className, method::getName);
             }
 
             // 3. 如果是字段，使用点号拼接：类全路径.字段名
             if (element instanceof PsiField field) {
                 PsiClass containingClass = PsiTreeUtil.getParentOfType(field, PsiClass.class);
-                if (containingClass != null) {
-                    String className = containingClass.getQualifiedName();
-                    if (className != null) {
-                        return className + "." + field.getName();
-                    }
-                    // 如果类没有全路径，使用类名
-                    String classSimpleName = containingClass.getName();
-                    if (classSimpleName != null) {
-                        return classSimpleName + "." + field.getName();
-                    }
-                }
-                return field.getName();
+                final String className = buildClassName(containingClass, field.getName());
+                return Objects.requireNonNullElseGet(className, field::getName);
             }
 
             // 4. 如果是文件，尝试获取文件中的第一个类
@@ -322,6 +300,22 @@ public class TaskExecutor {
 
             return element.getClass().getSimpleName();
         });
+    }
+
+    @Nullable
+    private static String buildClassName(PsiClass containingClass, String element) {
+        if (containingClass != null) {
+            String className = containingClass.getQualifiedName();
+            if (className != null) {
+                return className + "." + element;
+            }
+            // 如果类没有全路径，使用类名
+            String classSimpleName = containingClass.getName();
+            if (classSimpleName != null) {
+                return classSimpleName + "." + element;
+            }
+        }
+        return null;
     }
 
     /**
@@ -461,6 +455,7 @@ public class TaskExecutor {
             }
             return skippedCount.get();
         }
+
         /**
          * 增加已完成任务计数（单线程模式）
          */
@@ -645,7 +640,7 @@ public class TaskExecutor {
      */
     public boolean isServiceAvailable() {
         try {
-            return aiService != null;
+            return aiService != null && settings.providerConfig != null && settings.providerConfig.configurationVerified;
         } catch (Exception e) {
             return false;
         }
@@ -686,7 +681,7 @@ public class TaskExecutor {
         log.info("开始处理 {} 个文档生成任务", totalTasks);
 
         // 检查是否启用性能模式且任务数量大于5个
-        if (AIProviderSettings.getInstance().performanceMode && totalTasks > 5) {
+        if (AIProviderSettings.getInstance().runtimeSettings.performanceMode && totalTasks > 5) {
             return processTasksInParallel(tasks);
         } else {
             // 初始化单线程模式的进度管理器
@@ -720,41 +715,7 @@ public class TaskExecutor {
         }
 
         int providerCount = aiProviderTypes.size();
-        int taskCount = tasks.size();
-
-        // 计算合适的线程数
-        // 策略：根据任务数和提供商数动态计算
-        // - 如果任务数较少（<=10），每个提供商1个线程
-        // - 如果任务数中等（10-50），每个提供商2个线程
-        // - 如果任务数较多（>50），每个提供商3-4个线程
-        int threadsPerProvider;
-        if (taskCount <= 10) {
-            threadsPerProvider = 1;
-        } else if (taskCount <= 50) {
-            threadsPerProvider = 2;
-        } else {
-            // 任务数较多时，每个提供商最多4个线程
-            threadsPerProvider = Math.min(4, Math.max(2, taskCount / (providerCount * 2)));
-        }
-
-        // 计算总线程数
-        int totalThreads = providerCount * threadsPerProvider;
-
-        // 如果总线程数超过任务数，限制总线程数为任务数
-        // 然后重新计算每个提供商的线程数（平均分配，但每个提供商至少1个线程）
-        if (totalThreads > taskCount) {
-            totalThreads = taskCount;
-            // 平均分配线程，每个提供商至少1个线程
-            threadsPerProvider = Math.max(1, totalThreads / providerCount);
-            // 重新计算总线程数（可能因为取整而略小于 taskCount）
-            totalThreads = providerCount * threadsPerProvider;
-        }
-
-        // 计算平均并发度
-        double avgConcurrency = (double) totalThreads / providerCount;
-        log.info("性能模式：使用 {} 个提供商，创建 {} 个线程（平均每个提供商 {} 个线程，平均并发度 {}）并行处理 {} 个任务",
-                 providerCount, totalThreads, String.format("%.1f", avgConcurrency),
-                 String.format("%.1f", avgConcurrency), taskCount);
+        final int totalThreads = getTotalThreads(tasks, providerCount);
 
         // 创建动态大小的线程池
         ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
@@ -833,6 +794,55 @@ public class TaskExecutor {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    /**
+     * 计算总线程数, 根据任务数量和提供商数量动态调整线程分配
+     * <p>
+     * 根据任务总数和提供商数量, 计算每个提供商应分配的线程数, 并最终确定总线程数.
+     * 线程数会根据任务数量进行限制, 确保不超过任务总数.
+     *
+     * @param tasks         任务列表, 用于确定任务总数
+     * @param providerCount 提供商数量, 用于计算每个提供商的线程分配
+     * @return 总线程数, 用于并行处理任务
+     */
+    private static int getTotalThreads(@NotNull List<DocumentationTask> tasks, int providerCount) {
+        int taskCount = tasks.size();
+
+        // 计算合适的线程数
+        // 策略：根据任务数和提供商数动态计算
+        // - 如果任务数较少（<=10），每个提供商1个线程
+        // - 如果任务数中等（10-50），每个提供商2个线程
+        // - 如果任务数较多（>50），每个提供商3-4个线程
+        int threadsPerProvider;
+        if (taskCount <= 10) {
+            threadsPerProvider = 1;
+        } else if (taskCount <= 50) {
+            threadsPerProvider = 2;
+        } else {
+            // 任务数较多时，每个提供商最多4个线程
+            threadsPerProvider = Math.min(4, Math.max(2, taskCount / (providerCount * 2)));
+        }
+
+        // 计算总线程数
+        int totalThreads = providerCount * threadsPerProvider;
+
+        // 如果总线程数超过任务数，限制总线程数为任务数
+        // 然后重新计算每个提供商的线程数（平均分配，但每个提供商至少1个线程）
+        if (totalThreads > taskCount) {
+            totalThreads = taskCount;
+            // 平均分配线程，每个提供商至少1个线程
+            threadsPerProvider = Math.max(1, totalThreads / providerCount);
+            // 重新计算总线程数（可能因为取整而略小于 taskCount）
+            totalThreads = providerCount * threadsPerProvider;
+        }
+
+        // 计算平均并发度
+        double avgConcurrency = (double) totalThreads / providerCount;
+        log.info("性能模式：使用 {} 个提供商，创建 {} 个线程（平均每个提供商 {} 个线程，平均并发度 {}）并行处理 {} 个任务",
+                 providerCount, totalThreads, String.format("%.1f", avgConcurrency),
+                 String.format("%.1f", avgConcurrency), taskCount);
+        return totalThreads;
     }
 
     /**
@@ -1159,7 +1169,7 @@ public class TaskExecutor {
             AIChatRequest request = AIRequestComposer.compose(settings, task);
 
             // 输出代码位置信息（可点击链接）
-            if (virtualFile != null && settings.runtimeSettings.verboseLogging) {
+            if (virtualFile != null && AIProviderSettings.getInstance().runtimeSettings.verboseLogging) {
                 PsiElement element = task.getElement();
                 ApplicationManager.getApplication().runReadAction(() -> {
                     try {
@@ -1475,7 +1485,7 @@ public class TaskExecutor {
             // 执行删除
             document.deleteString(deleteStart, deleteEnd);
 
-            if (settings.runtimeSettings.verboseLogging) {
+            if (AIProviderSettings.getInstance().runtimeSettings.verboseLogging) {
                 log.debug("删除旧注释: 从 {} 到 {} (原注释: {} 到 {})",
                           deleteStart, deleteEnd, startOffset, endOffset);
             }

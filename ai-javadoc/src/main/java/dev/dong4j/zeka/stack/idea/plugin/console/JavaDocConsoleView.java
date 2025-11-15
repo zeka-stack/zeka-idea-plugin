@@ -19,6 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -116,7 +117,7 @@ public final class JavaDocConsoleView implements Disposable, AIConsoleLogger {
      * @return 如果启用详细日志返回 true
      */
     public boolean verboseLoggingDisable() {
-        return !settings.runtimeSettings.verboseLogging;
+        return !AIProviderSettings.getInstance().runtimeSettings.verboseLogging;
     }
 
     /**

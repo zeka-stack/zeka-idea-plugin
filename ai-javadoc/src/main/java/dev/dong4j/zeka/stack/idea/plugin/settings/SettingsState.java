@@ -18,10 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 
 /**
@@ -69,20 +67,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see AIProviderSettings
      */
     public AIProviderConfig providerConfig;
-
-    /**
-     * 模型参数（可选）
-     * <p>
-     * 如果为 null，则使用全局默认值。
-     */
-    public AIModelParameters modelParameters = new AIModelParameters();
-
-    /**
-     * 运行时设置（可选）
-     * <p>
-     * 如果为 null，则使用全局默认值。
-     */
-    public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
     // ==================== 功能配置 ====================
 

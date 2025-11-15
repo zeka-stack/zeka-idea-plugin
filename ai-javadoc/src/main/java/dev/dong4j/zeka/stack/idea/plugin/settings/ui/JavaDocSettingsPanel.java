@@ -4,8 +4,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.options.ShowSettingsUtil;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.JBColor;
@@ -49,7 +47,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
-import dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -319,14 +316,10 @@ public class JavaDocSettingsPanel {
             // 创建跳转链接
             HyperlinkLabel linkLabel = new HyperlinkLabel(JavaDocBundle.message("settings.ai.provider.open.ai.common.settings"));
             linkLabel.addHyperlinkListener(e -> {
-                // 打开 AI Common 设置页面
-                Project project = ProjectManager.getInstance().getDefaultProject();
-                if (!project.isDisposed()) {
-                    ShowSettingsUtil.getInstance().editConfigurable(
-                        project,
-                        new AICommonSettingsConfigurable()
-                                                                   );
-                }
+                // 打开 AI Common 全局设置页面（应用级配置）
+                // 使用 null 作为 parent 参数表示打开应用级（全局）配置，而不是项目级配置
+                // 直接创建 Configurable 实例，确保能够正确打开配置页面
+                ShowSettingsUtil.getInstance().editConfigurable(null, "AI Common");
             });
 
             // 创建空的下拉框（禁用状态）
