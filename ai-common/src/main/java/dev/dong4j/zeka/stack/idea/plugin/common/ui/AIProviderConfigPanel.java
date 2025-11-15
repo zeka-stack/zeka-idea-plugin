@@ -17,6 +17,7 @@ import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.ImageUtil;
 import com.intellij.util.ui.JBUI;
 
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,6 +27,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.ItemEvent;
 import java.awt.image.BufferedImage;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -175,7 +177,7 @@ public final class AIProviderConfigPanel {
 
     /** 当前正在使用的 AI 提供商配置信息 */
     private AIProviderSettings workingSettings = new AIProviderSettings();
-    
+
     /** 监听器是否已设置的标志, 用于防止重复添加监听器 */
     private boolean listenersSetup = false;
 
@@ -345,10 +347,10 @@ public final class AIProviderConfigPanel {
     public void loadSettings(@NotNull AIProviderSettings settings) {
         this.workingSettings = settings.copy();
 
-        // 使用 lastSelectedProviderType 恢复上次选择的提供商，如果没有则使用 CUSTOM 作为默认值
+        // 使用 lastSelectedProviderType 恢复上次选择的提供商，如果没有则使用 QIANWEN 作为默认值
         AIProviderType defaultProviderType = workingSettings.aiProviderType != null
-            ? workingSettings.aiProviderType
-            : AIProviderType.CUSTOM;
+                                             ? workingSettings.aiProviderType
+                                             : AIProviderType.QIANWEN;
 
         providerComboBox.setSelectedItem(defaultProviderType.getDisplayName());
         updateBasicConnectionInfo();
@@ -687,9 +689,20 @@ public final class AIProviderConfigPanel {
 
         providerComboBox.addActionListener(e -> {
             // 在切换供应商之前, 先保存当前编辑的配置到 defaultProviders Map（包括 API Key）
-            saveCurrentProviderConfig();
-            updateBasicConnectionInfo();
-            loadDefaultProviderConfig();
+            // saveCurrentProviderConfig();
+            // updateBasicConnectionInfo();
+            // loadDefaultProviderConfig();
+        });
+
+        providerComboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                System.out.println("当前选择: " + e.getItem());
+                updateBasicConnectionInfo();
+                loadDefaultProviderConfig();
+            } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                System.out.println("当前取消选择: " + e.getItem());
+                saveCurrentProviderConfig(String.valueOf(e.getItem()));
+            }
         });
 
         showAvailableProvidersCheckBox.addActionListener(e -> availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected()));
@@ -765,6 +778,9 @@ public final class AIProviderConfigPanel {
             modelComboBox.setSelectedItem(providerType.getDefaultModel());
         }
 
+        // 加载配置到 UI
+        baseUrlField.setText(providerType.getDefaultBaseUrl());
+
         updateBaseUrlEditable(providerType);
         updateApiKeyEnabled(providerType);
     }
@@ -775,17 +791,19 @@ public final class AIProviderConfigPanel {
      * 在切换供应商之前调用, 确保当前编辑的配置（包括 API Key）不会丢失
      * 配置会保存到 workingSettings.defaultProviders Map 中，持久化时会自动保存
      */
-    private void saveCurrentProviderConfig() {
-        AIProviderType providerType = resolveSelectedProviderType();
+    private void saveCurrentProviderConfig(String displayName) {
+        AIProviderType providerType = resolveSelectedProviderType(displayName);
         // 从 defaultProviders Map 中获取配置，如果没有则使用枚举的默认参数初始化
         AIProviderConfig currentConfig = workingSettings.getDefaultProviderConfig(providerType);
-        
+
         // 保存当前编辑的模型名称和基础 URL
         String modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
         currentConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
-        currentConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
+        currentConfig.baseUrl = normalizeBaseUrl(StringUtils.isBlank(baseUrlField.getText().trim())
+                                                 ? providerType.getDefaultBaseUrl()
+                                                 : baseUrlField.getText().trim());
         currentConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
-        
+
         // 保存当前编辑的 API Key（只有在需要 API Key 且不为空时才保存）
         String currentApiKey = getCurrentApiKey();
         if (providerType.requiresApiKey() && !currentApiKey.trim().isEmpty()) {
@@ -1063,7 +1081,7 @@ public final class AIProviderConfigPanel {
         workingSettings.addAvailableProvider(copy);
         AIProviderSettings globalSettings = AIProviderSettings.getInstance();
         globalSettings.addAvailableProvider(copy);
-        
+
         availableProvidersTableModel.setData(workingSettings.availableProviders);
         showAvailableProvidersCheckBox.setSelected(true);
         availableProvidersPanel.setVisible(true);
@@ -1099,7 +1117,7 @@ public final class AIProviderConfigPanel {
         workingSettings.removeAvailableProvider(credentialId);
         AIProviderSettings globalSettings = AIProviderSettings.getInstance();
         globalSettings.removeAvailableProvider(credentialId);
-        
+
         availableProvidersTableModel.setData(workingSettings.availableProviders);
     }
 
@@ -1151,7 +1169,7 @@ public final class AIProviderConfigPanel {
             workingSettings.clearAvailableProviders();
             AIProviderSettings globalSettings = AIProviderSettings.getInstance();
             globalSettings.clearAvailableProviders();
-            
+
             availableProvidersTableModel.setData(List.of());
         }
     }
@@ -1244,14 +1262,19 @@ public final class AIProviderConfigPanel {
      * 解析用户选择的 AI 提供者类型
      * <p>
      * 从下拉框中获取选中的显示名称, 并转换为对应的 AIProviderType 枚举值.
-     * 如果显示名称为空或无法转换, 则返回默认的 AIProviderType.CUSTOM.
+     * 如果显示名称为空或无法转换, 则返回默认的 AIProviderType.QIANWEN.
      *
-     * @return 解析后的 AI 提供者类型, 若无法解析则返回 CUSTOM 作为默认值
+     * @return 解析后的 AI 提供者类型, 若无法解析则返回 QIANWEN 作为默认值
      */
     private AIProviderType resolveSelectedProviderType() {
         String displayName = (String) providerComboBox.getSelectedItem();
         AIProviderType type = displayName != null ? AIProviderType.fromDisplayName(displayName) : null;
-        return type != null ? type : AIProviderType.CUSTOM;
+        return type != null ? type : AIProviderType.QIANWEN;
+    }
+
+    private AIProviderType resolveSelectedProviderType(String displayName) {
+        AIProviderType type = displayName != null ? AIProviderType.fromDisplayName(displayName) : null;
+        return type != null ? type : AIProviderType.QIANWEN;
     }
 
     /**

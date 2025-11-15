@@ -37,7 +37,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 )
 public class AIProviderSettings implements PersistentStateComponent<AIProviderSettings> {
     /** 最后选中的服务商类型（用于恢复 UI 状态） */
-    public AIProviderType aiProviderType = AIProviderType.CUSTOM;
+    public AIProviderType aiProviderType = AIProviderType.QIANWEN;
     /** 默认支持的 AI 服务提供商及其配置信息 */
     public final Map<AIProviderType, AIProviderConfig> defaultProviders = new EnumMap<>(AIProviderType.class);
     /** 可用的 AI 服务提供商配置列表 */

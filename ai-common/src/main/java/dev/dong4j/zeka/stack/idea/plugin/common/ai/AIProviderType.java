@@ -71,7 +71,7 @@ public enum AIProviderType {
         "ollama",
         "Ollama",
         "http://localhost:11434/v1",
-        "qwen:7b",
+        "gpt-oss:20b-cloud",
         false,
         true,
         Arrays.asList("gpt-oss:120b-cloud", "deepseek-r1:14b", "qwen3-8b")
