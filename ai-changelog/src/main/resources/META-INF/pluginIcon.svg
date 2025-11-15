@@ -1,0 +1,11 @@
+<svg width="40" height="40" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <rect width="40" height="40" rx="4" fill="#4a63d4"/>
+    <!-- 文档图标 -->
+    <path d="M12 8h10v2h-10zM12 12h10v2h-10zM12 16h8v2h-8zM12 20h6v2h-6z" fill="#ffffff" opacity="0.9"/>
+    <!-- AI 符号 -->
+    <path d="M24 14l3 3-3 3z" fill="#ffffff"/>
+    <circle cx="28" cy="20" r="2" fill="#ffffff"/>
+    <!-- 装饰线条 -->
+    <path d="M10 28h20v1H10z" fill="#ffffff" opacity="0.6"/>
+    <path d="M10 30h16v1H10z" fill="#ffffff" opacity="0.4"/>
+</svg>

@@ -93,15 +93,49 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public String weeklyReportTemplate = getDefaultWeeklyReportTemplate();
 
+    /**
+     * 提交记录模板
+     *
+     * <p>用于生成提交记录的提示词模板。
+     * 使用 {codeDiffs} 作为占位符，会被替换为格式化的代码变更信息。
+     *
+     * <p>默认值: getDefaultCommitMessageTemplate()
+     *
+     * @see #getDefaultCommitMessageTemplate()
+     */
+    public String commitMessageTemplate = getDefaultCommitMessageTemplate();
+
+    /**
+     * 获取 SettingsState 的单例实例
+     * <p>
+     * 通过 ApplicationManager 获取当前应用的 SettingsState 服务实例
+     *
+     * @return SettingsState 的实例
+     * @since 1.0
+     */
     public static SettingsState getInstance() {
         return ApplicationManager.getApplication().getService(SettingsState.class);
     }
 
+    /**
+     * 获取当前设置状态
+     * <p>
+     * 返回当前对象作为设置状态, 用于支持链式调用或状态传递
+     *
+     * @return 当前设置状态, 可能为 null
+     */
     @Override
     public @Nullable SettingsState getState() {
         return this;
     }
 
+    /**
+     * 加载设置状态
+     * <p>
+     * 将传入的 {@link SettingsState} 对象的属性复制到当前实例中.
+     *
+     * @param state 要加载的设置状态, 不能为空
+     */
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
@@ -241,6 +275,32 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             提交记录:
             
             {commits}
+            """;
+    }
+
+    /**
+     * 获取默认的提交记录模板
+     *
+     * <p>返回用于生成提交记录的默认提示词模板。
+     * 使用 {codeDiffs} 作为占位符，会被替换为格式化的代码变更信息。
+     *
+     * @return 默认的提交记录模板
+     */
+    @NotNull
+    public static String getDefaultCommitMessageTemplate() {
+        return """
+            请根据以下代码变更生成简洁、准确的提交记录（commit message）：
+            
+            代码变更：
+            {codeDiffs}
+            
+            要求：
+            1. 根据代码变更的实际内容生成描述，准确反映变更的本质
+            2. 识别变更类型（新功能、Bug 修复、重构、文档更新等）
+            3. 提交记录要简洁、清晰，符合常见的提交记录规范
+            4. 忽略无意义的变更（如格式化、空白字符等）
+            5. 如果变更涉及多个文件，请总结主要变更点
+            6. 输出格式：第一行是简短摘要（50字以内），空一行后是详细描述（可选）
             """;
     }
 

@@ -1,41 +1,90 @@
 <h2>AI Changelog</h2>
-<p>使用 AI 自动生成项目变更日志的 IntelliJ IDEA 插件。</p>
+<p>使用 AI 自动生成项目变更日志、工作日报、周报和提交记录的 IntelliJ IDEA 插件。</p>
 
 <h3>功能特性</h3>
 <ul>
     <li><b>🚀 AI 生成变更日志</b>：基于 Git 提交记录自动生成变更日志</li>
+    <li><b>📅 工作日报/周报生成</b>：根据 Git 提交记录自动生成工作日报和周报</li>
+    <li><b>💬 智能提交记录</b>：根据代码变更（diff）自动生成提交记录</li>
     <li><b>🤖 多种 AI 提供商支持</b>：支持通义千问、Ollama、OpenAI 等多种 AI 服务</li>
-    <li><b>⌨️ 灵活的触发方式</b>：可通过快捷键、右键菜单等多种方式触发</li>
-    <li><b>📝 自定义模板</b>：支持自定义变更日志格式和模板</li>
-    <li><b>🌍 国际化支持</b>：多语言资源文件</li>
+    <li><b>⌨️ 灵活的触发方式</b>：可通过 Git Log 右键菜单、Git 提交面板等多种方式触发</li>
+    <li><b>📝 自定义模板</b>：支持自定义变更日志、日报、周报和提交记录的提示词模板</li>
+    <li><b>🌍 国际化支持</b>：完整的中英文多语言支持</li>
 </ul>
 
-<h3>开发环境</h3>
+<h3>使用场景</h3>
 <ul>
-    <li>JDK 17+</li>
-    <li>Gradle 8.0+</li>
-    <li>IntelliJ IDEA 2022.3+</li>
+    <li><b>变更日志生成</b>：在 Git Log 工具窗口中选择提交记录，右键生成变更日志</li>
+    <li><b>工作日报/周报</b>：快速生成基于 Git 提交的工作日报和周报</li>
+    <li><b>提交记录生成</b>：在 Git 提交面板中，根据代码变更自动生成提交记录</li>
 </ul>
 
 <h3>快速开始</h3>
 <ol>
-    <li>安装插件</li>
-    <li>配置 AI 提供商和 API Key</li>
-    <li>使用快捷键或右键菜单生成变更日志</li>
+    <li>安装插件（需要先安装 AI Common 插件）</li>
+    <li>在 Settings → Tools → AI Common 中配置 AI 提供商和 API Key</li>
+    <li>在 Settings → Tools → AI Changelog 中选择默认 AI 提供商</li>
+    <li>在 Git Log 工具窗口或 Git 提交面板中使用相应功能</li>
 </ol>
 
-<h3>使用方式</h3>
+<h3>配置说明</h3>
 <ul>
-    <li>快捷键：Ctrl+Shift+C (Windows/Linux) 或 Cmd+Shift+C (Mac)</li>
-    <li>编辑器右键菜单 → Generate Changelog with AI</li>
-    <li>项目视图右键菜单 → Generate Changelog with AI</li>
-    <li>快速修复：Option+Enter / Alt+Enter → Generate Changelog with AI</li>
+    <li><b>AI 提供商配置</b>：在 Settings → Tools → AI Common 中配置和测试 AI 提供商</li>
+    <li><b>插件设置</b>：在 Settings → Tools → AI Changelog 中选择默认 AI 提供商和自定义提示词模板</li>
+    <li><b>提示词模板</b>：支持自定义系统提示词、变更日志模板、日报模板、周报模板等</li>
 </ul>
 
 <h3>技术栈</h3>
 <ul>
     <li>基于 IntelliJ Platform SDK 2.1.0</li>
-    <li>使用 Kotlin DSL 配置构建</li>
-    <li>集成 JUnit 5 测试框架</li>
-    <li>支持 Mockito 进行单元测试</li>
+    <li>依赖 AI Common 插件提供统一的 AI 服务接口</li>
+    <li>使用 JGit 进行 Git 操作</li>
+    <li>完整的国际化支持（中英文）</li>
+</ul>
+
+<hr/>
+
+<h2>AI Changelog</h2>
+<p>An IntelliJ IDEA plugin that uses AI to automatically generate project changelogs, daily reports, weekly reports, and commit
+    messages.</p>
+
+<h3>Features</h3>
+<ul>
+    <li><b>🚀 AI-Generated Changelogs</b>: Automatically generate changelogs based on Git commit history</li>
+    <li><b>📅 Daily/Weekly Reports</b>: Generate daily and weekly reports based on Git commits</li>
+    <li><b>💬 Smart Commit Messages</b>: Automatically generate commit messages based on code changes (diff)</li>
+    <li><b>🤖 Multiple AI Provider Support</b>: Support for various AI services including Qwen, Ollama, OpenAI, and more</li>
+    <li><b>⌨️ Flexible Trigger Methods</b>: Trigger via Git Log context menu, Git commit panel, and more</li>
+    <li><b>📝 Customizable Templates</b>: Customize prompt templates for changelogs, daily reports, weekly reports, and commit messages</li>
+    <li><b>🌍 Internationalization Support</b>: Full support for Chinese and English</li>
+</ul>
+
+<h3>Use Cases</h3>
+<ul>
+    <li><b>Changelog Generation</b>: Select commits in Git Log tool window and right-click to generate changelog</li>
+    <li><b>Daily/Weekly Reports</b>: Quickly generate daily and weekly reports based on Git commits</li>
+    <li><b>Commit Message Generation</b>: Automatically generate commit messages in Git commit panel based on code changes</li>
+</ul>
+
+<h3>Quick Start</h3>
+<ol>
+    <li>Install the plugin (requires AI Common plugin to be installed first)</li>
+    <li>Configure AI providers and API keys in Settings → Tools → AI Common</li>
+    <li>Select default AI provider in Settings → Tools → AI Changelog</li>
+    <li>Use the features in Git Log tool window or Git commit panel</li>
+</ol>
+
+<h3>Configuration</h3>
+<ul>
+    <li><b>AI Provider Configuration</b>: Configure and test AI providers in Settings → Tools → AI Common</li>
+    <li><b>Plugin Settings</b>: Select default AI provider and customize prompt templates in Settings → Tools → AI Changelog</li>
+    <li><b>Prompt Templates</b>: Customize system prompts, changelog templates, daily report templates, weekly report templates, etc.</li>
+</ul>
+
+<h3>Technology Stack</h3>
+<ul>
+    <li>Based on IntelliJ Platform SDK 2.1.0</li>
+    <li>Depends on AI Common plugin for unified AI service interface</li>
+    <li>Uses JGit for Git operations</li>
+    <li>Full internationalization support (Chinese and English)</li>
 </ul>

@@ -43,6 +43,7 @@ import lombok.Getter;
  */
 public class ChangelogSettingsPanel {
 
+    /** 主面板 */
     @Getter
     private final JPanel mainPanel;
     /** AI 提供商选择下拉框 */
@@ -59,11 +60,29 @@ public class ChangelogSettingsPanel {
     private final JPanel advancedSettingsPanel;
 
     // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
+    /** 系统提示文本区域, 用于显示或编辑系统提示信息 */
     public final JBTextArea systemPromptTextArea = new JBTextArea(15, 50);
+    /** 日志变更模板文本区域, 用于显示和编辑日志变更模板内容 */
     public final JBTextArea changelogTemplateTextArea = new JBTextArea(15, 50);
+    /**
+     * 用于输入每日报告模板的文本区域
+     * <p>
+     * 提供 15 行 50 列的编辑空间, 供用户编辑或查看每日报告模板内容
+     */
     public final JBTextArea dailyReportTemplateTextArea = new JBTextArea(15, 50);
+    /** 周报模板文本区域, 用于显示和编辑周报模板内容 */
     public final JBTextArea weeklyReportTemplateTextArea = new JBTextArea(15, 50);
+    /** 提交记录模板文本区域, 用于显示和编辑提交记录模板内容 */
+    public final JBTextArea commitMessageTemplateTextArea = new JBTextArea(15, 50);
 
+    /**
+     * 构造函数, 初始化变更日志设置面板.
+     * <p>
+     * 创建并布局所有 UI 组件, 包括高级设置复选框,AI 提供者选择面板以及提示模板面板.
+     * 同时注册提供者设置监听器并设置相关事件监听器.
+     *
+     * @since 1.0
+     */
     public ChangelogSettingsPanel() {
         // 创建高级设置复选框
         showAdvancedSettingsCheckBox = new JBCheckBox(ChangelogBundle.message("settings.prompt.settings.show"));
@@ -102,11 +121,24 @@ public class ChangelogSettingsPanel {
         setupListeners();
     }
 
+    /**
+     * 判断当前设置是否与给定的设置状态发生修改
+     * <p>
+     * 比较当前界面中的系统提示, 变更日志模板, 日报模板, 周报模板以及高级设置显示状态
+     * 是否与传入的设置状态对象不同, 若不同则返回 true, 表示设置已修改.
+     * 同时检查 AI 提供者下拉框是否为空或不可用, 若为空或不可用则返回 false.
+     * 如果选中的 AI 配置不为空且与 providerSettings 不一致, 则返回 true.
+     *
+     * @param settings         当前设置状态对象
+     * @param providerSettings AI 提供者配置对象
+     * @return 如果设置已修改, 返回 true; 否则返回 false
+     */
     public boolean isModified(SettingsState settings, AIProviderConfig providerSettings) {
         if (!systemPromptTextArea.getText().equals(settings.systemPrompt)
             || !changelogTemplateTextArea.getText().equals(settings.changelogTemplate)
             || !dailyReportTemplateTextArea.getText().equals(settings.dailyReportTemplate)
             || !weeklyReportTemplateTextArea.getText().equals(settings.weeklyReportTemplate)
+            || !commitMessageTemplateTextArea.getText().equals(settings.commitMessageTemplate)
             || showAdvancedSettingsCheckBox.isSelected() != settings.showAdvancedSettings) {
             return true;
         }
@@ -123,11 +155,19 @@ public class ChangelogSettingsPanel {
         return !providerSettings.contentEquals(selectedConfig);
     }
 
+    /**
+     * 将界面中的设置项应用到给定的 SettingsState 对象中
+     * <p>
+     * 该方法从文本框和复选框中读取当前用户界面的设置值, 并将其赋值给 SettingsState 对象的相应属性.
+     *
+     * @param settings 要应用设置的 SettingsState 对象
+     */
     public void apply(SettingsState settings) {
         settings.systemPrompt = systemPromptTextArea.getText();
         settings.changelogTemplate = changelogTemplateTextArea.getText();
         settings.dailyReportTemplate = dailyReportTemplateTextArea.getText();
         settings.weeklyReportTemplate = weeklyReportTemplateTextArea.getText();
+        settings.commitMessageTemplate = commitMessageTemplateTextArea.getText();
         settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
         if (providerComboBox != null && providerComboBox.isEnabled()) {
             AIProviderConfig selectedConfig = (AIProviderConfig) providerComboBox.getSelectedItem();
@@ -137,11 +177,20 @@ public class ChangelogSettingsPanel {
         }
     }
 
+    /**
+     * 重置界面设置为指定的配置状态
+     * <p>
+     * 根据传入的设置状态对象, 将界面中的各个文本区域和控件的值更新为对应的配置值.
+     *
+     * @param settings 包含配置信息的设置状态对象
+     * @throws NullPointerException 如果传入的 settings 为 null, 可能导致空指针异常
+     */
     public void reset(SettingsState settings) {
         systemPromptTextArea.setText(settings.systemPrompt);
         changelogTemplateTextArea.setText(settings.changelogTemplate);
         dailyReportTemplateTextArea.setText(settings.dailyReportTemplate);
         weeklyReportTemplateTextArea.setText(settings.weeklyReportTemplate);
+        commitMessageTemplateTextArea.setText(settings.commitMessageTemplate);
         showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
         advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
         if (providerComboBox != null && providerComboBox.isEnabled()) {
@@ -389,6 +438,8 @@ public class ChangelogSettingsPanel {
                                                                                                              "daily.report"));
         promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.weekly.report"),
                                 createPromptTab(weeklyReportTemplateTextArea, "weekly.report"));
+        promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.commit.message"),
+                                createPromptTab(commitMessageTemplateTextArea, "commit.message"));
 
         return promptTabbedPane;
     }
@@ -412,16 +463,38 @@ public class ChangelogSettingsPanel {
 
         // 添加文档监听器，根据内容自动调整大小
         textArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            /**
+             * 处理文档事件, 调整文本区域大小
+             * <p>
+             * 当文档事件发生时, 调用 adjustTextAreaSize 方法调整文本区域的大小
+             *
+             * @param e 文档事件对象
+             */
             @Override
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(textArea);
             }
 
+            /**
+             * 文档更新时触发的回调方法
+             * <p>
+             * 当文本域的内容发生变化时, 该方法会被调用, 并通过 {@link #adjustTextAreaSize(javax.swing.JTextArea)} 方法自动调整文本域的尺寸, 以适应新的内容.
+             *
+             * @param e 文档事件, 包含了更新的具体信息
+             */
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(textArea);
             }
 
+            /**
+             * 处理文档内容变更事件
+             * <p>
+             * 当文档内容发生变更时调用此方法, 用于调整文本区域的大小以适应内容变化.
+             *
+             * @param e 文档事件对象, 包含变更相关信息
+             * @since 1.0
+             */
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(textArea);
@@ -506,6 +579,9 @@ public class ChangelogSettingsPanel {
                 break;
             case "weekly.report":
                 textArea.setText(SettingsState.getDefaultWeeklyReportTemplate());
+                break;
+            case "commit.message":
+                textArea.setText(SettingsState.getDefaultCommitMessageTemplate());
                 break;
         }
         adjustTextAreaSize(textArea);

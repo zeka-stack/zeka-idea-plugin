@@ -62,7 +62,7 @@
 
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
-        <projectConfigurable
+        <applicationConfigurable
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
@@ -79,24 +79,27 @@
     <actions>
         <!-- Git Log 工具窗口右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
-                text="使用 AI 生成变更日志"
-                description="根据选中的提交记录使用 AI 生成变更日志"
-                icon="AllIcons.Actions.IntentionBulb">
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction">
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
-                text="使用 AI 生成工作日报"
-                description="根据选中的提交记录使用 AI 生成工作日报"
-                icon="AllIcons.Actions.IntentionBulb">
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction">
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
-                text="使用 AI 生成工作周报"
-                description="根据选中的提交记录使用 AI 生成工作周报"
-                icon="AllIcons.Actions.IntentionBulb">
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+
+        <!-- Git 提交工具栏操作 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForCommitAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForCommitAction">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+        </action>
+
+        <!-- Git Log 工具窗口右键菜单 - 生成提交记录 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction">
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
         </action>
     </actions>

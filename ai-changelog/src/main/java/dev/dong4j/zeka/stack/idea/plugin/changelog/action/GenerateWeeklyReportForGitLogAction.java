@@ -1,88 +1,92 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.project.Project;
-import com.intellij.vcs.log.VcsFullCommitDetails;
-import com.intellij.vcs.log.VcsLog;
-import com.intellij.vcs.log.VcsLogDataKeys;
-
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 
 /**
  * Git Log 工具窗口中生成工作周报的 Action
  */
-public class GenerateWeeklyReportForGitLogAction extends AnAction {
+public class GenerateWeeklyReportForGitLogAction extends AbstractGitLogAction {
 
+    /**
+     * 获取用于生成周报的 Git 日志操作的文本键
+     * <p>
+     * 返回一个固定字符串, 用于标识生成周报时涉及 Git 日志的操作
+     *
+     * @return 固定的文本键 "action.generate.weekly.report.gitlog"
+     */
     @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        if (project == null || project.isDisposed()) {
-            return;
-        }
-
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
-        if (log == null) {
-            NotificationUtil.showError(project, "请在 Git Log 工具窗口中选择提交记录");
-            return;
-        }
-
-        List<String> selectedHashes = new ArrayList<>();
-        List<VcsFullCommitDetails> selectedCommits = log.getSelectedDetails();
-        if (selectedCommits.isEmpty()) {
-            NotificationUtil.showError(project, "请至少选择一条提交记录");
-            return;
-        }
-
-        for (VcsFullCommitDetails commit : selectedCommits) {
-            selectedHashes.add(commit.getId().asString());
-        }
-
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "使用 AI 生成工作周报", true) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setIndeterminate(true);
-                indicator.setText("读取提交记录并生成工作周报...");
-
-                try {
-                    ChangelogService service = ChangelogService.getInstance(project);
-                    String report = service.generateWeeklyReport(selectedHashes);
-
-                    com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
-                        ChangelogResultDialog dialog = new ChangelogResultDialog(project, report);
-                        dialog.show();
-                    });
-                } catch (Exception ex) {
-                    com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
-                        NotificationUtil.showError(project, "生成工作周报失败: " + ex.getMessage());
-                    });
-                }
-            }
-        });
+    protected @NotNull String getTextKey() {
+        return "action.generate.weekly.report.gitlog";
     }
 
+    /**
+     * 获取描述键用于生成周报的 Git 日志操作描述
+     * <p>
+     * 返回一个固定的描述键字符串, 用于国际化显示操作描述信息
+     *
+     * @return 描述键字符串
+     */
     @Override
-    public void update(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
+    protected @NotNull String getDescriptionKey() {
+        return "action.generate.weekly.report.gitlog.description";
+    }
 
-        boolean enabled = project != null && log != null;
-        if (enabled) {
-            List<VcsFullCommitDetails> selectedCommits = log.getSelectedDetails();
-            enabled = !selectedCommits.isEmpty();
-        }
+    /**
+     * 获取进度标题的资源键
+     * <p>
+     * 返回用于显示进度标题的国际化资源键字符串
+     *
+     * @return 进度标题的资源键
+     */
+    @Override
+    protected @NotNull String getProgressTitleKey() {
+        return "action.generate.weekly.report.gitlog.progress.title";
+    }
 
-        e.getPresentation().setEnabled(enabled);
+    /**
+     * 获取进度文本键
+     * <p>
+     * 返回用于显示进度信息的文本键, 通常用于国际化资源加载.
+     *
+     * @return 进度文本键
+     */
+    @Override
+    protected @NotNull String getProgressTextKey() {
+        return "action.generate.weekly.report.gitlog.progress.text";
+    }
+
+    /**
+     * 重写父类方法, 获取错误键
+     * <p>
+     * 返回用于标识生成周报时 Git 日志错误的错误键
+     *
+     * @return 错误键
+     * @since 1.0
+     */
+    @Override
+    protected @NotNull String getErrorKey() {
+        return "action.generate.weekly.report.gitlog.error";
+    }
+
+    /**
+     * 生成每周报告内容
+     * <p>
+     * 该方法通过 {@link ChangelogService#generateWeeklyReport(java.util.List)} 生成
+     * 指定提交哈希列表对应的每周报告字符串.
+     *
+     * @param service      用于生成报告的 {@link ChangelogService} 实例
+     * @param commitHashes 提交哈希列表, 报告将基于这些提交生成
+     * @return 生成的报告内容字符串
+     * @throws Exception 生成过程中可能抛出的任何异常
+     */
+    @Override
+    protected @NotNull String generateContent(@NotNull ChangelogService service,
+                                              @NotNull List<String> commitHashes) throws Exception {
+        return service.generateWeeklyReport(commitHashes);
     }
 }
 
