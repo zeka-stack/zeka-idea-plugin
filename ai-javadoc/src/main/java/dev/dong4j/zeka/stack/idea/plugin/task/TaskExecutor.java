@@ -20,8 +20,14 @@ import com.intellij.psi.javadoc.PsiDocComment;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.SwingUtilities;
@@ -31,6 +37,8 @@ import dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -89,13 +97,8 @@ public class TaskExecutor {
     private final AIService aiService;
     /** AI 响应监听器 */
     private final JavaDocAIResponseListener responseListener;
-
-    /** 完成的任务数量计数器，用于记录已成功完成的任务数 */
-    private final AtomicInteger completedCount = new AtomicInteger(0);
-    /** 失败次数计数器，用于记录任务或操作失败的次数 */
-    private final AtomicInteger failedCount = new AtomicInteger(0);
-    /** 被跳过的记录数量 */
-    private final AtomicInteger skippedCount = new AtomicInteger(0);
+    /** 进度管理器，统一管理单线程和多线程的进度更新 */
+    private ProgressManager progressManager;
 
     /**
      * 提供商统计信息
@@ -240,6 +243,260 @@ public class TaskExecutor {
     // }
 
     /**
+     * 进度管理器
+     * <p>
+     * 统一管理单线程和多线程模式下的进度更新和统计信息。
+     * 提供统一的接口来更新进度指示器，支持单线程和多线程两种模式。
+     *
+     * <p>功能：
+     * <ul>
+     *   <li>单线程模式：使用内部计数器跟踪统计信息</li>
+     *   <li>多线程模式：汇总所有提供商的统计信息</li>
+     *   <li>统一更新进度指示器（进度条、文本、统计信息）</li>
+     *   <li>线程安全的统计信息访问</li>
+     * </ul>
+     */
+    private static class ProgressManager {
+        /** 进度指示器 */
+        private final ProgressIndicator indicator;
+        /** 总任务数 */
+        private final int totalTasks;
+        /** 单线程模式下的完成计数器 */
+        private final AtomicInteger completedCount = new AtomicInteger(0);
+        /** 单线程模式下的失败计数器 */
+        private final AtomicInteger failedCount = new AtomicInteger(0);
+        /** 单线程模式下的跳过计数器 */
+        private final AtomicInteger skippedCount = new AtomicInteger(0);
+        /** 多线程模式下的提供商统计信息映射（可选） */
+        private final Map<String, ProviderStatistics> providerStats;
+
+        /**
+         * 创建单线程模式的进度管理器
+         *
+         * @param indicator  进度指示器
+         * @param totalTasks 总任务数
+         */
+        public ProgressManager(@NotNull ProgressIndicator indicator, int totalTasks) {
+            this.indicator = indicator;
+            this.totalTasks = totalTasks;
+            this.providerStats = null;
+        }
+
+        /**
+         * 创建多线程模式的进度管理器
+         *
+         * @param indicator     进度指示器
+         * @param totalTasks    总任务数
+         * @param providerStats 提供商统计信息映射
+         */
+        public ProgressManager(@NotNull ProgressIndicator indicator,
+                               int totalTasks,
+                               @NotNull Map<String, ProviderStatistics> providerStats) {
+            this.indicator = indicator;
+            this.totalTasks = totalTasks;
+            this.providerStats = providerStats;
+        }
+
+        /**
+         * 判断是否为多线程模式
+         *
+         * @return 如果是多线程模式返回 true
+         */
+        public boolean isParallelMode() {
+            return providerStats != null;
+        }
+
+        /**
+         * 获取当前已完成的任务数
+         *
+         * @return 已完成任务数
+         */
+        public int getCompletedCount() {
+            if (isParallelMode()) {
+                return providerStats.values().stream()
+                    .mapToInt(ProviderStatistics::getCompletedCount)
+                    .sum();
+            }
+            return completedCount.get();
+        }
+
+        /**
+         * 获取当前失败的任务数
+         *
+         * @return 失败任务数
+         */
+        public int getFailedCount() {
+            if (isParallelMode()) {
+                return providerStats.values().stream()
+                    .mapToInt(ProviderStatistics::getFailedCount)
+                    .sum();
+            }
+            return failedCount.get();
+        }
+
+        /**
+         * 获取当前跳过的任务数
+         *
+         * @return 跳过任务数
+         */
+        public int getSkippedCount() {
+            if (isParallelMode()) {
+                return providerStats.values().stream()
+                    .mapToInt(ProviderStatistics::getSkippedCount)
+                    .sum();
+            }
+            return skippedCount.get();
+        }
+
+        /**
+         * 获取总任务数
+         *
+         * @return 总任务数
+         */
+        public int getTotalTasks() {
+            return totalTasks;
+        }
+
+        /**
+         * 增加已完成任务计数（单线程模式）
+         */
+        public void incrementCompleted() {
+            if (!isParallelMode()) {
+                completedCount.incrementAndGet();
+            }
+        }
+
+        /**
+         * 增加失败任务计数（单线程模式）
+         */
+        public void incrementFailed() {
+            if (!isParallelMode()) {
+                failedCount.incrementAndGet();
+            }
+        }
+
+        /**
+         * 增加跳过任务计数（单线程模式）
+         */
+        public void incrementSkipped() {
+            if (!isParallelMode()) {
+                skippedCount.incrementAndGet();
+            }
+        }
+
+        /**
+         * 更新进度指示器
+         * <p>
+         * 根据当前处理的任务索引和统计信息更新进度条、主文本和副文本。
+         *
+         * @param currentIndex 当前处理的任务索引（从0开始）
+         * @param currentTask  当前处理的任务（可选，用于显示文件路径）
+         * @param providerName 当前处理任务的提供商名称（可选，多线程模式使用）
+         */
+        public void updateProgress(int currentIndex, DocumentationTask currentTask, String providerName) {
+            int processed = getCompletedCount() + getFailedCount() + getSkippedCount();
+            double fraction = totalTasks > 0 ? (double) processed / totalTasks : 0.0;
+
+            // 更新进度条
+            indicator.setFraction(fraction);
+
+            // 更新主文本：显示处理进度
+            if (isParallelMode()) {
+                // 多线程模式：显示已处理的任务数和当前提供商
+                if (providerName != null && !providerName.isEmpty()) {
+                    indicator.setText(String.format("已处理 %d/%d 个任务 [%s]", processed, totalTasks, providerName));
+                } else {
+                    indicator.setText(String.format("已处理 %d/%d 个任务", processed, totalTasks));
+                }
+            } else {
+                // 单线程模式：显示当前正在处理的任务
+                if (currentTask != null) {
+                    indicator.setText(String.format("正在处理 (%d/%d): %s",
+                                                    currentIndex + 1, totalTasks, currentTask.getFilePath()));
+                } else {
+                    indicator.setText(String.format("正在处理 (%d/%d)", currentIndex + 1, totalTasks));
+                }
+            }
+
+            // 更新副文本：显示统计信息
+            updateStatisticsText();
+        }
+
+        /**
+         * 更新进度指示器（兼容旧版本调用）
+         *
+         * @param currentIndex 当前处理的任务索引（从0开始）
+         * @param currentTask  当前处理的任务（可选，用于显示文件路径）
+         */
+        public void updateProgress(int currentIndex, DocumentationTask currentTask) {
+            updateProgress(currentIndex, currentTask, null);
+        }
+
+        /**
+         * 更新统计信息文本
+         * <p>
+         * 在多线程模式下，还会显示各提供商的处理情况。
+         */
+        public void updateStatisticsText() {
+            if (isParallelMode()) {
+                // 多线程模式：显示总体统计和提供商详情
+                StringBuilder statsText = new StringBuilder();
+                statsText.append(String.format("完成: %d, 失败: %d, 跳过: %d",
+                                               getCompletedCount(), getFailedCount(), getSkippedCount()));
+
+                // 添加各提供商的详细统计信息
+                if (providerStats.size() > 0) {
+                    statsText.append(" | ");
+                    List<String> providerInfo = new ArrayList<>();
+                    for (ProviderStatistics stats : providerStats.values()) {
+                        int completed = stats.getCompletedCount();
+                        int failed = stats.getFailedCount();
+                        int skipped = stats.getSkippedCount();
+                        int total = stats.getTotalCount();
+                        if (total > 0) {
+                            // 显示提供商名称和详细统计：完成/失败/跳过
+                            providerInfo.add(String.format("%s: 完成%d 失败%d 跳过%d",
+                                                           stats.getProviderName(), completed, failed, skipped));
+                        }
+                    }
+                    if (!providerInfo.isEmpty()) {
+                        statsText.append(String.join(" | ", providerInfo));
+                    }
+                }
+
+                indicator.setText2(statsText.toString());
+            } else {
+                // 单线程模式：只显示总体统计
+                indicator.setText2(String.format("完成: %d, 失败: %d, 跳过: %d",
+                                                 getCompletedCount(), getFailedCount(), getSkippedCount()));
+            }
+        }
+
+        /**
+         * 完成进度更新
+         * <p>
+         * 将进度设置为100%，并显示完成消息。
+         */
+        public void finish() {
+            indicator.setFraction(1.0);
+            indicator.setText(JavaDocBundle.message("task.progress.completed"));
+        }
+
+        /**
+         * 获取统计信息
+         *
+         * @return 任务统计信息
+         */
+        public TaskStatistics getStatistics() {
+            return new TaskStatistics(
+                getCompletedCount(),
+                getFailedCount(),
+                getSkippedCount()
+            );
+        }
+    }
+
+    /**
      * 构造任务执行器
      *
      * @param project   项目对象
@@ -301,9 +558,139 @@ public class TaskExecutor {
         log.info("开始处理 {} 个文档生成任务", totalTasks);
 
         // 检查是否启用性能模式且任务数量大于5个
-        // 注意：性能模式下的多提供商支持需要进一步实现
-        // 目前暂时使用顺序处理
-        return processTasksSequentially(tasks);
+        if (AIProviderSettings.getInstance().performanceMode && totalTasks > 5) {
+            return processTasksInParallel(tasks);
+        } else {
+            // 初始化单线程模式的进度管理器
+            progressManager = new ProgressManager(indicator, totalTasks);
+            return processTasksSequentially(tasks);
+        }
+    }
+
+    /**
+     * 并行处理任务（性能模式）
+     * <p>
+     * 该方法在性能模式下，利用多个AI服务提供商并行处理任务列表。如果无可用提供商，则回退到顺序处理。
+     *
+     * @param tasks 任务列表，包含需要处理的文档任务
+     * @return 处理是否成功
+     */
+    private boolean processTasksInParallel(@NotNull List<DocumentationTask> tasks) {
+        final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
+
+        if (aiProviderTypes.isEmpty()) {
+            log.warn("性能模式启用但无可用提供商");
+            return false;
+        }
+
+        log.info("性能模式：使用 {} 个提供商并行处理 {} 个任务", aiProviderTypes.size(), tasks.size());
+
+        // 创建线程池
+        ExecutorService executor = Executors.newFixedThreadPool(aiProviderTypes.size());
+
+        // 为每个提供商创建统计对象
+        Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
+
+        // 初始化多线程模式的进度管理器
+        progressManager = new ProgressManager(indicator, tasks.size(), providerStats);
+
+        try {
+            // 将任务分配给不同的提供商
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
+            AtomicInteger taskIndex = new AtomicInteger(0);
+
+            for (AIProviderConfig provider : aiProviderTypes) {
+                String providerName = provider.providerType.getDisplayName();
+                ProviderStatistics stats = new ProviderStatistics(providerName);
+                providerStats.put(providerName, stats);
+
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                    processTasksWithProvider(tasks, provider, taskIndex, stats);
+                }, executor);
+                futures.add(future);
+            }
+
+            // 等待所有任务完成
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            // 完成所有统计
+            providerStats.values().forEach(ProviderStatistics::finish);
+
+            // 使用进度管理器完成进度更新
+            progressManager.finish();
+
+            // 显示每个提供商的统计信息（如果启用）
+            SettingsState settings = SettingsState.getInstance();
+            if (AIProviderSettings.getInstance().showProviderStatistics) {
+                showProviderStatistics(providerStats);
+            }
+
+            // 使用进度管理器获取统计信息
+            TaskStatistics statistics = progressManager.getStatistics();
+            log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
+                     statistics.completed(), statistics.failed(), statistics.skipped());
+
+            // Console 日志：任务完成统计
+            JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
+            JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
+                                                                   statistics.completed(), statistics.failed(), statistics.skipped()));
+
+            return true;
+        } finally {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * 使用指定提供商处理任务列表
+     * <p>
+     * 遍历任务列表，依次使用指定的AI服务提供商处理每个任务，并更新处理进度和统计信息。
+     *
+     * @param tasks     任务列表，包含需要处理的文档任务
+     * @param provider  AI服务提供商，用于执行具体的任务处理逻辑
+     * @param taskIndex 用于记录当前处理任务索引的原子整数，确保线程安全
+     * @param stats     统计信息对象，用于记录处理过程中的完成、失败和跳过任务数量
+     */
+    private void processTasksWithProvider(@NotNull List<DocumentationTask> tasks,
+                                          @NotNull AIProviderConfig provider,
+                                          @NotNull AtomicInteger taskIndex,
+                                          @NotNull ProviderStatistics stats) {
+        int totalTasks = tasks.size();
+        String providerName = provider.providerType.getDisplayName();
+
+        while (taskIndex.get() < totalTasks && !indicator.isCanceled()) {
+            int currentIndex = taskIndex.getAndIncrement();
+            if (currentIndex >= totalTasks) {
+                break;
+            }
+
+            DocumentationTask task = tasks.get(currentIndex);
+
+            // 任务开始处理时，更新进度显示当前提供商正在处理
+            SwingUtilities.invokeLater(() -> {
+                if (progressManager != null) {
+                    progressManager.updateProgress(currentIndex, task, providerName);
+                }
+            });
+
+            // 处理任务（会更新统计信息）
+            processTask(task, provider, stats);
+
+            // 任务处理完成后，使用进度管理器更新进度（需要在 EDT 中执行）
+            SwingUtilities.invokeLater(() -> {
+                if (progressManager != null) {
+                    progressManager.updateProgress(currentIndex, task, providerName);
+                }
+            });
+        }
     }
 
     /**
@@ -328,42 +715,45 @@ public class TaskExecutor {
         for (int i = 0; i < totalTasks && !indicator.isCanceled(); i++) {
             DocumentationTask task = tasks.get(i);
 
-            // 更新进度
-            double fraction = (double) i / totalTasks;
-            indicator.setFraction(fraction);
-            indicator.setText(String.format("正在处理 (%d/%d): %s",
-                                            i + 1, totalTasks, task.getFilePath()));
+            // 使用进度管理器更新进度
+            if (progressManager != null) {
+                progressManager.updateProgress(i, task);
+            }
 
-            // 处理任务
-            processTask(task);
-
-            // 显示统计信息
-            indicator.setText2(String.format("完成: %d, 失败: %d, 跳过: %d",
-                                             completedCount.get(), failedCount.get(), skippedCount.get()));
+            // 使用当前选中的服务商进行处理
+            processTask(task, settings.providerConfig);
         }
 
-        indicator.setFraction(1.0);
-        indicator.setText(JavaDocBundle.message("task.progress.completed"));
+        // 使用进度管理器完成进度更新
+        if (progressManager != null) {
+            progressManager.finish();
+        }
 
+        // 使用进度管理器获取统计信息
+        TaskStatistics statistics = progressManager != null ? progressManager.getStatistics() : new TaskStatistics(0, 0, 0);
         log.info("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
-                 completedCount.get(), failedCount.get(), skippedCount.get());
+                 statistics.completed(), statistics.failed(), statistics.skipped());
 
         // Console 日志：任务完成统计
         JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
         JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
-                                                               completedCount.get(), failedCount.get(), skippedCount.get()));
+                                                               statistics.completed(), statistics.failed(), statistics.skipped()));
 
         return true;
     }
 
-    // 注意：性能模式相关代码已暂时注释，后续需要重新实现以支持 AIService API
-    // TODO: 重新实现性能模式以支持 AIService API
-    /*
-    private boolean processTasksInParallel(@NotNull List<DocumentationTask> tasks) {
-        // 性能模式实现需要重新设计
-        return false;
+    /**
+     * 获取已验证的 AI 服务提供商类型列表
+     * <p>
+     * 从全局设置中获取已验证的 AI 服务提供商配置, 并提取其中唯一的提供商类型.
+     *
+     * @return 包含已验证 AI 服务提供商类型的列表
+     */
+    @NotNull
+    private static List<AIProviderConfig> getAiProviderTypes() {
+        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+        return globalSettings.getVerifiedProviders();
     }
-    */
 
     /**
      * 显示提供商的统计信息，包括HTML格式的表格和日志信息。
@@ -506,6 +896,20 @@ public class TaskExecutor {
     }
 
     /**
+     * 处理文档生成任务（单线程模式）
+     * <p>
+     * 该方法负责处理一个文档生成任务，包括设置任务状态、检查是否跳过、生成文档、插入文档以及处理异常。
+     * 如果任务被跳过，则更新状态并增加跳过计数。如果生成文档失败或发生异常，则更新任务状态为失败并记录错误信息。
+     * 如果任务成功完成，则更新状态为完成并增加完成计数。
+     *
+     * @param task     要处理的文档生成任务对象
+     * @param provider AI 服务提供商配置
+     */
+    private void processTask(@NotNull DocumentationTask task, @NotNull AIProviderConfig provider) {
+        processTask(task, provider, null);
+    }
+
+    /**
      * 处理文档生成任务
      * <p>
      * 该方法负责处理一个文档生成任务，包括设置任务状态、检查是否跳过、生成文档、插入文档以及处理异常。
@@ -513,12 +917,25 @@ public class TaskExecutor {
      * 如果任务成功完成，则更新状态为完成并增加完成计数。
      *
      * @param task 要处理的文档生成任务对象
+     * @param provider AI 服务提供商配置
+     * @param stats 提供商统计信息（多线程模式使用，单线程模式为 null）
      */
-    private void processTask(@NotNull DocumentationTask task) {
+    private void processTask(@NotNull DocumentationTask task, @NotNull AIProviderConfig provider, ProviderStatistics stats) {
         try {
             task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
 
-            int currentTaskNum = completedCount.get() + failedCount.get() + skippedCount.get() + 1;
+            // 计算当前任务编号
+            int currentTaskNum;
+            if (stats != null) {
+                // 多线程模式：使用提供商统计信息
+                currentTaskNum = stats.getTotalCount() + 1;
+            } else if (progressManager != null) {
+                // 单线程模式：使用进度管理器
+                currentTaskNum =
+                    progressManager.getCompletedCount() + progressManager.getFailedCount() + progressManager.getSkippedCount() + 1;
+            } else {
+                currentTaskNum = 1;
+            }
             VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
                                                                                             task.getElement().getContainingFile().getVirtualFile()
                                                                                        );
@@ -533,7 +950,11 @@ public class TaskExecutor {
 
             if (shouldSkip(task)) {
                 task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
-                skippedCount.incrementAndGet();
+                if (stats != null) {
+                    stats.incrementSkipped();
+                } else if (progressManager != null) {
+                    progressManager.incrementSkipped();
+                }
                 JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
                 JavaDocConsoleView.print(project, "");
                 return;
@@ -562,12 +983,16 @@ public class TaskExecutor {
             }
 
             // 使用 AIService API 生成内容
-            String documentation = aiService.generateContent(project, request, settings.providerConfig, responseListener);
+            String documentation = aiService.generateContent(project, request, provider, responseListener);
 
             if (documentation.trim().isEmpty()) {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);
                 task.setErrorMessage("生成的文档为空");
-                failedCount.incrementAndGet();
+                if (stats != null) {
+                    stats.incrementFailed();
+                } else if (progressManager != null) {
+                    progressManager.incrementFailed();
+                }
                 JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
                 JavaDocConsoleView.print(project, "");
                 return;
@@ -577,7 +1002,11 @@ public class TaskExecutor {
 
             task.setStatus(DocumentationTask.TaskStatus.COMPLETED);
             task.setResult(documentation);
-            completedCount.incrementAndGet();
+            if (stats != null) {
+                stats.incrementCompleted();
+            } else if (progressManager != null) {
+                progressManager.incrementCompleted();
+            }
 
             JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
             JavaDocConsoleView.print(project, "");
@@ -587,14 +1016,22 @@ public class TaskExecutor {
             log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
-            failedCount.incrementAndGet();
+            if (stats != null) {
+                stats.incrementFailed();
+            } else if (progressManager != null) {
+                progressManager.incrementFailed();
+            }
             JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
             JavaDocConsoleView.print(project, "");
         } catch (Exception e) {
             log.info("处理任务失败: {}", task, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
-            failedCount.incrementAndGet();
+            if (stats != null) {
+                stats.incrementFailed();
+            } else if (progressManager != null) {
+                progressManager.incrementFailed();
+            }
             JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
             JavaDocConsoleView.print(project, "");
         }
@@ -952,11 +1389,10 @@ public class TaskExecutor {
      * @see TaskStatistics
      */
     public TaskStatistics getStatistics() {
-        return new TaskStatistics(
-            completedCount.get(),
-            failedCount.get(),
-            skippedCount.get()
-        );
+        if (progressManager != null) {
+            return progressManager.getStatistics();
+        }
+        return new TaskStatistics(0, 0, 0);
     }
 
     /**

@@ -84,11 +84,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
-    /**
-     * 性能模式开关
-     */
-    public boolean performanceMode = false;
-
     // ==================== 功能配置 ====================
 
     /**
