@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -67,7 +68,7 @@ public class JavaDocSettingsPanel {
     private JPanel mainPanel;
 
     /** AI 提供商选择下拉框 */
-    private JComboBox<AIProviderType> providerComboBox;
+    private JComboBox<AIProviderConfig> providerComboBox;
 
     // 功能配置
     /** 生成针对类的复选框 */
@@ -302,12 +303,12 @@ public class JavaDocSettingsPanel {
      */
     private JPanel createAIProviderSelectionPanel() {
         // 从 ai-common 获取可用服务商列表
-        final List<AIProviderType> availableProviderTypes = getAiProviderTypes();
+        final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
 
         JPanel panel;
 
         // 如果没有可用服务商，显示提示信息和跳转链接
-        if (availableProviderTypes.isEmpty()) {
+        if (aiProviderTypes.isEmpty()) {
             // 创建提示信息面板
             JBLabel warningLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.no.available.warning"));
             // 使用警告颜色（如果系统不支持，则使用默认的警告颜色）
@@ -331,7 +332,7 @@ public class JavaDocSettingsPanel {
             });
 
             // 创建空的下拉框（禁用状态）
-            providerComboBox = new ComboBox<>(new AIProviderType[0]);
+            providerComboBox = new ComboBox<>(new AIProviderConfig[0]);
             providerComboBox.setEnabled(false);
 
             panel = FormBuilder.createFormBuilder()
@@ -342,14 +343,14 @@ public class JavaDocSettingsPanel {
                 .getPanel();
         } else {
             // 创建供应商下拉框
-            providerComboBox = new ComboBox<>(availableProviderTypes.toArray(new AIProviderType[0]));
+            providerComboBox = new ComboBox<>(aiProviderTypes.toArray(new AIProviderConfig[0]));
             providerComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
 
                 JBLabel label = new JBLabel();
                 if (value != null) {
-                    Icon icon = AICommonIcons.getProviderIcon(value);
+                    Icon icon = AICommonIcons.getProviderIcon(value.providerType);
                     label.setIcon(icon);
-                    label.setText(value.getDisplayName());
+                    label.setText(value.providerType.getDisplayName() + ":" + value.modelName);
                 }
                 if (isSelected) {
                     label.setBackground(list.getSelectionBackground());
@@ -388,21 +389,9 @@ public class JavaDocSettingsPanel {
      * @return 包含已验证 AI 服务提供商类型的列表
      */
     @NotNull
-    private static List<AIProviderType> getAiProviderTypes() {
+    private static List<AIProviderConfig> getAiProviderTypes() {
         AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-        List<AIProviderConfig> verifiedProviders = globalSettings.getVerifiedProviders();
-
-        // 从已验证的提供商配置中提取 AIProviderType 列表
-        List<AIProviderType> availableProviderTypes = new ArrayList<>();
-        if (!verifiedProviders.isEmpty()) {
-            // 使用已验证的提供商
-            for (AIProviderConfig config : verifiedProviders) {
-                if (config.providerType != null && !availableProviderTypes.contains(config.providerType)) {
-                    availableProviderTypes.add(config.providerType);
-                }
-            }
-        }
-        return availableProviderTypes;
+        return globalSettings.getVerifiedProviders();
     }
 
     /**
@@ -429,24 +418,24 @@ public class JavaDocSettingsPanel {
         }
 
         // 从 ai-common 获取可用服务商列表
-        final List<AIProviderType> availableProviderTypes = getAiProviderTypes();
+        final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
 
         // 判断之前是否有可用提供商（通过下拉框是否启用来判断）
         boolean hadProviders = providerComboBox != null && providerComboBox.isEnabled();
-        boolean hasProviders = !availableProviderTypes.isEmpty();
+        boolean hasProviders = !aiProviderTypes.isEmpty();
 
         // 如果状态没有变化，只需要更新下拉框内容
         if (hadProviders && hasProviders) {
             // 保存当前选中的值
-            AIProviderType selectedValue = (AIProviderType) providerComboBox.getSelectedItem();
+            AIProviderConfig selectedValue = (AIProviderConfig) providerComboBox.getSelectedItem();
 
             // 更新下拉框模型
-            providerComboBox.setModel(new javax.swing.DefaultComboBoxModel<>(availableProviderTypes.toArray(new AIProviderType[0])));
+            providerComboBox.setModel(new DefaultComboBoxModel<>(aiProviderTypes.toArray(new AIProviderConfig[0])));
 
             // 恢复之前选中的值（如果还存在）
-            if (selectedValue != null && availableProviderTypes.contains(selectedValue)) {
+            if (selectedValue != null && aiProviderTypes.contains(selectedValue)) {
                 providerComboBox.setSelectedItem(selectedValue);
-            } else if (!availableProviderTypes.isEmpty()) {
+            } else if (!aiProviderTypes.isEmpty()) {
                 // 如果之前选中的值不存在了，选择第一个
                 providerComboBox.setSelectedIndex(0);
             }
@@ -1014,8 +1003,8 @@ public class JavaDocSettingsPanel {
         SettingsState settings = new SettingsState();
 
         // 获取选择的供应商类型
-        AIProviderType selectedProvider = (AIProviderType) providerComboBox.getSelectedItem();
-        settings.providerType = selectedProvider != null ? selectedProvider : AIProviderType.QIANWEN;
+        AIProviderConfig selectedProvider = (AIProviderConfig) providerComboBox.getSelectedItem();
+        settings.providerType = selectedProvider != null ? selectedProvider.providerType : AIProviderType.QIANWEN;
 
         settings.generateForClass = generateForClassCheckBox.isSelected();
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
