@@ -15,7 +15,6 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -81,17 +80,17 @@ public class CommitMessageGenerator {
                         });
 
                         log.info("Git 提交页面：提交记录生成成功");
-                    } catch (AIServiceException e) {
+                    } catch (Exception e) {
                         log.error("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
-                            NotificationUtil.showError(project,
-                                                       ChangelogBundle.message("commit.generation.failed", e.getMessage()));
-                        });
-                    } catch (Exception e) {
-                        log.error("Git 提交页面：生成提交记录时发生异常", e);
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            NotificationUtil.showError(project,
-                                                       ChangelogBundle.message("commit.generation.error", e.getMessage()));
+                            String errorMessage = e.getMessage();
+                            if (errorMessage != null && !errorMessage.isEmpty()) {
+                                NotificationUtil.showError(project, errorMessage);
+                            } else {
+                                NotificationUtil.showError(project,
+                                                           ChangelogBundle.message("commit.generation.error",
+                                                                                   ChangelogBundle.message("error.ai.service.unknown")));
+                            }
                         });
                     }
                 }

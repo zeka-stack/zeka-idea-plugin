@@ -22,6 +22,7 @@ import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -258,16 +259,16 @@ public final class ChangelogService {
      *
      * @param userPrompt 用户提示词（已组装好的 prompt）
      * @return 生成的 Changelog 内容
-     * @throws AIServiceException 当 AI 服务调用失败时抛出
+     * @throws Exception 当 AI 服务调用失败时抛出，包含友好的错误消息
      */
     @NotNull
-    private String callAIService(@NotNull String userPrompt) throws AIServiceException {
+    private String callAIService(@NotNull String userPrompt) throws Exception {
         SettingsState settings = SettingsState.getInstance();
 
         // 获取当前配置的供应商
         AIProviderConfig config = settings.providerConfig;
         if (config == null) {
-            throw new AIServiceException("AI provider not configured. Please configure in Settings → Tools → AI Changelog");
+            throw new Exception(ChangelogBundle.message("error.ai.provider.not.configured"));
         }
 
         // 获取系统提示词
@@ -283,16 +284,27 @@ public final class ChangelogService {
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
-        // 使用 AIService API 生成内容
-        // listener 参数传 null，因为 changelog 插件可能不需要详细的响应监听
-        String result = aiService.generateContent(project, request, config, null);
+        try {
+            // 使用 AIService API 生成内容
+            // listener 参数传 null，因为 changelog 插件可能不需要详细的响应监听
+            String result = aiService.generateContent(project, request, config, null);
 
-        // 检查结果是否为空
-        if (result.trim().isEmpty()) {
-            throw new AIServiceException("AI service returned empty result");
+            // 检查结果是否为空
+            if (result.trim().isEmpty()) {
+                throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
+            }
+
+            return result;
+        } catch (AIServiceException e) {
+            // 捕获 AIServiceException 并转换为友好的错误消息
+            String errorMessage = e.getMessage();
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                throw new Exception(ChangelogBundle.message("error.ai.service.failed", errorMessage));
+            } else {
+                throw new Exception(ChangelogBundle.message("error.ai.service.failed",
+                                                            ChangelogBundle.message("error.ai.service.unknown")));
+            }
         }
-
-        return result;
     }
 
     /**
@@ -302,15 +314,15 @@ public final class ChangelogService {
      *
      * @param changes 代码变更集合
      * @return 生成的提交记录内容
-     * @throws AIServiceException 当 AI 服务调用失败时抛出
+     * @throws Exception 当 AI 服务调用失败时抛出，包含友好的错误消息
      */
     @NotNull
-    public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes) throws AIServiceException {
+    public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes) throws Exception {
         // 1. 提取代码变更信息
         List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
 
         if (codeDiffs.isEmpty()) {
-            throw new AIServiceException("No code changes found");
+            throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
 
         // 2. 构建 prompt
@@ -354,16 +366,16 @@ public final class ChangelogService {
      *
      * @param userPrompt 用户提示词
      * @return 生成的提交记录
-     * @throws AIServiceException 当 AI 服务调用失败时抛出
+     * @throws Exception 当 AI 服务调用失败时抛出，包含友好的错误消息
      */
     @NotNull
-    private String callAIServiceForCommitMessage(@NotNull String userPrompt) throws AIServiceException {
+    private String callAIServiceForCommitMessage(@NotNull String userPrompt) throws Exception {
         SettingsState settings = SettingsState.getInstance();
 
         // 获取当前配置的供应商
         AIProviderConfig config = settings.providerConfig;
         if (config == null) {
-            throw new AIServiceException("AI provider not configured. Please configure in Settings → Tools → AI Changelog");
+            throw new Exception(ChangelogBundle.message("error.ai.provider.not.configured"));
         }
 
         // 获取系统提示词（使用专门的提交记录生成提示词）
@@ -388,15 +400,26 @@ public final class ChangelogService {
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
-        // 使用 AIService API 生成内容
-        String result = aiService.generateContent(project, request, config, null);
+        try {
+            // 使用 AIService API 生成内容
+            String result = aiService.generateContent(project, request, config, null);
 
-        // 检查结果是否为空
-        if (result.trim().isEmpty()) {
-            throw new AIServiceException("AI service returned empty result");
+            // 检查结果是否为空
+            if (result.trim().isEmpty()) {
+                throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
+            }
+
+            return result.trim();
+        } catch (AIServiceException e) {
+            // 捕获 AIServiceException 并转换为友好的错误消息
+            String errorMessage = e.getMessage();
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                throw new Exception(ChangelogBundle.message("error.ai.service.failed", errorMessage));
+            } else {
+                throw new Exception(ChangelogBundle.message("error.ai.service.failed",
+                                                            ChangelogBundle.message("error.ai.service.unknown")));
+            }
         }
-
-        return result.trim();
     }
 
     /**
