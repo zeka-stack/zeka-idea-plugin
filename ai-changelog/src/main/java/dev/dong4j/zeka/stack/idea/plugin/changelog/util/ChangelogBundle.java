@@ -33,9 +33,9 @@ import java.util.function.Supplier;
  *
  * <p>使用方法：
  * <pre>
-     * String message = ChangelogBundle.message("notification.title");
-     * String formatted = ChangelogBundle.message("notification.completion.format", completed, failed, skipped);
-     * Supplier<String> messageSupplier = ChangelogBundle.messagePointer("action.generate.changelog");
+ * String message = ChangelogBundle.message("notification.title");
+ * String formatted = ChangelogBundle.message("notification.completion.format", completed, failed, skipped);
+ * Supplier<String> messageSupplier = ChangelogBundle.messagePointer("action.generate.changelog");
  * </pre>
  *
  * @author dong4j

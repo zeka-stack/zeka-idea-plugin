@@ -48,7 +48,8 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.modules.vcs</depends>
-    <depends optional="true">Git4Idea</depends>
+    <!-- 依赖 AI Common 插件 -->
+    <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
 
     <!-- 国际化资源文件 -->
     <resource-bundle>messages</resource-bundle>

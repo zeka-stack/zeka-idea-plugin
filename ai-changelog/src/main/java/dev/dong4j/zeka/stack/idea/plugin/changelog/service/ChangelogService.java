@@ -20,13 +20,10 @@ import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
  * Changelog 生成服务
@@ -64,9 +61,7 @@ public final class ChangelogService {
         String prompt = buildPrompt(commits);
 
         // 3. 调用 AI 服务生成 Changelog
-        String changelog = callAIService(prompt);
-
-        return changelog;
+        return callAIService(prompt);
     }
 
     /**
@@ -103,11 +98,11 @@ public final class ChangelogService {
         List<CommitInfo> commits = new ArrayList<>();
 
         Repository repository = getRepository();
-        if (repository == null) {
-            return commits;
-        }
 
-        try {
+        try (repository) {
+            if (repository == null) {
+                return commits;
+            }
             try (Git git = new Git(repository)) {
                 for (String hash : commitHashes) {
                     try {
@@ -127,8 +122,6 @@ public final class ChangelogService {
                     }
                 }
             }
-        } finally {
-            repository.close();
         }
 
         return commits;
@@ -174,12 +167,11 @@ public final class ChangelogService {
 
         // 替换模板变量
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        String prompt = template
+
+        return template
             .replace("{version}", "v1.0.0")
             .replace("{date}", dateFormat.format(new Date()))
             .replace("{commits}", commitsText.toString().trim());
-
-        return prompt;
     }
 
     /**
@@ -230,41 +222,51 @@ public final class ChangelogService {
 
     /**
      * 调用 AI 服务生成 Changelog
+     * <p>
+     * 使用 AIService API 生成内容，参考 TaskExecutor#processTask 的实现。
+     *
+     * @param userPrompt 用户提示词（已组装好的 prompt）
+     * @return 生成的 Changelog 内容
+     * @throws AIServiceException 当 AI 服务调用失败时抛出
      */
     @NotNull
-    private String callAIService(@NotNull String prompt) throws Exception {
+    private String callAIService(@NotNull String userPrompt) throws AIServiceException {
         SettingsState settings = SettingsState.getInstance();
-        AIProviderSettings providerSettings = settings.providerSettings;
 
-        // 获取当前配置
-        AIProviderConfig config = providerSettings.getDefaultProviderConfig(providerSettings.providerType);
-        AIModelParameters modelParams = providerSettings.modelParameters;
-        AIRuntimeSettings runtimeSettings = providerSettings.runtimeSettings;
+        // 获取当前配置的供应商
+        AIProviderConfig config = settings.providerConfig;
+        if (config == null) {
+            throw new AIServiceException("AI provider not configured. Please configure in Settings → Tools → AI Changelog");
+        }
 
-        // 获取 API Key
-        AICredentialManager credentialManager = new AICredentialManager("AI Changelog", "AI_CHANGELOG_API_KEY_");
-        String apiKey = credentialManager.getApiKey(config.credentialId);
-
-        // 创建 AI 服务提供者
-        AIServiceProvider provider = AIServiceFactory.createProvider(
-            config,
-            modelParams,
-            runtimeSettings,
-            null);
-
-        // 使用配置的系统提示词
+        // 获取系统提示词
         String systemPrompt = settings.systemPrompt;
+        if (systemPrompt == null || systemPrompt.trim().isEmpty()) {
+            // 使用默认系统提示词
+            systemPrompt = SettingsState.getDefaultSystemPrompt();
+        }
 
-        // 构建请求
-        AIChatRequest request = new AIChatRequest(systemPrompt, prompt);
+        // 创建 AI 聊天请求
+        AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
 
-        // 生成内容
-        return provider.generateContent(request, apiKey, null);
+        // 获取 AIService 实例
+        AIService aiService = AIServiceImpl.getInstance();
+
+        // 使用 AIService API 生成内容
+        // listener 参数传 null，因为 changelog 插件可能不需要详细的响应监听
+        String result = aiService.generateContent(project, request, config, null);
+
+        // 检查结果是否为空
+        if (result.trim().isEmpty()) {
+            throw new AIServiceException("AI service returned empty result");
+        }
+
+        return result;
     }
 
     /**
-         * 提交信息
-         */
-        private record CommitInfo(String hash, String shortMessage, String fullMessage, Date date, String author) {
+     * 提交信息
+     */
+    private record CommitInfo(String hash, String shortMessage, String fullMessage, Date date, String author) {
     }
 }
