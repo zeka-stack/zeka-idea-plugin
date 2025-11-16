@@ -230,6 +230,12 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.replaceChinesePunctuation != panelSettings.replaceChinesePunctuation) {
             return true;
         }
+        if (currentSettings.performanceMode != panelSettings.performanceMode) {
+            return true;
+        }
+        if (currentSettings.showProviderStatistics != panelSettings.showProviderStatistics) {
+            return true;
+        }
 
         return !currentSettings.supportedLanguages.equals(panelSettings.supportedLanguages);
     }
@@ -297,6 +303,8 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.showAdvancedSettings = panelSettings.showAdvancedSettings;
         currentSettings.addSpaceBetweenChineseAndEnglish = panelSettings.addSpaceBetweenChineseAndEnglish;
         currentSettings.replaceChinesePunctuation = panelSettings.replaceChinesePunctuation;
+        currentSettings.performanceMode = panelSettings.performanceMode;
+        currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
 
         // 触发标签同步（需要在写操作中执行）
         ApplicationManager.getApplication().invokeLater(() -> {

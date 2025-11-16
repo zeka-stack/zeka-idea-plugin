@@ -35,6 +35,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -113,6 +114,8 @@ public final class AIProviderConfigPanel {
     private JBCheckBox showAvailableProvidersCheckBox;
     /** 可用提供者的面板, 用于展示和选择可用的第三方登录提供商 */
     private JPanel availableProvidersPanel;
+    /** 可用服务商说明标签 */
+    private JBLabel availableProvidersDescriptionLabel;
     /**
      * 可用提供者表格
      * <p>
@@ -125,10 +128,6 @@ public final class AIProviderConfigPanel {
     // 基础配置组件
     /** 日志详细输出选项复选框 */
     private JBCheckBox verboseLoggingCheckBox;
-    /** 性能模式复选框, 用于启用或禁用性能优化模式 */
-    private JBCheckBox performanceModeCheckBox;
-    /** 显示提供商统计信息的复选框 */
-    private JBCheckBox showProviderStatisticsCheckBox;
 
     // 高级配置组件
     /**
@@ -180,17 +179,6 @@ public final class AIProviderConfigPanel {
 
     /** 监听器是否已设置的标志, 用于防止重复添加监听器 */
     private boolean listenersSetup = false;
-
-    /**
-     * 构造函数, 用于创建 AI 提供者配置面板
-     * <p>
-     * 初始化 AI 配置面板, 传入指定的凭证管理器
-     *
-     * @param credentialManager 准备使用的凭证管理器, 不能为空
-     */
-    public AIProviderConfigPanel(@NotNull AICredentialManager credentialManager) {
-        this(credentialManager, null);
-    }
 
     /**
      * 初始化 AI 提供者配置面板
@@ -247,8 +235,6 @@ public final class AIProviderConfigPanel {
 
         // 初始化基础配置组件
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
-        performanceModeCheckBox = new JBCheckBox(AICommonBundle.message("settings.performance.mode"));
-        showProviderStatisticsCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.provider.statistics"));
 
         // 初始化高级配置组件
         showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
@@ -315,8 +301,9 @@ public final class AIProviderConfigPanel {
 
         showAvailableProvidersCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.available.providers"));
 
-        // 创建 3 个子面板
+        // 创建 4 个子面板
         JPanel connectionPanel = createConnectionPanel();
+        JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
         JPanel basicPanel = createBasicPanel();
         JPanel advancedPanel = createAdvancedPanel();
 
@@ -328,6 +315,8 @@ public final class AIProviderConfigPanel {
         // 组合成主面板
         mainPanel = FormBuilder.createFormBuilder()
             .addComponent(connectionPanel)
+            .addSeparator(10)
+            .addComponent(availableProvidersSectionPanel)
             .addSeparator(10)
             .addComponent(basicPanel)
             .addSeparator(10)
@@ -370,9 +359,6 @@ public final class AIProviderConfigPanel {
         // 加载基础配置
         AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
         verboseLoggingCheckBox.setSelected(runtimeSettings.verboseLogging);
-        performanceModeCheckBox.setSelected(runtimeSettings.performanceMode);
-        showProviderStatisticsCheckBox.setSelected(workingSettings.showProviderStatistics);
-        updatePerformanceModeSubConfigEnabled();
 
         // 更新提示文本颜色（根据复选框的选中状态）
         updateCheckBoxHintColors();
@@ -394,7 +380,11 @@ public final class AIProviderConfigPanel {
         // 加载可用服务商
         availableProvidersTableModel.setData(workingSettings.availableProviders);
         showAvailableProvidersCheckBox.setSelected(workingSettings.showAvailableProviders);
-        availableProvidersPanel.setVisible(workingSettings.showAvailableProviders);
+        boolean showAvailableProviders = workingSettings.showAvailableProviders;
+        availableProvidersPanel.setVisible(showAvailableProviders);
+        if (availableProvidersDescriptionLabel != null) {
+            availableProvidersDescriptionLabel.setVisible(showAvailableProviders);
+        }
     }
 
     /**
@@ -427,10 +417,8 @@ public final class AIProviderConfigPanel {
         // 保存基础配置
         AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
         runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
-        runtimeSettings.performanceMode = performanceModeCheckBox.isSelected();
         runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
         runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
-        workingSettings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
         workingSettings.showAvailableProviders = showAvailableProvidersCheckBox.isSelected();
 
         // 保存高级配置
@@ -512,46 +500,60 @@ public final class AIProviderConfigPanel {
     }
 
     /**
+     * 创建可用服务商面板
+     * <p>
+     * 创建一个独立的面板用于显示和管理已验证的可用服务商列表。
+     * 包含详细的说明信息和可用的服务商列表表格。
+     *
+     * @return 可用服务商面板
+     */
+    private JPanel createAvailableProvidersPanel() {
+        // 创建说明标签
+        availableProvidersDescriptionLabel = new JBLabel();
+        String descriptionText = AICommonBundle.message("settings.available.providers.description");
+        // 将 \n 替换为 HTML 换行
+        descriptionText = "<html>" + descriptionText.replace("\n", "<br>") + "</html>";
+        availableProvidersDescriptionLabel.setText(descriptionText);
+        availableProvidersDescriptionLabel.setFont(availableProvidersDescriptionLabel.getFont().deriveFont(availableProvidersDescriptionLabel.getFont().getSize() - 1f));
+        availableProvidersDescriptionLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        availableProvidersDescriptionLabel.setBorder(JBUI.Borders.empty(5, 0, 10, 0));
+        // 初始状态：根据复选框状态设置可见性
+        availableProvidersDescriptionLabel.setVisible(false);
+
+        // 创建内容面板
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
+            .addComponent(availableProvidersDescriptionLabel)
+            .addComponent(availableProvidersPanel)
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+        panel.setBorder(new TitledBorder(
+            BorderFactory.createEtchedBorder(),
+            AICommonBundle.message("settings.show.available.providers")
+        ));
+
+        return panel;
+    }
+
+    /**
      * 创建基本配置面板
      * <p>
-     * 用于构建包含日志详细设置和性能模式设置的面板, 并将其包装在带有边框的容器中返回
+     * 用于构建包含日志详细设置的面板, 并将其包装在带有边框的容器中返回
      *
      * @return 包含基本配置项的面板
      */
     private JPanel createBasicPanel() {
         JPanel panel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
-            .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
-            .addComponent(createPerformanceModeSubConfigPanel())
             .getPanel();
 
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.add(panel, BorderLayout.CENTER);
         wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.basic.config")));
         return wrapper;
-    }
-
-    /**
-     * 创建性能模式子配置面板
-     * <p>
-     * 该方法构建一个用于配置性能模式相关选项的面板, 包含多个复选框和相关组件.
-     *
-     * @return 返回配置好的性能模式子配置面板
-     */
-    private JPanel createPerformanceModeSubConfigPanel() {
-        // 性能模式的子配置面板，包含显示任务统计和显示可用服务商
-        // 需要向右缩进2个空格（约22像素）
-        JPanel indentPanel = new JPanel(new BorderLayout());
-        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
-
-        JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
-            .addComponent(createCheckBoxWithHint(showAvailableProvidersCheckBox, "settings.show.available.providers.hint"))
-            .addComponent(availableProvidersPanel)
-            .getPanel();
-
-        indentPanel.add(contentPanel, BorderLayout.CENTER);
-        return indentPanel;
     }
 
     /**
@@ -699,7 +701,13 @@ public final class AIProviderConfigPanel {
             }
         });
 
-        showAvailableProvidersCheckBox.addActionListener(e -> availableProvidersPanel.setVisible(showAvailableProvidersCheckBox.isSelected()));
+        showAvailableProvidersCheckBox.addActionListener(e -> {
+            boolean selected = showAvailableProvidersCheckBox.isSelected();
+            availableProvidersPanel.setVisible(selected);
+            if (availableProvidersDescriptionLabel != null) {
+                availableProvidersDescriptionLabel.setVisible(selected);
+            }
+        });
 
         showAdvancedSettingsCheckBox.addActionListener(e -> {
             if (advancedSettingsContentPanel != null) {
@@ -707,46 +715,10 @@ public final class AIProviderConfigPanel {
             }
         });
 
-        performanceModeCheckBox.addActionListener(e -> updatePerformanceModeSubConfigEnabled());
-
         testConnectionButton.addActionListener(e -> testConnection());
         refreshModelsButton.addActionListener(e -> refreshModels());
     }
 
-    /**
-     * 更新性能模式子配置的启用状态
-     * <p>
-     * 根据性能模式复选框的状态, 启用或禁用相关配置项, 并更新提示标签的显示状态和颜色.
-     */
-    private void updatePerformanceModeSubConfigEnabled() {
-        boolean enabled = performanceModeCheckBox.isSelected();
-        showProviderStatisticsCheckBox.setEnabled(enabled);
-        showAvailableProvidersCheckBox.setEnabled(enabled);
-        if (!enabled) {
-            showProviderStatisticsCheckBox.setSelected(false);
-            showAvailableProvidersCheckBox.setSelected(false);
-            availableProvidersPanel.setVisible(false);
-        }
-
-        // 更新提示文本颜色
-        JBLabel statisticsHintLabel = checkBoxHintLabelMap.get(showProviderStatisticsCheckBox);
-        if (statisticsHintLabel != null) {
-            if (enabled) {
-                updateHintLabelColor(statisticsHintLabel, showProviderStatisticsCheckBox.isSelected());
-            } else {
-                statisticsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            }
-        }
-
-        JBLabel availableProvidersHintLabel = checkBoxHintLabelMap.get(showAvailableProvidersCheckBox);
-        if (availableProvidersHintLabel != null) {
-            if (enabled) {
-                updateHintLabelColor(availableProvidersHintLabel, showAvailableProvidersCheckBox.isSelected());
-            } else {
-                availableProvidersHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            }
-        }
-    }
     /**
      * 更新连接信息的基本配置
      * <p>

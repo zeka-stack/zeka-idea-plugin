@@ -63,7 +63,6 @@ public final class AIServiceFactory {
      * @param modelParameters 模型参数信息, 不能为空
      * @param runtimeSettings 运行时设置信息, 不能为空
      * @param consoleLogger   控制台日志记录器, 可以为 null
-     * @param performanceMode 性能模式开关, 用于控制是否启用性能优化
      * @return 创建的 AI 服务提供者实例, 可能为 null
      */
     @Nullable

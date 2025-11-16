@@ -85,6 +85,10 @@ public class JavaDocSettingsPanel {
     private JBCheckBox replaceChinesePunctuationCheckBox;
     /** 最大类代码行数设置控件 */
     private JSpinner maxClassCodeLinesSpinner;
+    /** 性能模式复选框 */
+    private JBCheckBox performanceModeCheckBox;
+    /** 显示任务统计复选框 */
+    private JBCheckBox showProviderStatisticsCheckBox;
 
     // 语言支持
     /** Java 语言支持选项框 */
@@ -172,6 +176,8 @@ public class JavaDocSettingsPanel {
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
         addSpaceBetweenChineseAndEnglishCheckBox = new JBCheckBox(JavaDocBundle.message("settings.add.space.between.chinese.and.english"));
         replaceChinesePunctuationCheckBox = new JBCheckBox(JavaDocBundle.message("settings.replace.chinese.punctuation"));
+        performanceModeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.performance.mode"));
+        showProviderStatisticsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.provider.statistics"));
 
         // 语言支持
         javaCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.java"));
@@ -566,6 +572,8 @@ public class JavaDocSettingsPanel {
                                        "settings.add.space.between.chinese.and.english.hint"))
             .addComponent(createCheckBoxWithHint(replaceChinesePunctuationCheckBox,
                                                  "settings.replace.chinese.punctuation.hint"))
+            .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
+            .addComponent(createPerformanceModeSubConfigPanel())
             .getPanel();
 
         // 创建带边框的面板
@@ -716,6 +724,28 @@ public class JavaDocSettingsPanel {
         updateMaxClassCodeLinesEnabled();
 
         return panel;
+    }
+
+    /**
+     * 创建性能模式子配置面板
+     * <p>
+     * 该方法构建一个用于配置性能模式相关选项的面板，包含显示任务统计复选框。
+     * 需要向右缩进2个空格（约22像素）。
+     *
+     * @return 返回配置好的性能模式子配置面板
+     */
+    private JPanel createPerformanceModeSubConfigPanel() {
+        // 性能模式的子配置面板，包含显示任务统计
+        // 需要向右缩进2个空格（约22像素）
+        JPanel indentPanel = new JPanel(new BorderLayout());
+        indentPanel.setBorder(JBUI.Borders.emptyLeft(20));
+
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(showProviderStatisticsCheckBox, "settings.show.provider.statistics.hint"))
+            .getPanel();
+
+        indentPanel.add(contentPanel, BorderLayout.CENTER);
+        return indentPanel;
     }
 
 
@@ -1002,6 +1032,31 @@ public class JavaDocSettingsPanel {
         showCustomJavaDocTagsCheckBox.addActionListener(e ->
                                                             customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected())
                                                        );
+
+        performanceModeCheckBox.addActionListener(e -> updatePerformanceModeSubConfigEnabled());
+    }
+
+    /**
+     * 更新性能模式子配置的启用状态
+     * <p>
+     * 根据性能模式复选框的状态, 启用或禁用相关配置项, 并更新提示标签的显示状态和颜色.
+     */
+    private void updatePerformanceModeSubConfigEnabled() {
+        boolean enabled = performanceModeCheckBox.isSelected();
+        showProviderStatisticsCheckBox.setEnabled(enabled);
+        if (!enabled) {
+            showProviderStatisticsCheckBox.setSelected(false);
+        }
+
+        // 更新提示文本颜色
+        JBLabel statisticsHintLabel = checkBoxHintLabelMap.get(showProviderStatisticsCheckBox);
+        if (statisticsHintLabel != null) {
+            if (enabled) {
+                updateHintLabelColor(statisticsHintLabel, showProviderStatisticsCheckBox.isSelected());
+            } else {
+                statisticsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+            }
+        }
     }
 
     /**
@@ -1028,6 +1083,8 @@ public class JavaDocSettingsPanel {
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
         settings.addSpaceBetweenChineseAndEnglish = addSpaceBetweenChineseAndEnglishCheckBox.isSelected();
         settings.replaceChinesePunctuation = replaceChinesePunctuationCheckBox.isSelected();
+        settings.performanceMode = performanceModeCheckBox.isSelected();
+        settings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
 
         settings.supportedLanguages = new HashSet<>();
         if (javaCheckBox.isSelected()) {
@@ -1080,8 +1137,11 @@ public class JavaDocSettingsPanel {
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
         addSpaceBetweenChineseAndEnglishCheckBox.setSelected(settings.addSpaceBetweenChineseAndEnglish);
         replaceChinesePunctuationCheckBox.setSelected(settings.replaceChinesePunctuation);
+        performanceModeCheckBox.setSelected(settings.performanceMode);
+        showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
 
         updateMaxClassCodeLinesEnabled();
+        updatePerformanceModeSubConfigEnabled();
 
         javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
         kotlinCheckBox.setSelected(settings.supportedLanguages.contains("kotlin"));

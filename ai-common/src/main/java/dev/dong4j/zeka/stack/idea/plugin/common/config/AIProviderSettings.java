@@ -52,8 +52,6 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     /** AI 运行时设置 */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
-    /** 是否显示提供商统计信息 */
-    public boolean showProviderStatistics = false;
     /** 是否显示高级设置 */
     public boolean showAdvancedSettings = false;
     /** 是否显示可用的服务提供商 */
@@ -168,9 +166,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.runtimeSettings.timeout = this.runtimeSettings.timeout;
         settings.runtimeSettings.waitDuration = this.runtimeSettings.waitDuration;
         settings.runtimeSettings.verboseLogging = this.runtimeSettings.verboseLogging;
-        settings.runtimeSettings.performanceMode = this.runtimeSettings.performanceMode;
 
-        settings.showProviderStatistics = this.showProviderStatistics;
         settings.showAdvancedSettings = this.showAdvancedSettings;
         settings.showAvailableProviders = this.showAvailableProviders;
         settings.aiProviderType = this.aiProviderType;
@@ -297,9 +293,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.runtimeSettings.timeout = sourceRuntime.timeout;
         this.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
         this.runtimeSettings.verboseLogging = sourceRuntime.verboseLogging;
-        this.runtimeSettings.performanceMode = sourceRuntime.performanceMode;
 
-        this.showProviderStatistics = source.showProviderStatistics;
         this.showAdvancedSettings = source.showAdvancedSettings;
         this.showAvailableProviders = source.showAvailableProviders;
         this.aiProviderType = source.aiProviderType;
@@ -322,8 +316,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     @SuppressWarnings( {"BooleanMethodIsAlwaysInverted", "D"})
     public boolean contentEquals(@NotNull AIProviderSettings other) {
         // 注意：不比较 providerType，因为全局配置不维护默认供应商
-        if (showProviderStatistics != other.showProviderStatistics
-            || showAdvancedSettings != other.showAdvancedSettings
+        if (showAdvancedSettings != other.showAdvancedSettings
             || showAvailableProviders != other.showAvailableProviders) {
             return false;
         }
@@ -345,9 +338,6 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         }
 
         if (runtimeSettings.maxRetries != other.runtimeSettings.maxRetries) {
-            return false;
-        }
-        if (runtimeSettings.performanceMode != other.runtimeSettings.performanceMode) {
             return false;
         }
 

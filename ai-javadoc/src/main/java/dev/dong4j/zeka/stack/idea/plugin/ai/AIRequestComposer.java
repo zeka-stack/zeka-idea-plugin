@@ -139,9 +139,12 @@ public final class AIRequestComposer {
 
         String date = customTagsMap.get("date");
         if (date == null || date.isEmpty()) {
-            date = DateFormatUtils.format(new Date(), "yyyy.MM.dd");
-        } else {
+            date = "yyyy.MM.dd";
+        }
+        try {
             date = DateFormatUtils.format(new Date(), date);
+        } catch (Exception e) {
+            date = DateFormatUtils.format(new Date(), "yyyy.MM.dd");
         }
 
         template = template.replace("${date}", date);

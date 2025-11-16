@@ -70,13 +70,12 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     /**
      * 初始化 AI 兼容性提供者
      * <p>
-     * 使用提供的配置, 模型参数, 运行时设置, 控制台日志记录器和性能模式初始化 AI 兼容性提供者.
+     * 使用提供的配置, 模型参数, 运行时设置和控制台日志记录器初始化 AI 兼容性提供者.
      *
      * @param config          AI 提供者配置对象, 不可为 null
      * @param modelParameters 模型参数对象, 不可为 null
      * @param runtimeSettings 运行时设置对象, 不可为 null
      * @param consoleLogger   控制台日志记录器, 可为 null
-     * @param performanceMode 是否启用性能模式
      */
     protected AICompatibleProvider(@NotNull AIProviderConfig config,
                                    @NotNull AIModelParameters modelParameters,
@@ -166,9 +165,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                                               getProviderType().getDisplayName(), getModelName(), getBaseUrl()));
             // 当前开启的配置
             StringBuilder configInfo = new StringBuilder("当前配置: ");
-            if (runtimeSettings.performanceMode) {
-                configInfo.append("性能模式✓");
-            }
             if (runtimeSettings.verboseLogging) {
                 if (configInfo.length() > "当前配置: ".length()) {
                     configInfo.append(" | ");

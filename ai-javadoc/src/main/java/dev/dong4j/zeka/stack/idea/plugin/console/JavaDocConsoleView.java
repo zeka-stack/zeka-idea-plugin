@@ -20,7 +20,6 @@ import java.util.Date;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
@@ -58,8 +57,6 @@ public final class JavaDocConsoleView implements Disposable, AIConsoleLogger {
     /** 项目实例 */
     private final Project project;
 
-    /** 设置状态 */
-    private final SettingsState settings;
 
     /**
      * 构造函数
@@ -68,8 +65,6 @@ public final class JavaDocConsoleView implements Disposable, AIConsoleLogger {
      */
     public JavaDocConsoleView(@NotNull Project project) {
         this.project = project;
-
-        this.settings = SettingsState.getInstance();
     }
 
     /**

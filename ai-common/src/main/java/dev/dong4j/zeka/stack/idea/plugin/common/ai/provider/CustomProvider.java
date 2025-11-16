@@ -24,13 +24,12 @@ public class CustomProvider extends AICompatibleProvider {
      * 创建一个 {@code CustomProvider} 实例.
      * <p>
      * 该构造函数使用指定的 {@link AIProviderConfig},{@link AIModelParameters},{@link AIRuntimeSettings},{@link AIConsoleLogger}
-     * 以及性能模式标志来初始化 {@code CustomProvider}.
+     * 来初始化 {@code CustomProvider}.
      *
      * @param config          AIProvider 的配置信息, 不能为空
      * @param modelParameters AI 模型参数, 不能为空
      * @param runtimeSettings AI 运行时设置, 不能为空
      * @param consoleLogger   用于日志输出的控制台日志器, 允许为 {@code null}
-     * @param performanceMode 是否启用性能模式
      */
     public CustomProvider(@NotNull AIProviderConfig config,
                           @NotNull AIModelParameters modelParameters,

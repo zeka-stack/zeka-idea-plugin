@@ -269,6 +269,47 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean replaceChinesePunctuation = true;
 
+    // ==================== 性能模式配置 ====================
+
+    /**
+     * 是否启用性能模式
+     *
+     * <p>控制是否使用多个已验证的 AI 服务提供商并行处理任务，以提高批量处理速度。
+     * 启用后，批量生成 JavaDoc 时会同时使用多个服务商，显著提高处理速度。
+     *
+     * <p>使用要求：
+     * <ul>
+     *   <li>需要先配置多个可用的服务商（通过"测试连接"验证）</li>
+     *   <li>任务数量大于 5 个时才会启用并行处理</li>
+     *   <li>会增加 API 调用次数，可能增加成本</li>
+     * </ul>
+     *
+     * <p>默认值: false（默认关闭）
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor#processTasks(java.util.List)
+     * @since 2.0.0
+     */
+    public boolean performanceMode = false;
+
+    /**
+     * 是否显示任务统计信息
+     *
+     * <p>控制是否在任务完成后显示统计信息对话框。
+     * 统计信息包括每个服务商的处理结果统计，帮助了解不同服务商的表现。
+     *
+     * <p>使用要求：
+     * <ul>
+     *   <li>只有启用"性能模式"后才有意义</li>
+     *   <li>仅在并行处理任务时显示统计信息</li>
+     * </ul>
+     *
+     * <p>默认值: false（默认关闭）
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor#showProviderStatistics(java.util.Map)
+     * @since 2.0.0
+     */
+    public boolean showProviderStatistics = false;
+
     // ==================== Prompt 配置 ====================
 
     /**
