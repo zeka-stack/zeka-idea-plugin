@@ -60,6 +60,7 @@ dependencies {
         create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
 
         bundledPlugin("com.intellij.java")
+        bundledPlugin("org.jetbrains.idea.maven")
         // 依赖 AI Common 插件
         // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
         // 发布到市场后，取消注释下面这行，并移除 copyAiCommonPlugin 任务

@@ -12,6 +12,7 @@ import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTabbedPane;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
@@ -47,6 +48,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
@@ -588,7 +590,16 @@ public class JavaDocSettingsPanel {
      * @return 其他设置面板
      */
     private JPanel createOtherSettingsPanel() {
-        return createPanelWithBorder("settings.other.settings", showCustomJavaDocTagsCheckBox, customJavaDocTagsPanel);
+        // 创建自定义 JavaDoc 标签提示标签
+        JBLabel customTagsHintLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.hint"));
+        customTagsHintLabel.setFont(customTagsHintLabel.getFont().deriveFont(customTagsHintLabel.getFont().getSize() - 1f));
+        customTagsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        customTagsHintLabel.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
+
+        return createPanelWithBorder("settings.other.settings",
+                                     showCustomJavaDocTagsCheckBox,
+                                     customTagsHintLabel,
+                                     customJavaDocTagsPanel);
     }
 
     /**
@@ -890,7 +901,20 @@ public class JavaDocSettingsPanel {
         // 添加边框，在四周留出10像素的空间
         scrollPane.setBorder(JBUI.Borders.empty(10));
 
-        tabPanel.add(scrollPane, BorderLayout.CENTER);
+        // 创建内容面板，包含占位符说明（如果是类提示）和文本区域
+        JPanel contentPanel = new JPanel(new BorderLayout());
+
+        // 如果是类提示，添加占位符说明
+        if ("class".equals(promptType)) {
+            JBLabel placeholderHint = new JBLabel(JavaDocBundle.message("settings.prompt.class.placeholder.hint"));
+            placeholderHint.setFont(placeholderHint.getFont().deriveFont(placeholderHint.getFont().getSize() - 1f));
+            placeholderHint.setForeground(UIManager.getColor("Label.disabledForeground"));
+            placeholderHint.setBorder(JBUI.Borders.empty(5, 10));
+            contentPanel.add(placeholderHint, BorderLayout.NORTH);
+        }
+
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        tabPanel.add(contentPanel, BorderLayout.CENTER);
 
         // 创建重置按钮
         JButton resetButton = new JButton(JavaDocBundle.message("settings.prompt.reset"));
@@ -1019,7 +1043,8 @@ public class JavaDocSettingsPanel {
         settings.fieldPromptTemplate = fieldPromptTextArea.getText().trim();
         settings.testPromptTemplate = testPromptTextArea.getText().trim();
 
-        settings.customJavaDocTags = customJavaDocTagsTableModel.getData();
+        // 获取标签列表（已经是 List<CustomJavaDocTag>）
+        settings.customJavaDocTags = new ArrayList<>(customJavaDocTagsTableModel.getData());
         settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
         settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
 
@@ -1067,7 +1092,12 @@ public class JavaDocSettingsPanel {
         fieldPromptTextArea.setText(settings.fieldPromptTemplate);
         testPromptTextArea.setText(settings.testPromptTemplate);
 
-        customJavaDocTagsTableModel.setData(settings.customJavaDocTags);
+        // 设置标签列表（已经是 List<CustomJavaDocTag>）
+        if (settings.customJavaDocTags != null) {
+            customJavaDocTagsTableModel.setData(new ArrayList<>(settings.customJavaDocTags));
+        } else {
+            customJavaDocTagsTableModel.setData(new ArrayList<>());
+        }
         showCustomJavaDocTagsCheckBox.setSelected(settings.showCustomJavaDocTags);
         customJavaDocTagsPanel.setVisible(settings.showCustomJavaDocTags);
 
@@ -1091,21 +1121,47 @@ public class JavaDocSettingsPanel {
     /**
      * 添加自定义 JavaDoc 标签
      * <p>
-     * 该方法弹出输入框提示用户输入自定义标签名称, 随后对输入进行合法性校验
+     * 该方法弹出输入框提示用户输入自定义标签名称和默认值, 随后对输入进行合法性校验
      * (使用 {@link SettingsState#isValidTagName(String)}), 并检查当前标签列表中是否已存在相同名称 (不区分大小写).<br>
      * 若输入合法且标签不存在, 则将该标签添加到 {@link CustomJavaDocTagsTableModel} 中;<br>
      * 否则根据不同情况弹出相应的错误或警告对话框.
      */
     private void addCustomJavaDocTag() {
-        String tagName = JOptionPane.showInputDialog(
-            getParentWindow(),
-            JavaDocBundle.message("settings.custom.javadoc.tags.add.prompt"),
-            JavaDocBundle.message("settings.custom.javadoc.tags.add.title"),
-            JOptionPane.QUESTION_MESSAGE
-                                                    );
+        // 创建输入对话框
+        JPanel panel = new JPanel();
+        panel.setLayout(new java.awt.GridLayout(2, 2, 5, 5));
 
-        if (tagName != null && !tagName.trim().isEmpty()) {
-            tagName = tagName.trim();
+        JBLabel tagNameLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.column.name") + ":");
+        JBTextField tagNameField = new JBTextField();
+        JBLabel defaultValueLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.column.default.value") + ":");
+        JBTextField defaultValueField = new JBTextField();
+
+        panel.add(tagNameLabel);
+        panel.add(tagNameField);
+        panel.add(defaultValueLabel);
+        panel.add(defaultValueField);
+
+        int result = JOptionPane.showConfirmDialog(
+            getParentWindow(),
+            panel,
+            JavaDocBundle.message("settings.custom.javadoc.tags.add.title"),
+            JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+                                                  );
+
+        if (result == JOptionPane.OK_OPTION) {
+            String tagName = tagNameField.getText().trim();
+            String defaultValue = defaultValueField.getText().trim();
+
+            if (tagName.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                    getParentWindow(),
+                    JavaDocBundle.message("settings.custom.javadoc.tags.invalid.name", tagName),
+                    JavaDocBundle.message("settings.error.title"),
+                    JOptionPane.ERROR_MESSAGE
+                                             );
+                return;
+            }
 
             // 验证标签名称
             if (!SettingsState.isValidTagName(tagName)) {
@@ -1119,9 +1175,9 @@ public class JavaDocSettingsPanel {
             }
 
             // 检查是否已存在
-            List<String> currentTags = customJavaDocTagsTableModel.getData();
+            List<CustomJavaDocTag> currentTags = customJavaDocTagsTableModel.getData();
             String tagNameLower = tagName.toLowerCase();
-            if (currentTags.stream().anyMatch(t -> t.toLowerCase().equals(tagNameLower))) {
+            if (currentTags.stream().anyMatch(t -> t.tagName.toLowerCase().equals(tagNameLower))) {
                 JOptionPane.showMessageDialog(
                     getParentWindow(),
                     JavaDocBundle.message("settings.custom.javadoc.tags.already.exists", tagName),
@@ -1132,7 +1188,9 @@ public class JavaDocSettingsPanel {
             }
 
             // 添加到表格
-            customJavaDocTagsTableModel.addTag(tagName);
+            customJavaDocTagsTableModel.addTag(
+                new CustomJavaDocTag(tagName, defaultValue)
+                                              );
         }
     }
 
@@ -1144,7 +1202,8 @@ public class JavaDocSettingsPanel {
             return;
         }
 
-        String tagName = customJavaDocTagsTableModel.getData().get(selectedRow);
+        CustomJavaDocTag tag = customJavaDocTagsTableModel.getData().get(selectedRow);
+        String tagName = tag.tagName;
 
         int result = JOptionPane.showConfirmDialog(
             getParentWindow(),
@@ -1190,16 +1249,19 @@ public class JavaDocSettingsPanel {
          * <p>
          * 数组中的元素通过 JavaDocBundle 获取国际化字符串
          */
-        private final String[] columnNames = {JavaDocBundle.message("settings.custom.javadoc.tags.column.name")};
+        private final String[] columnNames = {
+            JavaDocBundle.message("settings.custom.javadoc.tags.column.name"),
+            JavaDocBundle.message("settings.custom.javadoc.tags.column.default.value")
+        };
         /** 数据列表 */
-        private final List<String> data;
+        private final List<CustomJavaDocTag> data;
 
         /**
          * 构造函数, 初始化 CustomJavaDocTagsTableModel 实例
          * <p>
          * 创建一个空的表格模型, 用于展示 JavaDoc 标签信息
          *
-         * @since 1.0
+         * @since 2.0.0
          */
         public CustomJavaDocTagsTableModel() {
             this.data = new ArrayList<>();
@@ -1211,10 +1273,9 @@ public class JavaDocSettingsPanel {
          * 清除当前数据列表, 若传入的 newData 不为 null, 则将新数据添加到当前数据列表中, 并触发表格数据变更事件.
          *
          * @param newData 要设置的新数据列表
-         * @throws NullPointerException 如果 newData 为 null 时未正确处理 (但实际代码中已处理)
-         * @since 1.0
+         * @since 2.0.0
          */
-        public void setData(List<String> newData) {
+        public void setData(List<CustomJavaDocTag> newData) {
             this.data.clear();
             if (newData != null) {
                 this.data.addAll(newData);
@@ -1229,19 +1290,19 @@ public class JavaDocSettingsPanel {
          *
          * @return 数据列表
          */
-        public List<String> getData() {
+        public List<CustomJavaDocTag> getData() {
             return new ArrayList<>(data);
         }
 
         /**
          * 添加一个标签到数据集合中, 并通知表格数据已更新
          * <p>
-         * 该方法将指定的标签名称添加到内部数据集合, 并触发表格行插入事件以更新界面.
+         * 该方法将指定的标签添加到内部数据集合, 并触发表格行插入事件以更新界面.
          *
-         * @param tagName 要添加的标签名称
+         * @param tag 要添加的标签
          */
-        public void addTag(String tagName) {
-            data.add(tagName);
+        public void addTag(CustomJavaDocTag tag) {
+            data.add(tag);
             fireTableRowsInserted(data.size() - 1, data.size() - 1);
         }
 
@@ -1265,7 +1326,7 @@ public class JavaDocSettingsPanel {
          * <p>
          * 该方法会清除数据集合中的所有元素, 并触发表格数据删除的事件通知.
          *
-         * @since 1.0
+         * @since 2.0.0
          */
         public void clearAll() {
             int size = data.size();
@@ -1324,7 +1385,12 @@ public class JavaDocSettingsPanel {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             if (rowIndex >= 0 && rowIndex < data.size()) {
-                return data.get(rowIndex);
+                CustomJavaDocTag tag = data.get(rowIndex);
+                if (columnIndex == 0) {
+                    return tag.tagName;
+                } else if (columnIndex == 1) {
+                    return tag.defaultValue;
+                }
             }
             return "";
         }
@@ -1340,41 +1406,52 @@ public class JavaDocSettingsPanel {
          */
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
-            return true; // 允许编辑标签名称
+            return true; // 允许编辑标签名称和默认值
         }
 
         /**
          * 设置表格指定单元格的值.
          * <p>
-         * 仅当行索引在有效范围内且传入值不为 {@code null} 时才会进行处理. 方法会将传入值转换为字符串, 去除首尾空白, 并通过 {@link SettingsState#isValidTagName(String)} 进行合法性校验.
-         * 若校验失败或与表中其它行 (不区分大小写) 存在相同标签, 则不做任何修改. 校验通过后, 将新值写入内部数据集合, 并触发表格单元格更新事件.
+         * 仅当行索引在有效范围内且传入值不为 {@code null} 时才会进行处理. 
+         * 对于标签名称列，会进行合法性校验和重复检查。
+         * 对于默认值列，直接更新值。
          *
          * @param aValue      要设置的新值, 通常为 {@link String}, 但方法接受任何对象并调用 {@link Object#toString()}.
          * @param rowIndex    行索引, 必须在 0 与 {@link #data} 的大小之间.
          * @param columnIndex 列索引, 用于通知表格更新.
          */
+        @SuppressWarnings("D")
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             if (rowIndex >= 0 && rowIndex < data.size() && aValue != null) {
-                String newTagName = aValue.toString().trim();
+                CustomJavaDocTag tag = data.get(rowIndex);
 
-                // 验证标签名称
-                if (!SettingsState.isValidTagName(newTagName)) {
-                    // 可以显示错误提示，这里简单处理为不更新
-                    return;
-                }
+                if (columnIndex == 0) {
+                    // 编辑标签名称
+                    String newTagName = aValue.toString().trim();
 
-                // 检查是否与其他标签重复
-                String newTagNameLower = newTagName.toLowerCase();
-                for (int i = 0; i < data.size(); i++) {
-                    if (i != rowIndex && data.get(i).toLowerCase().equals(newTagNameLower)) {
-                        // 重复标签，不更新
+                    // 验证标签名称
+                    if (!SettingsState.isValidTagName(newTagName)) {
+                        // 可以显示错误提示，这里简单处理为不更新
                         return;
                     }
-                }
 
-                data.set(rowIndex, newTagName);
-                fireTableCellUpdated(rowIndex, columnIndex);
+                    // 检查是否与其他标签重复
+                    String newTagNameLower = newTagName.toLowerCase();
+                    for (int i = 0; i < data.size(); i++) {
+                        if (i != rowIndex && data.get(i).tagName.toLowerCase().equals(newTagNameLower)) {
+                            // 重复标签，不更新
+                            return;
+                        }
+                    }
+
+                    tag.tagName = newTagName;
+                    fireTableCellUpdated(rowIndex, columnIndex);
+                } else if (columnIndex == 1) {
+                    // 编辑默认值
+                    tag.defaultValue = aValue.toString();
+                    fireTableCellUpdated(rowIndex, columnIndex);
+                }
             }
         }
     }

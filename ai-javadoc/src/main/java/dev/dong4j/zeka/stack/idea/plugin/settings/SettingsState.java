@@ -195,18 +195,28 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *   <li>标签名称不能包含逗号、空格等特殊字符</li>
      * </ul>
      *
-     * <p>默认值: ["date", "email"]
-     * <p>首次加载配置时，如果列表为空，会自动添加默认的 "date" 和 "email" 标签。
+     * <p>默认值: 空列表
+     * <p>用户可以在设置页面手动添加标签，例如 "date" 和 "email"。
      *
      * <p>示例：
      * <pre>
-     * customJavaDocTags = ["date", "email", "custom"]
+     * customJavaDocTags = [
+     *   CustomJavaDocTag("date", "yyyy.MM.dd"),
+     *   CustomJavaDocTag("email", "mailto:zeka.stack@gmail.com"),
+     *   CustomJavaDocTag("custom", "default value")
+     * ]
      * </pre>
      *
      * @see dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar
-     * @since 1.3.4
+     * @since 2.0.0
      */
-    public List<String> customJavaDocTags = new ArrayList<>();
+    public List<CustomJavaDocTag> customJavaDocTags = new ArrayList<>() {
+        {
+            add(new CustomJavaDocTag("author", "zeka.stack.team"));
+            add(new CustomJavaDocTag("date", "yyyy.MM.dd"));
+            add(new CustomJavaDocTag("email", "mailto:zeka.stack@gmail.com"));
+        }
+    };
 
     /**
      * 是否显示自定义 JavaDoc 标签配置面板
@@ -369,8 +379,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             5. 如果是接口，需要说明接口的用途和实现要求
             6. 如果是枚举，需要说明枚举的用途和各个值的含义
             7. 如果有特殊的设计模式，需要说明
-            8. 可以使用 @author、@version、@since 等标签
-            9. 添加 @date 标签，如果已有相关时间标签, 需要格式化为 yyyy.mm.dd
+            8. 添加 @author、@version、@email、@date、@since 标签且保存顺序
+               - 如果已存在 @author 且添加了作者信息则直接使用, 否则使用 ${author} 作为作者
+               - 如果已存在 @version 则保存不变, 否则使用 1.0.0 作为版本号
+               - 如果已存在 @email 则保持不变, 否则使用 ${email} 作为邮箱
+               - 如果已存在 @date ,需要格式化为 yyyy.mm.dd, 否则使用 ${date} 作为时间戳
+               - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
             
             # 示例
             输入代码：
@@ -386,8 +400,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * 提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
              *
              * @author dong4j
-             * @date 2025.10.24
              * @version 1.0.0
+             * @email "mailto:dong4j@gmail.com"
+             * @date 2025.10.24
              * @since 1.0.0
              */
             
@@ -428,7 +443,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             # 格式要求
             1. 必须包含完整的 JavaDoc 格式，包括开始标记 /** 和结束标记 */
             2. 使用中文编写注释内容
-            3. 注释要准确描述方法的功能、参数、返回值
+            3. 注释要准确描述方法的功能、参数、返回值、异常
             4. 如果有参数, 必须包含 @param 标签
             5. 如果有返回值, 必须包含 @return 标签
             6. 如果有异常抛出，使用 @throws 标签
@@ -657,13 +672,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
-
-        // 初始化默认的自定义 JavaDoc 标签（仅在配置为空时）
-        if (customJavaDocTags == null || customJavaDocTags.isEmpty()) {
-            customJavaDocTags = new ArrayList<>();
-            customJavaDocTags.add("date");
-            customJavaDocTags.add("email");
-        }
     }
 
     // ==================== 辅助方法 ====================
@@ -711,13 +719,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>对标签列表进行规范化处理：
      * <ul>
-     *   <li>去除空字符串和 null 值</li>
-     *   <li>去除重复标签</li>
+     *   <li>去除 null 值</li>
+     *   <li>去除空标签名称</li>
+     *   <li>去除重复标签（基于标签名称，不区分大小写）</li>
      *   <li>转换为小写（标签不区分大小写）</li>
      *   <li>去除前后空格</li>
      * </ul>
      *
-     * @return 规范化后的标签列表
+     * @return 规范化后的标签名称列表
      */
     @NotNull
     public List<String> getNormalizedCustomJavaDocTags() {
@@ -726,9 +735,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         }
 
         return customJavaDocTags.stream()
-            .filter(tag -> tag != null && !tag.trim().isEmpty())
-            .map(String::trim)
-            .map(String::toLowerCase)
+            .filter(tag -> tag != null && !tag.tagName.trim().isEmpty())
+            .map(tag -> tag.tagName.trim().toLowerCase())
             .distinct()
             .sorted()
             .collect(Collectors.toList());

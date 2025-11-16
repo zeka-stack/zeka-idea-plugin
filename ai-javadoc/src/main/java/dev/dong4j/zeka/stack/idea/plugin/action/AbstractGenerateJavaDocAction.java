@@ -134,21 +134,19 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      * @param project           项目对象
      * @param tasks             任务列表
      * @param targetDescription 目标描述信息
-     * @return 若任务列表为空返回 false, 否则返回 true
      */
-    protected boolean generateDocumentation(@NotNull Project project,
-                                            @NotNull List<DocumentationTask> tasks,
-                                            @NotNull String targetDescription) {
+    protected void generateDocumentation(@NotNull Project project,
+                                         @NotNull List<DocumentationTask> tasks,
+                                         @NotNull String targetDescription) {
         // 使用文档生成服务处理任务
         DocumentationGenerationService service = new DocumentationGenerationService();
         String emptyTaskMessage = getEmptyTaskMessage();
         if (service.checkEmptyTasks(project, tasks, emptyTaskMessage)) {
-            return false;
+            return;
         }
 
         // 使用服务生成文档
         service.generateDocumentation(project, tasks, targetDescription);
-        return true;
     }
 
     /**

@@ -225,7 +225,7 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
             allTags.addAll(tagsToAdd);
 
             // 重新组合为字符串
-            String newTagsString = String.join(",", allTags.stream().sorted().collect(Collectors.toList()));
+            String newTagsString = allTags.stream().sorted().collect(Collectors.joining(","));
 
             // 设置新标签字符串
             setAdditionalTags(inspection, newTagsString);
@@ -254,12 +254,12 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
             Set<String> tagsToRemoveSet = new HashSet<>(tagsToRemove);
             List<String> remainingTags = currentTags.stream()
                 .filter(tag -> !tagsToRemoveSet.contains(tag))
-                .collect(Collectors.toList());
+                .toList();
 
             // 重新组合为字符串
             String newTagsString = remainingTags.isEmpty()
                                    ? ""
-                                   : String.join(",", remainingTags.stream().sorted().collect(Collectors.toList()));
+                                   : remainingTags.stream().sorted().collect(Collectors.joining(","));
 
             // 设置新标签字符串
             setAdditionalTags(inspection, newTagsString);

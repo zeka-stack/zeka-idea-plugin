@@ -326,22 +326,14 @@ public class TaskExecutor {
      */
     @NotNull
     private static String getTaskTypeEmoji(@NotNull DocumentationTask.TaskType type) {
-        switch (type) {
-            case CLASS:
-                return "📦";
-            case METHOD:
-                return "⚙️";
-            case TEST_METHOD:
-                return "🧪";
-            case FIELD:
-                return "📝";
-            case INTERFACE:
-                return "🔌";
-            case ENUM:
-                return "🔢";
-            default:
-                return "📄";
-        }
+        return switch (type) {
+            case CLASS -> "📦";
+            case METHOD -> "⚙️";
+            case TEST_METHOD -> "🧪";
+            case FIELD -> "📝";
+            case INTERFACE -> "🔌";
+            case ENUM -> "🔢";
+        };
     }
 
     /**
@@ -373,8 +365,6 @@ public class TaskExecutor {
         private final AtomicInteger skippedCount = new AtomicInteger(0);
         /** 多线程模式下的提供商统计信息映射（可选） */
         private final Map<String, ProviderStatistics> providerStats;
-        /** 多线程模式下的提供商进度指示器映射 */
-        private final Map<String, ProgressIndicator> providerIndicators = new ConcurrentHashMap<>();
 
         /**
          * 创建单线程模式的进度管理器
@@ -546,16 +536,6 @@ public class TaskExecutor {
         }
 
         /**
-         * 更新进度指示器（兼容旧版本调用）
-         *
-         * @param currentIndex 当前处理的任务索引（从0开始）
-         * @param currentTask  当前处理的任务（可选，用于显示文件路径）
-         */
-        public void updateProgress(int currentIndex, DocumentationTask currentTask) {
-            updateProgress(currentIndex, currentTask, null);
-        }
-
-        /**
          * 更新统计信息文本
          * <p>
          * 在多线程模式下，还会显示各提供商的处理情况。
@@ -570,18 +550,7 @@ public class TaskExecutor {
                 // 添加各提供商的详细统计信息
                 if (!providerStats.isEmpty()) {
                     statsText.append(" | ");
-                    List<String> providerInfo = new ArrayList<>();
-                    for (ProviderStatistics stats : providerStats.values()) {
-                        int completed = stats.getCompletedCount();
-                        int failed = stats.getFailedCount();
-                        int skipped = stats.getSkippedCount();
-                        int total = stats.getTotalCount();
-                        if (total > 0) {
-                            // 显示提供商名称和详细统计：完成/失败/跳过
-                            providerInfo.add(String.format("%s: 完成%d 失败%d 跳过%d",
-                                                           stats.getProviderName(), completed, failed, skipped));
-                        }
-                    }
+                    final List<String> providerInfo = getProviderInfo();
                     if (!providerInfo.isEmpty()) {
                         statsText.append(String.join(" | ", providerInfo));
                     }
@@ -593,6 +562,25 @@ public class TaskExecutor {
                 indicator.setText2(String.format("完成: %d, 失败: %d, 跳过: %d",
                                                  getCompletedCount(), getFailedCount(), getSkippedCount()));
             }
+        }
+
+        @NotNull
+        private List<String> getProviderInfo() {
+            List<String> providerInfo = new ArrayList<>();
+            if (providerStats != null) {
+                for (ProviderStatistics stats : providerStats.values()) {
+                    int completed = stats.getCompletedCount();
+                    int failed = stats.getFailedCount();
+                    int skipped = stats.getSkippedCount();
+                    int total = stats.getTotalCount();
+                    if (total > 0) {
+                        // 显示提供商名称和详细统计：完成/失败/跳过
+                        providerInfo.add(String.format("%s: 完成%d 失败%d 跳过%d",
+                                                       stats.getProviderName(), completed, failed, skipped));
+                    }
+                }
+            }
+            return providerInfo;
         }
 
         /**
@@ -750,9 +738,8 @@ public class TaskExecutor {
 
                 // 为当前提供商创建线程
                 for (int i = 0; i < currentProviderThreads; i++) {
-                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                        processTasksWithProvider(tasks, provider, taskIndex, stats);
-                    }, executor);
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> processTasksWithProvider(tasks, provider, taskIndex
+                        , stats), executor);
                     futures.add(future);
                 }
             }
@@ -767,7 +754,6 @@ public class TaskExecutor {
             progressManager.finish();
 
             // 显示每个提供商的统计信息（如果启用）
-            SettingsState settings = SettingsState.getInstance();
             if (AIProviderSettings.getInstance().showProviderStatistics) {
                 showProviderStatistics(providerStats);
             }
@@ -814,6 +800,26 @@ public class TaskExecutor {
         // - 如果任务数较少（<=10），每个提供商1个线程
         // - 如果任务数中等（10-50），每个提供商2个线程
         // - 如果任务数较多（>50），每个提供商3-4个线程
+        final int totalThreads = getTotalThreads(providerCount, taskCount);
+
+        // 计算平均并发度
+        double avgConcurrency = (double) totalThreads / providerCount;
+        log.info("性能模式：使用 {} 个提供商，创建 {} 个线程（平均每个提供商 {} 个线程，平均并发度 {}）并行处理 {} 个任务",
+                 providerCount, totalThreads, String.format("%.1f", avgConcurrency),
+                 String.format("%.1f", avgConcurrency), taskCount);
+        return totalThreads;
+    }
+
+    /**
+     * 计算总线程数
+     * <p>
+     * 根据提供者数量和任务数量, 计算需要启动的总线程数. 线程数根据任务数量的不同范围进行分段计算, 并确保总线程数不超过任务数量.
+     *
+     * @param providerCount 提供者数量
+     * @param taskCount     任务数量
+     * @return 总线程数
+     */
+    private static int getTotalThreads(int providerCount, int taskCount) {
         int threadsPerProvider;
         if (taskCount <= 10) {
             threadsPerProvider = 1;
@@ -836,12 +842,6 @@ public class TaskExecutor {
             // 重新计算总线程数（可能因为取整而略小于 taskCount）
             totalThreads = providerCount * threadsPerProvider;
         }
-
-        // 计算平均并发度
-        double avgConcurrency = (double) totalThreads / providerCount;
-        log.info("性能模式：使用 {} 个提供商，创建 {} 个线程（平均每个提供商 {} 个线程，平均并发度 {}）并行处理 {} 个任务",
-                 providerCount, totalThreads, String.format("%.1f", avgConcurrency),
-                 String.format("%.1f", avgConcurrency), taskCount);
         return totalThreads;
     }
 

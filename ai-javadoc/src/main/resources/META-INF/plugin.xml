@@ -16,6 +16,7 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.modules.vcs</depends>
+    <depends>org.jetbrains.idea.maven</depends>
     <!-- 依赖 AI Common 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
 

@@ -1,14 +1,30 @@
 package dev.dong4j.zeka.stack.idea.plugin.ai;
 
+import com.intellij.psi.PsiElement;
+
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Date;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
+import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.TokenCounter;
 
 /**
- * 负责根据当前设置与任务数据构建 {@link AIChatRequest}。
+ * AI 请求构建器类
+ * <p>
+ * 提供构建 AI 聊天请求的功能, 根据项目设置和文档任务生成系统提示和用户提示, 并估算所需 token 数量. 该类为工具类, 所有方法均为静态方法, 不允许实例化.
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @date 2025.10.24
+ * @since 1.0.0
  */
 public final class AIRequestComposer {
 
@@ -57,18 +73,19 @@ public final class AIRequestComposer {
     }
 
     /**
-     * 根据任务类型构建用户提示信息模板
+     * 根据任务类型和设置构建用户提示模板
      * <p>
-     * 根据传入的设置状态和任务类型, 选择对应的提示信息模板, 并使用任务代码进行格式化
+     * 使用指定的设置和任务类型, 选择对应的模板并填充任务代码内容, 生成最终的用户提示字符串.
      *
-     * @param settings 设置状态对象, 用于获取模板配置
-     * @param task     任务对象, 包含任务类型和代码信息
-     * @return 格式化后的提示信息字符串
+     * @param settings 配置设置对象, 用于获取模板配置
+     * @param task     文档生成任务对象, 包含任务类型和代码内容
+     * @return 生成的用户提示字符串
+     * @throws NullPointerException 如果 settings 或 task 为 null
      */
     private static String buildUserPrompt(@NotNull SettingsState settings, @NotNull DocumentationTask task) {
         String template = switch (task.getType()) {
-            case CLASS, INTERFACE, ENUM -> resolveTemplate(settings.classPromptTemplate,
-                                                           SettingsState.getDefaultClassPromptTemplate());
+            case CLASS, INTERFACE, ENUM -> resolveClassTemplate(task, settings.classPromptTemplate,
+                                                                SettingsState.getDefaultClassPromptTemplate());
             case FIELD -> resolveTemplate(settings.fieldPromptTemplate,
                                           SettingsState.getDefaultFieldPromptTemplate());
             case TEST_METHOD -> resolveTemplate(settings.testPromptTemplate,
@@ -93,5 +110,51 @@ public final class AIRequestComposer {
             return defaultTemplate;
         }
         return userTemplate;
+    }
+
+    /**
+     * 解析并替换类模板中的占位符
+     * <p>
+     * 根据给定的任务, 用户模板和默认模板, 解析模板内容并替换其中的占位符, 如作者, 版本, 日期和邮箱等信息.
+     *
+     * @param task            当前文档生成任务
+     * @param userTemplate    用户自定义模板, 若为空则使用默认模板
+     * @param defaultTemplate 默认模板
+     * @return 替换占位符后的模板字符串
+     */
+    private static String resolveClassTemplate(@NotNull DocumentationTask task,
+                                               String userTemplate, String defaultTemplate) {
+        String template = resolveTemplate(userTemplate, defaultTemplate);
+        final PsiElement element = task.getElement();
+
+        SettingsState settings = SettingsState.getInstance();
+        final Map<String, String> customTagsMap = settings.customJavaDocTags.stream()
+            .collect(Collectors.toMap(
+                CustomJavaDocTag::getTagName,
+                CustomJavaDocTag::getDefaultValue,
+                (existing, replacement) -> existing));
+
+        template = template.replace("${author}", MavenUtil.getAuthor(customTagsMap.get("author")));
+        template = template.replace("${since}", MavenUtil.getVersion(element));
+
+        String date = customTagsMap.get("date");
+        if (date == null || date.isEmpty()) {
+            date = DateFormatUtils.format(new Date(), "yyyy.MM.dd");
+        } else {
+            date = DateFormatUtils.format(new Date(), date);
+        }
+
+        template = template.replace("${date}", date);
+
+        String email = customTagsMap.get("email");
+        if (email == null || email.isEmpty()) {
+            email = "mailto:dong4j@gmail.com";
+        } else if (!email.startsWith("mailto:")) {
+            email = "mailto:" + email;
+        }
+
+        template = template.replace("${email}", email);
+
+        return template;
     }
 }
