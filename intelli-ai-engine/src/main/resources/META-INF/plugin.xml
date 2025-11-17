@@ -1,0 +1,47 @@
+<!-- IntelliAI Engine 插件配置文件 -->
+<idea-plugin>
+    <!-- 插件的唯一标识符 -->
+    <id>dev.dong4j.zeka.stack.idea.plugin.common.ai</id>
+
+    <!-- 公共插件名称 -->
+    <name>IntelliAI Engine</name>
+
+    <!-- 供应商信息 -->
+    <vendor email="dong4j@gmail.com">dong4j</vendor>
+
+    <!-- 产品和插件兼容性要求 -->
+    <idea-version since-build="223" until-build="252.*"/>
+
+    <!-- 依赖的平台模块 -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- 插件定义的扩展点 -->
+    <extensionPoints>
+        <!-- AI 控制台日志提供者扩展点 -->
+        <extensionPoint name="aiConsoleLoggerProvider"
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider"/>
+    </extensionPoints>
+
+    <!-- 插件定义的扩展点 -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 应用级服务：全局 AI 配置（可用供应商列表） -->
+        <applicationService
+                serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings"/>
+
+        <!-- 应用级服务：统一的 AI 服务入口 -->
+        <applicationService
+                serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"
+                serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
+
+        <!-- 设置页面：IntelliAI Engine 的全局配置（应用级配置） -->
+        <applicationConfigurable
+                parentId="tools"
+                instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
+                id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
+                displayName="IntelliAI Engine"/>
+
+        <!-- 注意：状态栏组件不应该在这里注册，因为 AIProviderStatusBarWidgetFactory 需要 AIProviderStatusBarAdapter 参数 -->
+        <!-- 使用 intelli-ai-engine 的插件应该注册自己的 StatusBarWidgetFactory，继承 AIProviderStatusBarWidgetFactory 并提供 adapter -->
+    </extensions>
+</idea-plugin>
+

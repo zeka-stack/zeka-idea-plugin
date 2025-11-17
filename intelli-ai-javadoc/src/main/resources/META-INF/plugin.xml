@@ -1,0 +1,112 @@
+<!-- 插件配置文件。更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- 插件的唯一标识符。应该是完全限定名。在插件版本之间不能更改。 -->
+    <id>dev.dong4j.zeka.stack.idea.plugin</id>
+
+    <!-- 公共插件名称应使用标题大小写书写。
+         指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>IntelliDoc Assistant</name>
+
+    <!-- 在插件页面上显示的供应商名称或组织ID。 -->
+    <vendor email="dong4j@gmail.com">dong4j</vendor>
+
+    <!-- 产品和插件兼容性要求。
+         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <idea-version since-build="223" until-build="252.*"/>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.vcs</depends>
+    <depends>org.jetbrains.idea.maven</depends>
+    <!-- 依赖 IntelliAI Engine 插件 -->
+    <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
+
+    <!-- 插件定义的扩展点。
+         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 配置持久化 -->
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState"/>
+
+        <!-- 设置面板 -->
+        <!--suppress PluginXmlI18n -->
+        <applicationConfigurable
+                parentId="tools"
+                instance="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
+                id="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
+                displayName="IntelliDoc Assistant"/>
+
+        <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup id="IntelliDoc Assistant Notifications"
+                           displayType="BALLOON"
+                           isLogByDefault="true"/>
+
+        <!-- 自动注册自定义 JavaDoc 标签 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar"/>
+
+        <!-- Maven 缓存清理监听器（在启动活动中注册） -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.MavenCacheCleanupListener"/>
+
+        <!-- Console 工具窗口 -->
+        <!--suppress PluginXmlI18n -->
+        <toolWindow id="IntelliDoc Assistant Console"
+                    factoryClass="dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleToolWindowFactory"
+                    anchor="bottom"
+                    icon="/icons/aij_16.svg"/>
+
+        <!-- 状态栏默认服务商控件 -->
+        <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidgetFactory"
+                                order="first" id="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidget"/>
+
+        <!-- Intention Action (Option+Enter / Alt+Enter 快捷菜单) -->
+        <intentionAction>
+            <language>JAVA</language>
+            <className>dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocIntentionAction</className>
+            <category>IntelliDoc Assistant</category>
+            <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
+        </intentionAction>
+
+    </extensions>
+
+    <!-- 注册到 intelli-ai-engine 的扩展点 -->
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <!-- AI 控制台日志提供者 -->
+        <aiConsoleLoggerProvider implementation="dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIConsoleLoggerProvider"/>
+    </extensions>
+
+    <!-- 插件定义的动作 -->
+    <actions>
+        <!-- Git 提交工具栏操作 -->
+        <!-- 使用 Vcs.MessageActionGroup 添加到提交消息区域 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForCommitAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForCommitAction"
+                icon="/icons/aij_16.svg">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+        </action>
+        <!-- 快捷键入口 (Ctrl+Shift+D / Cmd+Shift+D) -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocShortcutAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocShortcutAction">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl D"/>
+        </action>
+
+        <!-- 编辑器右键菜单 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForEditorAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForEditorAction"
+                icon="/icons/aij_16.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+
+        <!-- 项目视图右键菜单 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFilesAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFilesAction"
+                icon="/icons/aij_16.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+
+        <!-- Generate 菜单 (Command+N / Alt+Insert) -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocGenerateAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocGenerateAction"
+                icon="/icons/aij_16.svg">
+            <add-to-group group-id="GenerateGroup" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

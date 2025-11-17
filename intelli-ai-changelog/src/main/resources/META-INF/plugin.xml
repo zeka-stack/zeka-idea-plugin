@@ -1,0 +1,106 @@
+<!-- 插件配置文件。更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- 插件的唯一标识符。应该是完全限定名。在插件版本之间不能更改。 -->
+    <id>dev.dong4j.zeka.stack.idea.plugin.changelog</id>
+
+    <!-- 公共插件名称应使用标题大小写书写。
+         指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>IntelliChangelog Generator</name>
+
+    <!-- 在插件页面上显示的供应商名称或组织ID。 -->
+    <vendor email="dong4j@gmail.com">dong4j</vendor>
+
+    <!-- 在插件页面和IDE插件管理器中显示的插件描述。
+         可以在 <![CDATA[ ]]> 标签内添加简单的HTML元素（文本格式、段落和列表）。
+         指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+        <h2>IntelliChangelog Generator</h2>
+        <p>使用 AI 自动生成项目变更日志的 IntelliJ IDEA 插件。</p>
+
+        <h3>功能特性</h3>
+        <ul>
+            <li><b>AI 生成变更日志</b>：基于 Git 提交记录自动生成变更日志</li>
+            <li><b>多种 AI 提供商支持</b>：支持通义千问、Ollama、OpenAI 等多种 AI 服务</li>
+            <li><b>灵活的触发方式</b>：可通过快捷键、右键菜单等多种方式触发</li>
+            <li><b>自定义模板</b>：支持自定义变更日志格式和模板</li>
+            <li><b>国际化支持</b>：多语言资源文件</li>
+        </ul>
+
+        <h3>使用方式</h3>
+        <ul>
+            <li>快捷键：Ctrl+Shift+C (Windows/Linux) 或 Cmd+Shift+C (Mac)</li>
+            <li>编辑器右键菜单 → Generate Changelog with AI</li>
+            <li>项目视图右键菜单 → Generate Changelog with AI</li>
+        </ul>
+
+        <h3>配置说明</h3>
+        <p>配置路径：Settings → Tools → IntelliChangelog Generator</p>
+        <ul>
+            <li>选择 AI 提供商和模型</li>
+            <li>配置 API Key（使用系统级加密存储）</li>
+            <li>自定义变更日志模板</li>
+        </ul>
+    ]]></description>
+
+    <!-- 产品和插件兼容性要求。
+         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <idea-version since-build="223" until-build="252.*"/>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.vcs</depends>
+    <!-- 依赖 IntelliAI Engine 插件 -->
+    <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
+
+    <!-- 国际化资源文件 -->
+    <resource-bundle>messages</resource-bundle>
+
+    <!-- 插件定义的扩展点。
+         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 配置持久化 -->
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState"/>
+
+        <!-- 设置面板 -->
+        <!--suppress PluginXmlI18n -->
+        <applicationConfigurable
+                parentId="tools"
+                instance="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
+                id="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
+                displayName="IntelliChangelog Generator"/>
+
+        <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup id="IntelliChangelog Generator Notifications"
+                           displayType="BALLOON"
+                           isLogByDefault="true"/>
+    </extensions>
+
+    <!-- 插件定义的动作 -->
+    <actions>
+        <!-- Git Log 工具窗口右键菜单 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+
+        <!-- Git 提交工具栏操作 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForCommitAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForCommitAction">
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+        </action>
+
+        <!-- Git Log 工具窗口右键菜单 - 生成提交记录 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction">
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

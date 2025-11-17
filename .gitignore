@@ -1,4 +1,4 @@
-ai-javadoc/.gradle
+intelli-ai-javadoc/.gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/

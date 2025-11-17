@@ -25,7 +25,7 @@ import lombok.Data;
 @Data
 @State(
     name = "UniformFormatSettingsState",
-    storages = @Storage("uniform-format-settings.xml")
+    storages = @Storage("zeka.stack.uniform.format.xml")
 )
 public class UniformFormatSettingsState implements PersistentStateComponent<UniformFormatSettingsState> {
     /** 是否启用文件模板功能，默认启用 */
