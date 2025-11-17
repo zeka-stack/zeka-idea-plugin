@@ -313,15 +313,6 @@ public final class WorkflowResultToolWindow {
             });
         }
 
-        /**
-         * 获取当前内容
-         *
-         * @return 当前 Markdown 内容
-         */
-        @NotNull
-        public String getCurrentContent() {
-            return currentContent;
-        }
 
         /**
          * 获取 Markdown 文件

@@ -127,7 +127,7 @@ public final class MethodContextExtractor {
                     if (containingClass != null) {
                         String className = containingClass.getName();
                         String methodName = calledMethod.getName();
-                        if (className != null && methodName != null) {
+                        if (className != null) {
                             methodInfo.bodySummary.add(className + "." + methodName + "()");
                         }
                     }
