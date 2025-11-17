@@ -34,6 +34,7 @@
                 serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
 
         <!-- 设置页面：IntelliAI Engine 的全局配置（应用级配置） -->
+        <!--suppress PluginXmlI18n -->
         <applicationConfigurable
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"

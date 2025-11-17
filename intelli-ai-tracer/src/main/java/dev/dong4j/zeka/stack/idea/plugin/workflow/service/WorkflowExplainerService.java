@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.workflow.service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -13,6 +14,8 @@ import com.intellij.psi.PsiMethodCallExpression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
@@ -20,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.WorkflowContext;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindow;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.JSONSerializer;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.MethodContextExtractor;
@@ -310,15 +314,7 @@ public class WorkflowExplainerService {
     @NotNull
     private String callAI(@NotNull String json) throws Exception {
         // 获取 AI 配置
-        AIProviderSettings settings = AIProviderSettings.getInstance();
-        java.util.List<AIProviderConfig> verifiedProviders = settings.getVerifiedProviders();
-
-        if (verifiedProviders.isEmpty()) {
-            throw new Exception(WorkflowBundle.message("error.ai.provider.not.configured"));
-        }
-
-        // 使用第一个已验证的提供商
-        AIProviderConfig config = verifiedProviders.get(0);
+        AIProviderConfig config = selectProviderConfig();
 
         // 构建 Prompt
         String systemPrompt = buildSystemPrompt();
@@ -343,38 +339,12 @@ public class WorkflowExplainerService {
      */
     @NotNull
     private String buildSystemPrompt() {
-        return "你是一名资深的系统架构师和技术分析师。\n" +
-               "请根据提供的方法上下文信息，深入分析该方法的业务流程，并生成一份详细的技术说明文档。\n" +
-               "\n" +
-               "要求：\n" +
-               "1. **调用链分析**：\n" +
-               "   - 首先分析调用者（callers）：谁调用了这个方法，调用者的职责是什么\n" +
-               "   - 然后分析被调用者（callees）：这个方法调用了哪些其他方法，每个被调用方法的职责是什么\n" +
-               "   - 理解完整的调用链路，从入口到出口\n" +
-               "\n" +
-               "2. **绘制时序图**：\n" +
-               "   - 使用 Mermaid 语法绘制完整的调用时序图（sequenceDiagram）\n" +
-               "   - 展示从调用者到目标方法，再到被调用者的完整调用流程\n" +
-               "   - 标注关键的方法调用和参数传递\n" +
-               "\n" +
-               "3. **详细技术说明**：\n" +
-               "   - 按照调用链的顺序，逐个解释每个环节的作用：\n" +
-               "     a) 首先说明调用者如何触发这个方法（调用场景和触发条件）\n" +
-               "     b) 然后详细解释目标方法的核心逻辑和职责\n" +
-               "     c) 接着逐个说明目标方法调用的每个子方法的作用和意义\n" +
-               "     d) 最后说明整个调用链的返回流程和数据流转\n" +
-               "   - 每个环节都要说明：方法的作用、参数的含义、返回值的作用、在整个流程中的位置\n" +
-               "   - 说明要具体、详细，不要泛泛而谈\n" +
-               "\n" +
-               "4. **总结说明**：\n" +
-               "   - 在详细解释之后，提供一段总结性的说明\n" +
-               "   - 总结该方法在整个系统中的定位和作用\n" +
-               "   - 说明该方法解决的核心问题和业务价值\n" +
-               "\n" +
-               "5. **注意事项**：\n" +
-               "   - 只基于提供的上下文信息进行分析，不要编造不存在的细节\n" +
-               "   - 如果某些信息缺失，明确说明哪些信息无法确定\n" +
-               "   - 使用专业但易懂的技术语言";
+        SettingsState settings = SettingsState.getInstance();
+        String prompt = settings.systemPrompt;
+        if (StringUtil.isEmptyOrSpaces(prompt)) {
+            prompt = SettingsState.getDefaultSystemPrompt();
+        }
+        return prompt;
     }
 
     /**
@@ -385,35 +355,40 @@ public class WorkflowExplainerService {
      */
     @NotNull
     private String buildUserPrompt(@NotNull String json) {
-        return "以下是方法上下文（JSON）：\n\n" + json + "\n\n" +
-               "请按照以下格式输出：\n" +
-               "\n" +
-               "## 调用时序图\n" +
-               "\n" +
-               "```mermaid\n" +
-               "sequenceDiagram\n" +
-               "    ...\n" +
-               "```\n" +
-               "\n" +
-               "## 技术说明\n" +
-               "\n" +
-               "### 调用链分析\n" +
-               "\n" +
-               "#### 1. 调用者分析\n" +
-               "（详细说明谁调用了这个方法，调用场景和触发条件）\n" +
-               "\n" +
-               "#### 2. 目标方法核心逻辑\n" +
-               "（详细说明目标方法的作用、参数含义、核心处理逻辑）\n" +
-               "\n" +
-               "#### 3. 被调用方法分析\n" +
-               "（逐个详细说明目标方法调用的每个子方法的作用、参数、返回值及其在整个流程中的意义）\n" +
-               "\n" +
-               "#### 4. 返回流程分析\n" +
-               "（说明数据如何从被调用方法返回到调用者，整个调用链的返回流程）\n" +
-               "\n" +
-               "### 总结\n" +
-               "\n" +
-               "（总结该方法在整个系统中的定位、作用、解决的核心问题和业务价值）";
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.workflowTemplate;
+        if (StringUtil.isEmptyOrSpaces(template)) {
+            template = SettingsState.getDefaultWorkflowTemplate();
+        }
+        if (template.contains(SettingsState.CONTEXT_PLACEHOLDER)) {
+            return template.replace(SettingsState.CONTEXT_PLACEHOLDER, json);
+        }
+        return template + "\n\n" + json;
+    }
+
+    /**
+     * 选择 AI 提供商配置。
+     *
+     * @return 可用的 AIProviderConfig
+     * @throws Exception 无可用提供商时抛出
+     */
+    @NotNull
+    private AIProviderConfig selectProviderConfig() throws Exception {
+        AIProviderSettings settings = AIProviderSettings.getInstance();
+        List<AIProviderConfig> verifiedProviders = settings.getVerifiedProviders();
+        if (verifiedProviders.isEmpty()) {
+            throw new Exception(WorkflowBundle.message("error.ai.provider.not.configured"));
+        }
+        SettingsState tracerSettings = SettingsState.getInstance();
+        AIProviderConfig preferred = tracerSettings.providerConfig;
+        if (preferred != null) {
+            for (AIProviderConfig config : verifiedProviders) {
+                if (config.contentEquals(preferred)) {
+                    return config;
+                }
+            }
+        }
+        return verifiedProviders.get(0);
     }
 }
 

@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.workflow.action;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.service.WorkflowExplainerService;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
+import icons.TracerIcons;
 
 /**
  * 解释工作流 Action
@@ -27,7 +29,7 @@ public class ExplainWorkflowAction extends AnAction {
     public ExplainWorkflowAction() {
         super(WorkflowBundle.messagePointer("action.explain.workflow"),
               WorkflowBundle.messagePointer("action.explain.workflow.description"),
-              null);
+              TracerIcons.WORKFLOW_ACTION);
     }
 
     @Override
@@ -79,6 +81,21 @@ public class ExplainWorkflowAction extends AnAction {
         // 只在 Java 文件中启用
         Project project = e.getProject();
         e.getPresentation().setEnabledAndVisible(project != null);
+    }
+
+    /**
+     * 获取动作更新线程
+     *
+     * <p>指定 update 方法在后台线程中执行，避免阻塞事件调度线程(EDT)。
+     * 提高 UI 响应性，防止界面卡顿。
+     *
+     * @return ActionUpdateThread.BGT 后台线程
+     * @see ActionUpdateThread#BGT
+     */
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        // 在后台线程中执行 update，避免阻塞 EDT
+        return ActionUpdateThread.BGT;
     }
 }
 

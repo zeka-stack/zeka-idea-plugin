@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliTrace Analyzer - AI-Powered Code Flow Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Dynamic Gradient Background */
+        .gradient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(at 20% 30%, hsla(280, 100%, 60%, 0.15) 0px, transparent 50%),
+            radial-gradient(at 80% 70%, hsla(180, 100%, 50%, 0.15) 0px, transparent 50%),
+            radial-gradient(at 50% 50%, hsla(320, 100%, 60%, 0.12) 0px, transparent 50%);
+            animation: gradient-shift 15s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% {
+                filter: hue-rotate(0deg);
+            }
+            50% {
+                filter: hue-rotate(30deg);
+            }
+        }
+
+        /* Animated Grid */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-move 20s linear infinite;
+            perspective: 1000px;
+        }
+
+        @keyframes grid-move {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(50px);
+            }
+        }
+
+        /* Particles */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 20px 0;
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.7);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00f5ff, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.5));
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00f5ff, #a855f7);
+            transition: width 0.3s;
+        }
+
+        .nav-menu a:hover {
+            color: #00f5ff;
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+        }
+
+        .lang-toggle {
+            display: flex;
+            gap: 4px;
+            background: rgba(0, 245, 255, 0.1);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 245, 255, 0.2);
+        }
+
+        .lang-btn {
+            padding: 6px 12px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, #00f5ff, #a855f7);
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 245, 255, 0.2), transparent);
+            filter: blur(80px);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.5;
+            }
+        }
+
+        .hero h1 {
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #fff, #00f5ff, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+            position: relative;
+            z-index: 1;
+            animation: text-glow 3s ease-in-out infinite;
+        }
+
+        @keyframes text-glow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.5));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(0, 245, 255, 0.8));
+            }
+        }
+
+        .hero .subtitle {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 48px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 80px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00f5ff, #a855f7);
+            color: white;
+            box-shadow: 0 10px 40px rgba(0, 245, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 60px rgba(0, 245, 255, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 245, 255, 0.1);
+            border-color: rgba(0, 245, 255, 0.5);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 0;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 20px;
+            font-size: 13px;
+            color: #00f5ff;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+        }
+
+        .section-title {
+            font-size: 48px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .section-desc {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .feature-card {
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.05), rgba(168, 85, 247, 0.05));
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 245, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+        }
+
+        .feature-card:hover::before {
+            transform: rotate(90deg);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(0, 245, 255, 0.3);
+            border-color: rgba(0, 245, 255, 0.5);
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #00f5ff, #a855f7);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
+            animation: icon-float 3s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes icon-float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .feature-card h3 {
+            font-size: 22px;
+            color: white;
+            margin-bottom: 12px;
+            font-weight: 700;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+            font-size: 15px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 120px 0;
+            background: rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 80px;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+        }
+
+        .step::after {
+            content: '→';
+            position: absolute;
+            right: -40px;
+            top: 40px;
+            font-size: 48px;
+            color: rgba(0, 245, 255, 0.3);
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #00f5ff, #a855f7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 40px rgba(0, 245, 255, 0.6);
+            position: relative;
+        }
+
+        .step-number::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 245, 255, 0.5);
+            animation: ripple 2s ease-out infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .step h3 {
+            font-size: 24px;
+            color: white;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .step p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.7;
+        }
+
+        /* Demo Section */
+        .demo {
+            padding: 120px 0;
+        }
+
+        .demo-window {
+            margin-top: 60px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .window-header {
+            padding: 12px 20px;
+            background: rgba(0, 245, 255, 0.1);
+            border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .window-dot:nth-child(1) {
+            background: #ff5f57;
+        }
+
+        .window-dot:nth-child(2) {
+            background: #ffbd2e;
+        }
+
+        .window-dot:nth-child(3) {
+            background: #28ca42;
+        }
+
+        .window-content {
+            padding: 40px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #00f5ff;
+        }
+
+        .code-comment {
+            color: #6b7280;
+        }
+
+        .code-keyword {
+            color: #a855f7;
+        }
+
+        .code-string {
+            color: #00f5ff;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 120px 0;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.1), rgba(168, 85, 247, 0.1));
+            position: relative;
+        }
+
+        .cta h2 {
+            font-size: 56px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+
+        .cta p {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 48px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 80px 0 40px;
+            border-top: 1px solid rgba(0, 245, 255, 0.1);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .footer-section h4 {
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 12px;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: #00f5ff;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid rgba(0, 245, 255, 0.1);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .features-grid,
+            .steps,
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-menu {
+                display: none;
+            }
+
+            .step::after {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Background Elements -->
+<div class="gradient-bg"></div>
+<div class="grid-bg"></div>
+<canvas id="particles-canvas"></canvas>
+
+<!-- Navigation -->
+<nav>
+    <div class="nav-container">
+        <div class="logo">
+            <span>🔍</span>
+            <span>IntelliTrace Analyzer</span>
+        </div>
+        <div class="nav-menu">
+            <a href="#features" data-en="Features" data-zh="功能">Features</a>
+            <a href="#how-it-works" data-en="How It Works" data-zh="工作原理">How It Works</a>
+            <a href="#demo" data-en="Demo" data-zh="演示">Demo</a>
+            <a href="https://github.com/dong4j/zeka-idea-plugin">GitHub</a>
+            <div class="lang-toggle">
+                <button class="lang-btn active" onclick="switchLang('en')">EN</button>
+                <button class="lang-btn" onclick="switchLang('zh')">中文</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container">
+        <h1 data-en="Visualize Your Code Flow<br>with AI Intelligence" data-zh="用 AI 智能<br>可视化代码流程">Visualize Your Code Flow<br>with
+            AI Intelligence</h1>
+        <p class="subtitle" data-en="AI-powered call chain analysis and workflow visualization for IntelliJ. Understand complex code structures in seconds." data-zh="AI 驱动的调用链分析和工作流可视化工具。几秒钟内理解复杂的代码结构。">
+            AI-powered call chain analysis and workflow visualization for IntelliJ. Understand complex code structures in seconds.</p>
+        <div class="cta-buttons">
+            <a href="https://plugins.jetbrains.com/plugin/tracer" class="btn btn-primary" data-en="Install Plugin" data-zh="安装插件">Install
+                Plugin</a>
+            <a href="https://github.com/dong4j/zeka-idea-plugin" class="btn btn-secondary" data-en="View on GitHub" data-zh="查看源码">View
+                on GitHub</a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge" data-en="Features" data-zh="核心功能">Features</span>
+            <h2 class="section-title" data-en="Powered by Advanced AI" data-zh="由先进 AI 驱动">Powered by Advanced AI</h2>
+            <p class="section-desc" data-en="Automatically analyze and visualize complex code flows" data-zh="自动分析和可视化复杂的代码流程">
+                Automatically analyze and visualize complex code flows</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔗</div>
+                <h3 data-en="Call Chain Analysis" data-zh="调用链分析">Call Chain Analysis</h3>
+                <p data-en="Trace method calls upstream and downstream automatically" data-zh="自动追踪方法的上下游调用关系">Trace method
+                    calls upstream and downstream automatically</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 data-en="Sequence Diagram" data-zh="时序图生成">Sequence Diagram</h3>
+                <p data-en="Generate Mermaid sequence diagrams with AI" data-zh="使用 AI 生成 Mermaid 时序图">Generate Mermaid sequence
+                    diagrams with AI</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🧠</div>
+                <h3 data-en="Business Logic" data-zh="业务逻辑说明">Business Logic</h3>
+                <p data-en="AI-generated explanations of workflow and business logic" data-zh="AI 生成的工作流和业务逻辑说明">AI-generated
+                    explanations of workflow and business logic</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📝</div>
+                <h3 data-en="Context Extraction" data-zh="上下文提取">Context Extraction</h3>
+                <p data-en="Extract method context, annotations, and documentation" data-zh="提取方法上下文、注解和文档">Extract method
+                    context, annotations, and documentation</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 data-en="Smart Navigation" data-zh="智能导航">Smart Navigation</h3>
+                <p data-en="Click to navigate between methods in the call chain" data-zh="点击在调用链中的方法之间导航">Click to navigate
+                    between methods in the call chain</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 data-en="Fast & Accurate" data-zh="快速准确">Fast & Accurate</h3>
+                <p data-en="Powered by IntelliJ's PSI and AI analysis engine" data-zh="由 IntelliJ PSI 和 AI 分析引擎驱动">Powered by
+                    IntelliJ's PSI and AI analysis engine</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works" class="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge" data-en="How It Works" data-zh="工作原理">How It Works</span>
+            <h2 class="section-title" data-en="Three Simple Steps" data-zh="三个简单步骤">Three Simple Steps</h2>
+            <p class="section-desc" data-en="From code selection to AI-powered analysis" data-zh="从代码选择到 AI 驱动的分析">From code
+                selection to AI-powered analysis</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3 data-en="Select Method" data-zh="选择方法">Select Method</h3>
+                <p data-en="Right-click on any method in your code editor" data-zh="在代码编辑器中右键点击任意方法">Right-click on any
+                    method in your code editor</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3 data-en="AI Analysis" data-zh="AI 分析">AI Analysis</h3>
+                <p data-en="AI analyzes call chains and extracts context automatically" data-zh="AI 自动分析调用链并提取上下文">AI analyzes
+                    call chains and extracts context automatically</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3 data-en="View Results" data-zh="查看结果">View Results</h3>
+                <p data-en="Get visual diagrams and business logic explanations" data-zh="获取可视化图表和业务逻辑说明">Get visual diagrams
+                    and business logic explanations</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Demo Section -->
+<section id="demo" class="demo">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge" data-en="Demo" data-zh="演示">Demo</span>
+            <h2 class="section-title" data-en="See It In Action" data-zh="实际效果">See It In Action</h2>
+            <p class="section-desc" data-en="Example of AI-generated workflow analysis" data-zh="AI 生成的工作流分析示例">Example of
+                AI-generated workflow analysis</p>
+        </div>
+        <div class="demo-window">
+            <div class="window-header">
+                <div class="window-dot"></div>
+                <div class="window-dot"></div>
+                <div class="window-dot"></div>
+            </div>
+            <div class="window-content">
+                <div class="code-comment">// Workflow Analysis: OrderService#createOrder</div>
+                <br>
+                <div><span class="code-keyword">sequenceDiagram</span></div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;participant <span class="code-string">Controller</span> as OrderController</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;participant <span class="code-string">Service</span> as OrderService</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;participant <span class="code-string">Inventory</span> as InventoryService</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;participant <span class="code-string">Payment</span> as PaymentService</div>
+                <br>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;Controller->>Service: createOrder(userId, productId)</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;Service->>Inventory: lockStock(productId)</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;Service->>Payment: charge(userId, orderId)</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;Payment-->>Service: PaymentResult</div>
+                <div>&nbsp;&nbsp;&nbsp;&nbsp;Service-->>Controller: Order</div>
+                <br>
+                <div class="code-comment">// Business Logic:</div>
+                <div class="code-comment">// This method orchestrates the core order creation process...</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta">
+    <div class="container">
+        <h2 data-en="Ready to Analyze Your Code?" data-zh="准备分析你的代码了吗？">Ready to Analyze Your Code?</h2>
+        <p data-en="Join developers using AI to understand complex codebases faster" data-zh="加入使用 AI 更快理解复杂代码库的开发者行列">
+            Join developers using AI to understand complex codebases faster</p>
+        <div class="cta-buttons">
+            <a href="https://plugins.jetbrains.com/plugin/tracer" class="btn btn-primary" data-en="Install Now" data-zh="立即安装">Install
+                Now</a>
+            <a href="https://github.com/dong4j/zeka-idea-plugin" class="btn btn-secondary" data-en="Learn More" data-zh="了解更多">Learn
+                More</a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="footer-grid">
+            <div class="footer-section">
+                <h4 data-en="Product" data-zh="产品">Product</h4>
+                <ul>
+                    <li><a href="#features" data-en="Features" data-zh="功能">Features</a></li>
+                    <li><a href="#how-it-works" data-en="How It Works" data-zh="工作原理">How It Works</a></li>
+                    <li><a href="#demo" data-en="Demo" data-zh="演示">Demo</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 data-en="Resources" data-zh="资源">Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin" data-en="Documentation" data-zh="文档">Documentation</a></li>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin" data-en="Quick Start" data-zh="快速开始">Quick Start</a></li>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin/issues" data-en="Support" data-zh="支持">Support</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 data-en="Community" data-zh="社区">Community</h4>
+                <ul>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin">GitHub</a></li>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin/issues" data-en="Issues" data-zh="问题">Issues</a></li>
+                    <li>
+                        <a href="https://github.com/dong4j/zeka-idea-plugin/discussions" data-en="Discussions" data-zh="讨论">Discussions</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 data-en="More Plugins" data-zh="更多插件">More Plugins</h4>
+                <ul>
+                    <li><a href="#">IntelliAI Engine</a></li>
+                    <li><a href="#">IntelliChangelog</a></li>
+                    <li><a href="#">IntelliAI JavaDoc</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 IntelliTrace Analyzer. MIT Licensed. Built by
+                <a href="https://github.com/dong4j" style="color: #00f5ff;">dong4j</a></p>
+        </div>
+    </div>
+</footer>
+
+<script>
+  // Particle System
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 2 + 1;
+      this.speedX = Math.random() * 0.5 - 0.25;
+      this.speedY = Math.random() * 0.5 - 0.25;
+      this.opacity = Math.random() * 0.5 + 0.3;
+      this.color = Math.random() > 0.5 ? '0, 245, 255' : '168, 85, 247';
+    }
+
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      if (this.x > canvas.width) {
+        this.x = 0;
+      }
+      if (this.x < 0) {
+        this.x = canvas.width;
+      }
+      if (this.y > canvas.height) {
+        this.y = 0;
+      }
+      if (this.y < 0) {
+        this.y = canvas.height;
+      }
+    }
+
+    draw() {
+      ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function initParticles() {
+    particles = [];
+    const particleCount = Math.floor((
+                                         canvas.width * canvas.height) / 12000);
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+  }
+
+  function connectParticles() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 150) {
+          const opacity = (
+                              1 - distance / 150) * 0.3;
+          ctx.strokeStyle = `rgba(0, 245, 255, ${opacity})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(particle => {
+      particle.update();
+      particle.draw();
+    });
+    connectParticles();
+    requestAnimationFrame(animate);
+  }
+
+  initParticles();
+  animate();
+  window.addEventListener('resize', initParticles);
+
+  // Language Switch
+  function switchLang(lang) {
+    document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const text = el.getAttribute(`data-${lang}`);
+      if (text) {
+        if (el.tagName === 'A' || el.tagName === 'BUTTON') {
+          el.textContent = text;
+        } else {
+          el.innerHTML = text;
+        }
+      }
+    });
+  }
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
+    });
+  });
+</script>
+</body>
+</html>

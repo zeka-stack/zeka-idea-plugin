@@ -61,6 +61,7 @@
         <intentionAction>
             <language>JAVA</language>
             <className>dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocIntentionAction</className>
+            <!--suppress PluginXmlCapitalization -->
             <category>IntelliDoc Assistant</category>
             <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
         </intentionAction>

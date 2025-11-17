@@ -10,34 +10,6 @@
     <!-- 在插件页面上显示的供应商名称或组织ID。 -->
     <vendor email="dong4j@gmail.com">dong4j</vendor>
 
-    <!-- 在插件页面和IDE插件管理器中显示的插件描述。
-         可以在 <![CDATA[ ]]> 标签内添加简单的HTML元素（文本格式、段落和列表）。
-         指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-    <description><![CDATA[
-        <h2>IntelliTrace Analyzer</h2>
-        <p>使用 AI 自动分析代码方法调用链和业务流程的 IntelliJ IDEA 插件。</p>
-
-        <h3>功能特性</h3>
-        <ul>
-            <li><b>调用链分析</b>：自动分析方法的调用链（上行和下行）</li>
-            <li><b>上下文提取</b>：提取方法的上下文信息（类、注解、注释等）</li>
-            <li><b>AI 生成说明</b>：通过 AI 生成可视化的调用时序图和业务逻辑说明</li>
-            <li><b>多种 AI 提供商支持</b>：支持通义千问、Ollama、OpenAI 等多种 AI 服务</li>
-        </ul>
-
-        <h3>使用方式</h3>
-        <ul>
-            <li>编辑器右键菜单 → Explain Workflow with AI</li>
-        </ul>
-
-        <h3>配置说明</h3>
-        <p>配置路径：Settings → Tools → IntelliAI Engine</p>
-        <ul>
-            <li>选择 AI 提供商和模型</li>
-            <li>配置 API Key（使用系统级加密存储）</li>
-        </ul>
-    ]]></description>
-
     <!-- 产品和插件兼容性要求。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <idea-version since-build="223" until-build="252.*"/>
@@ -60,12 +32,21 @@
                            displayType="BALLOON"
                            isLogByDefault="true"/>
 
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState"/>
+
+        <!--suppress PluginXmlI18n -->
+        <projectConfigurable
+                parentId="tools"
+                instance="dev.dong4j.zeka.stack.idea.plugin.workflow.settings.TracerSettingsConfigurable"
+                id="dev.dong4j.zeka.stack.idea.plugin.workflow.settings"
+                displayName="IntelliTrace Analyzer"/>
+
         <!-- 工具窗口 -->
         <!--suppress PluginXmlI18n -->
         <toolWindow id="IntelliTrace Analyzer"
                     factoryClass="dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindowFactory"
                     anchor="right"
-                    icon="AllIcons.Toolwindows.Documentation"/>
+                    icon="/icons/pluginIcon_16.svg"/>
     </extensions>
 
     <!-- Markdown 扩展 -->
@@ -82,9 +63,7 @@
     <actions>
         <!-- 编辑器右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowAction"
-                text="%action.explain.workflow"
-                description="%action.explain.workflow.description">
+                class="dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>

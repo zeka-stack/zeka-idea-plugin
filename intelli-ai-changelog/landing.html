@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliChangelog Generator - AI-Powered Changelog & Report Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Mesh Gradient Background */
+        .mesh-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(at 27% 37%, hsla(215, 98%, 61%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 97% 21%, hsla(275, 98%, 61%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 52% 99%, hsla(354, 98%, 61%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 10% 29%, hsla(256, 96%, 67%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 97% 96%, hsla(38, 60%, 74%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 33% 50%, hsla(222, 67%, 73%, 0.12) 0px, transparent 50%),
+            radial-gradient(at 79% 53%, hsla(343, 68%, 79%, 0.12) 0px, transparent 50%);
+            filter: blur(100px);
+        }
+
+        /* Grid Pattern */
+        .grid-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: linear-gradient(rgba(99, 102, 241, 0.03) 1.5px, transparent 1.5px),
+            linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1.5px, transparent 1.5px);
+            background-size: 60px 60px;
+            animation: grid-flow 20s linear infinite;
+        }
+
+        @keyframes grid-flow {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(60px, 60px);
+            }
+        }
+
+        /* Particles */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            padding: 20px 0;
+            backdrop-filter: blur(12px);
+            background: rgba(10, 10, 15, 0.8);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            font-size: 15px;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .lang-switch {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .lang-btn {
+            padding: 6px 12px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .lang-btn:hover:not(.active) {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 72px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+        }
+
+        .hero .subtitle {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 48px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 80px;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Integration Logos */
+        .integrations {
+            margin: 80px 0;
+            position: relative;
+            overflow: hidden;
+            padding: 60px 0;
+        }
+
+        /* Fade edges */
+        .integrations::before,
+        .integrations::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 800px;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .integrations::before {
+            left: 0;
+            background: linear-gradient(to right, #0a0a0f 0%, #0a0a0f 20%, rgba(10, 10, 15, 0.8) 50%, transparent 100%);
+        }
+
+        .integrations::after {
+            right: 0;
+            background: linear-gradient(to left, #0a0a0f 0%, #0a0a0f 20%, rgba(10, 10, 15, 0.8) 50%, transparent 100%);
+        }
+
+        .integration-label {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 48px;
+            font-weight: 600;
+        }
+
+        .logos-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+        }
+
+        .logos-row {
+            display: flex;
+            gap: 32px;
+            width: max-content;
+        }
+
+        .logos-row:nth-child(1) {
+            animation: scroll-left 30s linear infinite;
+        }
+
+        .logos-row:nth-child(2) {
+            animation: scroll-right 25s linear infinite;
+        }
+
+        .logos-row:nth-child(3) {
+            animation: scroll-left 35s linear infinite;
+        }
+
+        .logo-item {
+            padding: 16px 32px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .logo-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: scale(1.05);
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes scroll-left {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        @keyframes scroll-right {
+            0% {
+                transform: translateX(-50%);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            font-size: 13px;
+            color: #a78bfa;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 48px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .section-description {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border: 1px solid rgba(99, 102, 241, 0.15);
+            border-radius: 24px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            font-size: 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card h3 {
+            font-size: 22px;
+            color: white;
+            margin-bottom: 12px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.7;
+            font-size: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 120px 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 80px;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            margin: 0 auto 24px;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .step h3 {
+            font-size: 24px;
+            color: white;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .step p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 120px 0;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 56px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+
+        .cta-section p {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 48px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 80px 0 40px;
+            border-top: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 60px;
+            margin-bottom: 60px;
+        }
+
+        .footer-section h4 {
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 12px;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid rgba(99, 102, 241, 0.1);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .features-grid,
+            .steps,
+            .footer-content,
+            .screenshots-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .feature-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .feature-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        .feature-card:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+
+        .feature-card:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+
+        .feature-card:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+
+        /* Screenshot Section */
+        .screenshots {
+            padding: 120px 0;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .screenshots-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+            margin-top: 60px;
+        }
+
+        .screenshot-card {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s;
+        }
+
+        .screenshot-card:hover {
+            transform: scale(1.02);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+        }
+
+        .screenshot-placeholder {
+            width: 100%;
+            aspect-ratio: 16/10;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .screenshot-caption {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .screenshot-caption h4 {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .screenshot-caption p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<!-- Background Elements -->
+<div class="mesh-gradient"></div>
+<div class="grid-pattern"></div>
+<canvas id="particles-canvas"></canvas>
+
+<!-- Navigation -->
+<nav>
+    <div class="nav-content">
+        <div class="logo">
+            <span>⚡</span>
+            <span>IntelliChangelog</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 24px;">
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="https://github.com/dong4j/zeka-idea-plugin">GitHub</a></li>
+                <li><a href="https://plugins.jetbrains.com/plugin/changelog">Install</a></li>
+            </ul>
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="switchLang('en')">EN</button>
+                <button class="lang-btn" onclick="switchLang('zh')">中文</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <h1 class="fade-in" data-en="AI-Powered Changelog<br>Generator for IntelliJ" data-zh="AI 驱动的智能变更日志生成器">AI-Powered
+            Changelog<br>Generator for IntelliJ</h1>
+        <p class="subtitle fade-in" data-en="Automatically generate professional changelogs, commit messages, daily and weekly reports using AI. Save time and maintain consistency across your team." data-zh="基于 AI 技术，自动生成专业的 Changelog、提交信息、工作日报和周报。节省时间，保持团队一致性。">
+            Automatically generate professional changelogs, commit messages, daily and weekly reports using AI. Save time and maintain
+            consistency across your team.</p>
+        <div class="cta-buttons fade-in">
+            <a href="https://plugins.jetbrains.com/plugin/changelog" class="btn btn-primary" data-en="Get Started Free" data-zh="免费开始使用">Get
+                Started Free</a>
+            <a href="https://github.com/dong4j/zeka-idea-plugin" class="btn btn-secondary" data-en="View on GitHub" data-zh="查看源码">View
+                on GitHub</a>
+        </div>
+    </div>
+</section>
+
+<!-- Integration Logos -->
+<section class="integrations">
+    <div class="container">
+        <div class="integration-label" data-en="Powered by Leading AI Providers" data-zh="支持主流 AI 服务提供商">Powered by Leading AI
+            Providers
+        </div>
+    </div>
+    <div class="logos-container">
+        <div class="logos-row">
+            <div class="logo-item"><span class="logo-icon">🤖</span>OpenAI</div>
+            <div class="logo-item"><span class="logo-icon">💬</span>Claude</div>
+            <div class="logo-item"><span class="logo-icon">☁️</span>Azure AI</div>
+            <div class="logo-item"><span class="logo-icon">✨</span>Gemini</div>
+            <div class="logo-item"><span class="logo-icon">🦙</span>Ollama</div>
+            <div class="logo-item"><span class="logo-icon">🔮</span>DeepSeek</div>
+            <div class="logo-item"><span class="logo-icon">🌟</span>Qwen</div>
+            <div class="logo-item"><span class="logo-icon">⚡</span>Groq</div>
+            <!-- Duplicate for seamless loop -->
+            <div class="logo-item"><span class="logo-icon">🤖</span>OpenAI</div>
+            <div class="logo-item"><span class="logo-icon">💬</span>Claude</div>
+            <div class="logo-item"><span class="logo-icon">☁️</span>Azure AI</div>
+            <div class="logo-item"><span class="logo-icon">✨</span>Gemini</div>
+            <div class="logo-item"><span class="logo-icon">🦙</span>Ollama</div>
+            <div class="logo-item"><span class="logo-icon">🔮</span>DeepSeek</div>
+            <div class="logo-item"><span class="logo-icon">🌟</span>Qwen</div>
+            <div class="logo-item"><span class="logo-icon">⚡</span>Groq</div>
+        </div>
+        <div class="logos-row">
+            <div class="logo-item"><span class="logo-icon">🔷</span>Google AI</div>
+            <div class="logo-item"><span class="logo-icon">🌊</span>Mistral</div>
+            <div class="logo-item"><span class="logo-icon">🎯</span>Cohere</div>
+            <div class="logo-item"><span class="logo-icon">🤗</span>Hugging Face</div>
+            <div class="logo-item"><span class="logo-icon">🎨</span>Anthropic</div>
+            <div class="logo-item"><span class="logo-icon">🌐</span>Perplexity</div>
+            <div class="logo-item"><span class="logo-icon">🚀</span>Together AI</div>
+            <div class="logo-item"><span class="logo-icon">💎</span>Replicate</div>
+            <!-- Duplicate for seamless loop -->
+            <div class="logo-item"><span class="logo-icon">🔷</span>Google AI</div>
+            <div class="logo-item"><span class="logo-icon">🌊</span>Mistral</div>
+            <div class="logo-item"><span class="logo-icon">🎯</span>Cohere</div>
+            <div class="logo-item"><span class="logo-icon">🤗</span>Hugging Face</div>
+            <div class="logo-item"><span class="logo-icon">🎨</span>Anthropic</div>
+            <div class="logo-item"><span class="logo-icon">🌐</span>Perplexity</div>
+            <div class="logo-item"><span class="logo-icon">🚀</span>Together AI</div>
+            <div class="logo-item"><span class="logo-icon">💎</span>Replicate</div>
+        </div>
+        <div class="logos-row">
+            <div class="logo-item"><span class="logo-icon">📦</span>AWS Bedrock</div>
+            <div class="logo-item"><span class="logo-icon">🏔️</span>Vertex AI</div>
+            <div class="logo-item"><span class="logo-icon">🔥</span>Fireworks AI</div>
+            <div class="logo-item"><span class="logo-icon">🌈</span>Stability AI</div>
+            <div class="logo-item"><span class="logo-icon">⭐</span>AI21 Labs</div>
+            <div class="logo-item"><span class="logo-icon">🎪</span>Moonshot</div>
+            <div class="logo-item"><span class="logo-icon">🧠</span>Baidu AI</div>
+            <div class="logo-item"><span class="logo-icon">💫</span>Zhipu AI</div>
+            <!-- Duplicate for seamless loop -->
+            <div class="logo-item"><span class="logo-icon">📦</span>AWS Bedrock</div>
+            <div class="logo-item"><span class="logo-icon">🏔️</span>Vertex AI</div>
+            <div class="logo-item"><span class="logo-icon">🔥</span>Fireworks AI</div>
+            <div class="logo-item"><span class="logo-icon">🌈</span>Stability AI</div>
+            <div class="logo-item"><span class="logo-icon">⭐</span>AI21 Labs</div>
+            <div class="logo-item"><span class="logo-icon">🎪</span>Moonshot</div>
+            <div class="logo-item"><span class="logo-icon">🧠</span>Baidu AI</div>
+            <div class="logo-item"><span class="logo-icon">💫</span>Zhipu AI</div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge" data-en="Features" data-zh="核心功能">Features</span>
+            <h2 class="section-title" data-en="Everything You Need" data-zh="一站式解决方案">Everything You Need</h2>
+            <p class="section-description" data-en="Powerful AI-driven tools to streamline your development workflow" data-zh="强大的 AI 驱动工具，简化您的开发工作流程">
+                Powerful AI-driven tools to streamline your development workflow</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card fade-in">
+                <div class="feature-icon">📝</div>
+                <h3 data-en="Smart Changelog" data-zh="智能变更日志">Smart Changelog</h3>
+                <p data-en="Generate structured changelogs from Git history with AI-powered analysis and formatting" data-zh="基于 Git 提交历史，自动生成结构化的变更日志，支持多种格式">
+                    Generate structured changelogs from Git history with AI-powered analysis and formatting</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">💬</div>
+                <h3 data-en="Commit Messages" data-zh="提交信息生成">Commit Messages</h3>
+                <p data-en="Create standardized commit messages based on code changes and team conventions" data-zh="根据代码变更内容，自动生成规范的 Git 提交信息">
+                    Create standardized commit messages based on code changes and team conventions</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">📊</div>
+                <h3 data-en="Daily Reports" data-zh="工作日报">Daily Reports</h3>
+                <p data-en="Automatically summarize your daily work with detailed progress tracking" data-zh="一键生成每日工作总结，汇总当天的代码提交和工作成果">
+                    Automatically summarize your daily work with detailed progress tracking</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">📈</div>
+                <h3 data-en="Weekly Reports" data-zh="工作周报">Weekly Reports</h3>
+                <p data-en="Generate comprehensive weekly summaries of development activities" data-zh="自动统计一周的开发工作，生成专业的周报文档">
+                    Generate comprehensive weekly summaries of development activities</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">⚙️</div>
+                <h3 data-en="Customizable" data-zh="灵活配置">Customizable</h3>
+                <p data-en="Configure AI models, prompts, and output formats to match your needs" data-zh="支持多种 AI 服务提供商，自定义提示词模板和输出格式">
+                    Configure AI models, prompts, and output formats to match your needs</p>
+            </div>
+            <div class="feature-card fade-in">
+                <div class="feature-icon">🚀</div>
+                <h3 data-en="Quick Actions" data-zh="快捷操作">Quick Actions</h3>
+                <p data-en="Integrated into Git tools with right-click context menu for instant access" data-zh="深度集成 Git 工具窗口，右键即可快速生成文档">
+                    Integrated into Git tools with right-click context menu for instant access</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Screenshots -->
+<section class="screenshots">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge" data-en="Screenshots" data-zh="功能展示">Screenshots</span>
+            <h2 class="section-title" data-en="See It In Action" data-zh="功能预览">See It In Action</h2>
+            <p class="section-description" data-en="Intuitive interface designed for productivity" data-zh="为提高生产力而设计的直观界面">
+                Intuitive interface designed for productivity</p>
+        </div>
+        <div class="screenshots-grid">
+            <div class="screenshot-card">
+                <div class="screenshot-placeholder">🖼️</div>
+                <div class="screenshot-caption">
+                    <h4 data-en="Changelog Generation" data-zh="变更日志生成">Changelog Generation</h4>
+                    <p data-en="AI-powered changelog from Git commits" data-zh="基于 Git 提交自动生成变更日志">AI-powered changelog from Git
+                        commits</p>
+                </div>
+            </div>
+            <div class="screenshot-card">
+                <div class="screenshot-placeholder">🖼️</div>
+                <div class="screenshot-caption">
+                    <h4 data-en="Commit Message Assistant" data-zh="提交信息助手">Commit Message Assistant</h4>
+                    <p data-en="Smart commit message suggestions" data-zh="智能生成提交信息建议">Smart commit message suggestions</p>
+                </div>
+            </div>
+            <div class="screenshot-card">
+                <div class="screenshot-placeholder">🖼️</div>
+                <div class="screenshot-caption">
+                    <h4 data-en="Daily Report" data-zh="工作日报">Daily Report</h4>
+                    <p data-en="Automated daily work summaries" data-zh="自动生成每日工作总结">Automated daily work summaries</p>
+                </div>
+            </div>
+            <div class="screenshot-card">
+                <div class="screenshot-placeholder">🖼️</div>
+                <div class="screenshot-caption">
+                    <h4 data-en="Settings Panel" data-zh="设置面板">Settings Panel</h4>
+                    <p data-en="Flexible configuration options" data-zh="灵活的配置选项">Flexible configuration options</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works" class="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-badge" data-en="How It Works" data-zh="使用指南">How It Works</span>
+            <h2 class="section-title" data-en="Get Started in Minutes" data-zh="三步即可开始使用">Get Started in Minutes</h2>
+            <p class="section-description" data-en="Simple setup, powerful results" data-zh="简单设置，强大功能">Simple setup, powerful
+                results</p>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3 data-en="Install Plugin" data-zh="安装插件">Install Plugin</h3>
+                <p data-en="Search for IntelliChangelog Generator in JetBrains Marketplace and install" data-zh="在 IntelliJ IDEA 插件市场搜索并安装 IntelliChangelog Generator">
+                    Search for IntelliChangelog Generator in JetBrains Marketplace and install</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3 data-en="Configure AI" data-zh="配置 AI 服务">Configure AI</h3>
+                <p data-en="Connect your preferred AI provider (OpenAI, Claude, etc.) in settings" data-zh="在设置中配置您喜欢的 AI 服务提供商（OpenAI、Claude 等）">
+                    Connect your preferred AI provider (OpenAI, Claude, etc.) in settings</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3 data-en="Generate" data-zh="开始使用">Generate</h3>
+                <p data-en="Right-click in Git log or commit panel to generate documentation instantly" data-zh="在 Git 日志或提交面板右键选择对应功能，AI 将自动生成文档">
+                    Right-click in Git log or commit panel to generate documentation instantly</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <h2 data-en="Ready to Automate Your Documentation?" data-zh="准备好提升效率了吗？">Ready to Automate Your Documentation?</h2>
+        <p data-en="Join developers who save hours every week with AI-powered changelog generation" data-zh="加入数千名开发者，让 AI 成为您的文档助手，每周节省数小时">
+            Join developers who save hours every week with AI-powered changelog generation</p>
+        <div class="cta-buttons">
+            <a href="https://plugins.jetbrains.com/plugin/changelog" class="btn btn-primary" data-en="Install Now - It's Free" data-zh="立即安装 - 完全免费">Install
+                Now - It's Free</a>
+            <a href="https://github.com/dong4j/zeka-idea-plugin" class="btn btn-secondary" data-en="View Documentation" data-zh="查看文档">View
+                Documentation</a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4 data-en="Product" data-zh="产品">Product</h4>
+                <ul>
+                    <li><a href="#features" data-en="Features" data-zh="功能特性">Features</a></li>
+                    <li><a href="#how-it-works" data-en="How It Works" data-zh="使用指南">How It Works</a></li>
+                    <li><a href="https://plugins.jetbrains.com/plugin/changelog" data-en="Download" data-zh="下载">Download</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 data-en="Resources" data-zh="资源">Resources</h4>
+                <ul>
+                    <li>
+                        <a href="https://github.com/dong4j/zeka-idea-plugin/blob/main/intelli-ai-changelog/README.md" data-en="Documentation" data-zh="文档">Documentation</a>
+                    </li>
+                    <li>
+                        <a href="https://github.com/dong4j/zeka-idea-plugin/blob/main/intelli-ai-changelog/QUICK_START.md" data-en="Quick Start" data-zh="快速开始">Quick
+                            Start</a></li>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin/issues" data-en="Support" data-zh="支持">Support</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 data-en="Community" data-zh="社区">Community</h4>
+                <ul>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin">GitHub</a></li>
+                    <li><a href="https://github.com/dong4j/zeka-idea-plugin/issues" data-en="Issues" data-zh="问题反馈">Issues</a></li>
+                    <li>
+                        <a href="https://github.com/dong4j/zeka-idea-plugin/discussions" data-en="Discussions" data-zh="讨论">Discussions</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4 data-en="More Plugins" data-zh="更多插件">More Plugins</h4>
+                <ul>
+                    <li><a href="#">IntelliAI Engine</a></li>
+                    <li><a href="#">IntelliAI JavaDoc</a></li>
+                    <li><a href="#">IntelliAI Tracer</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p data-en="&copy; 2024 IntelliChangelog Generator. MIT Licensed. Built by" data-zh="&copy; 2024 IntelliChangelog Generator. MIT 许可证. 作者">
+                &copy; 2024 IntelliChangelog Generator. MIT Licensed. Built by <a href="https://github.com/dong4j" style="color: #a78bfa;">dong4j</a>
+            </p>
+        </div>
+    </div>
+</footer>
+
+<script>
+  // Particle System
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animationFrameId;
+
+  // Set canvas size
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Particle class
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = Math.random() * 0.5 - 0.25;
+      this.speedY = Math.random() * 0.5 - 0.25;
+      this.opacity = Math.random() * 0.5 + 0.2;
+    }
+
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+
+      // Wrap around screen
+      if (this.x > canvas.width) {
+        this.x = 0;
+      }
+      if (this.x < 0) {
+        this.x = canvas.width;
+      }
+      if (this.y > canvas.height) {
+        this.y = 0;
+      }
+      if (this.y < 0) {
+        this.y = canvas.height;
+      }
+    }
+
+    draw() {
+      ctx.fillStyle = `rgba(167, 139, 250, ${this.opacity})`;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Create particles
+  function initParticles() {
+    particles = [];
+    const particleCount = Math.floor((
+                                         canvas.width * canvas.height) / 15000);
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+  }
+
+  // Connect nearby particles
+  function connectParticles() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 120) {
+          const opacity = (
+                              1 - distance / 120) * 0.2;
+          ctx.strokeStyle = `rgba(99, 102, 241, ${opacity})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Animation loop
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach(particle => {
+      particle.update();
+      particle.draw();
+    });
+
+    connectParticles();
+    animationFrameId = requestAnimationFrame(animate);
+  }
+
+  // Initialize
+  initParticles();
+  animate();
+
+  // Reinitialize on resize
+  window.addEventListener('resize', () => {
+    initParticles();
+  });
+
+  // Language Switch
+  let currentLang = 'en';
+
+  function switchLang(lang) {
+    currentLang = lang;
+
+    // Update button states
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Update content
+    document.querySelectorAll('[data-en]').forEach(el => {
+      const text = el.getAttribute(`data-${lang}`);
+      if (text) {
+        if (el.tagName === 'A' || el.tagName === 'BUTTON') {
+          el.textContent = text;
+        } else {
+          el.innerHTML = text;
+        }
+      }
+    });
+  }
+
+  // Intersection Observer for fade-in animations
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -100px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, observerOptions);
+
+  document.querySelectorAll('.fade-in').forEach(el => {
+    observer.observe(el);
+  });
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({behavior: 'smooth'});
+      }
+    });
+  });
+</script>
+</body>
+</html>
