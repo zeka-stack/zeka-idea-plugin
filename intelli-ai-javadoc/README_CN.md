@@ -1,10 +1,10 @@
-# IntelliJ IntelliDoc Assistant 插件
+# IntelliJ IntelliAI JavaDoc 插件
 
 **中文** | [English](./README.md) | [📄 精美 Landing Page](./index.html)
 
 > 🌟 [查看精美的推广页面](./index.html) - 更直观地了解插件功能！
 
-IntelliJ IntelliDoc Assistant 插件是一个功能强大的工具，利用人工智能为您的 Java 代码生成 JavaDoc 注释。它支持多种 AI 服务提供商，包括通义千问和
+IntelliJ IntelliAI JavaDoc 插件是一个功能强大的工具，利用人工智能为您的 Java 代码生成 JavaDoc 注释。它支持多种 AI 服务提供商，包括通义千问和
 Ollama
 本地模型，提供智能且上下文感知的文档建议，适用于方法、类和接口。
 
@@ -26,7 +26,7 @@ Ollama
 2. 进入 **Settings**（macOS 上为 Preferences）→ **Plugins**。
 3. 点击 **Marketplace** 标签。
 4. 在搜索栏中搜索"AIJavadoc"。
-5. 点击 IntelliJ IntelliDoc Assistant 插件旁边的 **Install**。
+5. 点击 IntelliJ IntelliAI JavaDoc 插件旁边的 **Install**。
 6. 重启 IntelliJ IDEA 以激活插件。
 
 ## 使用方法
@@ -68,7 +68,7 @@ Ollama
 
 1. 访问 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/) 注册账户
 2. 获取 API Key
-3. 在 IntelliJ IDEA 中进入 **Settings** → **Tools** → **IntelliDoc Assistant**
+3. 在 IntelliJ IDEA 中进入 **Settings** → **Tools** → **IntelliAI JavaDoc**
 4. 选择 **AI Provider** 为 "qianwen"
 5. 输入您的 **API Key**
 6. **Base URL** 使用默认值：`https://dashscope.aliyuncs.com/compatible-mode/v1`
@@ -157,7 +157,7 @@ Ollama 支持在本地运行开源大语言模型，数据完全私有，无需 
 
 ## 贡献
 
-欢迎为 IntelliJ IntelliDoc Assistant 插件做出贡献！如果您遇到任何错误、有功能请求或想要贡献代码改进，请在 GitHub 仓库上提交问题或拉取请求。
+欢迎为 IntelliJ IntelliAI JavaDoc 插件做出贡献！如果您遇到任何错误、有功能请求或想要贡献代码改进，请在 GitHub 仓库上提交问题或拉取请求。
 
 ## 作者
 

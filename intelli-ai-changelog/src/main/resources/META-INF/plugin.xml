@@ -5,7 +5,7 @@
 
     <!-- 公共插件名称应使用标题大小写书写。
          指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
-    <name>IntelliChangelog Generator</name>
+    <name>IntelliAI Changelog</name>
 
     <!-- 在插件页面上显示的供应商名称或组织ID。 -->
     <vendor email="dong4j@gmail.com">dong4j</vendor>
@@ -34,11 +34,11 @@
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
-                displayName="IntelliChangelog Generator"/>
+                displayName="IntelliAI Changelog"/>
 
         <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
         <!--suppress PluginXmlI18n -->
-        <notificationGroup id="IntelliChangelog Generator Notifications"
+        <notificationGroup id="IntelliAI Changelog Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
     </extensions>

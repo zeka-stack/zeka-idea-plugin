@@ -1,6 +1,6 @@
 # IntelliJ IDEA Plugin 开发完整指南
 
-本文档基于 IntelliJ IntelliDoc Assistant 项目，详细介绍 IntelliJ IDEA 插件的开发流程、核心概念、最佳实践和常见问题。
+本文档基于 IntelliJ IntelliAI JavaDoc 项目，详细介绍 IntelliJ IDEA 插件的开发流程、核心概念、最佳实践和常见问题。
 
 ## 目录
 

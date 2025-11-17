@@ -1,6 +1,6 @@
 # IntelliJ IDEA 插件开发模板
 
-基于 IntelliDoc Assistant 插件项目抽离的完整 IntelliJ IDEA 插件开发模板。
+基于 IntelliAI JavaDoc 插件项目抽离的完整 IntelliJ IDEA 插件开发模板。
 
 ## 功能特性
 

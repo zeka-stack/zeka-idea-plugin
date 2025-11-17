@@ -1,6 +1,6 @@
-# IntelliJ IntelliDoc Assistant 插件文档
+# IntelliJ IntelliAI JavaDoc 插件文档
 
-欢迎使用 IntelliJ IntelliDoc Assistant 插件文档！
+欢迎使用 IntelliJ IntelliAI JavaDoc 插件文档！
 
 ## 📚 文档导航
 

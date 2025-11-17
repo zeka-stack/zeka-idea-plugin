@@ -11,7 +11,7 @@ import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * IntelliDoc Assistant Console 工具窗口工厂
+ * IntelliAI JavaDoc Console 工具窗口工厂
  * <p>
  * 负责创建和初始化 Console 工具窗口，在 IDE 底部显示 AI 接口的请求和响应日志。
  *

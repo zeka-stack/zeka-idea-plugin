@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.Icon;
 
 /**
- * IntelliDoc Assistant 插件图标管理类
+ * IntelliAI JavaDoc 插件图标管理类
  * <p>
  * 用于集中管理插件中使用的所有图标资源。
  * 图标文件应放置在 {@code src/main/resources/icons/} 目录下。
@@ -40,7 +40,7 @@ public class AIJicons {
     // ========== 16x16 图标 - 用于 Toolbar/Action/Menu/ToolWindow ==========
 
     /**
-     * IntelliDoc Assistant 主图标 (16x16)
+     * IntelliAI JavaDoc 主图标 (16x16)
      * <p>
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */

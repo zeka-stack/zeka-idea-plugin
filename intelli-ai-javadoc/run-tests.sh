@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# IntelliJ IntelliDoc Assistant 插件 - 测试运行脚本
+# IntelliJ IntelliAI JavaDoc 插件 - 测试运行脚本
 # 此脚本用于运行所有单元测试
 
 set -e
 
 echo "========================================"
-echo "IntelliJ IntelliDoc Assistant Plugin - 测试运行"
+echo "IntelliJ IntelliAI JavaDoc Plugin - 测试运行"
 echo "========================================"
 echo ""
 

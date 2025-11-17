@@ -1389,7 +1389,7 @@ public class TaskExecutor {
                     }
                 }),
                 "Insert JavaDoc",
-                "IntelliDoc Assistant"
+                "IntelliAI JavaDoc"
                                                          );
         });
     }

@@ -74,7 +74,7 @@ public class TokenCounterDemo {
         System.out.println("【示例 3】中英文混合");
         System.out.println("--------------------------------------------------");
 
-        String text = "IntelliDoc Assistant 是一个使用 AI 生成 JavaDoc 的插件。\n" +
+        String text = "IntelliAI JavaDoc 是一个使用 AI 生成 JavaDoc 的插件。\n" +
                       "It supports multiple AI providers including QianWen and Ollama.\n" +
                       "支持多种 AI 服务提供商，包括通义千问和本地 Ollama 模型。";
 

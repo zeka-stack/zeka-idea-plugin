@@ -10,7 +10,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 
 /**
- * IntelliDoc Assistant 控制台日志提供者
+ * IntelliAI JavaDoc 控制台日志提供者
  * <p>
  * 实现 AIConsoleLoggerProvider 接口，为 intelli-ai-engine 提供控制台日志记录器。
  * 将 JavaDocConsoleView 作为控制台日志记录器返回。

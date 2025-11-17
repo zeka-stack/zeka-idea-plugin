@@ -573,7 +573,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * IntelliDoc Assistant 的流式响应监听器实现
+ * IntelliAI JavaDoc 的流式响应监听器实现
  * <p>
  * 将流式响应实时输出到 Console。
  */

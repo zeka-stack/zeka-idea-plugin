@@ -23,7 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * IntelliDoc Assistant Console 视图
+ * IntelliAI JavaDoc Console 视图
  * <p>
  * 用于在 IDE 底部工具窗口中显示 AI 接口的请求参数和响应结果。
  * 所有日志输出方法都受 verboseLogging 配置控制，只有启用时才会输出。
@@ -46,7 +46,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 public final class JavaDocConsoleView implements Disposable, AIConsoleLogger {
 
     /** 工具窗口 ID */
-    public static final String TOOL_WINDOW_ID = "IntelliDoc Assistant Console";
+    public static final String TOOL_WINDOW_ID = "IntelliAI JavaDoc Console";
 
     /** 时间格式：yyyy.MM.dd HH:mm:ss */
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss");

@@ -9,7 +9,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 
 /**
- * IntelliDoc Assistant 的 AI 响应监听器实现
+ * IntelliAI JavaDoc 的 AI 响应监听器实现
  * <p>
  * 将 AI 响应事件转换为控制台日志输出
  */

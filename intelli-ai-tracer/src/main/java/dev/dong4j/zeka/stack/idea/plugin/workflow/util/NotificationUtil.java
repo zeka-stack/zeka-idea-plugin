@@ -19,7 +19,7 @@ public class NotificationUtil {
     /**
      * 通知分组的 ID
      */
-    public static final String NOTIFICATION_GROUP_ID = "IntelliTrace Analyzer Notifications";
+    public static final String NOTIFICATION_GROUP_ID = "IntelliAI Tracer Notifications";
 
     /**
      * 获取指定 ID 的通知组
@@ -38,7 +38,7 @@ public class NotificationUtil {
      * @param message 通知内容
      */
     public static void showInfo(@Nullable Project project, @NotNull String message) {
-        notify(project, "IntelliTrace Analyzer", message, NotificationType.INFORMATION);
+        notify(project, "IntelliAI Tracer", message, NotificationType.INFORMATION);
     }
 
     /**
@@ -48,7 +48,7 @@ public class NotificationUtil {
      * @param message 通知内容
      */
     public static void showWarning(@Nullable Project project, @NotNull String message) {
-        notify(project, "IntelliTrace Analyzer", message, NotificationType.WARNING);
+        notify(project, "IntelliAI Tracer", message, NotificationType.WARNING);
     }
 
     /**
@@ -58,7 +58,7 @@ public class NotificationUtil {
      * @param message 通知内容
      */
     public static void showError(@Nullable Project project, @NotNull String message) {
-        notify(project, "IntelliTrace Analyzer", message, NotificationType.ERROR);
+        notify(project, "IntelliAI Tracer", message, NotificationType.ERROR);
     }
 
     /**

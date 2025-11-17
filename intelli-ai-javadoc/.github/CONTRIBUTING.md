@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢您对 IntelliJ IntelliDoc Assistant 插件项目的关注！
+感谢您对 IntelliJ IntelliAI JavaDoc 插件项目的关注！
 
 ## 🚀 快速开始
 

@@ -21,7 +21,7 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * IntelliDoc Assistant 插件设置面板
+ * IntelliAI JavaDoc 插件设置面板
  *
  * <p>提供用户界面来配置插件的各项设置，包括：
  * <ul>
@@ -33,7 +33,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
  *   <li>Prompt 模板配置</li>
  * </ul>
  *
- * <p>配置界面位于：Settings → Tools → IntelliDoc Assistant
+ * <p>配置界面位于：Settings → Tools → IntelliAI JavaDoc
  *
  * <p>实现 IntelliJ Platform 的 Configurable 接口，
  * 提供标准的设置面板功能：创建组件、检查修改、应用配置、重置配置等。
@@ -85,7 +85,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      * <p>返回在设置界面中显示的面板名称。
      * 使用国际化资源文件获取名称，支持多语言。
      *
-     * <p>显示位置：Settings → Tools → IntelliDoc Assistant
+     * <p>显示位置：Settings → Tools → IntelliAI JavaDoc
      *
      * @return 显示名称
      * @see JavaDocBundle#message(String, Object...))

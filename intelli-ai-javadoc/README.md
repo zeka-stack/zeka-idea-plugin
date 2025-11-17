@@ -1,11 +1,11 @@
-# IntelliJ IntelliDoc Assistant Plugin
+# IntelliJ IntelliAI JavaDoc Plugin
 
 [中文](./README_CN.md) | **English** | [📄 Beautiful Landing Page](./index.html)
 
 > 🌟 [View our beautiful landing page](./index.html) - Get an intuitive overview of plugin features!
 
 
-The IntelliJ IntelliDoc Assistant Plugin is a powerful tool that utilizes artificial intelligence to generate JavaDoc comments for your Java
+The IntelliJ IntelliAI JavaDoc Plugin is a powerful tool that utilizes artificial intelligence to generate JavaDoc comments for your Java
 code. It
 supports multiple AI service providers including QianWen (Alibaba Cloud) and Ollama local models, providing intelligent and context-aware
 suggestions for documenting your methods, classes, and interfaces.
@@ -29,7 +29,7 @@ suggestions for documenting your methods, classes, and interfaces.
 2. Go to **Settings** (Preferences on macOS) -> **Plugins**.
 3. Click on the **Marketplace** tab.
 4. Search for "AIJavadoc" in the search bar.
-5. Click **Install** next to the IntelliJ IntelliDoc Assistant Plugin.
+5. Click **Install** next to the IntelliJ IntelliAI JavaDoc Plugin.
 6. Restart IntelliJ IDEA to activate the plugin.
 
 ## Usage
@@ -72,7 +72,7 @@ documentation generation.
 
 1. Visit [Alibaba Cloud DashScope Console](https://dashscope.console.aliyun.com/) to register an account
 2. Get your API Key
-3. In IntelliJ IDEA, go to **Settings** → **Tools** → **IntelliDoc Assistant**
+3. In IntelliJ IDEA, go to **Settings** → **Tools** → **IntelliAI JavaDoc**
 4. Select **AI Provider** as "qianwen"
 5. Enter your **API Key**
 6. Use default **Base URL**: `https://dashscope.aliyuncs.com/compatible-mode/v1`
@@ -163,7 +163,7 @@ In the settings panel, you can also configure:
 
 ## Contributing
 
-Contributions to the IntelliJ IntelliDoc Assistant Plugin are welcome! If you encounter any bugs, have feature requests, or would like to
+Contributions to the IntelliJ IntelliAI JavaDoc Plugin are welcome! If you encounter any bugs, have feature requests, or would like to
 contribute
 code improvements, please submit an issue or pull request on the GitHub repository.
 

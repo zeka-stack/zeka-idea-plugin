@@ -1,7 +1,7 @@
 {
   "name": "intelli-ai-javadoc-docs",
   "version": "1.0.0",
-  "description": "IntelliJ IntelliDoc Assistant 插件文档",
+  "description": "IntelliJ IntelliAI JavaDoc 插件文档",
   "scripts": {
     "dev": "docsify serve .",
     "start": "docsify serve ."

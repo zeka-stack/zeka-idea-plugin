@@ -34,7 +34,7 @@ import javax.swing.JPanel;
  *   <li>支持 Mermaid 图表渲染（如果安装了 Mermaid 插件）</li>
  * </ul>
  * <p>
- * 文件持久化到 Scratches and Consoles 的"扩展/IntelliTrace Analyzer"目录。
+ * 文件持久化到 Scratches and Consoles 的"扩展/IntelliAI Tracer"目录。
  * <p>
  * 项目级别服务，每个项目独立的工具窗口实例。
  *
@@ -45,7 +45,7 @@ import javax.swing.JPanel;
 public final class WorkflowResultToolWindow {
 
     /** 工具窗口 ID */
-    public static final String TOOL_WINDOW_ID = "IntelliTrace Analyzer";
+    public static final String TOOL_WINDOW_ID = "IntelliAI Tracer";
 
     /** 主面板 */
     private JPanel mainPanel;
@@ -91,7 +91,7 @@ public final class WorkflowResultToolWindow {
      * 创建 scratch 文件并写入初始内容（阶段1：元数据）
      * <p>
      * 在调用 AI 之前调用，写入元数据（代码链接、文件链接、JSON 数据）。
-     * 文件会持久化到 Scratches and Consoles 的"扩展/IntelliTrace Analyzer"目录。
+     * 文件会持久化到 Scratches and Consoles 的"扩展/IntelliAI Tracer"目录。
      *
      * @param metadata Markdown 元数据内容
      * @param fileName 文件名（基于方法签名）

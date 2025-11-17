@@ -749,7 +749,7 @@ public void apply() throws ConfigurationException {
 
 ### 使用方法
 
-1. 打开设置页面：`Settings` → `Tools` → `IntelliDoc Assistant`
+1. 打开设置页面：`Settings` → `Tools` → `IntelliAI JavaDoc`
 2. 勾选"自定义 JavaDoc 标签"复选框
 3. 点击"+"按钮添加新标签
 4. 输入标签名称（不包含 @ 符号）

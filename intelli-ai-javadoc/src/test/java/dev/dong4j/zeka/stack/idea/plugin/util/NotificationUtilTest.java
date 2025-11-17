@@ -335,7 +335,7 @@ public class NotificationUtilTest {
             NotificationUtil.notifyNoTask(mockProject, "没有需要生成文档的元素");
 
             verify(mockNotificationGroup).createNotification(
-                eq("IntelliDoc Assistant"),
+                eq("IntelliAI JavaDoc"),
                 eq("没有需要生成文档的元素"),
                 eq(NotificationType.INFORMATION)
                                                             );
@@ -366,7 +366,7 @@ public class NotificationUtilTest {
             NotificationUtil.notifyErrorMessage(mockProject, "API 调用失败");
 
             verify(mockNotificationGroup).createNotification(
-                eq("IntelliDoc Assistant - 错误"),
+                eq("IntelliAI JavaDoc - 错误"),
                 eq("API 调用失败"),
                 eq(NotificationType.ERROR)
                                                             );
@@ -399,7 +399,7 @@ public class NotificationUtilTest {
             ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
 
             verify(mockNotificationGroup).createNotification(
-                eq("IntelliDoc Assistant"),
+                eq("IntelliAI JavaDoc"),
                 contentCaptor.capture(),
                 eq(NotificationType.WARNING)
                                                             );

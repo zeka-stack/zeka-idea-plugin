@@ -30,7 +30,7 @@ public class NotificationUtil {
      * <p>
      * 用于标识一组与 JavaDoc 生成相关的通知
      */
-    public static final String NOTIFICATION_GROUP_ID = "IntelliDoc Assistant Notifications";
+    public static final String NOTIFICATION_GROUP_ID = "IntelliAI JavaDoc Notifications";
 
     /**
      * 获取指定 ID 的通知组
@@ -196,7 +196,7 @@ public class NotificationUtil {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
                 // 打开设置面板
-                ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliDoc Assistant");
+                ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliAI JavaDoc");
                 notification.expire();
             }
         });

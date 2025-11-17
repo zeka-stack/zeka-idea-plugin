@@ -1,4 +1,4 @@
-# IntelliChangelog Generator 插件开发计划
+# IntelliAI Changelog 插件开发计划
 
 ## 功能计划
 

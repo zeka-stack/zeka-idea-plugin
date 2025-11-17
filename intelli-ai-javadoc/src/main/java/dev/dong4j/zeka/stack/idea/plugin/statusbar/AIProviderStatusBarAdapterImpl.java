@@ -154,7 +154,7 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
     @Override
     @NotNull
     public String getNotificationGroupId() {
-        return "IntelliDoc Assistant Notifications";
+        return "IntelliAI JavaDoc Notifications";
     }
 
     /**
@@ -167,7 +167,7 @@ public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapte
      */
     @Override
     public void openSettingsPanel(@NotNull Project project) {
-        ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliDoc Assistant");
+        ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliAI JavaDoc");
     }
 
     /**

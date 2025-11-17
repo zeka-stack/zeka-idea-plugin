@@ -25,7 +25,7 @@ public class NotificationUtil {
      * <p>
      * 用于标识一组与插件相关的通知
      */
-    public static final String NOTIFICATION_GROUP_ID = "IntelliChangelog Generator Notifications";
+    public static final String NOTIFICATION_GROUP_ID = "IntelliAI Changelog Notifications";
 
     /**
      * 获取指定 ID 的通知组
@@ -88,7 +88,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void showInfo(@Nullable Project project, @NotNull String message) {
-        notify(project, "IntelliChangelog Generator", message, NotificationType.INFORMATION);
+        notify(project, "IntelliAI Changelog", message, NotificationType.INFORMATION);
     }
 
     /**
@@ -100,7 +100,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void showWarning(@Nullable Project project, @NotNull String message) {
-        notify(project, "IntelliChangelog Generator", message, NotificationType.WARNING);
+        notify(project, "IntelliAI Changelog", message, NotificationType.WARNING);
     }
 
     /**
@@ -112,7 +112,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void showError(@Nullable Project project, @NotNull String message) {
-        notify(project, "IntelliChangelog Generator", message, NotificationType.ERROR);
+        notify(project, "IntelliAI Changelog", message, NotificationType.ERROR);
     }
 
     /**

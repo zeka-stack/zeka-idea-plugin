@@ -142,7 +142,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     // ==================== PasswordSafe 相关常量 ====================
 
     /** PasswordSafe 服务名称 */
-    private static final String PASSWORD_SAFE_SERVICE_NAME = "IntelliDoc Assistant";
+    private static final String PASSWORD_SAFE_SERVICE_NAME = "IntelliAI JavaDoc";
 
     /** PasswordSafe 默认服务商的存储键名 */
     private static final String PASSWORD_SAFE_KEY_DEFAULT = "AI_JAVADOC_API_KEY_DEFAULT";
