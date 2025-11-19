@@ -103,8 +103,8 @@ public class NacosClient {
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
-        params.put("show", "all");
-        params.put("namespaceId", "");
+        // params.put("show", "all");
+        params.put("namespaceId", "xxx");
 
         HttpRestResult<String> result = httpAgent.httpGet("/v1/console/namespaces", headers, params);
 

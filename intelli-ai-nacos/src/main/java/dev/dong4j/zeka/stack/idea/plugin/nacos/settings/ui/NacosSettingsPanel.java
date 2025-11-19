@@ -22,7 +22,12 @@ import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.Desktop;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -87,6 +92,9 @@ public class NacosSettingsPanel {
     /** 访问链接 */
     private final HyperlinkLabel localStatusLink;
 
+    /** 打开本地目录按钮 */
+    private final JButton openLocalDirButton;
+
     /** 是否处于本地 Nacos 操作中 */
     private boolean localOperationInProgress = false;
 
@@ -118,6 +126,8 @@ public class NacosSettingsPanel {
             "");
         localStatusLink.setToolTipText(LocalRegistryConstants.NACOS_TEST_URL);
         localStatusLink.addHyperlinkListener(e -> BrowserUtil.browse(LocalRegistryConstants.NACOS_TEST_URL));
+        openLocalDirButton = new JButton(NacosBundle.message("settings.nacos.local.open.dir"));
+        openLocalDirButton.addActionListener(e -> openLocalNacosDir());
 
         startLocalButton.setEnabled(false);
         stopLocalButton.setEnabled(false);
@@ -134,12 +144,13 @@ public class NacosSettingsPanel {
         SettingsState settings = SettingsState.getInstance();
         localRegistryCheckBox.setSelected(settings.useLocalRegistry);
 
+        JPanel localStatusPanel = buildLocalStatusPanel();
+
         FormBuilder builder = FormBuilder.createFormBuilder()
             .addComponent(new TitledSeparator(NacosBundle.message("settings.nacos.local.section")))
             .addComponent(localRegistryCheckBox)
             .addComponent(localActionsPanel)
-            .addComponent(localStatusIndicator)
-            .addComponent(localStatusLink)
+            .addComponent(localStatusPanel)
             .addSeparator(12)
             .addComponent(new TitledSeparator(NacosBundle.message("settings.nacos.custom.section")))
             .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.server.addr") + ":"), serverAddrField)
@@ -179,6 +190,7 @@ public class NacosSettingsPanel {
         });
         startLocalButton.addActionListener(e -> startLocalNacos());
         stopLocalButton.addActionListener(e -> stopLocalNacos());
+        openLocalDirButton.addActionListener(e -> openLocalNacosDir());
     }
 
     /**
@@ -307,6 +319,7 @@ public class NacosSettingsPanel {
         localRegistryCheckBox.setEnabled(!localOperationInProgress);
         startLocalButton.setEnabled(controlsEnabled);
         stopLocalButton.setEnabled(controlsEnabled);
+        openLocalDirButton.setEnabled(controlsEnabled && localRegistryRunning);
 
         serverAddrField.setEnabled(remoteEnabled);
         usernameField.setEnabled(remoteEnabled);
@@ -408,10 +421,42 @@ public class NacosSettingsPanel {
             localStatusIndicator.setText(NacosBundle.message("settings.nacos.local.status.running"));
             localStatusIndicator.setForeground(JBColor.GREEN);
             localStatusLink.setVisible(true);
+            openLocalDirButton.setEnabled(true);
         } else {
             localStatusIndicator.setText(NacosBundle.message("settings.nacos.local.status.stopped"));
             localStatusIndicator.setForeground(JBColor.RED);
             localStatusLink.setVisible(false);
+            openLocalDirButton.setEnabled(false);
+        }
+    }
+
+    private JPanel buildLocalStatusPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = JBUI.insets(0, 0, JBUI.scale(4), JBUI.scale(8));
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.gridx = 0;
+        panel.add(localStatusIndicator, gbc);
+        gbc.gridx = 1;
+        panel.add(localStatusLink, gbc);
+        gbc.gridx = 2;
+        panel.add(openLocalDirButton, gbc);
+        return panel;
+    }
+
+    private void openLocalNacosDir() {
+        String path = LocalRegistryConstants.NACOS_DIR;
+        try {
+            File dir = new File(path);
+            if (!dir.exists()) {
+                NotificationUtil.showWarning(null, NacosBundle.message("notification.local.nacos.open.dir.missing", path));
+                return;
+            }
+            Desktop.getDesktop().open(dir);
+        } catch (Exception ex) {
+            NotificationUtil.showError(null, NacosBundle.message("notification.local.nacos.open.dir.failed", ex.getMessage()));
+            LOG.warn("Failed to open local Nacos directory", ex);
         }
     }
 }

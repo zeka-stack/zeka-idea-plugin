@@ -4,8 +4,11 @@
         <li>新增 设置页本地 Nacos 注册中心启停，支持自动下载、启动、停止和通知反馈</li>
         <li>新增 LocalNacosService 服务封装异步生命周期管理</li>
         <li>新增 本地 Nacos 状态指示与可点击控制台链接，实时显示运行/停止状态</li>
+        <li>新增 一键打开本地 Nacos 目录按钮，快速定位安装路径</li>
+        <li>新增 IDE 关闭监听，自动停止本地 Nacos，避免遗留进程</li>
         <li>优化 勾选/取消使用本地注册中心时的行为：可同时配置自建地址并在取消时自动停服</li>
         <li>优化 Nacos 连接测试，用户名/密码可选填</li>
+        <li>移除 EDAS 轻量级注册中心相关逻辑，统一只保留 Nacos 模式</li>
         <li>修复 本地 Nacos 启动前端口校验固定检查轻量级端口的问题</li>
     </ul>
     <h3>v1.2.0</h3>
@@ -13,8 +16,11 @@
         <li>Added local Nacos toggle in settings with auto download/start/stop notifications</li>
         <li>Added LocalNacosService to encapsulate async lifecycle management</li>
         <li>Added status indicator + console hyperlink to visualize local Nacos health</li>
+        <li>Added quick action to open the local Nacos directory from settings</li>
+        <li>Added AppLifecycle listener to stop local Nacos when IDE exits</li>
         <li>Improved toggle logic: coexisting with custom registry settings and auto-stop on disable</li>
         <li>Relaxed connection validation so username/password become optional</li>
+        <li>Removed legacy EDAS lightweight registry code so only Nacos remains</li>
         <li>Fixed port detection to respect Nacos-specific ports before launch</li>
     </ul>
 
