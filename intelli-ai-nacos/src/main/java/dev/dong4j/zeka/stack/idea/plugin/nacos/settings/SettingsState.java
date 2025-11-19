@@ -8,6 +8,7 @@ import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.util.xmlb.XmlSerializerUtil;
+import com.intellij.util.xmlb.annotations.Transient;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +62,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean isAuthed = false;
 
     /**
+     * 是否启用本地 Nacos 注册中心
+     * <p>
+     * 勾选后优先使用本地内置注册中心
+     */
+    public boolean useLocalRegistry = false;
+
+    /**
      * 获取 SettingsState 的单例实例
      *
      * @return SettingsState 的实例
@@ -81,9 +89,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     /**
      * 获取密码
+     * <p>
+     * 注意：密码通过 PasswordSafe 安全存储，不会序列化到配置文件中
      *
      * @return 密码
      */
+    @Transient
     public String getPassword() {
         CredentialAttributes credentialAttributes = createCredentialAttributes();
         Credentials credentials = PasswordSafe.getInstance().get(credentialAttributes);
@@ -92,9 +103,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     /**
      * 设置密码
+     * <p>
+     * 注意：密码通过 PasswordSafe 安全存储，不会序列化到配置文件中
      *
      * @param password 密码
      */
+    @Transient
     public void setPassword(String password) {
         CredentialAttributes credentialAttributes = createCredentialAttributes();
         Credentials credentials = new Credentials(username, password);

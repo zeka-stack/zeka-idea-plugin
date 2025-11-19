@@ -7,7 +7,13 @@ import com.intellij.psi.PsiFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.CompareConfigService;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.ConfigDialogUtil;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 
 /**
  * 对比配置意图 Action
@@ -30,20 +36,42 @@ public class CompareConfigIntentionAction implements IntentionAction {
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile psiFile) {
-        return project != null && editor != null && psiFile != null;
-
-        // 在任何文件中都可用，但主要用于配置文件
+        if (project == null || editor == null || psiFile == null) {
+            return false;
+        }
+        String fileName = psiFile.getName();
+        return fileName.startsWith("application") &&
+               (fileName.endsWith(".yml") || fileName.endsWith(".yaml"));
     }
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, PsiFile psiFile) {
-        // TODO: 实现对比配置逻辑
-        // 1. 获取当前编辑器中的配置信息
-        // 2. 从 Nacos 拉取远程配置
-        // 3. 使用 IntelliJ Diff 工具显示差异
+        NacosClient client = NacosClientUtils.getDefaultClient();
+        if (client == null) {
+            NotificationUtil.showError(project, NacosBundle.message("error.nacos.not.configured"));
+            return;
+        }
+        ConfigFile configFile = ConfigFile.fromFileName(psiFile.getName(), "public");
+        if (configFile == null) {
+            NotificationUtil.showWarning(project, NacosBundle.message("error.no.file"));
+            return;
+        }
+        ConfigFile confirmed = ConfigDialogUtil.promptConfig(project, configFile);
+        if (confirmed == null) {
+            return;
+        }
 
-        // 暂时显示通知
-        //NotificationUtil.showInfo(project, NacosBundle.message("success.action.executed", "Compare Config"));
+        try {
+            String remote = client.getConfig(confirmed.getNamespace(), confirmed.getGroup(), confirmed.getDataId());
+            CompareConfigService.getInstance(project).compareConfigurations(
+                project,
+                psiFile.getText(),
+                remote != null ? remote : "",
+                confirmed.getDataId()
+                                                                           );
+        } catch (Exception ex) {
+            NotificationUtil.showError(project, NacosBundle.message("error.general", ex.getMessage()));
+        }
     }
 
     @Override

@@ -4,9 +4,12 @@ import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.BorderLayout;
 import java.util.Objects;
 
 import javax.swing.JPanel;
+
+import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.components.JsonEditor;
 
 /**
  * Nacos 配置标签页
@@ -20,16 +23,19 @@ public class Tab {
     private final String title;
     private final Project project;
     private final JPanel contentPanel;
+    private final JsonEditor editor;
     private String namespace;
     private String group;
     private String dataId;
     private boolean modified = false;
 
-    public Tab(@NotNull String id, @NotNull String title, @NotNull Project project, @NotNull JPanel contentPanel) {
+    public Tab(@NotNull String id, @NotNull String title, @NotNull Project project, @NotNull JsonEditor editor) {
         this.id = id;
         this.title = title;
         this.project = project;
-        this.contentPanel = contentPanel;
+        this.editor = editor;
+        this.contentPanel = new JPanel(new BorderLayout());
+        this.contentPanel.add(editor, BorderLayout.CENTER);
     }
 
     /**
@@ -66,6 +72,15 @@ public class Tab {
      */
     public JPanel getContentPanel() {
         return contentPanel;
+    }
+
+    /**
+     * 获取编辑器
+     *
+     * @return JsonEditor
+     */
+    public JsonEditor getEditor() {
+        return editor;
     }
 
     /**

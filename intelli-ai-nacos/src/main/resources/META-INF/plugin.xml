@@ -40,11 +40,32 @@
         <notificationGroup id="IntelliAI Nacos Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
+
+        <!-- 工具窗口 -->
+        <toolWindow factoryClass="dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow.NacosToolWindowFactory"
+                    id="Nacos"
+                    anchor="right"
+                    icon="/icons/nacos_16.svg"/>
+
+        <!-- 意图操作 -->
+        <intentionAction
+                language="ANY"
+                implementationClass="dev.dong4j.zeka.stack.idea.plugin.nacos.action.PublishConfigIntentionAction"
+                category="IntelliAI Nacos"/>
+        <intentionAction
+                language="ANY"
+                implementationClass="dev.dong4j.zeka.stack.idea.plugin.nacos.action.CompareConfigIntentionAction"
+                category="IntelliAI Nacos"/>
     </extensions>
 
     <!-- 插件定义的动作 -->
     <actions>
-        <!-- Nacos Actions 将在后续添加 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.nacos.PublishConfigByMenuAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.nacos.action.PublishConfigByMenuAction"
+                text="发布到 Nacos"
+                description="将所选配置文件发布到 Nacos">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
 

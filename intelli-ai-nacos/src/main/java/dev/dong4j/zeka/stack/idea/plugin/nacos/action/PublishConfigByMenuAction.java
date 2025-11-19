@@ -7,7 +7,14 @@ import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.charset.StandardCharsets;
+
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.ConfigDialogUtil;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 
 /**
  * 通过右键菜单发布配置 Action
@@ -22,7 +29,7 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
         super(
             NacosBundle.message("action.nacos.publish.menu.title"),
             NacosBundle.message("action.nacos.publish.menu.description"),
-            null // TODO: 添加发布图标
+            NacosIcons.NACOS_16
              );
     }
 
@@ -30,14 +37,46 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
     protected void actionPerformed(@NotNull AnActionEvent e, @NotNull Project project) throws Exception {
         VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
         if (virtualFile == null) {
-            //NotificationUtil.showError(project, NacosBundle.message("error.no.file"));
+            NotificationUtil.showError(project, NacosBundle.message("error.no.file"));
             return;
         }
 
-        // TODO: 实现发布配置逻辑
-        // 1. 解析选中的文件
-        // 2. 提取配置信息（namespace, group, dataId）
-        // 3. 发布到 Nacos
+        NacosClient client = getNacosClient(project);
+        if (client == null) {
+            return;
+        }
+
+        ConfigFile configFile = ConfigFile.fromFileName(virtualFile.getName(), "public");
+        if (configFile == null) {
+            NotificationUtil.showWarning(project, NacosBundle.message("error.nacos.not.configured"));
+            return;
+        }
+
+        byte[] bytes = virtualFile.contentsToByteArray();
+        configFile.setContent(new String(bytes, virtualFile.getCharset() != null ? virtualFile.getCharset() : StandardCharsets.UTF_8));
+        ConfigFile confirmed = ConfigDialogUtil.promptConfig(project, configFile);
+        if (confirmed == null) {
+            return;
+        }
+
+        boolean success = client.publishConfig(
+            confirmed.getNamespace(),
+            confirmed.getGroup(),
+            confirmed.getDataId(),
+            confirmed.getContent(),
+            confirmed.getType()
+                                              );
+        if (success) {
+            NotificationUtil.showInfo(
+                project,
+                NacosBundle.message("notification.publish.success",
+                                    confirmed.getDataId(),
+                                    confirmed.getNamespace(),
+                                    confirmed.getGroup())
+                                     );
+        } else {
+            NotificationUtil.showError(project, NacosBundle.message("error.nacos.connection.failed"));
+        }
 
         showNacosToolWindow(project);
     }

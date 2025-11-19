@@ -66,7 +66,7 @@ public class ConsumServerHttpAgent {
             String[] serverAddrs = serverAddress.split(",");
             if (serverAddrs.length > 0) {
                 server = serverAddrs[0].trim();
-                serverUrl = getServerUrl(server);
+                serverUrl = normalizeServerUrl(server);
             }
         }
 
@@ -75,11 +75,22 @@ public class ConsumServerHttpAgent {
         }
     }
 
-    private String getServerUrl(String serverAddr) {
+    private String normalizeServerUrl(String serverAddr) {
         if (serverAddr.startsWith(HTTPS) || serverAddr.startsWith(HTTP)) {
-            return serverAddr;
+            return appendContextIfMissing(serverAddr);
         }
-        return HTTP + serverAddr;
+        return appendContextIfMissing(HTTP + serverAddr);
+    }
+
+    private String appendContextIfMissing(String baseUrl) {
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        // Nacos OpenAPI 默认挂载在 /nacos
+        if (!baseUrl.endsWith("/nacos")) {
+            return baseUrl + "/nacos";
+        }
+        return baseUrl;
     }
 
     /**
@@ -168,6 +179,24 @@ public class ConsumServerHttpAgent {
      */
     public String getServerUrl() {
         return serverUrl;
+    }
+
+    /**
+     * 获取编码格式
+     *
+     * @return 编码格式
+     */
+    public String getEncode() {
+        return encode;
+    }
+
+    /**
+     * 获取原始 serverAddr
+     *
+     * @return server address
+     */
+    public String getServerAddress() {
+        return server;
     }
 
     /**

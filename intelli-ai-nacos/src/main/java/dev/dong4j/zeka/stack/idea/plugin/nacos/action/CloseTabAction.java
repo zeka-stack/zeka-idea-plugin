@@ -5,6 +5,8 @@ import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow.NacosToolWindow;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 
 /**
@@ -20,18 +22,16 @@ public class CloseTabAction extends AbstractNacosAction {
         super(
             NacosBundle.message("action.nacos.close.tab.title"),
             NacosBundle.message("action.nacos.close.tab.description"),
-            null // TODO: 添加关闭图标
+            NacosIcons.NACOS_16
              );
     }
 
     @Override
     protected void actionPerformed(@NotNull AnActionEvent e, @NotNull Project project) throws Exception {
-        // TODO: 实现关闭标签页逻辑
-        // 1. 获取当前选中的标签页
-        // 2. 检查是否有未保存的修改
-        // 3. 关闭标签页
-
-        showNacosToolWindow(project);
+        NacosToolWindow toolWindow = NacosToolWindow.getInstance(project);
+        if (toolWindow != null) {
+            toolWindow.closeCurrentTab();
+        }
     }
 
     @Override

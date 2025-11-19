@@ -1,7 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.components;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.intellij.lang.Language;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.EditorTextFieldProvider;
 import com.intellij.util.ui.JBUI;
@@ -10,9 +15,21 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.Properties;
 
 import javax.swing.JPanel;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.YamlUtils;
 
 /**
  * Nacos JSON 编辑器组件
@@ -22,9 +39,13 @@ import javax.swing.JPanel;
  * @since 1.0.0
  */
 public class JsonEditor extends JPanel {
+    private static final Logger LOG = Logger.getInstance(JsonEditor.class);
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
     private final Project project;
     private EditorTextField editorTextField;
     private Language language; // 默认语言类型
+    private String originalContent = "";
 
     public JsonEditor(@NotNull Project project) {
         this.project = project;
@@ -54,6 +75,16 @@ public class JsonEditor extends JPanel {
      */
     public void setContent(@Nullable String content) {
         editorTextField.setText(content != null ? content : "");
+    }
+
+    /**
+     * 设置内容并重置修改状态
+     *
+     * @param content 内容
+     */
+    public void setContentAndMarkClean(@Nullable String content) {
+        setContent(content);
+        markClean();
     }
 
     /**
@@ -98,8 +129,23 @@ public class JsonEditor extends JPanel {
      * 格式化内容
      */
     public void formatContent() {
-        // TODO: 实现内容格式化逻辑
-        // 这里可以调用相应的格式化工具
+        String text = getContent();
+        if (StringUtil.isEmptyOrSpaces(text)) {
+            return;
+        }
+        try {
+            String langId = getFileType().toLowerCase();
+            String formatted = switch (langId) {
+                case "json" -> formatJson(text);
+                case "yaml", "yml" -> YamlUtils.formatYaml(text);
+                case "xml" -> formatXml(text);
+                case "properties" -> formatProperties(text);
+                default -> text;
+            };
+            setContent(formatted);
+        } catch (Exception ex) {
+            LOG.warn("Format content failed", ex);
+        }
     }
 
     /**
@@ -108,8 +154,14 @@ public class JsonEditor extends JPanel {
      * @return 是否已修改
      */
     public boolean isModified() {
-        // TODO: 实现修改状态检查逻辑
-        return false;
+        return !Objects.equals(originalContent, getContent());
+    }
+
+    /**
+     * 标记为未修改
+     */
+    public void markClean() {
+        this.originalContent = getContent();
     }
 
     /**
@@ -128,5 +180,29 @@ public class JsonEditor extends JPanel {
      */
     public EditorTextField getEditorTextField() {
         return editorTextField;
+    }
+
+    private String formatJson(@NotNull String content) throws Exception {
+        JsonNode node = JSON_MAPPER.readTree(content);
+        return JSON_MAPPER.writeValueAsString(node);
+    }
+
+    private String formatXml(@NotNull String content) throws Exception {
+        var documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        var document = documentBuilder.parse(new org.xml.sax.InputSource(new StringReader(content)));
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+        StringWriter writer = new StringWriter();
+        transformer.transform(new DOMSource(document), new StreamResult(writer));
+        return writer.toString();
+    }
+
+    private String formatProperties(@NotNull String content) throws Exception {
+        Properties properties = new Properties();
+        properties.load(new StringReader(content));
+        StringWriter writer = new StringWriter();
+        properties.store(writer, "Formatted by IntelliAI Nacos");
+        return writer.toString();
     }
 }

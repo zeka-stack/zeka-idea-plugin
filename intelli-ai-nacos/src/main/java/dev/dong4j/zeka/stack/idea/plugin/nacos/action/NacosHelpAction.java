@@ -1,11 +1,14 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.action;
 
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 
 /**
  * Nacos 帮助 Action
@@ -16,22 +19,20 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
  */
 public class NacosHelpAction extends AbstractNacosAction {
 
+    private static final String HELP_URL = "https://nacos.io/en-us/docs/open-api.html";
+
     public NacosHelpAction() {
         super(
             NacosBundle.message("action.nacos.help.title"),
             NacosBundle.message("action.nacos.help.description"),
-            null // TODO: 添加帮助图标
+            NacosIcons.NACOS_16
              );
     }
 
     @Override
     protected void actionPerformed(@NotNull AnActionEvent e, @NotNull Project project) throws Exception {
-        // TODO: 实现帮助文档打开逻辑
-        // 1. 打开帮助文档网页
-        // 2. 或者显示帮助对话框
-
-        // 暂时显示通知
-        //NotificationUtil.showInfo(project, NacosBundle.message("success.action.executed", "Help"));
+        BrowserUtil.browse(HELP_URL);
+        NotificationUtil.showInfo(project, NacosBundle.message("success.action.executed", "Help"));
     }
 
     @Override

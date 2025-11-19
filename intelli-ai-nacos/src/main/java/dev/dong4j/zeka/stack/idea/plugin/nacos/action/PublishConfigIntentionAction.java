@@ -7,7 +7,12 @@ import com.intellij.psi.PsiFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.ConfigDialogUtil;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 
 /**
  * 发布配置意图 Action
@@ -42,14 +47,44 @@ public class PublishConfigIntentionAction implements IntentionAction {
 
     @Override
     public void invoke(@NotNull Project project, Editor editor, PsiFile psiFile) {
-        // TODO: 实现发布配置逻辑
-        // 1. 解析当前文件
-        // 2. 提取配置信息
-        // 3. 显示发布对话框
-        // 4. 发布到 Nacos
+        NacosClient client = NacosClientUtils.getDefaultClient();
+        if (client == null) {
+            NotificationUtil.showError(project, NacosBundle.message("error.nacos.not.configured"));
+            return;
+        }
 
-        // 暂时显示通知
-        //NotificationUtil.showInfo(project, NacosBundle.message("success.action.executed", "Publish Config"));
+        ConfigFile configFile = ConfigFile.fromFileName(psiFile.getName(), "public");
+        if (configFile == null) {
+            NotificationUtil.showWarning(project, NacosBundle.message("error.no.file"));
+            return;
+        }
+        configFile.setContent(psiFile.getText());
+
+        ConfigFile confirmed = ConfigDialogUtil.promptConfig(project, configFile);
+        if (confirmed == null) {
+            return;
+        }
+
+        try {
+            boolean success = client.publishConfig(
+                confirmed.getNamespace(),
+                confirmed.getGroup(),
+                confirmed.getDataId(),
+                confirmed.getContent(),
+                confirmed.getType()
+                                                  );
+            if (success) {
+                NotificationUtil.showInfo(project,
+                                          NacosBundle.message("notification.publish.success",
+                                                              confirmed.getDataId(),
+                                                              confirmed.getNamespace(),
+                                                              confirmed.getGroup()));
+            } else {
+                NotificationUtil.showError(project, NacosBundle.message("error.nacos.connection.failed"));
+            }
+        } catch (Exception ex) {
+            NotificationUtil.showError(project, NacosBundle.message("error.general", ex.getMessage()));
+        }
     }
 
     @Override

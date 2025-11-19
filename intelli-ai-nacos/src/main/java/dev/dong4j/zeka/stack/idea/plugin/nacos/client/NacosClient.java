@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfo;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfoListResponse;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfoWrapper;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.Namespace;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.NamespaceListResponse;
 
@@ -31,6 +33,7 @@ public class NacosClient {
     private final String username;
     private final String password;
     private boolean isLoggedIn = false;
+    private boolean globalAdmin;
 
     private NacosClient(String serverAddr, String username, String password) throws NacosException {
         this.serverAddr = serverAddr;
@@ -45,7 +48,7 @@ public class NacosClient {
 
         // 创建 HTTP 代理和安全代理
         this.httpAgent = new ConsumServerHttpAgent(properties);
-        this.securityProxy = new ConsumSecurityProxy(properties);
+        this.securityProxy = new ConsumSecurityProxy(properties, httpAgent);
     }
 
     /**
@@ -74,10 +77,19 @@ public class NacosClient {
      * @throws Exception 异常
      */
     public boolean login() throws Exception {
-        // 简化登录逻辑，实际实现需要调用 Nacos 的登录 API
-        // 这里只是示例，实际需要实现完整的登录流程
-        this.isLoggedIn = true;
-        return true;
+        if (isLoggedIn && securityProxy.ensureLogin()) {
+            return true;
+        }
+        boolean success = securityProxy.login(username, password);
+        this.isLoggedIn = success;
+        this.globalAdmin = success && securityProxy.isGlobalAdmin();
+        return success;
+    }
+
+    private void ensureLoggedIn() throws Exception {
+        if (!login()) {
+            throw new IllegalStateException("Failed to login Nacos server");
+        }
     }
 
     /**
@@ -87,13 +99,12 @@ public class NacosClient {
      * @throws Exception 异常
      */
     public List<Namespace> getNamespaces() throws Exception {
-        if (!isLoggedIn) {
-            throw new IllegalStateException("Not logged in");
-        }
+        ensureLoggedIn();
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
         params.put("show", "all");
+        params.put("namespaceId", "");
 
         HttpRestResult<String> result = httpAgent.httpGet("/v1/console/namespaces", headers, params);
 
@@ -115,9 +126,7 @@ public class NacosClient {
      * @throws Exception 异常
      */
     public ConfigInfoListResponse getConfigs(String namespaceId, int pageNo, int pageSize) throws Exception {
-        if (!isLoggedIn) {
-            throw new IllegalStateException("Not logged in");
-        }
+        ensureLoggedIn();
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
@@ -151,9 +160,7 @@ public class NacosClient {
      * @throws Exception 异常
      */
     public String getConfig(String namespaceId, String group, String dataId) throws Exception {
-        if (!isLoggedIn) {
-            throw new IllegalStateException("Not logged in");
-        }
+        ensureLoggedIn();
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
@@ -182,9 +189,7 @@ public class NacosClient {
      * @throws Exception 异常
      */
     public boolean publishConfig(String namespaceId, String group, String dataId, String content, String type) throws Exception {
-        if (!isLoggedIn) {
-            throw new IllegalStateException("Not logged in");
-        }
+        ensureLoggedIn();
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
@@ -215,9 +220,7 @@ public class NacosClient {
      * @throws Exception 异常
      */
     public boolean deleteConfig(String namespaceId, String group, String dataId) throws Exception {
-        if (!isLoggedIn) {
-            throw new IllegalStateException("Not logged in");
-        }
+        ensureLoggedIn();
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
@@ -241,6 +244,57 @@ public class NacosClient {
      */
     public boolean isLoggedIn() {
         return isLoggedIn;
+    }
+
+    public boolean isGlobalAdmin() {
+        return globalAdmin;
+    }
+
+    /**
+     * 拉取命名空间下所有配置（自动分页）
+     */
+    public List<ConfigInfoWrapper> listAllConfigs(String namespaceId) throws Exception {
+        ensureLoggedIn();
+        int pageNo = 1;
+        int pageSize = 200;
+        List<ConfigInfoWrapper> result = new java.util.ArrayList<>();
+        while (true) {
+            ConfigInfoListResponse response = getConfigs(namespaceId, pageNo, pageSize);
+            if (response.getConfigInfos() != null) {
+                result.addAll(response.getConfigInfos());
+            }
+            if (response.getConfigInfos() == null || response.getConfigInfos().isEmpty() ||
+                result.size() >= response.getTotalCount()) {
+                break;
+            }
+            pageNo++;
+        }
+        return result;
+    }
+
+    /**
+     * 获取指定命名空间下的所有分组
+     */
+    public List<String> listGroups(String namespaceId) throws Exception {
+        return listAllConfigs(namespaceId).stream()
+            .map(ConfigInfo::getGroup)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .sorted(String::compareToIgnoreCase)
+            .toList();
+    }
+
+    /**
+     * 获取指定命名空间+分组的 dataId 列表
+     */
+    public List<String> listDataIds(String namespaceId, String group) throws Exception {
+        return listAllConfigs(namespaceId).stream()
+            .filter(config -> group == null || group.equals(config.getGroup()))
+            .map(ConfigInfo::getDataId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .sorted(String::compareToIgnoreCase)
+            .toList();
     }
 
     /**

@@ -6,6 +6,7 @@ import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.tree.TreeUtil;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
 import java.util.Enumeration;
@@ -143,14 +144,8 @@ public class TreePanel extends JPanel {
      * @param rootNode 新的根节点
      */
     public void updateTree(DefaultMutableTreeNode rootNode) {
-        root.removeAllChildren();
-        if (rootNode != null) {
-            Enumeration<TreeNode> children = rootNode.children();
-            while (children.hasMoreElements()) {
-                TreeNode child = children.nextElement();
-                root.add((DefaultMutableTreeNode) child);
-            }
-        }
+        DefaultMutableTreeNode newRoot = rootNode != null ? rootNode : new DefaultMutableTreeNode("Nacos");
+        treeModel.setRoot(newRoot);
         treeModel.reload();
         TreeUtil.expandAll(configTree);
     }
@@ -180,5 +175,19 @@ public class TreePanel extends JPanel {
      */
     public DefaultMutableTreeNode getRoot() {
         return root;
+    }
+
+    /**
+     * 获取当前选中的节点
+     *
+     * @return 选中节点
+     */
+    @Nullable
+    public DefaultMutableTreeNode getSelectedNode() {
+        Object component = configTree.getLastSelectedPathComponent();
+        if (component instanceof DefaultMutableTreeNode node) {
+            return node;
+        }
+        return null;
     }
 }

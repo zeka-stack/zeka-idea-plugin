@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.NacosSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 
@@ -22,7 +23,7 @@ public class SettingAction extends AbstractNacosAction {
         super(
             NacosBundle.message("action.nacos.settings.title"),
             NacosBundle.message("action.nacos.settings.description"),
-            null // TODO: 添加设置图标
+            NacosIcons.NACOS_16
              );
     }
 

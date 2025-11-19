@@ -1,9 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
@@ -11,11 +14,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
+
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 
 /**
  * 配置操作面板
@@ -26,6 +37,7 @@ import javax.swing.JPanel;
  */
 public class ConfigOperationPanel extends JPanel {
     private final Project project;
+    private final NacosToolWindow nacosToolWindow;
     private final JComboBox<String> namespaceComboBox;
     private final JComboBox<String> groupComboBox;
     private final JBTextField dataIdTextField;
@@ -34,15 +46,16 @@ public class ConfigOperationPanel extends JPanel {
     private final JButton compareButton;
     private final JBLabel statusLabel;
 
-    public ConfigOperationPanel(@NotNull Project project) {
+    public ConfigOperationPanel(@NotNull Project project, @NotNull NacosToolWindow nacosToolWindow) {
         this.project = project;
+        this.nacosToolWindow = nacosToolWindow;
         this.namespaceComboBox = new ComboBox<>();
         this.groupComboBox = new ComboBox<>();
         this.dataIdTextField = new JBTextField();
-        this.pullButton = new JButton("Pull");
-        this.pushButton = new JButton("Push");
-        this.compareButton = new JButton("Compare");
-        this.statusLabel = new JBLabel("Ready");
+        this.pullButton = new JButton(NacosBundle.message("button.pull"));
+        this.pushButton = new JButton(NacosBundle.message("button.push"));
+        this.compareButton = new JButton(NacosBundle.message("button.compare"));
+        this.statusLabel = new JBLabel(NacosBundle.message("status.ready"));
 
         initialize();
     }
@@ -108,7 +121,6 @@ public class ConfigOperationPanel extends JPanel {
     }
 
     private void onNamespaceSelected() {
-        // TODO: 根据选择的命名空间加载对应的分组列表
         String selectedNamespace = (String) namespaceComboBox.getSelectedItem();
         if (selectedNamespace != null) {
             loadGroupsForNamespace(selectedNamespace);
@@ -116,7 +128,6 @@ public class ConfigOperationPanel extends JPanel {
     }
 
     private void onGroupSelected() {
-        // TODO: 根据选择的分组加载对应的 Data ID 列表
         String selectedGroup = (String) groupComboBox.getSelectedItem();
         if (selectedGroup != null) {
             loadDataIdsForGroup(selectedGroup);
@@ -124,18 +135,23 @@ public class ConfigOperationPanel extends JPanel {
     }
 
     private void pullConfiguration() {
-        // TODO: 实现拉取配置逻辑
-        updateStatus("Pulling configuration...");
+        if (StringUtil.isEmpty(getNamespace()) || StringUtil.isEmpty(getGroup()) || StringUtil.isEmpty(getDataId())) {
+            NotificationUtil.showWarning(project, NacosBundle.message("error.nacos.not.configured"));
+            return;
+        }
+        ConfigFile configFile = new ConfigFile();
+        configFile.setNamespace(getNamespace());
+        configFile.setGroup(getGroup());
+        configFile.setDataId(getDataId());
+        nacosToolWindow.pullAndOpenConfig(configFile);
     }
 
     private void pushConfiguration() {
-        // TODO: 实现推送配置逻辑
-        updateStatus("Pushing configuration...");
+        nacosToolWindow.pushCurrentTab();
     }
 
     private void compareConfiguration() {
-        // TODO: 实现对比配置逻辑
-        updateStatus("Comparing configurations...");
+        nacosToolWindow.compareWithRemote();
     }
 
     /**
@@ -145,8 +161,9 @@ public class ConfigOperationPanel extends JPanel {
      */
     public void updateNamespaces(List<String> namespaces) {
         namespaceComboBox.removeAllItems();
-        for (String namespace : namespaces) {
-            namespaceComboBox.addItem(namespace);
+        namespaces.forEach(namespaceComboBox::addItem);
+        if (namespaceComboBox.getItemCount() > 0) {
+            namespaceComboBox.setSelectedIndex(0);
         }
     }
 
@@ -157,8 +174,9 @@ public class ConfigOperationPanel extends JPanel {
      */
     public void updateGroups(List<String> groups) {
         groupComboBox.removeAllItems();
-        for (String group : groups) {
-            groupComboBox.addItem(group);
+        groups.forEach(groupComboBox::addItem);
+        if (groupComboBox.getItemCount() > 0) {
+            groupComboBox.setSelectedIndex(0);
         }
     }
 
@@ -168,7 +186,11 @@ public class ConfigOperationPanel extends JPanel {
      * @param dataIds Data ID 列表
      */
     public void updateDataIds(List<String> dataIds) {
-        // Data ID 通常是手动输入的，这里可以提供自动完成功能
+        if (dataIds.isEmpty()) {
+            return;
+        }
+        dataIdTextField.putClientProperty("nacos.dataIds", dataIds);
+        dataIdTextField.getEmptyText().setText(dataIds.get(0));
     }
 
     /**
@@ -177,7 +199,17 @@ public class ConfigOperationPanel extends JPanel {
      * @param namespace 命名空间
      */
     private void loadGroupsForNamespace(String namespace) {
-        // TODO: 实现加载分组逻辑
+        updateStatus(NacosBundle.message("status.loading.groups"));
+        runAsync(() -> {
+            NacosClient client = NacosClientUtils.getDefaultClient();
+            if (client == null) {
+                throw new IllegalStateException(NacosBundle.message("error.nacos.not.configured"));
+            }
+            return client.listGroups(namespace);
+        }, groups -> {
+            updateGroups(groups);
+            updateStatus(NacosBundle.message("status.ready"));
+        });
     }
 
     /**
@@ -186,7 +218,20 @@ public class ConfigOperationPanel extends JPanel {
      * @param group 分组
      */
     private void loadDataIdsForGroup(String group) {
-        // TODO: 实现加载 Data ID 逻辑
+        if (StringUtil.isEmpty(group) || StringUtil.isEmpty(getNamespace())) {
+            return;
+        }
+        updateStatus(NacosBundle.message("status.loading.dataids"));
+        runAsync(() -> {
+            NacosClient client = NacosClientUtils.getDefaultClient();
+            if (client == null) {
+                throw new IllegalStateException(NacosBundle.message("error.nacos.not.configured"));
+            }
+            return client.listDataIds(getNamespace(), group);
+        }, dataIds -> {
+            updateDataIds(dataIds);
+            updateStatus(NacosBundle.message("status.ready"));
+        });
     }
 
     /**
@@ -195,7 +240,7 @@ public class ConfigOperationPanel extends JPanel {
      * @param status 状态文本
      */
     public void updateStatus(String status) {
-        statusLabel.setText(status);
+        ApplicationManager.getApplication().invokeLater(() -> statusLabel.setText(status));
     }
 
     /**
@@ -250,5 +295,25 @@ public class ConfigOperationPanel extends JPanel {
      */
     public void setDataId(String dataId) {
         dataIdTextField.setText(dataId);
+    }
+
+    private void runAsync(@NotNull java.util.concurrent.Callable<List<String>> supplier,
+                          @NotNull java.util.function.Consumer<List<String>> success) {
+        CompletableFuture
+            .supplyAsync(() -> {
+                try {
+                    return supplier.call();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, AppExecutorUtil.getAppExecutorService())
+            .whenComplete((result, throwable) -> {
+                if (throwable != null) {
+                    NotificationUtil.showError(project, throwable.getMessage());
+                    updateStatus(throwable.getMessage());
+                    return;
+                }
+                success.accept(result != null ? result : Collections.emptyList());
+            });
     }
 }

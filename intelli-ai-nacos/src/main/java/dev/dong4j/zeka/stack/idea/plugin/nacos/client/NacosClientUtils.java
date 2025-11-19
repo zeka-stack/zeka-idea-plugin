@@ -29,10 +29,10 @@ public class NacosClientUtils {
     public static NacosClient getDefaultClient() {
         SettingsState settings = SettingsState.getInstance();
         String serverAddr = settings.serverAddr;
-        String username = settings.username;
+        String username = settings.username != null ? settings.username : "";
         String password = settings.getPassword();
 
-        if (serverAddr == null || serverAddr.isEmpty() || username == null || username.isEmpty()) {
+        if (serverAddr == null || serverAddr.isEmpty()) {
             return null;
         }
 
@@ -49,14 +49,16 @@ public class NacosClientUtils {
      */
     @Nullable
     public static NacosClient getClient(String serverAddr, String username, String password) {
-        if (serverAddr == null || serverAddr.isEmpty() || username == null || username.isEmpty()) {
+        if (serverAddr == null || serverAddr.isEmpty()) {
             return null;
         }
 
-        String key = generateClientKey(serverAddr, username);
+        String safeUsername = username != null ? username : "";
+        String safePassword = password != null ? password : "";
+        String key = generateClientKey(serverAddr, safeUsername);
         return CLIENT_CACHE.computeIfAbsent(key, k -> {
             try {
-                return NacosClient.getInstance(serverAddr, username, password);
+                return NacosClient.getInstance(serverAddr, safeUsername, safePassword);
             } catch (NacosException e) {
                 // 记录错误日志
                 e.printStackTrace();
@@ -84,7 +86,7 @@ public class NacosClientUtils {
      * @param username   用户名
      */
     public static void removeClient(String serverAddr, String username) {
-        String key = generateClientKey(serverAddr, username);
+        String key = generateClientKey(serverAddr, username != null ? username : "");
         CLIENT_CACHE.remove(key);
     }
 

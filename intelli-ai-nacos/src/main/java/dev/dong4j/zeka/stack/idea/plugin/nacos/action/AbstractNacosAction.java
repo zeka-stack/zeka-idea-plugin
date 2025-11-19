@@ -10,9 +10,10 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
-import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow.NacosToolWindowFactory;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
@@ -27,8 +28,8 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
  */
 public abstract class AbstractNacosAction extends AnAction {
 
-    public AbstractNacosAction(String text, String description, NacosIcons icon) {
-        super(text, description, icon != null ? NacosIcons.NACOS_16 : null);
+    public AbstractNacosAction(String text, String description, Icon icon) {
+        super(text, description, icon);
     }
 
     public AbstractNacosAction() {

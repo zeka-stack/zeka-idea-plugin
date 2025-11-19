@@ -12,6 +12,12 @@ import java.awt.BorderLayout;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.action.AddTabAction;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.action.CloseTabAction;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.action.NacosHelpAction;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.action.RefreshAction;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.action.SettingAction;
+
 /**
  * Nacos 工具窗口工具栏面板
  * 提供工具窗口顶部的工具栏功能
@@ -21,20 +27,17 @@ import javax.swing.JPanel;
  */
 public class ToolBarPanel extends JPanel {
     private final Project project;
+    private final DefaultActionGroup actionGroup;
 
     public ToolBarPanel(@NotNull Project project) {
         this.project = project;
+        this.actionGroup = new DefaultActionGroup();
         initialize();
     }
 
     private void initialize() {
         setLayout(new BorderLayout());
         setBorder(JBUI.Borders.empty(5));
-
-        // 创建动作组
-        DefaultActionGroup actionGroup = new DefaultActionGroup();
-
-        // TODO: 添加具体的工具栏动作
 
         // 创建工具栏
         ActionManager actionManager = ActionManager.getInstance();
@@ -43,5 +46,14 @@ public class ToolBarPanel extends JPanel {
 
         // 添加工具栏到面板
         add(actionToolbar.getComponent(), BorderLayout.CENTER);
+    }
+
+    public void bindActions(@NotNull NacosToolWindow toolWindow) {
+        actionGroup.removeAll();
+        actionGroup.add(new RefreshAction());
+        actionGroup.add(new AddTabAction());
+        actionGroup.add(new CloseTabAction());
+        actionGroup.add(new SettingAction());
+        actionGroup.add(new NacosHelpAction());
     }
 }
