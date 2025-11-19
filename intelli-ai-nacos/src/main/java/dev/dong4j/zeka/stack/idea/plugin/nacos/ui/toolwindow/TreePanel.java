@@ -11,9 +11,11 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.BorderLayout;
 import java.util.Enumeration;
 
+import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
@@ -44,7 +46,11 @@ public class TreePanel extends JPanel {
 
     private void initialize() {
         setLayout(new BorderLayout());
-        setBorder(JBUI.Borders.empty(5));
+        // 添加边框：内边距 + 可见边框
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(UIManager.getColor("Separator.separatorColor")),
+            JBUI.Borders.empty(5)
+                                                    ));
 
         // 设置树的基本属性
         configTree.setRootVisible(true);

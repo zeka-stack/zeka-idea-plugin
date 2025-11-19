@@ -3,8 +3,14 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.client;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.common.http.HttpRestResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -102,18 +108,20 @@ public class NacosClient {
         ensureLoggedIn();
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
-        Map<String, String> params = new HashMap<>();
-        // params.put("show", "all");
-        params.put("namespaceId", "xxx");
 
-        HttpRestResult<String> result = httpAgent.httpGet("/v1/console/namespaces", headers, params);
+        HttpRestResult<String> result = httpAgent.httpGet("/v2/console/namespace/list", headers, null);
 
-        if (result.getCode() == 200) {
-            NamespaceListResponse response = OBJECT_MAPPER.readValue(result.getData(), NamespaceListResponse.class);
-            return response.getNamespaces();
-        } else {
-            throw new Exception("Failed to get namespaces: " + result.getMessage());
+        String body = ensureHttpSuccess(result, "get namespaces");
+        JsonNode dataNode = extractDataNode(body, "get namespaces");
+        if (dataNode == null || dataNode.isNull()) {
+            NamespaceListResponse response = OBJECT_MAPPER.readValue(body, NamespaceListResponse.class);
+            return response.getNamespaces() != null ? response.getNamespaces() : Collections.emptyList();
         }
+        if (dataNode.isArray()) {
+            return OBJECT_MAPPER.readerFor(new TypeReference<List<Namespace>>() {}).readValue(dataNode);
+        }
+        NamespaceListResponse response = OBJECT_MAPPER.treeToValue(dataNode, NamespaceListResponse.class);
+        return response.getNamespaces() != null ? response.getNamespaces() : Collections.emptyList();
     }
 
     /**
@@ -130,7 +138,7 @@ public class NacosClient {
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
-        params.put("namespaceId", namespaceId);
+        params.put("tenant", namespaceId);
         params.put("pageNo", String.valueOf(pageNo));
         params.put("pageSize", String.valueOf(pageSize));
         params.put("search", "accurate");
@@ -138,16 +146,18 @@ public class NacosClient {
         params.put("group", "");
         params.put("appName", "");
         params.put("config_tags", "");
-        params.put("pageNo", String.valueOf(pageNo));
-        params.put("pageSize", String.valueOf(pageSize));
 
         HttpRestResult<String> result = httpAgent.httpGet("/v1/cs/configs", headers, params);
 
-        if (result.getCode() == 200) {
-            return OBJECT_MAPPER.readValue(result.getData(), ConfigInfoListResponse.class);
-        } else {
-            throw new Exception("Failed to get configs: " + result.getMessage());
+        String body = ensureHttpSuccess(result, "get configs");
+        JsonNode dataNode = extractDataNode(body, "get configs");
+        if (dataNode == null || dataNode.isNull()) {
+            return OBJECT_MAPPER.readValue(body, ConfigInfoListResponse.class);
         }
+        if (dataNode.isObject()) {
+            return OBJECT_MAPPER.treeToValue(dataNode, ConfigInfoListResponse.class);
+        }
+        return OBJECT_MAPPER.readValue(body, ConfigInfoListResponse.class);
     }
 
     /**
@@ -164,17 +174,21 @@ public class NacosClient {
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
-        params.put("tenant", namespaceId);
+        params.put("namespaceId", namespaceId);
         params.put("group", group);
         params.put("dataId", dataId);
 
-        HttpRestResult<String> result = httpAgent.httpGet("/v1/cs/configs", headers, params);
+        HttpRestResult<String> result = httpAgent.httpGet("/v2/cs/config", headers, params);
 
-        if (result.getCode() == 200) {
-            return result.getData();
-        } else {
-            throw new Exception("Failed to get config: " + result.getMessage());
+        String body = ensureHttpSuccess(result, "get config");
+        JsonNode dataNode = extractDataNode(body, "get config");
+        if (dataNode == null || dataNode.isNull()) {
+            return body;
         }
+        if (dataNode.isTextual() || dataNode.isNumber() || dataNode.isBoolean()) {
+            return dataNode.asText();
+        }
+        return dataNode.toString();
     }
 
     /**
@@ -195,19 +209,23 @@ public class NacosClient {
         headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 
         Map<String, String> params = new HashMap<>();
-        params.put("tenant", namespaceId);
+        params.put("namespaceId", namespaceId);
         params.put("group", group);
         params.put("dataId", dataId);
         params.put("content", content);
         params.put("type", type);
 
-        HttpRestResult<String> result = httpAgent.httpPost("/v1/cs/configs", headers, params, "");
+        HttpRestResult<String> result = httpAgent.httpPost("/v2/cs/config", headers, params, "");
 
-        if (result.getCode() == 200) {
-            return Boolean.parseBoolean(result.getData());
-        } else {
-            throw new Exception("Failed to publish config: " + result.getMessage());
+        String body = ensureHttpSuccess(result, "publish config");
+        JsonNode dataNode = extractDataNode(body, "publish config");
+        if (dataNode == null || dataNode.isNull()) {
+            return Boolean.parseBoolean(body);
         }
+        if (dataNode.isBoolean()) {
+            return dataNode.asBoolean();
+        }
+        return Boolean.parseBoolean(dataNode.asText());
     }
 
     /**
@@ -224,17 +242,21 @@ public class NacosClient {
 
         Map<String, String> headers = securityProxy.getAuthorizationHeader();
         Map<String, String> params = new HashMap<>();
-        params.put("tenant", namespaceId);
+        params.put("namespaceId", namespaceId);
         params.put("group", group);
         params.put("dataId", dataId);
 
-        HttpRestResult<String> result = httpAgent.httpDelete("/v1/cs/configs", headers, params);
+        HttpRestResult<String> result = httpAgent.httpDelete("/v2/cs/config", headers, params);
 
-        if (result.getCode() == 200) {
-            return Boolean.parseBoolean(result.getData());
-        } else {
-            throw new Exception("Failed to delete config: " + result.getMessage());
+        String body = ensureHttpSuccess(result, "delete config");
+        JsonNode dataNode = extractDataNode(body, "delete config");
+        if (dataNode == null || dataNode.isNull()) {
+            return Boolean.parseBoolean(body);
         }
+        if (dataNode.isBoolean()) {
+            return dataNode.asBoolean();
+        }
+        return Boolean.parseBoolean(dataNode.asText());
     }
 
     /**
@@ -313,5 +335,32 @@ public class NacosClient {
      */
     public String getUsername() {
         return username;
+    }
+
+    private String ensureHttpSuccess(HttpRestResult<String> result, String action) throws Exception {
+        if (result.getCode() != 200) {
+            throw new Exception("Failed to " + action + ": HTTP " + result.getCode() + " " + result.getMessage());
+        }
+        return result.getData();
+    }
+
+    private JsonNode extractDataNode(String body, String action) throws Exception {
+        if (body == null || body.isEmpty()) {
+            return NullNode.instance;
+        }
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(body);
+            if (root.has("code")) {
+                int apiCode = root.path("code").asInt(0);
+                if (apiCode != 0) {
+                    String message = root.path("message").asText("unknown error");
+                    throw new Exception("Failed to " + action + ": " + message);
+                }
+                return root.path("data");
+            }
+            return root;
+        } catch (JsonProcessingException e) {
+            return TextNode.valueOf(body);
+        }
     }
 }

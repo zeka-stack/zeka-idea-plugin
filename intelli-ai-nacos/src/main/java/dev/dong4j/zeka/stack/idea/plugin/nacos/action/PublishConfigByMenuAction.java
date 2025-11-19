@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
-import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.ConfigDialogUtil;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
@@ -29,7 +28,7 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
         super(
             NacosBundle.message("action.nacos.publish.menu.title"),
             NacosBundle.message("action.nacos.publish.menu.description"),
-            NacosIcons.NACOS_16
+            null
              );
     }
 

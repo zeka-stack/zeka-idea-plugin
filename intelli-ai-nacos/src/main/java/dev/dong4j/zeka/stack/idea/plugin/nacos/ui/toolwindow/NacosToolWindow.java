@@ -6,6 +6,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.ui.JBSplitter;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.ui.JBUI;
 
@@ -18,9 +19,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
@@ -52,7 +54,7 @@ public class NacosToolWindow {
     private final TreePanel treePanel;
     private final TabBar tabBar;
     private final ConfigOperationPanel configOperationPanel;
-    private final JSplitPane splitPane;
+    private final JBSplitter splitter;
     private int newTabCounter = 1;
 
     public NacosToolWindow(@NotNull Project project) {
@@ -61,7 +63,7 @@ public class NacosToolWindow {
         this.treePanel = new TreePanel(project);
         this.tabBar = new TabBar(project);
         this.configOperationPanel = new ConfigOperationPanel(project, this);
-        this.splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        this.splitter = new JBSplitter(false, 0.3f);
 
         this.mainPanel = new JPanel(new BorderLayout());
 
@@ -72,18 +74,22 @@ public class NacosToolWindow {
         // 设置主面板边框
         mainPanel.setBorder(JBUI.Borders.empty(5));
 
-        // 设置分割面板
-        splitPane.setLeftComponent(treePanel);
+        // 设置分割面板（使用 JBSplitter 提供更好的拖动体验）
+        splitter.setFirstComponent(treePanel);
         JPanel rightPanel = new JPanel(new BorderLayout());
+        // 为右侧面板添加边框
+        rightPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(UIManager.getColor("Separator.separatorColor")),
+            JBUI.Borders.empty(5)
+                                                               ));
         rightPanel.add(configOperationPanel, BorderLayout.NORTH);
         rightPanel.add(tabBar, BorderLayout.CENTER);
-        splitPane.setRightComponent(rightPanel);
-        splitPane.setDividerLocation(300);
-        splitPane.setResizeWeight(0.3);
+        splitter.setSecondComponent(rightPanel);
+        splitter.setDividerWidth(5); // 设置分割线宽度，方便拖动
 
         // 添加组件到主面板
         mainPanel.add(toolBarPanel, BorderLayout.NORTH);
-        mainPanel.add(splitPane, BorderLayout.CENTER);
+        mainPanel.add(splitter, BorderLayout.CENTER);
 
         installTreeInteractions();
         toolBarPanel.bindActions(this);
@@ -96,8 +102,17 @@ public class NacosToolWindow {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
                     var node = treePanel.getSelectedNode();
-                    if (node != null && node.getUserObject() instanceof ConfigInfoWrapper wrapper) {
-                        handleConfigSelection(wrapper);
+                    if (node != null) {
+                        Object userObject = node.getUserObject();
+                        ConfigInfoWrapper wrapper = null;
+                        if (userObject instanceof TreeNodeData treeNodeData) {
+                            wrapper = treeNodeData.wrapper();
+                        } else if (userObject instanceof ConfigInfoWrapper) {
+                            wrapper = (ConfigInfoWrapper) userObject;
+                        }
+                        if (wrapper != null) {
+                            handleConfigSelection(wrapper);
+                        }
                     }
                 }
             }
@@ -225,7 +240,12 @@ public class NacosToolWindow {
                 for (Map.Entry<String, List<ConfigInfoWrapper>> entry : groupMap.entrySet()) {
                     DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(entry.getKey());
                     for (ConfigInfoWrapper wrapper : entry.getValue()) {
-                        groupNode.add(new DefaultMutableTreeNode(wrapper));
+                        // 显示 dataId 而不是序列化对象
+                        String dataId = wrapper.getDataId();
+                        DefaultMutableTreeNode dataIdNode = new DefaultMutableTreeNode(dataId);
+                        // 将 wrapper 对象存储在节点中，以便后续使用
+                        dataIdNode.setUserObject(new TreeNodeData(dataId, wrapper));
+                        groupNode.add(dataIdNode);
                     }
                     namespaceNode.add(groupNode);
                 }
@@ -343,7 +363,6 @@ public class NacosToolWindow {
                     }
                     openConfigTab(cfg, true);
                     configOperationPanel.updateStatus(NacosBundle.message("success.config.pulled"));
-                    showNotification(NacosBundle.message("success.config.pulled"), "info");
                 });
             });
     }
@@ -391,7 +410,6 @@ public class NacosToolWindow {
                 tab.getEditor().markClean();
                 tab.setModified(false);
                 tabBar.updateTabTitle(tab.getId(), buildTabTitle(tab));
-                showNotification(NacosBundle.message("success.config.published"), "info");
             }));
     }
 
@@ -485,4 +503,16 @@ public class NacosToolWindow {
             default -> "TEXT";
         };
     }
+
+    /**
+         * 树节点数据包装类
+         * 用于在树节点中存储 dataId 和 ConfigInfoWrapper
+         */
+        private record TreeNodeData(String dataId, ConfigInfoWrapper wrapper) {
+
+        @Override
+            public String toString() {
+                return dataId;
+            }
+        }
 }

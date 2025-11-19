@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
+import lombok.Getter;
+
 /**
  * Nacos 安全代理
  * 用于处理 Nacos 服务器的认证和授权
@@ -21,17 +23,28 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author dong4j
  * @since 1.0.0
  */
+@SuppressWarnings("D")
 public class ConsumSecurityProxy {
     private static final Logger LOGGER = LogUtils.logger(ConsumSecurityProxy.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    @Getter
     private final String accessKey;
+
+    @Getter
     private final String secretKey;
     private final String ramRoleName;
     private final Properties properties;
     private final ConsumServerHttpAgent httpAgent;
     private final AtomicReference<String> accessToken = new AtomicReference<>("");
     private volatile long tokenExpireAt = -1L;
+    /**
+     * -- GETTER --
+     * 是否为全局管理员
+     *
+     * @return 全局管理员标识
+     */
+    @Getter
     private volatile boolean globalAdmin;
     private String username;
     private String password;
@@ -73,17 +86,23 @@ public class ConsumSecurityProxy {
                 return true;
             }
 
-            if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
-                LOGGER.info("No authentication configured, using anonymous access");
-                return true;
-            }
-
+            // 即使用户名和密码为空，也尝试调用登录接口
+            // 如果服务器允许匿名访问，会返回成功；如果需要认证，会返回失败
             Map<String, String> params = new HashMap<>();
-            params.put("username", username);
-            params.put("password", password);
-            HttpRestResult<String> result = httpAgent.httpPost("/v1/auth/users/login", null, params, "");
+            // 如果用户名或密码为空，使用空字符串，让服务器决定是否允许匿名访问
+            params.put("username", StringUtils.isBlank(username) ? "" : username);
+            params.put("password", StringUtils.isBlank(password) ? "" : password);
+            HttpRestResult<String> result = httpAgent.httpPost("/v2/auth/login", null, params, "");
             if (result.getCode() == 200 && StringUtils.isNotBlank(result.getData())) {
                 JsonNode node = OBJECT_MAPPER.readTree(result.getData());
+                if (node.has("code")) {
+                    int apiCode = node.path("code").asInt(0);
+                    if (apiCode != 0) {
+                        LOGGER.error("Login failed, apiCode: {}, msg: {}", apiCode, node.path("message").asText());
+                        return false;
+                    }
+                    node = node.path("data");
+                }
                 String token = node.path("accessToken").asText("");
                 long ttl = node.path("tokenTtl").asLong(18000L);
                 this.globalAdmin = node.path("globalAdmin").asBoolean(false);
@@ -124,33 +143,6 @@ public class ConsumSecurityProxy {
     }
 
     /**
-     * 获取 AccessKey
-     *
-     * @return AccessKey
-     */
-    public String getAccessKey() {
-        return accessKey;
-    }
-
-    /**
-     * 获取 SecretKey
-     *
-     * @return SecretKey
-     */
-    public String getSecretKey() {
-        return secretKey;
-    }
-
-    /**
-     * 是否为全局管理员
-     *
-     * @return 全局管理员标识
-     */
-    public boolean isGlobalAdmin() {
-        return globalAdmin;
-    }
-
-    /**
      * 确保 token 有效
      *
      * @return 登录是否有效
@@ -159,9 +151,7 @@ public class ConsumSecurityProxy {
         if (isTokenValid()) {
             return true;
         }
-        if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
-            return false;
-        }
+        // 即使用户名和密码为空，也尝试登录，让服务器决定是否允许匿名访问
         return login(username, password);
     }
 

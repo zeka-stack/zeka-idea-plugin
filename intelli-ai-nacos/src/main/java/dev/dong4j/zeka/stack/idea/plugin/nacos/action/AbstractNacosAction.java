@@ -75,6 +75,15 @@ public abstract class AbstractNacosAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         e.getPresentation().setEnabled(project != null && isAvailable(project));
+        // 确保图标和文本都正确显示
+        Icon icon = getTemplatePresentation().getIcon();
+        if (icon != null) {
+            e.getPresentation().setIcon(icon);
+        }
+        String text = getTemplatePresentation().getText();
+        if (text != null && !text.isEmpty()) {
+            e.getPresentation().setText(text);
+        }
     }
 
     /**
@@ -86,8 +95,7 @@ public abstract class AbstractNacosAction extends AnAction {
     protected boolean isAvailable(@NotNull Project project) {
         // 默认实现：检查 Nacos 配置是否完整
         SettingsState settings = SettingsState.getInstance();
-        return settings.serverAddr != null && !settings.serverAddr.isEmpty() &&
-               settings.username != null && !settings.username.isEmpty();
+        return settings.serverAddr != null && !settings.serverAddr.isEmpty();
     }
 
     /**

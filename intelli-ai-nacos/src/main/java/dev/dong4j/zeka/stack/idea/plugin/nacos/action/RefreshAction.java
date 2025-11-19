@@ -1,11 +1,11 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.action;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
-import dev.dong4j.zeka.stack.idea.plugin.nacos.icons.NacosIcons;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow.NacosToolWindow;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
@@ -23,7 +23,7 @@ public class RefreshAction extends AbstractNacosAction {
         super(
             NacosBundle.message("action.nacos.refresh.title"),
             NacosBundle.message("action.nacos.refresh.description"),
-            NacosIcons.NACOS_16
+            AllIcons.Actions.Refresh
              );
     }
 

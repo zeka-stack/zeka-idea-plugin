@@ -6,6 +6,7 @@
         <li>新增 本地 Nacos 状态指示与可点击控制台链接，实时显示运行/停止状态</li>
         <li>新增 一键打开本地 Nacos 目录按钮，快速定位安装路径</li>
         <li>新增 IDE 关闭监听，自动停止本地 Nacos，避免遗留进程</li>
+        <li>升级 OpenAPI 调用至 Nacos v2 版本，兼容新的 data 包装格式</li>
         <li>优化 勾选/取消使用本地注册中心时的行为：可同时配置自建地址并在取消时自动停服</li>
         <li>优化 Nacos 连接测试，用户名/密码可选填</li>
         <li>移除 EDAS 轻量级注册中心相关逻辑，统一只保留 Nacos 模式</li>
@@ -18,6 +19,7 @@
         <li>Added status indicator + console hyperlink to visualize local Nacos health</li>
         <li>Added quick action to open the local Nacos directory from settings</li>
         <li>Added AppLifecycle listener to stop local Nacos when IDE exits</li>
+        <li>Switched REST calls to Nacos OpenAPI v2 and handle the new data wrapper</li>
         <li>Improved toggle logic: coexisting with custom registry settings and auto-stop on disable</li>
         <li>Relaxed connection validation so username/password become optional</li>
         <li>Removed legacy EDAS lightweight registry code so only Nacos remains</li>

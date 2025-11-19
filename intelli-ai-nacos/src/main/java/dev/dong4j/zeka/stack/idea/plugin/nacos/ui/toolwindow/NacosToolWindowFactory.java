@@ -5,8 +5,15 @@ import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
+import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
+
+import java.awt.BorderLayout;
+import java.awt.Font;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 /**
  * Nacos 工具窗口工厂
@@ -30,16 +37,26 @@ public class NacosToolWindowFactory implements ToolWindowFactory {
      */
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        // 创建 Nacos 工具窗口主面板
-        NacosToolWindow nacosToolWindow = new NacosToolWindow(project);
+        ContentFactory contentFactory = ContentFactory.getInstance();
 
-        // 创建内容面板
-        Content content = ContentFactory.getInstance().createContent(nacosToolWindow.getMainPanel(), "", false);
+        // 创建配置中心面板
+        NacosToolWindow configCenterWindow = new NacosToolWindow(project);
+        Content configCenterContent = contentFactory.createContent(configCenterWindow.getMainPanel(), "配置中心", false);
+        configCenterWindow.setToolWindow(toolWindow);
+
+        // 创建注册中心面板（占位，后续实现）
+        JPanel registryCenterPanel = new JPanel(new BorderLayout());
+        registryCenterPanel.setBorder(JBUI.Borders.empty(20));
+        JLabel placeholderLabel = new JLabel("注册中心功能开发中...", JLabel.CENTER);
+        placeholderLabel.setFont(placeholderLabel.getFont().deriveFont(Font.ITALIC));
+        registryCenterPanel.add(placeholderLabel, BorderLayout.CENTER);
+        Content registryCenterContent = contentFactory.createContent(registryCenterPanel, "注册中心", false);
 
         // 将内容添加到工具窗口
-        toolWindow.getContentManager().addContent(content);
+        toolWindow.getContentManager().addContent(configCenterContent);
+        toolWindow.getContentManager().addContent(registryCenterContent);
 
-        // 保存工具窗口引用
-        nacosToolWindow.setToolWindow(toolWindow);
+        // 默认选中配置中心
+        toolWindow.getContentManager().setSelectedContent(configCenterContent);
     }
 }
