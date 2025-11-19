@@ -10,37 +10,6 @@
     <!-- 在插件页面上显示的供应商名称或组织ID。 -->
     <vendor email="example@example.com">Example</vendor>
 
-    <!-- 在插件页面和IDE插件管理器中显示的插件描述。
-         可以在 <![CDATA[ ]]> 标签内添加简单的HTML元素（文本格式、段落和列表）。
-         指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
-    <description><![CDATA[
-        <h2>Example Plugin</h2>
-        <p>这是一个 IntelliJ IDEA 插件开发模板，提供了基础的插件开发结构和示例代码。</p>
-
-        <h3>功能特性</h3>
-        <ul>
-            <li><b>基础 Action</b>：提供快捷键和菜单项示例</li>
-            <li><b>设置面板</b>：可配置的插件设置界面</li>
-            <li><b>服务层</b>：插件核心业务逻辑</li>
-            <li><b>工具类</b>：常用的工具方法</li>
-            <li><b>国际化支持</b>：多语言资源文件</li>
-        </ul>
-
-        <h3>使用方式</h3>
-        <ul>
-            <li>快捷键：Ctrl+Shift+E (Windows/Linux) 或 Cmd+Shift+E (Mac)</li>
-            <li>编辑器右键菜单 → Example Action</li>
-            <li>项目视图右键菜单 → Example Action</li>
-        </ul>
-
-        <h3>配置说明</h3>
-        <p>配置路径：Settings → Tools → Example Plugin</p>
-        <ul>
-            <li>基础配置选项</li>
-            <li>高级设置</li>
-        </ul>
-    ]]></description>
-
     <!-- 产品和插件兼容性要求。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <idea-version since-build="223" until-build="999.*"/>
