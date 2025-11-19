@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: example-app
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+
+fkh:
+  app:
+    config-group: DEV_GROUP
+
+logging:
+  level:
+    root: DEBUG
+    com.example: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+# 开发环境特有配置
+development:
+  mock-data: true
+  test-mode: enabled

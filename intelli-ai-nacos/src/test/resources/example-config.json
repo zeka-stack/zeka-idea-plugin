@@ -1,0 +1,23 @@
+{
+  "application": {
+    "name": "example-json-app",
+    "version": "1.0.0"
+  },
+  "server": {
+    "port": 8080,
+    "host": "localhost"
+  },
+  "database": {
+    "url": "jdbc:mysql://localhost:3306/example",
+    "username": "example_user",
+    "password": "example_password"
+  },
+  "features": {
+    "caching": true,
+    "monitoring": true,
+    "logging": {
+      "level": "INFO",
+      "file": "/var/log/example.log"
+    }
+  }
+}

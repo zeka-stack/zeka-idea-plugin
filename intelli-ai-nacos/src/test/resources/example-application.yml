@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: example-app
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+
+fkh:
+  app:
+    config-group: EXAMPLE_GROUP
+
+logging:
+  level:
+    root: INFO
+    com.example: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
