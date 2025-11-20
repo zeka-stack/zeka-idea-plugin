@@ -937,7 +937,8 @@ public class NacosSettingsPanel {
         public void paintIcon(Component c, Graphics g, int x, int y) {
             float alpha = 0.5f + 0.5f * (float) Math.sin(phase);
             int a = (int) (alpha * 255);
-            Color drawColor = new JBColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(60, Math.min(255, a))), new Color());
+            @SuppressWarnings("UseJBColor")
+            Color drawColor = new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(60, Math.min(255, a)));
 
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
