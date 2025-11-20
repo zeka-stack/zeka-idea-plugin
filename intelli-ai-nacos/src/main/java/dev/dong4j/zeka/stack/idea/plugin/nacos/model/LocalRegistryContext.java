@@ -1,14 +1,20 @@
-package com.alibabacloud.intellij.model.edas.registry.local;
+package dev.dong4j.zeka.stack.idea.plugin.nacos.model;
 
-import com.alibabacloud.intellij.model.edas.LocalRegistry;
-import com.alibabacloud.intellij.model.edas.registry.Context;
 import com.intellij.execution.Executor;
 import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.Project;
 
-public class LocalRegistryContext extends Context {
+/**
+ * 本地注册中心上下文
+ * 保存本地注册中心启动和运行过程中的状态信息
+ *
+ * @author dong4j
+ * @since 1.0.0
+ */
+public class LocalRegistryContext extends RegistryContext {
+    
     private volatile Process registerProcess;
     private volatile Project project;
     private Executor executor;
@@ -22,13 +28,13 @@ public class LocalRegistryContext extends Context {
     private volatile Boolean startSuccess;
     private volatile Boolean cancel;
 
+    @Override
     public void cleanResource() {
         try {
             this.registerProcess.destroyForcibly();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     public LocalRegistry getRegistry() {

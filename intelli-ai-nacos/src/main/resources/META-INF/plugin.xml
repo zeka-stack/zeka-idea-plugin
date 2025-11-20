@@ -47,20 +47,22 @@
         <!-- 工具窗口 -->
         <toolWindow factoryClass="dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow.NacosToolWindowFactory"
                     id="Nacos"
-                    anchor="right"
+                    anchor="bottom"
                     icon="/icons/nacos_16.svg"/>
 
         <!-- 意图操作 -->
-        <intentionAction
-                implementationClass="dev.dong4j.zeka.stack.idea.plugin.nacos.action.PublishConfigIntentionAction"
-                category="IntelliAI Nacos">
+        <intentionAction>
             <language>ANY</language>
+            <className>dev.dong4j.zeka.stack.idea.plugin.nacos.action.PublishConfigIntentionAction</className>
+            <category>IntelliAI Nacos</category>
+            <descriptionDirectoryName>PublishConfigIntention</descriptionDirectoryName>
         </intentionAction>
 
-        <intentionAction
-                implementationClass="dev.dong4j.zeka.stack.idea.plugin.nacos.action.CompareConfigIntentionAction"
-                category="IntelliAI Nacos">
+        <intentionAction>
             <language>ANY</language>
+            <className>dev.dong4j.zeka.stack.idea.plugin.nacos.action.CompareConfigIntentionAction</className>
+            <category>IntelliAI Nacos</category>
+            <descriptionDirectoryName>CompareConfigIntention</descriptionDirectoryName>
         </intentionAction>
     </extensions>
 

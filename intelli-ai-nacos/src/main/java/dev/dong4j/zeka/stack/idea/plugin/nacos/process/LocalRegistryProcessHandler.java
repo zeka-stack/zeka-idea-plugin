@@ -1,7 +1,5 @@
-package com.alibabacloud.intellij.service.edas.registry.local;
+package dev.dong4j.zeka.stack.idea.plugin.nacos.process;
 
-import com.alibabacloud.intellij.model.edas.registry.local.LocalRegistryContext;
-import com.alibabacloud.intellij.runner.edas.registry.ServiceConnectJavaProgramPatcher;
 import com.intellij.execution.ExecutionManager;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.process.ProcessOutputTypes;
@@ -13,8 +11,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.OutputStream;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryContext;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.runner.RegistryJavaProgramPatcher;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager.LocalRegistryManager;
+
+/**
+ * 本地注册中心进程处理器
+ * 负责管理本地 Nacos 注册中心进程的生命周期
+ *
+ * @author dong4j
+ * @since 1.0.0
+ */
 @SuppressWarnings("All")
 public class LocalRegistryProcessHandler extends ProcessHandler {
+
     protected LocalRegistryContext localRegistryContext;
 
     public LocalRegistryProcessHandler(LocalRegistryContext localRegistryContext) {
@@ -22,31 +32,45 @@ public class LocalRegistryProcessHandler extends ProcessHandler {
         this.startNotify();
     }
 
+    /**
+     * 打印消息到控制台
+     *
+     * @param message 消息内容
+     * @param type    输出类型
+     */
     private void printMessage(String message, Key type) {
         if (!this.isProcessTerminating() && !this.isProcessTerminated()) {
             this.notifyTextAvailable(message, type);
         }
-
     }
 
+    /**
+     * 打印信息级别消息
+     *
+     * @param message 消息内容
+     */
     public void printInfo(String message) {
         this.printMessage(String.format("[INFO] %s\n", message), ProcessOutputTypes.STDOUT);
     }
 
+    @Override
     public void notifyProcessTerminated(int exitCode) {
         super.notifyProcessTerminated(exitCode);
     }
 
+    @Override
     protected void destroyProcessImpl() {
         System.out.println("Destroy...");
         this.notifyProcessDetached();
     }
 
+    @Override
     protected void detachProcessImpl() {
         System.out.println("Detach...");
         this.notifyProcessDetached();
     }
 
+    @Override
     public boolean detachIsDefault() {
         System.out.println("DetachIsDefault...");
         if (this.localRegistryContext.getRegisterProcess() != null) {
@@ -61,10 +85,18 @@ public class LocalRegistryProcessHandler extends ProcessHandler {
                         }
 
                         LocalRegistryProcessHandler.this.localRegistryContext.setRegisterProcess((Process) null);
-                        ServiceConnectJavaProgramPatcher.notifyShutdown(LocalRegistryProcessHandler.this.localRegistryContext.getProject().getName(), LocalRegistryProcessHandler.this.localRegistryContext.getConfigName());
+                        RegistryJavaProgramPatcher.notifyShutdown(
+                            LocalRegistryProcessHandler.this.localRegistryContext.getProject().getName(),
+                            LocalRegistryProcessHandler.this.localRegistryContext.getConfigName()
+                                                                 );
                         LocalRegistryProcessHandler.this.localRegistryContext.getConsoleToolbarActions().removeAll();
                         LocalRegistryProcessHandler.this.localRegistryContext.getConsoleActionToolbar().updateActionsImmediately();
-                        ExecutionManager.getInstance(LocalRegistryProcessHandler.this.localRegistryContext.getProject()).getContentManager().removeRunContent(LocalRegistryProcessHandler.this.localRegistryContext.getExecutor(), LocalRegistryProcessHandler.this.localRegistryContext.getRunDescriptor());
+                        ExecutionManager.getInstance(LocalRegistryProcessHandler.this.localRegistryContext.getProject())
+                            .getContentManager()
+                            .removeRunContent(
+                                LocalRegistryProcessHandler.this.localRegistryContext.getExecutor(),
+                                LocalRegistryProcessHandler.this.localRegistryContext.getRunDescriptor()
+                                             );
                         System.out.println("detach local registry");
                     }
                 }
@@ -78,6 +110,7 @@ public class LocalRegistryProcessHandler extends ProcessHandler {
         return true;
     }
 
+    @Override
     public @Nullable OutputStream getProcessInput() {
         return null;
     }

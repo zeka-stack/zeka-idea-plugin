@@ -147,6 +147,33 @@ public class ConsumServerHttpAgent {
     }
 
     /**
+     * HTTP PUT 请求
+     *
+     * @param path    请求路径
+     * @param headers 请求头
+     * @param params  请求参数
+     * @param body    请求体
+     * @return 响应结果
+     * @throws Exception 异常
+     */
+    public HttpRestResult<String> httpPut(String path, Map<String, String> headers, Map<String, String> params, String body) throws Exception {
+        String url = serverUrl + path;
+        Header header = Header.newInstance();
+        if (headers != null) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                header.addParam(entry.getKey(), entry.getValue());
+            }
+        }
+        Query query = Query.newInstance();
+        if (params != null) {
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                query.addParam(entry.getKey(), entry.getValue());
+            }
+        }
+        return nacosRestTemplate.put(url, header, query, body, String.class);
+    }
+
+    /**
      * HTTP DELETE 请求
      *
      * @param path    请求路径

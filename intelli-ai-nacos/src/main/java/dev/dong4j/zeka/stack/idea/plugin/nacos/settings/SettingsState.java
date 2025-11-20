@@ -69,6 +69,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean useLocalRegistry = false;
 
     /**
+     * 本地 Nacos 版本
+     * <p>
+     * 用于选择要下载和启动的 Nacos 版本
+     */
+    public String localNacosVersion = "2.4.3";
+
+    /**
      * 获取 SettingsState 的单例实例
      *
      * @return SettingsState 的实例

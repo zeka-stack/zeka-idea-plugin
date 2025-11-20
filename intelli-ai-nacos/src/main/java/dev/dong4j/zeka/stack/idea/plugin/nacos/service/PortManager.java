@@ -1,4 +1,4 @@
-package com.alibabacloud.intellij.service.edas.registry;
+package dev.dong4j.zeka.stack.idea.plugin.nacos.service;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -9,9 +9,20 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * 端口管理器
+ * 用于检测系统端口占用情况
+ *
+ * @author dong4j
+ * @since 1.0.0
+ */
 public class PortManager {
 
-
+    /**
+     * 获取 Windows 系统 TCP 端口占用情况
+     *
+     * @return 已占用的端口集合
+     */
     public static Set<Integer> getPortInUseOnWindowsForTcp() {
         BufferedReader reader = null;
 
@@ -38,12 +49,18 @@ public class PortManager {
             e.printStackTrace();
             process = Collections.emptySet();
         } finally {
-            EdasServiceConnectUtils.close(reader);
+            RegistryUtils.close(reader);
         }
 
         return process;
     }
 
+    /**
+     * 检测 Mac 系统 TCP 端口是否可用
+     *
+     * @param port 端口号
+     * @return true 如果端口可用
+     */
     public static boolean isPortAvailableOnMacForTcp(int port) {
         try {
             String[] cmd = new String[] {"/bin/sh", "-c", "lsof -i:" + port + " | grep LISTEN"};
@@ -54,5 +71,4 @@ public class PortManager {
             return false;
         }
     }
-
 }

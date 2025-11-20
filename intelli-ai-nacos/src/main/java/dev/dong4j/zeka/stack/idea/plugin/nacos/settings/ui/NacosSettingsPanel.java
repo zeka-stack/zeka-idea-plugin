@@ -1,14 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.settings.ui;
 
-import com.alibabacloud.intellij.model.edas.LocalRegistry;
-import com.alibabacloud.intellij.model.edas.registry.local.LocalRegistryConstants;
-import com.alibabacloud.intellij.service.edas.registry.local.LocalRegistryManager;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.TitledSeparator;
@@ -26,7 +24,6 @@ import java.awt.Desktop;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -37,6 +34,9 @@ import javax.swing.JPanel;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.local.LocalNacosService;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryConstants;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager.LocalRegistryManager;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
@@ -95,6 +95,9 @@ public class NacosSettingsPanel {
     /** 打开本地目录按钮 */
     private final JButton openLocalDirButton;
 
+    /** Nacos 版本下拉列表 */
+    private final ComboBox<String> versionComboBox;
+
     /** 是否处于本地 Nacos 操作中 */
     private boolean localOperationInProgress = false;
 
@@ -129,6 +132,17 @@ public class NacosSettingsPanel {
         openLocalDirButton = new JButton(NacosBundle.message("settings.nacos.local.open.dir"));
         openLocalDirButton.addActionListener(e -> openLocalNacosDir());
 
+        // 初始化版本下拉列表
+        versionComboBox = new ComboBox<>(new String[] {"2.4.3"});
+        // 注意：版本选择会在 reset() 方法中从设置中回显
+        versionComboBox.addActionListener(e -> {
+            // 版本变更时，删除旧版本的 zip 包
+            String selectedVersion = (String) versionComboBox.getSelectedItem();
+            if (selectedVersion != null) {
+                deleteOldVersionZipFiles(selectedVersion);
+            }
+        });
+
         startLocalButton.setEnabled(false);
         stopLocalButton.setEnabled(false);
 
@@ -141,14 +155,12 @@ public class NacosSettingsPanel {
         localActionsPanel.add(startLocalButton);
         localActionsPanel.add(stopLocalButton);
 
-        SettingsState settings = SettingsState.getInstance();
-        localRegistryCheckBox.setSelected(settings.useLocalRegistry);
-
         JPanel localStatusPanel = buildLocalStatusPanel();
 
         FormBuilder builder = FormBuilder.createFormBuilder()
             .addComponent(new TitledSeparator(NacosBundle.message("settings.nacos.local.section")))
             .addComponent(localRegistryCheckBox)
+            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.local.version") + ":"), versionComboBox)
             .addComponent(localActionsPanel)
             .addComponent(localStatusPanel)
             .addSeparator(12)
@@ -262,10 +274,12 @@ public class NacosSettingsPanel {
                                   ? !Objects.equals(storedPassword, currentPassword)
                                   : !currentPassword.isEmpty();
 
+        String selectedVersion = (String) versionComboBox.getSelectedItem();
         return !serverAddrField.getText().equals(settings.serverAddr)
                || !usernameField.getText().equals(settings.username)
                || globalAdminCheckBox.isSelected() != settings.globalAdmin
                || localRegistryCheckBox.isSelected() != settings.useLocalRegistry
+               || !Objects.equals(selectedVersion, settings.localNacosVersion)
                || passwordChanged;
     }
 
@@ -277,6 +291,11 @@ public class NacosSettingsPanel {
         settings.username = usernameField.getText();
         settings.globalAdmin = globalAdminCheckBox.isSelected();
         settings.useLocalRegistry = localRegistryCheckBox.isSelected();
+        String selectedVersion = (String) versionComboBox.getSelectedItem();
+        if (selectedVersion == null || selectedVersion.isEmpty()) {
+            selectedVersion = "2.4.3";
+        }
+        settings.localNacosVersion = selectedVersion;
 
         // 保存密码到 CredentialStore，当输入为空时清除已保存密码
         String password = new String(passwordField.getPassword());
@@ -284,6 +303,11 @@ public class NacosSettingsPanel {
             settings.setPassword(null);
         } else {
             settings.setPassword(password);
+        }
+
+        // 删除非当前版本的其他 zip 包
+        if (selectedVersion != null) {
+            deleteOldVersionZipFiles(selectedVersion);
         }
     }
 
@@ -297,6 +321,23 @@ public class NacosSettingsPanel {
         String password = settings.getPassword();
         passwordField.setText(password != null ? password : "");
         localRegistryCheckBox.setSelected(settings.useLocalRegistry);
+
+        // 回显版本选择
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        // 确保版本在下拉列表中，如果不存在则添加
+        boolean versionExists = false;
+        for (int i = 0; i < versionComboBox.getItemCount(); i++) {
+            if (version.equals(versionComboBox.getItemAt(i))) {
+                versionExists = true;
+                break;
+            }
+        }
+        if (!versionExists && version != null && !version.isEmpty()) {
+            versionComboBox.addItem(version);
+        }
+        versionComboBox.setSelectedItem(version);
+        
         updateLocalRegistryState();
         refreshLocalStatus();
     }
@@ -317,6 +358,7 @@ public class NacosSettingsPanel {
         boolean remoteEnabled = !localOperationInProgress;
 
         localRegistryCheckBox.setEnabled(!localOperationInProgress);
+        versionComboBox.setEnabled(useLocalRegistry && !localOperationInProgress);
         startLocalButton.setEnabled(controlsEnabled);
         stopLocalButton.setEnabled(controlsEnabled);
         openLocalDirButton.setEnabled(controlsEnabled && localRegistryRunning);
@@ -335,6 +377,15 @@ public class NacosSettingsPanel {
         }
         setLocalOperationInProgress(true);
         startLocalButton.setText(NacosBundle.message("settings.nacos.local.starting"));
+        String selectedVersion = (String) versionComboBox.getSelectedItem();
+        if (selectedVersion == null || selectedVersion.isEmpty()) {
+            // 如果下拉列表没有选择，从设置中获取
+            SettingsState settings = SettingsState.getInstance();
+            selectedVersion = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                              ? settings.localNacosVersion : "2.4.3";
+        }
+        final String version = selectedVersion;
+        
         CompletableFuture
             .supplyAsync(() -> LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS),
                          AppExecutorUtil.getAppExecutorService())
@@ -346,7 +397,7 @@ public class NacosSettingsPanel {
                     setLocalOperationInProgress(false);
                     updateLocalStatusVisual(true);
                 } else {
-                    bindLocalOperation(LocalNacosService.getInstance().startLocalRegistry(),
+                    bindLocalOperation(LocalNacosService.getInstance().startLocalRegistry(version),
                                        () -> startLocalButton.setText(NacosBundle.message("settings.nacos.local.start")));
                 }
             }, ModalityState.any()));
@@ -457,6 +508,18 @@ public class NacosSettingsPanel {
         } catch (Exception ex) {
             NotificationUtil.showError(null, NacosBundle.message("notification.local.nacos.open.dir.failed", ex.getMessage()));
             LOG.warn("Failed to open local Nacos directory", ex);
+        }
+    }
+
+    /**
+     * 删除非当前版本的其他 zip 包
+     *
+     * @param currentVersion 当前版本号
+     */
+    private void deleteOldVersionZipFiles(String currentVersion) {
+        int deletedCount = LocalRegistryManager.deleteOldVersionZipFiles(currentVersion);
+        if (deletedCount > 0) {
+            LOG.info("Deleted " + deletedCount + " old version zip file(s)");
         }
     }
 }

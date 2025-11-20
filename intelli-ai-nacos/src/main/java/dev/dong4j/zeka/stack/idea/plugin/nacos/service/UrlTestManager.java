@@ -1,10 +1,24 @@
-package com.alibabacloud.intellij.service.edas.common;
+package dev.dong4j.zeka.stack.idea.plugin.nacos.service;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/**
+ * URL 测试管理器
+ * 用于测试 URL 的可访问性
+ *
+ * @author dong4j
+ * @since 1.0.0
+ */
 @SuppressWarnings("All")
 public class UrlTestManager {
+
+    /**
+     * 测试 URL 是否可通过 GET 方法访问
+     *
+     * @param url 测试的 URL
+     * @return true 如果返回 200 状态码
+     */
     public static boolean testGetMethod(String url) {
         HttpURLConnection c = null;
 
@@ -31,7 +45,6 @@ public class UrlTestManager {
                 } catch (Exception var13) {
                 }
             }
-
         }
 
         return var2;

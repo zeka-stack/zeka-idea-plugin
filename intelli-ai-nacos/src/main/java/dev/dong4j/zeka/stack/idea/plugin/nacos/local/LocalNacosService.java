@@ -1,15 +1,15 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.local;
 
-import com.alibabacloud.intellij.UserCancelException;
-import com.alibabacloud.intellij.model.edas.LocalRegistry;
-import com.alibabacloud.intellij.model.edas.registry.local.LocalRegistryConstants;
-import com.alibabacloud.intellij.model.edas.registry.local.LocalRegistryContext;
-import com.alibabacloud.intellij.service.edas.registry.local.LocalRegistryManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.concurrency.AppExecutorUtil;
 
 import java.util.concurrent.CompletableFuture;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.exception.UserCancelException;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryConstants;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryContext;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager.LocalRegistryManager;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 
@@ -39,15 +39,31 @@ public final class LocalNacosService {
 
     /**
      * 启动本地 Nacos 注册中心
+     * <p>
+     * 从设置中获取当前选择的版本号
      *
      * @return 异步任务
      */
     public CompletableFuture<Void> startLocalRegistry() {
+        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
+            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        return startLocalRegistry(version);
+    }
+
+    /**
+     * 启动本地 Nacos 注册中心（支持版本号）
+     *
+     * @param version Nacos 版本号
+     * @return 异步任务
+     */
+    public CompletableFuture<Void> startLocalRegistry(String version) {
         return CompletableFuture.runAsync(() -> {
             LocalRegistryContext context = new LocalRegistryContext();
             context.setRegistry(LocalRegistry.NACOS);
             try {
-                LocalRegistryManager.startRegistryFromPreferencePage(context);
+                LocalRegistryManager.startRegistryFromPreferencePage(context, version);
                 boolean startedByOthers = Boolean.TRUE.equals(context.getStartedByOtherOwner());
                 if (startedByOthers) {
                     NotificationUtil.showInfo(null,

@@ -1,0 +1,68 @@
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #34495e;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .code {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+<h1>发布配置到 Nacos</h1>
+<p>此意图操作允许您将当前编辑的配置文件发布到 Nacos 配置中心。</p>
+
+<h2>使用方法</h2>
+<p>在编辑 <code>application.yml</code> 或 <code>application.yaml</code> 文件时，将光标放在文件中的任意位置，然后按
+    <strong>Option+Enter</strong> (Mac) 或 <strong>Alt+Enter</strong> (Windows/Linux) 打开意图菜单，选择"发布配置到 Nacos"。</p>
+
+<h2>功能特性</h2>
+<ul>
+    <li>支持 YAML 格式的配置文件</li>
+    <li>自动识别配置文件名称（application.yml/yaml）</li>
+    <li>提供配置对话框，允许您指定命名空间、分组和数据 ID</li>
+    <li>发布前会验证 Nacos 连接配置</li>
+</ul>
+
+<h2>示例</h2>
+<div class="code">
+    # application.yml
+    server:
+    port: 8080
+    spring:
+    application:
+    name: my-service
+</div>
+
+<p>将光标放在上述文件中的任意位置，按 Alt+Enter，然后选择"发布配置到 Nacos"即可将配置发布到 Nacos 配置中心。</p>
+
+<h2>注意事项</h2>
+<ul>
+    <li>需要先在插件设置中配置 Nacos 服务器地址</li>
+    <li>配置文件名称必须以 "application" 开头</li>
+    <li>文件扩展名必须是 .yml 或 .yaml</li>
+</ul>
+</body>
+</html>
+

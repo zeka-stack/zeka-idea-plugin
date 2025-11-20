@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.local;
 
-import com.alibabacloud.intellij.model.edas.LocalRegistry;
-import com.alibabacloud.intellij.service.edas.registry.local.LocalRegistryManager;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
@@ -11,6 +9,8 @@ import com.intellij.util.concurrency.AppExecutorUtil;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager.LocalRegistryManager;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState;
 
 /**

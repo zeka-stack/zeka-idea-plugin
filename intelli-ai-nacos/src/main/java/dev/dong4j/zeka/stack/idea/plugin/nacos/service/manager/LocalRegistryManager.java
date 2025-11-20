@@ -1,14 +1,5 @@
-package com.alibabacloud.intellij.service.edas.registry.local;
+package dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager;
 
-import com.alibabacloud.intellij.UserCancelException;
-import com.alibabacloud.intellij.model.edas.LocalRegistry;
-import com.alibabacloud.intellij.model.edas.registry.local.LocalRegistryConstants;
-import com.alibabacloud.intellij.model.edas.registry.local.LocalRegistryContext;
-import com.alibabacloud.intellij.service.edas.common.UrlTestManager;
-import com.alibabacloud.intellij.service.edas.registry.EdasServiceConnectLogger;
-import com.alibabacloud.intellij.service.edas.registry.EdasServiceConnectLogger.EmptyLogger;
-import com.alibabacloud.intellij.service.edas.registry.EdasServiceConnectUtils;
-import com.alibabacloud.intellij.service.edas.registry.PortManager;
 import com.intellij.execution.ExecutionManager;
 import com.intellij.execution.Executor;
 import com.intellij.execution.actions.StopProcessAction;
@@ -52,54 +43,139 @@ import java.util.Set;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.exception.UserCancelException;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryConstants;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryContext;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.process.LocalRegistryProcessHandler;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.PortManager;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.RegistryLogger;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.RegistryLogger.EmptyLogger;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.RegistryUtils;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.service.UrlTestManager;
+
+/**
+ * 本地注册中心管理器
+ * 负责本地 Nacos 注册中心的下载、启动、停止等生命周期管理
+ *
+ * @author dong4j
+ * @since 1.0.0
+ */
 @SuppressWarnings("All")
 public class LocalRegistryManager {
+
     private static final Object downloadLock = new Object();
 
+    /**
+     * 检查注册中心是否已下载
+     *
+     * @param registry 注册中心类型
+     * @return true 如果已下载
+     */
     public static boolean isRegisterDownloaded(LocalRegistry registry) {
         String registerPath = getRegisterStartupFilePath(registry);
         return checkRegisterExists(registerPath);
     }
 
+    /**
+     * 检查注册中心文件是否存在
+     *
+     * @param path 文件路径
+     * @return true 如果文件存在
+     */
     private static boolean checkRegisterExists(String path) {
         File startupFile = new File(path);
         return startupFile.exists();
     }
 
+    /**
+     * 获取注册中心启动文件路径
+     *
+     * @param registry 注册中心类型
+     * @return 启动文件路径
+     */
     public static String getRegisterStartupFilePath(LocalRegistry registry) {
-        return EdasServiceConnectUtils.isWindows() ? LocalRegistryConstants.NACOS_START_UP_FILE_WIN :
+        return RegistryUtils.isWindows() ? LocalRegistryConstants.NACOS_START_UP_FILE_WIN :
                LocalRegistryConstants.NACOS_START_UP_FILE_MAC;
     }
 
+    /**
+     * 获取注册中心安装包文件路径
+     *
+     * @param registry 注册中心类型
+     * @return 安装包文件路径
+     */
     public static String getRegisterPackageFilePath(LocalRegistry registry) {
-        return EdasServiceConnectUtils.isWindows() ? LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_WIN :
+        return RegistryUtils.isWindows() ? LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_WIN :
                LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_MAC;
     }
 
-    public static void downloadRegistry(final LocalRegistry registry, ProgressIndicator indicator, final EdasServiceConnectLogger logger) throws InterruptedException {
+    /**
+     * 获取注册中心安装包文件路径（支持版本号）
+     *
+     * @param registry 注册中心类型
+     * @param version  Nacos 版本号
+     * @return 安装包文件路径
+     */
+    public static String getRegisterPackageFilePath(LocalRegistry registry, String version) {
+        return RegistryUtils.isWindows() ? LocalRegistryConstants.getNacosLocalPathForWin(version) :
+               LocalRegistryConstants.getNacosLocalPathForMac(version);
+    }
+
+    /**
+     * 下载注册中心
+     * <p>
+     * 从设置中获取当前选择的版本号
+     *
+     * @param registry  注册中心类型
+     * @param indicator 进度指示器
+     * @param logger    日志记录器
+     * @throws InterruptedException 中断异常
+     */
+    public static void downloadRegistry(final LocalRegistry registry, ProgressIndicator indicator, final RegistryLogger logger) throws InterruptedException {
+        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
+            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        downloadRegistry(registry, version, indicator, logger);
+    }
+
+    /**
+     * 下载注册中心（支持版本号）
+     *
+     * @param registry  注册中心类型
+     * @param version   Nacos 版本号
+     * @param indicator 进度指示器
+     * @param logger    日志记录器
+     * @throws InterruptedException 中断异常
+     */
+    public static void downloadRegistry(final LocalRegistry registry, final String version, ProgressIndicator indicator,
+                                        final RegistryLogger logger) throws InterruptedException {
         Thread t = new Thread(new Runnable() {
             public void run() {
                 try {
                     synchronized (LocalRegistryManager.downloadLock) {
-                        if (LocalRegistryManager.isRegisterDownloaded(registry)) {
-                            logger.info("Registry is already downloaded before");
+                        // 检查指定版本是否已下载
+                        String packagePath = getRegisterPackageFilePath(registry, version);
+                        File packageFile = new File(packagePath);
+                        if (packageFile.exists() && LocalRegistryManager.isRegisterDownloaded(registry)) {
+                            logger.info("Registry version " + version + " is already downloaded");
                             return;
                         }
 
-                        logger.info("Registry not exists, going to download");
-                        LocalRegistryManager.download0(registry, logger);
-                        logger.info("Download registry successfully");
+                        logger.info("Registry version " + version + " not exists, going to download");
+                        LocalRegistryManager.download0(registry, version, logger);
+                        logger.info("Download registry version " + version + " successfully");
                     }
                 } catch (Exception e) {
-                    logger.info("Failed to download registry: " + e.getMessage());
+                    logger.info("Failed to download registry version " + version + ": " + e.getMessage());
                 }
-
             }
         });
         t.start();
 
         for (; t.isAlive() && !indicator.isCanceled(); Thread.sleep(100L)) {
-            File file = new File(getRegisterPackageFilePath(registry));
+            File file = new File(getRegisterPackageFilePath(registry, version));
             if (file.exists()) {
                 double length = (double) file.length();
                 indicator.setFraction(length / (double) 7.2E7F);
@@ -109,37 +185,82 @@ public class LocalRegistryManager {
         if (t.isAlive()) {
             t.interrupt();
         }
-
     }
 
-    private static void download0(LocalRegistry registry, EdasServiceConnectLogger logger) throws Exception {
-        String startupFile = EdasServiceConnectUtils.isWindows()
+    /**
+     * 执行实际的下载操作
+     * <p>
+     * 从设置中获取当前选择的版本号
+     *
+     * @param registry 注册中心类型
+     * @param logger   日志记录器
+     * @throws Exception 异常
+     */
+    private static void download0(LocalRegistry registry, RegistryLogger logger) throws Exception {
+        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
+            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        download0(registry, version, logger);
+    }
+
+    /**
+     * 执行实际的下载操作（支持版本号）
+     *
+     * @param registry 注册中心类型
+     * @param version  Nacos 版本号
+     * @param logger   日志记录器
+     * @throws Exception 异常
+     */
+    private static void download0(LocalRegistry registry, String version, RegistryLogger logger) throws Exception {
+        String startupFile = RegistryUtils.isWindows()
                              ? LocalRegistryConstants.NACOS_START_UP_FILE_WIN
                              : LocalRegistryConstants.NACOS_START_UP_FILE_MAC;
-        String localPath = EdasServiceConnectUtils.isWindows()
-                           ? LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_WIN
-                           : LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_MAC;
-        if (!checkRegisterExists(startupFile)) {
-            EdasServiceConnectUtils.download(LocalRegistryConstants.NACOS_REMOTE_PATH, localPath, logger);
-            logger.info("Registry is downloaded to " + localPath);
-            if (EdasServiceConnectUtils.isWindows()) {
-                EdasServiceConnectUtils.unzip(localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
-            } else {
-                String command = String.format("unzip %s -d %s", localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
-                Process extractProcess = Runtime.getRuntime().exec(command, (String[]) null,
-                                                                   new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR));
-                int result = extractProcess.waitFor();
-                if (result != 0) {
-                    throw new Exception("Unable to extract registry package, the package maybe broken");
-                }
-            }
-            logger.info("Registry is extract to " + LocalRegistryConstants.LOCAL_REGISTRY_DIR);
-        }
+        String localPath = RegistryUtils.isWindows()
+                           ? LocalRegistryConstants.getNacosLocalPathForWin(version)
+                           : LocalRegistryConstants.getNacosLocalPathForMac(version);
+        String remotePath = LocalRegistryConstants.getNacosRemotePath(version);
 
+        // 如果启动文件不存在，或者本地 zip 文件不存在，则下载
+        if (!checkRegisterExists(startupFile) || !new File(localPath).exists()) {
+            // 确保目录存在
+            File pkgDir = new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR);
+            if (!pkgDir.exists()) {
+                pkgDir.mkdirs();
+            }
+
+            RegistryUtils.download(remotePath, localPath, logger);
+            logger.info("Registry version " + version + " is downloaded to " + localPath);
+
+            // 如果启动文件不存在，则解压
+            if (!checkRegisterExists(startupFile)) {
+                if (RegistryUtils.isWindows()) {
+                    RegistryUtils.unzip(localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
+                } else {
+                    String command = String.format("unzip %s -d %s", localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
+                    Process extractProcess = Runtime.getRuntime().exec(command, (String[]) null,
+                                                                       new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR));
+                    int result = extractProcess.waitFor();
+                    if (result != 0) {
+                        throw new Exception("Unable to extract registry package, the package maybe broken");
+                    }
+                }
+                logger.info("Registry version " + version + " is extract to " + LocalRegistryConstants.LOCAL_REGISTRY_DIR);
+            }
+        }
     }
 
+    /**
+     * 从应用启动时启动注册中心
+     *
+     * @param executor             执行器
+     * @param localRegistryContext 本地注册中心上下文
+     * @param project              项目
+     * @param logger               日志记录器
+     * @throws Exception 异常
+     */
     public static void startRegistryFromAppStart(Executor executor, LocalRegistryContext localRegistryContext, Project project,
-                                                 EdasServiceConnectLogger logger) throws Exception {
+                                                 RegistryLogger logger) throws Exception {
         if (localRegistryStarted(localRegistryContext.getRegistry())) {
             localRegistryContext.setStartedByOtherOwner(true);
         } else {
@@ -156,7 +277,30 @@ public class LocalRegistryManager {
         }
     }
 
+    /**
+     * 从设置页面启动注册中心
+     * <p>
+     * 从设置中获取当前选择的版本号
+     *
+     * @param registryContext 注册中心上下文
+     * @throws Exception 异常
+     */
     public static void startRegistryFromPreferencePage(final LocalRegistryContext registryContext) throws Exception {
+        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
+            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        startRegistryFromPreferencePage(registryContext, version);
+    }
+
+    /**
+     * 从设置页面启动注册中心（支持版本号）
+     *
+     * @param registryContext 注册中心上下文
+     * @param version         Nacos 版本号
+     * @throws Exception 异常
+     */
+    public static void startRegistryFromPreferencePage(final LocalRegistryContext registryContext, final String version) throws Exception {
         if (localRegistryStarted(registryContext.getRegistry())) {
             registryContext.setStartedByOtherOwner(true);
         } else {
@@ -172,18 +316,18 @@ public class LocalRegistryManager {
                         e1.printStackTrace();
                     }
 
-                    final String target = "Nacos Server";
+                    final String target = "Nacos Server " + version;
                     if (!LocalRegistryManager.isRegisterDownloaded(registryContext.getRegistry())) {
                         ProgressManager.getInstance().runProcessWithProgressSynchronously(new Runnable() {
                             public void run() {
                                 try {
                                     ProgressIndicator indicator = ProgressManager.getInstance().getProgressIndicator();
                                     indicator.setText("Downloading " + target + " (72MB)");
-                                    LocalRegistryManager.downloadRegistry(registryContext.getRegistry(), indicator, EmptyLogger.instance);
+                                    LocalRegistryManager.downloadRegistry(registryContext.getRegistry(), version, indicator,
+                                                                          EmptyLogger.instance);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-
                             }
                         }, "Downloading " + target, true, registryContext.getProject());
                     }
@@ -198,7 +342,6 @@ public class LocalRegistryManager {
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
-
                             }
                         })).start();
                         LocalRegistryManager.waitForRegisterStartResult(registryContext);
@@ -213,11 +356,17 @@ public class LocalRegistryManager {
         }
     }
 
+    /**
+     * 停止注册中心
+     *
+     * @param registry 注册中心类型
+     * @throws Exception 异常
+     */
     public static void stopRegistry(LocalRegistry registry) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(new String[0]);
         List<String> commands = new LinkedList();
         pb.directory(new File(LocalRegistryConstants.NACOS_BIN_DIR));
-        if (EdasServiceConnectUtils.isWindows()) {
+        if (RegistryUtils.isWindows()) {
             commands.add("cmd");
             commands.add("/c");
             commands.add("shutdown.cmd");
@@ -231,8 +380,13 @@ public class LocalRegistryManager {
         shutdownProcess.waitFor();
     }
 
+    /**
+     * 检查端口是否被占用
+     *
+     * @param ports 端口数组
+     */
     private static void checkPortInUse(int[] ports) {
-        if (EdasServiceConnectUtils.isWindows()) {
+        if (RegistryUtils.isWindows()) {
             Set<Integer> portsInuse = PortManager.getPortInUseOnWindowsForTcp();
 
             for (int port : ports) {
@@ -247,9 +401,15 @@ public class LocalRegistryManager {
                 }
             }
         }
-
     }
 
+    /**
+     * 处理注册中心启动结果
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     * @param processHandler       进程处理器
+     * @throws Exception 异常
+     */
     private static void handleRegisterStartResult(LocalRegistryContext localRegistryContext, LocalRegistryProcessHandler processHandler) throws Exception {
         if (localRegistryContext.getStartSuccess()) {
             notifySuccessMsg(processHandler);
@@ -262,6 +422,11 @@ public class LocalRegistryManager {
         }
     }
 
+    /**
+     * 等待注册中心启动结果
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     */
     private static void waitForRegisterStartResult(final LocalRegistryContext localRegistryContext) {
         final Project project = localRegistryContext.getProject();
         final Runnable runnable = new Runnable() {
@@ -289,7 +454,6 @@ public class LocalRegistryManager {
                         t.printStackTrace();
                     }
                 }
-
             }
         };
         if (ApplicationManager.getApplication().isDispatchThread()) {
@@ -319,12 +483,20 @@ public class LocalRegistryManager {
         if (localRegistryContext.getStartSuccess() == null) {
             localRegistryContext.setStartSuccess(false);
         }
-
     }
 
+    /**
+     * 启动注册中心并绘制控制台
+     *
+     * @param executor       执行器
+     * @param connectContext 连接上下文
+     * @param project        项目
+     * @param processHandler 进程处理器
+     * @param logger         日志记录器
+     */
     private static void startRegisterAndDrawConsole(final Executor executor, final LocalRegistryContext connectContext,
                                                     final Project project, final LocalRegistryProcessHandler processHandler,
-                                                    final EdasServiceConnectLogger logger) {
+                                                    final RegistryLogger logger) {
         (new Thread(new Runnable() {
             public void run() {
                 try {
@@ -332,7 +504,6 @@ public class LocalRegistryManager {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
             }
         })).start();
         if (executor != null) {
@@ -343,7 +514,6 @@ public class LocalRegistryManager {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
                 }
             };
             if (ApplicationManager.getApplication().isDispatchThread()) {
@@ -352,9 +522,16 @@ public class LocalRegistryManager {
                 ApplicationManager.getApplication().executeOnPooledThread(runnable);
             }
         }
-
     }
 
+    /**
+     * 绘制注册中心控制台视图
+     *
+     * @param executor             执行器
+     * @param project              项目
+     * @param processHandler       进程处理器
+     * @param localRegistryContext 本地注册中心上下文
+     */
     private static void drawRegisterConsoleView(final Executor executor, final Project project,
                                                 final LocalRegistryProcessHandler processHandler,
                                                 final LocalRegistryContext localRegistryContext) {
@@ -382,6 +559,11 @@ public class LocalRegistryManager {
         }, ModalityState.any());
     }
 
+    /**
+     * 通知启动成功消息
+     *
+     * @param processHandler 进程处理器
+     */
     private static void notifySuccessMsg(LocalRegistryProcessHandler processHandler) {
         processHandler.printInfo("Local registry start successfully.");
 
@@ -395,23 +577,39 @@ public class LocalRegistryManager {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
     }
 
+    /**
+     * 通知启动失败消息
+     *
+     * @param processHandler 进程处理器
+     */
     private static void notifyFailMsg(ProcessHandler processHandler) {
         String date = (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(new Date());
         processHandler.notifyTextAvailable(date + " Failed to start registry.", ProcessOutputTypes.STDOUT);
     }
 
-    private static void startRegistryProcess(LocalRegistryContext localRegistryContext, EdasServiceConnectLogger logger) throws Exception {
-        if (EdasServiceConnectUtils.isWindows()) {
+    /**
+     * 启动注册中心进程
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     * @param logger               日志记录器
+     * @throws Exception 异常
+     */
+    private static void startRegistryProcess(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
+        if (RegistryUtils.isWindows()) {
             startRegistryProcessOnWindows(localRegistryContext, logger);
         } else {
             startRegistryProcessOnMac(localRegistryContext, logger);
         }
-
     }
 
+    /**
+     * 获取项目 SDK 主目录
+     *
+     * @param project 项目
+     * @return SDK 主目录路径
+     */
     public static String getSdkHome(Project project) {
         Sdk sdk = ProjectRootManager.getInstance(project).getProjectSdk();
         if (sdk == null) {
@@ -422,7 +620,14 @@ public class LocalRegistryManager {
         }
     }
 
-    private static void startRegistryProcessOnMac(LocalRegistryContext localRegistryContext, EdasServiceConnectLogger logger) throws Exception {
+    /**
+     * 在 Mac 系统上启动注册中心进程
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     * @param logger               日志记录器
+     * @throws Exception 异常
+     */
+    private static void startRegistryProcessOnMac(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
         String sdkHome = getSdkHome(localRegistryContext.getProject());
         String targetLog = LocalRegistryConstants.NACOS_START_LOG;
         File logFile = new File(targetLog);
@@ -448,7 +653,14 @@ public class LocalRegistryManager {
         waitForRegistryStartOnMac(localRegistryContext, logger);
     }
 
-    private static void startRegistryProcessOnWindows(LocalRegistryContext localRegistryContext, EdasServiceConnectLogger logger) throws Exception {
+    /**
+     * 在 Windows 系统上启动注册中心进程
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     * @param logger               日志记录器
+     * @throws Exception 异常
+     */
+    private static void startRegistryProcessOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
         String sdkHome = getSdkHome(localRegistryContext.getProject());
         String[] envp = null;
         if (sdkHome != null && !sdkHome.isEmpty()) {
@@ -462,7 +674,13 @@ public class LocalRegistryManager {
         waitForRegistryStartOnWindows(localRegistryContext, logger);
     }
 
-    private static void waitForRegistryStartOnMac(LocalRegistryContext localRegistryContext, EdasServiceConnectLogger logger) {
+    /**
+     * 在 Mac 系统上等待注册中心启动
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     * @param logger               日志记录器
+     */
+    private static void waitForRegistryStartOnMac(LocalRegistryContext localRegistryContext, RegistryLogger logger) {
         BufferedReader reader = null;
         String targetLog = LocalRegistryConstants.NACOS_START_LOG;
 
@@ -512,11 +730,17 @@ public class LocalRegistryManager {
                     e.printStackTrace();
                 }
             }
-
         }
     }
 
-    private static void waitForRegistryStartOnWindows(LocalRegistryContext localRegistryContext, EdasServiceConnectLogger logger) throws Exception {
+    /**
+     * 在 Windows 系统上等待注册中心启动
+     *
+     * @param localRegistryContext 本地注册中心上下文
+     * @param logger               日志记录器
+     * @throws Exception 异常
+     */
+    private static void waitForRegistryStartOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(localRegistryContext.getRegisterProcess().getInputStream()));
         long end = System.currentTimeMillis() + 120000L;
 
@@ -533,10 +757,51 @@ public class LocalRegistryManager {
         if (localRegistryContext.getStartSuccess() == null) {
             localRegistryContext.setStartSuccess(false);
         }
-
     }
 
+    /**
+     * 检查本地注册中心是否已启动
+     *
+     * @param registry 注册中心类型
+     * @return true 如果已启动
+     */
     public static boolean localRegistryStarted(LocalRegistry registry) {
         return UrlTestManager.testGetMethod(LocalRegistryConstants.NACOS_TEST_URL);
+    }
+
+    /**
+     * 删除非当前版本的其他 zip 包
+     *
+     * @param currentVersion 当前版本号
+     * @return 删除的文件数量
+     */
+    public static int deleteOldVersionZipFiles(String currentVersion) {
+        int deletedCount = 0;
+        try {
+            File pkgDir = new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR);
+            if (!pkgDir.exists() || !pkgDir.isDirectory()) {
+                return 0;
+            }
+
+            File[] files = pkgDir.listFiles();
+            if (files == null) {
+                return 0;
+            }
+
+            String currentZipName = "nacos-server-" + currentVersion + ".zip";
+            for (File file : files) {
+                if (file.isFile() && file.getName().startsWith("nacos-server-") && file.getName().endsWith(".zip")) {
+                    if (!file.getName().equals(currentZipName)) {
+                        if (file.delete()) {
+                            deletedCount++;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 静默处理异常
+            e.printStackTrace();
+        }
+        return deletedCount;
     }
 }
