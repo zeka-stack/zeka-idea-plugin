@@ -60,8 +60,6 @@ public class NacosClientUtils {
             try {
                 return NacosClient.getInstance(serverAddr, safeUsername, safePassword);
             } catch (NacosException e) {
-                // 记录错误日志
-                e.printStackTrace();
                 return null;
             }
         });
@@ -110,7 +108,6 @@ public class NacosClientUtils {
             NacosClient client = NacosClient.getInstance(serverAddr, username, password);
             return client.login();
         } catch (Exception e) {
-            e.printStackTrace();
             return false;
         }
     }

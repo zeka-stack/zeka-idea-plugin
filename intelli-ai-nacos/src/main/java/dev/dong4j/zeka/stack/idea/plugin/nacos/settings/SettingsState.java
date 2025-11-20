@@ -13,6 +13,10 @@ import com.intellij.util.xmlb.annotations.Transient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 /**
  * Nacos 插件设置状态管理
  * 使用 @State 注解自动持久化配置
@@ -76,12 +80,21 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public String localNacosVersion = "2.4.3";
 
     /**
+     * 本地 Nacos 启动时使用的自定义 JVM 环境变量
+     */
+    public List<EnvVariable> localJvmOptions = new ArrayList<>();
+
+    /**
      * 获取 SettingsState 的单例实例
      *
      * @return SettingsState 的实例
      */
     public static SettingsState getInstance() {
         return ApplicationManager.getApplication().getService(SettingsState.class);
+    }
+
+    public SettingsState() {
+        ensureDefaults();
     }
 
     @Override
@@ -92,6 +105,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
+        ensureDefaults();
     }
 
     /**
@@ -129,6 +143,48 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     private CredentialAttributes createCredentialAttributes() {
         return new CredentialAttributes("IntelliAI Nacos", serverAddr + ":" + username);
+    }
+
+    private void ensureDefaults() {
+        if (localJvmOptions == null) {
+            localJvmOptions = new ArrayList<>();
+        }
+        if (localJvmOptions.isEmpty()) {
+            localJvmOptions.add(new EnvVariable("CUSTOM_NACOS_MEMORY", "-Xms128m -Xmx128m -Xmn128m"));
+        }
+    }
+
+    /**
+     * 可序列化的环境变量定义
+     */
+    public static class EnvVariable {
+        public String name = "";
+        public String value = "";
+
+        public EnvVariable() {
+        }
+
+        public EnvVariable(String name, String value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            EnvVariable that = (EnvVariable) o;
+            return Objects.equals(name, that.name) && Objects.equals(value, that.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, value);
+        }
     }
 }
 

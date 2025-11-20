@@ -363,6 +363,7 @@ public class NacosToolWindow {
                     }
                     openConfigTab(cfg, true);
                     configOperationPanel.updateStatus(NacosBundle.message("success.config.pulled"));
+                    showNotification(NacosBundle.message("success.config.pulled"), "info");
                 });
             });
     }
@@ -410,6 +411,7 @@ public class NacosToolWindow {
                 tab.getEditor().markClean();
                 tab.setModified(false);
                 tabBar.updateTabTitle(tab.getId(), buildTabTitle(tab));
+                showNotification(NacosBundle.message("success.config.published"), "info");
             }));
     }
 
@@ -510,6 +512,7 @@ public class NacosToolWindow {
          */
         private record TreeNodeData(String dataId, ConfigInfoWrapper wrapper) {
 
+        @NotNull
         @Override
             public String toString() {
                 return dataId;

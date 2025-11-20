@@ -20,6 +20,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
+import lombok.Getter;
+
 /**
  * Nacos 配置树面板
  * 用于展示 Nacos 配置的树形结构
@@ -28,14 +30,18 @@ import javax.swing.tree.TreeNode;
  * @since 1.0.0
  */
 public class TreePanel extends JPanel {
-    private final Project project;
+    /** 获取配置树 */
+    @Getter
     private final Tree configTree;
+    /** 获取树模型 */
+    @Getter
     private final DefaultTreeModel treeModel;
+    /** 获取根节点 */
+    @Getter
     private final DefaultMutableTreeNode root;
     private final JTextField searchField;
 
     public TreePanel(@NotNull Project project) {
-        this.project = project;
         this.root = new DefaultMutableTreeNode("Nacos Configurations");
         this.treeModel = new DefaultTreeModel(root);
         this.configTree = new Tree(treeModel);
@@ -98,6 +104,7 @@ public class TreePanel extends JPanel {
         TreeUtil.expandAll(configTree);
     }
 
+    @SuppressWarnings("D")
     private boolean filterNodes(DefaultMutableTreeNode node, String searchText) {
         if (searchText.isEmpty()) {
             // 如果搜索文本为空，显示所有节点
@@ -154,33 +161,6 @@ public class TreePanel extends JPanel {
         treeModel.setRoot(newRoot);
         treeModel.reload();
         TreeUtil.expandAll(configTree);
-    }
-
-    /**
-     * 获取配置树
-     *
-     * @return 配置树
-     */
-    public Tree getConfigTree() {
-        return configTree;
-    }
-
-    /**
-     * 获取树模型
-     *
-     * @return 树模型
-     */
-    public DefaultTreeModel getTreeModel() {
-        return treeModel;
-    }
-
-    /**
-     * 获取根节点
-     *
-     * @return 根节点
-     */
-    public DefaultMutableTreeNode getRoot() {
-        return root;
     }
 
     /**

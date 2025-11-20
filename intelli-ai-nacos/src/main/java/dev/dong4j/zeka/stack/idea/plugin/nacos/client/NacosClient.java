@@ -21,6 +21,7 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfoListRespon
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfoWrapper;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.Namespace;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.NamespaceListResponse;
+import lombok.Getter;
 
 /**
  * Nacos 客户端核心类
@@ -35,10 +36,17 @@ public class NacosClient {
 
     private final ConsumServerHttpAgent httpAgent;
     private final ConsumSecurityProxy securityProxy;
+    /** 获取服务器地址 */
+    @Getter
     private final String serverAddr;
+    /** 获取用户名 */
+    @Getter
     private final String username;
     private final String password;
+    /** 检查是否已登录 */
+    @Getter
     private boolean isLoggedIn = false;
+    @Getter
     private boolean globalAdmin;
 
     private NacosClient(String serverAddr, String username, String password) throws NacosException {
@@ -260,19 +268,6 @@ public class NacosClient {
     }
 
     /**
-     * 检查是否已登录
-     *
-     * @return 是否已登录
-     */
-    public boolean isLoggedIn() {
-        return isLoggedIn;
-    }
-
-    public boolean isGlobalAdmin() {
-        return globalAdmin;
-    }
-
-    /**
      * 拉取命名空间下所有配置（自动分页）
      */
     public List<ConfigInfoWrapper> listAllConfigs(String namespaceId) throws Exception {
@@ -317,24 +312,6 @@ public class NacosClient {
             .distinct()
             .sorted(String::compareToIgnoreCase)
             .toList();
-    }
-
-    /**
-     * 获取服务器地址
-     *
-     * @return 服务器地址
-     */
-    public String getServerAddr() {
-        return serverAddr;
-    }
-
-    /**
-     * 获取用户名
-     *
-     * @return 用户名
-     */
-    public String getUsername() {
-        return username;
     }
 
     private String ensureHttpSuccess(HttpRestResult<String> result, String action) throws Exception {

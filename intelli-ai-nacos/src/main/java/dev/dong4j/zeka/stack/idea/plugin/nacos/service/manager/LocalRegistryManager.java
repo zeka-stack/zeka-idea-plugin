@@ -26,6 +26,9 @@ import com.intellij.openapi.projectRoots.SdkTypeId;
 import com.intellij.openapi.projectRoots.impl.JavaSdkImpl;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.Condition;
+import com.intellij.openapi.util.text.StringUtil;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
 import java.io.BufferedReader;
@@ -39,6 +42,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.JPanel;
@@ -53,6 +57,7 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.service.RegistryLogger;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.service.RegistryLogger.EmptyLogger;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.service.RegistryUtils;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.service.UrlTestManager;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState;
 
 /**
  * 本地注册中心管理器
@@ -99,16 +104,6 @@ public class LocalRegistryManager {
                LocalRegistryConstants.NACOS_START_UP_FILE_MAC;
     }
 
-    /**
-     * 获取注册中心安装包文件路径
-     *
-     * @param registry 注册中心类型
-     * @return 安装包文件路径
-     */
-    public static String getRegisterPackageFilePath(LocalRegistry registry) {
-        return RegistryUtils.isWindows() ? LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_WIN :
-               LocalRegistryConstants.NACOS_LOCAL_PATH_FOR_MAC;
-    }
 
     /**
      * 获取注册中心安装包文件路径（支持版本号）
@@ -647,6 +642,7 @@ public class LocalRegistryManager {
         if (sdkHome != null && !sdkHome.isEmpty()) {
             pb.environment().put("JAVA_HOME", sdkHome);
         }
+        applyCustomEnvVariables(pb.environment());
 
         Process registryProcess = pb.start();
         localRegistryContext.setRegisterProcess(registryProcess);
@@ -662,14 +658,13 @@ public class LocalRegistryManager {
      */
     private static void startRegistryProcessOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
         String sdkHome = getSdkHome(localRegistryContext.getProject());
-        String[] envp = null;
+        ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "startup.cmd", "-m", "standalone");
+        pb.directory(new File(LocalRegistryConstants.NACOS_BIN_DIR));
         if (sdkHome != null && !sdkHome.isEmpty()) {
-            envp = new String[] {"JAVA_HOME=" + sdkHome};
+            pb.environment().put("JAVA_HOME", sdkHome);
         }
-
-        Process registryProcess = Runtime.getRuntime().exec("cmd /c startup.cmd -m standalone", envp,
-                                                            new File(LocalRegistryConstants.NACOS_BIN_DIR));
-
+        applyCustomEnvVariables(pb.environment());
+        Process registryProcess = pb.start();
         localRegistryContext.setRegisterProcess(registryProcess);
         waitForRegistryStartOnWindows(localRegistryContext, logger);
     }
@@ -803,5 +798,23 @@ public class LocalRegistryManager {
             e.printStackTrace();
         }
         return deletedCount;
+    }
+
+    private static void applyCustomEnvVariables(@NotNull Map<String, String> environment) {
+        List<SettingsState.EnvVariable> vars = SettingsState.getInstance().localJvmOptions;
+        if (vars == null) {
+            return;
+        }
+        for (SettingsState.EnvVariable var : vars) {
+            if (var == null) {
+                continue;
+            }
+            String name = var.name != null ? var.name.trim() : "";
+            String value = var.value != null ? var.value.trim() : "";
+            if (StringUtil.isEmptyOrSpaces(name) || StringUtil.isEmptyOrSpaces(value)) {
+                continue;
+            }
+            environment.put(name, value);
+        }
     }
 }

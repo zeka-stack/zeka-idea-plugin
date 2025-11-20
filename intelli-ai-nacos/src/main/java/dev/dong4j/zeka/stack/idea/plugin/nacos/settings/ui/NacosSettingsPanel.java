@@ -5,31 +5,56 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.TitledSeparator;
+import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPasswordField;
 import com.intellij.ui.components.JBTextField;
+import com.intellij.ui.table.JBTable;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.RenderingHints;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+import javax.swing.Timer;
+import javax.swing.UIManager;
+import javax.swing.border.Border;
+import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
@@ -50,6 +75,12 @@ import lombok.Getter;
  */
 public class NacosSettingsPanel {
     private static final Logger LOG = Logger.getInstance(NacosSettingsPanel.class);
+    private static final JBColor DOT_COLOR_GREEN = new JBColor(new Color(52, 199, 89), new Color(48, 209, 88));
+    private static final JBColor DOT_COLOR_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
+    private static final JBColor DOT_COLOR_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 214, 10));
+    private static final long STOP_TIMEOUT_MILLIS = 5000L;
+    private static final long STOP_FIRST_CHECK_DELAY = 3000L;
+    private static final long STOP_SECOND_CHECK_DELAY = 2000L;
 
     /**
      * 主面板
@@ -86,9 +117,6 @@ public class NacosSettingsPanel {
     /** 停止本地注册中心按钮 */
     private final JButton stopLocalButton;
 
-    /** 状态标签 */
-    private final JBLabel localStatusIndicator;
-
     /** 访问链接 */
     private final HyperlinkLabel localStatusLink;
 
@@ -97,6 +125,16 @@ public class NacosSettingsPanel {
 
     /** Nacos 版本下拉列表 */
     private final ComboBox<String> versionComboBox;
+
+    /** 启动按钮呼吸指示器 */
+    private final BreathingDotIcon startButtonIndicator;
+
+    /** 测试连接按钮呼吸指示器 */
+    private final BreathingDotIcon testButtonIndicator;
+
+    /** JVM 环境变量配置表 */
+    private final JBTable jvmOptionTable;
+    private final JvmOptionTableModel jvmOptionTableModel;
 
     /** 是否处于本地 Nacos 操作中 */
     private boolean localOperationInProgress = false;
@@ -113,20 +151,19 @@ public class NacosSettingsPanel {
         usernameField = new JBTextField();
         passwordField = new JBPasswordField();
         testConnectionButton = new JButton(NacosBundle.message("settings.nacos.test.connection"));
+        testConnectionButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        testConnectionButton.setIconTextGap(JBUI.scale(6));
         connectionStatusLabel = new JBLabel();
         globalAdminCheckBox = new JBCheckBox(NacosBundle.message("settings.nacos.global.admin"));
         localRegistryCheckBox = new JBCheckBox(NacosBundle.message("settings.nacos.local.enable"));
         startLocalButton = new JButton(NacosBundle.message("settings.nacos.local.start"));
+        startLocalButton.setHorizontalTextPosition(SwingConstants.RIGHT);
+        startLocalButton.setIconTextGap(JBUI.scale(6));
         stopLocalButton = new JButton(NacosBundle.message("settings.nacos.local.stop"));
-        localStatusIndicator = new JBLabel(NacosBundle.message("settings.nacos.local.status.checking"));
-        localStatusIndicator.setForeground(JBColor.GRAY);
         localStatusLink = new HyperlinkLabel();
-        localStatusLink.setVisible(false);
         localStatusLink.setHyperlinkTarget(LocalRegistryConstants.NACOS_TEST_URL);
         localStatusLink.setHyperlinkText(
-            NacosBundle.message("settings.nacos.local.status.link.prefix"),
-            NacosBundle.message("settings.nacos.local.status.link.text"),
-            "");
+            NacosBundle.message("settings.nacos.local.status.link.text"));
         localStatusLink.setToolTipText(LocalRegistryConstants.NACOS_TEST_URL);
         localStatusLink.addHyperlinkListener(e -> BrowserUtil.browse(LocalRegistryConstants.NACOS_TEST_URL));
         openLocalDirButton = new JButton(NacosBundle.message("settings.nacos.local.open.dir"));
@@ -134,6 +171,10 @@ public class NacosSettingsPanel {
 
         // 初始化版本下拉列表
         versionComboBox = new ComboBox<>(new String[] {"2.4.3"});
+        Dimension versionSize = versionComboBox.getPreferredSize();
+        versionComboBox.setMinimumSize(new Dimension(JBUI.scale(200), versionSize.height));
+        versionComboBox.setPreferredSize(null);
+        versionComboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, versionSize.height));
         // 注意：版本选择会在 reset() 方法中从设置中回显
         versionComboBox.addActionListener(e -> {
             // 版本变更时，删除旧版本的 zip 包
@@ -141,36 +182,62 @@ public class NacosSettingsPanel {
             if (selectedVersion != null) {
                 deleteOldVersionZipFiles(selectedVersion);
             }
+            updateLocalHintDetailText();
         });
+
+        jvmOptionTableModel = new JvmOptionTableModel();
+        jvmOptionTable = new JBTable(jvmOptionTableModel);
+        jvmOptionTable.setStriped(true);
+        jvmOptionTable.setShowGrid(false);
+        jvmOptionTable.setFillsViewportHeight(true);
+        int headerHeight = jvmOptionTable.getTableHeader().getPreferredSize().height;
+        int rowHeight = jvmOptionTable.getRowHeight() > 0 ? jvmOptionTable.getRowHeight() : JBUI.scale(24);
+        int tableHeight = headerHeight + rowHeight * JvmOptionTableModel.MAX_ROWS;
+        jvmOptionTable.setPreferredScrollableViewportSize(new Dimension(JBUI.scale(420), tableHeight));
 
         startLocalButton.setEnabled(false);
         stopLocalButton.setEnabled(false);
+        startButtonIndicator = new BreathingDotIcon(startLocalButton, DOT_COLOR_RED);
+        startLocalButton.setIcon(startButtonIndicator);
+        startLocalButton.setDisabledIcon(startButtonIndicator);
+        testButtonIndicator = new BreathingDotIcon(testConnectionButton, DOT_COLOR_YELLOW);
+        testConnectionButton.setIcon(testButtonIndicator);
+        testConnectionButton.setDisabledIcon(testButtonIndicator);
 
         // 设置组件提示信息
+        //noinspection DialogTitleCapitalization
         serverAddrField.getEmptyText().setText("http://localhost:8848");
-        usernameField.getEmptyText().setText("nacos");
+        usernameField.getEmptyText().setText(NacosBundle.message("settings.nacos.username.placeholder"));
 
-        JPanel localActionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(8), 0));
-        localActionsPanel.setOpaque(false);
-        localActionsPanel.add(startLocalButton);
-        localActionsPanel.add(stopLocalButton);
+        JPanel versionAndActionsPanel = createVersionAndActionsPanel();
+        JPanel localLinksPanel = buildLocalLinksPanel();
 
-        JPanel localStatusPanel = buildLocalStatusPanel();
-
-        FormBuilder builder = FormBuilder.createFormBuilder()
+        JPanel localRegistryPanel = FormBuilder.createFormBuilder()
             .addComponent(new TitledSeparator(NacosBundle.message("settings.nacos.local.section")))
             .addComponent(localRegistryCheckBox)
-            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.local.version") + ":"), versionComboBox)
-            .addComponent(localActionsPanel)
-            .addComponent(localStatusPanel)
-            .addSeparator(12)
+            .addComponent(versionAndActionsPanel)
+            .addComponent(createConsoleLinkPanel())
+            .addSeparator(8)
+            .addComponent(createJvmOptionsPanel())
+            .addComponent(localLinksPanel)
+            .getPanel();
+        localRegistryPanel.setBorder(sectionBorder());
+
+        JPanel customRegistryPanel = FormBuilder.createFormBuilder()
             .addComponent(new TitledSeparator(NacosBundle.message("settings.nacos.custom.section")))
-            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.server.addr") + ":"), serverAddrField)
-            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.username") + ":"), usernameField)
-            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.password") + ":"), passwordField)
-            .addComponent(testConnectionButton)
-            .addComponent(connectionStatusLabel)
+            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.server.addr")), serverAddrField)
+            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.username")), usernameField)
+            .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.password")), passwordField)
+            .addLabeledComponent(new JBLabel(" "), createTestButtonRow())
+            .addLabeledComponent(new JBLabel(" "), connectionStatusLabel)
             .addComponent(globalAdminCheckBox)
+            .getPanel();
+        customRegistryPanel.setBorder(sectionBorder());
+
+        FormBuilder builder = FormBuilder.createFormBuilder()
+            .addComponent(localRegistryPanel)
+            .addSeparator(12)
+            .addComponent(customRegistryPanel)
             .addComponentFillVertically(new JPanel(), 0);
 
         // 构建主面板
@@ -178,6 +245,9 @@ public class NacosSettingsPanel {
 
         // 设置边框
         mainPanel.setBorder(JBUI.Borders.empty(10));
+
+        // 初始化 JVM 配置
+        jvmOptionTableModel.setData(SettingsState.getInstance().localJvmOptions);
 
         // 设置监听器
         setupListeners();
@@ -211,14 +281,30 @@ public class NacosSettingsPanel {
     private void testConnection() {
         String serverAddr = serverAddrField.getText();
         String username = usernameField.getText();
+
+        // 使用本地 nacos 服务时
+        if (StringUtils.isNotBlank(username) && username.equals(LocalRegistryConstants.LOCAL_USERNAME)) {
+            // 本地服务未启动
+            if (!localRegistryRunning) {
+                connectionStatusLabel.setText(
+                    NacosBundle.message("settings.nacos.connection.failed.local.notstart"));
+                connectionStatusLabel.setForeground(JBColor.RED);
+                testButtonIndicator.setColor(DOT_COLOR_RED);
+                return;
+            }
+        }
+
         String password = new String(passwordField.getPassword());
 
         if (serverAddr.isEmpty()) {
             connectionStatusLabel.setText(
                 NacosBundle.message("settings.nacos.connection.failed.server.empty"));
             connectionStatusLabel.setForeground(JBColor.RED);
+            testButtonIndicator.setColor(DOT_COLOR_RED);
             return;
         }
+
+        testButtonIndicator.setColor(DOT_COLOR_YELLOW);
 
         // 在后台线程中执行连接测试
         new Task.Backgroundable(null, "Testing Nacos Connection", false) {
@@ -256,6 +342,7 @@ public class NacosSettingsPanel {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     connectionStatusLabel.setText(finalMessage);
                     connectionStatusLabel.setForeground(finalSuccess ? JBColor.GREEN : JBColor.RED);
+                    testButtonIndicator.setColor(finalSuccess ? DOT_COLOR_GREEN : DOT_COLOR_RED);
                     if (finalSuccess) {
                         globalAdminCheckBox.setSelected(finalGlobalAdmin);
                     }
@@ -280,7 +367,8 @@ public class NacosSettingsPanel {
                || globalAdminCheckBox.isSelected() != settings.globalAdmin
                || localRegistryCheckBox.isSelected() != settings.useLocalRegistry
                || !Objects.equals(selectedVersion, settings.localNacosVersion)
-               || passwordChanged;
+               || passwordChanged
+               || isJvmOptionModified(settings);
     }
 
     /**
@@ -306,9 +394,9 @@ public class NacosSettingsPanel {
         }
 
         // 删除非当前版本的其他 zip 包
-        if (selectedVersion != null) {
-            deleteOldVersionZipFiles(selectedVersion);
-        }
+        deleteOldVersionZipFiles(selectedVersion);
+
+        settings.localJvmOptions = new ArrayList<>(jvmOptionTableModel.getData());
     }
 
     /**
@@ -333,11 +421,14 @@ public class NacosSettingsPanel {
                 break;
             }
         }
-        if (!versionExists && version != null && !version.isEmpty()) {
+        if (!versionExists) {
             versionComboBox.addItem(version);
         }
         versionComboBox.setSelectedItem(version);
-        
+        jvmOptionTableModel.setData(settings.localJvmOptions);
+        updateLocalHintDetailText();
+
+        testButtonIndicator.setColor(DOT_COLOR_YELLOW);
         updateLocalRegistryState();
         refreshLocalStatus();
     }
@@ -347,6 +438,8 @@ public class NacosSettingsPanel {
      */
     public void dispose() {
         // 清理资源
+        startButtonIndicator.dispose();
+        testButtonIndicator.dispose();
     }
 
     /**
@@ -359,9 +452,9 @@ public class NacosSettingsPanel {
 
         localRegistryCheckBox.setEnabled(!localOperationInProgress);
         versionComboBox.setEnabled(useLocalRegistry && !localOperationInProgress);
-        startLocalButton.setEnabled(controlsEnabled);
-        stopLocalButton.setEnabled(controlsEnabled);
-        openLocalDirButton.setEnabled(controlsEnabled && localRegistryRunning);
+        startLocalButton.setEnabled(controlsEnabled && !localRegistryRunning);
+        stopLocalButton.setEnabled(controlsEnabled && localRegistryRunning);
+        openLocalDirButton.setEnabled(true);
 
         serverAddrField.setEnabled(remoteEnabled);
         usernameField.setEnabled(remoteEnabled);
@@ -415,12 +508,44 @@ public class NacosSettingsPanel {
         if (updateButtonLabel) {
             stopLocalButton.setText(NacosBundle.message("settings.nacos.local.stopping"));
         }
-        bindLocalOperation(LocalNacosService.getInstance().stopLocalRegistry(),
-                           () -> {
-                               if (updateButtonLabel) {
-                                   stopLocalButton.setText(NacosBundle.message("settings.nacos.local.stop"));
-                               }
-                           });
+        ProgressManager.getInstance().run(new Task.Backgroundable(null,
+                                                                  NacosBundle.message("settings.nacos.local.stopping"),
+                                                                  false) {
+            private String failureMessage;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(false);
+                indicator.setFraction(0.0);
+                try {
+                    LocalNacosService.getInstance().stopLocalRegistry().get(STOP_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+                    if (!waitUntilRegistryStops(indicator)) {
+                        failureMessage = NacosBundle.message("notification.local.nacos.stop.timeout");
+                    }
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    failureMessage = ex.getMessage();
+                } catch (ExecutionException | TimeoutException ex) {
+                    failureMessage = ex.getMessage();
+                }
+            }
+
+            @Override
+            public void onFinished() {
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (updateButtonLabel) {
+                        stopLocalButton.setText(NacosBundle.message("settings.nacos.local.stop"));
+                    }
+                    setLocalOperationInProgress(false);
+                    refreshLocalStatus();
+                    if (failureMessage != null) {
+                        NotificationUtil.showError(null,
+                                                   NacosBundle.message("notification.local.nacos.stop.failed",
+                                                                       failureMessage));
+                    }
+                }, ModalityState.any());
+            }
+        });
     }
 
     private void bindLocalOperation(@NotNull CompletableFuture<Void> future, @NotNull Runnable onComplete) {
@@ -456,9 +581,6 @@ public class NacosSettingsPanel {
     }
 
     private void refreshLocalStatus() {
-        localStatusIndicator.setText(NacosBundle.message("settings.nacos.local.status.checking"));
-        localStatusIndicator.setForeground(JBColor.GRAY);
-        localStatusLink.setVisible(false);
         CompletableFuture
             .supplyAsync(() -> LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS),
                          AppExecutorUtil.getAppExecutorService())
@@ -469,31 +591,51 @@ public class NacosSettingsPanel {
     private void updateLocalStatusVisual(boolean running) {
         this.localRegistryRunning = running;
         if (running) {
-            localStatusIndicator.setText(NacosBundle.message("settings.nacos.local.status.running"));
-            localStatusIndicator.setForeground(JBColor.GREEN);
-            localStatusLink.setVisible(true);
             openLocalDirButton.setEnabled(true);
+            startButtonIndicator.setColor(DOT_COLOR_GREEN);
         } else {
-            localStatusIndicator.setText(NacosBundle.message("settings.nacos.local.status.stopped"));
-            localStatusIndicator.setForeground(JBColor.RED);
-            localStatusLink.setVisible(false);
             openLocalDirButton.setEnabled(false);
+            startButtonIndicator.setColor(DOT_COLOR_RED);
         }
+        updateLocalRegistryState();
     }
 
-    private JPanel buildLocalStatusPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = JBUI.insets(0, 0, JBUI.scale(4), JBUI.scale(8));
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.gridx = 0;
-        panel.add(localStatusIndicator, gbc);
-        gbc.gridx = 1;
-        panel.add(localStatusLink, gbc);
-        gbc.gridx = 2;
-        panel.add(openLocalDirButton, gbc);
-        return panel;
+    private boolean waitUntilRegistryStops(@NotNull ProgressIndicator indicator) throws InterruptedException {
+        if (waitAndCheck(indicator, STOP_FIRST_CHECK_DELAY, 0.6)) {
+            return true;
+        }
+        return waitAndCheck(indicator, STOP_SECOND_CHECK_DELAY, 1.0);
+    }
+
+    private boolean waitAndCheck(@NotNull ProgressIndicator indicator, long waitMillis, double fraction)
+        throws InterruptedException {
+        indicator.checkCanceled();
+        TimeUnit.MILLISECONDS.sleep(waitMillis);
+        indicator.checkCanceled();
+        indicator.setFraction(fraction);
+        return !LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS);
+    }
+
+    private JPanel buildLocalLinksPanel() {
+        JPanel firstLine = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(4), 0));
+        firstLine.setOpaque(false);
+        firstLine.add(new JBLabel(NacosBundle.message("settings.nacos.local.hint.prefix")));
+        firstLine.add(openLocalDirButton);
+        firstLine.add(new JBLabel(NacosBundle.message("settings.nacos.local.hint.suffix")));
+        firstLine.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        String zipPath = updateLocalHintDetailText();
+        String hintHtml = NacosBundle.message("settings.nacos.local.hint.detail", zipPath);
+        JBLabel hintLabel = new JBLabel(hintHtml);
+        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setOpaque(false);
+        container.setBorder(JBUI.Borders.emptyLeft(20));
+        container.add(firstLine);
+        container.add(hintLabel);
+        return container;
     }
 
     private void openLocalNacosDir() {
@@ -511,6 +653,20 @@ public class NacosSettingsPanel {
         }
     }
 
+    private String updateLocalHintDetailText() {
+        String version = (String) versionComboBox.getSelectedItem();
+        if (StringUtils.isBlank(version)) {
+            version = SettingsState.getInstance().localNacosVersion;
+        }
+        if (StringUtils.isBlank(version)) {
+            version = "2.4.3";
+        }
+        return SystemInfo.isWindows
+               ? LocalRegistryConstants.getNacosLocalPathForWin(version)
+               : LocalRegistryConstants.getNacosLocalPathForMac(version);
+
+    }
+
     /**
      * 删除非当前版本的其他 zip 包
      *
@@ -520,6 +676,284 @@ public class NacosSettingsPanel {
         int deletedCount = LocalRegistryManager.deleteOldVersionZipFiles(currentVersion);
         if (deletedCount > 0) {
             LOG.info("Deleted " + deletedCount + " old version zip file(s)");
+        }
+    }
+
+    /**
+     * 创建统一的 section 边框
+     *
+     * @return 边框
+     */
+    private static Border sectionBorder() {
+        return JBUI.Borders.compound(
+            BorderFactory.createLineBorder(UIManager.getColor("Separator.separatorColor")),
+            JBUI.Borders.empty(10));
+    }
+
+    private JPanel createVersionAndActionsPanel() {
+        JPanel panel = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+        panel.setOpaque(false);
+        panel.setBorder(JBUI.Borders.emptyLeft(20));
+
+        JBLabel label = new JBLabel(NacosBundle.message("settings.nacos.local.version"));
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.BASELINE_LEADING;
+        centerPanel.add(label, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = JBUI.insetsLeft(JBUI.scale(8));
+        centerPanel.add(versionComboBox, gbc);
+
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, JBUI.scale(8), 0));
+        actionsPanel.setOpaque(false);
+        actionsPanel.add(startLocalButton);
+        actionsPanel.add(stopLocalButton);
+
+        panel.add(centerPanel, BorderLayout.CENTER);
+        panel.add(actionsPanel, BorderLayout.EAST);
+        return panel;
+    }
+
+    private JPanel createRightAlignedPanel(@NotNull JComponent component) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        panel.setOpaque(false);
+        panel.add(component);
+        return panel;
+    }
+
+    private JPanel createTestButtonRow() {
+        JPanel panel = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+        panel.setOpaque(false);
+
+        JBLabel hintLabel = new JBLabel(NacosBundle.message("settings.nacos.local.username.hint"));
+        hintLabel.setForeground(JBColor.GRAY);
+
+        panel.add(hintLabel, BorderLayout.WEST);
+        panel.add(createRightAlignedPanel(testConnectionButton), BorderLayout.EAST);
+        return panel;
+    }
+
+    private JPanel createConsoleLinkPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(8), 0));
+        panel.setOpaque(false);
+        JBLabel label = new JBLabel();
+        panel.add(label);
+        panel.add(localStatusLink);
+        return panel;
+    }
+
+    private JPanel createJvmOptionsPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.setBorder(JBUI.Borders.emptyLeft(20));
+
+        JBLabel title = new JBLabel(NacosBundle.message("settings.nacos.local.jvm.options"));
+        title.setBorder(JBUI.Borders.emptyBottom(4));
+        JBLabel hint = new JBLabel(NacosBundle.message("settings.nacos.local.jvm.options.hint"));
+        hint.setForeground(JBColor.GRAY);
+        hint.setBorder(JBUI.Borders.emptyBottom(4));
+        JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
+        header.add(title, BorderLayout.NORTH);
+        header.add(hint, BorderLayout.CENTER);
+        panel.add(header, BorderLayout.NORTH);
+
+        ToolbarDecorator decorator = ToolbarDecorator.createDecorator(jvmOptionTable)
+            .setAddAction(actionButton -> jvmOptionTableModel.addRow())
+            .setRemoveAction(actionButton -> {
+                int selected = jvmOptionTable.getSelectedRow();
+                if (selected >= 0) {
+                    jvmOptionTableModel.removeRow(selected);
+                }
+            })
+            .setMoveUpAction(actionButton -> jvmOptionTableModel.moveRowUp(jvmOptionTable.getSelectedRow()))
+            .setMoveDownAction(actionButton -> jvmOptionTableModel.moveRowDown(jvmOptionTable.getSelectedRow()));
+
+        panel.add(decorator.createPanel(), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private boolean isJvmOptionModified(SettingsState settings) {
+        java.util.List<SettingsState.EnvVariable> current = jvmOptionTableModel.getData();
+        java.util.List<SettingsState.EnvVariable> stored = settings.localJvmOptions;
+        if (current.size() != stored.size()) {
+            return true;
+        }
+        for (int i = 0; i < current.size(); i++) {
+            if (!current.get(i).equals(stored.get(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static class JvmOptionTableModel extends AbstractTableModel {
+        private static final int MAX_ROWS = 3;
+        private final java.util.List<SettingsState.EnvVariable> data = new java.util.ArrayList<>();
+        private final String[] columns = {
+            NacosBundle.message("settings.nacos.local.jvm.options.column.name"),
+            NacosBundle.message("settings.nacos.local.jvm.options.column.value")
+        };
+
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columns.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return columns[column];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            SettingsState.EnvVariable entry = data.get(rowIndex);
+            return columnIndex == 0 ? entry.name : entry.value;
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return true;
+        }
+
+        @Override
+        public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+            SettingsState.EnvVariable entry = data.get(rowIndex);
+            if (columnIndex == 0) {
+                entry.name = aValue != null ? aValue.toString() : "";
+            } else {
+                entry.value = aValue != null ? aValue.toString() : "";
+            }
+            fireTableRowsUpdated(rowIndex, rowIndex);
+        }
+
+        void setData(java.util.List<SettingsState.EnvVariable> newData) {
+            data.clear();
+            if (newData != null) {
+                for (SettingsState.EnvVariable item : newData) {
+                    if (data.size() >= MAX_ROWS) {
+                        break;
+                    }
+                    data.add(new SettingsState.EnvVariable(item.name, item.value));
+                }
+            }
+            if (data.isEmpty()) {
+                data.add(new SettingsState.EnvVariable());
+            }
+            fireTableDataChanged();
+        }
+
+        java.util.List<SettingsState.EnvVariable> getData() {
+            java.util.List<SettingsState.EnvVariable> copy = new java.util.ArrayList<>();
+            for (SettingsState.EnvVariable item : data) {
+                boolean emptyName = item.name == null || item.name.trim().isEmpty();
+                boolean emptyValue = item.value == null || item.value.trim().isEmpty();
+                if (emptyName && emptyValue) {
+                    continue;
+                }
+                copy.add(new SettingsState.EnvVariable(item.name, item.value));
+            }
+            return copy;
+        }
+
+        void addRow() {
+            if (data.size() >= MAX_ROWS) {
+                return;
+            }
+            data.add(new SettingsState.EnvVariable());
+            fireTableRowsInserted(data.size() - 1, data.size() - 1);
+        }
+
+        void removeRow(int row) {
+            if (row >= 0 && row < data.size()) {
+                data.remove(row);
+                fireTableRowsDeleted(row, row);
+            }
+            if (data.isEmpty()) {
+                data.add(new SettingsState.EnvVariable());
+                fireTableRowsInserted(0, 0);
+            }
+        }
+
+        void moveRowUp(int row) {
+            if (row > 0 && row < data.size()) {
+                java.util.Collections.swap(data, row, row - 1);
+                fireTableRowsUpdated(row - 1, row);
+            }
+        }
+
+        void moveRowDown(int row) {
+            if (row >= 0 && row < data.size() - 1) {
+                java.util.Collections.swap(data, row, row + 1);
+                fireTableRowsUpdated(row, row + 1);
+            }
+        }
+    }
+
+    /**
+     * 带呼吸效果的圆点图标
+     */
+    private static class BreathingDotIcon implements Icon {
+        private static final int SIZE = JBUI.scale(8);
+        private static final int TIMER_DELAY = 50;
+        private final Timer timer;
+        private final Component owner;
+        private float phase;
+        private Color color;
+
+        BreathingDotIcon(@NotNull Component owner, @NotNull Color initialColor) {
+            this.owner = owner;
+            this.color = initialColor;
+            this.timer = new Timer(TIMER_DELAY, e -> {
+                phase += 0.08f;
+                if (phase > Math.PI * 2) {
+                    phase -= Math.PI * 2;
+                }
+                owner.repaint();
+            });
+            this.timer.start();
+        }
+
+        void setColor(@NotNull Color color) {
+            this.color = color;
+        }
+
+        void dispose() {
+            timer.stop();
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            float alpha = 0.5f + 0.5f * (float) Math.sin(phase);
+            int a = (int) (alpha * 255);
+            Color drawColor = new JBColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(60, Math.min(255, a))), new Color());
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(drawColor);
+            g2.fillOval(x, y, SIZE, SIZE);
+            g2.dispose();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return SIZE;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return SIZE;
         }
     }
 }

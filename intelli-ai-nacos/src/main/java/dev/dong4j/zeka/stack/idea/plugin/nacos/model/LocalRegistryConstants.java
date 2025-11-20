@@ -30,7 +30,7 @@ public class LocalRegistryConstants {
     /** Nacos 日志目录 */
     public static final String NACOS_LOG_DIR;
     /** Nacos 远程下载地址 */
-    public static final String NACOS_REMOTE_PATH = "https://github.com/alibaba/nacos/releases/download/2.4.3/nacos-server-2.4.3.zip";
+    public static final String LOCAL_USERNAME;
 
     /**
      * 获取 Nacos 远程下载地址
@@ -62,10 +62,6 @@ public class LocalRegistryConstants {
         return LOCAL_REGISTRY_PKG_DIR + File.separator + "nacos-server-" + version + ".zip";
     }
 
-    /** Nacos Mac 本地路径（兼容旧代码，使用默认版本 2.4.3） */
-    public static final String NACOS_LOCAL_PATH_FOR_MAC;
-    /** Nacos Windows 本地路径（兼容旧代码，使用默认版本 2.4.3） */
-    public static final String NACOS_LOCAL_PATH_FOR_WIN;
     /** Nacos Windows 启动文件 */
     public static final String NACOS_START_UP_FILE_WIN;
     /** Nacos Mac 启动文件 */
@@ -88,11 +84,10 @@ public class LocalRegistryConstants {
         NACOS_DIR = LOCAL_REGISTRY_DIR + File.separator + "nacos";
         NACOS_BIN_DIR = NACOS_DIR + File.separator + "bin";
         NACOS_LOG_DIR = NACOS_DIR + File.separator + "logs";
-        NACOS_LOCAL_PATH_FOR_MAC = LOCAL_REGISTRY_PKG_DIR + File.separator + "nacos-server-2.4.3.zip";
-        NACOS_LOCAL_PATH_FOR_WIN = LOCAL_REGISTRY_PKG_DIR + File.separator + "nacos-server-2.4.3.zip";
         NACOS_START_UP_FILE_WIN = NACOS_BIN_DIR + File.separator + "startup.cmd";
         NACOS_START_UP_FILE_MAC = NACOS_BIN_DIR + File.separator + "startup.sh";
         NACOS_START_LOG = NACOS_LOG_DIR + File.separator + "start.out";
         NACOS_PORTS = new int[] {8848};
+        LOCAL_USERNAME = "localman";
     }
 }
