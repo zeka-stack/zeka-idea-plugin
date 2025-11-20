@@ -52,14 +52,14 @@
 
         <!-- 意图操作 -->
         <intentionAction>
-            <language>ANY</language>
+            <language/>
             <className>dev.dong4j.zeka.stack.idea.plugin.nacos.action.PublishConfigIntentionAction</className>
             <category>IntelliAI Nacos</category>
             <descriptionDirectoryName>PublishConfigIntention</descriptionDirectoryName>
         </intentionAction>
 
         <intentionAction>
-            <language>ANY</language>
+            <language/>
             <className>dev.dong4j.zeka.stack.idea.plugin.nacos.action.CompareConfigIntentionAction</className>
             <category>IntelliAI Nacos</category>
             <descriptionDirectoryName>CompareConfigIntention</descriptionDirectoryName>
