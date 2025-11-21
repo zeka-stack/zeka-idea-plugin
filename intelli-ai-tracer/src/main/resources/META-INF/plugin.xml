@@ -21,7 +21,7 @@
     <!-- 依赖 Mermaid 插件（可选，用于渲染 Mermaid 图表） -->
 
     <!-- 国际化资源文件 -->
-    <resource-bundle>messages</resource-bundle>
+    <resource-bundle>messages.WorkflowBundle</resource-bundle>
 
     <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
@@ -47,9 +47,16 @@
                     factoryClass="dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindowFactory"
                     anchor="right"
                     icon="/icons/pluginIcon_16.svg"/>
+
+        <!-- 意图操作 -->
+        <intentionAction>
+            <language>JAVA</language>
+            <className>dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowIntentionAction</className>
+            <category>IntelliAI Tracer</category>
+        </intentionAction>
     </extensions>
 
-    <!-- Markdown 扩展 -->
+    <!-- Markdown 扩展（可选，兼容不同版本） -->
     <extensions defaultExtensionNs="org.intellij.markdown">
         <!-- Markdown 预览链接处理器 -->
         <browserPreviewExtensionProvider implementation="dev.dong4j.zeka.stack.idea.plugin.workflow.ui.MarkdownLinkHandler$Provider"/>
@@ -63,7 +70,9 @@
     <actions>
         <!-- 编辑器右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.workflow.action.ExplainWorkflowAction"
+                text="Explain Workflow with AI"
+                description="Analyze method call chain and generate workflow explanation using AI">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>

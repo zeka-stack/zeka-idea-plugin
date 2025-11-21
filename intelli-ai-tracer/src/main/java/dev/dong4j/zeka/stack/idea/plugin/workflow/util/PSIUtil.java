@@ -13,6 +13,7 @@ import com.intellij.psi.PsiMethodCallExpression;
 import com.intellij.psi.PsiModifierListOwner;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiParameterList;
+import com.intellij.psi.PsiReferenceExpression;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -29,6 +30,105 @@ import org.jetbrains.annotations.Nullable;
 public final class PSIUtil {
     private PSIUtil() {
         // 工具类，禁止实例化
+    }
+
+    /**
+     * 检测光标位置的元素类型
+     */
+    public enum ElementType {
+        METHOD_CALL("方法调用"),     // 方法调用
+        METHOD_DEFINITION("方法定义"), // 方法定义
+        CLASS_DEFINITION("类定义"),  // 类定义
+        UNKNOWN("未知类型");           // 未知类型
+
+        private final String displayName;
+
+        ElementType(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
+
+    /**
+         * 检测光标位置的元素类型和对应的 PSI 元素
+         */
+        public record ElementContext(@NotNull ElementType type, @Nullable PsiElement element) {
+    }
+
+    /**
+     * 检测光标位置的元素类型
+     *
+     * @param psiFile PSI 文件
+     * @param offset  偏移量
+     * @return 元素上下文信息
+     */
+    @NotNull
+    public static ElementContext detectElementType(@NotNull PsiFile psiFile, int offset) {
+        PsiElement elementAtOffset = psiFile.findElementAt(offset);
+        if (elementAtOffset == null) {
+            return new ElementContext(ElementType.UNKNOWN, null);
+        }
+
+        // 1. 检测方法调用
+        PsiMethodCallExpression methodCall = PsiTreeUtil.getParentOfType(elementAtOffset, PsiMethodCallExpression.class);
+        if (methodCall != null) {
+            // 进一步检查光标是否在方法调用的标识符上
+            PsiElement methodIdentifier = getMethodCallIdentifier(methodCall);
+            if (methodIdentifier != null && isElementInRange(elementAtOffset, methodIdentifier)) {
+                return new ElementContext(ElementType.METHOD_CALL, methodCall);
+            }
+        }
+
+        // 2. 检测方法定义
+        PsiMethod method = PsiTreeUtil.getParentOfType(elementAtOffset, PsiMethod.class);
+        if (method != null) {
+            // 检查光标是否在方法名上
+            PsiIdentifier methodNameIdentifier = method.getNameIdentifier();
+            if (methodNameIdentifier != null && isElementInRange(elementAtOffset, methodNameIdentifier)) {
+                return new ElementContext(ElementType.METHOD_DEFINITION, method);
+            }
+        }
+
+        // 3. 检测类定义
+        PsiClass psiClass = PsiTreeUtil.getParentOfType(elementAtOffset, PsiClass.class);
+        if (psiClass != null) {
+            // 检查光标是否在类名上
+            PsiIdentifier classNameIdentifier = psiClass.getNameIdentifier();
+            if (classNameIdentifier != null && isElementInRange(elementAtOffset, classNameIdentifier)) {
+                return new ElementContext(ElementType.CLASS_DEFINITION, psiClass);
+            }
+        }
+
+        return new ElementContext(ElementType.UNKNOWN, null);
+    }
+
+    /**
+     * 获取方法调用的标识符元素
+     *
+     * @param methodCall 方法调用表达式
+     * @return 方法标识符元素
+     */
+    @Nullable
+    private static PsiElement getMethodCallIdentifier(@NotNull PsiMethodCallExpression methodCall) {
+        PsiReferenceExpression methodExpression = methodCall.getMethodExpression();
+        return methodExpression.getReferenceNameElement();
+    }
+
+    /**
+     * 检查元素是否在指定范围内
+     *
+     * @param element 要检查的元素
+     * @param target  目标范围元素
+     * @return 如果在范围内返回 true
+     */
+    private static boolean isElementInRange(@NotNull PsiElement element, @NotNull PsiElement target) {
+        int elementOffset = element.getTextOffset();
+        int targetStart = target.getTextOffset();
+        int targetEnd = targetStart + target.getTextLength();
+        return elementOffset >= targetStart && elementOffset <= targetEnd;
     }
 
     /**

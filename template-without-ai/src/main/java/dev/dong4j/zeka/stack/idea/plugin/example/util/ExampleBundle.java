@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 public class ExampleBundle extends DynamicBundle {
 
     @NonNls
-    private static final String BUNDLE = "messages";
+    private static final String BUNDLE = "messages.ExampleBundle";
 
     private static final ExampleBundle INSTANCE = new ExampleBundle();
 

@@ -1,0 +1,6 @@
+public class OrderService {
+    public void processOrder(String orderId) {
+        // Workflow analysis will be generated in the tool window
+        paymentService.processPayment(orderId);
+    }
+}

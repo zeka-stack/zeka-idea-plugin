@@ -3,10 +3,15 @@ package dev.dong4j.zeka.stack.idea.plugin.workflow.service;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaRecursiveElementVisitor;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiMethodCallExpression;
+import com.intellij.psi.PsiParameter;
+import com.intellij.psi.PsiType;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.search.searches.ClassInheritorsSearch;
 import com.intellij.psi.search.searches.ReferencesSearch;
 import com.intellij.psi.util.PsiTreeUtil;
 
@@ -17,6 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import dev.dong4j.zeka.stack.idea.plugin.workflow.model.ClassInfo;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.model.ClassRelationshipContext;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.model.MethodCallerChainContext;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.MethodInfo;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.MethodContextExtractor;
 
@@ -141,6 +149,249 @@ public class CallGraphBuilder {
                 }
             }
         });
+    }
+
+    /**
+     * 查找方法的调用链（谁调用了这个方法）
+     *
+     * @param method 目标方法
+     * @return 方法调用链上下文
+     */
+    @NotNull
+    public MethodCallerChainContext findMethodCallerChain(@NotNull PsiMethod method) {
+        MethodCallerChainContext context = new MethodCallerChainContext();
+
+        // 设置目标方法信息
+        context.targetMethod = MethodContextExtractor.extractMethodInfo(method);
+
+        // 查找直接调用者
+        context.directCallers = findCallers(method);
+
+        // 查找被调用者
+        context.callees = findCallees(method);
+
+        // 构建调用链（简化版，只构建一层）
+        buildCallerChains(method, context);
+
+        return context;
+    }
+
+    /**
+     * 构建调用链
+     *
+     * @param method  目标方法
+     * @param context 上下文
+     */
+    private void buildCallerChains(@NotNull PsiMethod method, @NotNull MethodCallerChainContext context) {
+        for (MethodInfo caller : context.directCallers) {
+            MethodCallerChainContext.CallerChain chain = new MethodCallerChainContext.CallerChain();
+            chain.chain.add(caller);
+            chain.chain.add(context.targetMethod);
+            chain.depth = 1;
+            context.callerChains.add(chain);
+        }
+    }
+
+    /**
+     * 查找类的继承关系
+     *
+     * @param psiClass 目标类
+     * @return 继承关系信息
+     */
+    @NotNull
+    public ClassRelationshipContext.InheritanceInfo findClassInheritance(@NotNull PsiClass psiClass) {
+        ClassRelationshipContext.InheritanceInfo inheritance = new ClassRelationshipContext.InheritanceInfo();
+
+        // 查找父类
+        PsiClass superClass = psiClass.getSuperClass();
+        if (superClass != null && !"java.lang.Object".equals(superClass.getQualifiedName())) {
+            inheritance.superClass = MethodContextExtractor.extractClassInfo(superClass);
+        }
+
+        // 查找实现的接口
+        PsiClassType[] implementsList = psiClass.getImplementsList() != null ?
+                                        psiClass.getImplementsList().getReferencedTypes() : new PsiClassType[0];
+        for (PsiClassType interfaceType : implementsList) {
+            PsiClass interfaceClass = interfaceType.resolve();
+            if (interfaceClass != null) {
+                inheritance.interfaces.add(MethodContextExtractor.extractClassInfo(interfaceClass));
+            }
+        }
+
+        // 查找子类（限制数量，避免性能问题）
+        findSubClasses(psiClass, inheritance.subClasses);
+
+        // 如果是接口，查找实现类
+        if (psiClass.isInterface()) {
+            findImplementations(psiClass, inheritance.implementations);
+        }
+
+        return inheritance;
+    }
+
+    /**
+     * 查找子类
+     *
+     * @param psiClass   目标类
+     * @param subClasses 子类列表
+     */
+    private void findSubClasses(@NotNull PsiClass psiClass, @NotNull List<ClassInfo> subClasses) {
+        try {
+            ClassInheritorsSearch.search(psiClass, GlobalSearchScope.projectScope(project), true)
+                .forEach(subClass -> {
+                    if (subClasses.size() >= MAX_CALLERS) {
+                        return false;
+                    }
+                    subClasses.add(MethodContextExtractor.extractClassInfo(subClass));
+                    return true;
+                });
+        } catch (Exception e) {
+            // 静默处理异常
+        }
+    }
+
+    /**
+     * 查找接口实现类
+     *
+     * @param psiInterface    接口类
+     * @param implementations 实现类列表
+     */
+    private void findImplementations(@NotNull PsiClass psiInterface, @NotNull List<ClassInfo> implementations) {
+        try {
+            ClassInheritorsSearch.search(psiInterface, GlobalSearchScope.projectScope(project), true)
+                .forEach(implClass -> {
+                    if (implementations.size() >= MAX_CALLERS) {
+                        return false;
+                    }
+                    if (!implClass.isInterface()) {
+                        implementations.add(MethodContextExtractor.extractClassInfo(implClass));
+                    }
+                    return true;
+                });
+        } catch (Exception e) {
+            // 静默处理异常
+        }
+    }
+
+    /**
+     * 查找类的依赖关系
+     *
+     * @param psiClass 目标类
+     * @return 依赖关系列表
+     */
+    @NotNull
+    public List<ClassRelationshipContext.ClassDependency> findClassDependencies(@NotNull PsiClass psiClass) {
+        List<ClassRelationshipContext.ClassDependency> dependencies = new ArrayList<>();
+        Set<String> processedClasses = new HashSet<>();
+
+        // 分析字段依赖
+        analyzeFieldDependencies(psiClass, dependencies, processedClasses);
+
+        // 分析方法依赖
+        analyzeMethodDependencies(psiClass, dependencies, processedClasses);
+
+        // 分析注解依赖
+        analyzeAnnotationDependencies(psiClass, dependencies, processedClasses);
+
+        return dependencies;
+    }
+
+    /**
+     * 分析字段依赖
+     */
+    private void analyzeFieldDependencies(@NotNull PsiClass psiClass,
+                                          @NotNull List<ClassRelationshipContext.ClassDependency> dependencies,
+                                          @NotNull Set<String> processedClasses) {
+        PsiField[] fields = psiClass.getFields();
+        for (PsiField field : fields) {
+            PsiType fieldType = field.getType();
+            if (fieldType instanceof PsiClassType classType) {
+                PsiClass fieldClass = classType.resolve();
+                if (fieldClass != null && isValidDependency(fieldClass, processedClasses)) {
+                    ClassRelationshipContext.ClassDependency dependency =
+                        new ClassRelationshipContext.ClassDependency(
+                            MethodContextExtractor.extractClassInfo(fieldClass),
+                            ClassRelationshipContext.DependencyType.FIELD
+                        );
+                    dependency.locations.add("字段: " + field.getName());
+                    dependencies.add(dependency);
+                    processedClasses.add(fieldClass.getQualifiedName());
+                }
+            }
+        }
+    }
+
+    /**
+     * 分析方法依赖
+     */
+    @SuppressWarnings("D")
+    private void analyzeMethodDependencies(@NotNull PsiClass psiClass,
+                                           @NotNull List<ClassRelationshipContext.ClassDependency> dependencies,
+                                           @NotNull Set<String> processedClasses) {
+        PsiMethod[] methods = psiClass.getMethods();
+        for (PsiMethod method : methods) {
+            // 分析参数依赖
+            PsiParameter[] parameters = method.getParameterList().getParameters();
+            for (PsiParameter parameter : parameters) {
+                PsiType paramType = parameter.getType();
+                if (paramType instanceof PsiClassType classType) {
+                    PsiClass paramClass = classType.resolve();
+                    if (paramClass != null && isValidDependency(paramClass, processedClasses)) {
+                        ClassRelationshipContext.ClassDependency dependency =
+                            new ClassRelationshipContext.ClassDependency(
+                                MethodContextExtractor.extractClassInfo(paramClass),
+                                ClassRelationshipContext.DependencyType.METHOD_PARAMETER
+                            );
+                        dependency.locations.add("方法参数: " + method.getName() + "(" + parameter.getName() + ")");
+                        dependencies.add(dependency);
+                        processedClasses.add(paramClass.getQualifiedName());
+                    }
+                }
+            }
+
+            // 分析返回值依赖
+            PsiType returnType = method.getReturnType();
+            if (returnType instanceof PsiClassType classType) {
+                PsiClass returnClass = classType.resolve();
+                if (returnClass != null && isValidDependency(returnClass, processedClasses)) {
+                    ClassRelationshipContext.ClassDependency dependency =
+                        new ClassRelationshipContext.ClassDependency(
+                            MethodContextExtractor.extractClassInfo(returnClass),
+                            ClassRelationshipContext.DependencyType.METHOD_RETURN
+                        );
+                    dependency.locations.add("方法返回值: " + method.getName());
+                    dependencies.add(dependency);
+                    processedClasses.add(returnClass.getQualifiedName());
+                }
+            }
+        }
+    }
+
+    /**
+     * 分析注解依赖
+     */
+    private void analyzeAnnotationDependencies(@NotNull PsiClass psiClass,
+                                               @NotNull List<ClassRelationshipContext.ClassDependency> dependencies,
+                                               @NotNull Set<String> processedClasses) {
+        // 简化实现，暂时跳过注解依赖分析
+    }
+
+    /**
+     * 检查是否是有效的依赖
+     */
+    private boolean isValidDependency(@NotNull PsiClass psiClass, @NotNull Set<String> processedClasses) {
+        String qualifiedName = psiClass.getQualifiedName();
+        if (qualifiedName == null) {
+            return false;
+        }
+
+        // 跳过已处理的类
+        if (processedClasses.contains(qualifiedName)) {
+            return false;
+        }
+
+        // 跳过 Java 标准库类
+        return !qualifiedName.startsWith("java.") && !qualifiedName.startsWith("javax.");
     }
 
     /**

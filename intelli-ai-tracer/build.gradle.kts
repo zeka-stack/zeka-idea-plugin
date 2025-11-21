@@ -92,9 +92,6 @@ dependencies {
     // 运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
     compileOnly("dev.dong4j:intelli-ai-engine:1.0.0")
 
-    // Gson for JSON serialization
-    implementation("com.google.code.gson:gson:2.10.1")
-
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
 

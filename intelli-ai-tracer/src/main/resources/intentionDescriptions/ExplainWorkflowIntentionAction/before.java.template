@@ -1,0 +1,6 @@
+public class OrderService {
+    public void processOrder(String orderId) {
+        // Place cursor on method call, method name, or class name
+        <spot>paymentService.processPayment(orderId);</spot>
+    }
+}
