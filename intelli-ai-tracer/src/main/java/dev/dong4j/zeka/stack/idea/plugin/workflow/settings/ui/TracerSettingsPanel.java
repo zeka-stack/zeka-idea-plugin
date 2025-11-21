@@ -163,7 +163,7 @@ public class TracerSettingsPanel {
             JBLabel warningLabel = new JBLabel(WorkflowBundle.message("settings.ai.provider.no.available.warning"));
             Color warningColor = UIManager.getColor("Label.warningForeground");
             if (warningColor == null) {
-                warningColor = new JBColor(new Color(255, 140, 0), new Color());
+                warningColor = new JBColor(new Color(255, 140, 0), new Color(255, 140, 0));
             }
             warningLabel.setForeground(warningColor);
 
@@ -227,6 +227,7 @@ public class TracerSettingsPanel {
         AIProviderSettings.getInstance().addListener(providerSettingsListener);
     }
 
+    @SuppressWarnings("D")
     private void refreshProviderComboBox() {
         if (aiProviderSelectionPanel == null) {
             return;

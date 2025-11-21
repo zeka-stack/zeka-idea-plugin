@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 public class NacosBundle extends DynamicBundle {
 
     @NonNls
-    private static final String BUNDLE = "messages";
+    private static final String BUNDLE = "messages.NacosBundle";
 
     private static final NacosBundle INSTANCE = new NacosBundle();
 

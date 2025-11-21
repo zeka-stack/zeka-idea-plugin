@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  */
 public class WorkflowBundle extends DynamicBundle {
     @NonNls
-    private static final String BUNDLE = "messages";
+    private static final String BUNDLE = "messages.WorkflowBundle";
     private static final WorkflowBundle INSTANCE = new WorkflowBundle();
 
     private WorkflowBundle() {

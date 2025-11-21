@@ -24,13 +24,11 @@ public class YamlUtils {
      * @param yamlContent YAML 内容
      * @return 解析后的 Map 对象
      */
-    @SuppressWarnings("unchecked")
     @Nullable
     public static Map<String, Object> parseYaml(@NotNull String yamlContent) {
         try {
             return YAML.load(new StringReader(yamlContent));
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
@@ -52,6 +50,7 @@ public class YamlUtils {
      * @param yamlContent YAML 内容
      * @return 应用名称，如果未找到则返回 null
      */
+    @SuppressWarnings("unchecked")
     @Nullable
     public static String extractAppName(@NotNull String yamlContent) {
         Map<String, Object> yamlData = parseYaml(yamlContent);
@@ -79,6 +78,7 @@ public class YamlUtils {
      * @param yamlContent YAML 内容
      * @return 配置组，如果未找到则返回 null
      */
+    @SuppressWarnings("unchecked")
     @Nullable
     public static String extractConfigGroup(@NotNull String yamlContent) {
         Map<String, Object> yamlData = parseYaml(yamlContent);

@@ -7,8 +7,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.charset.StandardCharsets;
-
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.ConfigDialogUtil;
@@ -52,7 +50,8 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
         }
 
         byte[] bytes = virtualFile.contentsToByteArray();
-        configFile.setContent(new String(bytes, virtualFile.getCharset() != null ? virtualFile.getCharset() : StandardCharsets.UTF_8));
+        virtualFile.getCharset();
+        configFile.setContent(new String(bytes, virtualFile.getCharset()));
         ConfigFile confirmed = ConfigDialogUtil.promptConfig(project, configFile);
         if (confirmed == null) {
             return;

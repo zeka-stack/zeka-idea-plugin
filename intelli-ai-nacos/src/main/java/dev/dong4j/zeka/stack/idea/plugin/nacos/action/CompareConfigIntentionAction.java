@@ -3,9 +3,13 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.action;
 import com.intellij.codeInsight.intention.IntentionAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 
 import org.jetbrains.annotations.NotNull;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
@@ -36,7 +40,7 @@ public class CompareConfigIntentionAction implements IntentionAction {
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile psiFile) {
-        if (project == null || editor == null || psiFile == null) {
+        if (editor == null || psiFile == null) {
             return false;
         }
         String fileName = psiFile.getName();
@@ -63,11 +67,17 @@ public class CompareConfigIntentionAction implements IntentionAction {
 
         try {
             String remote = client.getConfig(confirmed.getNamespace(), confirmed.getGroup(), confirmed.getDataId());
+            confirmed.setContent(remote != null ? remote : "");
+
+            // 获取本地文件路径
+            VirtualFile vf = psiFile.getVirtualFile();
+            Path localPath = vf != null ? Paths.get(vf.getPath()) : null;
+            
             CompareConfigService.getInstance(project).compareConfigurations(
                 project,
-                psiFile.getText(),
-                remote != null ? remote : "",
-                confirmed.getDataId()
+                confirmed,
+                localPath,
+                psiFile.getText()
                                                                            );
         } catch (Exception ex) {
             NotificationUtil.showError(project, NacosBundle.message("error.general", ex.getMessage()));

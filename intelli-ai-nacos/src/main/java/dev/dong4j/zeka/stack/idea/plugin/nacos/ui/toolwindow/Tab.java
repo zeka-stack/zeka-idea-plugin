@@ -3,156 +3,149 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
 import java.util.Objects;
 
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.components.JsonEditor;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Tab 类型枚举
+ */
+enum TabKind {
+    CONFIG,    // 配置编辑
+    COMPARE    // 配置对比
+}
 
 /**
  * Nacos 配置标签页
- * 代表一个配置编辑标签页
+ * 代表一个配置编辑标签页或对比标签页
  *
  * @author dong4j
  * @since 1.0.0
  */
 public class Tab {
+    /**
+     * -- GETTER --
+     * 获取标签页 ID
+     */
+    @Getter
     private final String id;
+    /**
+     * -- GETTER --
+     * 获取标签页标题
+     */
+    @Getter
     private final String title;
+    /**
+     * -- GETTER --
+     * 获取项目实例
+     */
+    @Getter
     private final Project project;
+    /**
+     * -- GETTER --
+     * 获取内容面板
+     */
+    @Getter
     private final JPanel contentPanel;
+    @Nullable
     private final JsonEditor editor;
+    /**
+     * -- GETTER --
+     * 获取 Tab 类型
+     */
+    @Getter
+    private final TabKind kind;
+    /**
+     * -- SETTER --
+     * 设置命名空间
+     *
+     * @param namespace 命名空间
+     */
+    @Setter
+    @Getter
     private String namespace;
+    /**
+     * -- GETTER --
+     * 获取分组
+     */
+    @Setter
+    @Getter
     private String group;
+    /**
+     * -- GETTER --
+     * 获取数据 ID
+     */
+    @Setter
+    @Getter
     private String dataId;
+    /**
+     * -- GETTER --
+     * 检查是否已修改
+     */
+    @Setter
+    @Getter
     private boolean modified = false;
 
+    /**
+     * 构造函数 - 配置编辑类型
+     */
     public Tab(@NotNull String id, @NotNull String title, @NotNull Project project, @NotNull JsonEditor editor) {
         this.id = id;
         this.title = title;
         this.project = project;
         this.editor = editor;
+        this.kind = TabKind.CONFIG;
         this.contentPanel = new JPanel(new BorderLayout());
         this.contentPanel.add(editor, BorderLayout.CENTER);
     }
 
     /**
-     * 获取标签页 ID
-     *
-     * @return 标签页 ID
+     * 构造函数 - 对比类型
      */
-    public String getId() {
-        return id;
-    }
-
-    /**
-     * 获取标签页标题
-     *
-     * @return 标签页标题
-     */
-    public String getTitle() {
-        return title;
-    }
-
-    /**
-     * 获取项目实例
-     *
-     * @return 项目实例
-     */
-    public Project getProject() {
-        return project;
-    }
-
-    /**
-     * 获取内容面板
-     *
-     * @return 内容面板
-     */
-    public JPanel getContentPanel() {
-        return contentPanel;
+    public Tab(@NotNull String id, @NotNull String title, @NotNull Project project, @NotNull JComponent content) {
+        this.id = id;
+        this.title = title;
+        this.project = project;
+        this.editor = null;
+        this.kind = TabKind.COMPARE;
+        this.contentPanel = new JPanel(new BorderLayout());
+        this.contentPanel.add(content, BorderLayout.CENTER);
     }
 
     /**
      * 获取编辑器
      *
-     * @return JsonEditor
+     * @return JsonEditor（仅配置编辑类型有值）
      */
+    @Nullable
     public JsonEditor getEditor() {
         return editor;
     }
 
     /**
-     * 获取命名空间
+     * 是否为配置编辑类型
      *
-     * @return 命名空间
+     * @return 是否为配置编辑类型
      */
-    public String getNamespace() {
-        return namespace;
+    public boolean isConfigTab() {
+        return kind == TabKind.CONFIG;
     }
 
     /**
-     * 设置命名空间
+     * 是否为对比类型
      *
-     * @param namespace 命名空间
+     * @return 是否为对比类型
      */
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    /**
-     * 获取分组
-     *
-     * @return 分组
-     */
-    public String getGroup() {
-        return group;
-    }
-
-    /**
-     * 设置分组
-     *
-     * @param group 分组
-     */
-    public void setGroup(String group) {
-        this.group = group;
-    }
-
-    /**
-     * 获取数据 ID
-     *
-     * @return 数据 ID
-     */
-    public String getDataId() {
-        return dataId;
-    }
-
-    /**
-     * 设置数据 ID
-     *
-     * @param dataId 数据 ID
-     */
-    public void setDataId(String dataId) {
-        this.dataId = dataId;
-    }
-
-    /**
-     * 检查是否已修改
-     *
-     * @return 是否已修改
-     */
-    public boolean isModified() {
-        return modified;
-    }
-
-    /**
-     * 设置修改状态
-     *
-     * @param modified 修改状态
-     */
-    public void setModified(boolean modified) {
-        this.modified = modified;
+    public boolean isCompareTab() {
+        return kind == TabKind.COMPARE;
     }
 
     /**

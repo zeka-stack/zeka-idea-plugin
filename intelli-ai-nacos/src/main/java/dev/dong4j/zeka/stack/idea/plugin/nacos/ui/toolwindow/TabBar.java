@@ -15,6 +15,8 @@ import java.util.List;
 
 import javax.swing.JPanel;
 
+import lombok.Getter;
+
 /**
  * Nacos 标签页栏
  * 管理多个配置编辑标签页
@@ -24,6 +26,11 @@ import javax.swing.JPanel;
  */
 public class TabBar extends JPanel {
     private final Project project;
+    /**
+     * -- GETTER --
+     * 获取 JBTabsImpl 实例
+     */
+    @Getter
     private final JBTabsImpl tabs;
     private final List<Tab> tabList;
 
@@ -208,12 +215,4 @@ public class TabBar extends JPanel {
         return null;
     }
 
-    /**
-     * 获取 JBTabsImpl 实例
-     *
-     * @return JBTabsImpl 实例
-     */
-    public JBTabsImpl getTabs() {
-        return tabs;
-    }
 }

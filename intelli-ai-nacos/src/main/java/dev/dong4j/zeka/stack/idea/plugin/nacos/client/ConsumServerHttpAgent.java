@@ -17,6 +17,9 @@ import org.slf4j.Logger;
 import java.util.Map;
 import java.util.Properties;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Nacos 服务器 HTTP 代理
  * 用于处理与 Nacos 服务器的 HTTP 通信
@@ -30,11 +33,29 @@ public class ConsumServerHttpAgent {
     private static final String HTTPS = "https://";
     private static final String HTTP = "http://";
 
+    /**
+     * -- GETTER --
+     * 获取命名空间 ID
+     */
+    @Setter
+    @Getter
     private String namespaceId;
+    /**
+     * -- GETTER --
+     * 获取服务器地址
+     */
+    @Getter
     private String serverUrl;
     private String server;
     private final NacosRestTemplate nacosRestTemplate;
     private final Properties properties;
+    /**
+     * -- GETTER --
+     * 获取编码格式
+     *
+     * @return 编码格式
+     */
+    @Getter
     private final String encode;
     private final String appName;
     private final String accessKey;
@@ -200,24 +221,6 @@ public class ConsumServerHttpAgent {
     }
 
     /**
-     * 获取服务器地址
-     *
-     * @return 服务器地址
-     */
-    public String getServerUrl() {
-        return serverUrl;
-    }
-
-    /**
-     * 获取编码格式
-     *
-     * @return 编码格式
-     */
-    public String getEncode() {
-        return encode;
-    }
-
-    /**
      * 获取原始 serverAddr
      *
      * @return server address
@@ -226,21 +229,4 @@ public class ConsumServerHttpAgent {
         return server;
     }
 
-    /**
-     * 获取命名空间 ID
-     *
-     * @return 命名空间 ID
-     */
-    public String getNamespaceId() {
-        return namespaceId;
-    }
-
-    /**
-     * 设置命名空间 ID
-     *
-     * @param namespaceId 命名空间 ID
-     */
-    public void setNamespaceId(String namespaceId) {
-        this.namespaceId = namespaceId;
-    }
 }

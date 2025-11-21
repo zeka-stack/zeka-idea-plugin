@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -33,9 +34,11 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.Namespace;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.service.CompareConfigService;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.components.ConfigComparePanel;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.ui.components.JsonEditor;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
+import lombok.Getter;
 
 /**
  * Nacos 工具窗口主面板
@@ -47,11 +50,36 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 public class NacosToolWindow {
     private static final Key<NacosToolWindow> TOOL_WINDOW_KEY = Key.create("dev.dong4j.zeka.stack.idea.plugin.nacos.toolwindow");
 
+    /**
+     * -- GETTER --
+     * 获取项目实例
+     */
+    @Getter
     private final Project project;
     private ToolWindow toolWindow;
+    /**
+     * -- GETTER --
+     * 获取主面板
+     */
+    @Getter
     private final JPanel mainPanel;
+    /**
+     * -- GETTER --
+     * 获取工具栏面板
+     */
+    @Getter
     private final ToolBarPanel toolBarPanel;
+    /**
+     * -- GETTER --
+     * 获取树面板
+     */
+    @Getter
     private final TreePanel treePanel;
+    /**
+     * -- GETTER --
+     * 获取标签页栏
+     */
+    @Getter
     private final TabBar tabBar;
     private final ConfigOperationPanel configOperationPanel;
     private final JBSplitter splitter;
@@ -63,7 +91,8 @@ public class NacosToolWindow {
         this.treePanel = new TreePanel(project);
         this.tabBar = new TabBar(project);
         this.configOperationPanel = new ConfigOperationPanel(project, this);
-        this.splitter = new JBSplitter(false, 0.3f);
+        // 使用固定大小模式，不按比例分配
+        this.splitter = new JBSplitter(false);
 
         this.mainPanel = new JPanel(new BorderLayout());
 
@@ -74,8 +103,16 @@ public class NacosToolWindow {
         // 设置主面板边框
         mainPanel.setBorder(JBUI.Borders.empty(5));
 
+        // 固定左侧面板初始大小（不会随 Tool Window 增大而自动增大，但可通过拖拽调整）
+        int fixedLeftWidth = JBUI.scale(300); // 初始宽度 300px（会根据 DPI 缩放）
+        treePanel.setPreferredSize(new Dimension(fixedLeftWidth, 0));
+        treePanel.setMinimumSize(new Dimension(JBUI.scale(200), 0)); // 最小宽度 200px，允许缩小
+        // 不设置 maximumSize，允许用户通过拖拽增大，但不会随窗口自动增大
+
         // 设置分割面板（使用 JBSplitter 提供更好的拖动体验）
         splitter.setFirstComponent(treePanel);
+        splitter.setHonorComponentsMinimumSize(true); // 尊重组件的最小大小
+
         JPanel rightPanel = new JPanel(new BorderLayout());
         // 为右侧面板添加边框
         rightPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -129,15 +166,6 @@ public class NacosToolWindow {
     }
 
     /**
-     * 获取主面板
-     *
-     * @return 主面板
-     */
-    public JPanel getMainPanel() {
-        return mainPanel;
-    }
-
-    /**
      * 获取工具窗口
      *
      * @return 工具窗口
@@ -155,42 +183,6 @@ public class NacosToolWindow {
     public void setToolWindow(@NotNull ToolWindow toolWindow) {
         this.toolWindow = toolWindow;
         project.putUserData(TOOL_WINDOW_KEY, this);
-    }
-
-    /**
-     * 获取项目实例
-     *
-     * @return 项目实例
-     */
-    public Project getProject() {
-        return project;
-    }
-
-    /**
-     * 获取工具栏面板
-     *
-     * @return 工具栏面板
-     */
-    public ToolBarPanel getToolBarPanel() {
-        return toolBarPanel;
-    }
-
-    /**
-     * 获取树面板
-     *
-     * @return 树面板
-     */
-    public TreePanel getTreePanel() {
-        return treePanel;
-    }
-
-    /**
-     * 获取标签页栏
-     *
-     * @return 标签页栏
-     */
-    public TabBar getTabBar() {
-        return tabBar;
     }
 
     /**
@@ -308,16 +300,83 @@ public class NacosToolWindow {
     }
 
     private void attachModificationListener(@NotNull Tab tab) {
-        tab.getEditor().getEditorTextField().addDocumentListener(new com.intellij.openapi.editor.event.DocumentListener() {
-            @Override
-            public void documentChanged(@NotNull com.intellij.openapi.editor.event.DocumentEvent event) {
-                boolean modified = tab.getEditor().isModified();
-                if (tab.isModified() != modified) {
-                    tab.setModified(modified);
-                    tabBar.updateTabTitle(tab.getId(), buildTabTitle(tab));
+        if (tab.isConfigTab() && tab.getEditor() != null) {
+            tab.getEditor().getEditorTextField().addDocumentListener(new com.intellij.openapi.editor.event.DocumentListener() {
+                @Override
+                public void documentChanged(@NotNull com.intellij.openapi.editor.event.DocumentEvent event) {
+                    boolean modified = tab.getEditor().isModified();
+                    if (tab.isModified() != modified) {
+                        tab.setModified(modified);
+                        tabBar.updateTabTitle(tab.getId(), buildTabTitle(tab));
+                    }
                 }
+            });
+        }
+    }
+
+    /**
+     * 打开或创建对比标签页
+     *
+     * @param remote         远程配置信息
+     * @param localPath      本地文件路径（可选）
+     * @param localContent   本地配置内容
+     * @param includeHistory 是否包含历史版本面板
+     */
+    public void openCompareTab(@NotNull ConfigFile remote,
+                               @Nullable java.nio.file.Path localPath,
+                               @NotNull String localContent,
+                               boolean includeHistory) {
+        String tabId = remote.getUniqueId() + "_compare";
+        Tab existing = tabBar.getTabById(tabId);
+
+        if (existing == null || !existing.isCompareTab()) {
+            String fileType = remote.getType() != null ? remote.getType() : SettingsState.getInstance().type;
+            ConfigComparePanel comparePanel = new ConfigComparePanel(
+                project,
+                fileType,
+                remote.getNamespace(),
+                remote.getGroup(),
+                remote.getDataId(),
+                localContent,
+                remote.getContent(),
+                localPath,
+                includeHistory
+            );
+
+            String title = NacosBundle.message("compare.tab.title", buildDisplayTitle(remote.getDataId(), remote.getGroup()));
+            Tab newTab = new Tab(tabId, title, project, comparePanel);
+
+            // 设置修改监听器
+            comparePanel.setModificationListener(modified -> {
+                if (newTab.isModified() != modified) {
+                    newTab.setModified(modified);
+                    tabBar.updateTabTitle(newTab.getId(), buildCompareTabTitle(newTab));
+                }
+            });
+
+            newTab.setNamespace(remote.getNamespace());
+            newTab.setGroup(remote.getGroup());
+            newTab.setDataId(remote.getDataId());
+
+            tabBar.addTab(newTab);
+            existing = newTab;
+
+            // 如果是 3 面板模式，加载历史版本列表
+            if (includeHistory) {
+                comparePanel.loadHistoryVersions();
             }
-        });
+        }
+
+        configOperationPanel.setNamespace(remote.getNamespace());
+        configOperationPanel.setGroup(remote.getGroup());
+        configOperationPanel.setDataId(remote.getDataId());
+        tabBar.selectTab(existing.getId());
+    }
+
+    private String buildCompareTabTitle(@NotNull Tab tab) {
+        String display = buildDisplayTitle(tab.getDataId(), tab.getGroup());
+        String title = NacosBundle.message("compare.tab.title", display);
+        return tab.isModified() ? "*" + title : title;
     }
 
     private String buildTabTitle(@NotNull ConfigFile configFile) {
@@ -325,6 +384,9 @@ public class NacosToolWindow {
     }
 
     private String buildTabTitle(@NotNull Tab tab) {
+        if (tab.isCompareTab()) {
+            return buildCompareTabTitle(tab);
+        }
         String display = buildDisplayTitle(tab.getDataId(), tab.getGroup());
         return tab.isModified() ? "*" + display : display;
     }
@@ -415,6 +477,7 @@ public class NacosToolWindow {
             }));
     }
 
+    @SuppressWarnings("D")
     public void compareWithRemote() {
         Tab tab = tabBar.getSelectedTab();
         if (tab == null) {
@@ -445,11 +508,27 @@ public class NacosToolWindow {
                     showNotification(throwable.getMessage(), "error");
                     return;
                 }
+
+                // 创建 ConfigFile 对象
+                ConfigFile remote = new ConfigFile();
+                remote.setNamespace(namespace);
+                remote.setGroup(group);
+                remote.setDataId(dataId);
+                remote.setContent(remoteContent != null ? remoteContent : "");
+                if (tab.getEditor() != null) {
+                    remote.setType(tab.getEditor().getFileType().toLowerCase());
+                } else {
+                    remote.setType(SettingsState.getInstance().type.toLowerCase());
+                }
+
+                // 获取本地内容
+                String localContent = tab.getEditor() != null ? tab.getEditor().getContent() : "";
+
                 CompareConfigService.getInstance(project).compareConfigurations(
                     project,
-                    tab.getEditor().getContent(),
-                    remoteContent != null ? remoteContent : "",
-                    dataId
+                    remote,
+                    null, // 本地文件路径（如果需要可以从 tab 获取）
+                    localContent
                                                                                );
             }));
     }
@@ -507,15 +586,15 @@ public class NacosToolWindow {
     }
 
     /**
-         * 树节点数据包装类
-         * 用于在树节点中存储 dataId 和 ConfigInfoWrapper
-         */
-        private record TreeNodeData(String dataId, ConfigInfoWrapper wrapper) {
+     * 树节点数据包装类
+     * 用于在树节点中存储 dataId 和 ConfigInfoWrapper
+     */
+    private record TreeNodeData(String dataId, ConfigInfoWrapper wrapper) {
 
         @NotNull
         @Override
-            public String toString() {
-                return dataId;
-            }
+        public String toString() {
+            return dataId;
         }
+    }
 }

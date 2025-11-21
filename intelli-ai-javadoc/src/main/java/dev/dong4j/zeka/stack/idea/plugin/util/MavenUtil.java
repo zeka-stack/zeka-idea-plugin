@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.util;
 
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
@@ -75,44 +76,48 @@ public final class MavenUtil {
      * <p>
      * 若获取失败或版本号中包含 "-SNAPSHOT" 或 ".RELEASE" 后缀, 则将其移除后返回.
      * 若发生异常或未找到版本号, 则返回默认版本 "1.0.0".
+     * <p>
+     * 该方法会自动在 ReadAction 中执行，确保线程安全。
      *
      * @param element 需要获取版本号的 PsiElement
      * @return 项目版本号, 格式为去除 "-SNAPSHOT" 和 ".RELEASE" 后的字符串
      */
     public static String getVersion(PsiElement element) {
-        Project project = element.getProject();
+        return ReadAction.compute(() -> {
+            Project project = element.getProject();
 
-        // 1. 检查缓存
-        VersionCacheEntry cached = versionCache.get(project);
-        if (cached != null && cached.pomFile != null && cached.pomFile.isValid()) {
-            // 2. 检查文件是否修改
-            long currentModified = cached.pomFile.getTimeStamp();
-            if (currentModified == cached.lastModified) {
-                return cached.version; // 缓存命中
-            }
-        }
-
-        // 3. 重新查询并更新缓存（使用双重检查锁定）
-        synchronized (getCacheLock(project)) {
-            // 双重检查：再次检查缓存（可能其他线程已经更新）
-            cached = versionCache.get(project);
+            // 1. 检查缓存
+            VersionCacheEntry cached = versionCache.get(project);
             if (cached != null && cached.pomFile != null && cached.pomFile.isValid()) {
+                // 2. 检查文件是否修改
                 long currentModified = cached.pomFile.getTimeStamp();
                 if (currentModified == cached.lastModified) {
-                    return cached.version;
+                    return cached.version; // 缓存命中
                 }
             }
 
-            // 查询版本号
-            String version = queryVersionFromMaven(element);
-            VirtualFile pomFile = getPomFile(element);
+            // 3. 重新查询并更新缓存（使用双重检查锁定）
+            synchronized (getCacheLock(project)) {
+                // 双重检查：再次检查缓存（可能其他线程已经更新）
+                cached = versionCache.get(project);
+                if (cached != null && cached.pomFile != null && cached.pomFile.isValid()) {
+                    long currentModified = cached.pomFile.getTimeStamp();
+                    if (currentModified == cached.lastModified) {
+                        return cached.version;
+                    }
+                }
 
-            // 更新缓存
-            long lastModified = pomFile != null && pomFile.isValid() ? pomFile.getTimeStamp() : 0;
-            versionCache.put(project, new VersionCacheEntry(version, pomFile, lastModified));
+                // 查询版本号
+                String version = queryVersionFromMaven(element);
+                VirtualFile pomFile = getPomFile(element);
 
-            return version;
-        }
+                // 更新缓存
+                long lastModified = pomFile != null && pomFile.isValid() ? pomFile.getTimeStamp() : 0;
+                versionCache.put(project, new VersionCacheEntry(version, pomFile, lastModified));
+
+                return version;
+            }
+        });
     }
 
     /**

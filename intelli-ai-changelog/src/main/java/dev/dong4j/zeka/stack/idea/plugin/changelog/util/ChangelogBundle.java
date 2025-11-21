@@ -47,7 +47,7 @@ public class ChangelogBundle extends DynamicBundle {
 
     /** 消息资源包名称，用于加载国际化消息 */
     @NonNls
-    private static final String BUNDLE = "messages";
+    private static final String BUNDLE = "messages.ChangelogBundle";
 
     /**
      * 单例实例

@@ -18,8 +18,7 @@
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
 
-    <!-- 国际化资源文件 -->
-    <resource-bundle>messages</resource-bundle>
+    <resource-bundle>messages.NacosBundle</resource-bundle>
 
     <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
@@ -54,14 +53,14 @@
         <intentionAction>
             <language/>
             <className>dev.dong4j.zeka.stack.idea.plugin.nacos.action.PublishConfigIntentionAction</className>
-            <category>IntelliAI Nacos</category>
+            <!--<category>IntelliAI Nacos</category>-->
             <descriptionDirectoryName>PublishConfigIntention</descriptionDirectoryName>
         </intentionAction>
 
         <intentionAction>
             <language/>
             <className>dev.dong4j.zeka.stack.idea.plugin.nacos.action.CompareConfigIntentionAction</className>
-            <category>IntelliAI Nacos</category>
+            <!--<category>IntelliAI Nacos</category>-->
             <descriptionDirectoryName>CompareConfigIntention</descriptionDirectoryName>
         </intentionAction>
     </extensions>

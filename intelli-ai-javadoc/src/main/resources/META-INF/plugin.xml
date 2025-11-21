@@ -59,10 +59,9 @@
 
         <!-- Intention Action (Option+Enter / Alt+Enter 快捷菜单) -->
         <intentionAction>
-            <language>JAVA</language>
+            <language/>
             <className>dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocIntentionAction</className>
-            <!--suppress PluginXmlCapitalization -->
-            <category>IntelliAI JavaDoc</category>
+            <!--<category>IntelliAI JavaDoc</category>-->
             <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
         </intentionAction>
 

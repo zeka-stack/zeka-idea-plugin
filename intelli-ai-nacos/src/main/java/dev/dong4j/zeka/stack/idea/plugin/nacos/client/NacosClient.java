@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigHistoryItem;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigHistoryListResponse;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfo;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfoListResponse;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfoWrapper;
@@ -88,9 +90,8 @@ public class NacosClient {
      * 登录到 Nacos 服务器
      *
      * @return 是否登录成功
-     * @throws Exception 异常
      */
-    public boolean login() throws Exception {
+    public boolean login() {
         if (isLoggedIn && securityProxy.ensureLogin()) {
             return true;
         }
@@ -100,7 +101,7 @@ public class NacosClient {
         return success;
     }
 
-    private void ensureLoggedIn() throws Exception {
+    private void ensureLoggedIn() {
         if (!login()) {
             throw new IllegalStateException("Failed to login Nacos server");
         }
@@ -265,6 +266,55 @@ public class NacosClient {
             return dataNode.asBoolean();
         }
         return Boolean.parseBoolean(dataNode.asText());
+    }
+
+    /**
+     * 获取配置历史版本列表
+     *
+     * @param namespaceId 命名空间 ID
+     * @param group       分组
+     * @param dataId      数据 ID
+     * @param pageNo      页码（可选，默认 1）
+     * @param pageSize    页大小（可选，默认 100，最大 500）
+     * @return 配置历史版本列表
+     * @throws Exception 异常
+     */
+    public List<ConfigHistoryItem> getConfigHistoryList(String namespaceId, String group, String dataId,
+                                                        Integer pageNo, Integer pageSize) throws Exception {
+        ensureLoggedIn();
+
+        NacosEndpoint endpoint = new NacosEndpoint(serverAddr, username, password);
+        JsonNode dataNode = endpoint.getConfigHistoryList(namespaceId, group, dataId, pageNo, pageSize);
+
+        if (dataNode.isNull()) {
+            return Collections.emptyList();
+        }
+
+        ConfigHistoryListResponse response = OBJECT_MAPPER.treeToValue(dataNode, ConfigHistoryListResponse.class);
+        return response.getPageItems() != null ? response.getPageItems() : Collections.emptyList();
+    }
+
+    /**
+     * 获取指定版本的历史配置
+     *
+     * @param namespaceId 命名空间 ID
+     * @param group       分组
+     * @param dataId      数据 ID
+     * @param nid         历史配置 ID
+     * @return 历史配置信息
+     * @throws Exception 异常
+     */
+    public ConfigHistoryItem getConfigHistory(String namespaceId, String group, String dataId, long nid) throws Exception {
+        ensureLoggedIn();
+
+        NacosEndpoint endpoint = new NacosEndpoint(serverAddr, username, password);
+        JsonNode dataNode = endpoint.getConfigHistory(namespaceId, group, dataId, nid);
+
+        if (dataNode.isNull()) {
+            throw new Exception("Config history not found");
+        }
+
+        return OBJECT_MAPPER.treeToValue(dataNode, ConfigHistoryItem.class);
     }
 
     /**

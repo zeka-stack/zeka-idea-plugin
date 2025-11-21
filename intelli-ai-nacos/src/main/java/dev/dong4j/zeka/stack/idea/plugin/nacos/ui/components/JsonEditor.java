@@ -30,6 +30,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.YamlUtils;
+import lombok.Getter;
 
 /**
  * Nacos JSON 编辑器组件
@@ -43,6 +44,11 @@ public class JsonEditor extends JPanel {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     private final Project project;
+    /**
+     * -- GETTER --
+     * 获取编辑器文本字段
+     */
+    @Getter
     private EditorTextField editorTextField;
     private Language language; // 默认语言类型
     private String originalContent = "";
@@ -171,15 +177,6 @@ public class JsonEditor extends JPanel {
      */
     public void setReadOnly(boolean readOnly) {
         editorTextField.setViewer(readOnly);
-    }
-
-    /**
-     * 获取编辑器文本字段
-     *
-     * @return 编辑器文本字段
-     */
-    public EditorTextField getEditorTextField() {
-        return editorTextField;
     }
 
     private String formatJson(@NotNull String content) throws Exception {

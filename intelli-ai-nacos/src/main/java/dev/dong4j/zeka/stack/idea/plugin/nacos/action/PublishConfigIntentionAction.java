@@ -35,7 +35,7 @@ public class PublishConfigIntentionAction implements IntentionAction {
 
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile psiFile) {
-        if (project == null || editor == null || psiFile == null) {
+        if (editor == null || psiFile == null) {
             return false;
         }
 
