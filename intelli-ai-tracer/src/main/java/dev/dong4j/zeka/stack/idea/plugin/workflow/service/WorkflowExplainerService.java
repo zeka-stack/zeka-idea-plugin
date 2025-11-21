@@ -22,7 +22,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.model.ClassRelationshipContext;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.model.MethodCallerChainContext;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.WorkflowContext;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.model.WorkflowType;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindow;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.JSONSerializer;
@@ -86,35 +89,24 @@ public class WorkflowExplainerService {
         // PSI 操作必须在 ReadAction 中执行
         WorkflowAnalysisData analysisData = com.intellij.openapi.application.ReadAction.compute(() -> {
             try {
-                // 1. 获取光标位置的方法调用
-                PsiMethodCallExpression methodCall = PSIUtil.getMethodCallAtOffset(psiFile, caretOffset);
-                if (methodCall == null) {
-                    throw new RuntimeException(WorkflowBundle.message("error.no.method.call"));
+                // 1. 检测元素类型
+                PSIUtil.ElementContext elementContext = PSIUtil.detectElementType(psiFile, caretOffset);
+
+                if (elementContext.type() == PSIUtil.ElementType.UNKNOWN) {
+                    throw new RuntimeException(WorkflowBundle.message("error.unsupported.element"));
                 }
 
-                // 2. 解析被调用的方法
-                PsiMethod targetMethod = methodCall.resolveMethod();
-                if (targetMethod == null) {
-                    throw new RuntimeException(WorkflowBundle.message("error.cannot.resolve.method"));
+                // 2. 根据类型生成不同的工作流
+                switch (elementContext.type()) {
+                    case METHOD_CALL:
+                        return analyzeMethodCallWorkflow(psiFile, caretOffset, (PsiMethodCallExpression) elementContext.element());
+                    case METHOD_DEFINITION:
+                        return analyzeMethodCallerChain(psiFile, caretOffset, (PsiMethod) elementContext.element());
+                    case CLASS_DEFINITION:
+                        return analyzeClassRelationship(psiFile, caretOffset, (PsiClass) elementContext.element());
+                    default:
+                        throw new RuntimeException(WorkflowBundle.message("error.unsupported.element"));
                 }
-
-                // 3. 获取当前上下文
-                PsiMethod currentMethod = PSIUtil.getMethodAtOffset(psiFile, caretOffset);
-                PsiClass currentClass = PSIUtil.getClassAtOffset(psiFile, caretOffset);
-
-                // 4. 构建工作流上下文
-                WorkflowContext context = buildWorkflowContext(targetMethod, currentMethod, currentClass);
-
-                // 5. 生成 JSON
-                String json = JSONSerializer.toJson(context);
-
-                // 6. 获取方法签名（用于生成文件名）
-                String methodSignature = PSIUtil.getMethodSignature(targetMethod);
-
-                // 7. 获取代码位置信息（用于生成代码链接）
-                CodeLocation codeLocation = getCodeLocation(psiFile, methodCall);
-
-                return new WorkflowAnalysisData(json, methodSignature, codeLocation, psiFile);
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {
@@ -126,7 +118,7 @@ public class WorkflowExplainerService {
         createScratchFileAndWriteMetadata(analysisData);
 
         // 阶段2：调用 AI 生成说明（在 ReadAction 外部执行）
-        String aiMarkdown = callAI(analysisData.json);
+        String aiMarkdown = callAI(analysisData.json, analysisData.workflowType);
 
         // 阶段3：追加 AI 结果到文件
         appendAIResult(aiMarkdown);
@@ -141,7 +133,8 @@ public class WorkflowExplainerService {
     /**
          * 工作流分析数据（内部类）
          */
-        private record WorkflowAnalysisData(String json, String methodSignature, CodeLocation codeLocation, PsiFile psiFile) {
+    private record WorkflowAnalysisData(String json, String signature, CodeLocation codeLocation, PsiFile psiFile,
+                                        WorkflowType workflowType) {
     }
 
     /**
@@ -176,7 +169,7 @@ public class WorkflowExplainerService {
     @NotNull
     private VirtualFile createScratchFileAndWriteMetadata(@NotNull WorkflowAnalysisData analysisData) {
         // 生成文件名
-        String fileName = generateFileName(analysisData.methodSignature);
+        String fileName = generateFileName(analysisData.signature);
 
         // 构建元数据 Markdown
         String metadata = buildMetadataMarkdown(analysisData, fileName);
@@ -198,7 +191,7 @@ public class WorkflowExplainerService {
         StringBuilder sb = new StringBuilder();
 
         // 标题
-        sb.append("# 工作流分析结果\n\n");
+        sb.append("# ").append(analysisData.workflowType.getDisplayName()).append("分析结果\n\n");
 
         // 代码链接
         CodeLocation location = analysisData.codeLocation;
@@ -206,9 +199,9 @@ public class WorkflowExplainerService {
             // 使用 java:// 协议来引用代码文件（file:// 无法被拦截）
             // 格式：java://文件路径:行号:列号
             String codeLink = String.format("java://%s:%d:%d", location.filePath, location.line, location.column);
-            String methodName = analysisData.methodSignature;
+            String signature = analysisData.signature;
             sb.append("## 分析的代码\n\n");
-            sb.append(String.format("[%s](%s)\n\n", methodName, codeLink));
+            sb.append(String.format("[%s](%s)\n\n", signature, codeLink));
         }
 
         // Scratch 文件链接
@@ -227,15 +220,15 @@ public class WorkflowExplainerService {
     }
 
     /**
-     * 生成文件名（基于方法签名）
+     * 生成文件名（基于签名）
      *
-     * @param methodSignature 方法签名
+     * @param signature 签名（方法签名或类名）
      * @return 文件名
      */
     @NotNull
-    private String generateFileName(@NotNull String methodSignature) {
-        // 清理方法签名，生成安全的文件名
-        String fileName = methodSignature
+    private String generateFileName(@NotNull String signature) {
+        // 清理签名，生成安全的文件名
+        String fileName = signature
             .replaceAll("[<>]", "") // 移除泛型符号
             .replaceAll("\\s+", "_") // 空格替换为下划线
             .replaceAll("[^a-zA-Z0-9._-]", "_"); // 其他特殊字符替换为下划线
@@ -264,7 +257,82 @@ public class WorkflowExplainerService {
     }
 
     /**
-     * 构建工作流上下文
+     * 分析方法调用工作流（当前功能）
+     *
+     * @param psiFile    PSI 文件
+     * @param caretOffset 光标偏移量
+     * @param methodCall 方法调用表达式
+     * @return 工作流分析数据
+     */
+    @NotNull
+    private WorkflowAnalysisData analyzeMethodCallWorkflow(@NotNull PsiFile psiFile,
+                                                           int caretOffset,
+                                                           @NotNull PsiMethodCallExpression methodCall) {
+        // 当前的实现逻辑
+        PsiMethod targetMethod = methodCall.resolveMethod();
+        if (targetMethod == null) {
+            throw new RuntimeException(WorkflowBundle.message("error.cannot.resolve.method"));
+        }
+
+        PsiMethod currentMethod = PSIUtil.getMethodAtOffset(psiFile, caretOffset);
+        PsiClass currentClass = PSIUtil.getClassAtOffset(psiFile, caretOffset);
+
+        WorkflowContext context = buildMethodCallWorkflowContext(targetMethod, currentMethod, currentClass);
+        String json = JSONSerializer.toJson(context);
+        String methodSignature = PSIUtil.getMethodSignature(targetMethod);
+        CodeLocation codeLocation = getCodeLocation(psiFile, methodCall);
+
+        return new WorkflowAnalysisData(json, methodSignature, codeLocation, psiFile, WorkflowType.METHOD_CALL_FLOW);
+    }
+
+    /**
+     * 分析方法调用链（谁调用了这个方法）
+     *
+     * @param psiFile     PSI 文件
+     * @param caretOffset 光标偏移量
+     * @param method      方法定义
+     * @return 工作流分析数据
+     */
+    @NotNull
+    private WorkflowAnalysisData analyzeMethodCallerChain(@NotNull PsiFile psiFile,
+                                                          int caretOffset,
+                                                          @NotNull PsiMethod method) {
+        // 构建方法调用链上下文
+        MethodCallerChainContext context = callGraphBuilder.findMethodCallerChain(method);
+
+        // 设置项目信息
+        context.project.name = project.getName();
+
+        String json = JSONSerializer.toJson(context);
+        String methodSignature = PSIUtil.getMethodSignature(method);
+        CodeLocation codeLocation = getCodeLocation(psiFile, method);
+
+        return new WorkflowAnalysisData(json, methodSignature, codeLocation, psiFile, WorkflowType.METHOD_CALLER_CHAIN);
+    }
+
+    /**
+     * 分析类关系链
+     *
+     * @param psiFile     PSI 文件
+     * @param caretOffset 光标偏移量
+     * @param psiClass    类定义
+     * @return 工作流分析数据
+     */
+    @NotNull
+    private WorkflowAnalysisData analyzeClassRelationship(@NotNull PsiFile psiFile,
+                                                          int caretOffset,
+                                                          @NotNull PsiClass psiClass) {
+        // 构建类关系上下文
+        ClassRelationshipContext context = buildClassRelationshipContext(psiClass);
+        String json = JSONSerializer.toJson(context);
+        String className = psiClass.getName() != null ? psiClass.getName() : "UnknownClass";
+        CodeLocation codeLocation = getCodeLocation(psiFile, psiClass);
+
+        return new WorkflowAnalysisData(json, className, codeLocation, psiFile, WorkflowType.CLASS_RELATIONSHIP);
+    }
+
+    /**
+     * 构建方法调用工作流上下文
      *
      * @param targetMethod  目标方法
      * @param currentMethod 当前方法
@@ -272,9 +340,9 @@ public class WorkflowExplainerService {
      * @return 工作流上下文
      */
     @NotNull
-    private WorkflowContext buildWorkflowContext(@NotNull PsiMethod targetMethod,
-                                                 @Nullable PsiMethod currentMethod,
-                                                 @Nullable PsiClass currentClass) {
+    private WorkflowContext buildMethodCallWorkflowContext(@NotNull PsiMethod targetMethod,
+                                                           @Nullable PsiMethod currentMethod,
+                                                           @Nullable PsiClass currentClass) {
         WorkflowContext context = new WorkflowContext();
 
         // 设置项目信息
@@ -303,22 +371,54 @@ public class WorkflowExplainerService {
     }
 
     /**
+     * 构建类关系上下文
+     *
+     * @param psiClass 目标类
+     * @return 类关系上下文
+     */
+    @NotNull
+    private ClassRelationshipContext buildClassRelationshipContext(@NotNull PsiClass psiClass) {
+        ClassRelationshipContext context = new ClassRelationshipContext();
+
+        // 设置项目信息
+        context.project.name = project.getName();
+
+        // 设置目标类信息
+        context.targetClass = MethodContextExtractor.extractClassInfo(psiClass);
+
+        // 查找继承关系
+        context.inheritance = callGraphBuilder.findClassInheritance(psiClass);
+
+        // 查找依赖关系
+        context.dependencies = callGraphBuilder.findClassDependencies(psiClass);
+
+        // 查找内部类
+        PsiClass[] innerClasses = psiClass.getInnerClasses();
+        for (PsiClass innerClass : innerClasses) {
+            context.innerClasses.add(MethodContextExtractor.extractClassInfo(innerClass));
+        }
+
+        return context;
+    }
+
+    /**
      * 调用 AI 生成说明
      * <p>
      * 注意：此方法在 ReadAction 外部执行，可以执行网络请求
      *
-     * @param json 上下文 JSON
+     * @param json         上下文 JSON
+     * @param workflowType 工作流类型
      * @return AI 生成的说明
      * @throws Exception 当 AI 调用失败时抛出
      */
     @NotNull
-    private String callAI(@NotNull String json) throws Exception {
+    private String callAI(@NotNull String json, @NotNull WorkflowType workflowType) throws Exception {
         // 获取 AI 配置
         AIProviderConfig config = selectProviderConfig();
 
         // 构建 Prompt
         String systemPrompt = buildSystemPrompt();
-        String userPrompt = buildUserPrompt(json);
+        String userPrompt = buildUserPrompt(json, workflowType);
 
         // 创建 AI 请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
@@ -348,18 +448,43 @@ public class WorkflowExplainerService {
     }
 
     /**
-     * 构建用户提示词
+     * 构建用户提示词（支持不同工作流类型）
      *
-     * @param json 上下文 JSON
+     * @param json         上下文 JSON
+     * @param workflowType 工作流类型
      * @return 用户提示词
      */
     @NotNull
-    private String buildUserPrompt(@NotNull String json) {
+    private String buildUserPrompt(@NotNull String json, @NotNull WorkflowType workflowType) {
         SettingsState settings = SettingsState.getInstance();
-        String template = settings.workflowTemplate;
-        if (StringUtil.isEmptyOrSpaces(template)) {
-            template = SettingsState.getDefaultWorkflowTemplate();
+        String template;
+
+        switch (workflowType) {
+            case METHOD_CALL_FLOW:
+                template = settings.methodCallTemplate;
+                if (StringUtil.isEmptyOrSpaces(template)) {
+                    template = SettingsState.getDefaultMethodCallTemplate();
+                }
+                break;
+            case METHOD_CALLER_CHAIN:
+                template = settings.methodCallerChainTemplate;
+                if (StringUtil.isEmptyOrSpaces(template)) {
+                    template = SettingsState.getDefaultMethodCallerChainTemplate();
+                }
+                break;
+            case CLASS_RELATIONSHIP:
+                template = settings.classRelationshipTemplate;
+                if (StringUtil.isEmptyOrSpaces(template)) {
+                    template = SettingsState.getDefaultClassRelationshipTemplate();
+                }
+                break;
+            default:
+                template = settings.workflowTemplate;
+                if (StringUtil.isEmptyOrSpaces(template)) {
+                    template = SettingsState.getDefaultWorkflowTemplate();
+                }
         }
+        
         if (template.contains(SettingsState.CONTEXT_PLACEHOLDER)) {
             return template.replace(SettingsState.CONTEXT_PLACEHOLDER, json);
         }
