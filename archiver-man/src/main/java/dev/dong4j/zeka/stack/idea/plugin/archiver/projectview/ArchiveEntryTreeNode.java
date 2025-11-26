@@ -17,6 +17,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import dev.dong4j.zeka.stack.idea.plugin.archiver.util.ArchiverBundle;
+import dev.dong4j.zeka.stack.idea.plugin.archiver.util.ArchiverFeatureToggles;
+
 /**
  * Project View 中的压缩条目节点
  *
@@ -58,6 +61,12 @@ public final class ArchiveEntryTreeNode extends AbstractTreeNode<VirtualFile> {
         }
         presentation.setPresentableText(value.getName());
         presentation.setIcon(value.isDirectory() ? PlatformIcons.FOLDER_ICON : resolveIcon(value));
+        if (ArchiverFeatureToggles.showEditableBadge()) {
+            String badge = ArchiverFeatureToggles.isEditableModeEnabled()
+                           ? ArchiverBundle.message("label.archive.editable")
+                           : ArchiverBundle.message("label.archive.readonly");
+            presentation.setLocationString(badge);
+        }
     }
 
     @Nullable

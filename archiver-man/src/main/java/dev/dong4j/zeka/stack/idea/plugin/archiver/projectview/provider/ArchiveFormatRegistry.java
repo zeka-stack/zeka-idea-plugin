@@ -20,8 +20,10 @@ public final class ArchiveFormatRegistry {
     private final List<ArchiveFormatProvider> providers = new ArrayList<>();
 
     private ArchiveFormatRegistry() {
-        // 默认注册 Zip/Jar provider，后续可通过构造添加更多格式
         providers.add(new ZipArchiveFormatProvider());
+        providers.add(new TarArchiveFormatProvider());
+        providers.add(new GzipArchiveFormatProvider());
+        providers.add(new SevenZipArchiveFormatProvider());
     }
 
     public static ArchiveFormatRegistry getInstance() {

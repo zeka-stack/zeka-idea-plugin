@@ -1,3 +1,27 @@
+<h3>0.5.0</h3>
+<ul>
+    <li>新增可编辑模式开关，支持对 ZIP/TAR/TGZ/GZ/7Z 条目创建可写副本并写回原包</li>
+    <li>新增批量写回与延迟保存策略，自动串行化同一归档的写入任务并提供状态提示</li>
+    <li>新增设置页面，可配置多格式浏览、可编辑能力、备份策略与最大可编辑文件大小</li>
+</ul>
+<h3>0.5.0</h3>
+<ul>
+    <li>Added editable mode toggle with full write-back for ZIP/TAR/TGZ/GZ/7Z entries</li>
+    <li>Introduced batch save scheduling with notifications and automatic conflict protection per archive</li>
+    <li>Added a Tools → Archiver Man settings page to control browsing, editing, backup, and size limits</li>
+</ul>
+<h3>0.3.0</h3>
+<ul>
+    <li>新增 TAR/GZ/TGZ/7Z 浏览支持，在 Project View 中可与 ZIP/JAR 一样展开和定位</li>
+    <li>新增归档提取服务，统一管理临时解压与缓存目录，保障多格式性能与安全</li>
+    <li>优化 Project View Provider，自动在嵌套场景中复制文件并降级回退，避免 IDE 报错</li>
+</ul>
+<h3>0.3.0</h3>
+<ul>
+    <li>Added TAR/GZ/TGZ/7Z viewing support so archives behave like folders alongside ZIP/JAR</li>
+    <li>Introduced an archive extraction service that manages temporary directories and improves performance</li>
+    <li>Improved the Project View provider with safe fallbacks for nested archives to prevent IDE errors</li>
+</ul>
 <h3>0.2.0</h3>
 <ul>
     <li>新增可写 LightVirtualFile 副本，支持直接在 IDE 中编辑 ZIP/JAR 条目</li>

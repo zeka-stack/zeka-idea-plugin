@@ -35,7 +35,7 @@ public final class ArchiveTreeStructureProvider implements TreeStructureProvider
                                                            @NotNull Collection<AbstractTreeNode<?>> children,
                                                            ViewSettings settings) {
         Collection<AbstractTreeNode<?>> originalSnapshot = new java.util.ArrayList<>(children);
-        if (!ArchiverFeatureToggles.ENABLE_ARCHIVE_BROWSER) {
+        if (!ArchiverFeatureToggles.isArchiveBrowserEnabled()) {
             return originalSnapshot;
         }
         Project project = parent.getProject();

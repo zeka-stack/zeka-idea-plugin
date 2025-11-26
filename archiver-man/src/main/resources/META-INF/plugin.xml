@@ -22,8 +22,12 @@
     <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.archiver.core.EditableArchiveService"/>
-        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.archiver.core.NestedArchiveCacheService"/>
+
+        <applicationConfigurable
+                parentId="tools"
+                instance="dev.dong4j.zeka.stack.idea.plugin.archiver.settings.ArchiverSettingsConfigurable"
+                id="dev.dong4j.zeka.stack.idea.plugin.archiver.settings"
+                displayName="Archiver Man"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup id="Archiver Man Notifications"

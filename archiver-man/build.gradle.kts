@@ -87,6 +87,9 @@ dependencies {
     testImplementation("org.mockito:mockito-junit-jupiter:5.2.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
 
+    implementation("org.apache.commons:commons-compress:1.26.1")
+    implementation("org.tukaani:xz:1.9")
+
     testCompileOnly("org.projectlombok:lombok:1.18.26")
     testAnnotationProcessor("org.projectlombok:lombok:1.18.26")
 }

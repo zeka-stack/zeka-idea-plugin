@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * 可编辑压缩条目元数据
@@ -15,17 +16,30 @@ import java.nio.file.Path;
  * @version 0.2.0
  * @since 0.2.0
  */
-public record EditableArchiveEntry(Path archivePath, String entryPath, Charset charset, long archiveTimestamp, long crc) {
+public record EditableArchiveEntry(Path archivePath,
+                                   String entryPath,
+                                   Charset charset,
+                                   long archiveTimestamp,
+                                   long crc,
+                                   ArchiveFormat format,
+                                   Path extractedRoot,
+                                   Path extractedFile) {
     public EditableArchiveEntry(@NotNull Path archivePath,
                                 @NotNull String entryPath,
                                 @NotNull Charset charset,
                                 long archiveTimestamp,
-                                long crc) {
-        this.archivePath = archivePath;
-        this.entryPath = entryPath;
-        this.charset = charset;
+                                long crc,
+                                @NotNull ArchiveFormat format,
+                                Path extractedRoot,
+                                Path extractedFile) {
+        this.archivePath = Objects.requireNonNull(archivePath);
+        this.entryPath = Objects.requireNonNull(entryPath);
+        this.charset = Objects.requireNonNull(charset);
         this.archiveTimestamp = archiveTimestamp;
         this.crc = crc;
+        this.format = Objects.requireNonNull(format);
+        this.extractedRoot = extractedRoot;
+        this.extractedFile = extractedFile;
     }
 
     @Override
@@ -55,7 +69,7 @@ public record EditableArchiveEntry(Path archivePath, String entryPath, Charset c
      */
     @NotNull
     public EditableArchiveEntry withUpdatedState(long newTimestamp, long newCrc) {
-        return new EditableArchiveEntry(archivePath, entryPath, charset, newTimestamp, newCrc);
+        return new EditableArchiveEntry(archivePath, entryPath, charset, newTimestamp, newCrc, format, extractedRoot, extractedFile);
     }
 }
 

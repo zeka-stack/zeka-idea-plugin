@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.archiver.core;
 
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.testFramework.LightVirtualFile;
 
 import org.jetbrains.annotations.NotNull;
@@ -21,16 +22,19 @@ import java.nio.charset.Charset;
 public final class EditableArchiveVirtualFile extends LightVirtualFile {
     private final Project project;
     private EditableArchiveEntry entry;
+    private final VirtualFile sourceFile;
 
     public EditableArchiveVirtualFile(@NotNull Project project,
                                       @NotNull String name,
                                       @NotNull FileType fileType,
                                       @NotNull EditableArchiveEntry entry,
                                       @NotNull Charset charset,
-                                      @NotNull CharSequence content) {
+                                      @NotNull CharSequence content,
+                                      @NotNull VirtualFile sourceFile) {
         super(name, fileType, content);
         this.project = project;
         this.entry = entry;
+        this.sourceFile = sourceFile;
         setWritable(true);
         setFileType(fileType);
         setCharset(charset);
@@ -48,6 +52,21 @@ public final class EditableArchiveVirtualFile extends LightVirtualFile {
 
     public void updateEntry(@NotNull EditableArchiveEntry newEntry) {
         this.entry = newEntry;
+    }
+
+    @NotNull
+    public VirtualFile getSourceFile() {
+        return sourceFile;
+    }
+
+    @Override
+    public boolean isValid() {
+        return true;
+    }
+
+    @Override
+    public boolean isWritable() {
+        return true;
     }
 }
 

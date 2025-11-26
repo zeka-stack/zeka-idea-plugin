@@ -12,11 +12,13 @@ import com.intellij.psi.PsiFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.archiver.core.ArchiveExtractionService;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.core.EditableArchiveException;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.core.EditableArchiveService;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.core.EditableArchiveVirtualFile;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.icons.ArchiverIcons;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.util.ArchiverBundle;
+import dev.dong4j.zeka.stack.idea.plugin.archiver.util.ArchiverFeatureToggles;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.util.NotificationUtil;
 
 /**
@@ -58,14 +60,20 @@ public class ArchiveContextAction extends AnAction {
             return;
         }
 
-        EditableArchiveService service = EditableArchiveService.getInstance();
+        if (!ArchiverFeatureToggles.isEditableModeEnabled()) {
+            NotificationUtil.showWarning(project, ArchiverBundle.message("error.editable.disabled"));
+            return;
+        }
 
-        if (!(virtualFile.getFileSystem() instanceof ArchiveFileSystem) || virtualFile.isDirectory()) {
+        boolean archiveFileSystem = virtualFile.getFileSystem() instanceof ArchiveFileSystem;
+        boolean extracted = ArchiveExtractionService.getInstance().findDescriptor(virtualFile).isPresent();
+        if (virtualFile.isDirectory() || (!archiveFileSystem && !extracted)) {
             NotificationUtil.showWarning(project, ArchiverBundle.message("error.archive.unsupported"));
             return;
         }
 
         try {
+            EditableArchiveService service = EditableArchiveService.getInstance();
             EditableArchiveVirtualFile editableFile = service.createEditableCopy(project, virtualFile);
             FileEditorManager.getInstance(project).openFile(editableFile, true);
             NotificationUtil.showInfo(project, ArchiverBundle.message("success.archive.open", editableFile.getName()));
@@ -82,10 +90,13 @@ public class ArchiveContextAction extends AnAction {
         if (virtualFile == null && psiFile != null) {
             virtualFile = psiFile.getVirtualFile();
         }
+        boolean archiveFs = virtualFile != null && virtualFile.getFileSystem() instanceof ArchiveFileSystem;
+        boolean extracted = virtualFile != null && ArchiveExtractionService.getInstance().findDescriptor(virtualFile).isPresent();
         boolean enabled = project != null
+                          && ArchiverFeatureToggles.isEditableModeEnabled()
                           && virtualFile != null
-                          && virtualFile.getFileSystem() instanceof ArchiveFileSystem
-                          && !virtualFile.isDirectory();
+                          && !virtualFile.isDirectory()
+                          && (archiveFs || extracted);
         e.getPresentation().setEnabledAndVisible(enabled);
     }
 

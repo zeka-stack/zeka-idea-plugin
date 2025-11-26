@@ -12,30 +12,33 @@ import dev.dong4j.zeka.stack.idea.plugin.archiver.core.EditableArchiveService;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.core.EditableArchiveVirtualFile;
 
 /**
- * 文档保存监听器
- * <p>
- * 拦截 {@link EditableArchiveVirtualFile} 的保存动作，将内容写回原始压缩包。
- *
- * @author dong4j
- * @since 0.2.0
+ * Save/Auto-save hook for editable archive files.
  */
 public final class EditableArchiveDocumentListener implements FileDocumentManagerListener {
 
     @Override
     public void beforeDocumentSaving(@NotNull Document document) {
+        processDocument(document);
+    }
+
+    @Override
+    public void beforeAllDocumentsSaving() {
+        FileDocumentManager manager = FileDocumentManager.getInstance();
+        for (Document document : manager.getUnsavedDocuments()) {
+            processDocument(document);
+        }
+    }
+
+    private void processDocument(@NotNull Document document) {
         VirtualFile file = FileDocumentManager.getInstance().getFile(document);
         if (!(file instanceof EditableArchiveVirtualFile editableFile)) {
             return;
         }
-
         Project project = editableFile.getProject();
         if (project.isDisposed()) {
             return;
         }
-
-        EditableArchiveService service = EditableArchiveService.getInstance();
-        String content = document.getText();
-        service.scheduleSave(project, editableFile, content);
+        EditableArchiveService.getInstance().scheduleSave(project, editableFile, document.getText());
     }
 }
 
