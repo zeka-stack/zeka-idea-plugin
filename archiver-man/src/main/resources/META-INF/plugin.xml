@@ -48,6 +48,12 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ArchiveContextAction">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
+
+        <!-- 强制保存归档内容 -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ForceSaveArchiveAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ForceSaveArchiveAction">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
     </actions>
 </idea-plugin>
 

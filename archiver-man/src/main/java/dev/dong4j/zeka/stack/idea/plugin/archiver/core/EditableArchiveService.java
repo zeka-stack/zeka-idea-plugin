@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.archiver.core;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
@@ -54,6 +55,7 @@ import dev.dong4j.zeka.stack.idea.plugin.archiver.util.NotificationUtil;
  */
 @Service(Service.Level.APP)
 public final class EditableArchiveService {
+    private static final Logger LOG = Logger.getInstance(EditableArchiveService.class);
     private static final DateTimeFormatter BACKUP_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final Map<Path, Object> archiveLocks = new ConcurrentHashMap<>();
@@ -122,12 +124,38 @@ public final class EditableArchiveService {
         }
     }
 
+    /**
+     * 立即保存所有待处理的更改到指定归档
+     *
+     * @param archivePath 归档路径
+     */
+    public void flushPendingSaves(@NotNull Path archivePath) {
+        PendingBatch batch = pendingBatches.get(archivePath);
+        if (batch != null) {
+            synchronized (batch) {
+                if (batch.future != null) {
+                    // 取消计划的批量保存
+                    batch.future.cancel(false);
+                    batch.future = null;
+                }
+                if (!batch.saves.isEmpty()) {
+                    List<PendingSave> pending = new ArrayList<>(batch.saves);
+                    batch.saves.clear();
+                    pendingBatches.remove(archivePath, batch);
+                    flushBatch(archivePath, pending);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("D")
     private void flushBatch(@NotNull Path archivePath, @NotNull List<PendingSave> saves) {
         for (PendingSave save : saves) {
-            if (save.project().isDisposed()) {
-                continue;
-            }
             ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                // 在执行线程中再次检查项目是否已关闭
+                if (save.project().isDisposed()) {
+                    return;
+                }
                 try {
                     writeEntry(save.project(), save.file(), save.content(), null);
                 } catch (EditableArchiveException ex) {
@@ -136,6 +164,14 @@ public final class EditableArchiveService {
                         statusBar.setInfo(ex.getMessage());
                     }
                     NotificationUtil.showError(save.project(), ex.getMessage());
+                } catch (Exception ex) {
+                    // 捕获所有其他异常，避免静默失败
+                    StatusBar statusBar = WindowManager.getInstance().getStatusBar(save.project());
+                    if (statusBar != null) {
+                        statusBar.setInfo("Failed to save archive: " + ex.getMessage());
+                    }
+                    NotificationUtil.showError(save.project(), "Failed to save archive: " + ex.getMessage());
+                    LOG.error("Unexpected error during archive save", ex);
                 }
             });
         }
