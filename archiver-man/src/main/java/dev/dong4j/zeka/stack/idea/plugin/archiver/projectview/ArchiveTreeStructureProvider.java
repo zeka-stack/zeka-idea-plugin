@@ -3,42 +3,49 @@ package dev.dong4j.zeka.stack.idea.plugin.archiver.projectview;
 import com.intellij.ide.projectView.TreeStructureProvider;
 import com.intellij.ide.projectView.ViewSettings;
 import com.intellij.ide.util.treeView.AbstractTreeNode;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.JarFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFileSystemItem;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+
+import dev.dong4j.zeka.stack.idea.plugin.archiver.core.NestedArchiveCacheService;
+import dev.dong4j.zeka.stack.idea.plugin.archiver.projectview.provider.ArchiveFormatProvider;
+import dev.dong4j.zeka.stack.idea.plugin.archiver.projectview.provider.ArchiveFormatRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.archiver.util.ArchiverFeatureToggles;
 
 /**
- * 使 ZIP/JAR 在 Project View 中可展开的结构提供者
+ * Project View 中的归档展开结构提供者。
  *
  * @author dong4j
  * @since 0.2.0
  */
-@SuppressWarnings("D")
 public final class ArchiveTreeStructureProvider implements TreeStructureProvider {
 
-    private static final String ZIP = "zip";
-    private static final String JAR = "jar";
+    private static final Logger LOG = Logger.getInstance(ArchiveTreeStructureProvider.class);
+    private final ArchiveFormatRegistry registry = ArchiveFormatRegistry.getInstance();
+    private final NestedArchiveCacheService cacheService = NestedArchiveCacheService.getInstance();
 
     @Override
     public @NotNull Collection<AbstractTreeNode<?>> modify(@NotNull AbstractTreeNode<?> parent,
                                                            @NotNull Collection<AbstractTreeNode<?>> children,
                                                            ViewSettings settings) {
+        Collection<AbstractTreeNode<?>> originalSnapshot = new java.util.ArrayList<>(children);
+        if (!ArchiverFeatureToggles.ENABLE_ARCHIVE_BROWSER) {
+            return originalSnapshot;
+        }
         Project project = parent.getProject();
         if (project == null) {
-            return children;
+            return originalSnapshot;
         }
 
         Object value = parent.getValue();
         if (!(value instanceof PsiElement element)) {
-            return children;
+            return originalSnapshot;
         }
 
         VirtualFile virtualFile = null;
@@ -48,34 +55,34 @@ public final class ArchiveTreeStructureProvider implements TreeStructureProvider
             virtualFile = element.getContainingFile().getVirtualFile();
         }
 
-        if (virtualFile == null || !isArchive(virtualFile)) {
+        if (virtualFile == null || !virtualFile.isValid()) {
+            return originalSnapshot;
+        }
+
+        ArchiveFormatProvider provider = registry.findProvider(virtualFile);
+        if (provider == null) {
+            return originalSnapshot;
+        }
+
+        VirtualFile localFile = cacheService.toLocalIfNeeded(virtualFile);
+        if (localFile == null) {
             return children;
         }
 
-        VirtualFile archiveRoot = JarFileSystem.getInstance().getJarRootForLocalFile(virtualFile);
-        if (archiveRoot == null) {
-            return children;
-        }
-
-        List<AbstractTreeNode<?>> archiveNodes = new ArrayList<>();
-        VirtualFile[] archiveChildren = archiveRoot.getChildren();
-        if (archiveChildren != null) {
-            for (VirtualFile child : archiveChildren) {
-                if (child != null && child.isValid()) {
-                    archiveNodes.add(new ArchiveEntryTreeNode(project, child, settings));
-                }
+        try {
+            VirtualFile archiveRoot = provider.getArchiveRoot(localFile);
+            if (archiveRoot == null) {
+                return originalSnapshot;
             }
+            Collection<? extends AbstractTreeNode<?>> nodes = provider.buildNodes(project, archiveRoot, settings);
+            if (nodes.isEmpty()) {
+                return originalSnapshot;
+            }
+            return new java.util.ArrayList<>(nodes);
+        } catch (Exception ex) {
+            LOG.warn("Failed to build project view nodes for archive: " + localFile.getPath(), ex);
+            return originalSnapshot;
         }
-        return archiveNodes.isEmpty() ? children : archiveNodes;
-    }
-
-    private boolean isArchive(@NotNull VirtualFile file) {
-        String extension = file.getExtension();
-        if (extension == null) {
-            return false;
-        }
-        String lower = extension.toLowerCase();
-        return ZIP.equals(lower) || JAR.equals(lower);
     }
 }
 

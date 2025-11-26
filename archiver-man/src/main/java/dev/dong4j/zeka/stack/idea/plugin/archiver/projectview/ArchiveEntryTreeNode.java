@@ -35,7 +35,7 @@ public final class ArchiveEntryTreeNode extends AbstractTreeNode<VirtualFile> {
     public @NotNull Collection<? extends AbstractTreeNode<?>> getChildren() {
         VirtualFile value = getValue();
         if (value == null || !value.isValid() || !value.isDirectory()) {
-            return List.of();
+            return java.util.Collections.emptyList();
         }
 
         List<AbstractTreeNode<?>> nodes = new ArrayList<>();
