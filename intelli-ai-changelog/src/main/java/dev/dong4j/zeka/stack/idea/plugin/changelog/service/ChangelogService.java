@@ -18,7 +18,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -166,16 +168,46 @@ public final class ChangelogService {
 
     /**
      * 构建提交记录文本
+     * <p>
+     * 按照提交日期对提交记录进行分组，每个日期一个分组。
+     * 分组后的格式便于 AI 理解并按日期生成变更日志。
      *
      * @param commits 提交记录列表
-     * @return 格式化后的提交记录文本
+     * @return 格式化后的提交记录文本（已按日期分组）
      */
     @NotNull
     private String buildCommitsText(@NotNull List<CommitInfo> commits) {
-        StringBuilder commitsText = new StringBuilder();
-        for (CommitInfo commit : commits) {
-            commitsText.append("- ").append(commit.shortMessage).append("\n");
+        if (commits.isEmpty()) {
+            return "";
         }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        // 按日期分组提交记录
+        Map<String, List<CommitInfo>> commitsByDate = new LinkedHashMap<>();
+        for (CommitInfo commit : commits) {
+            String dateStr = dateFormat.format(commit.date);
+            commitsByDate.computeIfAbsent(dateStr, k -> new ArrayList<>()).add(commit);
+        }
+
+        // 构建分组后的文本
+        StringBuilder commitsText = new StringBuilder();
+        for (Map.Entry<String, List<CommitInfo>> entry : commitsByDate.entrySet()) {
+            String dateStr = entry.getKey();
+            List<CommitInfo> dateCommits = entry.getValue();
+
+            // 添加日期分组标题
+            commitsText.append("### ").append(dateStr).append("\n\n");
+
+            // 添加该日期下的所有提交记录
+            for (CommitInfo commit : dateCommits) {
+                commitsText.append("- ").append(commit.shortMessage).append("\n");
+            }
+
+            // 日期分组之间添加空行
+            commitsText.append("\n");
+        }
+        
         return commitsText.toString().trim();
     }
 
@@ -214,11 +246,9 @@ public final class ChangelogService {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.changelogTemplate;
         String commitsText = buildCommitsText(commits);
-        String date = formatCurrentDate();
 
         return template
             .replace("{version}", "v1.0.0")
-            .replace("{date}", date)
             .replace("{commits}", commitsText);
     }
 
