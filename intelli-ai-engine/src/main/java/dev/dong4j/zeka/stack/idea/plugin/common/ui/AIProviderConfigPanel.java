@@ -239,9 +239,9 @@ public final class AIProviderConfigPanel {
         // 初始化高级配置组件
         showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
         maxRetriesSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 10, 1));
-        timeoutSpinner = new JSpinner(new SpinnerNumberModel(10000, 1000, 300000, 1000));
+        timeoutSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 600, 1));
         temperatureSpinner = new JSpinner(new SpinnerNumberModel(0.1, 0.0, 2.0, 0.1));
-        maxTokensSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 10000, 100));
+        maxTokensSpinner = new JSpinner(new SpinnerNumberModel(4.0, 0.1, 256.0, 0.1));
         topPSpinner = new JSpinner(new SpinnerNumberModel(0.9, 0.0, 1.0, 0.1));
         topKSpinner = new JSpinner(new SpinnerNumberModel(50, 1, 100, 1));
         presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.0, -2.0, 2.0, 0.1));
@@ -372,7 +372,7 @@ public final class AIProviderConfigPanel {
         timeoutSpinner.setValue(runtimeSettings.timeout);
         AIModelParameters modelParameters = workingSettings.modelParameters;
         temperatureSpinner.setValue(modelParameters.temperature);
-        maxTokensSpinner.setValue(modelParameters.maxTokens);
+        maxTokensSpinner.setValue(Math.max(0.1d, modelParameters.maxTokens / 1000.0d));
         topPSpinner.setValue(modelParameters.topP);
         topKSpinner.setValue(modelParameters.topK);
         presencePenaltySpinner.setValue(modelParameters.presencePenalty);
@@ -426,7 +426,8 @@ public final class AIProviderConfigPanel {
 
         AIModelParameters modelParameters = workingSettings.modelParameters;
         modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
-        modelParameters.maxTokens = ((Number) maxTokensSpinner.getValue()).intValue();
+        double maxTokensInK = ((Number) maxTokensSpinner.getValue()).doubleValue();
+        modelParameters.maxTokens = (int) Math.max(100, Math.round(maxTokensInK * 1000));
         modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
         modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
         modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();

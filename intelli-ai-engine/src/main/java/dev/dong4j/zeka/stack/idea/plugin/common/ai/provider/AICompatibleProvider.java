@@ -490,13 +490,14 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     private void tuneConnection(HttpURLConnection connection, @Nullable String apiKey) {
         AIRuntimeSettings runtime = runtimeSettings;
-        connection.setConnectTimeout(runtime.timeout);
-        connection.setReadTimeout(runtime.timeout * 2);
+        int timeoutMillis = runtime.getTimeoutInMillis();
+        connection.setConnectTimeout(timeoutMillis);
+        connection.setReadTimeout(timeoutMillis * 2);
         if (requiresApiKey() && apiKey != null) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         }
         if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.print(String.format("连接超时: [%sms] 读取超时: [%sms]", runtime.timeout, (runtime.timeout * 2)));
+            consoleLogger.print(String.format("连接超时: [%ss] 读取超时: [%ss]", runtime.timeout, (runtime.timeout * 2)));
         }
     }
 

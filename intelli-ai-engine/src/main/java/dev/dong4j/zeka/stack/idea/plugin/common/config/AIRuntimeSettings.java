@@ -14,8 +14,8 @@ package dev.dong4j.zeka.stack.idea.plugin.common.config;
 public class AIRuntimeSettings {
     /** 最大重试次数, 用于控制在发生异常时最多尝试的次数 */
     public int maxRetries = 2;
-    /** 超时时间, 单位为毫秒, 默认值为 10000 */
-    public int timeout = 10000;
+    /** 超时时间, 单位为秒, 默认值为 10 */
+    public int timeout = 10;
     /**
      * 等待持续时间, 单位为毫秒
      */
@@ -38,4 +38,17 @@ public class AIRuntimeSettings {
         settings.verboseLogging = this.verboseLogging;
         return settings;
     }
+
+    /**
+     * 获取以毫秒为单位的超时时间.
+     * <p>
+     * 配置页面中使用秒为单位, 在执行网络请求时需要转换为毫秒.
+     *
+     * @return 以毫秒表示的超时时长
+     * @since 1.0.1
+     */
+    public int getTimeoutInMillis() {
+        return Math.max(1, timeout) * 1000;
+    }
+
 }
