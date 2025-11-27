@@ -47,10 +47,8 @@ public final class AIServiceFactory {
      * @return 创建的 {@link AIServiceProvider} 实例; 若创建失败则返回 {@code null}
      */
     @Nullable
-    public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
-                                                   @NotNull AIModelParameters modelParameters,
-                                                   @NotNull AIRuntimeSettings runtimeSettings) {
-        return createProvider(config, modelParameters, runtimeSettings, null);
+    public static AIServiceProvider createProvider(@NotNull AIProviderConfig config) {
+        return createProvider(config, null);
     }
 
     /**
@@ -67,10 +65,10 @@ public final class AIServiceFactory {
      */
     @Nullable
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
-                                                   @NotNull AIModelParameters modelParameters,
-                                                   @NotNull AIRuntimeSettings runtimeSettings,
                                                    @Nullable AIConsoleLogger consoleLogger) {
         AIProviderType providerType = config.providerType != null ? config.providerType : AIProviderType.QIANWEN;
+        AIModelParameters modelParameters = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
+        AIRuntimeSettings runtimeSettings = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
         return switch (providerType) {
             case CUSTOM -> new CustomProvider(config, modelParameters, runtimeSettings, consoleLogger);
             case QIANWEN -> new QianWenProvider(config, modelParameters, runtimeSettings, consoleLogger);

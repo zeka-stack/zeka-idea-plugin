@@ -36,7 +36,7 @@ public interface AIService {
     @NotNull
     String generateContent(@NotNull Project project,
                            @NotNull AIChatRequest request,
-                           @Nullable AIProviderConfig config,
+                           @NotNull AIProviderConfig config,
                            @Nullable AIResponseListener listener) throws AIServiceException;
 
     /**

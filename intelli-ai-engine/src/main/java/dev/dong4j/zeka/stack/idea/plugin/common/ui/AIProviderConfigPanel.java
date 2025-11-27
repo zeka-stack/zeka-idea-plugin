@@ -408,32 +408,26 @@ public final class AIProviderConfigPanel {
 
         // 保存当前编辑的默认提供商的 API Key
         updateCredentialIdAndSaveApiKey(defaultConfig);
-        workingSettings.updateDefaultProviderConfig(providerType, defaultConfig);
-
         // 保存可用提供商列表（它们的 API Key 已经在 addAvailableProvider 时保存了）
         workingSettings.availableProviders.clear();
         availableProvidersTableModel.getData().forEach(workingSettings::addAvailableProvider);
 
         // 保存基础配置
-        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
-        runtimeSettings.verboseLogging = verboseLoggingCheckBox.isSelected();
-        runtimeSettings.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
-        runtimeSettings.timeout = ((Number) timeoutSpinner.getValue()).intValue();
+        AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
+        workingSettings.runtimeSettings = runtimeSnapshot.copy();
         workingSettings.showAvailableProviders = showAvailableProvidersCheckBox.isSelected();
 
         // 保存高级配置
         workingSettings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
 
-        AIModelParameters modelParameters = workingSettings.modelParameters;
-        modelParameters.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
-        double maxTokensInK = ((Number) maxTokensSpinner.getValue()).doubleValue();
-        modelParameters.maxTokens = (int) Math.max(100, Math.round(maxTokensInK * 1000));
-        modelParameters.topP = ((Number) topPSpinner.getValue()).doubleValue();
-        modelParameters.topK = ((Number) topKSpinner.getValue()).intValue();
-        modelParameters.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
+        AIModelParameters modelSnapshot = snapshotModelParameters();
+        workingSettings.modelParameters = modelSnapshot.copy();
 
         // 保存最后选中的提供商类型
         workingSettings.aiProviderType = providerType;
+
+        applyParametersToConfig(defaultConfig, modelSnapshot, runtimeSnapshot);
+        workingSettings.updateDefaultProviderConfig(providerType, defaultConfig);
 
         return workingSettings;
     }
@@ -776,6 +770,11 @@ public final class AIProviderConfigPanel {
         if (!currentApiKey.trim().isEmpty()) {
             updateCredentialIdAndSaveApiKey(currentConfig);
         }
+        AIModelParameters modelSnapshot = snapshotModelParameters();
+        AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
+        applyParametersToConfig(currentConfig, modelSnapshot, runtimeSnapshot);
+        workingSettings.modelParameters = modelSnapshot.copy();
+        workingSettings.runtimeSettings = runtimeSnapshot.copy();
         // 更新到 defaultProviders Map 中，持久化时会自动保存
         workingSettings.updateDefaultProviderConfig(providerType, currentConfig);
     }
@@ -837,10 +836,13 @@ public final class AIProviderConfigPanel {
         testConfig.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
         testConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
         testConfig.updateCredentialId(getCurrentApiKey());
+        AIModelParameters modelSnapshot = snapshotModelParameters();
+        AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
+        applyParametersToConfig(testConfig, modelSnapshot, runtimeSnapshot);
 
         AIServiceProvider provider;
         try {
-            provider = AIServiceFactory.createProvider(testConfig, workingSettings.modelParameters, workingSettings.runtimeSettings);
+            provider = AIServiceFactory.createProvider(testConfig);
             if (provider == null) {
                 JOptionPane.showMessageDialog(mainPanel,
                                               AICommonBundle.message("settings.error.provider.create.failed.details"),
@@ -923,10 +925,13 @@ public final class AIProviderConfigPanel {
         refreshConfig.modelName = Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
         refreshConfig.baseUrl = normalizeBaseUrl(baseUrlField.getText());
         refreshConfig.updateCredentialId(getCurrentApiKey());
+        AIModelParameters modelSnapshot = snapshotModelParameters();
+        AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
+        applyParametersToConfig(refreshConfig, modelSnapshot, runtimeSnapshot);
 
         AIServiceProvider provider;
         try {
-            provider = AIServiceFactory.createProvider(refreshConfig, workingSettings.modelParameters, workingSettings.runtimeSettings);
+            provider = AIServiceFactory.createProvider(refreshConfig);
             if (provider == null) {
                 JOptionPane.showMessageDialog(mainPanel,
                                               AICommonBundle.message("settings.error.provider.create.failed"),
@@ -1190,6 +1195,53 @@ public final class AIProviderConfigPanel {
         if (!providerType.isBaseUrlEditable()) {
             baseUrlField.setText(providerType.getDefaultBaseUrl());
         }
+    }
+
+    /**
+     * 从当前界面收集模型参数快照.
+     *
+     * @return 包含界面输入值的 {@link AIModelParameters}
+     */
+    @NotNull
+    private AIModelParameters snapshotModelParameters() {
+        AIModelParameters params = new AIModelParameters();
+        params.temperature = ((Number) temperatureSpinner.getValue()).doubleValue();
+        double maxTokensInK = ((Number) maxTokensSpinner.getValue()).doubleValue();
+        params.maxTokens = (int) Math.max(100, Math.round(maxTokensInK * 1000));
+        params.topP = ((Number) topPSpinner.getValue()).doubleValue();
+        params.topK = ((Number) topKSpinner.getValue()).intValue();
+        params.presencePenalty = ((Number) presencePenaltySpinner.getValue()).doubleValue();
+        return params;
+    }
+
+    /**
+     * 从当前界面收集运行时配置快照.
+     *
+     * @return {@link AIRuntimeSettings} 快照
+     */
+    @NotNull
+    private AIRuntimeSettings snapshotRuntimeSettings() {
+        AIRuntimeSettings snapshot = new AIRuntimeSettings();
+        AIRuntimeSettings baseline = workingSettings.runtimeSettings != null ? workingSettings.runtimeSettings : new AIRuntimeSettings();
+        snapshot.waitDuration = baseline.waitDuration;
+        snapshot.verboseLogging = verboseLoggingCheckBox.isSelected();
+        snapshot.maxRetries = ((Number) maxRetriesSpinner.getValue()).intValue();
+        snapshot.timeout = ((Number) timeoutSpinner.getValue()).intValue();
+        return snapshot;
+    }
+
+    /**
+     * 将模型与运行时快照应用到指定配置.
+     *
+     * @param target          配置对象
+     * @param modelSnapshot   模型参数快照
+     * @param runtimeSnapshot 运行时参数快照
+     */
+    private void applyParametersToConfig(@NotNull AIProviderConfig target,
+                                         @NotNull AIModelParameters modelSnapshot,
+                                         @NotNull AIRuntimeSettings runtimeSnapshot) {
+        target.modelParameters = modelSnapshot.copy();
+        target.runtimeSettings = runtimeSnapshot.copy();
     }
 
     /**

@@ -36,6 +36,10 @@ public class AIProviderConfig {
     public String remark;
     /** 身份凭证标识符 */
     public String credentialId;
+    /** 模型参数配置 */
+    public AIModelParameters modelParameters = new AIModelParameters();
+    /** 运行时配置 */
+    public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
     /**
      * 构造函数, 用于初始化 AIProviderConfig 对象.
@@ -75,6 +79,8 @@ public class AIProviderConfig {
         config.lastVerifiedTime = this.lastVerifiedTime;
         config.remark = this.remark;
         config.credentialId = this.credentialId;
+        config.modelParameters = this.modelParameters != null ? this.modelParameters.copy() : new AIModelParameters();
+        config.runtimeSettings = this.runtimeSettings != null ? this.runtimeSettings.copy() : new AIRuntimeSettings();
         return config;
     }
 
@@ -141,6 +147,27 @@ public class AIProviderConfig {
                && Objects.equals(baseUrl, other.baseUrl)
                && configurationVerified == other.configurationVerified
                && Objects.equals(credentialId, other.credentialId)
-               && Objects.equals(remark, other.remark);
+               && Objects.equals(remark, other.remark)
+               && compareModelParameters(other)
+               && compareRuntimeSettings(other);
+    }
+
+    private boolean compareModelParameters(@NotNull AIProviderConfig other) {
+        AIModelParameters left = modelParameters != null ? modelParameters : new AIModelParameters();
+        AIModelParameters right = other.modelParameters != null ? other.modelParameters : new AIModelParameters();
+        return Double.compare(left.temperature, right.temperature) == 0
+               && left.maxTokens == right.maxTokens
+               && Double.compare(left.topP, right.topP) == 0
+               && left.topK == right.topK
+               && Double.compare(left.presencePenalty, right.presencePenalty) == 0;
+    }
+
+    private boolean compareRuntimeSettings(@NotNull AIProviderConfig other) {
+        AIRuntimeSettings left = runtimeSettings != null ? runtimeSettings : new AIRuntimeSettings();
+        AIRuntimeSettings right = other.runtimeSettings != null ? other.runtimeSettings : new AIRuntimeSettings();
+        return left.maxRetries == right.maxRetries
+               && left.timeout == right.timeout
+               && left.waitDuration == right.waitDuration
+               && left.verboseLogging == right.verboseLogging;
     }
 }

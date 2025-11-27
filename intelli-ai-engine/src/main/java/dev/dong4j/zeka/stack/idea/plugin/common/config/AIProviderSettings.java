@@ -183,7 +183,14 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      */
     @NotNull
     public AIProviderConfig getDefaultProviderConfig(@NotNull AIProviderType type) {
-        return defaultProviders.computeIfAbsent(type, AIProviderConfig::new).copy();
+        return defaultProviders.computeIfAbsent(type, this::createDefaultProviderConfig).copy();
+    }
+
+    private AIProviderConfig createDefaultProviderConfig(@NotNull AIProviderType type) {
+        AIProviderConfig config = new AIProviderConfig(type);
+        config.modelParameters = modelParameters != null ? modelParameters.copy() : new AIModelParameters();
+        config.runtimeSettings = runtimeSettings != null ? runtimeSettings.copy() : new AIRuntimeSettings();
+        return config;
     }
 
     /**

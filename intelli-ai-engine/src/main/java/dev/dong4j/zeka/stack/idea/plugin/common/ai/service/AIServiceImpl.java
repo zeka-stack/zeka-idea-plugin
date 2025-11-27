@@ -38,7 +38,7 @@ public final class AIServiceImpl implements AIService {
     @NotNull
     public String generateContent(@NotNull Project project,
                                   @NotNull AIChatRequest request,
-                                  @Nullable AIProviderConfig config,
+                                  @NotNull AIProviderConfig config,
                                   @Nullable AIResponseListener listener) throws AIServiceException {
         return generateContentWithConfig(project, request, config, listener);
     }
@@ -49,17 +49,11 @@ public final class AIServiceImpl implements AIService {
                                              @NotNull AIProviderConfig config,
                                              @Nullable AIResponseListener listener) throws AIServiceException {
 
-        final AIProviderSettings instance = AIProviderSettings.getInstance();
-        
         // 从扩展点获取控制台日志记录器
         AIConsoleLogger consoleLogger = getConsoleLogger(project);
         
         // 创建服务提供者
-        AIServiceProvider provider = AIServiceFactory.createProvider(
-            config,
-            instance.modelParameters,
-            instance.runtimeSettings,
-            consoleLogger);
+        AIServiceProvider provider = AIServiceFactory.createProvider(config, consoleLogger);
 
         if (provider == null) {
             throw new AIServiceException("Failed to create AI service provider");

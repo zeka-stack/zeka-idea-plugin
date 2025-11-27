@@ -309,7 +309,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 List<String> models = parseModelsResponse(responseBody);
                 if (consoleLogger != null && runtimeSettings.verboseLogging) {
                     consoleLogger.printSuccess("成功获取 " + models.size() + " 个模型");
-                    if (models.size() > 0 && models.size() <= 10) {
+                    if (!models.isEmpty() && models.size() <= 10) {
                         models.forEach(model -> consoleLogger.print("  - " + model));
                     }
                 }
