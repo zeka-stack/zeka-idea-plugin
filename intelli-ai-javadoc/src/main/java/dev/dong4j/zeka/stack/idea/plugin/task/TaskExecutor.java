@@ -39,6 +39,7 @@ import javax.swing.SwingUtilities;
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIRequestComposer;
 import dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -99,8 +100,6 @@ public class TaskExecutor {
     private final SettingsState settings;
     /** AI 服务实例 */
     private final AIService aiService;
-    /** AI 响应监听器 */
-    private final JavaDocAIResponseListener responseListener;
     /** 进度管理器，统一管理单线程和多线程的进度更新 */
     private ProgressManager progressManager;
 
@@ -618,7 +617,6 @@ public class TaskExecutor {
         this.indicator = indicator;
         this.settings = SettingsState.getInstance();
         this.aiService = ApplicationManager.getApplication().getService(AIService.class);
-        this.responseListener = new JavaDocAIResponseListener(project);
     }
 
     /**
@@ -962,6 +960,16 @@ public class TaskExecutor {
     }
 
     /**
+     * 判断指定提供者是否启用详细日志.
+     *
+     * @param provider 提供者配置
+     * @return true 表示启用
+     */
+    private boolean isVerbose(@NotNull AIProviderConfig provider) {
+        return provider.runtimeSettings != null && provider.runtimeSettings.verboseLogging;
+    }
+
+    /**
      * 显示提供商的统计信息，包括HTML格式的表格和日志信息。
      * <p>
      * 该方法接收一个包含提供商统计信息的Map，生成HTML格式的统计表格，并在日志中记录详细信息。
@@ -1169,7 +1177,8 @@ public class TaskExecutor {
             AIChatRequest request = AIRequestComposer.compose(settings, task);
 
             // 输出代码位置信息（可点击链接）
-            if (virtualFile != null && AIProviderSettings.getInstance().runtimeSettings.verboseLogging) {
+            boolean verboseLogging = isVerbose(provider);
+            if (virtualFile != null && verboseLogging) {
                 PsiElement element = task.getElement();
                 ApplicationManager.getApplication().runReadAction(() -> {
                     try {
@@ -1189,7 +1198,8 @@ public class TaskExecutor {
             }
 
             // 使用 AIService API 生成内容
-            String documentation = aiService.generateContent(project, request, provider, responseListener);
+            AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project, true) : null;
+            String documentation = aiService.generateContent(project, request, provider, listener);
 
             if (documentation.trim().isEmpty()) {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);
@@ -1204,7 +1214,7 @@ public class TaskExecutor {
                 return;
             }
 
-            insertDocumentation(task, documentation);
+            insertDocumentation(task, documentation, verboseLogging);
 
             task.setStatus(DocumentationTask.TaskStatus.COMPLETED);
             task.setResult(documentation);
@@ -1316,7 +1326,9 @@ public class TaskExecutor {
      * @see #getInsertPosition(PsiElement)
      */
     @SuppressWarnings("D")
-    private void insertDocumentation(@NotNull DocumentationTask task, @NotNull String documentation) {
+    private void insertDocumentation(@NotNull DocumentationTask task,
+                                     @NotNull String documentation,
+                                     boolean verboseLogging) {
         ApplicationManager.getApplication().invokeLater(() -> {
             PsiElement element = task.getElement();
             Document document = FileDocumentManager.getInstance()
@@ -1334,7 +1346,7 @@ public class TaskExecutor {
                 () -> ApplicationManager.getApplication().runWriteAction(() -> {
                     try {
                         // 1. 先删除旧注释（如果存在）
-                        deleteOldDocComment(element, document);
+                        deleteOldDocComment(element, document, verboseLogging);
 
                         // 2. 提交删除操作
                         PsiDocumentManager.getInstance(project).commitDocument(document);
@@ -1419,7 +1431,9 @@ public class TaskExecutor {
      * @param document 文档对象
      */
     @SuppressWarnings("D")
-    private void deleteOldDocComment(@NotNull PsiElement element, @NotNull Document document) {
+    private void deleteOldDocComment(@NotNull PsiElement element,
+                                     @NotNull Document document,
+                                     boolean verboseLogging) {
         if (!(element instanceof PsiDocCommentOwner)) {
             return;
         }
@@ -1485,7 +1499,7 @@ public class TaskExecutor {
             // 执行删除
             document.deleteString(deleteStart, deleteEnd);
 
-            if (AIProviderSettings.getInstance().runtimeSettings.verboseLogging) {
+            if (verboseLogging) {
                 log.debug("删除旧注释: 从 {} 到 {} (原注释: {} 到 {})",
                           deleteStart, deleteEnd, startOffset, endOffset);
             }

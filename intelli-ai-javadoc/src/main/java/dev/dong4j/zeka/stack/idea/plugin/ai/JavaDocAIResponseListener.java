@@ -5,7 +5,6 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 
 /**
@@ -18,9 +17,9 @@ public class JavaDocAIResponseListener implements AIResponseListener {
     private final Project project;
     private final boolean verboseLogging;
 
-    public JavaDocAIResponseListener(@NotNull Project project) {
+    public JavaDocAIResponseListener(@NotNull Project project, boolean verboseLogging) {
         this.project = project;
-        this.verboseLogging = AIProviderSettings.getInstance().runtimeSettings.verboseLogging;
+        this.verboseLogging = verboseLogging;
     }
 
     @Override
