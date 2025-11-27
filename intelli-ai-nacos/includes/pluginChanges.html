@@ -1,84 +1,82 @@
-<div>
-    <h3>v1.2.0</h3>
-    <ul>
-        <li>新增 设置页本地 Nacos 注册中心启停，支持自动下载、启动、停止和通知反馈</li>
-        <li>新增 LocalNacosService 服务封装异步生命周期管理</li>
-        <li>新增 本地 Nacos 状态指示与可点击控制台链接，实时显示运行/停止状态</li>
-        <li>新增 一键打开本地 Nacos 目录按钮，快速定位安装路径</li>
-        <li>新增 IDE 关闭监听，自动停止本地 Nacos，避免遗留进程</li>
-        <li>升级 OpenAPI 调用至 Nacos v2 版本，兼容新的 data 包装格式</li>
-        <li>优化 勾选/取消使用本地注册中心时的行为：可同时配置自建地址并在取消时自动停服</li>
-        <li>优化 Nacos 连接测试，用户名/密码可选填</li>
-        <li>移除 EDAS 轻量级注册中心相关逻辑，统一只保留 Nacos 模式</li>
-        <li>修复 本地 Nacos 启动前端口校验固定检查轻量级端口的问题</li>
-    </ul>
-    <h3>v1.2.0</h3>
-    <ul>
-        <li>Added local Nacos toggle in settings with auto download/start/stop notifications</li>
-        <li>Added LocalNacosService to encapsulate async lifecycle management</li>
-        <li>Added status indicator + console hyperlink to visualize local Nacos health</li>
-        <li>Added quick action to open the local Nacos directory from settings</li>
-        <li>Added AppLifecycle listener to stop local Nacos when IDE exits</li>
-        <li>Switched REST calls to Nacos OpenAPI v2 and handle the new data wrapper</li>
-        <li>Improved toggle logic: coexisting with custom registry settings and auto-stop on disable</li>
-        <li>Relaxed connection validation so username/password become optional</li>
-        <li>Removed legacy EDAS lightweight registry code so only Nacos remains</li>
-        <li>Fixed port detection to respect Nacos-specific ports before launch</li>
-    </ul>
+<h3>v1.2.0</h3>
+<ul>
+    <li>新增 设置页本地 Nacos 注册中心启停，支持自动下载、启动、停止和通知反馈</li>
+    <li>新增 LocalNacosService 服务封装异步生命周期管理</li>
+    <li>新增 本地 Nacos 状态指示与可点击控制台链接，实时显示运行/停止状态</li>
+    <li>新增 一键打开本地 Nacos 目录按钮，快速定位安装路径</li>
+    <li>新增 IDE 关闭监听，自动停止本地 Nacos，避免遗留进程</li>
+    <li>升级 OpenAPI 调用至 Nacos v2 版本，兼容新的 data 包装格式</li>
+    <li>优化 勾选/取消使用本地注册中心时的行为：可同时配置自建地址并在取消时自动停服</li>
+    <li>优化 Nacos 连接测试，用户名/密码可选填</li>
+    <li>移除 EDAS 轻量级注册中心相关逻辑，统一只保留 Nacos 模式</li>
+    <li>修复 本地 Nacos 启动前端口校验固定检查轻量级端口的问题</li>
+</ul>
+<h3>v1.2.0</h3>
+<ul>
+    <li>Added local Nacos toggle in settings with auto download/start/stop notifications</li>
+    <li>Added LocalNacosService to encapsulate async lifecycle management</li>
+    <li>Added status indicator + console hyperlink to visualize local Nacos health</li>
+    <li>Added quick action to open the local Nacos directory from settings</li>
+    <li>Added AppLifecycle listener to stop local Nacos when IDE exits</li>
+    <li>Switched REST calls to Nacos OpenAPI v2 and handle the new data wrapper</li>
+    <li>Improved toggle logic: coexisting with custom registry settings and auto-stop on disable</li>
+    <li>Relaxed connection validation so username/password become optional</li>
+    <li>Removed legacy EDAS lightweight registry code so only Nacos remains</li>
+    <li>Fixed port detection to respect Nacos-specific ports before launch</li>
+</ul>
 
-    <h3>v1.1.0</h3>
-    <ul>
-        <li>新增 Nacos 连接测试与安全登录流程，支持自动检测管理员权限</li>
-        <li>新增 Tool Window 刷新、命名空间树、配置拉取/发布/对比及多标签编辑能力</li>
-        <li>新增 工具栏/右键/意图操作：一键发布、对比配置并展示通知</li>
-    </ul>
-    <h3>v1.1.0</h3>
-    <ul>
-        <li>Added secure Nacos connection test with token reuse and admin detection</li>
-        <li>Added Tool Window refresh, namespace tree, pull/push/compare actions and multi-tab editor</li>
-        <li>Added toolbar/context/intention actions for one-click publish & diff with notifications</li>
-    </ul>
+<h3>v1.1.0</h3>
+<ul>
+    <li>新增 Nacos 连接测试与安全登录流程，支持自动检测管理员权限</li>
+    <li>新增 Tool Window 刷新、命名空间树、配置拉取/发布/对比及多标签编辑能力</li>
+    <li>新增 工具栏/右键/意图操作：一键发布、对比配置并展示通知</li>
+</ul>
+<h3>v1.1.0</h3>
+<ul>
+    <li>Added secure Nacos connection test with token reuse and admin detection</li>
+    <li>Added Tool Window refresh, namespace tree, pull/push/compare actions and multi-tab editor</li>
+    <li>Added toolbar/context/intention actions for one-click publish & diff with notifications</li>
+</ul>
 
-    <h3>v1.0.0</h3>
-    <ul>
-        <li>🎉 初始版本发布</li>
-        <li>✨ 提供完整的 Nacos 配置管理功能</li>
-        <li>✨ 集成 IntelliAI Engine 插件，支持 AI 功能</li>
-        <li>✨ 提供可视化的 Nacos 配置管理界面</li>
-        <li>✨ 支持配置的拉取、发布、对比、删除操作</li>
-        <li>✨ 提供配置树形结构展示</li>
-        <li>✨ 支持多 Tab 配置编辑</li>
-        <li>✨ 集成 Nacos Client 2.2.0</li>
-        <li>🔧 支持多版本 IntelliJ IDEA</li>
-    </ul>
+<h3>v1.0.0</h3>
+<ul>
+    <li>🎉 初始版本发布</li>
+    <li>✨ 提供完整的 Nacos 配置管理功能</li>
+    <li>✨ 集成 IntelliAI Engine 插件，支持 AI 功能</li>
+    <li>✨ 提供可视化的 Nacos 配置管理界面</li>
+    <li>✨ 支持配置的拉取、发布、对比、删除操作</li>
+    <li>✨ 提供配置树形结构展示</li>
+    <li>✨ 支持多 Tab 配置编辑</li>
+    <li>✨ 集成 Nacos Client 2.2.0</li>
+    <li>🔧 支持多版本 IntelliJ IDEA</li>
+</ul>
 
-    <h4>核心功能</h4>
-    <ul>
-        <li><b>Nacos 连接管理</b>：服务器连接配置和测试</li>
-        <li><b>配置树视图</b>：按 Namespace → Group → DataId 三级分组展示</li>
-        <li><b>配置编辑器</b>：支持多 Tab 编辑，支持多种格式</li>
-        <li><b>配置操作</b>：拉取、发布、对比配置</li>
-        <li><b>权限管理</b>：基于 Nacos 权限的配置删除控制</li>
-        <li><b>右键菜单</b>：项目视图右键发布配置</li>
-        <li><b>意图操作</b>：快速发布和对比配置</li>
-    </ul>
+<h4>核心功能</h4>
+<ul>
+    <li><b>Nacos 连接管理</b>：服务器连接配置和测试</li>
+    <li><b>配置树视图</b>：按 Namespace → Group → DataId 三级分组展示</li>
+    <li><b>配置编辑器</b>：支持多 Tab 编辑，支持多种格式</li>
+    <li><b>配置操作</b>：拉取、发布、对比配置</li>
+    <li><b>权限管理</b>：基于 Nacos 权限的配置删除控制</li>
+    <li><b>右键菜单</b>：项目视图右键发布配置</li>
+    <li><b>意图操作</b>：快速发布和对比配置</li>
+</ul>
 
-    <h4>技术特性</h4>
-    <ul>
-        <li>基于 IntelliJ Platform SDK 2.1.0</li>
-        <li>集成 Nacos Client 2.2.0</li>
-        <li>集成 IntelliAI Engine 插件</li>
-        <li>使用 Kotlin DSL 配置构建</li>
-        <li>JUnit 5 单元测试框架</li>
-        <li>Lombok 简化 Java 代码</li>
-    </ul>
+<h4>技术特性</h4>
+<ul>
+    <li>基于 IntelliJ Platform SDK 2.1.0</li>
+    <li>集成 Nacos Client 2.2.0</li>
+    <li>集成 IntelliAI Engine 插件</li>
+    <li>使用 Kotlin DSL 配置构建</li>
+    <li>JUnit 5 单元测试框架</li>
+    <li>Lombok 简化 Java 代码</li>
+</ul>
 
-    <h4>系统要求</h4>
-    <ul>
-        <li>IntelliJ IDEA 2022.3 或更高版本</li>
-        <li>Java 17+</li>
-        <li>Gradle 8.0+</li>
-        <li>IntelliAI Engine 插件</li>
-        <li>Nacos 2.x 服务器</li>
-    </ul>
-</div>
+<h4>系统要求</h4>
+<ul>
+    <li>IntelliJ IDEA 2022.3 或更高版本</li>
+    <li>Java 17+</li>
+    <li>Gradle 8.0+</li>
+    <li>IntelliAI Engine 插件</li>
+    <li>Nacos 2.x 服务器</li>
+</ul>
