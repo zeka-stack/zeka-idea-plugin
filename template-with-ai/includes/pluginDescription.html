@@ -1,10 +1,78 @@
+<p>IntelliJ IDEA Plugin Template (With AI) is a development template that integrates IntelliAI Engine for creating AI-powered IntelliJ IDEA
+    plugins.</p>
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/template-with-ai">GitHub</a> |
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a>
+<br/>
+<br/>
+<p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>: Seamlessly integrates with
+    <b><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b> to provide unified, pluggable, and high-performance AI
+    capabilities</p>
+<h2>IntelliJ IDEA Plugin Template (With AI)</h2>
+<p>A development template that integrates IntelliAI Engine for creating AI-powered IntelliJ IDEA plugins with best practices and complete
+    foundation.</p>
+
+<h3>Template Features</h3>
+<ul>
+    <li><b>🚀 Quick Start</b>: Complete project structure and configuration, ready to use out of the box</li>
+    <li><b>🤖 AI Integration</b>: Integrated with <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a>, supporting
+        multiple AI service providers
+    </li>
+    <li><b>⚙️ Settings Management</b>: Complete settings page supporting AI provider selection and prompt template management</li>
+    <li><b>📦 Dependency Management</b>: Pre-configured common dependencies including Lombok, JUnit, Mockito, etc.</li>
+    <li><b>🔧 Development Tools</b>: Integrated Google Java Format, testing framework and plugin verification tools</li>
+    <li><b>🌍 Internationalization</b>: Built-in multi-language support with Chinese and English resource files</li>
+    <li><b>📝 Documentation</b>: Detailed usage documentation and development guide</li>
+    <li><b>🎨 Icon Management</b>: Icon management class for unified plugin icon resource management</li>
+</ul>
+
+<h3>Development Environment</h3>
+<ul>
+    <li>JDK 17+</li>
+    <li>Gradle 8.0+</li>
+    <li>IntelliJ IDEA 2022.3+</li>
+    <li><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> plugin (automatically installed during local development)
+    </li>
+</ul>
+
+<h3>Quick Start</h3>
+<ol>
+    <li><b>📥 Clone Template</b>: Clone the template project to local</li>
+    <li><b>⚙️ Configure Info</b>: Modify plugin information in <code>gradle.properties</code></li>
+    <li><b>▶️ Start Development</b>: Run <code>./gradlew runIde</code> to start sandbox environment (IntelliAI Engine plugin will be
+        automatically installed)
+    </li>
+    <li><b>🔧 Configure AI</b>: Configure AI providers in Settings → Tools → <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI
+        Engine</a></li>
+    <li><b>💻 Start Development</b>: Start developing your plugin features</li>
+</ol>
+
+<h3>Included Features</h3>
+<ul>
+    <li><b>🎯 Action Example</b>: Right-click menu triggered action example</li>
+    <li><b>⚙️ Settings Page</b>: AI provider selection and prompt template management</li>
+    <li><b>🎨 Icon Management</b>: Tool class for unified icon resource management</li>
+    <li><b>🔔 Notification Utility</b>: Unified notification utility class</li>
+    <li><b>🌍 Internationalization Support</b>: Multi-language resource file support</li>
+</ul>
+
+<h3>Technology Stack</h3>
+<ul>
+    <li>Based on IntelliJ Platform SDK 2.1.0</li>
+    <li>Integrated with <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> plugin</li>
+    <li>Using Kotlin DSL for build configuration</li>
+    <li>Integrated JUnit 5 testing framework</li>
+    <li>Support Mockito for unit testing</li>
+</ul>
+
+<p><b>⚡ 由 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 驱动</b>：深度集成
+    <b><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>，提供统一、可扩展、高性能的 AI 能力支持</p>
 <h2>IntelliJ IDEA Plugin Template (With AI)</h2>
 <p>这是一个集成 IntelliAI Engine 的 IntelliJ IDEA 插件开发模板，提供了快速创建 AI 功能插件的基础框架和最佳实践。</p>
 
 <h3>模板特性</h3>
 <ul>
     <li><b>🚀 快速开始</b>：提供完整的项目结构和配置，开箱即用</li>
-    <li><b>🤖 AI 集成</b>：集成 IntelliAI Engine，支持多种 AI 服务提供商</li>
+    <li><b>🤖 AI 集成</b>：集成 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a>，支持多种 AI 服务提供商</li>
     <li><b>⚙️ 设置管理</b>：提供完整的设置页面，支持 AI 提供商选择和提示词模板管理</li>
     <li><b>📦 依赖管理</b>：预配置常用依赖，包括 Lombok、JUnit、Mockito 等</li>
     <li><b>🔧 开发工具</b>：集成 Google Java Format、测试框架和插件验证工具</li>
@@ -18,31 +86,32 @@
     <li>JDK 17+</li>
     <li>Gradle 8.0+</li>
     <li>IntelliJ IDEA 2022.3+</li>
-    <li>IntelliAI Engine 插件（本地开发时自动安装）</li>
+    <li><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 插件（本地开发时自动安装）</li>
 </ul>
 
 <h3>快速开始</h3>
 <ol>
-    <li>克隆模板项目</li>
-    <li>修改 <code>gradle.properties</code> 中的插件信息</li>
-    <li>运行 <code>./gradlew runIde</code> 启动沙箱环境（会自动安装 IntelliAI Engine 插件）</li>
-    <li>在 Settings → Tools → IntelliAI Engine 中配置 AI 提供商</li>
-    <li>开始开发你的插件功能</li>
+    <li><b>📥 克隆模板</b>：克隆模板项目到本地</li>
+    <li><b>⚙️ 配置信息</b>：修改 <code>gradle.properties</code> 中的插件信息</li>
+    <li><b>▶️ 启动开发</b>：运行 <code>./gradlew runIde</code> 启动沙箱环境（会自动安装 IntelliAI Engine 插件）</li>
+    <li><b>🔧 配置 AI</b>：在 Settings → Tools → <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 中配置 AI 提供商
+    </li>
+    <li><b>💻 开始开发</b>：开始开发你的插件功能</li>
 </ol>
 
 <h3>包含功能</h3>
 <ul>
-    <li>Action（操作）示例 - 右键菜单触发</li>
-    <li>设置页面 - AI 提供商选择和提示词模板管理</li>
-    <li>图标管理类 - 统一管理图标资源</li>
-    <li>通知工具类 - 统一的通知功能</li>
-    <li>国际化支持 - 多语言资源文件</li>
+    <li><b>🎯 Action 示例</b>：右键菜单触发操作示例</li>
+    <li><b>⚙️ 设置页面</b>：AI 提供商选择和提示词模板管理</li>
+    <li><b>🎨 图标管理</b>：统一管理图标资源的工具类</li>
+    <li><b>🔔 通知工具</b>：统一的通知功能工具类</li>
+    <li><b>🌍 国际化支持</b>：多语言资源文件支持</li>
 </ul>
 
 <h3>技术栈</h3>
 <ul>
     <li>基于 IntelliJ Platform SDK 2.1.0</li>
-    <li>集成 IntelliAI Engine 插件</li>
+    <li>集成 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 插件</li>
     <li>使用 Kotlin DSL 配置构建</li>
     <li>集成 JUnit 5 测试框架</li>
     <li>支持 Mockito 进行单元测试</li>
