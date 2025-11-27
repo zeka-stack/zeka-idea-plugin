@@ -1,7 +1,34 @@
+<p>
+    IntelliAI Engine is a foundational IntelliJ extension for plugin developers. It exposes a unified AI Service API,
+    centralized configuration UI, secure credential management, reusable UI widgets, and a robust task pipeline so every plugin
+    can talk to OpenAI, Qwen, Ollama, LM Studio, SiliconFlow, etc. without re‑implementing glue code.
+</p>
 <a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-engine">GitHub</a> |
 <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a>
 <br/>
 <br/>
+<p>
+    <b>Core Capabilities</b>
+</p>
+<ul>
+    <li>Multi-model access: preset endpoints and parameter templates for OpenAI, Qwen, Ollama, LM Studio, SiliconFlow</li>
+    <li>Unified configuration UI: one panel for credentials, models and rate limits with instant validation</li>
+    <li>Secure credentials: Password Safe based key storage with unique service names to avoid overwrites</li>
+    <li>Reusable UI widgets: inline generation buttons, status bar entries, progress dialogs ready for downstream plugins</li>
+    <li>Task pipeline: handles request orchestration, streaming responses and error recovery off the EDT</li>
+</ul>
+<p>
+    <b>How to Use</b>
+</p>
+<ol>
+    <li>Add IntelliAI Engine as a dependency in your custom plugin</li>
+    <li>Invoke <code>AIService</code> (or provider facades) to run chat/completion tasks</li>
+    <li>Optionally reuse the provided UI components, notification utilities and settings entries for consistent UX</li>
+</ol>
+<p>
+    With IntelliAI Engine you can focus on business logic and UX, while the engine centralizes provider integrations,
+    credential management and UI scaffolding.
+</p>
 <p>
     IntelliAI Engine 是一个面向插件开发者的基础引擎，提供统一的 AI Service API、配置与凭证管理能力。
     依赖本插件即可一次性获得多模型服务商支持、统一配置面板以及可复用的 UI 组件，无需在每个插件里重复实现相同逻辑。
@@ -27,31 +54,3 @@
 <p>
     借助 IntelliAI Engine，可以把精力集中在业务逻辑与体验设计上，而不是在各个模型服务之间来回打补丁。
 </p>
-<p>
-    IntelliAI Engine is a foundational IntelliJ extension for plugin developers. It exposes a unified AI Service API,
-    centralized configuration UI, secure credential management, reusable UI widgets, and a robust task pipeline so every plugin
-    can talk to OpenAI, Qwen, Ollama, LM Studio, SiliconFlow, etc. without re‑implementing glue code.
-</p>
-<p>
-    <b>Core Capabilities</b>
-</p>
-<ul>
-    <li>Multi-model access: preset endpoints and parameter templates for OpenAI, Qwen, Ollama, LM Studio, SiliconFlow</li>
-    <li>Unified configuration UI: one panel for credentials, models and rate limits with instant validation</li>
-    <li>Secure credentials: Password Safe based key storage with unique service names to avoid overwrites</li>
-    <li>Reusable UI widgets: inline generation buttons, status bar entries, progress dialogs ready for downstream plugins</li>
-    <li>Task pipeline: handles request orchestration, streaming responses and error recovery off the EDT</li>
-</ul>
-<p>
-    <b>How to Use</b>
-</p>
-<ol>
-    <li>Add IntelliAI Engine as a dependency in your custom plugin</li>
-    <li>Invoke <code>AIService</code> (or provider facades) to run chat/completion tasks</li>
-    <li>Optionally reuse the provided UI components, notification utilities and settings entries for consistent UX</li>
-</ol>
-<p>
-    With IntelliAI Engine you can focus on business logic and UX, while the engine centralizes provider integrations,
-    credential management and UI scaffolding.
-</p>
-

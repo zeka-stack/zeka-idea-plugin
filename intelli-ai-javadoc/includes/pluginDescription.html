@@ -1,9 +1,67 @@
+<p>Specialized tool for batch generating compliant JavaDoc comments that meet company standards and Checkstyle requirements.
+    Unlike generic AI tools or simple translation tools, this plugin is optimized specifically for fast, accurate JavaDoc generation across
+    entire projects.</p>
 <a href="https://aij.dong4j.site">Website</a> |
 <a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-javadoc">GitHub</a> |
 <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
 <a href="https://aij.dong4j.site/docs">Help</a>
 <br/>
 <br/>
+<p><b>⚡ Powered by IntelliAI Engine</b>: Seamlessly integrates with <b>IntelliAI Engine</b> to provide unified, pluggable, and
+    high-performance AI capabilities</p>
+<h3>Why This Plugin?</h3>
+<p>When refactoring legacy projects to meet JavaDoc standards, you face common challenges:</p>
+<ul>
+    <li><b>Translation tools (like EasyDoc)</b>: Only translate existing comments, producing meaningless documentation</li>
+    <li><b>Format-only generators</b>: Create proper JavaDoc structure but with empty or meaningless content</li>
+    <li><b>Generic AI tools</b>: Too heavy and slow for batch processing, often fail to complete large projects</li>
+</ul>
+<p><b>This plugin solves these problems</b> by combining AI-powered meaningful content generation with optimized batch processing,
+    specifically designed for enterprise-scale JavaDoc compliance tasks.</p>
+
+<h3>Core Features</h3>
+<ul>
+    <li><b>Meaningful AI-Generated Comments</b>: Uses AI to understand code and generate meaningful JavaDoc, not just format templates</li>
+    <li><b>Fast Batch Processing</b>: Optimized for processing entire projects quickly, supporting parallel processing and performance mode
+    </li>
+    <li><b>Compliance-Focused</b>: Generates JavaDoc that meets Checkstyle and company standards</li>
+    <li><b>Multiple AI Providers</b>: Support for QianWen, Ollama and other AI services</li>
+    <li><b>Flexible Triggering</b>: Available via shortcuts, right-click menus, Generate menu and more</li>
+    <li><b>Smart Recognition</b>: Automatically identify classes, methods, test methods and other elements</li>
+    <li><b>Asynchronous Processing</b>: Background processing without blocking the IDE</li>
+    <li><b>Progress Display</b>: Real-time progress and result statistics</li>
+</ul>
+
+<h3>Usage</h3>
+<ul>
+    <li>Shortcut: Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (Mac)</li>
+    <li>Editor right-click menu → Generate Javadoc with AI</li>
+    <li>File/Directory right-click menu → Generate Javadoc with AI</li>
+    <li>Generate menu: Cmd+N / Alt+Insert → JavaDoc with AI</li>
+    <li>Quick fix: Option+Enter / Alt+Enter → Generate Javadoc with AI</li>
+</ul>
+
+<h3>Configuration</h3>
+<p>Configuration path: Settings → Tools → IntelliAI JavaDoc</p>
+<ul>
+    <li>Select AI provider (QianWen/Ollama)</li>
+    <li>Configure model and API Key (encrypted storage using system-level keychain)</li>
+    <li>Customize generation options</li>
+</ul>
+
+<h3>Security Features</h3>
+<ul>
+    <li><b>Encrypted API Key Storage</b>: Uses IntelliJ Platform's PasswordSafe mechanism, API Keys are never saved to configuration files
+    </li>
+    <li><b>System-Level Encryption</b>:
+        <ul>
+            <li>macOS: Keychain Access</li>
+            <li>Linux: GNOME Keyring or KWallet</li>
+            <li>Windows: Credential Manager</li>
+        </ul>
+    </li>
+</ul>
+
 <p><b>⚡ 由 IntelliAI Engine 驱动</b>：深度集成 <b>IntelliAI Engine</b>，提供统一、可扩展、高性能的 AI 能力支持</p>
 <h2>IntelliAI JavaDoc: You Know, for Javaer, Fun</h2>
 <p>专为批量生成符合规范的 JavaDoc 注释而设计，满足公司标准和 Checkstyle 检测要求。
@@ -55,65 +113,6 @@
             <li>macOS：使用 Keychain Access（钥匙串）</li>
             <li>Linux：使用 GNOME Keyring 或 KWallet</li>
             <li>Windows：使用 Credential Manager</li>
-        </ul>
-    </li>
-</ul>
-
-<p><b>⚡ Powered by IntelliAI Engine</b>: Seamlessly integrates with <b>IntelliAI Engine</b> to provide unified, pluggable, and
-    high-performance AI capabilities</p>
-<p>Specialized tool for batch generating compliant JavaDoc comments that meet company standards and Checkstyle requirements.
-    Unlike generic AI tools or simple translation tools, this plugin is optimized specifically for fast, accurate JavaDoc generation across
-    entire projects.</p>
-
-<h3>Why This Plugin?</h3>
-<p>When refactoring legacy projects to meet JavaDoc standards, you face common challenges:</p>
-<ul>
-    <li><b>Translation tools (like EasyDoc)</b>: Only translate existing comments, producing meaningless documentation</li>
-    <li><b>Format-only generators</b>: Create proper JavaDoc structure but with empty or meaningless content</li>
-    <li><b>Generic AI tools</b>: Too heavy and slow for batch processing, often fail to complete large projects</li>
-</ul>
-<p><b>This plugin solves these problems</b> by combining AI-powered meaningful content generation with optimized batch processing,
-    specifically designed for enterprise-scale JavaDoc compliance tasks.</p>
-
-<h3>Core Features</h3>
-<ul>
-    <li><b>Meaningful AI-Generated Comments</b>: Uses AI to understand code and generate meaningful JavaDoc, not just format templates</li>
-    <li><b>Fast Batch Processing</b>: Optimized for processing entire projects quickly, supporting parallel processing and performance mode
-    </li>
-    <li><b>Compliance-Focused</b>: Generates JavaDoc that meets Checkstyle and company standards</li>
-    <li><b>Multiple AI Providers</b>: Support for QianWen, Ollama and other AI services</li>
-    <li><b>Flexible Triggering</b>: Available via shortcuts, right-click menus, Generate menu and more</li>
-    <li><b>Smart Recognition</b>: Automatically identify classes, methods, test methods and other elements</li>
-    <li><b>Asynchronous Processing</b>: Background processing without blocking the IDE</li>
-    <li><b>Progress Display</b>: Real-time progress and result statistics</li>
-</ul>
-
-<h3>Usage</h3>
-<ul>
-    <li>Shortcut: Ctrl+Shift+D (Windows/Linux) or Cmd+Shift+D (Mac)</li>
-    <li>Editor right-click menu → Generate Javadoc with AI</li>
-    <li>File/Directory right-click menu → Generate Javadoc with AI</li>
-    <li>Generate menu: Cmd+N / Alt+Insert → JavaDoc with AI</li>
-    <li>Quick fix: Option+Enter / Alt+Enter → Generate Javadoc with AI</li>
-</ul>
-
-<h3>Configuration</h3>
-<p>Configuration path: Settings → Tools → IntelliAI JavaDoc</p>
-<ul>
-    <li>Select AI provider (QianWen/Ollama)</li>
-    <li>Configure model and API Key (encrypted storage using system-level keychain)</li>
-    <li>Customize generation options</li>
-</ul>
-
-<h3>Security Features</h3>
-<ul>
-    <li><b>Encrypted API Key Storage</b>: Uses IntelliJ Platform's PasswordSafe mechanism, API Keys are never saved to configuration files
-    </li>
-    <li><b>System-Level Encryption</b>:
-        <ul>
-            <li>macOS: Keychain Access</li>
-            <li>Linux: GNOME Keyring or KWallet</li>
-            <li>Windows: Credential Manager</li>
         </ul>
     </li>
 </ul>
