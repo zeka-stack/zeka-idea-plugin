@@ -747,9 +747,9 @@ public final class AIProviderConfigPanel {
 
         // 加载配置到 UI
         baseUrlField.setText(providerType.getDefaultBaseUrl());
-
+        // 所有供应商都可以填入 api-key
+        apiKeyField.setEnabled(true);
         updateBaseUrlEditable(providerType);
-        updateApiKeyEnabled(providerType);
     }
 
     /**
@@ -773,7 +773,7 @@ public final class AIProviderConfigPanel {
 
         // 保存当前编辑的 API Key（只有在需要 API Key 且不为空时才保存）
         String currentApiKey = getCurrentApiKey();
-        if (providerType.requiresApiKey() && !currentApiKey.trim().isEmpty()) {
+        if (!currentApiKey.trim().isEmpty()) {
             updateCredentialIdAndSaveApiKey(currentConfig);
         }
         // 更新到 defaultProviders Map 中，持久化时会自动保存
@@ -1174,20 +1174,6 @@ public final class AIProviderConfigPanel {
             refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80))));
         } else {
             refreshModelsButton.setIcon(createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54))));
-        }
-    }
-
-    /**
-     * 根据指定的 AI 服务提供商类型更新 API 密钥字段的启用状态和文本内容
-     * <p>
-     * 如果该提供商类型不需要 API 密钥, 则禁用 API 密钥字段并清空其文本内容.
-     *
-     * @param providerType AI 服务提供商类型
-     */
-    private void updateApiKeyEnabled(@NotNull AIProviderType providerType) {
-        apiKeyField.setEnabled(providerType.requiresApiKey());
-        if (!providerType.requiresApiKey()) {
-            apiKeyField.setText("");
         }
     }
 
