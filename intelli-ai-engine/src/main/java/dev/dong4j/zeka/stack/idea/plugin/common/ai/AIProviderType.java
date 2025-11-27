@@ -89,6 +89,20 @@ public enum AIProviderType {
         false,
         true,
         List.of("qwen3-8b")
+    ),
+    /**
+     * ModelScope 模型配置
+     * <p>
+     * 使用 ModelScope Dolphin 接口, 默认不需要 API Key, 支持通过刷新获取最新模型列表.
+     */
+    MODELSCOPE(
+        "modelscope",
+        "ModelScope",
+        "https://api-inference.modelscope.cn/v1",
+        "ZhipuAI/GLM-4.6",
+        false,
+        true,
+        List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
     );
 
     /** 服务提供方唯一标识符 */

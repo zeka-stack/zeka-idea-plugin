@@ -54,3 +54,5 @@ SingleCriterion":[{"category":"inference_type","DateType":"int","predicate":"equ
     "Success": true
 }
 ```
+
+https://api-inference.modelscope.cn/v1/chat/completions

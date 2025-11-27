@@ -129,6 +129,7 @@ public final class AICommonIcons {
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
             case OLLAMA -> PROVIDER_OLLAMA;
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
+            case MODELSCOPE -> PROVIDER_CHATGPT;
         };
     }
 
@@ -149,6 +150,7 @@ public final class AICommonIcons {
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
             case OLLAMA -> PROVIDER_OLLAMA_64;
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
+            case MODELSCOPE -> PROVIDER_CHATGPT_64;
         };
     }
 
