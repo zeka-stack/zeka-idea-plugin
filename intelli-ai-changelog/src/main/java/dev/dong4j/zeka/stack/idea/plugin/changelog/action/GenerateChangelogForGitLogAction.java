@@ -4,7 +4,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import icons.ChangelogIcons;
 
 /**
  * Git Log 工具窗口中生成 Changelog 的 Action
@@ -12,6 +15,11 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
  * 在 Git Log 工具窗口中，用户可以选择多条提交记录，然后右键选择此 Action 生成 Changelog
  */
 public class GenerateChangelogForGitLogAction extends AbstractGitLogAction {
+
+    @NotNull
+    protected Icon getIcon() {
+        return ChangelogIcons.LOGS;
+    }
 
     /**
      * 获取用于生成提交日志的文本键

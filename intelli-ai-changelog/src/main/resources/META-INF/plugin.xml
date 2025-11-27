@@ -47,16 +47,20 @@
     <actions>
         <!-- Git Log 工具窗口右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction">
-            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
+                popup="true">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction">
-            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
+                popup="true">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction">
-            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
+                popup="true">
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
+                popup="true">
         </action>
 
         <!-- Git 提交工具栏操作 -->
@@ -65,10 +69,15 @@
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
         </action>
 
-        <!-- Git Log 工具窗口右键菜单 - 生成提交记录 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction">
-            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="last"/>
-        </action>
+        <!--suppress PluginXmlI18n -->
+        <group popup="true" id="dev.dong4j.zeka.stack.idea.plugin.changelog.group"
+               text="IntelliAI Changelog"
+               icon="ChangelogIcons.CHANGELOG_16">
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"/>
+            <add-to-group group-id="Vcs.Log.ContextMenu" anchor="first"/>
+        </group>
     </actions>
 </idea-plugin>

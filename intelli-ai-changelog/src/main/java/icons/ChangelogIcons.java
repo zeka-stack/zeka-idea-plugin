@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.icons;
+package icons;
 
 import com.intellij.openapi.util.IconLoader;
 
@@ -45,12 +45,10 @@ public class ChangelogIcons {
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */
     public static final Icon CHANGELOG_16 = load("/icons/changelog_16.svg");
+    public static final Icon LOGS = load("/icons/logs.svg");
+    public static final Icon WEEKLY = load("/icons/weekly.svg");
+    public static final Icon DAILY = load("/icons/daily.svg");
+    public static final Icon DIFF = load("/icons/diff.svg");
 
-    /**
-     * 提交记录生成图标 (16x16)
-     * <p>
-     * 用于：生成提交记录的动作图标
-     */
-    public static final Icon COMMIT_MESSAGE_16 = load("/icons/commit_message_16.svg");
 }
 

@@ -4,12 +4,27 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import icons.ChangelogIcons;
 
 /**
  * Git Log 工具窗口中生成工作周报的 Action
  */
 public class GenerateWeeklyReportForGitLogAction extends AbstractGitLogAction {
+
+    /**
+     * 获取图标对象
+     * <p>
+     * 返回一个预定义的图标对象, 用于表示周度变更日志.
+     *
+     * @return 图标对象
+     */
+    @NotNull
+    protected Icon getIcon() {
+        return ChangelogIcons.WEEKLY;
+    }
 
     /**
      * 获取用于生成周报的 Git 日志操作的文本键

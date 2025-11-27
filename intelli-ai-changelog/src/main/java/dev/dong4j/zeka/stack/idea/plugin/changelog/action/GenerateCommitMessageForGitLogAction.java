@@ -12,9 +12,9 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.icons.ChangelogIcons;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -63,7 +63,7 @@ public class GenerateCommitMessageForGitLogAction extends AbstractGitLogAction {
      */
     @Override
     protected @NotNull Icon getIcon() {
-        return ChangelogIcons.COMMIT_MESSAGE_16;
+        return ChangelogIcons.DIFF;
     }
 
     /**

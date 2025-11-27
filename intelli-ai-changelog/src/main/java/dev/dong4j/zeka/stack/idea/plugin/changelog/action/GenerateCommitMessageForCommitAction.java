@@ -14,8 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collection;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.icons.ChangelogIcons;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
+import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -56,7 +56,7 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
 
         // 设置按钮文本和图标
         e.getPresentation().setText(ChangelogBundle.message("commit.action.text"));
-        e.getPresentation().setIcon(ChangelogIcons.COMMIT_MESSAGE_16);
+        e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
 
         // 检查是否有代码变更（需要在 read-action 中访问 VCS 数据）
         boolean hasChanges = ApplicationManager.getApplication().runReadAction(

@@ -19,11 +19,11 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.icons.ChangelogIcons;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import icons.ChangelogIcons;
 
 /**
  * Git Log 相关 Action 的抽象基类
