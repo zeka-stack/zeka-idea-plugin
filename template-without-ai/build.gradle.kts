@@ -113,5 +113,10 @@ tasks {
     test {
         useJUnitPlatform()
     }
+
+    // 热更新
+    runIde {
+        jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
+    }
 }
 

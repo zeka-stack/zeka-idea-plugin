@@ -184,6 +184,8 @@ tasks {
     // 在 runIde 之前执行复制任务（在 prepareSandbox 之后）
     runIde {
         dependsOn(copyAiCommonPlugin)
+        // 热更新
+        jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
     }
 }
 

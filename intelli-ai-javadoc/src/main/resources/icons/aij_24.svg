@@ -18,5 +18,6 @@
               style="--darkreader-inline-fill: var(--darkreader-background-ffffff, #1a1b1a);">
         </path>
     </g>
+    <circle cx="20.5" cy="16.5" r="1.6" fill="#EF4444" stroke="#FFFFFF" stroke-width="0.2"/>
 </svg>
 
