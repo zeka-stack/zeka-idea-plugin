@@ -259,21 +259,28 @@ public class TaskExecutor {
             // 1. 如果是类/接口/枚举，直接返回类的全路径
             if (element instanceof PsiClass psiClass) {
                 String qualifiedName = psiClass.getQualifiedName();
-                return qualifiedName != null ? qualifiedName : psiClass.getName();
+                if (qualifiedName != null) {
+                    return qualifiedName;
+                }
+                String className = psiClass.getName();
+                return Objects.requireNonNullElseGet(className, () -> psiClass.getClass().getSimpleName());
+                // 匿名类或特殊情况下，使用类类型作为后备
             }
 
             // 2. 如果是方法，使用点号拼接：类全路径.方法名
             if (element instanceof PsiMethod method) {
                 PsiClass containingClass = PsiTreeUtil.getParentOfType(method, PsiClass.class);
-                final String className = buildClassName(containingClass, method.getName());
-                return Objects.requireNonNullElseGet(className, method::getName);
+                String methodName = method.getName();
+                final String className = buildClassName(containingClass, methodName);
+                return Objects.requireNonNullElse(className, methodName);
             }
 
             // 3. 如果是字段，使用点号拼接：类全路径.字段名
             if (element instanceof PsiField field) {
                 PsiClass containingClass = PsiTreeUtil.getParentOfType(field, PsiClass.class);
-                final String className = buildClassName(containingClass, field.getName());
-                return Objects.requireNonNullElseGet(className, field::getName);
+                String fieldName = field.getName();
+                final String className = buildClassName(containingClass, fieldName);
+                return Objects.requireNonNullElse(className, fieldName);
             }
 
             // 4. 如果是文件，尝试获取文件中的第一个类
@@ -282,10 +289,21 @@ public class TaskExecutor {
                     PsiClass[] classes = javaFile.getClasses();
                     if (classes.length > 0) {
                         String qualifiedName = classes[0].getQualifiedName();
-                        return qualifiedName != null ? qualifiedName : classes[0].getName();
+                        if (qualifiedName != null) {
+                            return qualifiedName;
+                        }
+                        String className = classes[0].getName();
+                        if (className != null) {
+                            return className;
+                        }
                     }
                 }
-                return element.getContainingFile().getName();
+                PsiFile containingFile = element.getContainingFile();
+                if (containingFile != null) {
+                    return containingFile.getName();
+                }
+                // 最后的后备方案
+                return "UnknownFile";
             }
 
             // 5. 其他情况，尝试查找包含的类
@@ -293,17 +311,38 @@ public class TaskExecutor {
             if (containingClass != null) {
                 String className = containingClass.getQualifiedName();
                 if (className != null) {
-                    return className + "." + element.getClass().getSimpleName();
+                    String elementName = element.getClass().getSimpleName();
+                    return className + "." + elementName;
+                }
+                String simpleClassName = containingClass.getName();
+                if (simpleClassName != null) {
+                    String elementName = element.getClass().getSimpleName();
+                    return simpleClassName + "." + elementName;
                 }
             }
 
-            return element.getClass().getSimpleName();
+            // 最后的后备方案：使用元素类型名称
+            String elementTypeName = element.getClass().getSimpleName();
+            if (!elementTypeName.isEmpty()) {
+                return elementTypeName;
+            }
+            // 如果所有方法都失败，返回默认值
+            return "UnknownElement";
         });
     }
 
+    /**
+     * 构建带有类名的元素名称字符串
+     * <p>
+     * 根据指定的类和元素名称, 构建形如 "类名. 元素名" 的字符串. 如果类名或元素名为空, 则返回 null.
+     *
+     * @param containingClass 包含该元素的类对象
+     * @param element         元素名称
+     * @return 构建后的字符串, 格式为 "类名. 元素名", 若类或元素为空则返回 null
+     */
     @Nullable
     private static String buildClassName(PsiClass containingClass, String element) {
-        if (containingClass != null) {
+        if (containingClass != null && element != null) {
             String className = containingClass.getQualifiedName();
             if (className != null) {
                 return className + "." + element;

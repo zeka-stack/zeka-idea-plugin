@@ -118,8 +118,7 @@ public class CommitJavaDocGenerator {
                             project,
                             message,
                             JavaDocBundle.message("commit.detection.title"),
-                            Messages.getQuestionIcon()
-                                                             );
+                            Messages.getQuestionIcon());
 
                         if (result != Messages.YES) {
                             return;
@@ -129,8 +128,7 @@ public class CommitJavaDocGenerator {
                         generateDocumentation(tasks);
                     });
                 }
-            }
-                                         );
+            });
     }
 
     /**
