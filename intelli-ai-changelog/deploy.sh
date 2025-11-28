@@ -239,6 +239,7 @@ echo "================================"
 echo "✓ 部署完成！"
 if $do_publish; then
     echo "  - 插件已发布到 JetBrains Marketplace"
+    echo "    https://plugins.jetbrains.com/plugin/29154"
 fi
 if $do_zip; then
     echo "  - ZIP: $REMOTE_HOST:$REMOTE_DIR/$DEST_ZIP_NAME"

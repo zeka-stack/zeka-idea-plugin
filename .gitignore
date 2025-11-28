@@ -1,6 +1,6 @@
 intelli-ai-javadoc/.gradle
 build/
-!gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
@@ -38,7 +38,9 @@ bin/
 ### Mac OS ###
 .DS_Store
 .intellijPlatform/
+# Ignore all JAR files except Gradle Wrapper
 *.jar
+!**/gradle/wrapper/gradle-wrapper.jar
 .gradle/
 chain.crt
 private.pem
