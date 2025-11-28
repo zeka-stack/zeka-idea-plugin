@@ -313,12 +313,14 @@ public class TaskCollector {
      * 从 PSI 文件收集缺失 JavaDoc 的任务
      *
      * <p>专门用于 Git 提交场景，只收集没有 JavaDoc 的元素，
-     * 忽略 overrideExisting 配置，确保只为缺失文档的元素生成任务。
+     * 忽略所有配置（generateForClass、generateForMethod、generateForField、overrideExisting），
+     * 强制检查所有类型的元素，确保只为缺失文档的元素生成任务。
      *
      * <p>与 collectFromFile 的区别：
      * <ul>
      *   <li>强制只收集没有 JavaDoc 的元素</li>
-     *   <li>忽略 overrideExisting 配置</li>
+     *   <li>忽略所有配置（generateForClass、generateForMethod、generateForField、overrideExisting）</li>
+     *   <li>强制检查类、方法、字段所有类型的元素</li>
      *   <li>适用于提交前的文档检查场景</li>
      * </ul>
      *
@@ -326,6 +328,7 @@ public class TaskCollector {
      * <ol>
      *   <li>检查文件是否为 Java 文件</li>
      *   <li>使用 visitor 模式遍历所有元素</li>
+     *   <li>强制检查所有类型的元素（类、方法、字段）</li>
      *   <li>只收集没有 JavaDoc 的元素</li>
      * </ol>
      *
@@ -336,7 +339,64 @@ public class TaskCollector {
      */
     @NotNull
     public List<DocumentationTask> collectMissingJavaDocFromFile(@NotNull PsiFile psiFile) {
-        return collectFromFileInternal(psiFile, this::hasNoJavaDoc);
+        List<DocumentationTask> tasks = new ArrayList<>();
+
+        if (!(psiFile instanceof PsiJavaFile)) {
+            return tasks;
+        }
+
+        // 专门用于 Git 提交场景，强制检查所有类型的元素，不受配置影响
+        psiFile.accept(new JavaRecursiveElementVisitor() {
+            /**
+             * 访问类元素，强制检查所有类（不受 generateForClass 配置影响）
+             *
+             * @param aClass 被访问的类元素
+             */
+            @Override
+            public void visitClass(@NotNull PsiClass aClass) {
+                super.visitClass(aClass);
+
+                // 强制检查类，不受 generateForClass 配置影响
+                if (hasNoJavaDoc(aClass)) {
+                    tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
+                }
+            }
+
+            /**
+             * 处理方法节点，强制检查所有方法（不受 generateForMethod 配置影响）
+             *
+             * @param method 被访问的方法节点
+             */
+            @Override
+            public void visitMethod(@NotNull PsiMethod method) {
+                super.visitMethod(method);
+
+                // 强制检查方法，不受 generateForMethod 配置影响
+                if (hasNoJavaDoc(method)) {
+                    DocumentationTask.TaskType type = isTestMethod(method)
+                                                      ? DocumentationTask.TaskType.TEST_METHOD
+                                                      : DocumentationTask.TaskType.METHOD;
+                    tasks.add(createTask(method, type));
+                }
+            }
+
+            /**
+             * 处理字段元素，强制检查所有字段（不受 generateForField 配置影响）
+             *
+             * @param field 被访问的字段元素
+             */
+            @Override
+            public void visitField(@NotNull PsiField field) {
+                super.visitField(field);
+
+                // 强制检查字段，不受 generateForField 配置影响
+                if (hasNoJavaDoc(field)) {
+                    tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+                }
+            }
+        });
+
+        return tasks;
     }
 
     /**
