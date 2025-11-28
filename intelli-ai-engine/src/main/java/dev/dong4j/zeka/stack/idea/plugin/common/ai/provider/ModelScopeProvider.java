@@ -39,8 +39,8 @@ public class ModelScopeProvider extends AICompatibleProvider {
     private static final Logger LOG = Logger.getInstance(ModelScopeProvider.class);
     /** ModelScope 模型列表接口地址（固定） */
     private static final String MODELS_LIST_URL = "https://modelscope.cn/api/v1/dolphin/models";
-    /** 最大页数，每页最多 50 条 */
-    private static final int MAX_PAGES = 5;
+    /** 最大页数，每页最多 30 条 */
+    private static final int MAX_PAGES = 3;
 
     /**
      * 构造函数
@@ -65,6 +65,7 @@ public class ModelScopeProvider extends AICompatibleProvider {
      * @param apiKey API Key, 可为 null
      * @return 模型 id 列表
      */
+    @SuppressWarnings("D")
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
@@ -128,16 +129,26 @@ public class ModelScopeProvider extends AICompatibleProvider {
     @NotNull
     private List<String> fetchModelsPage(int pageNumber, @Nullable String apiKey) throws IOException {
         String requestBody = buildRequestBody(pageNumber);
+        // 计算请求体长度，用于禁用分块传输编码
+        byte[] requestBodyBytes = requestBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final int contentLength = requestBodyBytes.length;
+        
         String response = HttpRequests.post(MODELS_LIST_URL, "application/json")
-            .connect(request -> {
-                HttpURLConnection connection = (HttpURLConnection) request.getConnection();
-                connection.setRequestMethod("PUT");
-                connection.setConnectTimeout(runtimeSettings.getTimeoutInMillis());
-                connection.setReadTimeout(runtimeSettings.getTimeoutInMillis() * 2);
-                connection.setRequestProperty("Content-Type", "application/json");
+            .tuner(connection -> {
+                HttpURLConnection conn = (HttpURLConnection) connection;
+                conn.setRequestMethod("PUT");
+                conn.setConnectTimeout(runtimeSettings.getTimeoutInMillis());
+                conn.setReadTimeout(runtimeSettings.getTimeoutInMillis() * 2);
+                conn.setRequestProperty("Content-Type", "application/json");
                 if (apiKey != null && !apiKey.trim().isEmpty()) {
-                    connection.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
+                    conn.setRequestProperty("Authorization", "Bearer " + apiKey.trim());
                 }
+                // 在连接建立之前设置固定长度流模式，禁用分块传输编码
+                // 这样在身份验证失败时可以重试
+                conn.setFixedLengthStreamingMode(contentLength);
+                conn.setRequestProperty("Content-Length", String.valueOf(contentLength));
+            })
+            .connect(request -> {
                 request.write(requestBody);
                 return request.readString();
             });

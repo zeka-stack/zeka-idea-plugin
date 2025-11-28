@@ -414,10 +414,20 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         logRequest(listener, requestBody, validation);
 
         try {
+            // 计算请求体长度，用于禁用分块传输编码
+            byte[] requestBodyBytes = requestBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            final int contentLength = requestBodyBytes.length;
+            
             String responseBody = HttpRequests.post(url, "application/json")
+                .tuner(connection -> {
+                    HttpURLConnection conn = (HttpURLConnection) connection;
+                    tuneConnection(conn, apiKey);
+                    // 在连接建立之前设置固定长度流模式，禁用分块传输编码
+                    // 这样在身份验证失败时可以重试
+                    conn.setFixedLengthStreamingMode(contentLength);
+                    conn.setRequestProperty("Content-Length", String.valueOf(contentLength));
+                })
                 .connect(request -> {
-                    HttpURLConnection connection = (HttpURLConnection) request.getConnection();
-                    tuneConnection(connection, apiKey);
                     request.write(requestBody);
                     return request.readString();
                 });
@@ -493,7 +503,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         int timeoutMillis = runtime.getTimeoutInMillis();
         connection.setConnectTimeout(timeoutMillis);
         connection.setReadTimeout(timeoutMillis * 2);
-        if (requiresApiKey() && apiKey != null) {
+        if (apiKey != null && !apiKey.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         }
         if (consoleLogger != null && runtimeSettings.verboseLogging) {

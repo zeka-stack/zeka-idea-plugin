@@ -100,7 +100,7 @@ public enum AIProviderType {
         "ModelScope",
         "https://api-inference.modelscope.cn/v1",
         "ZhipuAI/GLM-4.6",
-        false,
+        true,
         true,
         List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
     );

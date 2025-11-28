@@ -3,6 +3,8 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import lombok.Getter;
+
 /**
  * 验证结果封装类
  * <p>
@@ -16,7 +18,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ValidationResult {
 
-    /** 如果验证成功返回 true，否则返回 false */
+    /** 如果验证成功返回 true，否则返回 false
+     * -- GETTER --
+     *  判断当前操作是否成功
+     *  <p>
+     *  返回操作是否成功的布尔值
+     *
+     * @return 如果操作成功返回 true, 否则返回 false
+     */
+    @Getter
     private final boolean success;
 
     /** 成功或失败的消息 */
@@ -118,17 +128,6 @@ public class ValidationResult {
                                            @Nullable String errorDetails,
                                            @Nullable Throwable throwable) {
         return new ValidationResult(false, message, errorDetails, throwable);
-    }
-
-    /**
-     * 判断当前操作是否成功
-     * <p>
-     * 返回操作是否成功的布尔值
-     *
-     * @return 如果操作成功返回 true, 否则返回 false
-     */
-    public boolean isSuccess() {
-        return success;
     }
 
     /**
