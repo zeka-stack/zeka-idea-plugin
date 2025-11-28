@@ -246,7 +246,6 @@
         /* 主内容区 */
         .main-content {
             margin-left: var(--sidebar-width);
-            margin-right: var(--sidebar-width);
             margin-top: var(--header-height);
             padding: 32px;
             display: flex;
@@ -264,95 +263,34 @@
             position: relative;
         }
 
-        .content-layout {
+        /* Banner 图片区域 */
+        .content-banner {
             width: 100%;
             max-width: 1100px;
+            margin: 0 auto 32px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
-        .documents-panel {
-            position: fixed;
-            right: 0;
-            top: var(--header-height);
-            bottom: 64px;
-            /*width: var(--sidebar-width);*/
-            width: 340px; /* 自定义宽度 */
-            background: var(--bg);
-            border-left: none;
-            padding: 24px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            z-index: 900;
+        [data-theme="dark"] .content-banner {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
         }
 
-        .documents-header h3 {
-            font-size: 16px;
-            margin-bottom: 4px;
-            color: var(--text);
-            padding: 0 24px;
-        }
-
-        .documents-header p {
-            margin: 0;
-            font-size: 13px;
-            color: var(--text-secondary);
-            padding: 0 24px;
-        }
-
-        .documents-current {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 6px;
-            padding: 0 24px;
-        }
-
-        .documents-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px 0;
-            margin: 0;
-            list-style: none;
-        }
-
-        .document-item {
+        .content-banner img {
             width: 100%;
-            text-align: left;
-            border: none;
-            border-left: 3px solid transparent;
-            padding: 10px 24px;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+            height: auto;
             display: block;
+            border-radius: 16px;
+            margin: 0;
+            box-shadow: none;
+            border: none;
+            transition: transform 0.3s;
         }
 
-        .document-item + .document-item {
-            margin-top: 4px;
-        }
-
-        .document-item:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: var(--bg-hover);
-        }
-
-        .document-item.active {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--primary);
-        }
-
-        .documents-empty,
-        .documents-error {
-            font-size: 13px;
-            color: var(--text-secondary);
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 12px;
-            border: 1px dashed var(--border);
+        .content-banner img:hover {
+            transform: scale(1.02);
         }
 
         /* 底部 Footer */
@@ -931,17 +869,7 @@
 
             .main-content {
                 margin-left: 0;
-                margin-right: 0;
                 padding: 24px 16px;
-            }
-
-            .documents-panel {
-                width: 100%;
-                position: static;
-                bottom: auto;
-                border-left: none;
-                border-top: 1px solid var(--border);
-                padding: 16px 0;
             }
 
             .search-input {
@@ -1053,24 +981,16 @@
 
 <!-- 主内容区 -->
 <main class="main-content">
-    <div class="content-layout">
-        <article class="content" id="content">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>加载中...</p>
-            </div>
-        </article>
-        <aside class="documents-panel" id="documentsPanel">
-            <div class="documents-header">
-                <h3>文档列表</h3>
-                <p>展示 docs 目录下的所有 Markdown 文档</p>
-                <div class="documents-current" id="documentsCurrent">当前：加载中...</div>
-            </div>
-            <div class="documents-list" id="documentsList">
-                <div class="documents-empty">正在加载文档列表...</div>
-            </div>
-        </aside>
+    <!-- Banner 图片区域 -->
+    <div class="content-banner" id="contentBanner" style="display: none;">
+        <img src="" alt="Banner" id="bannerImage">
     </div>
+    <article class="content" id="content">
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+    </article>
 </main>
 
 <!-- 回到顶部 -->
@@ -1117,191 +1037,59 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/properties.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
-  // 文档加载与清单
+  // 从 用户手册.md 文件加载内容
   let markdownContent = '';
-  let documentsManifest = [];
-  let currentDocumentId = null;
 
-  const MANIFEST_PATH = './docs/docs-list.json';
-  const DEFAULT_DOC_PATH = './docs/用户手册.md';
-  const LAST_DOC_STORAGE_KEY = 'intelliAI.docs.lastDocId';
+  // 加载 Banner 图片
+  async function loadBanner() {
+    const bannerImage = document.getElementById('bannerImage');
+    const contentBanner = document.getElementById('contentBanner');
 
-  async function initializeDocuments() {
-    await loadManifest();
-    renderDocumentList();
-    attachDocumentListEvents();
-    const initialDoc = getInitialDocumentMeta();
-    await loadDocument(initialDoc);
-  }
+    // 尝试加载 banner 图片（支持多种格式和路径）
+    const bannerPaths = [
+      './docs/banner.png',
+      './docs/banner.jpg',
+      './docs/banner.webp',
+      './banner.png',
+      './banner.jpg',
+      './banner.webp'
+    ];
 
-  async function loadManifest() {
-    try {
-      const response = await fetch(MANIFEST_PATH, {cache: 'no-cache'});
-      if (!response.ok) {
-        throw new Error('Failed to load manifest');
-      }
-      const data = await response.json();
-      documentsManifest = Array.isArray(data)
-                          ? data.filter(item => item && item.path && item.name)
-                          : [];
-    } catch (error) {
-      console.error('Error loading manifest:', error);
-      documentsManifest = [];
-      showDocumentsMessage('documents-error', '无法加载文档列表，请检查 docs/docs-list.json');
-    }
-  }
-
-  function getInitialDocumentMeta() {
-    const savedId = localStorage.getItem(LAST_DOC_STORAGE_KEY);
-    if (savedId) {
-      const savedDoc = documentsManifest.find(doc => (
-                                                         doc.id || doc.path) === savedId);
-      if (savedDoc) {
-        return savedDoc;
+    for (const path of bannerPaths) {
+      try {
+        const response = await fetch(path, {method: 'HEAD'});
+        if (response.ok) {
+          bannerImage.src = path;
+          contentBanner.style.display = 'block';
+          return;
+        }
+      } catch (e) {
+        // 继续尝试下一个路径
       }
     }
 
-    const defaultDoc = documentsManifest.find(doc => doc.default);
-    if (defaultDoc) {
-      return defaultDoc;
-    }
-
-    if (documentsManifest.length > 0) {
-      return documentsManifest[0];
-    }
-
-    return {
-      id: 'fallback-user-guide',
-      name: '用户手册',
-      path: DEFAULT_DOC_PATH,
-      category: '手册'
-    };
+    // 如果没有找到 banner，隐藏 banner 区域
+    contentBanner.style.display = 'none';
   }
 
-  async function loadDocument(docMeta) {
-    if (!docMeta || !docMeta.path) {
-      return;
-    }
-
-    currentDocumentId = docMeta.id || docMeta.path;
-    const contentElement = document.getElementById('content');
-    contentElement.innerHTML = `
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>加载中...</p>
-                    </div>
-                `;
+  // 加载 Markdown 文件
+  async function loadMarkdown() {
     try {
-      const response = await fetch(docMeta.path);
+      const response = await fetch('./docs/用户手册.md');
       if (!response.ok) {
         throw new Error('Failed to load markdown');
       }
       markdownContent = await response.text();
       renderMarkdown();
-      setActiveDocument(currentDocumentId);
-      updateDocumentsPanelStatus(docMeta);
-      if (currentDocumentId) {
-        localStorage.setItem(LAST_DOC_STORAGE_KEY, currentDocumentId);
-      }
     } catch (error) {
       console.error('Error loading markdown:', error);
-      contentElement.innerHTML = `
-                        <div class="loading">
-                            <p style="color: var(--accent);">⚠️ 无法加载文档</p>
-                            <p>${docMeta.name || docMeta.path}</p>
-                        </div>
-                    `;
+      document.getElementById('content').innerHTML = `
+                    <div class="loading">
+                        <p style="color: var(--accent);">⚠️ 无法加载文档</p>
+                        <p>请确保 docs/用户手册.md 文件存在</p>
+                    </div>
+                `;
     }
-  }
-
-  function renderDocumentList() {
-    const list = document.getElementById('documentsList');
-    if (!list) {
-      return;
-    }
-
-    if (!documentsManifest.length) {
-      showDocumentsMessage('documents-empty', '暂未发现 Markdown 文档，请检查 docs 目录');
-      return;
-    }
-
-    list.innerHTML = '';
-    const fragment = document.createDocumentFragment();
-    documentsManifest.forEach(doc => {
-      const docId = doc.id || doc.path;
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'document-item';
-      item.dataset.docId = docId;
-      item.dataset.docPath = doc.path;
-      item.dataset.docName = doc.name;
-      item.dataset.docCategory = doc.category || '文档';
-
-      item.textContent = doc.name;
-      fragment.appendChild(item);
-    });
-
-    list.appendChild(fragment);
-  }
-
-  function setActiveDocument(docId) {
-    const list = document.getElementById('documentsList');
-    if (!list) {
-      return;
-    }
-
-    list.querySelectorAll('.document-item').forEach(item => {
-      if (item.dataset.docId === docId) {
-        item.classList.add('active');
-      } else {
-        item.classList.remove('active');
-      }
-    });
-  }
-
-  function attachDocumentListEvents() {
-    const list = document.getElementById('documentsList');
-    if (!list || list.dataset.bound === 'true') {
-      return;
-    }
-    list.dataset.bound = 'true';
-
-    list.addEventListener('click', (event) => {
-      const target = event.target.closest('.document-item');
-      if (!target) {
-        return;
-      }
-      const docId = target.dataset.docId;
-      if (docId === currentDocumentId) {
-        return;
-      }
-      const selected = documentsManifest.find(doc => (
-                                                         doc.id || doc.path) === docId) || {
-        id: target.dataset.docId,
-        name: target.dataset.docName,
-        path: target.dataset.docPath,
-        category: target.dataset.docCategory
-      };
-      loadDocument(selected);
-    });
-  }
-
-  function showDocumentsMessage(cssClass, message) {
-    const list = document.getElementById('documentsList');
-    if (!list) {
-      return;
-    }
-    list.innerHTML = `<div class="${cssClass}">${message}</div>`;
-  }
-
-  function updateDocumentsPanelStatus(docMeta) {
-    const current = document.getElementById('documentsCurrent');
-    if (!current) {
-      return;
-    }
-    current.textContent = docMeta
-                          ? `当前：${docMeta.name || docMeta.path}`
-                          : '当前：--';
   }
 
   // 配置 marked
@@ -1488,8 +1276,6 @@
     document.querySelectorAll('.content img').forEach(img => {
       img.loading = 'lazy';
     });
-
-    updateActiveNav();
   }
 
   // 生成侧边栏目录
@@ -1786,7 +1572,8 @@
 
   // 初始化
   document.addEventListener('DOMContentLoaded', () => {
-    initializeDocuments();  // 加载文档清单与默认文档
+    loadBanner();    // 加载 Banner 图片
+    loadMarkdown();  // 加载 Markdown 文件
     setupSearch();
     setupTheme();
     setupBackToTop();

@@ -1,0 +1,54 @@
+[
+  {
+    "name": "AIProviderConfigPanel重构方案",
+    "path": "./docs/AIProviderConfigPanel重构方案.md"
+  },
+  {
+    "name": "AI工作流解释器功能实现方案",
+    "path": "./docs/AI工作流解释器功能实现方案.md"
+  },
+  {
+    "name": "AI扩展插件能力分析与设计方案",
+    "path": "./docs/AI扩展插件能力分析与设计方案.md"
+  },
+  {
+    "name": "ModelScope服务商接入方案",
+    "path": "./docs/ModelScope服务商接入方案.md"
+  },
+  {
+    "name": "扩展点实现方案",
+    "path": "./docs/扩展点实现方案.md"
+  },
+  {
+    "name": "插件改造任务清单",
+    "path": "./docs/插件改造任务清单.md"
+  },
+  {
+    "name": "模型下拉列表搜索筛选实现方案",
+    "path": "./docs/模型下拉列表搜索筛选实现方案.md"
+  },
+  {
+    "name": "模型参数与运行时绑定提供商方案",
+    "path": "./docs/模型参数与运行时绑定提供商方案.md"
+  },
+  {
+    "name": "流式输出AI响应接口实现方案",
+    "path": "./docs/流式输出AI响应接口实现方案.md"
+  },
+  {
+    "name": "用户手册",
+    "path": "./docs/用户手册.md"
+  },
+  {
+    "name": "设置页面动态刷新实现方案",
+    "path": "./docs/设置页面动态刷新实现方案.md"
+  },
+  {
+    "name": "超时时间与Token单位调整方案",
+    "path": "./docs/超时时间与Token单位调整方案.md"
+  },
+  {
+    "name": "部署脚本与Nginx配置实现方案",
+    "path": "./docs/部署脚本与Nginx配置实现方案.md"
+  }
+]

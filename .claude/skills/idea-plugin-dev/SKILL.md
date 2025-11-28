@@ -283,7 +283,7 @@ dependencies {
         // ... same as standard
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")  // Uncomment for marketplace
     }
-    compileOnly("dev.dong4j:intelli-ai-engine:1.0.0")
+    compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
 }
 
 tasks {

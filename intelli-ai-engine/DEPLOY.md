@@ -1,0 +1,50 @@
+# IntelliAI Engine 用户手册
+
+## 部署脚本
+
+### 功能说明
+
+`deploy.sh` 统一处理 `intelli-ai-engine` 的版本更新、`publishPlugin`、ZIP 上传以及 Landing/Docs 部署，确保多环境一致性。
+
+### 使用方法
+
+1. 进入工程目录并执行：
+   ```bash
+   cd /Users/dong4j/Developer/0.Worker/opensource/zeka.stack/zeka-idea-plugin/intelli-ai-engine
+   bash deploy.sh -v 1.0.1
+   ```
+2. 参数说明：
+    - `-v <version>`：调用 `update_version.sh` 同步版本号。
+    - `-l`：仅部署 `landing.html`。
+    - `-z`：仅上传 `build/distributions` 中最新 ZIP（重命名为 `eng.zip`）。
+    - `-d`：仅同步 `docs/`。
+3. 部署完成后可通过以下地址校验：
+    - Landing：`https://eng.dong4j.site/`
+    - ZIP：`https://eng.dong4j.site/eng.zip`
+    - Docs：`https://eng.dong4j.site/docs`
+
+### 注意事项
+
+- 确保 `gradlew`、`deploy.sh`、`update_version.sh` 可执行。
+- 服务器主机名默认 `aliyun`，如需变更可编辑脚本变量。
+- `docs/` 同步使用 `rsync --delete`，执行前请确认目标目录内容。
+
+## Nginx 配置
+
+### 功能说明
+
+`eng.dong4j.site.conf` 配置 HTTPS、ZIP 下载类型及 Docsify 路由，保障站点与资源入口稳定。
+
+### 部署步骤
+
+1. 将配置复制到 `/etc/nginx/sites-available/eng.dong4j.site.conf`。
+2. 链接到 `sites-enabled/` 并运行 `nginx -t` 验证。
+3. 执行 `sudo systemctl reload nginx` 使配置生效。
+
+### 目录映射
+
+- `/var/www/eng-landing`：存放 `landing.html` 与 `eng.zip`。
+- `/var/www/eng-docs`：Docsify 文档根目录（入口 `guide/index.html`）。
+
+
+
