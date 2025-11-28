@@ -43,35 +43,38 @@ public final class AICommonIcons {
      * <p>
      * 用于：设置页面 AI 供应商下拉列表、状态栏
      */
-    public static final Icon PROVIDER_CHATGPT = load("/icons/chatgpt.svg");
+    public static final Icon PROVIDER_CHATGPT = load("/icons/chatgpt_16.svg");
 
     /**
      * 通义千问提供商图标 (16x16)
      * <p>
      * 用于：设置页面 AI 供应商下拉列表、状态栏
      */
-    public static final Icon PROVIDER_QWEN = load("/icons/qwen.svg");
+    public static final Icon PROVIDER_QWEN = load("/icons/qwen_16.svg");
 
     /**
      * 硅基流动提供商图标 (16x16)
      * <p>
      * 用于：设置页面 AI 供应商下拉列表、状态栏
      */
-    public static final Icon PROVIDER_SILICONFLOW = load("/icons/siliconflow.svg");
+    public static final Icon PROVIDER_SILICONFLOW = load("/icons/siliconflow_16.svg");
 
     /**
      * Ollama 提供商图标 (16x16)
      * <p>
      * 用于：设置页面 AI 供应商下拉列表、状态栏
      */
-    public static final Icon PROVIDER_OLLAMA = load("/icons/ollama.svg");
+    public static final Icon PROVIDER_OLLAMA = load("/icons/ollama_16.svg");
 
     /**
      * LM Studio 提供商图标 (16x16)
      * <p>
      * 用于：设置页面 AI 供应商下拉列表、状态栏
      */
-    public static final Icon PROVIDER_LMSTUDIO = load("/icons/lmstudio.svg");
+    public static final Icon PROVIDER_LMSTUDIO = load("/icons/lmstudio_16.svg");
+
+    /** 模型 scope 图标资源 */
+    public static final Icon PROVIDER_MODELSCOPE = load("/icons/modelscope_16.svg");
 
     // ========== AI 提供商图标 - 用于对话框/错误提示框 (64x64) ==========
 
@@ -81,6 +84,8 @@ public final class AICommonIcons {
      * 用于：错误提示框、对话框
      */
     public static final Icon PROVIDER_CHATGPT_64 = load("/icons/chatgpt_64.svg");
+    /** 模型 scope 64x64 像素图标资源 */
+    public static final Icon PROVIDER_MODELSCOPE_64 = load("/icons/modelscope_64.svg");
 
     /**
      * 通义千问提供商图标 (64x64)
@@ -129,7 +134,7 @@ public final class AICommonIcons {
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
             case OLLAMA -> PROVIDER_OLLAMA;
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
-            case MODELSCOPE -> PROVIDER_CHATGPT;
+            case MODELSCOPE -> PROVIDER_MODELSCOPE;
         };
     }
 
@@ -150,7 +155,7 @@ public final class AICommonIcons {
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
             case OLLAMA -> PROVIDER_OLLAMA_64;
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
-            case MODELSCOPE -> PROVIDER_CHATGPT_64;
+            case MODELSCOPE -> PROVIDER_MODELSCOPE_64;
         };
     }
 
