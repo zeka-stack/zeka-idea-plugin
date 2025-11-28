@@ -6,6 +6,15 @@
 [![IntelliJ IDEA](https://img.shields.io/badge/IntelliJ%20IDEA-2022.3+-blue.svg)](https://www.jetbrains.com/idea/)
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://www.oracle.com/java/)
 
+## 🎯 项目概述
+
+Zeka IDEA Plugin Suite 是一个现代化的 IntelliJ IDEA 插件生态系统，包含两大类插件：
+
+1. **AI 驱动插件** - 依赖 IntelliAI Engine 提供智能化功能
+2. **工具类插件** - 独立运行，提供实用的开发工具
+
+项目采用模块化架构，每个插件都是独立的 Gradle 项目，便于开发、测试和维护。
+
 ## 📦 包含插件
 
 ### 核心引擎
@@ -22,7 +31,7 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 🧩 可复用 UI 组件:提供状态栏、按钮、进度弹窗等 UI 组件
 - 🔄 任务执行管线:处理请求调度、流式输出和错误恢复
 
-**JetBrains Marketplace:** `dev.dong4j.zeka.stack.idea.plugin.common.ai`
+**JetBrains Marketplace:** [IntelliAI Engine](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.common.ai)
 
 ---
 
@@ -42,6 +51,8 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 🎯 多种触发方式:快捷键(`Cmd/Ctrl+Shift+D`)、右键菜单、Generate 菜单等
 - 🧪 智能识别类、方法、测试方法等不同元素
 - 📊 实时进度显示和结果统计
+
+**JetBrains Marketplace:** [IntelliAI JavaDoc](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin)
 
 **[使用指南](./intelli-ai-javadoc/用户手册.md)**
 
@@ -63,6 +74,8 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 快速生成周期性工作报告
 - 在 Git 提交面板中自动生成规范的提交信息
 
+**JetBrains Marketplace:** [IntelliAI Changelog](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.changelog)
+
 **[使用指南](./intelli-ai-changelog/用户手册.md)**
 
 #### [IntelliAI Tracer](./intelli-ai-tracer)
@@ -83,6 +96,8 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 代码审查时分析潜在问题
 - 自动生成技术文档和时序图
 
+**JetBrains Marketplace:** [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.workflow)
+
 **[使用指南](./intelli-ai-tracer/用户手册.md)**
 
 #### [IntelliAI Nacos](./intelli-ai-nacos)
@@ -95,6 +110,8 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - 📂 浏览和管理配置
 - 🔍 配置对比和差异分析
 - 🏠 本地 Nacos 注册中心支持
+
+**JetBrains Marketplace:** [IntelliAI Nacos](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.nacos)
 
 **[使用指南](./intelli-ai-nacos/用户手册.md)**
 
@@ -120,6 +137,8 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - 验证第三方 SDK 内的代码
 - 批量更新压缩包中的配置
 
+**JetBrains Marketplace:** [Archiver Man](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.archiver.man)
+
 **[使用指南](./archiver-man/docs/用户手册.md)**
 
 #### [Uniform Format](./uniform-format)
@@ -139,6 +158,8 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - 🎯 标准化代码风格
 - ⚡ 提升开发效率
 - 🔧 支持自定义
+
+**JetBrains Marketplace:** [Uniform Format](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.uniform.format)
 
 **[使用指南](./uniform-format/插件操作手册.md)**
 
@@ -173,6 +194,198 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 ---
 
 ## 🛠️ 开发指南
+
+### 🚀 快速上手开发
+
+#### 前置要求
+
+- **IntelliJ IDEA:** 2022.3 及以上版本
+- **Java:** 17 及以上
+- **Gradle:** 8.x (项目已包含 Gradle Wrapper)
+
+#### 选择插件模板
+
+项目提供两种插件模板，根据是否需要 AI 能力选择：
+
+##### 1. 带 AI 能力的插件模板 - `template-with-ai`
+
+**适用场景:** 需要集成 OpenAI、通义千问等 AI 服务的插件
+
+**特性:**
+
+- 🤖 已集成 IntelliAI Engine 依赖
+- 🔧 自动构建和安装 Engine 插件的任务
+- 📦 预配置 AI 服务调用接口
+- 🎨 AI 相关 UI 组件支持
+
+**使用方法:**
+
+```bash
+# 复制模板
+cp -r template-with-ai my-new-ai-plugin
+cd my-new-ai-plugin
+
+# 修改 gradle.properties 中的插件信息
+vim gradle.properties
+
+# 开始开发
+./gradlew runIde
+```
+
+##### 2. 不带 AI 能力的插件模板 - `template-without-ai`
+
+**适用场景:** 纯工具类插件，无需 AI 集成
+
+**特性:**
+
+- ⚡ 轻量级，无额外依赖
+- 🛠️ 完整的插件开发环境
+- 📦 预配置常用依赖和工具
+- 🎯 专注于业务逻辑开发
+
+**使用方法:**
+
+```bash
+# 复制模板
+cp -r template-without-ai my-new-plugin
+cd my-new-plugin
+
+# 修改 gradle.properties 中的插件信息
+vim gradle.properties
+
+# 开始开发
+./gradlew runIde
+```
+
+### 🔌 AI 插件 Engine 依赖集成详解
+
+对于需要 AI 能力的插件，必须正确集成 IntelliAI Engine。以下是完整的集成步骤：
+
+#### 1. 依赖配置
+
+在 `build.gradle.kts` 中配置依赖：
+
+```kotlin
+dependencies {
+    // IntelliJ Platform 基础依赖
+    intellijPlatform {
+        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+
+        // 本地开发时注释掉，发布时取消注释
+        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")
+
+        instrumentationTools()
+        zipSigner()
+        pluginVerifier()
+        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+    }
+
+    // 编译时依赖 - 本地开发和发布都需要
+    compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
+
+    // 其他依赖...
+}
+```
+
+#### 2. 关键 Gradle 任务配置
+
+**两个核心任务用于本地开发：**
+
+##### `buildAiCommonPlugin` 任务
+
+```kotlin
+val buildAiCommonPlugin = register<Exec>("buildAiCommonPlugin") {
+    description = "Build intelli-ai-engine plugin for local development"
+    group = "intellij"
+
+    val aiCommonDir = file("../intelli-ai-engine")
+    workingDir = aiCommonDir
+    commandLine = listOf(aiCommonDir.resolve("gradlew").absolutePath, "clean", "buildPlugin")
+}
+```
+
+##### `copyAiCommonPlugin` 任务
+
+```kotlin
+val copyAiCommonPlugin = register<Copy>("copyAiCommonPlugin") {
+    description = "Copy intelli-ai-engine plugin to sandbox for local development"
+    group = "intellij"
+
+    // 依赖构建任务
+    dependsOn(buildAiCommonPlugin)
+
+    // 在 prepareSandbox 之后执行
+    mustRunAfter("prepareSandbox")
+
+    // 从 intelli-ai-engine 的构建输出复制插件
+    val aiCommonPluginDir = file("../intelli-ai-engine/build/distributions")
+    from(aiCommonPluginDir) {
+        include("*.zip")
+    }
+
+    // 复制到 sandbox 的 plugins 目录
+    val sandboxProductDir = "${providers.gradleProperty("platformType").get()}-${providers.gradleProperty("platformVersion").get()}"
+    val sandboxPluginsDir = layout.buildDirectory.dir("idea-sandbox/$sandboxProductDir/plugins").get().asFile
+    sandboxPluginsDir.mkdirs()
+    into(sandboxPluginsDir)
+
+    // 自动解压插件 ZIP 文件
+    doLast {
+        val zipFiles = fileTree(sandboxPluginsDir) { include("*.zip") }
+        zipFiles.forEach { zipFile ->
+            val pluginDirName = zipFile.nameWithoutExtension.substringBeforeLast("-", zipFile.nameWithoutExtension)
+            val targetDir = sandboxPluginsDir.resolve(pluginDirName)
+            if (targetDir.exists()) {
+                targetDir.deleteRecursively()
+            }
+
+            copy {
+                from(zipTree(zipFile))
+                into(sandboxPluginsDir)
+            }
+            zipFile.delete()
+        }
+    }
+}
+```
+
+#### 3. 自动化集成
+
+在 `runIde` 任务中自动执行依赖插件的安装：
+
+```kotlin
+runIde {
+    dependsOn(copyAiCommonPlugin)  // 自动构建和安装 Engine 插件
+    jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")  // 支持热更新
+}
+```
+
+#### 4. 本地开发 vs 生产发布
+
+**本地开发流程:**
+
+1. `./gradlew runIde` 自动触发：
+    - `buildAiCommonPlugin` → 构建引擎插件
+    - `copyAiCommonPlugin` → 复制到沙盒环境
+    - `runIde` → 启动带完整依赖的 IDE
+
+**生产发布流程:**
+
+1. 取消注释 `plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")`
+2. 移除或注释 `buildAiCommonPlugin` 和 `copyAiCommonPlugin` 任务
+3. 执行发布流程
+
+#### 5. plugin.xml 配置
+
+```xml
+<!-- 依赖 IntelliAI Engine 插件 -->
+<depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
+
+<!-- 注册到 Engine 的扩展点 -->
+<extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+    <aiConsoleLoggerProvider implementation="com.your.plugin.YourAIConsoleLoggerProvider"/>
+</extensions>
+```
 
 ### 克隆仓库
 
@@ -455,7 +668,7 @@ Apache License 2.0
 
 - **GitHub:** [zeka-stack/zeka-idea-plugin](https://github.com/zeka-stack/zeka-idea-plugin)
 - **Issues:** [提交问题](https://github.com/zeka-stack/zeka-idea-plugin/issues)
-- **Email:** code.dsj@gmail.com
+- **Email:** dong4jj@gmail.com
 
 ---
 

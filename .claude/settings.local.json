@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew clean buildPlugin:*)",
-      "Bash(java:*)"
+      "Bash(java:*)",
+      "WebSearch",
+      "WebFetch(domain:plugins.jetbrains.com)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,235 @@
+---
+alwaysApply: false
+globs:
+  - "**/*.svg"
+  - "**/icons/**"
+  - "**/META-INF/pluginIcon.svg"
+---
+
+## IntelliJ IDEA 插件 SVG 图标开发规范
+
+### 图标文件管理
+
+#### 目录结构
+
+- SVG 图标文件统一存放在 `src/main/resources/icons/` 目录下
+- 插件主图标存放在 `src/main/resources/META-INF/` 目录下，命名为 `pluginIcon.svg`
+
+#### 命名规范
+
+- 使用小写字母和下划线：`icon_name_16.svg`
+- 包含尺寸信息：`_16`、`_24`、`_32`、`_64` 等
+- 使用语义化名称：描述图标用途而非外观
+- 深色主题版本使用 `@dark` 后缀：`icon_16@dark.svg`
+- 高分辨率版本使用 `@2x` 后缀：`icon_16@2x.svg`
+
+#### 尺寸规范
+
+| 尺寸    | 用途                                             |
+|-------|------------------------------------------------|
+| 16×16 | Toolbar/Action/Menu/ToolWindow（工具栏、动作、菜单、工具窗口） |
+| 24×24 | Notifications（通知图标）                            |
+| 32×32 | Dialog/Settings（对话框、设置面板）                      |
+| 64×64 | 错误提示框、大型对话框                                    |
+| 40×40 | 插件市场展示主图标（pluginIcon.svg）                      |
+
+### SVG 格式要求
+
+#### ViewBox 设置
+
+- 标准 1024×1024 画布：`viewBox="0 0 1024 1024"`
+- 添加透明边距时调整 viewBox：例如 2px 边距使用 `viewBox="-2 -2 1028 1028"`
+    - 位置向左上偏移 2 像素
+    - 宽高各增加 4 像素（左右各 2px，上下各 2px）
+
+#### 透明留白规则（每边添加指定像素）
+
+**原理**：在不修改 SVG 内部图形的前提下，通过扩展 viewBox 为图标四周添加透明留白（padding）。
+
+**ViewBox 调整公式**（每边添加 N px）：
+
+```
+原始: viewBox = [minX, minY, width, height]
+
+新值:
+newMinX = minX - N
+newMinY = minY - N
+newWidth  = width  + 2N
+newHeight = height + 2N
+
+结果: newViewBox = [newMinX, newMinY, newWidth, newHeight]
+```
+
+**示例**（添加 100px 留白）：
+
+```
+原始: viewBox="-2 -2 1028 1028"
+
+计算:
+• newMinX = -2 - 100 = -102
+• newMinY = -2 - 100 = -102
+• newWidth = 1028 + 200 = 1228
+• newHeight = 1028 + 200 = 1228
+
+结果: viewBox="-102 -102 1228 1228"
+```
+
+**效果说明**：
+
+- 图标可视尺寸不变
+- SVG 外围增加透明空间
+- 图标在 UI 中显示会"更小、更舒展"
+- 对齐与点击区域不受影响（仍使用原宽高）
+
+**关键规则**：
+
+1. ⚠️ 保持原始图形不变 - 不要移动、缩放或修改 `<path>`、`<circle>` 等元素
+2. ✅ 仅通过扩展 viewBox 添加透明留白 - 四周增加留白的唯一方式是扩大 viewBox 的范围
+
+#### 尺寸转换规则
+
+- 创建不同尺寸版本时，**保持 viewBox 和 path 数据不变**
+- **只修改 width 和 height 属性**
+- 例如从 64×64 转换为 32×32：
+  ```xml
+  <!-- 64×64 版本 -->
+  <svg width="64" height="64" viewBox="0 0 1024 1024">
+  
+  <!-- 32×32 版本（只改 width/height）-->
+  <svg width="32" height="32" viewBox="0 0 1024 1024">
+  ```
+
+#### 文件格式
+
+- 优先使用 SVG 格式（矢量图形，支持主题适配）
+- 仅在特殊需求时使用 PNG（如复杂图标、特殊效果）
+
+### 图标加载与管理
+
+#### 图标管理类
+
+每个插件模块必须创建统一的图标管理类：
+
+```java
+package icons; // 或 package xxx.icons;
+
+import com.intellij.openapi.util.IconLoader;
+import org.jetbrains.annotations.NotNull;
+import javax.swing.Icon;
+
+/**
+ * 插件图标管理类
+ * <p>
+ * 用于集中管理插件中使用的所有图标资源。
+ * 图标文件应放置在 {@code src/main/resources/icons/} 目录下。
+ * <p>
+ * 图标尺寸说明：
+ * <ul>
+ *   <li>16x16 - Toolbar/Action/Menu/ToolWindow（工具栏、动作、菜单、工具窗口）</li>
+ *   <li>24x24 - Notifications（通知图标）</li>
+ *   <li>32x32 - Dialog/Settings（对话框、设置面板）</li>
+ *   <li>64x64 - 错误提示框、大型对话框</li>
+ * </ul>
+ */
+public final class PluginIcons {
+    @NotNull
+    private static Icon load(@NotNull String iconPath) {
+        return IconLoader.getIcon(iconPath, PluginIcons.class);
+    }
+
+    // ========== 16x16 图标 ==========
+    public static final Icon ICON_16 = load("/icons/icon_16.svg");
+    
+    // ========== 24x24 图标 ==========
+    public static final Icon NOTIFICATION_24 = load("/icons/notification_24.svg");
+    
+    // ========== 32x32 图标 ==========
+    public static final Icon DIALOG_32 = load("/icons/dialog_32.svg");
+    
+    // ========== 64x64 图标 ==========
+    public static final Icon ERROR_64 = load("/icons/error_64.svg");
+}
+```
+
+#### 图标加载规范
+
+- 使用 `static final` 常量避免重复加载
+- 路径以 `/icons/` 开头（相对于 resources 根目录）
+- 使用图标管理类的 Class 对象加载：`IconLoader.getIcon(path, PluginIcons.class)`
+
+#### 在 plugin.xml 中引用
+
+```xml
+<actions>
+    <action id="MyAction" 
+            class="com.example.MyAction"
+            icon="/icons/icon_16.svg"/>
+</actions>
+
+<toolWindow id="MyToolWindow"
+            factoryClass="com.example.MyToolWindowFactory"
+            icon="/icons/toolwindow_16.svg"/>
+```
+
+### 主题适配
+
+#### 深色主题支持
+
+- 浅色主题：`icon_16.svg`
+- 深色主题：`icon_16@dark.svg`
+- IDEA 会根据当前主题自动选择对应版本
+
+#### 设计建议
+
+- 确保图标在深色背景下清晰可见
+- 调整颜色对比度以适配深色主题
+- 在浅色和深色主题下都进行测试
+
+### 最佳实践
+
+#### 创建新图标时
+
+1. 确定图标用途和所需尺寸
+2. 使用语义化命名（包含尺寸信息）
+3. 保持 viewBox="0 0 1024 1024" 一致
+4. 根据需要设置透明边距（通过调整 viewBox）
+5. 创建多尺寸版本时只修改 width/height 属性
+6. 在图标管理类中添加常量引用
+7. 测试浅色和深色主题显示效果
+
+#### 性能优化
+
+- 使用 SVG 减少文件体积
+- 图标常量使用 `static final` 缓存
+- 在图标管理类中统一加载
+
+#### 代码组织
+
+- 创建统一的图标管理类（必须）
+- 按尺寸分类组织常量
+- 添加清晰的 JavaDoc 注释说明用途
+- 图标管理类使用 `final` 修饰，私有构造函数防止实例化
+
+### 常见问题
+
+#### 图标不显示
+
+- 检查路径是否以 `/icons/` 开头
+- 确认文件存在于 `src/main/resources/icons/` 目录
+- 验证文件格式（SVG 或 PNG）
+
+#### 高分辨率显示模糊
+
+- 使用 SVG 格式而非 PNG
+- 或提供 `@2x` 高分辨率版本
+
+#### 深色主题显示异常
+
+- 提供对应的 `@dark` 版本
+- 检查颜色对比度
+
+### 参考资源
+
+- [IntelliJ Platform SDK - Icons](https://plugins.jetbrains.com/docs/intellij/work-with-icons-and-images.html)
+- [IntelliJ Platform SDK - Actions](https://plugins.jetbrains.com/docs/intellij/basic-action-system.html)
+- 项目内参考：`intelli-ai-javadoc/docs/图标管理指南.md`
