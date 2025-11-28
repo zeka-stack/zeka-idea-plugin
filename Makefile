@@ -43,13 +43,13 @@ run-javadoc:
 # 清理命令
 clean: clean-javadoc clean-engine clean-changelog clean-nacos clean-tracer
 
-clean-javadoc:
-	@echo "正在清理 intelli-ai-javadoc..."
-	cd $(JAVADOC_DIR) && ./gradlew clean
-
 clean-engine:
 	@echo "正在清理 intelli-ai-engine..."
 	cd $(ENGINE_DIR) && ./gradlew clean
+
+clean-javadoc:
+	@echo "正在清理 intelli-ai-javadoc..."
+	cd $(JAVADOC_DIR) && ./gradlew clean
 
 clean-changelog:
 	@echo "正在清理 intelli-ai-changelog..."

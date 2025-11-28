@@ -183,20 +183,49 @@ if $do_docs; then
         exit 1
     fi
 
+    # 检查 generate-docs-list.sh 脚本是否存在
+    GENERATE_DOCS_LIST_SCRIPT="$SCRIPT_DIR/generate-docs-list.sh"
+    if [ ! -f "$GENERATE_DOCS_LIST_SCRIPT" ]; then
+        echo "错误: 找不到 $GENERATE_DOCS_LIST_SCRIPT 文件"
+        exit 1
+    fi
+
+    # 执行 generate-docs-list.sh 生成 docs-list.json
+    echo "执行 generate-docs-list.sh 生成文档清单..."
+    bash "$GENERATE_DOCS_LIST_SCRIPT"
+    if [ $? -ne 0 ]; then
+        echo "错误: 生成文档清单失败"
+        exit 1
+    fi
+    echo "✓ 文档清单已生成"
+
+    # 检查 docs.html 是否存在
+    DOCS_HTML_FILE="$SCRIPT_DIR/docs.html"
+    if [ ! -f "$DOCS_HTML_FILE" ]; then
+        echo "错误: 找不到文件 $DOCS_HTML_FILE"
+        exit 1
+    fi
+
     echo "✓ 源目录检查通过: $DOCS_DIR"
     echo "正在上传文档到 $REMOTE_HOST:$REMOTE_DOCS_DIR ..."
 
     # 创建远程目录（如果不存在）
-    ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DOCS_DIR"
+    ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DOCS_DIR/docs"
 
-    # 同步文档目录（排除 node_modules）
+    # 同步文档目录到远程的 docs 子目录（排除 node_modules）
     rsync -avz --progress \
         --exclude 'node_modules' \
         --exclude '.DS_Store' \
         --exclude '*.log' \
         --delete \
         "$DOCS_DIR/" \
-        "$REMOTE_HOST:$REMOTE_DOCS_DIR/"
+        "$REMOTE_HOST:$REMOTE_DOCS_DIR/docs/"
+
+    # 上传 docs.html 到远程目录
+    echo "正在上传 docs.html 到 $REMOTE_HOST:$REMOTE_DOCS_DIR ..."
+    rsync -avz --progress \
+        "$DOCS_HTML_FILE" \
+        "$REMOTE_HOST:$REMOTE_DOCS_DIR/docs.html"
 
     echo "设置文档目录权限..."
     ssh "$REMOTE_HOST" "find $REMOTE_DOCS_DIR -type f -exec chmod 644 {} \; && find $REMOTE_DOCS_DIR -type d -exec chmod 755 {} \;"
@@ -221,6 +250,8 @@ if $do_landing; then
 fi
 if $do_docs; then
     echo "  - DOCS: $REMOTE_HOST:$REMOTE_DOCS_DIR"
+    echo "    - docs.html: $REMOTE_HOST:$REMOTE_DOCS_DIR/docs.html"
+    echo "    - docs目录: $REMOTE_HOST:$REMOTE_DOCS_DIR/docs/"
     echo "  - 访问地址: https://chl.dong4j.site/docs"
 fi
 echo "================================"

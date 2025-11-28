@@ -2,7 +2,7 @@
 
 [中文](./README_CN.md) | **English** | [📄 Beautiful Landing Page](./index.html)
 
-> 🌟 [View our beautiful landing page](./index.html) - Get an intuitive overview of plugin features!
+> 🌟 [View our beautiful landing page](https://aij.dong4j.site) - Get an intuitive overview of plugin features!
 
 
 The IntelliJ IntelliAI JavaDoc Plugin is a powerful tool that utilizes artificial intelligence to generate JavaDoc comments for your Java

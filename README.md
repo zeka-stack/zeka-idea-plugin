@@ -31,7 +31,7 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 🧩 可复用 UI 组件:提供状态栏、按钮、进度弹窗等 UI 组件
 - 🔄 任务执行管线:处理请求调度、流式输出和错误恢复
 
-**JetBrains Marketplace:** [IntelliAI Engine](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.common.ai)
+**JetBrains Marketplace:** [IntelliAI Engine](https://plugins.jetbrains.com/plugin/29152)
 
 ---
 
@@ -52,9 +52,9 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 🧪 智能识别类、方法、测试方法等不同元素
 - 📊 实时进度显示和结果统计
 
-**JetBrains Marketplace:** [IntelliAI JavaDoc](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin)
+**JetBrains Marketplace:** [IntelliAI JavaDoc](https://plugins.jetbrains.com/plugin/28835)
 
-**[使用指南](./intelli-ai-javadoc/用户手册.md)**
+**[使用指南](./intelli-ai-javadoc/docs/用户手册.md)**
 
 #### [IntelliAI Changelog](./intelli-ai-changelog)
 
@@ -74,9 +74,9 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 快速生成周期性工作报告
 - 在 Git 提交面板中自动生成规范的提交信息
 
-**JetBrains Marketplace:** [IntelliAI Changelog](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.changelog)
+**JetBrains Marketplace:** [IntelliAI Changelog](https://plugins.jetbrains.com/plugin/29154)
 
-**[使用指南](./intelli-ai-changelog/用户手册.md)**
+**[使用指南](./intelli-ai-changelog/docs/用户手册.md)**
 
 #### [IntelliAI Tracer](./intelli-ai-tracer)
 
@@ -96,9 +96,9 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 - 代码审查时分析潜在问题
 - 自动生成技术文档和时序图
 
-**JetBrains Marketplace:** [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.workflow)
+**JetBrains Marketplace:** [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/29155)
 
-**[使用指南](./intelli-ai-tracer/用户手册.md)**
+**[使用指南](./intelli-ai-tracer/docs/用户手册.md)**
 
 #### [IntelliAI Nacos](./intelli-ai-nacos)
 
@@ -111,9 +111,9 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - 🔍 配置对比和差异分析
 - 🏠 本地 Nacos 注册中心支持
 
-**JetBrains Marketplace:** [IntelliAI Nacos](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.nacos)
+**JetBrains Marketplace:** [IntelliAI Nacos](https://plugins.jetbrains.com/plugin/29156)
 
-**[使用指南](./intelli-ai-nacos/用户手册.md)**
+**[使用指南](./intelli-ai-nacos/docs/用户手册.md)**
 
 ---
 
@@ -137,7 +137,7 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - 验证第三方 SDK 内的代码
 - 批量更新压缩包中的配置
 
-**JetBrains Marketplace:** [Archiver Man](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.archiver.man)
+**JetBrains Marketplace:** [Archiver Man]()
 
 **[使用指南](./archiver-man/docs/用户手册.md)**
 
@@ -159,7 +159,7 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - ⚡ 提升开发效率
 - 🔧 支持自定义
 
-**JetBrains Marketplace:** [Uniform Format](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.uniform.format)
+**JetBrains Marketplace:** [Uniform Format]()
 
 **[使用指南](./uniform-format/插件操作手册.md)**
 
@@ -186,7 +186,7 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 
 #### 手动安装
 
-1. 从 [Releases](../../releases) 下载插件 ZIP 包
+1. 从各插件的产品页下载插件 ZIP 包
 2. 进入 `Settings/Preferences` → `Plugins` → 齿轮图标 → `Install Plugin from Disk...`
 3. 选择下载的 ZIP 文件
 4. 重启 IDEA
@@ -630,8 +630,8 @@ includes/
 
 - [IntelliAI Engine - AI 工作流解释器](./intelli-ai-engine/docs/AI工作流解释器功能实现方案.md)
 - [IntelliAI Engine - 扩展点实现方案](./intelli-ai-engine/docs/扩展点实现方案.md)
-- [IntelliAI JavaDoc - 开发指南](./intelli-ai-javadoc/DEVELOPMENT_GUIDE.md)
-- [IntelliAI JavaDoc - 快速开始](./intelli-ai-javadoc/QUICK_START.md)
+- [IntelliAI JavaDoc - 开发指南](./intelli-ai-javadoc/docs/DEVELOPMENT_GUIDE.md)
+- [IntelliAI JavaDoc - 快速开始](./intelli-ai-javadoc/docs/QUICK_START.md)
 - [IntelliAI Changelog - 方案设计](./intelli-ai-changelog/docs/方案设计.md)
 - [IntelliAI Tracer - 功能设计](./intelli-ai-tracer/docs/)
 - [Archiver Man - 功能规划](./archiver-man/docs/ArchiverMan功能规划清单.md)
