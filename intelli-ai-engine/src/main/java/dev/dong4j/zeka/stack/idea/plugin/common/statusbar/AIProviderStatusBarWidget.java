@@ -12,6 +12,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.StatusBarWidget;
 import com.intellij.openapi.wm.impl.status.EditorBasedStatusBarPopup;
+import com.intellij.util.IconUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,14 +136,15 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
         String displayText = AIProviderStatusBarWidgetModel.getCurrentProviderDisplayName(adapter);
         String tooltip = adapter.getMessage("statusbar.provider.tooltip", displayText);
-        WidgetState state = new WidgetState(tooltip, displayText, true);
+        WidgetState state = new WidgetState(tooltip, " " + displayText, true);
 
-        // 获取当前提供商的图标
+        // 获取当前提供商的图标（已缩放为 13x13）
         AIProviderType providerType = adapter.getCurrentProviderType();
         Icon providerIcon = AICommonIcons.getProviderIcon(providerType);
-        // 如果提供商有图标则使用，否则使用插件主图标
-        state.setIcon(providerIcon != null ? providerIcon : adapter.getMainIcon());
-        
+        // 如果提供商有图标则使用（已缩放），否则缩放主图标
+        Icon iconToUse = providerIcon != null ? providerIcon : scaleIconForStatusBar(adapter.getMainIcon());
+        state.setIcon(iconToUse);
+
         return state;
     }
 
@@ -207,13 +209,14 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
                 @NotNull
                 @Override
                 public Icon getIconFor(AIProviderConfig value) {
-                    // 根据提供商类型获取对应的图标
+                    // 根据提供商类型获取对应的图标（已缩放为 13x13）
                     if (value != null && value.providerType != null) {
                         Icon providerIcon = AICommonIcons.getProviderIcon(value.providerType);
-                        // 如果提供商有图标则使用，否则使用插件主图标
-                        return providerIcon != null ? providerIcon : adapter.getMainIcon();
+                        // 如果提供商有图标则使用（已缩放），否则缩放主图标
+                        return providerIcon != null ? providerIcon : scaleIconForStatusBar(adapter.getMainIcon());
                     }
-                    return adapter.getMainIcon();
+                    // 使用主图标并缩放
+                    return scaleIconForStatusBar(adapter.getMainIcon());
                 }
 
                 /**
@@ -227,7 +230,8 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
                  */
                 @Override
                 public @NotNull String getTextFor(AIProviderConfig value) {
-                    return AIProviderStatusBarWidgetModel.getProviderDisplayText(value);
+                    // return AIProviderStatusBarWidgetModel.getProviderDisplayText(value);
+                    return AIProviderStatusBarWidgetModel.getProviderModelName(value);
                 }
 
                 /**
@@ -261,6 +265,26 @@ public class AIProviderStatusBarWidget extends EditorBasedStatusBarPopup {
             };
 
         return JBPopupFactory.getInstance().createListPopup(step);
+    }
+
+    /**
+     * 缩放图标以适应状态栏显示
+     * <p>
+     * 状态栏图标通常使用 13x13 的尺寸，该方法将图标缩放到适合状态栏显示的尺寸。
+     * 主要用于缩放主图标，因为提供商图标已在 {@link AICommonIcons#getProviderIcon} 中缩放。
+     * 如果图标为 null，则直接返回 null。
+     *
+     * @param icon 原始图标
+     * @return 缩放后的图标，如果输入为 null 则返回 null
+     */
+    @Nullable
+    private Icon scaleIconForStatusBar(@Nullable Icon icon) {
+        if (icon == null) {
+            return null;
+        }
+        // 状态栏图标通常使用 13x13 尺寸，将 16x16 的图标缩放到 13x13
+        // 缩放比例：13/16 = 0.8125
+        return IconUtil.scale(icon, null, 0.8125f);
     }
 
     /**

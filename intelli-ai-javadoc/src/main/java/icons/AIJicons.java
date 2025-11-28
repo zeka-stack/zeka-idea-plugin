@@ -45,5 +45,7 @@ public class AIJicons {
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */
     public static final Icon AIJ_16 = load("/icons/aij_16.svg");
+    public static final Icon AIJ_24 = load("/icons/aij_24.svg");
+    public static final Icon AIJ_32 = load("/icons/aij_32.svg");
 
 }

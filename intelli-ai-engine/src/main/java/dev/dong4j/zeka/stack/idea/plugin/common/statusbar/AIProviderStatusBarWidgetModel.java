@@ -40,7 +40,8 @@ public final class AIProviderStatusBarWidgetModel {
     public static String getCurrentProviderDisplayName(@NotNull AIProviderStatusBarAdapter adapter) {
         AIProviderType providerType = adapter.getCurrentProviderType();
         AIProviderConfig defaultConfig = adapter.getDefaultProviderConfig(providerType);
-        return getProviderDisplayText(defaultConfig);
+        // return getProviderDisplayText(defaultConfig);
+        return getProviderModelName(defaultConfig);
     }
 
     /**
@@ -121,6 +122,20 @@ public final class AIProviderStatusBarWidgetModel {
             return providerName;
         }
         return providerName + ":" + modelName;
+    }
+
+    /**
+     * 根据 AI 提供者配置获取模型名称
+     * <p>
+     * 通过 AI 提供者配置获取对应的模型名称, 若配置中未指定提供者类型, 则默认使用通义千问类型.
+     *
+     * @param config AI 提供者配置对象
+     * @return 模型名称
+     */
+    public static String getProviderModelName(@NotNull AIProviderConfig config) {
+        AIProviderType providerType = config.providerType != null ? config.providerType : AIProviderType.QIANWEN;
+        String providerName = providerType.getDisplayName();
+        return config.modelName;
     }
 }
 

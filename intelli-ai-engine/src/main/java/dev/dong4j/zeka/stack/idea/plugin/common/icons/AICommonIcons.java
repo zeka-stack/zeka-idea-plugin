@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.icons;
 
 import com.intellij.openapi.util.IconLoader;
+import com.intellij.util.IconUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -118,17 +119,20 @@ public final class AICommonIcons {
     // ========== 工具方法 ==========
 
     /**
-     * 根据 AIProviderType 获取对应的 16x16 图标
+     * 根据 AIProviderType 获取对应的图标（已缩放为 13x13）
+     * <p>
+     * 该方法返回的图标已从 16x16 缩放到 13x13，适合在状态栏、下拉列表和表格中使用。
+     * 缩放比例：13/16 = 0.8125
      *
      * @param providerType 提供商类型
-     * @return 对应的图标，如果未找到返回 null
+     * @return 对应的图标（已缩放），如果未找到返回 null
      */
     @Nullable
     public static Icon getProviderIcon(@Nullable AIProviderType providerType) {
         if (providerType == null) {
             return null;
         }
-        return switch (providerType) {
+        Icon icon = switch (providerType) {
             case CUSTOM -> PROVIDER_CHATGPT;
             case QIANWEN -> PROVIDER_QWEN;
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
@@ -136,6 +140,9 @@ public final class AICommonIcons {
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
             case MODELSCOPE -> PROVIDER_MODELSCOPE;
         };
+        // 将图标从 16x16 缩放到 13x13，适合状态栏显示
+        // 状态栏图标通常使用 13x13 尺寸
+        return icon != null ? IconUtil.scale(icon, null, 0.8125f) : null;
     }
 
     /**
