@@ -90,4 +90,5 @@ version:
 	@cd $(JAVADOC_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
 	@cd $(CHANGELOG_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
 	@cd $(TRACER_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
+	@cd $(NACOS_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
 
