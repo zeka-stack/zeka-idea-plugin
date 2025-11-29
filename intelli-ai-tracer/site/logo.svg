@@ -1,39 +1,43 @@
-<?xml version="1.0" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg class="icon" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg class="logo" viewBox="0 0 200 40" version="1.1" xmlns="http://www.w3.org/2000/svg" width="200" height="40">
     <defs>
-        <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <!-- 蓝色渐变 -->
+        <linearGradient id="blueGradientLogo" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style="stop-color:#1E3A8A;stop-opacity:1"/>
             <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1"/>
             <stop offset="100%" style="stop-color:#93C5FD;stop-opacity:1"/>
         </linearGradient>
-        <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#FB923C;stop-opacity:1"/>
-            <stop offset="50%" style="stop-color:#F97316;stop-opacity:1"/>
-            <stop offset="100%" style="stop-color:#EA580C;stop-opacity:1"/>
-        </linearGradient>
-        <radialGradient id="dotGradient" cx="50%" cy="50%" r="50%">
+        <!-- 圆点渐变：绿色径向渐变 -->
+        <radialGradient id="dotGradientLogo" cx="50%" cy="50%" r="50%">
             <stop offset="0%" style="stop-color:#4ADE80;stop-opacity:1"/>
             <stop offset="70%" style="stop-color:#22C55E;stop-opacity:1"/>
             <stop offset="100%" style="stop-color:#16A34A;stop-opacity:1"/>
         </radialGradient>
+        <!-- 文字蓝色渐变：从深蓝色到浅蓝色 -->
+        <linearGradient id="textGradientLogo" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1"/>
+            <stop offset="50%" style="stop-color:#60A5FA;stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#93C5FD;stop-opacity:1"/>
+        </linearGradient>
     </defs>
-
-    <g transform="translate(4, 4) scale(0.03125)">
+    <!-- 图标部分（40x40） -->
+    <g transform="translate(0, 0) scale(0.03125)">
         <!-- 蓝色渐变六边形背景 -->
         <path d="M548.235636 13.312l362.053819 209.035636a93.090909 93.090909 0 0 1 46.545454 80.616728v418.071272a93.090909 93.090909 0 0 1-46.545454 80.616728l-362.053819 209.035636a93.090909 93.090909 0 0 1-93.090909 0L93.090909 801.652364a93.090909 93.090909 0 0 1-46.545454-80.616728V302.964364a93.090909 93.090909 0 0 1 46.545454-80.616728L455.144727 13.312a93.090909 93.090909 0 0 1 93.090909 0z"
-              fill="url(#blueGradient)"/>
-
+              fill="url(#blueGradientLogo)"/>
         <!-- 蓝色渐变六边形 -->
-        <path fill="url(#blueGradient)"
+        <path fill="url(#blueGradientLogo)"
               d="M548.235636 13.312l362.053819 209.035636a93.090909 93.090909 0 0 1 46.545454 80.616728v418.071272a93.090909 93.090909 0 0 1-46.545454 80.616728l-362.053819 209.035636a93.090909 93.090909 0 0 1-93.090909 0L93.090909 801.652364a93.090909 93.090909 0 0 1-46.545454-80.616728V302.964364a93.090909 93.090909 0 0 1 46.545454-80.616728L455.144727 13.312a93.090909 93.090909 0 0 1 93.090909 0z"/>
-
         <!-- 白色 "T" 字母 -->
         <path fill="#FFFFFF" fill-rule="evenodd"
               d="M300 350 H724 V430 H300 Z
                  M472 430 H552 V774 H472 Z"/>
     </g>
-
-    <circle cx="33" cy="29" r="3.0"
-            fill="url(#dotGradient)" stroke="#FFFFFF" stroke-width="0.3"/>
+    <!-- 右下角圆点，使用绿色径向渐变 -->
+    <circle cx="33" cy="29" r="3.0" fill="url(#dotGradientLogo)" stroke="#FFFFFF" stroke-width="0.3"/>
+    <!-- 文字部分：IntelliAI Tracer，使用蓝色渐变 -->
+    <text x="48" y="26" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700"
+          fill="url(#textGradientLogo)">IntelliAI Tracer
+    </text>
 </svg>
+

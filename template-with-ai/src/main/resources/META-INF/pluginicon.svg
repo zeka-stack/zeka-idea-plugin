@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg class="icon" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+<svg class="icon" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
     <defs>
         <linearGradient id="warmGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1"/>
@@ -13,9 +13,9 @@
             <stop offset="100%" style="stop-color:#10B981;stop-opacity:1"/>
         </linearGradient>
         <radialGradient id="dotGradient" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" style="stop-color:#FB923C;stop-opacity:1"/>
-            <stop offset="70%" style="stop-color:#F97316;stop-opacity:1"/>
-            <stop offset="100%" style="stop-color:#EA580C;stop-opacity:1"/>
+            <stop offset="0%" style="stop-color:#4ADE80;stop-opacity:1"/>
+            <stop offset="70%" style="stop-color:#22C55E;stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#16A34A;stop-opacity:1"/>
         </radialGradient>
     </defs>
 
