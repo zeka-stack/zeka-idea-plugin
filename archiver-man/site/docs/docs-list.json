@@ -1,0 +1,30 @@
+[
+  {
+    "name": "ArchiverMan功能规划清单",
+    "path": "./docs/ArchiverMan功能规划清单.md"
+  },
+  {
+    "name": "P0任务清单",
+    "path": "./docs/P0任务清单.md"
+  },
+  {
+    "name": "P1任务清单",
+    "path": "./docs/P1任务清单.md"
+  },
+  {
+    "name": "P2任务清单",
+    "path": "./docs/P2任务清单.md"
+  },
+  {
+    "name": "ZIP直接编辑",
+    "path": "./docs/ZIP直接编辑.md"
+  },
+  {
+    "name": "参考插件复刻指南",
+    "path": "./docs/参考插件复刻指南.md"
+  },
+  {
+    "name": "用户手册",
+    "path": "./docs/用户手册.md"
+  }
+]

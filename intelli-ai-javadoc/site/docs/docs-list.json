@@ -1,0 +1,154 @@
+[
+  {
+    "name": "ActionUpdateThread",
+    "path": "./docs/ActionUpdateThread.md"
+  },
+  {
+    "name": "ActionUpdateThread修复说明",
+    "path": "./docs/ActionUpdateThread修复说明.md"
+  },
+  {
+    "name": "Console集成指南",
+    "path": "./docs/Console集成指南.md"
+  },
+  {
+    "name": "EDT&BGT",
+    "path": "./docs/EDT&BGT.md"
+  },
+  {
+    "name": "Git提交页面集成方案",
+    "path": "./docs/Git提交页面集成方案.md"
+  },
+  {
+    "name": "IDEA_Plugin_开发文档",
+    "path": "./docs/IDEA_Plugin_开发文档.md"
+  },
+  {
+    "name": "PasswordSafe集成说明",
+    "path": "./docs/PasswordSafe集成说明.md"
+  },
+  {
+    "name": "README_部署说明",
+    "path": "./docs/README_部署说明.md"
+  },
+  {
+    "name": "StatusBarWidget服务商切换实现方案",
+    "path": "./docs/StatusBarWidget服务商切换实现方案.md"
+  },
+  {
+    "name": "TokenCounter使用说明",
+    "path": "./docs/TokenCounter使用说明.md"
+  },
+  {
+    "name": "docs.html-使用说明",
+    "path": "./docs/docs.html-使用说明.md"
+  },
+  {
+    "name": "国际化实现说明",
+    "path": "./docs/国际化实现说明.md"
+  },
+  {
+    "name": "图标管理指南",
+    "path": "./docs/图标管理指南.md"
+  },
+  {
+    "name": "异常处理优化说明",
+    "path": "./docs/异常处理优化说明.md"
+  },
+  {
+    "name": "异常处理优化说明V2",
+    "path": "./docs/异常处理优化说明V2.md"
+  },
+  {
+    "name": "提示词模板优化说明",
+    "path": "./docs/提示词模板优化说明.md"
+  },
+  {
+    "name": "插件开发指南",
+    "path": "./docs/插件开发指南.md"
+  },
+  {
+    "name": "智能定位功能实现总结",
+    "path": "./docs/智能定位功能实现总结.md"
+  },
+  {
+    "name": "智能定位功能说明",
+    "path": "./docs/智能定位功能说明.md"
+  },
+  {
+    "name": "格式化功能说明",
+    "path": "./docs/格式化功能说明.md"
+  },
+  {
+    "name": "模型配置优化说明",
+    "path": "./docs/模型配置优化说明.md"
+  },
+  {
+    "name": "注释替换功能说明",
+    "path": "./docs/注释替换功能说明.md"
+  },
+  {
+    "name": "测试说明",
+    "path": "./docs/测试说明.md"
+  },
+  {
+    "name": "用户手册",
+    "path": "./docs/用户手册.md"
+  },
+  {
+    "name": "用户手册V2",
+    "path": "./docs/用户手册V2.md"
+  },
+  {
+    "name": "类代码优化功能实现说明",
+    "path": "./docs/类代码优化功能实现说明.md"
+  },
+  {
+    "name": "线程安全问题修复说明",
+    "path": "./docs/线程安全问题修复说明.md"
+  },
+  {
+    "name": "统计信息弹窗测试说明",
+    "path": "./docs/统计信息弹窗测试说明.md"
+  },
+  {
+    "name": "自定义JavaDoc标签配置功能实现方案",
+    "path": "./docs/自定义JavaDoc标签配置功能实现方案.md"
+  },
+  {
+    "name": "设置页面代码优化配置UI实现说明",
+    "path": "./docs/设置页面代码优化配置UI实现说明.md"
+  },
+  {
+    "name": "设置页面模型下拉框优化说明",
+    "path": "./docs/设置页面模型下拉框优化说明.md"
+  },
+  {
+    "name": "设置页面模型下拉框重构说明",
+    "path": "./docs/设置页面模型下拉框重构说明.md"
+  },
+  {
+    "name": "调试日志功能说明",
+    "path": "./docs/调试日志功能说明.md"
+  },
+  {
+    "name": "运行集成测试",
+    "path": "./docs/运行集成测试.md"
+  },
+  {
+    "name": "配置验证功能实现说明",
+    "path": "./docs/配置验证功能实现说明.md"
+  },
+  {
+    "name": "配置验证状态保存修复说明",
+    "path": "./docs/配置验证状态保存修复说明.md"
+  },
+  {
+    "name": "集成测试完成总结",
+    "path": "./docs/集成测试完成总结.md"
+  },
+  {
+    "name": "集成测试说明",
+    "path": "./docs/集成测试说明.md"
+  }
+]

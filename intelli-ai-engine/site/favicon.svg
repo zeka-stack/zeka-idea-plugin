@@ -2,19 +2,19 @@
 <svg class="icon" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
     <defs>
         <!-- 暖色渐变：从橙红色到橙黄色 -->
-        <linearGradient id="warmGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="warmGradientFav" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1"/>
             <stop offset="50%" style="stop-color:#FF8C42;stop-opacity:1"/>
             <stop offset="100%" style="stop-color:#FFB347;stop-opacity:1"/>
         </linearGradient>
         <!-- 冷色渐变：从深青色到浅青色，与暖色形成强烈对比 -->
-        <linearGradient id="coolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="coolGradientFav" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style="stop-color:#0891B2;stop-opacity:1"/>
             <stop offset="50%" style="stop-color:#06B6D4;stop-opacity:1"/>
             <stop offset="100%" style="stop-color:#22D3EE;stop-opacity:1"/>
         </linearGradient>
         <!-- 圆点渐变：绿色径向渐变，与暖色形成强烈对比 -->
-        <radialGradient id="dotGradient" cx="50%" cy="50%" r="50%">
+        <radialGradient id="dotGradientFav" cx="50%" cy="50%" r="50%">
             <stop offset="0%" style="stop-color:#4ADE80;stop-opacity:1"/>
             <stop offset="70%" style="stop-color:#22C55E;stop-opacity:1"/>
             <stop offset="100%" style="stop-color:#16A34A;stop-opacity:1"/>
@@ -26,11 +26,12 @@
         <!-- scale(0.03125) = 32/1024，将 1024x1024 的图标缩放到 32x32，四周各留 4px 透明边距 -->
         <!-- 六边形背景，使用冷色渐变填充中间留空区域 -->
         <path d="M548.235636 13.312l362.053819 209.035636a93.090909 93.090909 0 0 1 46.545454 80.616728v418.071272a93.090909 93.090909 0 0 1-46.545454 80.616728l-362.053819 209.035636a93.090909 93.090909 0 0 1-93.090909 0L93.090909 801.652364a93.090909 93.090909 0 0 1-46.545454-80.616728V302.964364a93.090909 93.090909 0 0 1 46.545454-80.616728L455.144727 13.312a93.090909 93.090909 0 0 1 93.090909 0z"
-              fill="url(#coolGradient)"/>
+              fill="url(#coolGradientFav)"/>
         <!-- 完整图标路径（六边形+字母），使用暖色渐变填充，fill-rule="evenodd" 让字母部分从六边形中挖空，露出冷色背景 -->
         <path d="M548.235636 13.312l362.053819 209.035636a93.090909 93.090909 0 0 1 46.545454 80.616728v418.071272a93.090909 93.090909 0 0 1-46.545454 80.616728l-362.053819 209.035636a93.090909 93.090909 0 0 1-93.090909 0L93.090909 801.652364a93.090909 93.090909 0 0 1-46.545454-80.616728V302.964364a93.090909 93.090909 0 0 1 46.545454-80.616728L455.144727 13.312a93.090909 93.090909 0 0 1 93.090909 0z m-142.894545 320.535273l-144.523636 375.226182h60.974545l35.188364-96.698182h161.349818l35.211636 96.698182h61.486546l-144.523637-375.226182h-65.163636z m-31.022546 231.237818l62.557091-169.751273h2.094546l62.021818 169.751273h-126.673455z m278.551273-231.237818v375.226182h56.762182V333.847273h-56.762182z"
-              fill="url(#warmGradient)" fill-rule="evenodd"/>
+              fill="url(#warmGradientFav)" fill-rule="evenodd"/>
     </g>
     <!-- 右下角圆点，使用绿色径向渐变 -->
-    <circle cx="33" cy="29" r="3.0" fill="url(#dotGradient)" stroke="#FFFFFF" stroke-width="0.3"/>
+    <circle cx="33" cy="29" r="3.0" fill="url(#dotGradientFav)" stroke="#FFFFFF" stroke-width="0.3"/>
 </svg>
+

@@ -1,0 +1,34 @@
+[
+  {
+    "name": "IntelliAI Nacos遗留功能完善方案",
+    "path": "./docs/IntelliAI Nacos遗留功能完善方案.md"
+  },
+  {
+    "name": "Nacos插件功能需求说明",
+    "path": "./docs/Nacos插件功能需求说明.md"
+  },
+  {
+    "name": "Nacos插件实现方案",
+    "path": "./docs/Nacos插件实现方案.md"
+  },
+  {
+    "name": "Nacos插件开发计划",
+    "path": "./docs/Nacos插件开发计划.md"
+  },
+  {
+    "name": "open-api",
+    "path": "./docs/open-api.md"
+  },
+  {
+    "name": "本地Nacos注册中心功能实现方案",
+    "path": "./docs/本地Nacos注册中心功能实现方案.md"
+  },
+  {
+    "name": "用户手册",
+    "path": "./docs/用户手册.md"
+  },
+  {
+    "name": "配置对比增强方案",
+    "path": "./docs/配置对比增强方案.md"
+  }
+]
