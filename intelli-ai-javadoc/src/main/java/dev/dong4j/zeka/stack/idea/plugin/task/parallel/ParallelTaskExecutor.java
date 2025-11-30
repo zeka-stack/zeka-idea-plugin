@@ -262,17 +262,56 @@ public class ParallelTaskExecutor {
 
     /**
      * 等待所有任务完成
+     * <p>
+     * 等待逻辑：
+     * <ol>
+     *   <li>等待所有队列为空（包括文件队列和重试队列）</li>
+     *   <li>等待所有正在处理的任务完成（给一个缓冲时间）</li>
+     *   <li>关闭线程池并等待所有线程退出</li>
+     * </ol>
      *
      * @param providerExecutors 服务商执行器映射
      */
     private void waitForCompletion(@NotNull Map<String, ExecutorService> providerExecutors) {
-        // 等待所有执行器完成
+        // 1. 等待所有队列为空（包括重试队列）
+        waitForQueuesEmpty();
+
+        // 2. 等待一小段时间，确保正在处理的任务完成（包括重试任务）
+        // 因为任务可能正在执行 AI 请求，需要给一些时间完成
+        try {
+            Thread.sleep(2000); // 等待 2 秒，确保正在处理的任务完成
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // 3. 再次检查队列，确保没有新加入的重试任务
+        // 如果还有任务，继续等待
+        int retryCount = 0;
+        while (taskDispatcher.hasTasks() && retryCount < 10) {
+            log.debug("检测到还有任务，继续等待... (重试次数: {})", retryCount);
+            waitForQueuesEmpty();
+            try {
+                Thread.sleep(1000); // 等待 1 秒
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            retryCount++;
+        }
+
+        // 4. 关闭所有执行器并等待线程退出
         CompletableFuture<?>[] futures = providerExecutors.values().stream()
             .map(executor -> CompletableFuture.runAsync(() -> {
                 try {
                     executor.shutdown();
+                    // 等待最多 60 秒让所有任务完成
                     if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                        log.warn("线程池未在 60 秒内完成，强制关闭");
                         executor.shutdownNow();
+                        // 再等待 10 秒确保线程退出
+                        if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                            log.error("线程池强制关闭后仍有线程未退出");
+                        }
                     }
                 } catch (InterruptedException e) {
                     executor.shutdownNow();
@@ -282,6 +321,45 @@ public class ParallelTaskExecutor {
             .toArray(CompletableFuture[]::new);
 
         CompletableFuture.allOf(futures).join();
+    }
+
+    /**
+     * 等待所有队列为空
+     * <p>
+     * 轮询检查文件队列和重试队列，直到所有队列都为空。
+     * 同时检查是否有线程正在处理任务（通过检查线程池的活动线程数）。
+     */
+    private void waitForQueuesEmpty() {
+        int maxWaitTime = 300; // 最多等待 30 秒（300 * 100ms）
+        int waitCount = 0;
+        int consecutiveEmptyChecks = 0; // 连续空队列检查次数
+
+        while (waitCount < maxWaitTime) {
+            boolean hasTasks = taskDispatcher.hasTasks();
+
+            if (!hasTasks) {
+                consecutiveEmptyChecks++;
+                // 连续 5 次检查都为空，认为队列确实为空
+                if (consecutiveEmptyChecks >= 5) {
+                    log.debug("所有队列已为空，连续检查 {} 次确认", consecutiveEmptyChecks);
+                    break;
+                }
+            } else {
+                consecutiveEmptyChecks = 0; // 重置计数器
+            }
+
+            try {
+                Thread.sleep(100); // 每 100ms 检查一次
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            waitCount++;
+        }
+
+        if (waitCount >= maxWaitTime) {
+            log.warn("等待队列为空超时（30秒），可能仍有任务在处理中");
+        }
     }
 
     /**
