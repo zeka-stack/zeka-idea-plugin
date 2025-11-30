@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.task;
 import com.intellij.openapi.progress.ProgressIndicator;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +78,16 @@ public class ProgressManager {
      */
     public boolean isParallelMode() {
         return isParallel;
+    }
+
+    /**
+     * 获取提供商统计信息映射（多线程模式）
+     *
+     * @return 提供商统计信息映射，如果不是多线程模式返回 null
+     */
+    @Nullable
+    public Map<String, ProviderStatistics> getProviderStats() {
+        return providerStats;
     }
 
     /**

@@ -303,6 +303,8 @@ public class ParallelTaskWorker implements Runnable {
 
     /**
      * 更新进度
+     * <p>
+     * 进度更新必须在 EDT 中执行，因为 ProgressIndicator 的更新需要在 UI 线程中进行。
      *
      * @param task 任务
      */
@@ -311,7 +313,11 @@ public class ParallelTaskWorker implements Runnable {
         int currentIndex = progressManager.getCompletedCount() +
                            progressManager.getFailedCount() +
                            progressManager.getSkippedCount();
-        progressManager.updateProgress(currentIndex, task, providerName);
+
+        // 进度更新必须在 EDT 中执行
+        ApplicationManager.getApplication().invokeLater(() -> {
+            progressManager.updateProgress(currentIndex, task, providerName);
+        });
     }
 
     /**

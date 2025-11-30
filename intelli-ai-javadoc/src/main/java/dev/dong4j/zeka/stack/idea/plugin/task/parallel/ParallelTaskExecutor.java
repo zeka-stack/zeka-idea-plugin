@@ -83,9 +83,9 @@ public class ParallelTaskExecutor {
     @Getter
     private ProviderManager providerManager;
 
-    /** 服务商统计信息映射 */
+    /** 服务商统计信息映射（从 ProgressManager 获取，确保使用同一个实例） */
     @Getter
-    private final Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
+    private Map<String, ProviderStatistics> providerStats;
 
     /**
      * 执行并行任务处理
@@ -94,6 +94,7 @@ public class ParallelTaskExecutor {
      * @param providers 服务商配置列表
      * @return 处理是否成功
      */
+    @SuppressWarnings("D")
     public boolean execute(@NotNull List<DocumentationTask> tasks,
                            @NotNull List<AIProviderConfig> providers) {
         if (tasks.isEmpty()) {
@@ -112,13 +113,23 @@ public class ParallelTaskExecutor {
         // 初始化服务商管理器
         providerManager = new ProviderManager();
 
-        // 初始化进度管理器（需要在创建统计信息后）
-        // 先创建统计信息，然后创建进度管理器
+        // 从 ProgressManager 获取 providerStats（确保使用同一个实例）
+        Map<String, ProviderStatistics> statsMap = progressManager.getProviderStats();
+        if (statsMap == null) {
+            log.error("ProgressManager 未初始化 providerStats，无法继续执行");
+            return false;
+        }
+        this.providerStats = statsMap;
+
+        // 初始化统计信息（如果 Map 中还没有对应提供商的统计信息）
         for (AIProviderConfig provider : providers) {
             String providerId = provider.providerType.getProviderId();
             String providerName = provider.providerType.getDisplayName();
-            ProviderStatistics stats = new ProviderStatistics(providerName);
-            providerStats.put(providerId, stats);
+            // 如果已存在则跳过，避免覆盖
+            if (!providerStats.containsKey(providerId)) {
+                ProviderStatistics stats = new ProviderStatistics(providerName);
+                providerStats.put(providerId, stats);
+            }
         }
 
         // 计算总线程数
@@ -212,17 +223,17 @@ public class ParallelTaskExecutor {
 
     /**
      * 计算总线程数
+     * 计算合适的线程数
+     * 策略：根据任务数和提供商数动态计算
+     * - 如果任务数较少（<=10），每个提供商1个线程
+     * - 如果任务数中等（10-50），每个提供商2个线程
+     * - 如果任务数较多（>50），每个提供商3-4个线程
      *
      * @param taskCount     任务数量
      * @param providerCount 服务商数量
      * @return 总线程数
      */
     private int calculateTotalThreads(int taskCount, int providerCount) {
-        // 计算合适的线程数
-        // 策略：根据任务数和提供商数动态计算
-        // - 如果任务数较少（<=10），每个提供商1个线程
-        // - 如果任务数中等（10-50），每个提供商2个线程
-        // - 如果任务数较多（>50），每个提供商3-4个线程
         int threadsPerProvider;
         if (taskCount <= 10) {
             threadsPerProvider = 1;
