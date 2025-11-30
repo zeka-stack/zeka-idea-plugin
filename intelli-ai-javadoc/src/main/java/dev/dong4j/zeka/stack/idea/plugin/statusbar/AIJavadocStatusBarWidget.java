@@ -53,31 +53,21 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
-
-    /**
-     * 控件唯一标识
-     *
-     * <p>用于在状态栏系统中唯一标记该控件，便于刷新和更新。</p>
-     */
+    /** 状态栏小部件的唯一标识符 */
     public static final String WIDGET_ID = "dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidget";
-
-    /**
-     * 提供商选中状态 Key
-     *
-     * <p>用于在 Presentation 中标记当前选中的提供商。</p>
-     */
+    /** 选中状态的键值对标识 */
     private static final Key<Boolean> SELECTED_KEY = Key.create("selected");
-
-    /** 项目对象 */
+    /** 项目 */
     private final Project project;
-    /** 状态栏组件 */
+    /** 状态栏组件, 用于显示应用程序状态信息 */
     private StatusBar statusBar;
 
     /**
-     * 构造状态栏控件
+     * 构造 AI Javadoc 状态栏组件
+     * <p>
+     * 初始化 AI Javadoc 状态栏组件, 设置项目上下文
      *
-     * @param project 当前项目
-     * @since 1.0.0
+     * @param project 项目实例, 不能为空
      */
     public AIJavadocStatusBarWidget(@NotNull Project project) {
         super(project, false);
@@ -85,10 +75,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 创建新的控件实例
+     * 创建状态栏组件实例
+     * <p>
+     * 重写父类方法, 根据指定项目创建 AI Javadoc 状态栏组件实例
      *
-     * @param project 项目上下文
-     * @return 新实例
+     * @param project 项目实例, 不能为空
+     * @return AI Javadoc 状态栏组件实例, 不为 null
      */
     @Override
     protected @NotNull StatusBarWidget createInstance(@NotNull Project project) {
@@ -97,6 +89,8 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
 
     /**
      * 注册自定义监听器
+     * <p>
+     * 重写父类方法, 用于注册自定义的事件监听器
      */
     @Override
     protected void registerCustomListeners() {
@@ -104,9 +98,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 返回控件标识符
+     * 获取组件的唯一标识符
+     * <p>
+     * 返回预定义的组件 ID 常量值
      *
-     * @return 控件唯一标识符
+     * @return 组件的唯一标识符, 不为 null
      */
     @Override
     public @NotNull String ID() {
@@ -114,9 +110,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 安装控件到状态栏
+     * 安装状态栏组件
+     * <p>
+     * 调用父类的 {@code install} 方法并将传入的 {@link StatusBar} 对象保存到本实例中, 以便后续使用.
      *
-     * @param statusBar 状态栏实例
+     * @param statusBar 要安装的 {@link StatusBar} 对象
      */
     @Override
     public void install(@NotNull StatusBar statusBar) {
@@ -125,7 +123,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 释放控件资源
+     * 释放资源
+     * <p>
+     * 调用父类的 {@code dispose} 方法并将 {@code statusBar} 置为 {@code null}, 以便及时回收资源.
+     *
+     * @since 1.0
      */
     @Override
     public void dispose() {
@@ -134,10 +136,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 获取状态栏小部件的当前状态
+     * 获取小部件状态
+     * <p>
+     * 根据虚拟文件获取小部件的当前状态, 包括显示文本, 工具提示和图标
      *
-     * @param file 当前文件 (可为空)
-     * @return 包含当前 AI 提供者信息的 WidgetState
+     * @param file 虚拟文件, 可为 null
+     * @return 小部件状态对象, 不为 null
      */
     @Override
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
@@ -156,10 +160,13 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 创建状态栏弹出菜单
+     * 创建 AI 提供程序切换弹出菜单
+     * <p>
+     * 根据当前数据上下文创建一个包含可用 AI 提供程序列表的弹出菜单,
+     * 如果没有可用的提供程序则显示错误通知并返回 null
      *
-     * @param context 数据上下文
-     * @return 弹出菜单, 如果创建失败则返回 null
+     * @param context 数据上下文, 包含当前操作的上下文信息
+     * @return ListPopup 类型的弹出菜单, 如果没有可用提供程序则返回 null
      */
     @Override
     protected @Nullable ListPopup createPopup(@NotNull DataContext context) {
@@ -176,18 +183,20 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 创建 Action 组
         DefaultActionGroup group = new DefaultActionGroup();
 
-        // 1. 添加提供商切换选项
+        // 1. 添加提供商切换选项（用分隔符包裹，形成边框效果）
+        group.add(Separator.create(JavaDocBundle.message("statusbar.provider.list.title")));
         for (AIProviderConfig config : providers) {
             group.add(new SwitchProviderAction(config));
         }
-
-        // 2. 添加分隔符
         group.add(Separator.create());
 
-        // 3. 添加快捷配置 ToggleAction
+        // 2. 添加快捷配置 ToggleAction（用分隔符包裹，形成边框效果）
+        group.add(Separator.create(JavaDocBundle.message("statusbar.quick.settings.title")));
         group.add(new GenerateForClassToggleAction());
         group.add(new GenerateForMethodToggleAction());
         group.add(new GenerateForFieldToggleAction());
+        group.add(new PerformanceModeToggleAction());
+        group.add(Separator.create());
 
         // 创建弹出菜单
         return JBPopupFactory.getInstance().createActionGroupPopup(
@@ -200,9 +209,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 获取当前默认提供商类型
+     * 获取当前 AI 提供商类型
+     * <p>
+     * 从设置状态中获取当前配置的 AI 提供商类型, 如果未配置则默认返回千问类型
      *
-     * @return 当前默认提供商类型
+     * @return 当前 AI 提供商类型, 如果未配置则返回默认的 QIANWEN 类型
      */
     @NotNull
     private AIProviderType getCurrentProviderType() {
@@ -211,10 +222,13 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 获取当前默认提供商配置
+     * 获取指定 AI 提供商类型的默认配置
+     * <p>
+     * 通过 {@link AIProviderSettings#getInstance()} 获取全局设置实例, 并返回对应
+     * {@link AIProviderType} 的默认 {@link AIProviderConfig}.
      *
-     * @param providerType 提供商类型
-     * @return 提供商配置
+     * @param providerType AI 提供商类型, 不能为空
+     * @return 对应类型的默认配置 (非 {@code null})
      */
     @NotNull
     private AIProviderConfig getDefaultProviderConfig(@NotNull AIProviderType providerType) {
@@ -223,9 +237,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 获取可用的提供商配置列表
+     * 获取可用的 AI 提供商配置列表
+     * <p>
+     * 该方法从全局 AIProviderSettings 实例中读取已验证的提供商配置,
+     * 并返回一个新的 {@link java.util.ArrayList} 以避免外部修改原始集合.
      *
-     * @return 可用提供商配置列表
+     * @return 已验证的 AIProviderConfig 列表, 永不为 {@code null}
      */
     @NotNull
     private List<AIProviderConfig> getAvailableProviders() {
@@ -234,9 +251,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 获取当前提供商模型名称
+     * 获取当前提供商的模型名称
+     * <p>
+     * 获取当前选中的 AI 提供商类型的默认配置, 并返回其模型名称
      *
-     * @return 模型名称
+     * @return 当前提供商的模型名称, 不为 null
      */
     @NotNull
     private String getCurrentProviderModelName() {
@@ -246,10 +265,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 切换默认提供商
+     * 切换默认 AI 提供商
+     * <p>
+     * 根据指定的提供商类型和配置更新默认的 AI 提供商设置
      *
-     * @param providerType 提供商类型
-     * @param config       提供商配置
+     * @param providerType AI 提供商类型, 不能为空
+     * @param config AI 提供商配置, 不能为空
      */
     private void switchDefaultProvider(@NotNull AIProviderType providerType, @NotNull AIProviderConfig config) {
         // 更新插件配置中的默认提供商选择
@@ -262,9 +283,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
 
     /**
      * 显示错误通知
+     * <p>
+     * 创建并显示一个错误类型的通知, 包含指定的标题和内容
      *
-     * @param title   通知标题
-     * @param content 通知内容
+     * @param title 通知标题, 不能为空
+     * @param content 通知内容, 不能为空
      */
     private void showErrorNotification(@NotNull String title, @NotNull String content) {
         Notification notification = new Notification(
@@ -278,10 +301,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 缩放图标以适应状态栏显示
+     * 为状态栏缩放图标
+     * <p>
+     * 将传入的图标按比例缩放以适应状态栏显示, 缩放比例为 0.8125 倍
      *
-     * @param icon 原始图标
-     * @return 缩放后的图标
+     * @param icon 待缩放的图标, 可为 null
+     * @return 缩放后的图标, 如果输入图标为 null 则返回 null
      */
     @Nullable
     private Icon scaleIconForStatusBar(@Nullable Icon icon) {
@@ -293,11 +318,29 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 切换提供商 Action
+     * 切换 AI 服务商提供者动作类
+     * <p>
+     * 该类继承自 AnAction, 用于处理 AI 服务商的切换操作. 它允许用户在不同的 AI 服务商之间进行切换,
+     * 并更新相关的配置和状态. 此类包含错误处理机制, 确保在切换过程中出现异常时能够正确处理
+     * 并向用户显示相应的错误通知. 同时支持在状态栏中显示当前选中的服务商状态.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private class SwitchProviderAction extends AnAction {
+        /** AI 提供商配置 */
         private final AIProviderConfig config;
 
+        /**
+         * 构造函数, 创建切换提供者动作实例
+         * <p>
+         * 根据 AI 提供者配置初始化动作, 设置模型名称并配置提供者图标
+         *
+         * @param config AI 提供者配置对象, 包含提供者类型, 模型名称等信息
+         */
         SwitchProviderAction(AIProviderConfig config) {
             super(config.modelName);
             this.config = config;
@@ -311,6 +354,15 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             }
         }
 
+        /**
+         * 处理动作事件, 切换默认 AI 服务商
+         * <p>
+         * 当用户触发切换服务商的动作时, 执行相应的切换逻辑,
+         * 包括验证服务商类型, 在写操作中更新配置, 处理异常情况等
+         *
+         * @param e 动作事件对象, 包含事件的相关信息
+         * @throws NullPointerException 当传入的事件对象为 null 时抛出
+         */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             if (config.providerType == null) {
@@ -348,6 +400,13 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             }, ModalityState.NON_MODAL);
         }
 
+        /**
+         * 更新动作事件的状态
+         * <p>
+         * 根据当前 AI 提供者类型和配置信息更新动作事件的展示状态, 将选中状态存储到客户端属性中
+         *
+         * @param e 动作事件对象, 不能为空
+         */
         @Override
         public void update(@NotNull AnActionEvent e) {
             // 如果是当前选中的提供商,显示选中标记
@@ -356,6 +415,14 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
         }
 
+        /**
+         * 获取动作更新线程
+         * <p>
+         * 返回动作更新所使用的线程类型, 固定返回后台线程 (BGT)
+         *
+         * @return 动作更新线程, 非空值
+         * @since 1.0
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
@@ -363,7 +430,16 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * "为类生成文档" 切换 Action
+     * 生成类级别 JavaDoc 切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否为类生成 JavaDoc 注释的开关动作.
+     * 通过该动作可以切换生成类级别 JavaDoc 注释的开关状态, 状态信息保存在 SettingsState 中.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private static class GenerateForClassToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         GenerateForClassToggleAction() {
@@ -387,7 +463,16 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * "为方法生成文档" 切换 Action
+     * 生成方法 JavaDoc 切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否为方法生成 JavaDoc 的功能开关,
+     * 通过状态栏快速设置选项来切换生成方法 JavaDoc 的开关状态
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private static class GenerateForMethodToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         GenerateForMethodToggleAction() {
@@ -411,7 +496,17 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * "为字段生成文档" 切换 Action
+     * 字段生成开关动作类
+     * <p>
+     * 继承自 IntelliJ IDEA 的 ToggleAction, 用于控制字段生成功能的开关状态.
+     * 该类提供了一个切换动作, 允许用户在 IDE 状态栏中快速启用或禁用字段生成功能.
+     * 通过获取和设置 SettingsState 中的 generateForField 属性来管理字段生成的启用状态.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private static class GenerateForFieldToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         GenerateForFieldToggleAction() {
@@ -431,6 +526,40 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().generateForField = state;
+        }
+    }
+
+    /**
+     * 性能模式切换动作类
+     * <p>
+     * 继承自 IntelliJ IDEA 的 ToggleAction, 用于控制性能模式的开启和关闭状态.
+     * 该类提供了一个切换按钮, 允许用户在性能模式和普通模式之间进行切换,
+     * 通过 SettingsState 管理性能模式的状态持久化.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
+     */
+    private static class PerformanceModeToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        PerformanceModeToggleAction() {
+            super(JavaDocBundle.message("settings.performance.mode"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().performanceMode;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().performanceMode = state;
         }
     }
 }
