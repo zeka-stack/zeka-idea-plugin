@@ -27,11 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.SwingUtilities;
@@ -46,6 +41,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.task.parallel.DocumentationInserter;
+import dev.dong4j.zeka.stack.idea.plugin.task.parallel.ParallelTaskExecutor;
+import dev.dong4j.zeka.stack.idea.plugin.task.parallel.TaskExecutorDocumentationInserter;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
 import lombok.Getter;
@@ -375,7 +373,7 @@ public class TaskExecutor {
      * @date 2025.11.30
      * @since 1.0.0
      */
-    private static class ProgressManager {
+    public static class ProgressManager {
         /** 进度指示器 */
         private final ProgressIndicator indicator;
         /** 总任务数 */
@@ -705,14 +703,20 @@ public class TaskExecutor {
     /**
      * 并行处理任务（性能模式）
      * <p>
-     * 该方法在性能模式下，利用多个AI服务提供商并行处理任务列表。如果无可用提供商，则回退到顺序处理。
-     * <p>
-     * 线程分配策略：
+     * 使用新的消消乐式并行处理算法：
      * <ul>
-     *   <li>根据任务数和提供商数量动态计算合适的线程数</li>
-     *   <li>每个提供商可以有多个线程并发处理任务</li>
-     *   <li>并发度 = 总线程数 / 提供商数</li>
-     *   <li>所有线程共享任务队列，从队列中获取任务处理</li>
+     *   <li>每个文件是一个列，文件中的任务是列中的块</li>
+     *   <li>多个线程（乒乓球）并发从队列中获取任务</li>
+     *   <li>同一文件的任务必须按顺序处理（一个块消除后才能处理下一个）</li>
+     *   <li>不同文件的任务可以并行处理</li>
+     * </ul>
+     * <p>
+     * 支持功能：
+     * <ul>
+     *   <li>超时控制（默认 10 秒）</li>
+     *   <li>429 错误处理（销毁服务商线程）</li>
+     *   <li>重试机制（最大 3 次）</li>
+     *   <li>负载均衡（轮询所有文件队列）</li>
      * </ul>
      *
      * @param tasks 任务列表，包含需要处理的文档任务
@@ -726,191 +730,42 @@ public class TaskExecutor {
             return false;
         }
 
-        int providerCount = aiProviderTypes.size();
-        final int totalThreads = getTotalThreads(tasks, providerCount);
+        // 创建文档插入器（使用反射调用私有方法）
+        DocumentationInserter documentationInserter = new TaskExecutorDocumentationInserter(this);
 
-        // 创建动态大小的线程池
-        ExecutorService executor = Executors.newFixedThreadPool(totalThreads);
+        AIProviderSettings providerSettings = AIProviderSettings.getInstance();
+        SettingsState settingsState = SettingsState.getInstance();
 
-        // 为每个提供商创建统计对象
-        Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
+        // 创建并行任务执行器
+        ParallelTaskExecutor parallelExecutor = new ParallelTaskExecutor(
+            project,
+            aiService,
+            providerSettings,
+            settingsState,
+            indicator,
+            documentationInserter
+        );
 
-        // 初始化多线程模式的进度管理器
-        progressManager = new ProgressManager(indicator, tasks.size(), providerStats);
+        // 执行并行任务处理
+        boolean success = parallelExecutor.execute(tasks, aiProviderTypes);
 
-        try {
-            // 创建所有线程任务
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            AtomicInteger taskIndex = new AtomicInteger(0);
-
-            // 计算余数，用于分配额外的线程
-            int remainder = totalThreads % providerCount;
-            int baseThreadsPerProvider = totalThreads / providerCount;
-
-            // 为每个提供商创建多个线程
-            for (int providerIdx = 0; providerIdx < aiProviderTypes.size(); providerIdx++) {
-                AIProviderConfig provider = aiProviderTypes.get(providerIdx);
-                String providerName = provider.providerType.getDisplayName();
-                ProviderStatistics stats = new ProviderStatistics(providerName);
-                providerStats.put(providerName, stats);
-
-                // 计算当前提供商应该创建的线程数
-                // 前 remainder 个提供商多分配1个线程，以处理余数
-                int currentProviderThreads = baseThreadsPerProvider + (providerIdx < remainder ? 1 : 0);
-
-                log.debug("提供商 {} 分配 {} 个线程", providerName, currentProviderThreads);
-
-                // 为当前提供商创建线程
-                for (int i = 0; i < currentProviderThreads; i++) {
-                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> processTasksWithProvider(tasks, provider, taskIndex
-                        , stats), executor);
-                    futures.add(future);
-                }
-            }
-
-            // 等待所有任务完成
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-            // 完成所有统计
-            providerStats.values().forEach(ProviderStatistics::finish);
-
-            // 使用进度管理器完成进度更新
-            progressManager.finish();
+        // 获取统计信息并更新进度管理器
+        if (!parallelExecutor.getProviderStats().isEmpty()) {
+            // 初始化多线程模式的进度管理器
+            progressManager = new ProgressManager(indicator, tasks.size(), parallelExecutor.getProviderStats());
 
             // 显示每个提供商的统计信息（如果启用）
-            if (SettingsState.getInstance().showProviderStatistics) {
-                showProviderStatistics(providerStats);
+            if (settingsState.showProviderStatistics) {
+                showProviderStatistics(parallelExecutor.getProviderStats());
             }
 
-            // 使用进度管理器获取统计信息
-            TaskStatistics statistics = progressManager.getStatistics();
-            log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
-                     statistics.completed(), statistics.failed(), statistics.skipped());
-
-            // Console 日志：任务完成统计
-            JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
-            JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
-                                                                   statistics.completed(), statistics.failed(), statistics.skipped()));
-
-            return true;
-        } finally {
-            executor.shutdown();
-            try {
-                if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
+            // 使用进度管理器完成进度更新
+            if (progressManager != null) {
+                progressManager.finish();
             }
         }
-    }
 
-    /**
-     * 计算总线程数, 根据任务数量和提供商数量动态调整线程分配
-     * <p>
-     * 根据任务总数和提供商数量, 计算每个提供商应分配的线程数, 并最终确定总线程数.
-     * 线程数会根据任务数量进行限制, 确保不超过任务总数.
-     *
-     * @param tasks         任务列表, 用于确定任务总数
-     * @param providerCount 提供商数量, 用于计算每个提供商的线程分配
-     * @return 总线程数, 用于并行处理任务
-     */
-    private static int getTotalThreads(@NotNull List<DocumentationTask> tasks, int providerCount) {
-        int taskCount = tasks.size();
-
-        // 计算合适的线程数
-        // 策略：根据任务数和提供商数动态计算
-        // - 如果任务数较少（<=10），每个提供商1个线程
-        // - 如果任务数中等（10-50），每个提供商2个线程
-        // - 如果任务数较多（>50），每个提供商3-4个线程
-        final int totalThreads = getTotalThreads(providerCount, taskCount);
-
-        // 计算平均并发度
-        double avgConcurrency = (double) totalThreads / providerCount;
-        log.info("性能模式：使用 {} 个提供商，创建 {} 个线程（平均每个提供商 {} 个线程，平均并发度 {}）并行处理 {} 个任务",
-                 providerCount, totalThreads, String.format("%.1f", avgConcurrency),
-                 String.format("%.1f", avgConcurrency), taskCount);
-        return totalThreads;
-    }
-
-    /**
-     * 计算总线程数
-     * <p>
-     * 根据提供者数量和任务数量, 计算需要启动的总线程数. 线程数根据任务数量的不同范围进行分段计算, 并确保总线程数不超过任务数量.
-     *
-     * @param providerCount 提供者数量
-     * @param taskCount     任务数量
-     * @return 总线程数
-     */
-    private static int getTotalThreads(int providerCount, int taskCount) {
-        int threadsPerProvider;
-        if (taskCount <= 10) {
-            threadsPerProvider = 1;
-        } else if (taskCount <= 50) {
-            threadsPerProvider = 2;
-        } else {
-            // 任务数较多时，每个提供商最多4个线程
-            threadsPerProvider = Math.min(4, Math.max(2, taskCount / (providerCount * 2)));
-        }
-
-        // 计算总线程数
-        int totalThreads = providerCount * threadsPerProvider;
-
-        // 如果总线程数超过任务数，限制总线程数为任务数
-        // 然后重新计算每个提供商的线程数（平均分配，但每个提供商至少1个线程）
-        if (totalThreads > taskCount) {
-            totalThreads = taskCount;
-            // 平均分配线程，每个提供商至少1个线程
-            threadsPerProvider = Math.max(1, totalThreads / providerCount);
-            // 重新计算总线程数（可能因为取整而略小于 taskCount）
-            totalThreads = providerCount * threadsPerProvider;
-        }
-        return totalThreads;
-    }
-
-    /**
-     * 使用指定提供商处理任务列表
-     * <p>
-     * 遍历任务列表，依次使用指定的AI服务提供商处理每个任务，并更新处理进度和统计信息。
-     *
-     * @param tasks     任务列表，包含需要处理的文档任务
-     * @param provider  AI服务提供商，用于执行具体的任务处理逻辑
-     * @param taskIndex 用于记录当前处理任务索引的原子整数，确保线程安全
-     * @param stats     统计信息对象，用于记录处理过程中的完成、失败和跳过任务数量
-     */
-    private void processTasksWithProvider(@NotNull List<DocumentationTask> tasks,
-                                          @NotNull AIProviderConfig provider,
-                                          @NotNull AtomicInteger taskIndex,
-                                          @NotNull ProviderStatistics stats) {
-        int totalTasks = tasks.size();
-        String providerName = provider.providerType.getDisplayName();
-
-        while (taskIndex.get() < totalTasks && !indicator.isCanceled()) {
-            int currentIndex = taskIndex.getAndIncrement();
-            if (currentIndex >= totalTasks) {
-                break;
-            }
-
-            DocumentationTask task = tasks.get(currentIndex);
-
-            // 任务开始处理时，更新进度显示当前提供商正在处理
-            SwingUtilities.invokeLater(() -> {
-                if (progressManager != null) {
-                    progressManager.updateProgress(currentIndex, task, providerName);
-                }
-            });
-
-            // 处理任务（会更新统计信息）
-            processTask(task, provider, stats);
-
-            // 任务处理完成后，使用进度管理器更新进度（需要在 EDT 中执行）
-            SwingUtilities.invokeLater(() -> {
-                if (progressManager != null) {
-                    progressManager.updateProgress(currentIndex, task, providerName);
-                }
-            });
-        }
+        return success;
     }
 
     /**
@@ -1351,9 +1206,9 @@ public class TaskExecutor {
      * @see #getInsertPosition(PsiElement)
      */
     @SuppressWarnings("D")
-    private void insertDocumentation(@NotNull DocumentationTask task,
-                                     @NotNull String documentation,
-                                     boolean verboseLogging) {
+    public void insertDocumentation(@NotNull DocumentationTask task,
+                                    @NotNull String documentation,
+                                    boolean verboseLogging) {
         ApplicationManager.getApplication().invokeLater(() -> {
             PsiElement element = task.getElement();
             Document document = FileDocumentManager.getInstance()
