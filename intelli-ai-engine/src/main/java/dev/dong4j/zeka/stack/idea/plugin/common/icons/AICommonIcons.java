@@ -22,6 +22,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
  * @date 2025.10.24
  * @since 1.0.0
  */
+@SuppressWarnings("DuplicatedCode")
 public final class AICommonIcons {
     /**
      * 加载图标
@@ -84,6 +85,13 @@ public final class AICommonIcons {
      */
     public static final Icon PROVIDER_IFLOW = load("/icons/iflow_16.svg");
 
+    /**
+     * 智谱AI 提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_ZHIPU = load("/icons/chatglm_16.svg");
+
     // ========== AI 提供商图标 - 用于对话框/错误提示框 (64x64) ==========
 
     /**
@@ -130,6 +138,13 @@ public final class AICommonIcons {
      */
     public static final Icon PROVIDER_IFLOW_64 = load("/icons/iflow_64.svg");
 
+    /**
+     * 智谱AI 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_ZHIPU_64 = load("/icons/chatglm_64.svg");
+
     // ========== 工具方法 ==========
 
     /**
@@ -154,10 +169,11 @@ public final class AICommonIcons {
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
             case MODELSCOPE -> PROVIDER_MODELSCOPE;
             case IFLOW -> PROVIDER_IFLOW;
+            case ZHIPU -> PROVIDER_ZHIPU;
         };
         // 将图标从 16x16 缩放到 13x13，适合状态栏显示
         // 状态栏图标通常使用 13x13 尺寸
-        return icon != null ? IconUtil.scale(icon, null, 0.8125f) : null;
+        return IconUtil.scale(icon, null, 0.8125f);
     }
 
     /**
@@ -179,6 +195,7 @@ public final class AICommonIcons {
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
             case MODELSCOPE -> PROVIDER_MODELSCOPE_64;
             case IFLOW -> PROVIDER_IFLOW_64;
+            case ZHIPU -> PROVIDER_ZHIPU_64;
         };
     }
 

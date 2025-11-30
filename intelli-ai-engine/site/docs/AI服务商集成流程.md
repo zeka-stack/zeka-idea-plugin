@@ -274,6 +274,56 @@ protected List<String> parseModelsResponse(String responseBody) {
 }
 ```
 
+#### 需要重写 `buildRequestBody` 的情况
+
+如果服务商的请求体格式**不是**标准的 OpenAI 兼容格式，则需要重写此方法以构建自定义格式的请求体。
+
+**标准 OpenAI 兼容格式示例：**
+
+```json
+{
+  "model": "gpt-3.5-turbo",
+  "messages": [
+    {"role": "system", "content": "..."},
+    {"role": "user", "content": "..."}
+  ],
+  "temperature": 0.7,
+  "max_tokens": 2048
+}
+```
+
+**重写示例（自定义格式）：**
+
+```java
+@Override
+protected JsonObject buildRequestBody(AIChatRequest request) {
+    // 构建自定义格式的请求体
+    JsonObject body = new JsonObject();
+    
+    // 根据服务商 API 要求构建请求体
+    body.addProperty("model_id", config.modelName);
+    body.addProperty("prompt", request.userPrompt());
+    body.addProperty("system_prompt", request.systemPrompt());
+    
+    // 设置模型参数（根据服务商支持的参数名称调整）
+    AIModelParameters params = modelParameters;
+    body.addProperty("temperature", params.temperature);
+    body.addProperty("max_length", params.maxTokens);
+    
+    // 添加服务商特定的字段
+    body.addProperty("custom_param", "value");
+    
+    return body;
+}
+```
+
+**注意事项：**
+
+- 重写此方法时，需要根据服务商的 API 文档构建正确的请求格式
+- 确保包含所有必需的字段（如模型名称、提示内容等）
+- 模型参数名称可能因服务商而异（如 `max_tokens` vs `max_length`）
+- 可以访问 `config.modelName` 获取模型名称，访问 `request.systemPrompt()` 和 `request.userPrompt()` 获取提示内容
+
 ### 步骤 3：在 AIServiceFactory 中注册 Provider
 
 **文件路径：** `src/main/java/dev/dong4j/zeka/stack/idea/plugin/common/ai/AIServiceFactory.java`
@@ -416,6 +466,7 @@ settings.error.{service_id}.missing.token=Missing {Service Name} API Key
 - [ ] 创建了 `{ServiceName}Provider` 类并正确继承 `AICompatibleProvider`
 - [ ] 如需自定义模型列表获取，已重写 `getAvailableModels` 方法
 - [ ] 如需自定义响应解析，已重写 `parseModelsResponse` 方法
+- [ ] 如需自定义请求体格式，已重写 `buildRequestBody` 方法
 - [ ] `AIServiceFactory` 中已注册新 Provider
 - [ ] 图标文件已创建（`{service_id}_16.svg` 和 `{service_id}_64.svg`）
 - [ ] `AICommonIcons` 中已添加图标引用和 switch case
@@ -467,13 +518,14 @@ settings.error.{service_id}.missing.token=Missing {Service Name} API Key
 
 ### Q1: 服务商使用非标准的 OpenAI 格式怎么办？
 
-A: 如果服务商的 API 格式与 OpenAI 完全不同，需要重写更多方法：
+A: 如果服务商的 API 格式与 OpenAI 不兼容，可以根据需要重写以下方法：
 
-- `generateContent` - 重写请求构建逻辑
-- `sendRequest` - 重写请求发送逻辑
-- `parseResponse` - 重写响应解析逻辑
+- `buildRequestBody` - 重写请求体构建逻辑（推荐，最简单）
+- `parseResponse` - 重写响应解析逻辑（如果响应格式不同）
+- `sendRequest` - 重写请求发送逻辑（仅在请求方式完全不同时）
+- `generateContent` - 重写整个生成流程（仅在完全无法复用现有逻辑时）
 
-建议先查看 `AICompatibleProvider` 的源码，了解哪些方法可以重写。
+**建议：** 优先尝试重写 `buildRequestBody` 方法，因为这是最常见的差异点。大多数服务商只需要自定义请求体格式，其他逻辑可以复用。
 
 ### Q2: 模型列表接口需要认证但返回空列表怎么办？
 

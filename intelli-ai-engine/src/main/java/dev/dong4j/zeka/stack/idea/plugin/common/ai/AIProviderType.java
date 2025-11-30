@@ -117,6 +117,20 @@ public enum AIProviderType {
         true,
         true,
         List.of("kimi-k2-0905", "qwen3-coder-plus", "glm-4.6", "deepseek-r1")
+    ),
+    /**
+     * 智谱AI 模型配置
+     * <p>
+     * 智谱AI (ChatGLM) 服务提供商, 支持多种 GLM 模型, 包括 glm-4.6, glm-4.5, glm-4.5-flash 等.
+     */
+    ZHIPU(
+        "zhipu",
+        "智谱AI",
+        "https://open.bigmodel.cn/api/paas/v4",
+        "glm-4.5-flash",
+        true,
+        true,
+        List.of("glm-4.5-flash", "glm-4.6", "glm-4.5")
     );
 
     /** 服务提供方唯一标识符 */

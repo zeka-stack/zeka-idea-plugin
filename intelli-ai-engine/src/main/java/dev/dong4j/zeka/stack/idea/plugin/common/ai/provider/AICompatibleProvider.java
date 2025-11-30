@@ -350,11 +350,28 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * 构建发送给 AI 聊天服务的请求体
      * <p>
      * 根据传入的 AI 聊天请求对象, 构建包含系统消息和用户消息的 JSON 请求体, 同时设置模型参数.
+     * 默认实现构建标准的 OpenAI 兼容格式请求体.
+     * <p>
+     * 如果服务商的 API 格式与 OpenAI 不兼容, 子类可以重写此方法以构建自定义格式的请求体.
+     * <p>
+     * 示例 - 标准 OpenAI 兼容格式:
+     * <pre>{@code
+     * {
+     *   "model": "gpt-3.5-turbo",
+     *   "messages": [
+     *     {"role": "system", "content": "..."},
+     *     {"role": "user", "content": "..."}
+     *   ],
+     *   "temperature": 0.7,
+     *   "max_tokens": 2048
+     * }
+     * }</pre>
      *
      * @param request AI 聊天请求对象, 包含系统提示和用户提示信息
      * @return 构建完成的 JSON 对象, 包含消息内容和模型参数
+     * @since 1.0.0
      */
-    private JsonObject buildRequestBody(AIChatRequest request) {
+    protected JsonObject buildRequestBody(AIChatRequest request) {
         JsonObject systemMessage = new JsonObject();
         systemMessage.addProperty("role", "system");
         systemMessage.addProperty("content", request.systemPrompt());

@@ -11,6 +11,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ModelScopeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.OllamaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.QianWenProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.SiliconFlowProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ZhipuProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
@@ -44,11 +45,8 @@ public final class AIServiceFactory {
      * 的扩展配置以及 {@code false} 的兼容性标志.
      *
      * @param config          AI 提供者配置, 不能为空
-     * @param modelParameters 模型参数, 不能为空
-     * @param runtimeSettings 运行时设置, 不能为空
      * @return 创建的 {@link AIServiceProvider} 实例; 若创建失败则返回 {@code null}
      */
-    @Nullable
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config) {
         return createProvider(config, null);
     }
@@ -60,12 +58,9 @@ public final class AIServiceFactory {
      * 如果未指定提供者类型, 则默认使用 QIANWEN 类型.
      *
      * @param config          提供者配置信息, 不能为空
-     * @param modelParameters 模型参数信息, 不能为空
-     * @param runtimeSettings 运行时设置信息, 不能为空
      * @param consoleLogger   控制台日志记录器, 可以为 null
      * @return 创建的 AI 服务提供者实例, 可能为 null
      */
-    @Nullable
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
                                                    @Nullable AIConsoleLogger consoleLogger) {
         AIProviderType providerType = config.providerType != null ? config.providerType : AIProviderType.QIANWEN;
@@ -79,6 +74,7 @@ public final class AIServiceFactory {
             case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings, consoleLogger);
             case MODELSCOPE -> new ModelScopeProvider(config, modelParameters, runtimeSettings, consoleLogger);
             case IFLOW -> new IflowProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case ZHIPU -> new ZhipuProvider(config, modelParameters, runtimeSettings, consoleLogger);
         };
     }
 }
