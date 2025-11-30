@@ -87,15 +87,8 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         return new AIJavadocStatusBarWidget(project);
     }
 
-    /**
-     * 注册自定义监听器
-     * <p>
-     * 重写父类方法, 用于注册自定义的事件监听器
-     */
-    @Override
-    protected void registerCustomListeners() {
-        // 当前不存在需要订阅的事件，使用默认行为即可
-    }
+    // registerCustomListeners() 方法已过时，不再需要重写
+    // 如果将来需要注册自定义监听器，请使用其他方式
 
     /**
      * 获取组件的唯一标识符
@@ -398,7 +391,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
                     // update() 方法被标记为 @ApiStatus.OverrideOnly，只能被重写，不应手动调用
                     // 框架会在需要时自动调用 update() 方法来更新动作状态
                 }
-            }, ModalityState.NON_MODAL);
+            }, ModalityState.defaultModalityState());
         }
 
         /**

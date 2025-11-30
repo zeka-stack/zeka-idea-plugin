@@ -265,6 +265,7 @@ public final class WorkflowResultToolWindow {
          * @param markdownFile Markdown 文件
          * @param initialContent 初始内容
          */
+        @SuppressWarnings("UnstableApiUsage")
         public RefreshableMarkdownPanel(@NotNull Project project,
                                         @NotNull VirtualFile markdownFile,
                                         @NotNull String initialContent) {
@@ -278,6 +279,8 @@ public final class WorkflowResultToolWindow {
             // 获取第一个可用 Provider
             MarkdownHtmlPanelProvider provider = MarkdownHtmlPanelProvider.getAvailableProviders().get(0);
 
+            // 注意：createHtmlPanel() 是实验性 API，可能在未来版本中改变
+            // 目前没有稳定的替代方案，如果未来 API 变更，需要相应更新
             // 创建 HTML 面板（会自动从 VirtualFile 读取内容）
             this.htmlPanel = provider.createHtmlPanel(project, markdownFile);
 

@@ -52,12 +52,14 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
      * @param panel   Markdown HTML 面板
      * @param project 项目实例
      */
+    @SuppressWarnings("UnstableApiUsage")
     public MarkdownLinkHandler(@NotNull MarkdownHtmlPanel panel, @NotNull Project project) {
         this.panel = panel;
         this.project = project;
 
         // 订阅链接点击事件
-        // 使用公开的 API 访问 browserPipe
+        // 注意：getBrowserPipe() 是实验性 API，可能在未来版本中改变
+        // 目前没有稳定的替代方案，如果未来 API 变更，需要相应更新
         var browserPipe = panel.getBrowserPipe();
         if (browserPipe != null) {
             browserPipe.subscribe(OPEN_LINK_EVENT_NAME, this::handleLink);
@@ -200,8 +202,10 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
     public static class Provider implements MarkdownBrowserPreviewExtension.Provider {
         @Override
         @Nullable
+        @SuppressWarnings("UnstableApiUsage")
         public MarkdownBrowserPreviewExtension createBrowserExtension(@NotNull MarkdownHtmlPanel panel) {
-            // 使用公开的 API 获取 Project
+            // 注意：getProject() 是实验性 API，可能在未来版本中改变
+            // 目前没有稳定的替代方案，如果未来 API 变更，需要相应更新
             Project project = panel.getProject();
             if (project == null) {
                 return null;
