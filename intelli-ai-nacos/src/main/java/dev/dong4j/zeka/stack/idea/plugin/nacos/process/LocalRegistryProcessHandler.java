@@ -1,8 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.process;
 
-import com.intellij.execution.ExecutionManager;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.process.ProcessOutputTypes;
+import com.intellij.execution.ui.RunContentManager;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.util.Key;
@@ -90,9 +90,8 @@ public class LocalRegistryProcessHandler extends ProcessHandler {
                             LocalRegistryProcessHandler.this.localRegistryContext.getConfigName()
                                                                  );
                         LocalRegistryProcessHandler.this.localRegistryContext.getConsoleToolbarActions().removeAll();
-                        LocalRegistryProcessHandler.this.localRegistryContext.getConsoleActionToolbar().updateActionsImmediately();
-                        ExecutionManager.getInstance(LocalRegistryProcessHandler.this.localRegistryContext.getProject())
-                            .getContentManager()
+                        // updateActionsImmediately() 已过时，工具栏会在下次显示时自动更新
+                        RunContentManager.getInstance(LocalRegistryProcessHandler.this.localRegistryContext.getProject())
                             .removeRunContent(
                                 LocalRegistryProcessHandler.this.localRegistryContext.getExecutor(),
                                 LocalRegistryProcessHandler.this.localRegistryContext.getRunDescriptor()

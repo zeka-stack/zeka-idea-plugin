@@ -6,7 +6,6 @@ import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -246,9 +245,11 @@ public final class AIProviderConfigController {
 
         String modelName = Objects.toString(ui.getModelComboBox().getEditor().getItem(), "").trim();
         currentConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
-        currentConfig.baseUrl = normalizeBaseUrl(StringUtils.isBlank(ui.getBaseUrlField().getText().trim())
+        String baseUrlText = ui.getBaseUrlField().getText();
+        String trimmedBaseUrl = baseUrlText != null ? baseUrlText.trim() : "";
+        currentConfig.baseUrl = normalizeBaseUrl(trimmedBaseUrl.isEmpty()
                                                  ? providerType.getDefaultBaseUrl()
-                                                 : ui.getBaseUrlField().getText().trim());
+                                                 : trimmedBaseUrl);
         currentConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
 
         String currentApiKey = getCurrentApiKey();

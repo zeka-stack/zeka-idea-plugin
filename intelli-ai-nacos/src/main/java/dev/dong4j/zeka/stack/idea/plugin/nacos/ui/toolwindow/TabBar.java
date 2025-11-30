@@ -1,9 +1,10 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.ui.tabs.JBTabs;
+import com.intellij.ui.tabs.JBTabsFactory;
 import com.intellij.ui.tabs.TabInfo;
 import com.intellij.ui.tabs.TabsListener;
-import com.intellij.ui.tabs.impl.JBTabsImpl;
 import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
@@ -28,15 +29,15 @@ public class TabBar extends JPanel {
     private final Project project;
     /**
      * -- GETTER --
-     * 获取 JBTabsImpl 实例
+     * 获取 JBTabs 实例
      */
     @Getter
-    private final JBTabsImpl tabs;
+    private final JBTabs tabs;
     private final List<Tab> tabList;
 
     public TabBar(@NotNull Project project) {
         this.project = project;
-        this.tabs = new JBTabsImpl(project);
+        this.tabs = JBTabsFactory.createTabs(project);
         this.tabList = new ArrayList<>();
 
         initialize();

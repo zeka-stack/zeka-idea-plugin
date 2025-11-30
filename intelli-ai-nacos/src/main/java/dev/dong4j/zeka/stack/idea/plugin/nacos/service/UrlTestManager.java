@@ -1,7 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.service;
 
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 
 /**
  * URL 测试管理器
@@ -24,7 +24,7 @@ public class UrlTestManager {
 
         boolean var2;
         try {
-            c = (HttpURLConnection) (new URL(url)).openConnection();
+            c = (HttpURLConnection) (new URI(url).toURL()).openConnection();
             c.setRequestMethod("GET");
             c.setConnectTimeout(5000);
             c.setReadTimeout(5000);

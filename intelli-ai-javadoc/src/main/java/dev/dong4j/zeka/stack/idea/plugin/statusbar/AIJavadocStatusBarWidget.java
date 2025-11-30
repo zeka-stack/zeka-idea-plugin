@@ -395,7 +395,8 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
                     if (currentStatusBar != null) {
                         currentStatusBar.updateWidget(ID());
                     }
-                    update(e);
+                    // update() 方法被标记为 @ApiStatus.OverrideOnly，只能被重写，不应手动调用
+                    // 框架会在需要时自动调用 update() 方法来更新动作状态
                 }
             }, ModalityState.NON_MODAL);
         }

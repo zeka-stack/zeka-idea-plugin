@@ -10,7 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -87,7 +87,7 @@ public class RegistryUtils {
         File file = new File(path);
 
         try {
-            c = (HttpURLConnection) (new URL(url)).openConnection();
+            c = (HttpURLConnection) (new URI(url).toURL()).openConnection();
             c.setRequestMethod("GET");
             c.setConnectTimeout(3000);
             c.setReadTimeout(3000);

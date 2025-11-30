@@ -183,7 +183,7 @@ tasks {
     runIde {
         dependsOn(copyAiCommonPlugin)
         // 热更新
-        jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
+        // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
     }
 }
 

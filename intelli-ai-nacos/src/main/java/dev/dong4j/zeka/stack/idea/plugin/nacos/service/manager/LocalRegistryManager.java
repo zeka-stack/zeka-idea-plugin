@@ -1,26 +1,24 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager;
 
-import com.intellij.execution.ExecutionManager;
 import com.intellij.execution.Executor;
 import com.intellij.execution.actions.StopProcessAction;
 import com.intellij.execution.impl.ConsoleViewImpl;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.process.ProcessOutputTypes;
 import com.intellij.execution.ui.RunContentDescriptor;
+import com.intellij.execution.ui.RunContentManager;
 import com.intellij.execution.ui.actions.CloseAction;
 import com.intellij.icons.AllIcons.RunConfigurations;
-import com.intellij.ide.DataManager;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
-import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.projectRoots.SdkTypeId;
 import com.intellij.openapi.projectRoots.impl.JavaSdkImpl;
@@ -232,9 +230,10 @@ public class LocalRegistryManager {
                 if (RegistryUtils.isWindows()) {
                     RegistryUtils.unzip(localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
                 } else {
-                    String command = String.format("unzip %s -d %s", localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
-                    Process extractProcess = Runtime.getRuntime().exec(command, (String[]) null,
-                                                                       new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR));
+                    // 使用 ProcessBuilder 替代过时的 Runtime.exec()
+                    ProcessBuilder processBuilder = new ProcessBuilder("unzip", localPath, "-d", LocalRegistryConstants.LOCAL_REGISTRY_DIR);
+                    processBuilder.directory(new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR));
+                    Process extractProcess = processBuilder.start();
                     int result = extractProcess.waitFor();
                     if (result != 0) {
                         throw new Exception("Unable to extract registry package, the package maybe broken");
@@ -304,9 +303,18 @@ public class LocalRegistryManager {
             ApplicationManager.getApplication().invokeAndWait(new Runnable() {
                 public void run() {
                     try {
-                        Project project =
-                            (Project) ((DataContext) DataManager.getInstance().getDataContextFromFocus().getResultSync(3000L)).getData(PlatformDataKeys.PROJECT);
-                        registryContext.setProject(project);
+                        Project project = registryContext.getProject();
+                        if (project == null) {
+                            // 如果 context 中没有 project，尝试从打开的项目中获取
+                            Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
+                            if (openProjects.length > 0) {
+                                project = openProjects[0];
+                            } else {
+                                // 如果没有打开的项目，使用默认项目
+                                project = ProjectManager.getInstance().getDefaultProject();
+                            }
+                            registryContext.setProject(project);
+                        }
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
@@ -546,7 +554,7 @@ public class LocalRegistryManager {
                 toolbarActions.add(new StopProcessAction("Stop process", "Stop process", processHandler));
                 toolbarActions.add(new CloseAction(executor, runDescriptor, project));
                 consoleView.attachToProcess(processHandler);
-                ExecutionManager.getInstance(project).getContentManager().showRunContent(executor, runDescriptor);
+                RunContentManager.getInstance(project).showRunContent(executor, runDescriptor);
                 localRegistryContext.setConsoleToolbarActions(toolbarActions);
                 localRegistryContext.setConsoleActionToolbar(toolbar);
                 localRegistryContext.setRunDescriptor(runDescriptor);
