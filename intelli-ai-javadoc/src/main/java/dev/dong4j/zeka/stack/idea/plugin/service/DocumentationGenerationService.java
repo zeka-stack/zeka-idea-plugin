@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
+import dev.dong4j.zeka.stack.idea.plugin.task.TaskStatistics;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,7 @@ public class DocumentationGenerationService {
     public void generateDocumentation(@NotNull Project project,
                                       @NotNull List<DocumentationTask> tasks,
                                       @NotNull String targetDescription,
-                                      @NotNull Consumer<TaskExecutor.TaskStatistics> onComplete) {
+                                      @NotNull Consumer<TaskStatistics> onComplete) {
 
         if (tasks.isEmpty()) {
             log.warn("任务列表为空，跳过生成");
@@ -86,7 +87,7 @@ public class DocumentationGenerationService {
                     boolean success = executor.processTasks(tasks);
 
                     if (success) {
-                        TaskExecutor.TaskStatistics stats = executor.getStatistics();
+                        TaskStatistics stats = executor.getStatistics();
                         log.info("文档生成完成: {}", stats);
 
                         // 在 EDT 中调用完成回调

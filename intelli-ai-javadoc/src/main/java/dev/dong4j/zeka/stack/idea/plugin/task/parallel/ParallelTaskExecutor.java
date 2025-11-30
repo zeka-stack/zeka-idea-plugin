@@ -19,7 +19,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
-import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
+import dev.dong4j.zeka.stack.idea.plugin.task.ProgressManager;
+import dev.dong4j.zeka.stack.idea.plugin.task.ProviderStatistics;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,9 @@ public class ParallelTaskExecutor {
     @NotNull
     private final DocumentationInserter documentationInserter;
 
+    @NotNull
+    private final ProgressManager progressManager;
+
     /** 任务分发器 */
     @Getter
     private TaskDispatcher taskDispatcher;
@@ -81,7 +85,7 @@ public class ParallelTaskExecutor {
 
     /** 服务商统计信息映射 */
     @Getter
-    private final Map<String, TaskExecutor.ProviderStatistics> providerStats = new ConcurrentHashMap<>();
+    private final Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
 
     /**
      * 执行并行任务处理
@@ -113,12 +117,9 @@ public class ParallelTaskExecutor {
         for (AIProviderConfig provider : providers) {
             String providerId = provider.providerType.getProviderId();
             String providerName = provider.providerType.getDisplayName();
-            TaskExecutor.ProviderStatistics stats = new TaskExecutor.ProviderStatistics(providerName);
+            ProviderStatistics stats = new ProviderStatistics(providerName);
             providerStats.put(providerId, stats);
         }
-
-        // 进度管理器
-        TaskExecutor.ProgressManager progressManager = new TaskExecutor.ProgressManager(indicator, tasks.size(), providerStats);
 
         // 计算总线程数
         int totalThreads = calculateTotalThreads(tasks.size(), providers.size());
@@ -157,7 +158,7 @@ public class ParallelTaskExecutor {
                 providerManager.registerProvider(provider, executor);
 
                 // 获取已创建的统计信息
-                TaskExecutor.ProviderStatistics stats = providerStats.get(providerId);
+                ProviderStatistics stats = providerStats.get(providerId);
 
                 JavaDocConsoleView.print(project, String.format("创建服务商线程池: %s (%d 个线程)", providerName, currentProviderThreads));
                 JavaDocConsoleView.print(project, "");
@@ -185,7 +186,7 @@ public class ParallelTaskExecutor {
             waitForCompletion(providerExecutors);
 
             // 完成所有统计信息（设置结束时间）
-            providerStats.values().forEach(TaskExecutor.ProviderStatistics::finish);
+            providerStats.values().forEach(ProviderStatistics::finish);
 
             // 完成进度管理器
             progressManager.finish();
@@ -280,7 +281,7 @@ public class ParallelTaskExecutor {
         int totalFailed = 0;
         int totalSkipped = 0;
 
-        for (TaskExecutor.ProviderStatistics stats : providerStats.values()) {
+        for (ProviderStatistics stats : providerStats.values()) {
             totalCompleted += stats.getCompletedCount();
             totalFailed += stats.getFailedCount();
             totalSkipped += stats.getSkippedCount();

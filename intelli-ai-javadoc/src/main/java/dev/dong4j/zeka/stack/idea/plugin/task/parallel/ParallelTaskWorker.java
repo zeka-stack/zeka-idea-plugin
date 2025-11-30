@@ -27,7 +27,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
-import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
+import dev.dong4j.zeka.stack.idea.plugin.task.ProgressManager;
+import dev.dong4j.zeka.stack.idea.plugin.task.ProviderStatistics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -80,7 +81,7 @@ public class ParallelTaskWorker implements Runnable {
 
     /** 统计信息 */
     @NotNull
-    private final TaskExecutor.ProviderStatistics stats;
+    private final ProviderStatistics stats;
 
     /** 文档插入器 */
     @NotNull
@@ -88,7 +89,7 @@ public class ParallelTaskWorker implements Runnable {
 
     /** 进度管理器 */
     @NotNull
-    private final TaskExecutor.ProgressManager progressManager;
+    private final ProgressManager progressManager;
 
     /** 默认超时时间（秒） */
     private static final int DEFAULT_TIMEOUT_SECONDS = 10;

@@ -2,14 +2,14 @@ package dev.dong4j.zeka.stack.idea.plugin.task.parallel;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationInserterHelper;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
-import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import lombok.RequiredArgsConstructor;
 
 /**
  * TaskExecutor 文档插入器适配器
  * <p>
- * 直接调用 TaskExecutor 的 insertDocumentation 方法。
+ * 直接调用 DocumentationInserterHelper 的 insertDocumentation 方法。
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -18,17 +18,16 @@ import lombok.RequiredArgsConstructor;
  * @since 1.0.0
  */
 @RequiredArgsConstructor
-public class TaskExecutorDocumentationInserter implements DocumentationInserter {
-    /** TaskExecutor 实例 */
+public class DocumentationInserterWrapper implements DocumentationInserter {
+    /** 文档插入辅助类实例 */
     @NotNull
-    private final TaskExecutor taskExecutor;
+    private final DocumentationInserterHelper inserterHelper;
 
     @Override
     public void insertDocumentation(@NotNull DocumentationTask task,
                                     @NotNull String documentation,
                                     boolean verboseLogging) {
-        // 直接调用 TaskExecutor 的 insertDocumentation 方法
-        taskExecutor.insertDocumentation(task, documentation, verboseLogging);
+        inserterHelper.insertDocumentation(task, documentation, verboseLogging);
     }
 }
 
