@@ -471,9 +471,45 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             };
             throw new AIServiceException("HTTP error: " + e.getMessage(), code, e);
         } catch (IOException e) {
-            throw new AIServiceException("网络错误: " + e.getMessage(),
+            // 检查 IOException 消息中是否包含 HTTP 状态码信息
+            // 某些情况下，HTTP 错误可能被包装在 IOException 中
+            final String message = getErrorString(e);
+            throw new AIServiceException("网络错误: " + message,
                                          AIServiceException.ErrorCode.NETWORK_ERROR, e);
         }
+    }
+
+    /**
+     * 从 IOException 中提取错误信息并根据 HTTP 状态码抛出相应的 AI 服务异常
+     * <p>
+     * 该方法解析 IOException 的消息内容, 识别特定的 HTTP 状态码错误,
+     * 并抛出对应的 AIServiceException 异常, 如果未识别到特定错误则返回原始消息
+     *
+     * @param e 包含 HTTP 错误信息的 IOException
+     * @return 如果没有匹配到特定错误码, 则返回原始错误消息; 否则抛出相应异常
+     * @throws AIServiceException 当识别到 429,401 或 5xx HTTP 状态码时抛出相应错误码的异常
+     */
+    @Nullable
+    private static String getErrorString(IOException e) throws AIServiceException {
+        String message = e.getMessage();
+        if (message != null) {
+            // 检查是否包含 HTTP 429 错误（限流）
+            if (message.contains("HTTP response code: 429") || message.contains("429")) {
+                throw new AIServiceException("请求频率过高，请稍后重试: " + message,
+                                             AIServiceException.ErrorCode.RATE_LIMIT, e);
+            }
+            // 检查是否包含 HTTP 401 错误（认证失败）
+            if (message.contains("HTTP response code: 401") || message.contains("401")) {
+                throw new AIServiceException("API 密钥无效: " + message,
+                                             AIServiceException.ErrorCode.INVALID_API_KEY, e);
+            }
+            // 检查是否包含其他 HTTP 错误状态码
+            if (message.contains("HTTP response code: 5")) {
+                throw new AIServiceException("服务暂时不可用，请稍后重试: " + message,
+                                             AIServiceException.ErrorCode.SERVICE_UNAVAILABLE, e);
+            }
+        }
+        return message;
     }
 
     /**

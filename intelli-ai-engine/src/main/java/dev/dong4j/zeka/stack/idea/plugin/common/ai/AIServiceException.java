@@ -132,7 +132,7 @@ public class AIServiceException extends Exception {
 
         return switch (errorCode) {
             case INVALID_API_KEY -> "API Key 无效，请在设置中检查并更新 API Key";
-            case RATE_LIMIT -> "请求频率过高，请稍后再试";
+            case RATE_LIMIT -> "已到达模型调用配额限制, 请更换其他模型";
             case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用，请稍后再试";
             case NETWORK_ERROR -> "网络连接失败，请检查网络连接或服务器地址";
             case CONFIGURATION_ERROR -> "配置错误: " + e.getMessage();
