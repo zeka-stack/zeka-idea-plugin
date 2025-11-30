@@ -24,7 +24,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  * @date 2025.11.30
  * @since 1.0.0
  */
-@SuppressWarnings("D")
 public final class AIProviderConfigPanel {
 
     private final AIProviderConfigUI ui;

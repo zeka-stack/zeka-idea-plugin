@@ -589,9 +589,7 @@ public final class AIProviderConfigUI {
                 AIProviderType providerType = AIProviderType.fromDisplayName(displayName);
                 if (providerType != null) {
                     Icon icon = AICommonIcons.getProviderIcon(providerType);
-                    if (icon != null) {
-                        label.setIcon(icon);
-                    }
+                    label.setIcon(icon);
                 }
             }
             return label;
@@ -621,9 +619,7 @@ public final class AIProviderConfigUI {
                 label.setText(displayName);
                 if (config.providerType != null) {
                     Icon icon = AICommonIcons.getProviderIcon(config.providerType);
-                    if (icon != null) {
-                        label.setIcon(icon);
-                    }
+                    label.setIcon(icon);
                 }
             }
             return component;

@@ -40,9 +40,6 @@
                 instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 displayName="IntelliAI Engine"/>
-
-        <!-- 注意：状态栏组件不应该在这里注册，因为 AIProviderStatusBarWidgetFactory 需要 AIProviderStatusBarAdapter 参数 -->
-        <!-- 使用 intelli-ai-engine 的插件应该注册自己的 StatusBarWidgetFactory，继承 AIProviderStatusBarWidgetFactory 并提供 adapter -->
     </extensions>
 </idea-plugin>
 

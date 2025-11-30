@@ -107,7 +107,9 @@ public final class AIProviderConfigController {
         updateRefreshButtonState();
 
         // 加载基础配置
-        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings;
+        AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings != null
+                                            ? workingSettings.runtimeSettings
+                                            : new AIRuntimeSettings();
         ui.getVerboseLoggingCheckBox().setSelected(runtimeSettings.verboseLogging);
         ui.updateCheckBoxHintColors();
 
@@ -119,7 +121,9 @@ public final class AIProviderConfigController {
         }
         ui.getMaxRetriesSpinner().setValue(runtimeSettings.maxRetries);
         ui.getTimeoutSpinner().setValue(runtimeSettings.timeout);
-        AIModelParameters modelParameters = workingSettings.modelParameters;
+        AIModelParameters modelParameters = workingSettings.modelParameters != null
+                                            ? workingSettings.modelParameters
+                                            : new AIModelParameters();
         ui.getTemperatureSpinner().setValue(modelParameters.temperature);
         ui.getMaxTokensSpinner().setValue(Math.max(0.1d, modelParameters.maxTokens / 1000.0d));
         ui.getTopPSpinner().setValue(modelParameters.topP);

@@ -27,6 +27,8 @@ public class AICommonSettingsPanel {
     public AICommonSettingsPanel() {
         AICredentialManager credentialManager = new AICredentialManager("IntelliAI Engine", "AI_COMMON_");
         this.configPanel = new AIProviderConfigPanel(credentialManager, null);
+        // 创建 UI 后立即加载配置，确保复选框等组件显示正确的初始状态
+        this.configPanel.loadSettings(AIProviderSettings.getInstance());
     }
 
     /**

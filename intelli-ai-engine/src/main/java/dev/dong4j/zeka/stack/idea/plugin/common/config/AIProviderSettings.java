@@ -143,6 +143,14 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     @Override
     public void loadState(@NotNull AIProviderSettings state) {
         XmlSerializerUtil.copyBean(state, this);
+        // 确保嵌套对象被正确初始化，避免反序列化时为 null
+        // 如果当前对象的嵌套对象为 null（可能在 copyBean 时被设置为 null），使用源对象的副本或创建新实例
+        if (this.runtimeSettings == null) {
+            this.runtimeSettings = state.runtimeSettings != null ? state.runtimeSettings.copy() : new AIRuntimeSettings();
+        }
+        if (this.modelParameters == null) {
+            this.modelParameters = state.modelParameters != null ? state.modelParameters.copy() : new AIModelParameters();
+        }
     }
 
     /**
@@ -156,16 +164,19 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         AIProviderSettings settings = new AIProviderSettings();
         this.defaultProviders.forEach((type, config) -> settings.defaultProviders.put(type, config.copy()));
         this.availableProviders.forEach(config -> settings.availableProviders.add(config.copy()));
-        settings.modelParameters.temperature = this.modelParameters.temperature;
-        settings.modelParameters.maxTokens = this.modelParameters.maxTokens;
-        settings.modelParameters.topP = this.modelParameters.topP;
-        settings.modelParameters.topK = this.modelParameters.topK;
-        settings.modelParameters.presencePenalty = this.modelParameters.presencePenalty;
 
-        settings.runtimeSettings.maxRetries = this.runtimeSettings.maxRetries;
-        settings.runtimeSettings.timeout = this.runtimeSettings.timeout;
-        settings.runtimeSettings.waitDuration = this.runtimeSettings.waitDuration;
-        settings.runtimeSettings.verboseLogging = this.runtimeSettings.verboseLogging;
+        AIModelParameters sourceModel = this.modelParameters != null ? this.modelParameters : new AIModelParameters();
+        settings.modelParameters.temperature = sourceModel.temperature;
+        settings.modelParameters.maxTokens = sourceModel.maxTokens;
+        settings.modelParameters.topP = sourceModel.topP;
+        settings.modelParameters.topK = sourceModel.topK;
+        settings.modelParameters.presencePenalty = sourceModel.presencePenalty;
+
+        AIRuntimeSettings sourceRuntime = this.runtimeSettings != null ? this.runtimeSettings : new AIRuntimeSettings();
+        settings.runtimeSettings.maxRetries = sourceRuntime.maxRetries;
+        settings.runtimeSettings.timeout = sourceRuntime.timeout;
+        settings.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
+        settings.runtimeSettings.verboseLogging = sourceRuntime.verboseLogging;
 
         settings.showAdvancedSettings = this.showAdvancedSettings;
         settings.showAvailableProviders = this.showAvailableProviders;
@@ -288,14 +299,14 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.availableProviders.clear();
         source.availableProviders.forEach(config -> this.availableProviders.add(config.copy()));
 
-        AIModelParameters sourceModel = source.modelParameters;
+        AIModelParameters sourceModel = source.modelParameters != null ? source.modelParameters : new AIModelParameters();
         this.modelParameters.temperature = sourceModel.temperature;
         this.modelParameters.maxTokens = sourceModel.maxTokens;
         this.modelParameters.topP = sourceModel.topP;
         this.modelParameters.topK = sourceModel.topK;
         this.modelParameters.presencePenalty = sourceModel.presencePenalty;
 
-        AIRuntimeSettings sourceRuntime = source.runtimeSettings;
+        AIRuntimeSettings sourceRuntime = source.runtimeSettings != null ? source.runtimeSettings : new AIRuntimeSettings();
         this.runtimeSettings.maxRetries = sourceRuntime.maxRetries;
         this.runtimeSettings.timeout = sourceRuntime.timeout;
         this.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
