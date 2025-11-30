@@ -462,7 +462,7 @@ cd intelli-ai-changelog
 ### 外部资源
 
 - [IntelliJ Platform SDK](https://plugins.jetbrains.com/docs/intellij/welcome.html)
-- [IntelliAI Engine](../intelli-ai-engine/README.md) - AI 能力基础引擎
+- [IntelliAI Engine](https://plugins.jetbrains.com/plugin/29152) - AI 能力基础引擎
 - [Git 文档](https://git-scm.com/doc) - Git 版本控制文档
 
 ## 📄 许可证

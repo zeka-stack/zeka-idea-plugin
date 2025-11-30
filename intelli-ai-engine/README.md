@@ -96,3 +96,22 @@ Engine 会自动处理：
 - 响应解析和错误处理
 - 重试和超时控制
 
+## 📄 许可证
+
+本项目基于 Apache License 2.0 开源许可证。详见 [LICENSE](../LICENSE) 文件。
+
+## 🙏 致谢
+
+特别感谢以下项目和贡献者：
+
+- [IntelliJ Platform](https://www.jetbrains.com/idea/) - 优秀的开发平台和 PSI 框架
+- 所有 AI 服务提供商 - 提供强大的代码分析和理解能力
+- 社区贡献者 - 持续改进和功能建议
+
+---
+
+**JetBrains Marketplace**: [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/29152)
+
+**问题反馈**: [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues)
+
+**联系方式**: dong4jj@gmail.com

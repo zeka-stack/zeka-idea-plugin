@@ -491,7 +491,7 @@ NacosClient.addListener(dataId, group, namespace, listener -> {
 ### 外部资源
 
 - [IntelliJ Platform SDK](https://plugins.jetbrains.com/docs/intellij/welcome.html)
-- [IntelliAI Engine](../intelli-ai-engine/) - AI 能力基础引擎
+- [IntelliAI Engine](https://plugins.jetbrains.com/plugin/29152) - AI 能力基础引擎
 - [Nacos 官方文档](https://nacos.io/zh-cn/docs/what-is-nacos.html) - Nacos 服务文档
 
 ## 📄 许可证

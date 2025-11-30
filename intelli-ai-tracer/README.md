@@ -530,7 +530,7 @@ cd intelli-ai-tracer
 ### 外部资源
 
 - [IntelliJ Platform SDK](https://plugins.jetbrains.com/docs/intellij/welcome.html)
-- [IntelliAI Engine](../intelli-ai-engine/) - AI 能力基础引擎
+- [IntelliAI Engine](https://plugins.jetbrains.com/plugin/29152) - AI 能力基础引擎
 - [PSI 开发指南](https://plugins.jetbrains.com/docs/intellij/psi.html) - PSI 编程指南
 
 ## 📄 许可证
@@ -547,7 +547,7 @@ cd intelli-ai-tracer
 
 ---
 
-**JetBrains Marketplace**: [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/dev.dong4j.zeka.stack.idea.plugin.workflow)
+**JetBrains Marketplace**: [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/29155)
 
 **问题反馈**: [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues)
 

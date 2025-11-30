@@ -10,9 +10,6 @@ CHANGELOG_DIR := intelli-ai-changelog
 NACOS_DIR := intelli-ai-nacos
 TRACER_DIR := intelli-ai-tracer
 
-# 构建命令
-build: build-javadoc build-engine build-changelog build-nacos  build-tracer
-
 build-javadoc:
 	@echo "正在构建 intelli-ai-javadoc 插件..."
 	cd $(JAVADOC_DIR) && ./gradlew buildPlugin
@@ -39,9 +36,6 @@ run: run-javadoc
 run-javadoc:
 	@echo "正在沙箱IDE中运行 intelli-ai-javadoc..."
 	cd $(JAVADOC_DIR) && ./gradlew runIde
-
-# 清理命令
-clean: clean-javadoc clean-engine clean-changelog clean-nacos clean-tracer
 
 clean-engine:
 	@echo "正在清理 intelli-ai-engine..."
@@ -83,6 +77,7 @@ publish-javadoc:
 	@echo "正在发布 intelli-ai-javadoc 插件..."
 	cd $(JAVADOC_DIR) && ./gradlew publishPlugin
 
+
 deploy-engine:
 	@echo "正在部署 intelli-ai-engine 插件..."
 	./deploy.sh engine
@@ -102,6 +97,11 @@ deploy-nacos:
 deploy-tracer:
 	@echo "正在部署 intelli-ai-tracer 插件..."
 	./deploy.sh tracer
+
+# 清理命令
+clean: clean-javadoc clean-engine clean-changelog clean-nacos clean-tracer
+# 构建命令
+build: build-javadoc build-engine build-changelog build-nacos  build-tracer
 
 deploy-all: deploy-engine deploy-javadoc deploy-changelog deploy-nacos deploy-tracer
 

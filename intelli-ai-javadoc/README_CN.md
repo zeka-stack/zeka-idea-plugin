@@ -1,6 +1,6 @@
 # IntelliJ IntelliAI JavaDoc 插件
 
-**中文** | [English](./README.md) | [📄 精美 Landing Page](./index.html)
+**中文** | [English](./README.md)
 
 > 🌟 [查看精美的推广页面](https://aij.dong4j.site) - 更直观地了解插件功能！
 
@@ -290,9 +290,15 @@ A: 根据您的需求选择：
 - **通义千问**：适合中文文档生成，需要 API Key，有使用成本
 - **Ollama**：本地运行，数据私有，无需 API Key，需要足够的系统资源
 
-## 许可证
+### 外部资源
 
-请查看项目根目录下的 LICENSE 文件。
+- [IntelliJ Platform SDK](https://plugins.jetbrains.com/docs/intellij/welcome.html)
+- [IntelliAI Engine](https://plugins.jetbrains.com/plugin/29152) - AI 能力基础引擎
+- [Git 文档](https://git-scm.com/doc) - Git 版本控制文档
+
+## 📄 许可证
+
+本项目基于 Apache License 2.0 开源许可证。详见 [LICENSE](../LICENSE) 文件。
 
 ## 支持
 
@@ -309,3 +315,10 @@ A: 根据您的需求选择：
 - **阿里云通义千问** - 提供强大的中文 AI 服务
 - **Ollama** - 提供本地大语言模型运行环境
 
+---
+
+**JetBrains Marketplace**: [IntelliAI Tracer](https://plugins.jetbrains.com/plugin/28835)
+
+**问题反馈**: [GitHub Issues](https://github.com/zeka-stack/zeka-idea-plugin/issues)
+
+**联系方式**: dong4jj@gmail.com
