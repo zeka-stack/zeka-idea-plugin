@@ -83,6 +83,28 @@ publish-javadoc:
 	@echo "正在发布 intelli-ai-javadoc 插件..."
 	cd $(JAVADOC_DIR) && ./gradlew publishPlugin
 
+deploy-engine:
+	@echo "正在部署 intelli-ai-engine 插件..."
+	./deploy.sh engine
+
+deploy-javadoc:
+	@echo "正在部署 intelli-ai-javadoc 插件..."
+	./deploy.sh javadoc
+
+deploy-changelog:
+	@echo "正在部署 intelli-ai-changelog 插件..."
+	./deploy.sh changelog
+
+deploy-nacos:
+	@echo "正在部署 intelli-ai-nacos 插件..."
+	./deploy.sh nacos
+
+deploy-tracer:
+	@echo "正在部署 intelli-ai-tracer 插件..."
+	./deploy.sh tracer
+
+deploy-all: deploy-engine deploy-javadoc deploy-changelog deploy-nacos deploy-tracer
+
 # 插件版本信息
 version:
 	@echo "插件版本："
