@@ -52,40 +52,16 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 任务执行器
+ * 任务执行器类
+ * <p>
+ * 负责执行文档生成任务的管理器, 支持串行和并行两种处理模式. 该类提供了任务进度跟踪,
+ * 多提供商并行处理, 统计信息收集等功能, 能够处理类, 方法, 字段等不同类型的文档生成任务.
+ * 支持性能模式下的多线程并行处理, 提高大量任务的处理效率.
  *
- * <p>负责执行文档生成任务队列，处理多个文件的批量生成。
- * 作为文档生成流程的核心组件，协调 AI 服务调用、文档插入和进度管理。
- *
- * <p>核心功能：
- * <ul>
- *   <li>批量处理文档生成任务</li>
- *   <li>与 AI 服务交互生成文档内容</li>
- *   <li>将生成的文档插入到源代码中</li>
- *   <li>实时显示处理进度和统计信息</li>
- *   <li>处理异常和错误情况</li>
- *   <li>支持用户取消操作</li>
- * </ul>
- *
- * <p>执行流程：
- * <ol>
- *   <li>初始化 AI 服务提供商</li>
- *   <li>遍历任务列表逐个处理</li>
- *   <li>更新进度指示器</li>
- *   <li>调用 AI 服务生成文档</li>
- *   <li>将文档插入到源代码</li>
- *   <li>收集处理统计信息</li>
- * </ol>
- *
- * <p>线程安全：
- * <ul>
- *   <li>使用 AtomicInteger 确保计数器线程安全</li>
- *   <li>PSI 访问在适当的线程上下文中执行</li>
- *   <li>UI 更新通过 invokeLater 调度</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @SuppressWarnings("D")
@@ -104,9 +80,17 @@ public class TaskExecutor {
     private ProgressManager progressManager;
 
     /**
-     * 提供商统计信息
+     * 服务提供者统计信息类
      * <p>
-     * 注意：性能模式下的多提供商支持需要进一步实现
+     * 用于统计服务提供者的执行情况, 包括完成数量, 失败数量, 跳过数量等指标,
+     * 并提供执行时长统计和状态更新功能. 该类是线程安全的, 使用原子类来保证
+     * 计数器的并发安全性.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public static class ProviderStatistics {
         /** 服务提供商名称 */
@@ -254,7 +238,10 @@ public class TaskExecutor {
      * @return 完整类路径，如果无法获取则返回元素名称
      */
     @NotNull
-    private static String getElementQualifiedName(@NotNull PsiElement element) {
+    private static String getElementQualifiedName(PsiElement element) {
+        if (element == null) {
+            return "UnknownElement";
+        }
         return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
             // 1. 如果是类/接口/枚举，直接返回类的全路径
             if (element instanceof PsiClass psiClass) {
@@ -377,16 +364,16 @@ public class TaskExecutor {
     /**
      * 进度管理器
      * <p>
-     * 统一管理单线程和多线程模式下的进度更新和统计信息。
-     * 提供统一的接口来更新进度指示器，支持单线程和多线程两种模式。
+     * 用于管理文档生成任务的进度跟踪, 支持并行和串行两种模式. 该类负责更新进度指示器,
+     * 统计任务完成情况 (完成数, 失败数, 跳过数), 并提供详细的进度信息显示功能.
+     * 在并行模式下, 可以按提供者分别统计任务状态; 在串行模式下, 使用统一的计数器进行统计.
+     * 主要用于文档生成过程中的进度可视化和状态监控.
      *
-     * <p>功能：
-     * <ul>
-     *   <li>单线程模式：使用内部计数器跟踪统计信息</li>
-     *   <li>多线程模式：汇总所有提供商的统计信息，为每个提供商创建子进度指示器</li>
-     *   <li>统一更新进度指示器（进度条、文本、统计信息）</li>
-     *   <li>线程安全的统计信息访问</li>
-     * </ul>
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private static class ProgressManager {
         /** 进度指示器 */
@@ -1361,7 +1348,6 @@ public class TaskExecutor {
      *
      * @param task          文档生成任务
      * @param documentation 生成的文档内容
-     * @see #deleteOldDocComment(PsiElement, Document)
      * @see #getInsertPosition(PsiElement)
      */
     @SuppressWarnings("D")
@@ -1655,23 +1641,16 @@ public class TaskExecutor {
     }
 
     /**
-     * 任务统计信息
+     * 任务统计记录类
+     * <p>
+     * 用于统计任务执行情况, 包括已完成, 失败和跳过的任务数量,
+     * 并提供获取总任务数和判断是否有任务执行的方法
      *
-     * <p>记录任务处理的统计信息，用于结果展示和日志记录。
-     * 使用 record 简化代码，提供基本的统计计算和格式化功能。
-     *
-     * <p>包含的信息：
-     * <ul>
-     *   <li>completed：成功完成的任务数</li>
-     *   <li>failed：处理失败的任务数</li>
-     *   <li>skipped：被跳过的任务数</li>
-     * </ul>
-     *
-     * <p>提供的方法：
-     * <ul>
-     *   <li>getTotal()：计算任务总数</li>
-     *   <li>toString()：格式化统计信息</li>
-     * </ul>
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public record TaskStatistics(int completed, int failed, int skipped) {
 
