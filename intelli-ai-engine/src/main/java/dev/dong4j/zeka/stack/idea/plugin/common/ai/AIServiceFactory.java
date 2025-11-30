@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.CustomProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.IflowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.LMStudioProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ModelScopeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.OllamaProvider;
@@ -77,6 +78,7 @@ public final class AIServiceFactory {
             case OLLAMA -> new OllamaProvider(config, modelParameters, runtimeSettings, consoleLogger);
             case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings, consoleLogger);
             case MODELSCOPE -> new ModelScopeProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case IFLOW -> new IflowProvider(config, modelParameters, runtimeSettings, consoleLogger);
         };
     }
 }

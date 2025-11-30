@@ -77,6 +77,13 @@ public final class AICommonIcons {
     /** 模型 scope 图标资源 */
     public static final Icon PROVIDER_MODELSCOPE = load("/icons/modelscope_16.svg");
 
+    /**
+     * IFlow 提供商图标 (16x16)
+     * <p>
+     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     */
+    public static final Icon PROVIDER_IFLOW = load("/icons/iflow_16.svg");
+
     // ========== AI 提供商图标 - 用于对话框/错误提示框 (64x64) ==========
 
     /**
@@ -116,6 +123,13 @@ public final class AICommonIcons {
      */
     public static final Icon PROVIDER_LMSTUDIO_64 = load("/icons/lmstudio_64.svg");
 
+    /**
+     * IFlow 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_IFLOW_64 = load("/icons/iflow_64.svg");
+
     // ========== 工具方法 ==========
 
     /**
@@ -139,6 +153,7 @@ public final class AICommonIcons {
             case OLLAMA -> PROVIDER_OLLAMA;
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
             case MODELSCOPE -> PROVIDER_MODELSCOPE;
+            case IFLOW -> PROVIDER_IFLOW;
         };
         // 将图标从 16x16 缩放到 13x13，适合状态栏显示
         // 状态栏图标通常使用 13x13 尺寸
@@ -163,6 +178,7 @@ public final class AICommonIcons {
             case OLLAMA -> PROVIDER_OLLAMA_64;
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
             case MODELSCOPE -> PROVIDER_MODELSCOPE_64;
+            case IFLOW -> PROVIDER_IFLOW_64;
         };
     }
 

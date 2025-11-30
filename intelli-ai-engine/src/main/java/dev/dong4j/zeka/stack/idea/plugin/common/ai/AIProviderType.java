@@ -103,6 +103,20 @@ public enum AIProviderType {
         true,
         true,
         List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
+    ),
+    /**
+     * IFlow 模型配置
+     * <p>
+     * IFlow AI 服务提供商, 支持多种模型, 包括 kimi-k2-0905, qwen3-coder-plus, glm-4.6, deepseek-r1 等.
+     */
+    IFLOW(
+        "iflow",
+        "IFlow",
+        "https://apis.iflow.cn/v1",
+        "kimi-k2-0905",
+        true,
+        true,
+        List.of("kimi-k2-0905", "qwen3-coder-plus", "glm-4.6", "deepseek-r1")
     );
 
     /** 服务提供方唯一标识符 */

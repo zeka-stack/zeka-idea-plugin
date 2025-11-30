@@ -12,6 +12,10 @@
     "path": "./docs/AI扩展插件能力分析与设计方案.md"
   },
   {
+    "name": "AI服务商集成流程",
+    "path": "./docs/AI服务商集成流程.md"
+  },
+  {
     "name": "ModelScope服务商接入方案",
     "path": "./docs/ModelScope服务商接入方案.md"
   },
