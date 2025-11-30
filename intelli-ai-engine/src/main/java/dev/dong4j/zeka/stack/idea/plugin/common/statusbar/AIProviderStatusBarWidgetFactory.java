@@ -9,14 +9,16 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * AI 服务提供商状态栏小部件工厂类
+ * AI 提供商状态栏组件工厂类
  * <p>
- * 用于创建和管理 AI 服务提供商相关的状态栏小部件, 提供状态栏小部件的 ID, 显示名称, 可用性判断以及小部件创建和销毁的功能.
- * 该类实现了 StatusBarWidgetFactory 接口, 负责根据项目和状态栏信息生成对应的 AI 状态栏小部件.
+ * 该类实现了 StatusBarWidgetFactory 接口, 用于创建和管理 AI 提供商状态栏组件.
+ * 负责创建 AIProviderStatusBarWidget 实例, 并提供组件的标识符, 显示名称等信息.
+ * 该工厂类通过适配器模式将 AI 提供商功能集成到 IDE 的状态栏中.
  *
- * @author 作者名
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class AIProviderStatusBarWidgetFactory implements StatusBarWidgetFactory {

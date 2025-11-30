@@ -3,13 +3,16 @@ package dev.dong4j.zeka.stack.idea.plugin.settings;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 自定义 JavaDoc 标签
+ * 自定义 JavaDoc 标签类
  * <p>
- * 用于存储标签名称和默认值。
+ * 用于表示和管理自定义的 JavaDoc 标签信息, 包含标签名称和默认值两个属性,
+ * 支持标签的创建, 获取, 设置等基本操作, 以及基于标签名称的相等性比较
  *
- * @author dong4j
- * @version 2.0.0
- * @since 2.0.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class CustomJavaDocTag {
     /**

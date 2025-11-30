@@ -23,23 +23,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * IntelliAI JavaDoc Console 视图
+ * JavaDoc 控制台视图服务类
  * <p>
- * 用于在 IDE 底部工具窗口中显示 AI 接口的请求参数和响应结果。
- * 所有日志输出方法都受 verboseLogging 配置控制，只有启用时才会输出。
+ * 该类实现了 IntelliJ IDEA 插件中的控制台日志输出功能, 提供带时间戳的消息打印,
+ * 不同类型日志输出 (成功, 警告, 错误), 超链接支持以及欢迎信息显示等功能.
+ * 作为项目级别的服务, 负责管理 JavaDoc 生成过程中的日志输出和用户交互界面.
  *
- * <p>功能特性：
- * <ul>
- *   <li>项目级别服务，每个项目独立的 Console 实例</li>
- *   <li>支持带/不带时间戳的正常输出</li>
- *   <li>支持成功（绿色）、警告（黄色）、错误（红色）输出</li>
- *   <li>自动显示工具窗口</li>
- *   <li>时间戳格式：[yyyy.MM.dd HH:mm:ss]</li>
- *   <li>所有方法都受 verboseLogging 配置控制</li>
- * </ul>
- *
- * @author dong4j
- * @version 2.0.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Service(Service.Level.PROJECT)

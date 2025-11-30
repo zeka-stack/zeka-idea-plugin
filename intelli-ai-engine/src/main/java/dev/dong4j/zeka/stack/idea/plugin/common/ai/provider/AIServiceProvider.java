@@ -12,13 +12,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 
 /**
- * AI 服务提供者接口
+ * AI 服务提供商接口
  * <p>
- * 定义了 AI 服务提供者的通用行为和方法, 用于获取服务类型, 模型名称, 基础 URL, 生成内容以及验证配置等操作. 该接口为不同 AI 服务的实现提供了统一的调用方式.
+ * 定义 AI 服务提供商的统一接口规范, 用于集成不同的 AI 服务提供商,
+ * 提供模型调用, 配置验证, 可用模型查询等核心功能
  *
- * @author 作者名
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public interface AIServiceProvider {

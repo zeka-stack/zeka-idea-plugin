@@ -3,12 +3,15 @@ package dev.dong4j.zeka.stack.idea.plugin.common.config;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * AI 提供商设置变更监听器
+ * AI 提供者设置监听器接口
  * <p>
- * 用于监听 AIProviderSettings 中可用提供商列表的变化，以便在设置页面中动态刷新 UI。
+ * 用于监听 AI 提供者设置的变化, 当可用的 AI 提供者发生改变时触发相应的回调方法.
+ * 实现该接口的类可以接收 AI 提供者设置变更的通知, 以便及时更新相关的配置或状态.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public interface AIProviderSettingsListener {

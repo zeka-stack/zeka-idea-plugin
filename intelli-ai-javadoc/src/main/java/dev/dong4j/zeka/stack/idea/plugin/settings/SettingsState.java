@@ -23,33 +23,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 
 /**
- * 插件配置状态
+ * JavaDoc AI 设置状态类
+ * <p>
+ * 该类用于管理 JavaDoc AI 插件的各项配置参数, 包括 AI 提供商配置, 支持的语言类型,
+ * 生成选项, 自定义标签配置, 提示模板等. 实现了持久化状态组件接口, 支持配置的保存和加载.
+ * 通过单例模式提供全局访问入口, 用于控制 JavaDoc 生成的行为和外观设置.
  *
- * <p>使用 IntelliJ Platform 的持久化组件机制保存和加载配置。
- * 配置将保存在 IDE 的配置目录中的 JavaDocAI.xml 文件中。
- * 作为插件的核心配置管理类，负责所有用户设置的存储和访问。
- *
- * <p>配置包括：
- * <ul>
- *   <li>AI 服务提供商设置</li>
- *   <li>模型配置</li>
- *   <li>语言支持</li>
- *   <li>高级选项</li>
- *   <li>Prompt 模板配置</li>
- * </ul>
- *
- * <p>设计模式：
- * <ul>
- *   <li>单例模式：通过 getInstance() 获取全局唯一实例</li>
- *   <li>持久化模式：实现 PersistentStateComponent 接口</li>
- *   <li>配置分组：按功能将配置项分组管理</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @see PersistentStateComponent
- * @see State
- * @see Storage
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @State(

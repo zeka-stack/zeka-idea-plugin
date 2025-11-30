@@ -4,12 +4,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderStatusBarWid
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * 状态栏默认服务商控件工厂
+ * AI JavaDoc 状态栏组件工厂类
  * <p>
- * 负责创建 {@link AIJavadocStatusBarWidget} 实例并在插件启动时注册到状态栏。
+ * 该类继承自 AIProviderStatusBarWidgetFactory, 用于创建和管理 AI JavaDoc 相关的状态栏组件.
+ * 负责初始化状态栏组件的适配器, 组件 ID 以及显示名称, 为用户提供 AI 驱动的 JavaDoc 生成和管理功能.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class AIJavadocStatusBarWidgetFactory extends AIProviderStatusBarWidgetFactory {

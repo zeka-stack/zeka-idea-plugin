@@ -8,33 +8,16 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * 文档生成任务
+ * 文档生成任务类
+ * <p>
+ * 用于封装代码文档生成任务的相关信息, 包括待处理的代码元素, 代码内容, 任务类型, 文件路径等.
+ * 该类支持不同类型的任务 (类, 方法, 测试方法, 字段, 接口, 枚举), 并跟踪任务的执行状态.
+ * 提供了任务状态管理, 结果存储和错误信息记录等功能, 是文档自动生成系统的核心任务实体.
  *
- * <p>表示一个需要生成文档的代码元素。
- * 作为任务执行的基本单位，封装了生成文档所需的所有信息。
- *
- * <p>任务生命周期：
- * <ol>
- *   <li>PENDING：任务创建，等待处理</li>
- *   <li>PROCESSING：任务正在处理中</li>
- *   <li>COMPLETED：任务成功完成</li>
- *   <li>FAILED：任务处理失败</li>
- *   <li>SKIPPED：任务被跳过</li>
- * </ol>
- *
- * <p>包含的信息：
- * <ul>
- *   <li>PSI 元素：需要生成文档的代码元素</li>
- *   <li>代码内容：元素的源代码（包含现有注释）</li>
- *   <li>任务类型：决定使用的 Prompt 模板</li>
- *   <li>文件路径：用于进度显示和日志记录</li>
- *   <li>处理状态：任务的当前状态</li>
- *   <li>处理结果：生成的文档内容</li>
- *   <li>错误信息：处理失败时的错误详情</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class DocumentationTask {
@@ -59,27 +42,16 @@ public class DocumentationTask {
     private String errorMessage;
 
     /**
-     * 任务类型
+     * 任务类型枚举
+     * <p>
+     * 定义了系统中不同类型的任务类型, 用于区分和标识各种任务的执行目标,
+     * 包括类任务, 方法任务, 测试方法任务, 字段任务, 接口任务和枚举任务
      *
-     * <p>定义了支持的代码元素类型，用于区分不同的处理逻辑和 Prompt 模板。
-     * 每种类型对应不同的文档生成策略。
-     *
-     * <p>类型说明：
-     * <ul>
-     *   <li>CLASS：普通类</li>
-     *   <li>METHOD：普通方法</li>
-     *   <li>TEST_METHOD：测试方法</li>
-     *   <li>FIELD：字段（成员变量）</li>
-     *   <li>INTERFACE：接口</li>
-     *   <li>ENUM：枚举</li>
-     * </ul>
-     *
-     * <p>使用场景：
-     * <ul>
-     *   <li>选择合适的 Prompt 模板</li>
-     *   <li>决定 AI 服务的处理策略</li>
-     *   <li>UI 显示和日志记录</li>
-     * </ul>
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public enum TaskType {
         /** 用户的唯一标识符，用于身份验证和数据关联 */
@@ -97,27 +69,15 @@ public class DocumentationTask {
     }
 
     /**
-     * 任务状态
+     * 任务状态枚举
+     * <p>
+     * 定义任务执行过程中的各种状态, 包括待处理, 处理中, 已完成, 失败和跳过等状态
      *
-     * <p>定义了任务的生命周期状态，用于跟踪任务的执行进度。
-     * 状态转换遵循严格的顺序，确保任务处理的正确性。
-     *
-     * <p>状态说明：
-     * <ul>
-     *   <li>PENDING：任务已创建，等待处理</li>
-     *   <li>PROCESSING：任务正在处理中</li>
-     *   <li>COMPLETED：任务成功完成</li>
-     *   <li>FAILED：任务处理失败</li>
-     *   <li>SKIPPED：任务被跳过（根据配置）</li>
-     * </ul>
-     *
-     * <p>状态转换：
-     * <ul>
-     *   <li>PENDING → PROCESSING：开始处理任务</li>
-     *   <li>PROCESSING → COMPLETED：任务成功完成</li>
-     *   <li>PROCESSING → FAILED：任务处理失败</li>
-     *   <li>PROCESSING → SKIPPED：任务被跳过</li>
-     * </ul>
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public enum TaskStatus {
         /** 任务状态标识，用于表示当前任务的处理状态 */

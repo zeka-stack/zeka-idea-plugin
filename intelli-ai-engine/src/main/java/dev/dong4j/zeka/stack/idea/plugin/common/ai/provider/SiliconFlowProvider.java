@@ -9,14 +9,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * 提供硅基流 (SiliconFlow)AI 服务的实现类
+ * SiliconFlow AI 服务提供商实现类
  * <p>
- * 该类继承自 AICompatibleProvider, 用于集成和管理硅基流 AI 模型的配置, 参数及运行时设置, 支持多种构造方式以适应不同的使用场景.
- * 主要职责包括初始化 AI 提供者配置, 模型参数及运行时环境, 并支持日志记录和性能模式的配置.
+ * 该类继承自 AICompatibleProvider, 用于实现 SiliconFlow 平台的 AI 服务提供功能,
+ * 负责处理 SiliconFlow 平台的模型配置, 参数设置和运行时环境配置等.
  *
- * @author 未知
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class SiliconFlowProvider extends AICompatibleProvider {

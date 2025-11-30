@@ -12,11 +12,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * 通知工具类
  * <p>
- * 提供统一的通知功能, 用于在项目中展示不同级别的通知信息, 如信息, 警告和错误等.
- * 支持根据不同的任务状态生成对应的通知内容, 并通过指定的项目上下文进行展示.
+ * 提供统一的通知消息处理功能, 支持信息, 警告和错误类型的通知显示,
+ * 主要用于 IntelliAI Changelog 相关的消息通知展示
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class NotificationUtil {

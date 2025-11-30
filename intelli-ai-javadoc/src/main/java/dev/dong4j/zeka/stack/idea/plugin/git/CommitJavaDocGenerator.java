@@ -27,15 +27,15 @@ import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * JavaDoc 生成工具类
+ * Git 提交页面 JavaDoc 生成器
  * <p>
- * 该类用于在 Git 提交时检测并生成缺失的 JavaDoc 注释, 支持对类, 方法和字段的注释生成.
- * 提供了检测 Java 文件中缺失 JavaDoc 的功能, 并在检测完成后提示用户是否生成注释.
- * 支持进度显示和结果通知, 适用于代码提交前的自动化文档生成流程.
+ * 该类负责在 Git 提交页面中检测和生成缺失的 JavaDoc 注释, 提供对 Java 文件中类, 方法, 字段等元素的 JavaDoc 自动生成功能.
+ * 通过分析指定的 Java 文件集合, 检测其中缺少 JavaDoc 的元素, 并提供批量生成 JavaDoc 的交互式操作.
  *
- * @author 作者信息
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

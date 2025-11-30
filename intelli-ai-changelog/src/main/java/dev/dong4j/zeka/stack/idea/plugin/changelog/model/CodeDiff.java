@@ -4,12 +4,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 代码变更信息
+ * 代码差异信息类
  * <p>
- * 用于表示单个文件的代码变更信息，包括变更类型、文件路径、diff 内容等。
+ * 用于表示代码文件的变更信息, 包括文件路径, 变更类型, 新增 / 删除行数以及具体的差异内容.
+ * 该类常用于代码版本对比, 代码审查或变更日志记录等场景.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class CodeDiff {
@@ -52,6 +55,14 @@ public class CodeDiff {
 
     /**
      * 变更类型枚举
+     * <p>
+     * 用于表示文件或对象在系统中发生的变更类型, 包括新增, 删除, 修改, 重命名和移动等操作
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public enum ChangeType {
         /** 新增文件 */

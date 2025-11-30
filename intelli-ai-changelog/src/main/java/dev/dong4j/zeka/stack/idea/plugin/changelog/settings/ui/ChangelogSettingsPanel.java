@@ -39,7 +39,17 @@ import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import lombok.Getter;
 
 /**
- * 插件设置面板 UI
+ * 变更日志设置面板
+ * <p>
+ * 该面板提供了一个用户界面, 用于配置变更日志相关的设置, 包括 AI 提供商选择,
+ * 系统提示模板, 变更日志模板, 日报模板, 周报模板和提交消息模板等高级设置.
+ * 支持动态刷新 AI 提供商配置, 并提供模板重置功能.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class ChangelogSettingsPanel {
 

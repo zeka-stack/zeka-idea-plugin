@@ -12,28 +12,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * ZhipuProvider
+ * 智谱 AI 服务提供商实现类
  * <p>
- * 该类实现了对智谱AI (ChatGLM) AI 模型的兼容性支持, 继承自 {@link AICompatibleProvider}.
- * 通过多种构造函数, 用户可以灵活配置 AIProviderConfig,AIModelParameters,AIRuntimeSettings
- * 以及可选的 AIConsoleLogger 与性能模式开关, 以满足不同场景下的日志记录与性能调优需求.
- * <p>
- * 主要职责:
- * <ul>
- *   <li> 封装智谱AI模型的调用细节, 提供统一的接口给业务层使用.</li>
- *   <li> 支持自定义日志输出, 方便调试与监控.</li>
- *   <li> 可开启性能模式, 优化模型调用的延迟与吞吐量.</li>
- * </ul>
- * <p>
- * 使用场景:
- * <ul>
- *   <li> 需要在项目中集成智谱AI服务时, 直接使用本类实例化并调用.</li>
- *   <li> 在需要对日志进行自定义处理或开启性能优化时, 选择相应的构造函数.</li>
- * </ul>
+ * 该类继承自 AICompatibleProvider, 专门用于集成智谱 AI 服务, 提供智谱 AI 模型的管理和调用功能.
+ * 实现了获取可用模型列表的功能, 支持多种智谱 AI 模型, 包括 glm-4 系列的不同版本和变体.
+ * 该类负责与智谱 AI API 进行交互, 处理模型列表的获取和日志记录等操作.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.01.XX
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class ZhipuProvider extends AICompatibleProvider {

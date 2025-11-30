@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
@@ -21,34 +20,16 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * IntelliAI JavaDoc 插件设置面板
+ * JavaDoc 设置可配置类
+ * <p>
+ * 实现了 SearchableConfigurable 接口, 用于在 IDE 中提供 JavaDoc 生成插件的配置界面.
+ * 该类负责管理 JavaDoc 生成的相关设置, 包括 AI 提供商配置, 生成选项, 提示模板,
+ * 自定义标签等配置项, 并提供配置的验证, 应用和重置功能.
  *
- * <p>提供用户界面来配置插件的各项设置，包括：
- * <ul>
- *   <li>AI 服务提供商选择</li>
- *   <li>模型配置</li>
- *   <li>API 密钥</li>
- *   <li>语言支持</li>
- *   <li>高级选项</li>
- *   <li>Prompt 模板配置</li>
- * </ul>
- *
- * <p>配置界面位于：Settings → Tools → IntelliAI JavaDoc
- *
- * <p>实现 IntelliJ Platform 的 Configurable 接口，
- * 提供标准的设置面板功能：创建组件、检查修改、应用配置、重置配置等。
- *
- * <p>核心功能：
- * <ul>
- *   <li>UI 组件管理</li>
- *   <li>配置变更检测</li>
- *   <li>配置验证和应用</li>
- *   <li>配置重置支持</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @see Configurable
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")

@@ -1,31 +1,35 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
+import lombok.Getter;
+
 /**
  * AI 服务异常类
  * <p>
- * 该类用于封装 AI 服务调用过程中可能出现的异常信息, 包含错误码和错误消息. 支持构建具体的异常信息字符串, 便于统一处理和展示异常.
- * <p>
- * 包含的错误码用于标识不同的异常类型, 如无效 API Key, 网络错误, 超时, 服务不可用等. 根据错误码, 可以判断异常是否可重试.
+ * 用于处理 AI 服务调用过程中可能出现的各种异常情况, 包含详细的错误码分类
+ * 和相应的错误处理逻辑, 支持重试判断和错误信息构建功能
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
+@Getter
 public class AIServiceException extends Exception {
 
-    /** 错误代码 */
+    /** 错误码对象, 用于标识和处理系统中的错误状态 */
     private final ErrorCode errorCode;
 
     /**
      * 错误码枚举
      * <p>
-     * 定义系统中可能出现的各种错误类型, 用于统一错误处理和日志记录.
-     * 每个枚举值代表一个具体的错误类型, 便于在业务逻辑中进行判断和响应.
+     * 定义系统中可能出现的各种错误类型, 包括 API 密钥无效, 网络错误, 超时,
+     * 速率限制, 服务不可用, 响应无效, 配置错误和未知错误等
      *
-     * @author 作者名
+     * @author zeka.stack.team
      * @version 1.0.0
-     * @date 2025.10.24
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
      * @since 1.0.0
      */
     public enum ErrorCode {
@@ -87,15 +91,6 @@ public class AIServiceException extends Exception {
     public AIServiceException(String message, ErrorCode errorCode, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
-    }
-
-    /**
-     * 获取错误码信息
-     *
-     * @return 错误码对象
-     */
-    public ErrorCode getErrorCode() {
-        return errorCode;
     }
 
     /**

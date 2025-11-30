@@ -27,15 +27,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * AI 服务提供商状态栏小部件
+ * AI 服务商状态栏组件
  * <p>
- * 该类用于在 IDE 的状态栏中展示当前 AI 服务提供商的信息, 并提供切换服务商的下拉菜单功能. 支持动态更新状态栏显示内容和图标, 并处理用户选择服务商后的相关操作.
- * <p>
- * 该类继承自 EditorBasedStatusBarPopup, 用于创建和管理状态栏弹出窗口, 支持弹出菜单的创建, 显示和交互.
+ * 该组件用于在 IDE 状态栏中显示当前使用的 AI 服务商信息, 并提供切换服务商的功能.
+ * 继承自 EditorBasedStatusBarPopup, 实现了状态栏弹出菜单和状态显示功能.
+ * 用户可以通过点击状态栏组件来查看可用的 AI 服务商列表并进行切换操作.
  *
- * @author 作者
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

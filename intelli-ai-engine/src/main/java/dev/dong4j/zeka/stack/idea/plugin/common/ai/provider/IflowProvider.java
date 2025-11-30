@@ -25,15 +25,17 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * IFlow 提供者类
+ * Iflow AI 服务提供商实现类
  * <p>
- * 该类继承自 AICompatibleProvider, 用于与 IFlow AI 模型进行交互, 提供模型列表获取, 参数解析等功能.
- * 主要负责从 IFlow 服务中获取可用模型列表, 并根据响应内容解析出模型名称.
- * 适用于集成 IFlow 作为 AI 模型提供者的场景.
+ * 该类继承自 AICompatibleProvider, 专门用于与 Iflow AI 服务进行交互,
+ * 提供模型列表获取, 模型响应解析等核心功能. 支持通过 HTTP 请求获取可用的 AI 模型列表,
+ * 并能够解析 Iflow API 返回的模型数据格式. 该类具备完善的错误处理机制和日志记录功能,
+ * 确保在各种网络环境下都能稳定运行, 并在出现问题时返回默认的模型列表作为备选方案.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.01.XX
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class IflowProvider extends AICompatibleProvider {

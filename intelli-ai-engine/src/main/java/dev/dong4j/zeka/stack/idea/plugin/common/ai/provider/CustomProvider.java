@@ -9,13 +9,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * 自定义 AI 服务提供者类
+ * 自定义 AI 提供者类
  * <p>
- * 该类继承自 AICompatibleProvider, 用于实现特定的 AI 服务提供逻辑. 支持多种构造方式, 可灵活配置 AI 服务参数, 运行时设置以及日志记录功能.
+ * 继承自 AICompatibleProvider, 用于实现自定义的 AI 服务提供者功能,
+ * 通过配置参数, 模型参数, 运行时设置和控制台日志器来初始化自定义 AI 提供者实例
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class CustomProvider extends AICompatibleProvider {

@@ -21,15 +21,17 @@ import java.util.stream.Collectors;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
- * 在插件启动时自动注册自定义的 JavaDoc 标签
+ * 自定义 JavaDoc 标签注册器
  * <p>
- * 这个组件会在 IntelliJ 启动时自动运行，从配置中读取自定义标签列表，
- * 并将这些标签注册到 JavadocDeclarationInspection 中。
- * <p>
- * 支持动态添加和删除标签，当配置变更时会自动同步标签状态。
+ * 该类实现了 StartupActivity 接口, 用于在 IDE 启动时同步自定义的 JavaDoc 标签配置.
+ * 通过反射机制操作 JavadocDeclarationInspection 检查工具, 动态添加或移除自定义的 JavaDoc 标签,
+ * 使 IDE 能够识别和验证项目中使用的自定义 JavaDoc 标签. 主要功能包括: 同步配置的自定义标签,
+ * 解析和管理标签字符串, 以及通过反射操作检查工具的内部字段.
  *
- * @author dong4j
- * @version 1.3.4
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class CustomJavaDocTagRegistrar implements StartupActivity {

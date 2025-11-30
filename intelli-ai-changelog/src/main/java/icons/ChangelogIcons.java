@@ -7,19 +7,14 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.Icon;
 
 /**
- * IntelliAI Changelog 插件图标管理类
+ * 变更日志图标类
  * <p>
- * 用于集中管理插件中使用的所有图标资源。
- * 图标文件应放置在 {@code src/main/resources/icons/} 目录下。
- * <p>
- * 图标尺寸说明：
- * <ul>
- *   <li>16x16 - Toolbar/Action/Menu/ToolWindow（工具栏、动作、菜单、工具窗口）</li>
- *   <li>24x24 - Notifications（通知图标）</li>
- *   <li>32x32 - Dialog/Settings（对话框、设置面板）</li>
- * </ul>
+ * 提供变更日志相关的图标资源, 包含各种日志视图和操作的图标, 如变更日志, 日志, 周报, 日报, 差异对比等图标
  *
- * @author dong4j
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class ChangelogIcons {

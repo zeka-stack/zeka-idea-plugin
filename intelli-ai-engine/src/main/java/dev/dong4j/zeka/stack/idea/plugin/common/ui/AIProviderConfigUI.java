@@ -50,14 +50,17 @@ import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
- * AI 提供者配置 UI 组件管理类
+ * AI 提供商配置 UI 类
  * <p>
- * 负责创建和管理所有 UI 组件，包括连接配置面板、可用服务商面板、基础配置面板、高级设置面板等。
- * 提供 UI 组件的访问接口和辅助方法。
+ * 该类负责创建和管理 AI 服务提供商的配置界面, 包括提供商选择, 模型配置,API 密钥设置,
+ * 连接测试, 可用提供商管理以及高级参数配置等功能. 提供完整的 UI 组件和交互逻辑,
+ * 支持多种 AI 服务提供商的配置和管理.
  *
- * @author dong4j
- * @version 2.0.0
- * @since 2.0.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public final class AIProviderConfigUI {
     /** 主界面主面板, 用于承载主要功能组件和布局 */

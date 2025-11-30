@@ -17,13 +17,16 @@ import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.TokenCounter;
 
 /**
- * AI 请求构建器类
+ * AI 请求构建器
  * <p>
- * 提供构建 AI 聊天请求的功能, 根据项目设置和文档任务生成系统提示和用户提示, 并估算所需 token 数量. 该类为工具类, 所有方法均为静态方法, 不允许实例化.
+ * 该类负责根据设置和文档任务构建 AI 聊天请求, 包括系统提示词和用户提示词的生成,
+ * 并估算请求的 token 数量. 主要用于代码文档自动生成场景, 根据不同类型的代码元素
+ * (类, 接口, 枚举, 字段, 测试方法等) 生成相应的提示词模板.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class AIRequestComposer {

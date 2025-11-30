@@ -18,51 +18,31 @@ import org.jetbrains.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * PSI 元素定位器
- * <p>根据编辑器光标位置智能定位需要生成文档的 PSI 元素
+ * Psi 元素定位器
+ * <p>
+ * 提供在 IDE 编辑器中定位 Java 代码元素 (方法, 字段, 类, 文件) 的功能,
+ * 通过编辑器光标位置来确定当前选中的 Psi 元素类型和位置信息.
+ * 主要用于代码分析, 文档生成等场景中确定当前操作的代码元素.
  *
- * <p>作为插件智能识别功能的核心组件，负责根据用户光标位置
- * 准确识别需要生成文档的代码元素，提供精准的上下文感知。
- *
- * <p>定位优先级：
- * <ol>
- *   <li>方法 (PsiMethod)：光标在方法内部或方法声明上</li>
- *   <li>字段 (PsiField)：光标在字段声明上</li>
- *   <li>类 (PsiClass)：光标在类声明上或类内部</li>
- *   <li>整个文件 (PsiFile)：无法定位到具体元素时</li>
- * </ol>
- *
- * <p>核心功能：
- * <ul>
- *   <li>精确的元素定位算法</li>
- *   <li>智能的上下文识别</li>
- *   <li>类声明行的特殊处理</li>
- *   <li>友好的元素描述生成</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j
 public class PsiElementLocator {
-
     /**
-     * 定位结果
+     * 定位结果记录类
+     * <p>
+     * 用于封装代码元素定位操作的结果, 包含定位到的 Psi 元素, 定位类型以及是否为整个文件的标识
+     * 提供了便捷的方法来判断定位结果的类型 (方法, 字段, 类等)
      *
-     * <p>封装元素定位的结果信息，包含定位到的元素、元素类型
-     * 以及是否需要为整个文件或类生成文档的标志。
-     *
-     * <p>设计考虑：
-     * <ul>
-     *   <li>使用 record 简化代码，提高可读性</li>
-     *   <li>包含完整的定位信息，便于后续处理</li>
-     *   <li>提供便捷的类型检查方法</li>
-     * </ul>
-     *
-     * @param element     定位到的 PSI 元素
-     * @param type        定位类型（方法、字段、类、文件）
-     * @param isWholeFile 是否需要为整个文件生成（类内部时为 true）
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public record LocateResult(PsiElement element, LocateType type, boolean isWholeFile) {
         /**
@@ -155,18 +135,19 @@ public class PsiElementLocator {
     }
 
     /**
-     * 定位类型
+     * 定位类型枚举
+     * <p>
+     * 定义了代码元素的定位类型, 用于标识方法, 字段, 类或文件等不同级别的代码元素
+     * METHOD 表示方法级别的定位
+     * FIELD 表示字段级别的定位
+     * CLASS 表示类级别的定位
+     * FILE 表示文件级别的定位
      *
-     * <p>定义了支持的元素定位类型，用于区分不同的处理逻辑。
-     * 每种类型对应不同的文档生成策略和范围。
-     *
-     * <p>类型说明：
-     * <ul>
-     *   <li>METHOD：方法级别，只处理单个方法</li>
-     *   <li>FIELD：字段级别，只处理单个字段</li>
-     *   <li>CLASS：类级别，可能处理整个类或单个类</li>
-     *   <li>FILE：文件级别，处理整个文件</li>
-     * </ul>
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public enum LocateType {
         /** 方法 */

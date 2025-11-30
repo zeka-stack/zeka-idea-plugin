@@ -22,17 +22,18 @@ import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 为选中的文件/目录生成 JavaDoc
+ * 为文件生成 JavaDoc 的动作类
+ * <p>
+ * 该类继承自 AnAction, 用于在 IntelliJ IDEA 等 IDE 中提供生成 JavaDoc 的功能.
+ * 支持为单个 Java 文件或整个目录中的 Java 文件批量生成 JavaDoc 注释.
+ * 该动作可以处理选中的虚拟文件数组, 自动识别 Java 文件并为其生成相应的 JavaDoc 注释.
+ * 当处理大量文件时, 会显示确认对话框以避免误操作.
  *
- * <p>在项目视图右键菜单中提供，支持：
- * <ul>
- *   <li>单个文件：为该文件生成文档</li>
- *   <li>多个文件：为所有选中的文件生成文档</li>
- *   <li>目录：为目录下所有 Java 文件生成文档</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")
 @Slf4j

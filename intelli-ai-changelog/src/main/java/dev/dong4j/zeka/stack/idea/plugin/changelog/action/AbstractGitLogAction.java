@@ -26,13 +26,15 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import icons.ChangelogIcons;
 
 /**
- * Git Log 相关 Action 的抽象基类
+ * 抽象 Git 日志操作类
  * <p>
- * 提供统一的 update() 方法实现，减少代码重复。
- * 子类只需要提供文本、描述和图标的信息即可。
+ * 提供 Git 日志相关操作的基类实现, 用于在 IDE 中执行与 Git 提交记录相关的动作, 如生成变更日志, 显示结果等.
+ * 该类定义了子类必须实现的抽象方法, 并提供了通用的 UI 更新和操作执行逻辑.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public abstract class AbstractGitLogAction extends AnAction {

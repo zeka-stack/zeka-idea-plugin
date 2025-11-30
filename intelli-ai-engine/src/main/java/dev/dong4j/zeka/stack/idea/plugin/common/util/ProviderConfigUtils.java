@@ -7,16 +7,15 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * 提供与 Provider 配置相关的工具方法
+ * 提供者配置工具类
  * <p>
- * 该类封装了与 Provider 配置相关的实用方法, 主要提供唯一标识生成和配置信息比较功能.
- * <p>
- * generateUniqueId 方法根据给定的 providerId,modelName,apiKey 和 baseUrl 生成一个唯一的 MD5 标识符, 若 MD5 生成失败则使用默认的 hashCode 值.
- * areEqual 方法用于比较两个 Provider 配置是否相等, 通过生成唯一标识符进行比较.
+ * 提供生成唯一标识符和比较配置相等性的工具方法, 用于处理 AI 服务提供者的配置信息
+ * 通过 MD5 哈希算法生成配置的唯一标识, 支持对多个配置参数进行统一处理
  *
- * @author 未知
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class ProviderConfigUtils {

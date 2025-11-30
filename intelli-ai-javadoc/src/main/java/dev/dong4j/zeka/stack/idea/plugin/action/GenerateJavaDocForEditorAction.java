@@ -7,15 +7,15 @@ import org.jetbrains.annotations.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 生成 JavaDoc 编辑器动作
+ * 生成 JavaDoc 编辑器动作类
  * <p>
- * 该类实现了 IDE 中的动作, 用于在编辑器中为当前文件或选中的代码块生成 JavaDoc 注释. 它继承自 {@link AbstractGenerateJavaDocAction}, 并通过 {@code process(e, true)} 触发生成逻辑.
- * <p>
- * 通过 Lombok 的 {@code @Slf4j} 注解提供日志支持, 方便在调试时记录动作执行过程.
+ * 该类继承自 AbstractGenerateJavaDocAction, 用于在编辑器中执行 JavaDoc 生成操作,
+ * 通过 actionPerformed 方法处理用户触发的动作事件, 调用父类的 process 方法进行具体的 JavaDoc 生成处理
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.11.08
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

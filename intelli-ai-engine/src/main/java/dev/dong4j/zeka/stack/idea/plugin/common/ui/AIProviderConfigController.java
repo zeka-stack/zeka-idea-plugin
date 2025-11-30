@@ -34,14 +34,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
- * AI 服务提供商配置控制器类
+ * AI 提供商配置控制器
  * <p>
- * 该类负责管理 AI 服务提供商的配置界面交互逻辑, 包括加载和保存配置, 测试连接, 刷新模型列表, 管理可用提供商等功能. 它与 UI 组件紧密集成, 用于处理用户在配置界面中的操作, 并更新相关配置数据.
+ * 负责管理 AI 服务提供商的配置界面逻辑, 包括提供商类型选择,API 密钥管理, 模型配置,
+ * 连接测试, 模型刷新等功能. 该控制器协调凭证管理器, 响应监听器和 UI 组件, 提供完整的
+ * AI 服务配置管理功能, 支持多种 AI 提供商的配置和管理.
  *
  * @author zeka.stack.team
  * @version 1.0.0
  * @email mailto:zeka.stack@gmail.com
- * @date 2025.11.28
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class AIProviderConfigController {

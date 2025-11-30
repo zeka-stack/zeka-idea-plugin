@@ -9,28 +9,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * QianWenProvider
+ * 通义千问 AI 服务提供者
  * <p>
- * 该类实现了对千问 (QianWen)AI 模型的兼容性支持, 继承自 {@link AICompatibleProvider}.
- * 通过多种构造函数, 用户可以灵活配置 AIProviderConfig,AIModelParameters,AIRuntimeSettings
- * 以及可选的 AIConsoleLogger 与性能模式开关, 以满足不同场景下的日志记录与性能调优需求.
- * <p>
- * 主要职责:
- * <ul>
- *   <li> 封装千问模型的调用细节, 提供统一的接口给业务层使用.</li>
- *   <li> 支持自定义日志输出, 方便调试与监控.</li>
- *   <li> 可开启性能模式, 优化模型调用的延迟与吞吐量.</li>
- * </ul>
- * <p>
- * 使用场景:
- * <ul>
- *   <li> 需要在项目中集成千问 AI 服务时, 直接使用本类实例化并调用.</li>
- *   <li> 在需要对日志进行自定义处理或开启性能优化时, 选择相应的构造函数.</li>
- * </ul>
+ * 继承自 AI 兼容提供者, 专门用于处理通义千问 AI 模型的服务调用和配置管理,
+ * 负责初始化通义千问相关的配置参数, 模型参数和运行时设置
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.11.14
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class QianWenProvider extends AICompatibleProvider {

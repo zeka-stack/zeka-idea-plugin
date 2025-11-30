@@ -10,37 +10,16 @@ import org.jetbrains.annotations.PropertyKey;
 import java.util.function.Supplier;
 
 /**
- * 国际化资源管理类
+ * JavaDoc 国际化资源绑定类
+ * <p>
+ * 继承自 DynamicBundle, 用于管理 JavaDoc 相关的国际化消息资源.
+ * 提供静态方法来获取本地化的消息字符串, 支持参数替换和延迟加载功能.
+ * 该类采用单例模式, 确保资源的统一管理和高效访问.
  *
- * <p>负责加载和管理插件的多语言资源文件。
- * 资源文件位置：src/main/resources/messages.properties
- *
- * <p>作为插件国际化支持的核心组件，提供统一的消息访问接口，
- * 支持运行时动态切换语言环境。
- *
- * <p>支持的语言：
- * <ul>
- *   <li>英文（默认）- messages.properties</li>
- *   <li>简体中文 - messages_zh_CN.properties</li>
- * </ul>
- *
- * <p>设计模式：
- * <ul>
- *   <li>单例模式：通过 INSTANCE 提供全局唯一实例</li>
- *   <li>静态工厂：提供静态方法访问国际化消息</li>
- *   <li>延迟加载：支持消息的延迟加载</li>
- * </ul>
- *
- * <p>使用方法：
- * <pre>
- * String message = JavaDocBundle.message("notification.title");
- * String formatted = JavaDocBundle.message("notification.completion.format", completed, failed, skipped);
- * Supplier<String> messageSupplier = JavaDocBundle.messagePointer("action.generate.javadoc");
- * </pre>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @see DynamicBundle
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class JavaDocBundle extends DynamicBundle {

@@ -22,9 +22,17 @@ import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import icons.AIJicons;
 
 /**
- * AI 提供商状态栏适配器实现
+ * AI 提供商状态栏适配器实现类
  * <p>
- * 将 intelli-ai-javadoc 的配置和资源桥接到通用的状态栏组件。
+ * 该类实现了 AIProviderStatusBarAdapter 接口, 提供 AI 提供商的状态栏相关功能,
+ * 包括当前提供商类型获取, 提供商配置管理, 状态栏图标显示, 消息提示等操作.
+ * 采用单例模式确保全局唯一实例, 统一管理 AI 提供商的切换和配置.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class AIProviderStatusBarAdapterImpl implements AIProviderStatusBarAdapter {
 

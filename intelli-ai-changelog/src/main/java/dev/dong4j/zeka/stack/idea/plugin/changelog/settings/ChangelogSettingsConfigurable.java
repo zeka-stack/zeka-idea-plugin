@@ -13,7 +13,17 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 
 /**
- * 插件设置配置界面
+ * 变更日志设置可配置类
+ * <p>
+ * 实现了 Configurable 接口, 用于管理变更日志相关的设置配置界面.
+ * 提供设置面板的创建, 显示, 应用和重置功能, 以及配置的修改状态检查和资源释放.
+ * 该类主要负责与用户交互, 处理变更日志插件的各种配置选项.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class ChangelogSettingsConfigurable implements Configurable {
 

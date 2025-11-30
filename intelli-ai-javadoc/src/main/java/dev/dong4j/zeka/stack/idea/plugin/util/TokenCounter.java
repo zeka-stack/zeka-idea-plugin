@@ -9,42 +9,17 @@ import java.util.regex.Pattern;
 import lombok.Data;
 
 /**
- * Token 计数工具类
+ * 令牌计数器工具类
  * <p>
- * 用于估算文本的 Token 数量，主要用于 AI API 调用的成本估算和上下文限制检查。
+ * 提供文本令牌估算功能, 支持中英文混合文本的令牌数量计算, 文本分析,
+ * 令牌限制检查, 多文本令牌统计以及基于令牌限制的文本截断等功能.
+ * 该类采用不同的字符类型权重来估算令牌数量, 适用于 AI 模型输入长度控制等场景.
  *
- * <p>计算方法说明：
- * <ul>
- *   <li>精确计算：需要使用特定模型的 tokenizer（如 tiktoken），但需要额外依赖</li>
- *   <li>估算计算：基于统计规律进行估算，误差约 ±20%，无需额外依赖</li>
- * </ul>
- *
- * <p>估算规则（基于 OpenAI GPT 系列模型）：
- * <ul>
- *   <li>英文单词：平均 1.3 token/word</li>
- *   <li>英文字符：平均 4 字符 = 1 token</li>
- *   <li>中文字符：平均 1.5-2 字符 = 1 token</li>
- *   <li>数字和符号：约 4 字符 = 1 token</li>
- *   <li>代码：约 3-4 字符 = 1 token（包含缩进和特殊符号）</li>
- * </ul>
- *
- * <p>使用示例：
- * <pre>{@code
- * // 快速估算
- * int tokens = TokenCounter.estimateTokens("Hello, World!");
- *
- * // 获取详细统计
- * TokenStats stats = TokenCounter.analyze("你好，世界！Hello, World!");
- * System.out.println("估算 tokens: " + stats.getEstimatedTokens());
- * System.out.println("字符数: " + stats.getTotalChars());
- *
- * // 检查是否超过限制
- * boolean exceedsLimit = TokenCounter.exceedsLimit(text, 4096);
- * }</pre>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @since 1.2.1
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public final class TokenCounter {
 
@@ -269,7 +244,16 @@ public final class TokenCounter {
     }
 
     /**
-     * Token 统计信息
+     * Token 统计信息类
+     * <p>
+     * 用于统计文本的 Token 相关信息, 包括估算的 Token 数量, 字符统计, 中英文占比, 代码符号识别等
+     * 提供了计算平均每行 Token 数, 中文占比以及判断是否为代码等辅助方法
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     @Data
     public static class TokenStats {

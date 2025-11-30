@@ -9,14 +9,17 @@ import java.util.List;
 import lombok.Getter;
 
 /**
- * AIProviderType 枚举
+ * AI 服务提供商类型枚举
  * <p>
- * 定义了系统支持的 AI 服务提供商类型, 并为每个提供商提供了默认的基础 URL, 模型, 是否需要 API Key, 是否可编辑基础 URL 以及支持的模型列表等配置信息.
- * 该枚举可用于统一管理不同 AI 提供商的配置, 方便在调用时根据 providerId 或 displayName 进行快速查找和配置.
+ * 定义了系统支持的各种 AI 服务提供商类型, 包括自定义 API, 通义千问, 硅基流动,Ollama,
+ * LM Studio,ModelScope,IFlow, 智谱 AI 等. 每个枚举值包含提供商的标识符, 显示名称,
+ * 默认 API 基础 URL, 默认模型,API 密钥要求, 基础 URL 可编辑性以及支持的模型列表等信息.
+ * 提供了根据提供商 ID 或显示名称查找枚举值的静态方法, 以及获取所有提供商 ID 和显示名称的工具方法.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.11.14
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public enum AIProviderType {

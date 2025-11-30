@@ -27,12 +27,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * ModelScopeProvider
+ * ModelScope 提供商实现类
  * <p>
- * 针对 ModelScope Dolphin 接口的实现, 重写模型列表获取逻辑, 以满足固定请求体与响应结构的解析需求.
+ * 该类继承自 AICompatibleProvider, 专门用于与 ModelScope 平台进行集成,
+ * 提供模型列表获取功能. 通过并发请求多个页面数据来获取可用的 AI 模型列表,
+ * 支持分页查询和结果合并, 确保能够获取到完整的模型信息.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class ModelScopeProvider extends AICompatibleProvider {

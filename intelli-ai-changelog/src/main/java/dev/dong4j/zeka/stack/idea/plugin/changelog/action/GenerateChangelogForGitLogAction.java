@@ -10,9 +10,15 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import icons.ChangelogIcons;
 
 /**
- * Git Log 工具窗口中生成 Changelog 的 Action
+ * 用于从 Git 日志生成变更日志的 Action 类
  * <p>
- * 在 Git Log 工具窗口中，用户可以选择多条提交记录，然后右键选择此 Action 生成 Changelog
+ * 该类继承自 AbstractGitLogAction, 主要负责生成基于 Git 提交记录的变更日志内容, 适用于集成到 IDE 或构建工具中, 用于自动化生成项目变更记录.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class GenerateChangelogForGitLogAction extends AbstractGitLogAction {
 

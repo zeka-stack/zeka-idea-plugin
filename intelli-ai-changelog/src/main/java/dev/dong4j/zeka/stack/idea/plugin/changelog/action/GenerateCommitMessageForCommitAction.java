@@ -19,19 +19,15 @@ import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Git 提交工具栏中的提交记录生成操作
+ * 用于生成 Git 提交信息的 Action 类
  * <p>
- * 在 Git 提交工具栏中添加一个按钮，允许用户根据代码变更（diff）生成提交记录。
+ * 该类继承自 AnAction, 主要负责在 Git 提交页面中检测是否有文件变更, 并根据变更内容生成合适的提交信息.
+ * 适用于集成在 IDE 中的 Git 提交流程, 提供自动化提交信息生成功能.
  *
- * <p>功能特性：
- * <ul>
- *   <li>仅在提交面板打开时显示</li>
- *   <li>仅在存在代码变更时可用</li>
- *   <li>基于代码实际改动生成提交记录</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

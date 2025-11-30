@@ -6,14 +6,16 @@ import org.jetbrains.annotations.Nullable;
 import lombok.Getter;
 
 /**
- * 验证结果封装类
+ * 验证结果类
  * <p>
- * 用于封装验证操作的结果信息, 包括验证是否成功, 提示信息, 详细错误信息以及异常对象.
- * 该类提供多种静态方法用于创建成功或失败的验证结果对象, 适用于数据校验, 业务规则验证等场景.
+ * 用于封装验证操作的结果信息, 包括验证是否成功, 消息内容, 错误详情和异常信息.
+ * 提供了多种静态工厂方法来创建成功或失败的验证结果实例, 支持不同的错误信息组合.
+ * 该类是不可变的, 一旦创建就不能修改其状态.
  *
- * @author 未知
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class ValidationResult {

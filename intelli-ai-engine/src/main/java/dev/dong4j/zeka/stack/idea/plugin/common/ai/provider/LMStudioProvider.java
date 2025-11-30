@@ -9,14 +9,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * LMStudio 服务提供者类
+ * LMStudio AI 提供商实现类
  * <p>
- * 该类用于封装 LMStudio 模型的调用逻辑, 实现与 AI 兼容接口的对接, 支持模型参数配置, 运行时设置以及日志输出等功能.
- * 提供了多种构造方法以适应不同的使用场景, 包括是否启用性能模式等高级配置.
+ * 该类继承自 AICompatibleProvider, 专门用于集成 LMStudio AI 模型服务,
+ * 提供与 LMStudio 兼容的 AI 模型调用功能, 支持模型参数配置和运行时设置
  *
- * @author 作者名
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class LMStudioProvider extends AICompatibleProvider {

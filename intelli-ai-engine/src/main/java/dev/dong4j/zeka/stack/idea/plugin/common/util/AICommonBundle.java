@@ -10,14 +10,15 @@ import org.jetbrains.annotations.PropertyKey;
 import java.util.function.Supplier;
 
 /**
- * AI 通用消息资源包类
+ * AI 通用资源包类
  * <p>
- * 该类用于封装和提供 AI 相关的通用消息资源, 支持根据键获取对应的本地化消息字符串, 以及获取延迟加载的消息 Supplier 对象.
- * 继承自 DynamicBundle, 用于动态加载资源文件中的消息内容.
+ * 继承自 DynamicBundle, 用于管理 AI 相关的国际化消息资源. 该类提供静态方法来获取本地化消息,
+ * 支持参数化消息格式化, 并提供延迟加载消息的功能. 主要用于 AI 功能模块的多语言支持.
  *
- * @author 作者信息未提供
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class AICommonBundle extends DynamicBundle {
@@ -26,8 +27,6 @@ public final class AICommonBundle extends DynamicBundle {
      * 资源包名称
      * <p>
      * 用于加载国际化消息的资源文件
-     *
-     * @see com.intellij.l10n.Bundle
      */
     @NonNls
     private static final String BUNDLE = "messages.AICommonBundle";
@@ -54,7 +53,6 @@ public final class AICommonBundle extends DynamicBundle {
      * @param key    资源键, 用于标识特定的消息
      * @param params 可变参数, 用于替换消息中的占位符
      * @return 本地化的消息字符串
-     * @throws MissingResourceException 如果找不到对应的资源键
      * @since 1.0
      */
     @NotNull

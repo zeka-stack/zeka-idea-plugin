@@ -28,30 +28,15 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor;
 
 /**
- * 任务收集器
+ * 任务收集器类
+ * <p>
+ * 负责从 PSI 元素中收集文档生成任务, 支持从方法, 字段, 类, 文件和目录等多个维度收集需要生成文档的任务.
+ * 根据设置状态判断是否为元素生成文档, 并支持过滤已存在文档的元素.
  *
- * <p>从文件、目录中收集需要生成文档的代码元素。
- * 作为文档生成流程的第一步，负责识别和收集所有需要处理的代码元素，
- * 并根据用户配置和代码状态创建相应的文档生成任务。
- *
- * <p>核心功能：
- * <ul>
- *   <li>从不同来源收集任务（元素、文件、目录）</li>
- *   <li>根据配置过滤需要处理的元素</li>
- *   <li>创建 DocumentationTask 对象</li>
- *   <li>支持递归处理内部类和目录结构</li>
- * </ul>
- *
- * <p>收集策略：
- * <ul>
- *   <li>单个元素：只处理指定的元素</li>
- *   <li>类：处理类及其所有成员</li>
- *   <li>文件：处理文件中的所有类、方法、字段</li>
- *   <li>目录：递归处理目录中的所有 Java 文件</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class TaskCollector {

@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.Icon;
 
 /**
- * IntelliAI JavaDoc 插件图标管理类
+ * AIJ 图标工具类
  * <p>
  * 用于集中管理插件中使用的所有图标资源。
  * 图标文件应放置在 {@code src/main/resources/icons/} 目录下。
@@ -19,7 +19,10 @@ import javax.swing.Icon;
  *   <li>32x32 - Dialog/Settings（对话框、设置面板）</li>
  * </ul>
  *
- * @author dong4j
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class AIJicons {

@@ -23,28 +23,18 @@ import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * JavaDoc 生成动作的抽象基类
+ * 抽象 JavaDoc 生成动作类
+ * <p>
+ * 该类继承自 AnAction, 提供 JavaDoc 生成的核心功能实现. 主要负责处理 IDE 中的 JavaDoc 生成请求,
+ * 包括获取当前项目, 文件和编辑器信息, 定位需要生成 JavaDoc 的元素, 并执行具体的生成任务.
+ * 支持在编辑器中定位到具体元素进行 JavaDoc 生成, 也支持对整个文件进行 JavaDoc 生成.
+ * 该类采用模板方法模式, 定义了 JavaDoc 生成的通用流程, 具体的生成逻辑由子类实现.
  *
- * <p>提供统一的文档生成逻辑，减少代码重复。
- * 子类可以根据不同的入口点（右键菜单、快捷键、Intention 等）实现特定的行为。
- *
- * <p>核心功能：
- * <ul>
- *   <li>统一的文档生成流程</li>
- *   <li>智能元素定位（有 editor 时）</li>
- *   <li>文件级别处理（无 editor 时）</li>
- *   <li>任务收集和文档生成</li>
- * </ul>
- *
- * <p>处理策略：
- * <ul>
- *   <li>有 editor：根据光标位置智能定位元素，使用 collectFromElement</li>
- *   <li>无 editor：处理整个文件，使用 collectFromFile</li>
- * </ul>
- *
- * @author dong4j
- * @version 1.4.0
- * @since 1.4.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 @Slf4j
 public abstract class AbstractGenerateJavaDocAction extends AnAction {

@@ -13,13 +13,14 @@ import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
 /**
  * Maven 缓存清理监听器
  * <p>
- * 监听项目关闭事件，自动清理 Maven 版本号缓存，避免内存泄漏。
- * <p>
- * 在启动活动中注册为全局监听器。
+ * 该监听器实现了启动活动和项目管理器监听器接口, 负责在项目关闭时清理 Maven 缓存,
+ * 确保项目资源的正确释放和缓存的一致性. 采用单例模式确保监听器只注册一次.
  *
- * @author dong4j
- * @version 2.0.0
- * @since 2.0.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class MavenCacheCleanupListener implements StartupActivity, ProjectManagerListener {
 

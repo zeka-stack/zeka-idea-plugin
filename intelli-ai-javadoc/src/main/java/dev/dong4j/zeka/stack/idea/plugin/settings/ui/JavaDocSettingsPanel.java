@@ -53,12 +53,18 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * JavaDoc 设置面板 UI
+ * JavaDoc 设置面板类
+ * <p>
+ * 提供 JavaDoc 生成工具的配置界面, 允许用户配置 AI 提供商, 生成规则, 语言支持,
+ * 代码压缩, 性能模式等各项设置. 该面板包含多个功能区域, 如 AI 提供商选择,
+ * 生成规则配置, 自定义 JavaDoc 标签管理, 高级提示模板设置等.
+ * 支持 Java 和 Kotlin 语言, 提供中文英文间距调整, 中文标点替换等本地化功能.
  *
- * <p>构建设置界面的所有 UI 组件。
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class JavaDocSettingsPanel {
 
@@ -1301,7 +1307,17 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 自定义 JavaDoc 标签列表的表格模型
+     * 自定义 JavaDoc 标签表格模型
+     * <p>
+     * 该模型用于管理自定义 JavaDoc 标签的数据, 继承自 AbstractTableModel,
+     * 提供了对自定义标签的增删改查操作, 支持表格界面的数据展示和编辑功能.
+     * 主要用于 JavaDoc 设置界面中自定义标签的管理, 包括标签名称和默认值的配置.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
         /**

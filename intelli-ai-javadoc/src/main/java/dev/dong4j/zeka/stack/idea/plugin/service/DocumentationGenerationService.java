@@ -22,11 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 文档生成服务类
  * <p>
- * 提供文档生成相关的业务逻辑处理, 包括任务执行, 进度管理, 错误通知等功能. 该类主要负责协调文档生成流程, 调用任务执行器处理具体任务, 并在生成完成后通知用户结果.
+ * 负责处理项目中文档的生成任务, 提供异步的文档生成功能, 支持进度监控和完成回调.
+ * 该服务类主要用于 IDE 环境中的文档自动生成, 能够处理多个文档任务并提供进度反馈.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

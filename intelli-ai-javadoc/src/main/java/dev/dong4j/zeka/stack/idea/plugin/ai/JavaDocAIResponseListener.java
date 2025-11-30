@@ -8,9 +8,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 
 /**
- * IntelliAI JavaDoc 的 AI 响应监听器实现
+ * JavaDoc AI 响应监听器
  * <p>
- * 将 AI 响应事件转换为控制台日志输出
+ * 实现 AI 响应监听器接口, 用于监听和处理 AI 服务的请求, 响应和使用情况,
+ * 支持详细日志记录功能, 可以输出请求和响应的详细信息以及 Token 使用情况
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class JavaDocAIResponseListener implements AIResponseListener {
 

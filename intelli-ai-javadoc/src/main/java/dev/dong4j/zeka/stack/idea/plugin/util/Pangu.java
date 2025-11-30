@@ -10,27 +10,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Pangu
+ * 盘古类 - 中英文混排格式化工具
  * <p>
- * 该类实现了在中文（CJK）字符与英文、数字、标点符号之间自动插入空格的功能，解决中英文混排时缺少空格导致阅读不便的问题。<br>
- * 通过预编译的正则表达式，Pangu 能够识别并处理以下几种情况：<br>
- * <ul>
- *   <li>中英文、数字、符号之间的空格缺失（如「Hello世界」→「Hello 世界」）</li>
- *   <li>引号、括号、井号等符号与中英文字符之间的空格问题（如「(Hello世界)」→「( Hello 世界 )」）</li>
- *   <li>多余空格的修复（如「'  Hello  '」→「'Hello'」）</li>
- * </ul>
- * <p>
- * 主要提供两种使用方式：
- * <ol>
- *   <li>{@link #spacingText(String)}：对单行字符串进行空格插入处理。</li>
- *   <li>{@link #spacingFile(java.io.File, java.io.File)}：对文件逐行读取并写入处理后的内容，适用于批量文本文件的格式化。</li>
- * </ol>
- * <p>
- * 该工具类不维护任何状态，所有方法均为实例方法，使用时可直接创建 {@code new Pangu()} 或将其改为静态方法以便更方便调用。
+ * 该类提供中英文混排文本的自动格式化功能, 通过在中文字符与英文 / 数字 / 符号之间添加适当的空格,
+ * 以及处理引号, 括号, 井号等特殊符号的间距, 使中英文混排文本更加美观易读.
+ * 主要包含文本间距调整和文件批量处理两种功能.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @SuppressWarnings("all")

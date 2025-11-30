@@ -18,13 +18,16 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 提交记录生成器
+ * 提交消息生成器
  * <p>
- * 用于在 Git 提交时根据代码变更（diff）生成提交记录。
- * 参考 CommitJavaDocGenerator 的实现方式。
+ * 负责为代码变更生成符合规范的 Git 提交消息. 该类通过分析代码变更内容,
+ * 利用 AI 服务生成描述性的提交消息, 并提供用户界面供用户确认和编辑.
+ * 主要用于在 Git 提交页面中自动生提交消息, 提升开发效率.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

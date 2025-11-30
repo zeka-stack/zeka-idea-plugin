@@ -13,8 +13,21 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * 插件设置状态管理
- * 使用 @State 注解自动持久化配置
+ * 变更日志插件设置状态类
+ * <p>
+ * 该类用于管理变更日志插件的各种配置设置, 包括 AI 提供者配置, 系统提示,
+ * 变更日志模板, 日报模板, 周报模板和提交消息模板等. 实现了持久化状态组件,
+ * 可以将配置保存到 XML 文件中并在应用重启后恢复.
+ * <p>
+ * 该类采用单例模式, 通过 getInstance() 方法获取全局唯一的实例.
+ * 提供了默认的模板内容, 包括变更日志生成模板, 日报生成模板,
+ * 周报生成模板和提交消息生成模板, 用于指导 AI 生成相应的内容.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 @State(
         name = "ChangelogPluginSettings",

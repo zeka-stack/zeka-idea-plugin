@@ -9,12 +9,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
 
 /**
- * IntelliAI Engine 全局设置面板
+ * AI 通用设置面板类
  * <p>
- * 用于配置全局 AI 提供商设置，包括可用供应商列表、模型参数、运行时设置等。
+ * 该类提供 AI 服务的通用配置界面, 封装了 AI 提供者的配置面板功能,
+ * 包括设置的加载, 保存, 修改状态检测等操作, 用于在 IDE 中配置 AI 相关参数
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class AICommonSettingsPanel {
 

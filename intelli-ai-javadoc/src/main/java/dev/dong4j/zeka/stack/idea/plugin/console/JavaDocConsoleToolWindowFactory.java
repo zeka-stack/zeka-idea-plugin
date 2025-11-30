@@ -11,12 +11,15 @@ import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * IntelliAI JavaDoc Console 工具窗口工厂
+ * JavaDoc 控制台工具窗口工厂类
  * <p>
- * 负责创建和初始化 Console 工具窗口，在 IDE 底部显示 AI 接口的请求和响应日志。
+ * 该类实现了 ToolWindowFactory 和 DumbAware 接口, 用于创建和初始化 JavaDoc 控制台工具窗口.
+ * 负责在 IDE 中创建专门用于显示 JavaDoc 相关输出的控制台窗口, 并初始化欢迎消息.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class JavaDocConsoleToolWindowFactory implements ToolWindowFactory, DumbAware {

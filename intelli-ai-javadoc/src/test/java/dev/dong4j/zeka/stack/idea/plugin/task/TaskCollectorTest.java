@@ -41,7 +41,7 @@ import static org.mockito.Mockito.withSettings;
  * 包括对方法、测试方法、字段、类等元素的收集逻辑进行测试，同时验证配置参数对任务生成的影响。
  * 还测试了跳过已有文档、文件类型判断、目录处理等场景。
  *
- * @author 作者名
+ * @author dong4j
  * @version 1.0.0
  * @date 2025.10.24
  * @since 1.0.0

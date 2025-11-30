@@ -12,14 +12,17 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * AI 提供者配置面板（门面类）
+ * AI 提供商配置面板类
  * <p>
- * 作为门面类，协调 UI 组件和业务逻辑控制器，提供统一的公共 API。
- * 负责设置事件监听器，将 UI 事件委托给 Controller 处理。
+ * 该类提供了一个完整的 AI 服务提供商配置界面, 用于管理 AI 服务提供商的连接配置,
+ * API 密钥管理, 可用提供商列表以及高级设置等功能. 通过该面板用户可以配置
+ * 不同的 AI 服务提供商, 测试连接, 刷新模型列表等操作.
  *
- * @author dong4j
- * @version 2.0.0
- * @since 2.0.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 @SuppressWarnings("D")
 public final class AIProviderConfigPanel {

@@ -33,9 +33,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 
 /**
- * Changelog 生成服务
+ * 变更日志服务类
  * <p>
- * 负责从 Git 提交记录生成 Changelog
+ * 提供基于 Git 提交记录生成变更日志, 日报, 周报以及根据代码 diff 生成提交信息的功能. 该类负责从项目仓库中读取提交信息, 并通过 AI 服务生成结构化和自然语言的变更内容.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 @Service(Service.Level.PROJECT)
 public final class ChangelogService {
@@ -453,7 +459,15 @@ public final class ChangelogService {
     }
 
     /**
-     * 提交信息
+     * 提供提交信息的不可变记录类
+     * <p>
+     * 用于封装 Git 提交的相关信息, 包括提交哈希, 简短信息, 完整信息, 提交日期和作者等字段
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     private record CommitInfo(String hash, String shortMessage, String fullMessage, Date date, String author) {
     }

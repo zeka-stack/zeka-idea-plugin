@@ -8,11 +8,13 @@ import org.jetbrains.annotations.Nullable;
 /**
  * AI 控制台日志提供者接口
  * <p>
- * 用于让插件注册自己的控制台日志实现，供 intelli-ai-engine 使用。
- * 插件需要实现此接口，并在 plugin.xml 中注册为扩展点。
+ * 定义获取 AI 控制台日志记录器的方法, 用于为指定项目提供控制台日志记录功能
+ * 该接口主要用于获取与特定项目关联的 AI 控制台日志记录器实例
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public interface AIConsoleLoggerProvider {

@@ -18,13 +18,14 @@ import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Git Log 工具窗口中生成提交记录的 Action
+ * 用于从 Git 日志生成提交信息的操作类
  * <p>
- * 在 Git Log 工具窗口中，用户可以选择提交记录，然后右键选择此 Action 生成提交记录。
- * 注意：这个功能需要从已提交的 commit 中获取 diff，实现相对复杂，MVP 版本可以先提示用户。
+ * 该类继承自 AbstractGitLogAction, 负责处理从 Git 日志中生成提交信息的逻辑, 包括获取项目上下文, 验证日志数据, 检查选中的提交记录, 并显示相关信息通知.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

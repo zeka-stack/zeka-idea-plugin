@@ -19,16 +19,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
- * AI 服务提供商配置类（应用级服务）
+ * AI 提供商设置类
  * <p>
- * 用于存储和管理 AI 服务提供商的相关配置信息, 包括可用提供商, 模型参数, 运行时参数等.
- * 作为应用级服务，所有插件共享同一份全局配置。
- * <p>
- * 注意：全局配置不维护"默认供应商"，每个插件维护自己的默认供应商选择。
+ * 管理 AI 服务提供商的配置信息, 包括默认提供商配置, 可用提供商列表, 模型参数设置和运行时设置等.
+ * 该类实现了持久化状态组件, 能够保存和加载 AI 提供商的配置状态, 并提供监听器机制来通知配置变更.
+ * 支持多种 AI 提供商类型, 提供配置的增删改查操作, 以及配置验证和复制功能.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @State(

@@ -13,12 +13,17 @@ import javax.swing.JComponent;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * IntelliAI Engine 全局设置配置页面
+ * AI 通用设置可配置类
  * <p>
- * 提供全局 AI 提供商配置界面，位于 Settings → Tools → IntelliAI Engine
+ * 实现了 SearchableConfigurable 接口, 用于在 IDE 中提供 AI 通用设置的配置界面.
+ * 该类负责创建和管理 AI 设置面板, 处理设置的保存, 重置和应用等操作.
+ * 主要功能包括显示 IntelliAI 引擎的通用配置选项, 管理 AI 提供者的设置参数.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class AICommonSettingsConfigurable implements SearchableConfigurable {
 

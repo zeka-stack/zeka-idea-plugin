@@ -25,15 +25,16 @@ import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 生成 JavaDoc 意图操作类
+ * 生成 JavaDoc 意图动作类
  * <p>
- * 该类用于在 IDE 中提供一个意图操作, 允许用户快速生成 JavaDoc 注释. 支持对 Java 文件中的 PsiDocCommentOwner 元素进行 JavaDoc 生成操作, 包括覆盖已有注释或仅在没有注释时生成.
- * <p>
- * 该类继承自 PsiElementBaseIntentionAction 并实现了 Iconable 接口, 用于在 IDE 中展示该意图操作的图标和文本.
+ * 该类实现了 IDEA 插件中的意图动作功能, 用于为 Java 代码元素生成 JavaDoc 注释.
+ * 继承自 PsiElementBaseIntentionAction 并实现 Iconable 接口, 提供在 IDE 中通过意图操作快速生成 JavaDoc 的功能.
+ * 该动作会在编辑器中选中的代码元素上生成标准的 JavaDoc 注释, 支持类, 方法, 字段等 Java 元素的文档注释生成.
  *
- * @author 作者信息
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j

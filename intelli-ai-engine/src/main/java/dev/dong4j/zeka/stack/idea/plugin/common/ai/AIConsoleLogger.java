@@ -5,13 +5,15 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 控制台日志记录接口
+ * AI 控制台日志记录器接口
  * <p>
- * 提供多种日志输出方法, 支持带时间戳, 成功信息, 警告信息, 错误信息以及超链接的日志打印, 适用于在控制台或 IDE 控制台中展示不同类型的日志信息, 增强日志的可读性和可交互性.
+ * 定义了 AI 相关控制台日志输出的统一接口规范, 提供多种日志输出方式,
+ * 包括普通消息, 带时间戳消息, 成功 / 警告 / 错误消息以及超链接格式的日志输出
  *
- * @author 未知
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public interface AIConsoleLogger {

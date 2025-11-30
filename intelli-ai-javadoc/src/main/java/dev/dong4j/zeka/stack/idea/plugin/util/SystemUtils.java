@@ -11,12 +11,14 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 系统工具类
  * <p>
- * 提供与操作系统和环境相关的静态工具方法, 用于获取系统属性, 判断操作系统类型等.
- * 包含获取用户目录, 用户名称, 系统名称等系统信息的方法, 并支持通过枚举方式判断当前操作系统是否为 Linux,Mac 或 Windows.
+ * 提供系统相关的工具方法, 包括获取系统属性, 判断操作系统类型等功能.
+ * 该类封装了常用的系统环境变量获取逻辑, 支持从环境变量, 系统属性和配置文件中获取值.
+ * 同时提供了便捷的操作系统类型判断方法, 支持 Linux,Mac 和 Windows 系统的识别.
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @Slf4j
@@ -95,12 +97,12 @@ public class SystemUtils {
     /**
      * 操作系统类型枚举
      * <p>
-     * 用于表示不同的操作系统类型, 包含 Linux,Mac 和 Windows 三种常见操作系统类型.
-     * 该枚举常用于系统兼容性判断, 环境配置识别等场景.
+     * 定义了支持的操作系统类型, 包括 Linux,Mac 和 Windows 三种主要操作系统平台
      *
-     * @author dong4j
+     * @author zeka.stack.team
      * @version 1.0.0
-     * @date 2025.10.24
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
      * @since 1.0.0
      */
     public enum OsType {

@@ -3,12 +3,13 @@ package dev.dong4j.zeka.stack.idea.plugin.common.config;
 /**
  * AI 模型参数配置类
  * <p>
- * 用于封装与 AI 语言模型交互时的关键参数, 包括温度, 最大 token 数量,top-p,top-k 以及存在惩罚等.
- * 该类提供了一个 {@link #copy()} 方法, 支持创建当前参数实例的深拷贝, 便于在不同上下文中复用或修改参数而不影响原实例.
+ * 用于配置 AI 模型的各种参数, 包括温度, 最大令牌数,topP,topK 和存在惩罚等参数
+ * 提供参数复制功能, 支持创建参数对象的副本
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.11.14
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class AIModelParameters {

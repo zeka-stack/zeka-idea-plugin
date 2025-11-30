@@ -3,25 +3,16 @@ package dev.dong4j.zeka.stack.idea.plugin.util;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * JavaDoc 文本格式化工具类
+ * JavaDoc 格式化工具类
+ * <p>
+ * 提供 JavaDoc 注释的格式化功能, 包括中文标点符号替换和中英文间空格添加,
+ * 用于规范化 JavaDoc 注释的格式, 提升代码文档的可读性和一致性
  *
- * <p>用于格式化 AI 生成的 JavaDoc 注释，提升可读性和规范性。
- *
- * <p>主要功能：
- * <ul>
- *   <li>在中英文之间添加空格，提升可读性</li>
- *   <li>将中文标点符号替换为英文标点符号</li>
- * </ul>
- *
- * <p>使用示例：
- * <pre>
- * String formatted = JavaDocFormatter.format("这是一个User类，用于处理用户数据。");
- * // 结果: "这是一个 User 类, 用于处理用户数据."
- * </pre>
- *
- * @author dong4j
- * @version 1.4.0
- * @since 1.4.0
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public final class JavaDocFormatter {
     /**

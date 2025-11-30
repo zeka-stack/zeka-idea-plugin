@@ -4,23 +4,14 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * AI 代码预处理器
+ * <p>
+ * 提供代码预处理功能, 用于清理和格式化源代码, 包括移除注释,
+ * 消除多余空格, 标准化缩进等操作, 为 AI 代码分析和处理提供标准化的代码输入
  *
- * <p>处理 Java 源码，用于 AI 注释生成：
- * <ul>
- *   <li>删除所有注释</li>
- *   <li>删除多余空格和空行</li>
- *   <li>缩进压缩到最小层级（每层 1 个空格）</li>
- * </ul>
- *
- * <p>设计目标：
- * <ul>
- *   <li>减少 token 使用量</li>
- *   <li>保持代码层级关系，避免 AI 理解错误</li>
- *   <li>确保代码结构清晰可读</li>
- * </ul>
- *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class AiCodePreprocessor {

@@ -14,29 +14,32 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Maven 工具类
  * <p>
- * 提供与 Maven 项目相关的实用功能, 主要负责从项目中提取版本信息并进行处理, 适用于需要动态获取或修改 Maven 项目版本号的场景.
- * <p>
- * 版本号查询使用缓存机制，避免在批量任务中重复查询。缓存基于 pom.xml 文件的修改时间自动失效。
+ * 提供 Maven 项目相关的工具方法, 主要用于获取 Maven 项目的版本信息,POM 文件操作以及版本缓存管理.
+ * 该类采用单例模式, 通过静态方法提供服务, 包含版本查询, 缓存同步, 缓存清理等功能.
+ * 使用读写锁机制确保线程安全, 避免重复查询 Maven 项目版本信息, 提高性能.
  *
- * @author dong4j
- * @version 0.0.1
- * @email "mailto:dong4j@gmail.com"
- * @date 2020.05.13
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class MavenUtil {
     private MavenUtil() {}
 
     /**
-     * 版本号缓存条目
+     * 版本缓存条目记录类
      * <p>
-     * 存储缓存的版本号、pom.xml 文件和文件最后修改时间。
+     * 用于存储版本信息,POM 文件引用和最后修改时间的不可变数据载体,
+     * 主要用于缓存版本相关的文件信息, 提高文件访问效率
      *
-     * @param version      缓存的版本号
-     * @param pomFile      pom.xml 文件
-     * @param lastModified 文件最后修改时间
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
-        private record VersionCacheEntry(String version, VirtualFile pomFile, long lastModified) {
+    private record VersionCacheEntry(String version, VirtualFile pomFile, long lastModified) {
     }
 
     /**

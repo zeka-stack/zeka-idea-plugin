@@ -3,20 +3,13 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 /**
  * AI 响应监听器接口
  * <p>
- * 该接口定义了在 AI 服务请求, 响应以及使用量统计过程中的回调方法. 实现类可以通过覆盖这些默认方法来接收并处理相应事件, 例如记录日志, 更新 UI 或进行业务逻辑处理.
- * <p>
- * 典型使用场景:
- * <ul>
- *   <li>在调用第三方 AI 提供商 (如 OpenAI,Azure AI 等) 时, 捕获请求与响应信息.</li>
- *   <li>统计 token 使用量, 用于计费或监控.</li>
- *   <li>实现统一的错误处理或重试机制.</li>
- * </ul>
- * <p>
- * 该接口采用 Observer(观察者)模式, 允许多处注册监听器并在事件发生时统一通知.
+ * 用于监听 AI 服务的请求, 响应和使用情况, 提供默认的空实现方法,
+ * 实现类可以选择性地重写需要的方法来处理特定的事件回调
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.11.14
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public interface AIResponseListener {

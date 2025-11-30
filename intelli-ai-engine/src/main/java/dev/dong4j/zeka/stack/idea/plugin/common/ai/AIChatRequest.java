@@ -5,12 +5,13 @@ import org.jetbrains.annotations.NotNull;
 /**
  * AI 聊天请求记录类
  * <p>
- * 用于封装 AI 聊天请求的相关参数, 包括系统提示语, 用户提示语以及预估的提示词令牌数.
- * 该类提供了构造方法, 用于初始化请求对象, 支持通过系统提示语和用户提示语创建实例, 并默认设置提示词令牌数为 0.
+ * 用于封装 AI 聊天的请求参数, 包括系统提示词, 用户提示词和提示词 token 预估数量
+ * 该记录类提供了创建 AI 聊天请求的标准化数据结构
  *
- * @author 作者名
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public record AIChatRequest(@NotNull String systemPrompt,

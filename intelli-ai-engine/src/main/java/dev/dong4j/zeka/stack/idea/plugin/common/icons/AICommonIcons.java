@@ -11,15 +11,15 @@ import javax.swing.Icon;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
- * AI 常用图标工具类
+ * AI 通用图标类
  * <p>
- * 提供 AI 服务提供商相关的图标资源加载和获取功能, 包含不同尺寸的图标资源, 支持根据 AIProviderType 获取对应的图标.
- * <p>
- * 该类通过静态方法加载图标资源, 并提供两个方法用于根据 AIProviderType 获取对应图标, 分别对应常规尺寸和 64 像素尺寸的图标.
+ * 提供 AI 服务提供商的图标资源管理, 包含各种 AI 提供商的 16x16 和 64x64 尺寸图标,
+ * 并提供根据 AI 提供商类型获取对应图标的方法
  *
- * @author 作者名
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")

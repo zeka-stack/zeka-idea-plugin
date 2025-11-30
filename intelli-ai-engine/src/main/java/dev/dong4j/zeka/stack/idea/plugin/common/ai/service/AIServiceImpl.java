@@ -19,9 +19,18 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * AI 服务实现
+ * AI 服务实现类
  * <p>
- * 自动从插件配置中读取默认供应商，从全局配置中读取供应商详情。
+ * 提供 AI 内容生成服务的具体实现, 包括 AI 内容生成, 配置管理, 日志记录等功能.
+ * 该类实现了 AIService 接口, 通过 AI 服务提供商工厂创建具体的 AI 服务提供商,
+ * 并使用全局凭证管理器管理 AI 服务的认证信息.
+ * 支持通过扩展点机制获取控制台日志记录器, 提供灵活的日志记录功能.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public final class AIServiceImpl implements AIService {
 

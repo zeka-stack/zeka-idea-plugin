@@ -15,7 +15,16 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
 /**
- * Changelog 结果展示对话框
+ * 变更日志结果对话框
+ * <p>
+ * 用于显示生成的变更日志内容的对话框窗口, 继承自 DialogWrapper,
+ * 提供了一个可编辑的文本区域来展示和编辑变更日志信息
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class ChangelogResultDialog extends DialogWrapper {
 

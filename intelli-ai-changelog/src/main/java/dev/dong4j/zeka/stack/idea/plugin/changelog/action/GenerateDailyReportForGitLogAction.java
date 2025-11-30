@@ -10,7 +10,16 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import icons.ChangelogIcons;
 
 /**
- * Git Log 工具窗口中生成工作日报的 Action
+ * 用于生成每日 Git 日志报告的操作类
+ * <p>
+ * 该类继承自 AbstractGitLogAction, 负责生成基于 Git 提交记录的每日报告内容, 主要功能包括设置图标, 文本资源键以及生成报告内容.
+ * 适用于在集成开发环境中执行 Git 日志分析并生成每日报告的场景.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class GenerateDailyReportForGitLogAction extends AbstractGitLogAction {
 

@@ -17,14 +17,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * AIServiceFactory
+ * AI 服务工厂类
  * <p>
- * 用于创建不同 AI 服务提供者的工厂类, 根据配置信息动态生成对应的 AI 服务实现.
- * 支持多种 AI 服务类型, 如 QianWen,SiliconFlow,Ollama 等, 并提供日志记录和性能模式配置选项.
+ * 用于创建和管理不同类型的 AI 服务提供者实例, 根据配置参数动态创建相应的 AI 服务提供者
+ * 支持多种 AI 服务提供商, 包括千问, 硅基流动,Ollama,LM Studio, 魔搭,iFlow, 智谱等
  *
- * @author 作者名
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class AIServiceFactory {

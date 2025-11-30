@@ -12,12 +12,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * AI 服务统一入口
+ * AI 服务接口
  * <p>
- * 为外部插件提供简洁的 AI 能力，自动从插件配置中读取默认供应商。
+ * 定义 AI 内容生成和全局设置管理的核心功能, 提供项目相关的 AI 内容生成能力
+ * 以及 AI 服务的全局配置管理, 支持聊天请求处理和响应监听机制
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email mailto:zeka.stack@gmail.com
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public interface AIService {
 

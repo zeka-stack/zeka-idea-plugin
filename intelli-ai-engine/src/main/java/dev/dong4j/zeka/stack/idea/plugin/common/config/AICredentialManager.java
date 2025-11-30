@@ -14,13 +14,15 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * AI 凭据管理类
+ * AI 凭证管理器
  * <p>
- * 用于管理 AI 服务的 API 密钥, 提供获取, 设置, 删除以及异步加载密钥的功能. 该类通过 CredentialAttributes 标识密钥存储的位置, 并使用 PasswordSafe 工具类进行安全存储和读取.
+ * 用于管理 AI 服务的 API 密钥凭证, 提供密钥的获取, 设置, 删除和异步加载功能.
+ * 该类封装了与密码安全存储相关的操作, 确保 API 密钥的安全存储和访问.
  *
- * @author 未知
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class AICredentialManager {

@@ -7,13 +7,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * 提供商配置工具类
+ * 提供者配置工具类
  * <p>
- * 提供与提供商配置相关的工具方法，包括生成唯一标识符和比较配置是否相等的功能。该类主要用于处理提供商配置信息的唯一性校验和一致性判断。
+ * 提供生成唯一标识符和比较提供者配置是否相等的工具方法, 主要用于 AI 服务提供者的配置管理
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
- * @date 2025.10.24
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public class ProviderConfigUtils {

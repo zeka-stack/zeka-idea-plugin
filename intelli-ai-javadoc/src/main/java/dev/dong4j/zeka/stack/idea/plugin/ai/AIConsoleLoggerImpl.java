@@ -9,9 +9,17 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
 
 /**
- * AI 控制台日志实现
+ * AI 控制台日志实现类
  * <p>
- * 将通用的日志接口适配到 JavaDocConsoleView
+ * 实现 AI 控制台日志接口, 提供向 IDE 控制台输出各种类型日志消息的功能,
+ * 包括普通消息, 带时间戳消息, 成功消息, 警告消息, 错误消息以及超链接消息等.
+ * 该类依赖于项目上下文和 JavaDoc 控制台视图来完成实际的日志输出操作.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
+ * @since 1.0.0
  */
 public class AIConsoleLoggerImpl implements AIConsoleLogger {
     /**

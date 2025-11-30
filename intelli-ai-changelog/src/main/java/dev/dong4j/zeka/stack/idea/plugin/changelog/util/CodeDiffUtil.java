@@ -16,12 +16,15 @@ import java.util.List;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 
 /**
- * 代码 Diff 工具类
+ * 代码差异工具类
  * <p>
- * 用于从 IntelliJ Platform 的 Change 对象中提取代码变更信息。
+ * 提供代码变更差异提取和分析功能, 用于处理版本控制系统中的文件变更,
+ * 可以从变更对象中提取代码差异信息, 包括变更类型, 新增行数, 删除行数和差异内容等
  *
- * @author dong4j
+ * @author zeka.stack.team
  * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.11.30
  * @since 1.0.0
  */
 public final class CodeDiffUtil {
@@ -104,7 +107,7 @@ public final class CodeDiffUtil {
             return CodeDiff.ChangeType.ADD;
         } else if (beforeRevision != null && afterRevision == null) {
             return CodeDiff.ChangeType.DELETE;
-        } else if (beforeRevision != null && afterRevision != null) {
+        } else if (beforeRevision != null) {
             // 检查是否是重命名或移动
             String beforePath = beforeRevision.getFile().getPath();
             String afterPath = afterRevision.getFile().getPath();
@@ -123,6 +126,7 @@ public final class CodeDiffUtil {
      * @param change 变更对象
      * @return Diff 内容字符串
      */
+    @SuppressWarnings("D")
     @Nullable
     private static String extractDiffContent(@NotNull Change change) {
         return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
