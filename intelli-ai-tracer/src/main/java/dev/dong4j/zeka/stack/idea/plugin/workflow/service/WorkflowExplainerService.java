@@ -16,8 +16,6 @@ import com.intellij.psi.PsiMethodCallExpression;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -25,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.exception.NoProviderdException;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.ai.TracerAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.ClassRelationshipContext;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.MethodCallerChainContext;
@@ -45,25 +44,73 @@ import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
  * @version 1.0.0
  */
 public class WorkflowExplainerService {
+    /**
+     * 当前操作的项目对象
+     * <p>
+     * 该字段用于存储与当前操作相关的项目信息, 不可变
+     */
     private final Project project;
+    /**
+     * 用于构建调用图的工具
+     * <p>
+     * 该实例负责分析和生成代码中的调用关系图谱
+     *
+     * @see CallGraphBuilder
+     */
     private final CallGraphBuilder callGraphBuilder;
 
+    /**
+     * 初始化 WorkflowExplainerService 实例
+     * <p>
+     * 使用指定的项目信息创建服务实例, 并初始化调用图构建器.
+     *
+     * @param project 项目对象, 用于提供上下文信息
+     * @throws NullPointerException 如果传入的 project 参数为 null, 将抛出异常
+     * @since 1.0
+     */
     public WorkflowExplainerService(@NotNull Project project) {
         this.project = project;
         this.callGraphBuilder = new CallGraphBuilder(project);
     }
 
     /**
-     * 工作流分析结果
+     * 工作流结果类
+     * <p>
+     * 用于封装工作流执行后的结果信息, 包含以 Markdown 格式展示的描述内容以及方法签名, 便于在日志或展示中使用.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email mailto:zeka.stack@gmail.com
+     * @date 2025.12.02
+     * @since 1.0.0
      */
     public static class WorkflowResult {
-        /** AI 生成的 Markdown 结果 */
+        /**
+         * 用于存储或处理的 Markdown 格式内容
+         * <p>
+         * 该字段表示以 Markdown 语法编写的文本数据, 通常用于富文本展示或编辑.
+         *
+         * @see org.apache.commons.lang3.Validate#notNull(Object)
+         */
         @NotNull
         public String markdown;
-        /** 目标方法签名（用于生成文件名） */
+        /**
+         * 方法签名, 表示该方法的名称和参数类型
+         *
+         * @NotNull 注解表明该字段不允许为 null
+         */
         @NotNull
         public String methodSignature;
 
+        /**
+         * 构造一个新的 WorkflowResult 对象
+         * <p>
+         * 该方法用于初始化 WorkflowResult 实例的 markdown 和 methodSignature 字段.
+         *
+         * @param markdown        用于描述工作流的 Markdown 格式文本
+         * @param methodSignature 方法的签名信息
+         * @since 1.0
+         */
         public WorkflowResult(@NotNull String markdown, @NotNull String methodSignature) {
             this.markdown = markdown;
             this.methodSignature = methodSignature;
@@ -71,29 +118,16 @@ public class WorkflowExplainerService {
     }
 
     /**
-     * 分析工作流并生成说明（两阶段写入）
+     * 解释当前光标位置的工作流
      * <p>
-     * 阶段1：在调用 AI 之前，创建 scratch 文件并写入元数据
-     * 阶段2：在调用 AI 之后，追加 AI 结果到文件
+     * 该方法用于分析指定文件中光标所在位置的代码元素类型, 并根据类型执行相应的工作流分析逻辑.
+     * 如果没有可用的 AI 提供者配置, 将显示错误通知并返回.
      *
-     * @param psiFile     PSI 文件
-     * @param caretOffset 光标位置偏移量
-     * @throws Exception 当分析或 AI 调用失败时抛出
+     * @param psiFile     当前打开的 Psi 文件, 表示正在分析的源代码文件
+     * @param caretOffset 光标在文件中的偏移位置, 用于定位当前分析的代码元素
+     * @throws Exception 在调用 AI 分析或处理过程中发生异常时抛出
      */
     public void explainWorkflow(@NotNull PsiFile psiFile, int caretOffset) throws Exception {
-        AIProviderSettings settings = AIProviderSettings.getInstance();
-        List<AIProviderConfig> verifiedProviders = settings.getVerifiedProviders();
-        if (verifiedProviders.isEmpty()) {
-            Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
-                                                         WorkflowBundle.message("notification.error.title"),
-                                                         WorkflowBundle.message("settings.ai.provider.no.available.warning"),
-                                                         NotificationType.ERROR);
-            // 添加设置动作
-            NotificationUtil.addOpenConfigurablePanelAction(notification, project);
-            return;
-        }
-
-
         // PSI 操作必须在 ReadAction 中执行
         WorkflowAnalysisData analysisData = com.intellij.openapi.application.ReadAction.compute(() -> {
             try {
@@ -122,14 +156,25 @@ public class WorkflowExplainerService {
             }
         });
 
-        // 阶段1：创建 scratch 文件并写入元数据
-        createScratchFileAndWriteMetadata(analysisData);
+        try {
+            // 阶段1：创建 scratch 文件并写入元数据
+            createScratchFileAndWriteMetadata(analysisData);
 
-        // 阶段2：调用 AI 生成说明（在 ReadAction 外部执行）
-        String aiMarkdown = callAI(analysisData.json, analysisData.workflowType);
+            // 阶段2：调用 AI 生成说明（在 ReadAction 外部执行）
+            String aiMarkdown = callAI(analysisData.json, analysisData.workflowType);
 
-        // 阶段3：追加 AI 结果到文件
-        appendAIResult(aiMarkdown);
+            // 阶段3：追加 AI 结果到文件
+            appendAIResult(aiMarkdown);
+        } catch (NoProviderdException e) {
+            Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
+                                                         WorkflowBundle.message("notification.error.title"),
+                                                         WorkflowBundle.message("settings.ai.provider.no.available.warning"),
+                                                         NotificationType.ERROR);
+            // 添加设置动作
+            NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to explain workflow", e);
+        }
     }
 
     /**
@@ -422,7 +467,10 @@ public class WorkflowExplainerService {
     @NotNull
     private String callAI(@NotNull String json, @NotNull WorkflowType workflowType) throws Exception {
         // 获取 AI 配置
-        AIProviderConfig config = selectProviderConfig();
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        if (config == null) {
+            throw new NoProviderdException("No AI provider configured");
+        }
 
         // 构建 Prompt
         String systemPrompt = buildSystemPrompt();
@@ -503,25 +551,5 @@ public class WorkflowExplainerService {
         return template + "\n\n" + json;
     }
 
-    /**
-     * 选择 AI 提供商配置。
-     *
-     * @return 可用的 AIProviderConfig
-     */
-    @NotNull
-    private AIProviderConfig selectProviderConfig() {
-        AIProviderSettings settings = AIProviderSettings.getInstance();
-        List<AIProviderConfig> verifiedProviders = settings.getVerifiedProviders();
-        SettingsState tracerSettings = SettingsState.getInstance();
-        AIProviderConfig preferred = tracerSettings.providerConfig;
-        if (preferred != null) {
-            for (AIProviderConfig config : verifiedProviders) {
-                if (config.contentEquals(preferred)) {
-                    return config;
-                }
-            }
-        }
-        return verifiedProviders.get(0);
-    }
 }
 

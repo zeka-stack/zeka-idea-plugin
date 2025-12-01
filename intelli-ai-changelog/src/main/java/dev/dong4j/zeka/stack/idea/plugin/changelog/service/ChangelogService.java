@@ -34,6 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.exception.NoProviderdException;
 
 /**
  * 变更日志服务类
@@ -306,8 +307,9 @@ public final class ChangelogService {
 
         // 获取当前配置的供应商
         AIProviderConfig config = settings.providerConfig;
+        // 获取 AI 配置
         if (config == null) {
-            throw new Exception(ChangelogBundle.message("error.ai.provider.not.configured"));
+            throw new NoProviderdException("No AI provider configured");
         }
 
         // 获取系统提示词
@@ -411,14 +413,6 @@ public final class ChangelogService {
      */
     @NotNull
     private String callAIServiceForCommitMessage(@NotNull String userPrompt) throws Exception {
-        SettingsState settings = SettingsState.getInstance();
-
-        // 获取当前配置的供应商
-        AIProviderConfig config = settings.providerConfig;
-        if (config == null) {
-            throw new Exception(ChangelogBundle.message("error.ai.provider.not.configured"));
-        }
-
         // 获取系统提示词（使用专门的提交记录生成提示词）
         String systemPrompt = """
             你是一位经验丰富的代码审查专家和技术文档编写者。

@@ -210,10 +210,9 @@ public class TracerSettingsPanel {
                 .getPanel();
         }
 
-        TitledBorder border = BorderFactory.createTitledBorder(
+        panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            WorkflowBundle.message("settings.ai.provider.selection"));
-        panel.setBorder(BorderFactory.createCompoundBorder(border, JBUI.Borders.empty(10)));
+            WorkflowBundle.message("settings.ai.provider.selection")));
 
         return panel;
     }

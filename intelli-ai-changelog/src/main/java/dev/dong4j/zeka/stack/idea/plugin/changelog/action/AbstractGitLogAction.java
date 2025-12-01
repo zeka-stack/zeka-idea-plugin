@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -23,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.exception.NoProviderdException;
 import icons.ChangelogIcons;
 
 /**
@@ -200,11 +203,18 @@ public abstract class AbstractGitLogAction extends AnAction {
                         ChangelogResultDialog dialog = new ChangelogResultDialog(project, content);
                         dialog.show();
                     });
-                } catch (Exception ex) {
+                } catch (NoProviderdException ex) {
+                    Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
+                                                                 ChangelogBundle.message("notification.error.title"),
+                                                                 ChangelogBundle.message("settings.ai.provider.no.available.warning"),
+                                                                 NotificationType.ERROR);
+                    // 添加设置动作
+                    NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+                } catch (Exception e) {
                     // 在 EDT 中显示错误提示
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showError(project,
-                                                   ChangelogBundle.message(getErrorKey(), ex.getMessage()));
+                                                   ChangelogBundle.message(getErrorKey(), e.getMessage()));
                     });
                 }
             }

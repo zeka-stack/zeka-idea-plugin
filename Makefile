@@ -77,7 +77,7 @@ publish-javadoc:
 	@echo "正在发布 intelli-ai-javadoc 插件..."
 	cd $(JAVADOC_DIR) && ./gradlew publishPlugin
 
-
+# 必须先部署且通过审核才能发布后续插件
 deploy-engine:
 	@echo "正在部署 intelli-ai-engine 插件..."
 	./deploy.sh engine
