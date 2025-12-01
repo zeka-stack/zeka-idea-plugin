@@ -35,7 +35,7 @@
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState"/>
 
         <!--suppress PluginXmlI18n -->
-        <projectConfigurable
+        <applicationConfigurable
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.workflow.settings.TracerSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.workflow.settings"
