@@ -7,16 +7,20 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Iconable;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.util.IncorrectOperationException;
 
 import org.jetbrains.annotations.NotNull;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.workflow.service.WorkflowExplainerService;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.PSIUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
+import icons.TracerIcons;
 
 /**
  * 工作流解释意图操作
@@ -26,7 +30,7 @@ import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
  * @author dong4j
  * @version 1.0.0
  */
-public class ExplainWorkflowIntentionAction implements IntentionAction {
+public class ExplainWorkflowIntentionAction implements IntentionAction, Iconable {
 
     @Override
     public @NotNull String getText() {
@@ -85,5 +89,18 @@ public class ExplainWorkflowIntentionAction implements IntentionAction {
     @Override
     public boolean startInWriteAction() {
         return false;
+    }
+
+    /**
+     * 获取图标
+     * <p>
+     * 根据指定的图标标志返回对应的图标对象
+     *
+     * @param flags 图标标志，用于指定图标样式或变体
+     * @return 对应的图标对象
+     */
+    @Override
+    public Icon getIcon(@Iconable.IconFlags int flags) {
+        return TracerIcons.WORKFLOW_ACTION;
     }
 }
