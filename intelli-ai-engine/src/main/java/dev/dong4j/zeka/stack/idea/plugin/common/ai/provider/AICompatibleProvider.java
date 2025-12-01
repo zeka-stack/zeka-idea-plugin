@@ -474,8 +474,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             // 检查 IOException 消息中是否包含 HTTP 状态码信息
             // 某些情况下，HTTP 错误可能被包装在 IOException 中
             final String message = getErrorString(e);
-            throw new AIServiceException("网络错误: " + message,
-                                         AIServiceException.ErrorCode.NETWORK_ERROR, e);
+            throw new AIServiceException("未知错误: " + message,
+                                         AIServiceException.ErrorCode.UNKNOWN_ERROR, e);
         }
     }
 

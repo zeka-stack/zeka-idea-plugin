@@ -368,7 +368,8 @@ public class ConfigComparePanel extends JPanel {
     }
 
     private void attachModificationListener() {
-        localEditor.getEditorTextField().getDocument().addDocumentListener(new DocumentListener() {
+        // 使用 EditorTextField 的 addDocumentListener() 方法，而不是过时的 getDocument().addDocumentListener()
+        localEditor.getEditorTextField().addDocumentListener(new DocumentListener() {
             @Override
             public void documentChanged(@NotNull DocumentEvent event) {
                 boolean modified = localEditor.isModified();
