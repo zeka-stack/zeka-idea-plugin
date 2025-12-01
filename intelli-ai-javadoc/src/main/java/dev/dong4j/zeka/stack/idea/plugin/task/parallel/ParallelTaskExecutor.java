@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.ProgressManager;
@@ -139,9 +139,9 @@ public class ParallelTaskExecutor {
                  tasks.size(), providers.size(), totalThreads);
 
         // Console 日志：任务开始
-        JavaDocConsoleView.printWithTimestamp(project,
+        AIConsoleLoggerUtil.printWithTimestamp(project,
                                               String.format("========== 开始生成文档（并行模式）任务总数: %d ==========", tasks.size()));
-        JavaDocConsoleView.print(project, "");
+        AIConsoleLoggerUtil.print(project, "");
 
         // 为每个服务商创建线程池
         Map<String, ExecutorService> providerExecutors = new ConcurrentHashMap<>();
@@ -171,8 +171,8 @@ public class ParallelTaskExecutor {
                 // 获取已创建的统计信息
                 ProviderStatistics stats = providerStats.get(providerId);
 
-                JavaDocConsoleView.print(project, String.format("创建服务商线程池: %s (%d 个线程)", providerName, currentProviderThreads));
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.print(project, String.format("创建服务商线程池: %s (%d 个线程)", providerName, currentProviderThreads));
+                AIConsoleLoggerUtil.print(project, "");
 
                 // 为服务商创建多个工作线程
                 for (int j = 0; j < currentProviderThreads; j++) {
@@ -254,7 +254,7 @@ public class ParallelTaskExecutor {
 
         // 计算平均并发度
         double avgConcurrency = (double) totalThreads / providerCount;
-        JavaDocConsoleView.print(project, String.format("性能模式：使用 %d 个提供商，创建 %d 个线程（平均每个提供商 %.1f 个线程，平均并发度 %.1f）并行处理 %d 个任务",
+        AIConsoleLoggerUtil.print(project, String.format("性能模式：使用 %d 个提供商，创建 %d 个线程（平均每个提供商 %.1f 个线程，平均并发度 %.1f）并行处理 %d 个任务",
                                                         providerCount, totalThreads, avgConcurrency, avgConcurrency, taskCount));
 
         return totalThreads;
@@ -272,6 +272,7 @@ public class ParallelTaskExecutor {
      *
      * @param providerExecutors 服务商执行器映射
      */
+    @SuppressWarnings("D")
     private void waitForCompletion(@NotNull Map<String, ExecutorService> providerExecutors) {
         // 1. 等待所有队列为空（包括重试队列）
         waitForQueuesEmpty();
@@ -380,8 +381,8 @@ public class ParallelTaskExecutor {
                  totalCompleted, totalFailed, totalSkipped);
 
         // Console 日志：任务完成统计
-        JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
-        JavaDocConsoleView.printSuccess(project,
+        AIConsoleLoggerUtil.printWithTimestamp(project, "========== 生成完成 ==========");
+        AIConsoleLoggerUtil.printSuccess(project,
                                         String.format("成功: %d | 失败: %d | 跳过: %d",
                                                       totalCompleted, totalFailed, totalSkipped));
     }

@@ -22,7 +22,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,8 +79,8 @@ public class SequentialTaskProcessor {
         int totalTasks = tasks.size();
 
         // Console 日志：任务开始
-        JavaDocConsoleView.printWithTimestamp(project, String.format("========== 开始生成文档 任务总数: %s ==========", totalTasks));
-        JavaDocConsoleView.print(project, "");
+        AIConsoleLoggerUtil.printWithTimestamp(project, String.format("========== 开始生成文档 任务总数: %s ==========", totalTasks));
+        AIConsoleLoggerUtil.print(project, "");
 
         // 获取当前使用的提供商名称
         String providerName = settings.providerConfig != null
@@ -114,9 +115,9 @@ public class SequentialTaskProcessor {
                  statistics.completed(), statistics.failed(), statistics.skipped());
 
         // Console 日志：任务完成统计
-        JavaDocConsoleView.printWithTimestamp(project, "========== 生成完成 ==========");
-        JavaDocConsoleView.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
-                                                               statistics.completed(), statistics.failed(), statistics.skipped()));
+        AIConsoleLoggerUtil.printWithTimestamp(project, "========== 生成完成 ==========");
+        AIConsoleLoggerUtil.printSuccess(project, String.format("成功: %d | 失败: %d | 跳过: %d",
+                                                                statistics.completed(), statistics.failed(), statistics.skipped()));
 
         return true;
     }
@@ -154,8 +155,8 @@ public class SequentialTaskProcessor {
                                                 currentTaskNum,
                                                 task.getType().name(),
                                                 task.getFilePath());
-                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
+                AIConsoleLoggerUtil.print(project, "");
             }
 
             if (shouldSkip(task)) {
@@ -163,15 +164,15 @@ public class SequentialTaskProcessor {
                 if (progressManager != null) {
                     progressManager.incrementSkipped();
                 }
-                JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.printWarning(project, "⏭ 任务已跳过（已有文档）");
+                AIConsoleLoggerUtil.print(project, "");
                 return;
             }
 
             AIChatRequest request = AIRequestComposer.compose(settings, task);
 
             // 输出代码位置信息（可点击链接）
-            boolean verboseLogging = isVerbose(provider);
+            boolean verboseLogging = isVerbose();
             if (virtualFile != null && verboseLogging) {
                 PsiElement element = task.getElement();
                 ApplicationManager.getApplication().runReadAction(() -> {
@@ -183,7 +184,7 @@ public class SequentialTaskProcessor {
                             int lineNumber = document.getLineNumber(startOffset);
                             String fileName = virtualFile.getName();
                             String locationMessage = String.format("处理代码位置: %s:%d", fileName, lineNumber + 1);
-                            JavaDocConsoleView.printHyperlink(project, locationMessage, virtualFile, lineNumber);
+                            AIConsoleLoggerUtil.printHyperlink(project, locationMessage, virtualFile, lineNumber);
                         }
                     } catch (Exception e) {
                         // 忽略异常，避免影响主功能
@@ -192,7 +193,7 @@ public class SequentialTaskProcessor {
             }
 
             // 使用 AIService API 生成内容
-            AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project, true) : null;
+            AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project) : null;
             String documentation = aiService.generateContent(project, request, provider, listener);
 
             if (documentation.trim().isEmpty()) {
@@ -201,8 +202,8 @@ public class SequentialTaskProcessor {
                 if (progressManager != null) {
                     progressManager.incrementFailed();
                 }
-                JavaDocConsoleView.printError(project, "✗ 任务失败: 生成的文档为空");
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.printError(project, "✗ 任务失败: 生成的文档为空");
+                AIConsoleLoggerUtil.print(project, "");
                 return;
             }
 
@@ -214,8 +215,8 @@ public class SequentialTaskProcessor {
                 progressManager.incrementCompleted();
             }
 
-            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
-            JavaDocConsoleView.print(project, "");
+            AIConsoleLoggerUtil.printSuccess(project, "✓ 任务完成");
+            AIConsoleLoggerUtil.print(project, "");
 
         } catch (AIServiceException e) {
             String errorMessage = AIServiceException.build(e);
@@ -225,8 +226,8 @@ public class SequentialTaskProcessor {
             if (progressManager != null) {
                 progressManager.incrementFailed();
             }
-            JavaDocConsoleView.printError(project, "✗ 任务失败: " + errorMessage);
-            JavaDocConsoleView.print(project, "");
+            AIConsoleLoggerUtil.printError(project, "✗ 任务失败: " + errorMessage);
+            AIConsoleLoggerUtil.print(project, "");
         } catch (Exception e) {
             log.info("处理任务失败: {}", task, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
@@ -234,8 +235,8 @@ public class SequentialTaskProcessor {
             if (progressManager != null) {
                 progressManager.incrementFailed();
             }
-            JavaDocConsoleView.printError(project, "✗ 任务失败: " + e.getMessage());
-            JavaDocConsoleView.print(project, "");
+            AIConsoleLoggerUtil.printError(project, "✗ 任务失败: " + e.getMessage());
+            AIConsoleLoggerUtil.print(project, "");
         }
     }
 
@@ -286,11 +287,10 @@ public class SequentialTaskProcessor {
     /**
      * 判断指定提供者是否启用详细日志.
      *
-     * @param provider 提供者配置
      * @return true 表示启用
      */
-    private boolean isVerbose(@NotNull AIProviderConfig provider) {
-        return provider.runtimeSettings != null && provider.runtimeSettings.verboseLogging;
+    private boolean isVerbose() {
+        return AIProviderSettings.getInstance().verboseLogging;
     }
 }
 

@@ -46,7 +46,7 @@
         <toolWindow id="IntelliAI Tracer"
                     factoryClass="dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindowFactory"
                     anchor="right"
-                    icon="/icons/pluginIcon_16.svg"/>
+                    icon="icons.TracerIcons.WORKFLOW_ACTION"/>
 
         <!-- 意图操作 -->
         <intentionAction>

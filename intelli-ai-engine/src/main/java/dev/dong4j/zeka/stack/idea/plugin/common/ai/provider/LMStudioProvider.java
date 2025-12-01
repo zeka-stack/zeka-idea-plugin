@@ -1,9 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.intellij.openapi.project.Project;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
+import org.jetbrains.annotations.NotNull;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
@@ -30,13 +30,12 @@ public class LMStudioProvider extends AICompatibleProvider {
      * @param config          配置信息, 不能为空
      * @param modelParameters 模型参数, 不能为空
      * @param runtimeSettings 运行时设置, 不能为空
-     * @param consoleLogger   控制台日志记录器, 可以为 null
      */
-    public LMStudioProvider(@NotNull AIProviderConfig config,
+    public LMStudioProvider(@NotNull Project project,
+                            @NotNull AIProviderConfig config,
                             @NotNull AIModelParameters modelParameters,
-                            @NotNull AIRuntimeSettings runtimeSettings,
-                            @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                            @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 
 }

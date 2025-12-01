@@ -31,9 +31,9 @@ import javax.swing.border.TitledBorder;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
+import icons.AICommonIcons;
 import lombok.Getter;
 
 /**

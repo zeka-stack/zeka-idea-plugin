@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.workflow.service;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
@@ -17,11 +19,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.ai.TracerAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.ClassRelationshipContext;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.MethodCallerChainContext;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.WorkflowContext;
@@ -30,6 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindow;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.JSONSerializer;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.MethodContextExtractor;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.PSIUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
 
@@ -48,16 +53,6 @@ public class WorkflowExplainerService {
         this.callGraphBuilder = new CallGraphBuilder(project);
     }
 
-    /**
-     * 分析工作流并生成说明
-     * <p>
-     * 注意：PSI 操作必须在 ReadAction 中执行
-     *
-     * @param psiFile PSI 文件
-     * @param caretOffset 光标位置偏移量
-     * @return AI 生成的说明文本
-     * @throws Exception 当分析或 AI 调用失败时抛出
-     */
     /**
      * 工作流分析结果
      */
@@ -86,6 +81,19 @@ public class WorkflowExplainerService {
      * @throws Exception 当分析或 AI 调用失败时抛出
      */
     public void explainWorkflow(@NotNull PsiFile psiFile, int caretOffset) throws Exception {
+        AIProviderSettings settings = AIProviderSettings.getInstance();
+        List<AIProviderConfig> verifiedProviders = settings.getVerifiedProviders();
+        if (verifiedProviders.isEmpty()) {
+            Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
+                                                         WorkflowBundle.message("notification.error.title"),
+                                                         WorkflowBundle.message("settings.ai.provider.no.available.warning"),
+                                                         NotificationType.ERROR);
+            // 添加设置动作
+            NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+            return;
+        }
+
+
         // PSI 操作必须在 ReadAction 中执行
         WorkflowAnalysisData analysisData = com.intellij.openapi.application.ReadAction.compute(() -> {
             try {
@@ -125,14 +133,14 @@ public class WorkflowExplainerService {
     }
 
     /**
-         * 代码位置信息
-         */
-        private record CodeLocation(String filePath, int line, int column) {
+     * 代码位置信息
+     */
+    private record CodeLocation(String filePath, int line, int column) {
     }
 
     /**
-         * 工作流分析数据（内部类）
-         */
+     * 工作流分析数据（内部类）
+     */
     private record WorkflowAnalysisData(String json, String signature, CodeLocation codeLocation, PsiFile psiFile,
                                         WorkflowType workflowType) {
     }
@@ -259,9 +267,9 @@ public class WorkflowExplainerService {
     /**
      * 分析方法调用工作流（当前功能）
      *
-     * @param psiFile    PSI 文件
+     * @param psiFile     PSI 文件
      * @param caretOffset 光标偏移量
-     * @param methodCall 方法调用表达式
+     * @param methodCall  方法调用表达式
      * @return 工作流分析数据
      */
     @NotNull
@@ -423,10 +431,14 @@ public class WorkflowExplainerService {
         // 创建 AI 请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
 
+        // 检查是否启用详细日志
+        boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
+        AIResponseListener listener = verboseLogging ? new TracerAIResponseListener(project) : null;
+
         // 调用 AI 服务
         AIService aiService = AIServiceImpl.getInstance();
         try {
-            return aiService.generateContent(project, request, config, null);
+            return aiService.generateContent(project, request, config, listener);
         } catch (AIServiceException e) {
             throw new Exception(WorkflowBundle.message("error.ai.service.failed", e.getMessage()));
         }
@@ -484,7 +496,7 @@ public class WorkflowExplainerService {
                     template = SettingsState.getDefaultWorkflowTemplate();
                 }
         }
-        
+
         if (template.contains(SettingsState.CONTEXT_PLACEHOLDER)) {
             return template.replace(SettingsState.CONTEXT_PLACEHOLDER, json);
         }
@@ -495,15 +507,11 @@ public class WorkflowExplainerService {
      * 选择 AI 提供商配置。
      *
      * @return 可用的 AIProviderConfig
-     * @throws Exception 无可用提供商时抛出
      */
     @NotNull
-    private AIProviderConfig selectProviderConfig() throws Exception {
+    private AIProviderConfig selectProviderConfig() {
         AIProviderSettings settings = AIProviderSettings.getInstance();
         List<AIProviderConfig> verifiedProviders = settings.getVerifiedProviders();
-        if (verifiedProviders.isEmpty()) {
-            throw new Exception(WorkflowBundle.message("error.ai.provider.not.configured"));
-        }
         SettingsState tracerSettings = SettingsState.getInstance();
         AIProviderConfig preferred = tracerSettings.providerConfig;
         if (preferred != null) {

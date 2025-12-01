@@ -31,10 +31,10 @@ import javax.swing.Icon;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
+import icons.AICommonIcons;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
@@ -185,6 +185,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
 
         // 2. 添加快捷配置 ToggleAction（用分隔符包裹，形成边框效果）
         group.add(Separator.create(JavaDocBundle.message("statusbar.quick.settings.title")));
+        group.add(new OverrideExistingToggleAction());
         group.add(new GenerateForClassToggleAction());
         group.add(new GenerateForMethodToggleAction());
         group.add(new GenerateForFieldToggleAction());
@@ -420,6 +421,39 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
+        }
+    }
+
+    /**
+     * 覆盖已有注释切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否覆盖已有 JavaDoc 注释的开关动作.
+     * 通过该动作可以切换覆盖已有注释的开关状态, 状态信息保存在 SettingsState 中.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
+     */
+    private static class OverrideExistingToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        OverrideExistingToggleAction() {
+            super(JavaDocBundle.message("settings.override.existing"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().overrideExisting;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().overrideExisting = state;
         }
     }
 

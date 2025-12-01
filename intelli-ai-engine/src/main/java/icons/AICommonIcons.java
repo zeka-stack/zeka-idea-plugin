@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.icons;
+package icons;
 
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.util.IconUtil;
@@ -40,6 +40,15 @@ public final class AICommonIcons {
 
     // ========== AI 提供商图标 - 用于下拉列表 (16x16) ==========
 
+    public static final Icon PLUGIN = load("/icons/plugin_16.svg");
+    /**
+     * 工具图标, 已按比例缩放
+     * <p>
+     * 该图标用于表示插件相关的工具, 缩放比例为 0.8125
+     *
+     * @see IconUtil
+     */
+    public static final Icon TOOL_ICON = IconUtil.scale(PLUGIN, null, 0.8125f);
     /**
      * OpenAI API 提供商图标 (16x16)
      * <p>

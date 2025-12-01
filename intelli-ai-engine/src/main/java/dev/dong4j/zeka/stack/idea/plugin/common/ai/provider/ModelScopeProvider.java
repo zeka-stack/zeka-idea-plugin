@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
 import org.jetbrains.annotations.NotNull;
@@ -21,10 +22,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * ModelScope 提供商实现类
@@ -52,13 +53,12 @@ public class ModelScopeProvider extends AICompatibleProvider {
      * @param config          提供者配置
      * @param modelParameters 模型参数
      * @param runtimeSettings 运行时配置
-     * @param consoleLogger   日志记录器
      */
-    public ModelScopeProvider(@NotNull AIProviderConfig config,
+    public ModelScopeProvider(@NotNull Project project,
+                              @NotNull AIProviderConfig config,
                               @NotNull AIModelParameters modelParameters,
-                              @NotNull AIRuntimeSettings runtimeSettings,
-                              @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                              @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 
     /**
@@ -69,15 +69,12 @@ public class ModelScopeProvider extends AICompatibleProvider {
      * @param apiKey API Key, 可为 null
      * @return 模型 id 列表
      */
-    @SuppressWarnings("D")
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printWithTimestamp("=== ModelScope 获取模型列表 ===");
-            consoleLogger.print("接口地址: " + MODELS_LIST_URL);
-            consoleLogger.print("并发请求 " + MAX_PAGES + " 页数据");
-        }
+        AIConsoleLoggerUtil.printWithTimestamp(project, "=== ModelScope 获取模型列表 ===");
+        AIConsoleLoggerUtil.print(project, "接口地址: " + MODELS_LIST_URL);
+        AIConsoleLoggerUtil.print(project, "并发请求 " + MAX_PAGES + " 页数据");
 
         ExecutorService executor = Executors.newFixedThreadPool(MAX_PAGES);
         try {
@@ -90,10 +87,8 @@ public class ModelScopeProvider extends AICompatibleProvider {
                         return fetchModelsPage(page, apiKey);
                     } catch (Exception e) {
                         LOG.info("ModelScope 获取第 " + page + " 页失败", e);
-                        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                            consoleLogger.printWarning("第 " + page + " 页请求失败: " + e.getMessage());
-                        }
-                        return new ArrayList<String>();
+                        AIConsoleLoggerUtil.printWarning(project, "第 " + page + " 页请求失败: " + e.getMessage());
+                        return new ArrayList<>();
                     }
                 }, executor);
                 futures.add(future);
@@ -107,16 +102,12 @@ public class ModelScopeProvider extends AICompatibleProvider {
                     allModels.addAll(pageModels);
                 } catch (Exception e) {
                     LOG.info("ModelScope 合并结果失败", e);
-                    if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                        consoleLogger.printWarning("合并结果时出错: " + e.getMessage());
-                    }
+                    AIConsoleLoggerUtil.printWarning(project, "合并结果时出错: " + e.getMessage());
                 }
             }
 
             List<String> result = new ArrayList<>(allModels);
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printSuccess("ModelScope 共获取 " + result.size() + " 个模型");
-            }
+            AIConsoleLoggerUtil.printSuccess(project, "ModelScope 共获取 " + result.size() + " 个模型");
             return result;
         } finally {
             executor.shutdown();
@@ -136,7 +127,7 @@ public class ModelScopeProvider extends AICompatibleProvider {
         // 计算请求体长度，用于禁用分块传输编码
         byte[] requestBodyBytes = requestBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         final int contentLength = requestBodyBytes.length;
-        
+
         String response = HttpRequests.post(MODELS_LIST_URL, "application/json")
             .tuner(connection -> {
                 HttpURLConnection conn = (HttpURLConnection) connection;

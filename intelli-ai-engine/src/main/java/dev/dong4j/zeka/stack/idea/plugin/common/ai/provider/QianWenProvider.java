@@ -1,7 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
 
+import com.intellij.openapi.project.Project;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -31,13 +32,12 @@ public class QianWenProvider extends AICompatibleProvider {
      * @param config          提供者配置, 不能为空
      * @param modelParameters 模型参数, 不能为空
      * @param runtimeSettings 运行时设置, 不能为空
-     * @param consoleLogger   控制台日志记录器, 可为空
      */
-    public QianWenProvider(@NotNull AIProviderConfig config,
+    public QianWenProvider(@NotNull Project project,
+                           @NotNull AIProviderConfig config,
                            @NotNull AIModelParameters modelParameters,
-                           @NotNull AIRuntimeSettings runtimeSettings,
-                           @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                           @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 
 }

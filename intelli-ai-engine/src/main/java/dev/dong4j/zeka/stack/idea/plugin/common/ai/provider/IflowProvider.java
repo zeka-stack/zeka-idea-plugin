@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
 import org.jetbrains.annotations.NotNull;
@@ -18,11 +19,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * Iflow AI 服务提供商实现类
@@ -51,13 +52,12 @@ public class IflowProvider extends AICompatibleProvider {
      * @param config          AI 提供商的配置信息
      * @param modelParameters 模型相关参数
      * @param runtimeSettings 运行时设置
-     * @param consoleLogger   可选的控制台日志记录器
      */
-    public IflowProvider(@NotNull AIProviderConfig config,
+    public IflowProvider(@NotNull Project project,
+                         @NotNull AIProviderConfig config,
                          @NotNull AIModelParameters modelParameters,
-                         @NotNull AIRuntimeSettings runtimeSettings,
-                         @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                         @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 
     /**
@@ -69,14 +69,11 @@ public class IflowProvider extends AICompatibleProvider {
      * @param apiKey 用于认证的 API 密钥
      * @return 可用的模型名称列表
      */
-    @SuppressWarnings("D")
     @NotNull
     @Override
     public List<String> getAvailableModels(@Nullable String apiKey) {
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printWithTimestamp("=== IFlow 获取模型列表 ===");
-            consoleLogger.print("接口地址: " + MODELS_LIST_URL);
-        }
+        AIConsoleLoggerUtil.printWithTimestamp(project, "=== IFlow 获取模型列表 ===");
+        AIConsoleLoggerUtil.print(project, "接口地址: " + MODELS_LIST_URL);
 
         try {
             // 构建请求体（空对象）
@@ -100,11 +97,9 @@ public class IflowProvider extends AICompatibleProvider {
 
             if (!responseBody.trim().isEmpty()) {
                 List<String> models = parseModelsResponse(responseBody);
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.printSuccess("成功获取 " + models.size() + " 个模型");
-                    if (!models.isEmpty() && models.size() <= 10) {
-                        models.forEach(model -> consoleLogger.print("  - " + model));
-                    }
+                AIConsoleLoggerUtil.printSuccess(project, "成功获取 " + models.size() + " 个模型");
+                if (!models.isEmpty() && models.size() <= 10) {
+                    models.forEach(model -> AIConsoleLoggerUtil.print(project, "  - " + model));
                 }
                 // 如果获取的模型列表为空，返回默认模型列表
                 if (models.isEmpty()) {
@@ -113,21 +108,16 @@ public class IflowProvider extends AICompatibleProvider {
                 return models;
             }
 
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printWarning("服务返回空响应，返回默认模型列表");
-            }
+            AIConsoleLoggerUtil.printWarning(project, "服务返回空响应，返回默认模型列表");
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         } catch (IOException e) {
             LOG.info("IFlow 获取模型列表网络错误", e);
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("网络错误: " + e.getMessage());
-            }
+            AIConsoleLoggerUtil.printError(project, "网络错误: " + e.getMessage());
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         } catch (Exception e) {
             LOG.info("IFlow 获取模型列表失败", e);
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("获取模型列表失败: " + e.getMessage());
-            }
+            AIConsoleLoggerUtil.printError(project, "获取模型列表失败: " + e.getMessage());
+
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         }
     }

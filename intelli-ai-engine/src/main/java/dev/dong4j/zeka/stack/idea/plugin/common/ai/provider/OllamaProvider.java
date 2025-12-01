@@ -5,13 +5,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import com.intellij.openapi.project.Project;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -41,13 +41,12 @@ public class OllamaProvider extends AICompatibleProvider {
      * @param config          AI 提供商的配置信息
      * @param modelParameters 模型相关参数
      * @param runtimeSettings 运行时设置
-     * @param consoleLogger   可选的控制台日志记录器
      */
-    public OllamaProvider(@NotNull AIProviderConfig config,
+    public OllamaProvider(@NotNull Project project,
+                          @NotNull AIProviderConfig config,
                           @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings,
-                          @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                          @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 
 

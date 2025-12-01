@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
 import org.jetbrains.annotations.NotNull;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -26,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * AI 兼容性提供者抽象类
@@ -40,7 +41,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
  * @date 2025.11.30
  * @since 1.0.0
  */
-@SuppressWarnings("D")
 public abstract class AICompatibleProvider implements AIServiceProvider {
 
     /**
@@ -48,6 +48,12 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     private static final Logger LOG = Logger.getInstance(AICompatibleProvider.class);
 
+    /**
+     * 当前操作的项目对象
+     * <p>
+     * 用于访问和操作与该项目相关的数据和设置
+     */
+    protected final Project project;
     /** AI 服务提供商配置信息 */
     protected final AIProviderConfig config;
     /**
@@ -58,17 +64,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     protected final AIModelParameters modelParameters;
     /** AI 运行时设置 */
     protected final AIRuntimeSettings runtimeSettings;
-    /**
-     * 控制台日志记录器
-     * <p>
-     * 用于输出 AI 相关的日志信息, 可能为 null
-     *
-     * @see AIConsoleLogger
-     */
-    @Nullable
-    protected final AIConsoleLogger consoleLogger;
 
     /**
+     * /**
      * 初始化 AI 兼容性提供者
      * <p>
      * 使用提供的配置, 模型参数, 运行时设置和控制台日志记录器初始化 AI 兼容性提供者.
@@ -76,17 +74,15 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @param config          AI 提供者配置对象, 不可为 null
      * @param modelParameters 模型参数对象, 不可为 null
      * @param runtimeSettings 运行时设置对象, 不可为 null
-     * @param consoleLogger   控制台日志记录器, 可为 null
      */
-    protected AICompatibleProvider(@NotNull AIProviderConfig config,
+    protected AICompatibleProvider(@NotNull Project project, @NotNull AIProviderConfig config,
                                    @NotNull AIModelParameters modelParameters,
-                                   @NotNull AIRuntimeSettings runtimeSettings,
-                                   @Nullable AIConsoleLogger consoleLogger) {
+                                   @NotNull AIRuntimeSettings runtimeSettings) {
+        this.project = project;
         this.config = config.copy();
         this.config.baseUrl = normalizeBaseUrl(this.config.baseUrl);
         this.modelParameters = modelParameters.copy();
         this.runtimeSettings = runtimeSettings.copy();
-        this.consoleLogger = consoleLogger;
     }
 
     /**
@@ -159,48 +155,41 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     public String generateContent(@NotNull AIChatRequest request,
                                   @Nullable String apiKey,
                                   @Nullable AIResponseListener listener) throws AIServiceException {
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printWithTimestamp("=== 开始生成内容 ===");
-            // 模型相关信息一行输出
-            consoleLogger.print(String.format("模型信息: 供应商=%s | 模型=%s | Base URL=%s",
-                                              getProviderType().getDisplayName(), getModelName(), getBaseUrl()));
-            // 当前开启的配置
-            StringBuilder configInfo = new StringBuilder("当前配置: ");
-            if (runtimeSettings.verboseLogging) {
-                if (configInfo.length() > "当前配置: ".length()) {
-                    configInfo.append(" | ");
-                }
-                configInfo.append("详细日志✓");
-            }
-            if (configInfo.length() == "当前配置: ".length()) {
-                configInfo.append("默认配置");
-            }
-            consoleLogger.print(configInfo.toString());
+        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 开始生成内容 ===");
+        // 模型相关信息一行输出
+        AIConsoleLoggerUtil.print(project, String.format("模型信息: 供应商=%s | 模型=%s | Base URL=%s",
+                                                         getProviderType().getDisplayName(), getModelName(), getBaseUrl()));
+        // 当前开启的配置
+        StringBuilder configInfo = new StringBuilder("当前配置: ");
+        if (configInfo.length() > "当前配置: ".length()) {
+            configInfo.append(" | ");
         }
+        configInfo.append("详细日志✓");
+        if (configInfo.length() == "当前配置: ".length()) {
+            configInfo.append("默认配置");
+        }
+        AIConsoleLoggerUtil.print(project, configInfo.toString());
 
+        // 使用全局的 verboseLogging 设置
         AIRuntimeSettings runtime = runtimeSettings;
         int attempts = 0;
         while (attempts < Math.max(1, runtime.maxRetries)) {
             try {
                 String result = sendRequest(buildRequestBody(request), apiKey, listener, request.promptTokenEstimate(), false);
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.printSuccess("=== 内容生成成功 ===");
-                    consoleLogger.print("响应长度: " + result.length() + " 字符");
-                }
+                AIConsoleLoggerUtil.printSuccess(project, "=== 内容生成成功 ===");
+                AIConsoleLoggerUtil.print(project, "响应长度: " + result.length() + " 字符");
                 return result;
             } catch (AIServiceException e) {
                 attempts++;
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.printWarning("请求失败 (尝试 " + attempts + "/" + Math.max(1, runtime.maxRetries) + "): " + e.getMessage());
-                }
+                AIConsoleLoggerUtil.printWarning(project,
+
+                                                 "请求失败 (尝试 " + attempts + "/" + Math.max(1, runtime.maxRetries) + "): " + e.getMessage());
                 if (!e.isRetryable() || attempts >= Math.max(1, runtime.maxRetries)) {
                     break;
                 }
                 long waitTime = (long) (runtime.waitDuration * Math.pow(2, attempts - 1));
                 LOG.info("AI request failed, retry in " + waitTime + "ms: " + e.getMessage());
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.print("等待 " + waitTime + "ms 后重试...");
-                }
+                AIConsoleLoggerUtil.print(project, "等待 " + waitTime + "ms 后重试...");
                 try {
                     TimeUnit.MILLISECONDS.sleep(waitTime);
                 } catch (InterruptedException interruptedException) {
@@ -211,9 +200,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 }
             }
         }
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printError("=== 内容生成失败 ===");
-        }
+        AIConsoleLoggerUtil.print(project, "=== 内容生成失败 ===");
         throw new AIServiceException("AI 服务调用失败", AIServiceException.ErrorCode.UNKNOWN_ERROR);
 
     }
@@ -233,40 +220,31 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     @Override
     @NotNull
     public ValidationResult validateConfiguration(@Nullable String apiKey) {
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printWithTimestamp("=== 开始验证配置 ===");
-            consoleLogger.print("提供商: " + getProviderType().getDisplayName());
-            consoleLogger.print("模型: " + getModelName());
-            consoleLogger.print("Base URL: " + getBaseUrl());
-        }
+        // 使用全局的 verboseLogging 设置
+        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 开始验证配置 ===");
+        AIConsoleLoggerUtil.print(project, "提供商: " + getProviderType().getDisplayName());
+        AIConsoleLoggerUtil.print(project, "模型: " + getModelName());
+        AIConsoleLoggerUtil.print(project, "Base URL: " + getBaseUrl());
         try {
             AIChatRequest request = new AIChatRequest("i say ping, you say pong",
                                                       "ping", 0);
             String response = sendRequest(buildRequestBody(request), apiKey, null, 0, true);
             if (!response.isEmpty()) {
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.printSuccess("=== 配置验证成功 ===");
-                }
+                AIConsoleLoggerUtil.printSuccess(project, "=== 配置验证成功 ===");
                 return ValidationResult.success("连接成功！提供商: " + getProviderType().getDisplayName() +
                                                 ", 模型: " + getModelName());
             }
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("配置验证失败：服务返回空响应");
-            }
+            AIConsoleLoggerUtil.printError(project, "配置验证失败：服务返回空响应");
             return ValidationResult.failure("连接失败：服务返回空响应");
         } catch (AIServiceException e) {
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("配置验证失败: " + e.getMessage());
-            }
+            AIConsoleLoggerUtil.printError(project, "配置验证失败: " + e.getMessage());
             return ValidationResult.failure("配置验证失败", AIServiceException.build(e));
         } catch (Exception e) {
             String details = e.getMessage();
             if (details == null || details.isEmpty()) {
                 details = e.getClass().getSimpleName();
             }
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("配置验证异常: " + details);
-            }
+            AIConsoleLoggerUtil.printError(project, "配置验证异常: " + details);
             return ValidationResult.failure("配置验证异常", details, e);
         }
     }
@@ -283,23 +261,17 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printWithTimestamp("=== 开始获取可用模型列表 ===");
-            consoleLogger.print("提供商: " + getProviderType().getDisplayName());
-            consoleLogger.print("Base URL: " + config.baseUrl);
-        }
+        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 开始获取可用模型列表 ===");
+        AIConsoleLoggerUtil.print(project, "提供商: " + getProviderType().getDisplayName());
+        AIConsoleLoggerUtil.print(project, "Base URL: " + config.baseUrl);
         try {
             if (requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.printWarning("需要 API Key 但未提供，返回空列表");
-                }
+                AIConsoleLoggerUtil.printWarning(project, "需要 API Key 但未提供，返回空列表");
                 return new ArrayList<>();
             }
 
             String url = config.baseUrl + "/models";
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.print("请求 URL: " + url);
-            }
+            AIConsoleLoggerUtil.print(project, "请求 URL: " + url);
             String responseBody = HttpRequests.request(url)
                 .tuner(connection -> {
                     tuneConnection((HttpURLConnection) connection, apiKey);
@@ -308,30 +280,22 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
             if (!responseBody.trim().isEmpty()) {
                 List<String> models = parseModelsResponse(responseBody);
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.printSuccess("成功获取 " + models.size() + " 个模型");
-                    if (!models.isEmpty() && models.size() <= 10) {
-                        models.forEach(model -> consoleLogger.print("  - " + model));
-                    }
+                AIConsoleLoggerUtil.printSuccess(project, "成功获取 " + models.size() + " 个模型");
+                if (!models.isEmpty() && models.size() <= 10) {
+                    models.forEach(model -> AIConsoleLoggerUtil.print(project, "  - " + model));
                 }
                 return models;
             }
 
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printWarning("服务返回空响应");
-            }
+            AIConsoleLoggerUtil.printWarning(project, "服务返回空响应");
             return new ArrayList<>();
         } catch (IOException e) {
             LOG.info("Network error while fetching models", e);
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("网络错误: " + e.getMessage());
-            }
+            AIConsoleLoggerUtil.printError(project, "网络错误: " + e.getMessage());
             return new ArrayList<>();
         } catch (Exception e) {
             LOG.info("Unexpected error while fetching models", e);
-            if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                consoleLogger.printError("获取模型列表失败: " + e.getMessage());
-            }
+            AIConsoleLoggerUtil.printError(project, "获取模型列表失败: " + e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -435,7 +399,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             // 计算请求体长度，用于禁用分块传输编码
             byte[] requestBodyBytes = requestBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
             final int contentLength = requestBodyBytes.length;
-            
+
             String responseBody = HttpRequests.post(url, "application/json")
                 .tuner(connection -> {
                     HttpURLConnection conn = (HttpURLConnection) connection;
@@ -454,9 +418,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
             if (!responseBody.trim().isEmpty()) {
                 String result = validation ? parseValidationResponse(responseBody) : parseResponse(responseBody, listener);
-                if (runtimeSettings.verboseLogging) {
-                    LOG.debug("AI response length: " + result.length());
-                }
+                LOG.debug("AI response length: " + result.length());
                 return result;
             }
 
@@ -560,9 +522,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         if (apiKey != null && !apiKey.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         }
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.print(String.format("连接超时: [%ss] 读取超时: [%ss]", runtime.timeout, (runtime.timeout * 2)));
-        }
+        AIConsoleLoggerUtil.print(project, String.format("连接超时: [%ss] 读取超时: [%ss]", runtime.timeout,
+                                                         (runtime.timeout * 2)));
     }
 
     /**
@@ -591,10 +552,10 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 int totalTokens = usage.has("total_tokens") ? usage.get("total_tokens").getAsInt() : 0;
 
                 // 输出 token 消耗情况，使用 | 分隔，一行输出
-                if (consoleLogger != null && runtimeSettings.verboseLogging) {
-                    consoleLogger.print(String.format("Token 消耗: Prompt=%d | Completion=%d | Total=%d",
-                                                      promptTokens, completionTokens, totalTokens));
-                }
+                AIConsoleLoggerUtil.print(project, String.format("Token 消耗: Prompt=%d | Completion=%d | " +
+                                                                 "Total=%d",
+                                                                 promptTokens, completionTokens,
+                                                                 totalTokens));
 
                 if (listener != null) {
                     listener.onUsage(getProviderType().getDisplayName(), getModelName(), promptTokens, completionTokens, totalTokens);

@@ -47,10 +47,10 @@ import javax.swing.table.AbstractTableModel;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import icons.AICommonIcons;
 
 /**
  * JavaDoc 设置面板类

@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
 
+import com.intellij.openapi.project.Project;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,6 +12,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * 智谱 AI 服务提供商实现类
@@ -35,13 +38,12 @@ public class ZhipuProvider extends AICompatibleProvider {
      * @param config          提供者配置, 不能为空
      * @param modelParameters 模型参数, 不能为空
      * @param runtimeSettings 运行时设置, 不能为空
-     * @param consoleLogger   控制台日志记录器, 可为空
      */
-    public ZhipuProvider(@NotNull AIProviderConfig config,
+    public ZhipuProvider(@NotNull Project project,
+                         @NotNull AIProviderConfig config,
                          @NotNull AIModelParameters modelParameters,
-                         @NotNull AIRuntimeSettings runtimeSettings,
-                         @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                         @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 
     /**
@@ -56,10 +58,8 @@ public class ZhipuProvider extends AICompatibleProvider {
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printWithTimestamp("=== 智谱AI 获取模型列表 ===");
-            consoleLogger.print("返回固定模型列表");
-        }
+        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 智谱AI 获取模型列表 ===");
+        AIConsoleLoggerUtil.print(project, "返回固定模型列表");
 
         // 返回固定的模型列表
         List<String> models = new ArrayList<>();
@@ -75,11 +75,8 @@ public class ZhipuProvider extends AICompatibleProvider {
         models.add("glm-4-flashx");
         models.add("glm-4-flashx-250414");
 
-        if (consoleLogger != null && runtimeSettings.verboseLogging) {
-            consoleLogger.printSuccess("成功获取 " + models.size() + " 个模型");
-            models.forEach(model -> consoleLogger.print("  - " + model));
-        }
-
+        AIConsoleLoggerUtil.printSuccess(project, "成功获取 " + models.size() + " 个模型");
+        models.forEach(model -> AIConsoleLoggerUtil.print(project, "  - " + model));
         return models;
     }
 }

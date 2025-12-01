@@ -46,8 +46,8 @@ import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import icons.AICommonIcons;
 
 /**
  * AI 提供商配置 UI 类

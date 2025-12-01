@@ -1,7 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
 
+import com.intellij.openapi.project.Project;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -31,12 +32,10 @@ public class CustomProvider extends AICompatibleProvider {
      * @param config          AIProvider 的配置信息, 不能为空
      * @param modelParameters AI 模型参数, 不能为空
      * @param runtimeSettings AI 运行时设置, 不能为空
-     * @param consoleLogger   用于日志输出的控制台日志器, 允许为 {@code null}
      */
-    public CustomProvider(@NotNull AIProviderConfig config,
+    public CustomProvider(@NotNull Project project, @NotNull AIProviderConfig config,
                           @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings,
-                          @Nullable AIConsoleLogger consoleLogger) {
-        super(config, modelParameters, runtimeSettings, consoleLogger);
+                          @NotNull AIRuntimeSettings runtimeSettings) {
+        super(project, config, modelParameters, runtimeSettings);
     }
 }

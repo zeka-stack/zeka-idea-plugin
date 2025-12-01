@@ -1,6 +1,7 @@
 package icons;
 
 import com.intellij.openapi.util.IconLoader;
+import com.intellij.util.IconUtil;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -39,5 +40,13 @@ public final class TracerIcons {
      * 用于：右键菜单、工具栏按钮等基于 {@link com.intellij.openapi.actionSystem.AnAction} 的入口。
      */
     public static final Icon WORKFLOW_ACTION = load("/icons/pluginIcon_16.svg");
+    /**
+     * 工具图标, 用于表示工作流操作
+     * <p>
+     * 该图标通过 {@link IconUtil#scale} 方法对原始图标进行缩放处理, 缩放比例为 0.8125
+     *
+     * @see IconUtil
+     */
+    public static final Icon TOOL_ICON = IconUtil.scale(WORKFLOW_ACTION, null, 0.8125f);
 }
 

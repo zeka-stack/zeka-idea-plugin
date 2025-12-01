@@ -169,7 +169,6 @@ public class AIProviderConfig {
         AIRuntimeSettings right = other.runtimeSettings != null ? other.runtimeSettings : new AIRuntimeSettings();
         return left.maxRetries == right.maxRetries
                && left.timeout == right.timeout
-               && left.waitDuration == right.waitDuration
-               && left.verboseLogging == right.verboseLogging;
+               && left.waitDuration == right.waitDuration;
     }
 }

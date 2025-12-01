@@ -46,12 +46,6 @@
         <!-- Maven 缓存清理监听器（在启动活动中注册） -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.MavenCacheCleanupListener"/>
 
-        <!-- Console 工具窗口 -->
-        <!--suppress PluginXmlI18n -->
-        <toolWindow id="IntelliAI JavaDoc Console"
-                    factoryClass="dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleToolWindowFactory"
-                    anchor="bottom"
-                    icon="/icons/aij_16.svg"/>
 
         <!-- 状态栏默认服务商控件 -->
         <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidgetFactory"
@@ -67,11 +61,6 @@
 
     </extensions>
 
-    <!-- 注册到 intelli-ai-engine 的扩展点 -->
-    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
-        <!-- AI 控制台日志提供者 -->
-        <aiConsoleLoggerProvider implementation="dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIConsoleLoggerProvider"/>
-    </extensions>
 
     <!-- 插件定义的动作 -->
     <actions>

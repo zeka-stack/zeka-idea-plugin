@@ -21,8 +21,6 @@ public class AIRuntimeSettings {
      * 等待持续时间, 单位为毫秒
      */
     public long waitDuration = 5000;
-    /** 是否启用详细日志记录,true 表示启用,false 表示禁用 */
-    public boolean verboseLogging = false;
 
     /**
      * 创建当前运行时设置的副本
@@ -36,7 +34,6 @@ public class AIRuntimeSettings {
         settings.maxRetries = this.maxRetries;
         settings.timeout = this.timeout;
         settings.waitDuration = this.waitDuration;
-        settings.verboseLogging = this.verboseLogging;
         return settings;
     }
 

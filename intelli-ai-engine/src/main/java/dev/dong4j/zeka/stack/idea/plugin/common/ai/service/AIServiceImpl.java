@@ -1,15 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.service;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
@@ -24,7 +21,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  * 提供 AI 内容生成服务的具体实现, 包括 AI 内容生成, 配置管理, 日志记录等功能.
  * 该类实现了 AIService 接口, 通过 AI 服务提供商工厂创建具体的 AI 服务提供商,
  * 并使用全局凭证管理器管理 AI 服务的认证信息.
- * 支持通过扩展点机制获取控制台日志记录器, 提供灵活的日志记录功能.
+ * 使用 Engine 的统一控制台进行日志记录.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -34,15 +31,29 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  */
 public final class AIServiceImpl implements AIService {
 
+    /**
+     * 全局凭证管理器实例
+     * <p>
+     * 用于管理所有与 "IntelliAI Engine" 相关的凭证信息, 使用前缀 "AI_COMMON_" 进行标识
+     *
+     * @see AICredentialManager
+     */
     private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER =
         new AICredentialManager("IntelliAI Engine", "AI_COMMON_");
 
     /**
-     * AI 控制台日志提供者扩展点名称
+     * 生成内容
+     * <p>
+     * 根据提供的项目, 请求, 配置和可选的监听器生成内容.
+     *
+     * @param project  项目对象
+     * @param request  AI 聊天请求
+     * @param config   AI 提供者配置
+     * @param listener 可选的 AI 响应监听器, 用于处理生成过程中的响应事件
+     * @return 生成的内容字符串
+     * @throws AIServiceException 当 AI 服务调用过程中发生错误时抛出
+     * @since 1.0
      */
-    private static final ExtensionPointName<AIConsoleLoggerProvider> CONSOLE_LOGGER_PROVIDER_EP_NAME =
-        ExtensionPointName.create("dev.dong4j.zeka.stack.idea.plugin.common.ai.aiConsoleLoggerProvider");
-
     @Override
     @NotNull
     public String generateContent(@NotNull Project project,
@@ -52,52 +63,50 @@ public final class AIServiceImpl implements AIService {
         return generateContentWithConfig(project, request, config, listener);
     }
 
-
+    /**
+     * 使用指定配置生成 AI 内容
+     * <p>
+     * 根据提供的项目, 请求,AI 服务配置和可选的监听器, 创建 AI 服务提供者并生成内容.
+     *
+     * @param project  项目对象, 用于获取相关上下文信息
+     * @param request  AI 请求内容
+     * @param config   AI 服务提供者的配置信息
+     * @param listener 可选的 AI 响应监听器, 用于处理生成过程中的事件
+     * @return 生成的 AI 内容结果
+     * @throws AIServiceException 当 AI 服务调用过程中发生错误时抛出
+     */
     private String generateContentWithConfig(@NotNull Project project,
                                              @NotNull AIChatRequest request,
                                              @NotNull AIProviderConfig config,
                                              @Nullable AIResponseListener listener) throws AIServiceException {
-
-        // 从扩展点获取控制台日志记录器
-        AIConsoleLogger consoleLogger = getConsoleLogger(project);
-        
         // 创建服务提供者
-        AIServiceProvider provider = AIServiceFactory.createProvider(config, consoleLogger);
-
-        if (provider == null) {
-            throw new AIServiceException("Failed to create AI service provider");
-        }
-
+        AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
         // 生成内容（传递 listener）
         return provider.generateContent(request, GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId), listener);
     }
 
     /**
-     * 从扩展点获取控制台日志记录器
+     * 获取全局的 AI 提供者设置
      * <p>
-     * 查找所有注册的 AIConsoleLoggerProvider 扩展点实现，返回第一个非空的日志记录器。
+     * 返回当前应用中全局使用的 AI 提供者配置实例.
      *
-     * @param project 项目对象
-     * @return 控制台日志记录器，如果没有找到则返回 null
+     * @return 全局 AI 提供者设置的实例
+     * @throws IllegalStateException 如果无法获取设置实例时抛出
+     * @since 1.0.0
      */
-    @Nullable
-    private AIConsoleLogger getConsoleLogger(@NotNull Project project) {
-        for (AIConsoleLoggerProvider provider : CONSOLE_LOGGER_PROVIDER_EP_NAME.getExtensionList()) {
-            AIConsoleLogger logger = provider.getConsoleLogger(project);
-            if (logger != null) {
-                return logger;
-            }
-        }
-        return null;
-    }
-
     @Override
     @NotNull
     public AIProviderSettings getGlobalSettings() {
         return AIProviderSettings.getInstance();
     }
+
     /**
-     * 获取服务实例
+     * 获取 AIService 的单例实例
+     * <p>
+     * 通过 ApplicationManager 获取当前应用上下文中 AIService 的实例.
+     *
+     * @return AIService 的实例
+     * @since 1.0
      */
     public static AIService getInstance() {
         return ApplicationManager.getApplication().getService(AIService.class);

@@ -26,6 +26,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
@@ -35,7 +36,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
+import icons.AICommonIcons;
 import lombok.Getter;
 
 /**
@@ -336,6 +337,7 @@ public class ChangelogSettingsPanel {
      * 从 IntelliAI Engine 设置中重新获取可用提供商列表，并更新下拉框内容。
      * 如果之前没有可用提供商，现在有了，会重新创建面板。
      */
+    @SuppressWarnings("D")
     private void refreshProviderComboBox() {
         if (aiProviderSelectionPanel == null) {
             return;
@@ -488,7 +490,7 @@ public class ChangelogSettingsPanel {
             /**
              * 文档更新时触发的回调方法
              * <p>
-             * 当文本域的内容发生变化时, 该方法会被调用, 并通过 {@link #adjustTextAreaSize(javax.swing.JTextArea)} 方法自动调整文本域的尺寸, 以适应新的内容.
+             * 当文本域的内容发生变化时, 该方法会被调用, 并通过 {@link JTextArea} 方法自动调整文本域的尺寸, 以适应新的内容.
              *
              * @param e 文档事件, 包含了更新的具体信息
              */

@@ -31,6 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import icons.AICommonIcons;
 
 /**
  * AI 提供商配置控制器
@@ -109,7 +110,7 @@ public final class AIProviderConfigController {
         AIRuntimeSettings runtimeSettings = workingSettings.runtimeSettings != null
                                             ? workingSettings.runtimeSettings
                                             : new AIRuntimeSettings();
-        ui.getVerboseLoggingCheckBox().setSelected(runtimeSettings.verboseLogging);
+        ui.getVerboseLoggingCheckBox().setSelected(workingSettings.verboseLogging);
         ui.updateCheckBoxHintColors();
 
         // 加载高级配置
@@ -167,6 +168,9 @@ public final class AIProviderConfigController {
         workingSettings.showAvailableProviders = ui.getShowAvailableProvidersCheckBox().isSelected();
 
         workingSettings.showAdvancedSettings = ui.getShowAdvancedSettingsCheckBox().isSelected();
+
+        // verboseLogging 已迁移到全局配置
+        workingSettings.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();
@@ -329,13 +333,6 @@ public final class AIProviderConfigController {
         AIServiceProvider provider;
         try {
             provider = AIServiceFactory.createProvider(testConfig);
-            if (provider == null) {
-                JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                              AICommonBundle.message("settings.error.provider.create.failed.details"),
-                                              AICommonBundle.message("settings.error.title"),
-                                              JOptionPane.ERROR_MESSAGE);
-                return;
-            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(ui.getMainPanel(),
                                           AICommonBundle.message("settings.error.provider.create.failed"),
@@ -357,10 +354,13 @@ public final class AIProviderConfigController {
                         configurationVerified = true;
                         updateTestButtonState();
                         addAvailableProvider(testConfig, providerType);
+                        String message = buildSuccessMessage(result.getMessage(), testConfig);
+                        javax.swing.Icon icon = AICommonIcons.getProviderIcon64(providerType);
                         JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                                      result.getMessage(),
+                                                      message,
                                                       AICommonBundle.message("settings.test.result.title"),
-                                                      JOptionPane.INFORMATION_MESSAGE);
+                                                      JOptionPane.INFORMATION_MESSAGE,
+                                                      icon);
                     } else {
                         configurationVerified = false;
                         updateTestButtonState();
@@ -412,13 +412,6 @@ public final class AIProviderConfigController {
         AIServiceProvider provider;
         try {
             provider = AIServiceFactory.createProvider(refreshConfig);
-            if (provider == null) {
-                JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                              AICommonBundle.message("settings.error.provider.create.failed"),
-                                              AICommonBundle.message("settings.error.title"),
-                                              JOptionPane.ERROR_MESSAGE);
-                return;
-            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(ui.getMainPanel(),
                                           AICommonBundle.message("settings.error.provider.create.failed.details"),
@@ -697,7 +690,7 @@ public final class AIProviderConfigController {
         AIRuntimeSettings snapshot = new AIRuntimeSettings();
         AIRuntimeSettings baseline = workingSettings.runtimeSettings != null ? workingSettings.runtimeSettings : new AIRuntimeSettings();
         snapshot.waitDuration = baseline.waitDuration;
-        snapshot.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
+        // verboseLogging 已迁移到全局配置，不在这里设置
         snapshot.maxRetries = ((Number) ui.getMaxRetriesSpinner().getValue()).intValue();
         snapshot.timeout = ((Number) ui.getTimeoutSpinner().getValue()).intValue();
         return snapshot;
@@ -784,6 +777,46 @@ public final class AIProviderConfigController {
             return "";
         }
         return baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+    }
+
+    /**
+     * 构建测试成功的消息，包含高级配置信息
+     * <p>
+     * 展示当前的高级配置参数，并告知用户可以在可用服务商列表中修改这些参数。
+     *
+     * @param baseMessage 基础成功消息
+     * @param config      AI 提供商配置
+     * @return 完整的成功消息
+     */
+    @NotNull
+    private String buildSuccessMessage(@NotNull String baseMessage, @NotNull AIProviderConfig config) {
+
+        AIRuntimeSettings runtime = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
+
+        AIModelParameters modelParams = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
+
+        String message = baseMessage + "\n\n" +
+                         "=== 当前高级配置 ===\n\n" +
+
+                         // 运行时设置
+                         "【运行时设置】\n" +
+                         String.format("  最大重试次数: %d\n", runtime.maxRetries) +
+                         String.format("  请求超时: %d 秒\n", runtime.timeout) +
+                         "\n" +
+
+                         // 模型参数
+                         "【模型参数】\n" +
+                         String.format("  温度 (Temperature): %.2f\n", modelParams.temperature) +
+                         String.format("  最大 Token 数: %d\n", modelParams.maxTokens) +
+                         String.format("  Top P: %.2f\n", modelParams.topP) +
+                         String.format("  Top K: %d\n", modelParams.topK) +
+                         String.format("  存在惩罚 (Presence Penalty): %.2f\n", modelParams.presencePenalty) +
+                         "\n" +
+
+                         // 说明文字
+                         "💡 提示：测试连接之前先修改高级参数以适配不同场景需求\n";
+
+        return message;
     }
 }
 

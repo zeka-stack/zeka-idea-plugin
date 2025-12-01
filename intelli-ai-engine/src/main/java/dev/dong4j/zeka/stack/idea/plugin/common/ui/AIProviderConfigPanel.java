@@ -97,16 +97,6 @@ public final class AIProviderConfigPanel {
     }
 
     /**
-     * 获取当前 API 密钥
-     *
-     * @return 当前 API 密钥的字符串形式
-     */
-    @NotNull
-    public String getCurrentApiKey() {
-        return controller.getCurrentApiKey();
-    }
-
-    /**
      * 初始化各种监听器，用于响应用户界面组件的事件
      */
     private void setupListeners() {

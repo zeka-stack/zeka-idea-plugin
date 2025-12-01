@@ -24,7 +24,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.ProgressManager;
@@ -202,13 +202,13 @@ public class ParallelTaskWorker implements Runnable {
             task.setStatus(DocumentationTask.TaskStatus.SKIPPED);
             stats.incrementSkipped();
             updateProgress(task);
-            JavaDocConsoleView.printWarning(project, "⏭ 任务已跳过（已有文档）");
-            JavaDocConsoleView.print(project, "");
+            AIConsoleLoggerUtil.printWarning(project, "⏭ 任务已跳过（已有文档）");
+            AIConsoleLoggerUtil.print(project, "");
             throw new AIServiceException("任务已跳过", AIServiceException.ErrorCode.UNKNOWN_ERROR);
         }
 
         // 输出代码位置信息（详细日志模式）
-        boolean verboseLogging = isVerbose(provider);
+        boolean verboseLogging = isVerbose();
         if (verboseLogging) {
             outputCodeLocation(task);
         }
@@ -217,7 +217,7 @@ public class ParallelTaskWorker implements Runnable {
         AIChatRequest request = AIRequestComposer.compose(settings, task);
 
         // 生成文档内容
-        AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project, true) : null;
+        AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project) : null;
         String documentation = aiService.generateContent(project, request, provider, listener);
 
         if (documentation.trim().isEmpty()) {
@@ -259,8 +259,8 @@ public class ParallelTaskWorker implements Runnable {
                                                 currentTaskNum,
                                                 task.getType().name(),
                                                 task.getFilePath());
-                JavaDocConsoleView.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.printHyperlinkWithTimestamp(project, taskInfo, virtualFile, 0);
+                AIConsoleLoggerUtil.print(project, "");
             } catch (Exception e) {
                 // 忽略异常，避免影响主功能
             }
@@ -294,7 +294,7 @@ public class ParallelTaskWorker implements Runnable {
                 int lineNumber = document.getLineNumber(startOffset);
                 String fileName = virtualFile.getName();
                 String locationMessage = String.format("处理代码位置: %s:%d", fileName, lineNumber + 1);
-                JavaDocConsoleView.printHyperlink(project, locationMessage, virtualFile, lineNumber);
+                AIConsoleLoggerUtil.printHyperlink(project, locationMessage, virtualFile, lineNumber);
             } catch (Exception e) {
                 // 忽略异常，避免影响主功能
             }
@@ -336,11 +336,11 @@ public class ParallelTaskWorker implements Runnable {
         updateProgress(task);
 
         if (isRetryTask) {
-            JavaDocConsoleView.printSuccess(project, "✓ 任务完成（重试成功）");
+            AIConsoleLoggerUtil.printSuccess(project, "✓ 任务完成（重试成功）");
         } else {
-            JavaDocConsoleView.printSuccess(project, "✓ 任务完成");
+            AIConsoleLoggerUtil.printSuccess(project, "✓ 任务完成");
         }
-        JavaDocConsoleView.print(project, "");
+        AIConsoleLoggerUtil.print(project, "");
     }
 
     /**
@@ -398,27 +398,27 @@ public class ParallelTaskWorker implements Runnable {
                 task.setErrorMessage(errorMessage);
                 stats.incrementFailed();
                 updateProgress(task);
-                JavaDocConsoleView.printError(project,
-                                              String.format("✗ 任务失败（重试 %d 次后仍失败）: %s",
-                                                            retryableTask.getRetryCount(), errorMessage));
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.printError(project,
+                                               String.format("✗ 任务失败（重试 %d 次后仍失败）: %s",
+                                                             retryableTask.getRetryCount(), errorMessage));
+                AIConsoleLoggerUtil.print(project, "");
             } else {
                 // 未超过最大重试次数，重新加入重试队列（复用现有的 RetryableTask）
                 retryableTask.setLastError(errorMessage);
                 taskDispatcher.addToRetryQueue(retryableTask);
-                JavaDocConsoleView.printWarning(project,
-                                                String.format("⚠ 任务失败，将重试（第 %d 次）: %s",
-                                                              retryableTask.getRetryCount() + 1, errorMessage));
-                JavaDocConsoleView.print(project, "");
+                AIConsoleLoggerUtil.printWarning(project,
+                                                 String.format("⚠ 任务失败，将重试（第 %d 次）: %s",
+                                                               retryableTask.getRetryCount() + 1, errorMessage));
+                AIConsoleLoggerUtil.print(project, "");
             }
         } else {
             // 首次失败，创建重试任务并加入重试队列
             retryableTask = new RetryableTask(task);
             retryableTask.setLastError(errorMessage);
             taskDispatcher.addToRetryQueue(task, errorMessage);
-            JavaDocConsoleView.printWarning(project,
-                                            String.format("⚠ 任务失败，将重试: %s", errorMessage));
-            JavaDocConsoleView.print(project, "");
+            AIConsoleLoggerUtil.printWarning(project,
+                                             String.format("⚠ 任务失败，将重试: %s", errorMessage));
+            AIConsoleLoggerUtil.print(project, "");
         }
     }
 
@@ -445,11 +445,10 @@ public class ParallelTaskWorker implements Runnable {
     /**
      * 检查是否启用详细日志
      *
-     * @param provider 服务商配置
      * @return 如果启用详细日志返回 true
      */
-    private boolean isVerbose(@NotNull AIProviderConfig provider) {
-        return providerSettings.runtimeSettings != null && providerSettings.runtimeSettings.verboseLogging;
+    private boolean isVerbose() {
+        return AIProviderSettings.getInstance().verboseLogging;
     }
 }
 

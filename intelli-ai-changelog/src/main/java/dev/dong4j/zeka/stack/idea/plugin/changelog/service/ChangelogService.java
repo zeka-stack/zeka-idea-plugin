@@ -22,15 +22,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.ai.ChangelogAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
  * 变更日志服务类
@@ -317,13 +320,16 @@ public final class ChangelogService {
         // 创建 AI 聊天请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
 
+        // 检查是否启用详细日志
+        boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
+        AIResponseListener listener = verboseLogging ? new ChangelogAIResponseListener(project) : null;
+
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
             // 使用 AIService API 生成内容
-            // listener 参数传 null，因为 changelog 插件可能不需要详细的响应监听
-            String result = aiService.generateContent(project, request, config, null);
+            String result = aiService.generateContent(project, request, config, listener);
 
             // 检查结果是否为空
             if (result.trim().isEmpty()) {
@@ -335,10 +341,9 @@ public final class ChangelogService {
             // 捕获 AIServiceException 并转换为友好的错误消息
             String errorMessage = e.getMessage();
             if (errorMessage != null && !errorMessage.isEmpty()) {
-                throw new Exception(ChangelogBundle.message("error.ai.service.failed", errorMessage));
+                throw new Exception(errorMessage);
             } else {
-                throw new Exception(ChangelogBundle.message("error.ai.service.failed",
-                                                            ChangelogBundle.message("error.ai.service.unknown")));
+                throw new Exception("未知错误");
             }
         }
     }
@@ -433,12 +438,16 @@ public final class ChangelogService {
         // 创建 AI 聊天请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
 
+        // 检查是否启用详细日志
+        boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
+        AIResponseListener listener = verboseLogging ? new ChangelogAIResponseListener(project) : null;
+
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
             // 使用 AIService API 生成内容
-            String result = aiService.generateContent(project, request, config, null);
+            String result = aiService.generateContent(project, request, config, listener);
 
             // 检查结果是否为空
             if (result.trim().isEmpty()) {

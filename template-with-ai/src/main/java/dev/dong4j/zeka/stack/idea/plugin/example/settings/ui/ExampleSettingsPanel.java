@@ -34,7 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.example.util.ExampleBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.icons.AICommonIcons;
+import icons.AICommonIcons;
 import lombok.Getter;
 
 /**

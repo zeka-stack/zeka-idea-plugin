@@ -1,7 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.CustomProvider;
@@ -39,17 +41,17 @@ public final class AIServiceFactory {
     }
 
     /**
-     * 创建 AI 服务提供者实例
+     * 根据提供的配置创建 AI 服务提供商实例
      * <p>
-     * 根据提供的 {@link AIProviderConfig},{@link AIModelParameters} 与 {@link AIRuntimeSettings} 创建
-     * {@link AIServiceProvider} 对象. 该方法内部调用带有更多参数的重载方法, 传入 {@code null}
-     * 的扩展配置以及 {@code false} 的兼容性标志.
+     * 使用当前项目和指定的 AIProviderConfig 配置来创建并返回一个 AIServiceProvider 实例.
      *
-     * @param config          AI 提供者配置, 不能为空
-     * @return 创建的 {@link AIServiceProvider} 实例; 若创建失败则返回 {@code null}
+     * @param config AI 服务提供商的配置信息, 不可为 null
+     * @return 创建的 AIServiceProvider 实例
+     * @throws NullPointerException 如果 config 参数为 null 时抛出
+     * @since 1.0.0
      */
     public static AIServiceProvider createProvider(@NotNull AIProviderConfig config) {
-        return createProvider(config, null);
+        return createProvider(getProject(), config);
     }
 
     /**
@@ -59,23 +61,39 @@ public final class AIServiceFactory {
      * 如果未指定提供者类型, 则默认使用 QIANWEN 类型.
      *
      * @param config          提供者配置信息, 不能为空
-     * @param consoleLogger   控制台日志记录器, 可以为 null
      * @return 创建的 AI 服务提供者实例, 可能为 null
      */
-    public static AIServiceProvider createProvider(@NotNull AIProviderConfig config,
-                                                   @Nullable AIConsoleLogger consoleLogger) {
+    public static AIServiceProvider createProvider(@NotNull Project project, @NotNull AIProviderConfig config) {
         AIProviderType providerType = config.providerType != null ? config.providerType : AIProviderType.QIANWEN;
         AIModelParameters modelParameters = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
         AIRuntimeSettings runtimeSettings = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
         return switch (providerType) {
-            case CUSTOM -> new CustomProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case QIANWEN -> new QianWenProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case SILICONFLOW -> new SiliconFlowProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case OLLAMA -> new OllamaProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case LM_STUDIO -> new LMStudioProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case MODELSCOPE -> new ModelScopeProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case IFLOW -> new IflowProvider(config, modelParameters, runtimeSettings, consoleLogger);
-            case ZHIPU -> new ZhipuProvider(config, modelParameters, runtimeSettings, consoleLogger);
+            case CUSTOM -> new CustomProvider(project, config, modelParameters, runtimeSettings);
+            case QIANWEN -> new QianWenProvider(project, config, modelParameters, runtimeSettings);
+            case SILICONFLOW -> new SiliconFlowProvider(project, config, modelParameters, runtimeSettings);
+            case OLLAMA -> new OllamaProvider(project, config, modelParameters, runtimeSettings);
+            case LM_STUDIO -> new LMStudioProvider(project, config, modelParameters, runtimeSettings);
+            case MODELSCOPE -> new ModelScopeProvider(project, config, modelParameters, runtimeSettings);
+            case IFLOW -> new IflowProvider(project, config, modelParameters, runtimeSettings);
+            case ZHIPU -> new ZhipuProvider(project, config, modelParameters, runtimeSettings);
         };
+    }
+
+    /**
+     * 获取项目实例
+     * <p>
+     * 在应用级设置中，优先使用打开的项目，如果没有打开的项目则使用默认项目。
+     * 这确保了在设置页面中也能正常使用需要 project 的功能。
+     *
+     * @return 项目实例，不会为 null
+     */
+    @NotNull
+    private static Project getProject() {
+        Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
+        if (openProjects.length > 0) {
+            return openProjects[0];
+        }
+        // 如果没有打开的项目，使用默认项目
+        return ProjectManager.getInstance().getDefaultProject();
     }
 }

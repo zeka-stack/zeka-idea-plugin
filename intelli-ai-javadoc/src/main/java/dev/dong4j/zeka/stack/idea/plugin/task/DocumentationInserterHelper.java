@@ -17,7 +17,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 
 import org.jetbrains.annotations.NotNull;
 
-import dev.dong4j.zeka.stack.idea.plugin.console.JavaDocConsoleView;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
 import lombok.RequiredArgsConstructor;
@@ -128,9 +128,9 @@ public class DocumentationInserterHelper {
                         }
 
                         // Console 日志：输出最终插入的 JavaDoc（仅详细日志模式）
-                        JavaDocConsoleView.printWithTimestamp(project, "=== 最终插入的 JavaDoc ===");
-                        JavaDocConsoleView.print(project, javadoc);
-                        JavaDocConsoleView.print(project, "");
+                        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 最终插入的 JavaDoc ===");
+                        AIConsoleLoggerUtil.print(project, javadoc);
+                        AIConsoleLoggerUtil.print(project, "");
 
                         // 输出可点击跳转的代码位置
                         VirtualFile virtualFile = element.getContainingFile().getVirtualFile();
@@ -140,9 +140,9 @@ public class DocumentationInserterHelper {
                             String locationMessage = String.format("==>>: %s:%d", fileName, line);
 
                             // 使用可点击的超链接格式输出
-                            JavaDocConsoleView.printHyperlink(project, locationMessage, virtualFile, lineNumber);
+                            AIConsoleLoggerUtil.printHyperlink(project, locationMessage, virtualFile, lineNumber);
                         }
-                        JavaDocConsoleView.print(project, "");
+                        AIConsoleLoggerUtil.print(project, "");
 
                     } catch (Exception e) {
                         log.info("插入文档失败", e);
