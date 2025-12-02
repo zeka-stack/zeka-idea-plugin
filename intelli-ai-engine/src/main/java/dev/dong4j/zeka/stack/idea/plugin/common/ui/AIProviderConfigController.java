@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.Gray;
 import com.intellij.ui.JBColor;
@@ -14,6 +15,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -533,6 +538,8 @@ public final class AIProviderConfigController {
      * 更新凭证 ID 并保存 API 密钥
      * <p>
      * 根据传入的 AIProviderConfig 对象, 获取当前 API 密钥, 更新配置中的凭证 ID, 并在条件满足时将 API 密钥保存到凭证管理器中.
+     * <p>
+     * 密码保存操作在后台线程中执行, 避免阻塞 EDT.
      *
      * @param config AIProviderConfig 对象, 用于更新凭证 ID 和保存 API 密钥
      */
@@ -540,7 +547,20 @@ public final class AIProviderConfigController {
         String apiKey = getCurrentApiKey();
         config.updateCredentialId(apiKey);
         if (!apiKey.trim().isEmpty() && config.credentialId != null) {
-            credentialManager.setApiKey(config.credentialId, apiKey);
+            // 密码保存是慢操作, 需要在后台线程执行
+            String credentialId = config.credentialId;
+            String finalApiKey = apiKey;
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                credentialManager.setApiKey(credentialId, finalApiKey);
+            }, ApplicationManager.getApplication()::executeOnPooledThread);
+
+            // 等待密码保存完成, 但设置超时避免无限等待
+            try {
+                future.get(5, TimeUnit.SECONDS);
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                // 静默处理异常, 避免影响主流程
+                // 密码保存失败不会影响配置的保存, 只是下次需要重新输入
+            }
         }
     }
 

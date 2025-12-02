@@ -309,7 +309,7 @@ public final class ChangelogService {
         AIProviderConfig config = settings.providerConfig;
         // 获取 AI 配置
         if (config == null) {
-            throw new NoProviderdException("No AI provider configured");
+            throw new NoProviderdException();
         }
 
         // 获取系统提示词
@@ -440,6 +440,7 @@ public final class ChangelogService {
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
+            AIProviderConfig config = SettingsState.getInstance().providerConfig;
             // 使用 AIService API 生成内容
             String result = aiService.generateContent(project, request, config, listener);
 

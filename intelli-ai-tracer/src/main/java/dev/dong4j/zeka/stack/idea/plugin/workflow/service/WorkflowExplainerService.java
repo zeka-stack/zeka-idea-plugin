@@ -469,7 +469,7 @@ public class WorkflowExplainerService {
         // 获取 AI 配置
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
         if (config == null) {
-            throw new NoProviderdException("No AI provider configured");
+            throw new NoProviderdException();
         }
 
         // 构建 Prompt

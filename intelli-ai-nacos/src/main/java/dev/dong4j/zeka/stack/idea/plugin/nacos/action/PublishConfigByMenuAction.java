@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.action;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
@@ -82,6 +83,12 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
     @Override
     protected boolean isAvailable(@NotNull Project project) {
         return super.isAvailable(project);
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        // VIRTUAL_FILE 只能在 EDT 中访问，所以必须在 EDT 中执行 update
+        return ActionUpdateThread.EDT;
     }
 
     @Override

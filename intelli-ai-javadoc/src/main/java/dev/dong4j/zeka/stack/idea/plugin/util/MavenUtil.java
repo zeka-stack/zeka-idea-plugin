@@ -85,6 +85,7 @@ public final class MavenUtil {
      * @param element 需要获取版本号的 PsiElement
      * @return 项目版本号, 格式为去除 "-SNAPSHOT" 和 ".RELEASE" 后的字符串
      */
+    @SuppressWarnings("D")
     public static String getVersion(PsiElement element) {
         return ReadAction.compute(() -> {
             Project project = element.getProject();

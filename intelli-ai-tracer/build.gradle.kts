@@ -1,7 +1,6 @@
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.1.0"
-    id("com.github.sherter.google-java-format") version "0.9"
 }
 
 group = providers.gradleProperty("pluginGroup").get()

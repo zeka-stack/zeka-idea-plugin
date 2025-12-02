@@ -103,7 +103,7 @@ clean: clean-javadoc clean-engine clean-changelog clean-nacos clean-tracer
 # 构建命令
 build: build-javadoc build-engine build-changelog build-nacos  build-tracer
 
-deploy-all: deploy-engine deploy-javadoc deploy-changelog deploy-nacos deploy-tracer
+deploy-sub: deploy-javadoc deploy-changelog deploy-tracer deploy-nacos
 
 # 插件版本信息
 version:

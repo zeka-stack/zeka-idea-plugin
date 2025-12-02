@@ -1,0 +1,178 @@
+---
+description: IDEA 插件开发 EDT/BGT 安全规范
+globs: [ "**/*.java" ]
+alwaysApply: true
+---
+
+⸻
+
+📌 1. 全局原则
+
+在生成或修改任何 IntelliJ IDEA 插件代码时，你必须遵守以下 IntelliJ 平台线程模型规则：
+
+1. 所有 UI 操作必须在 Event Dispatch Thread (EDT) 执行。
+2. 所有耗时操作必须在后台线程（BGT / pooled thread）执行，不能阻塞 EDT。
+3. 读取 IDEA 模型（Psi、VFS、索引）必须使用 ReadAction。
+4. 修改 IDEA 模型必须使用 WriteCommandAction（Write Action）并且只能在 EDT。
+5. BGT → 更新 UI 时必须使用 invokeLater 或 finishOnUiThread 切回 EDT。
+6. 禁止在 EDT 中写入文件、扫描项目、解析 PSI、执行 IO、网络请求等慢操作。
+7. 禁止在后台线程直接操作 Swing UI 或 PSI 写操作。
+
+⸻
+
+📌 2. 代码生成要求（强约束）
+
+当生成 IntelliJ 插件代码时：
+
+✔ 所有包含重任务的逻辑必须包装为：
+
+```java
+ApplicationManager.getApplication().executeOnPooledThread(() -> { ... });
+```
+
+或：
+
+```java
+ReadAction.nonBlocking(() -> { ... })
+.submit(ExecutorService);
+```
+
+⸻
+
+✔ 所有包含 UI 更新代码必须：
+
+```java
+ApplicationManager.getApplication().invokeLater(() -> { ... });
+```
+
+或：
+
+在 nonBlocking 中：
+
+```java
+.finishOnUiThread(ModalityState.any(), result -> { ... });
+```
+
+⸻
+
+✔ 所有 PSI 修改必须：
+
+```java
+WriteCommandAction.runWriteCommandAction(project, () -> { ... });
+```
+
+⸻
+
+📌 3. 应避免生成的错误
+
+不得生成下列违反 IntelliJ threading model 的代码：
+
+❌ 在 EDT 中执行耗时代码
+
+如 actionPerformed 中直接：
+
+```java
+Thread.sleep(...)
+psiManager.findFile(...)
+doHeavyScan(...)
+virtualFile.contentsToByteArray()
+```
+
+❌ 在后台线程执行 UI 操作
+
+如：
+
+```java
+label.setText("...")
+toolWindow.show(...)
+Messages.showInfoMessage(...)
+```
+
+❌ 在后台线程进行 PSI 写操作
+
+如：
+
+```java
+psiClass.add(method)  // without WriteCommandAction
+```
+
+❌ 使用过时的 runReadAction / invokeAndWait 组合导致死锁
+
+不应生成：
+
+```java
+ApplicationManager.getApplication().invokeAndWait(() -> {
+    ApplicationManager.getApplication().runReadAction(...)
+});
+```
+
+⸻
+
+📌 4. 常见场景模式
+
+🔹 Action 按钮逻辑（EDT → BGT → EDT）
+
+```java
+@Override
+public void actionPerformed(@NotNull AnActionEvent e) {
+Project project = e.getProject();
+
+    // EDT: UI
+    Messages.showInfoMessage(project, "Start scanning...", "Info");
+
+    // BGT: heavy work
+    ReadAction.nonBlocking(() -> {
+        return scanProject(project);
+    })
+    .finishOnUiThread(ModalityState.any(), result -> {
+        // EDT: UI update
+        Messages.showInfoMessage(project, "Scan result: " + result, "Done");
+    })
+    .submit(AppExecutorUtil.getAppExecutorService());
+}
+```
+
+⸻
+
+🔹 PSI 写操作模板
+
+```java
+WriteCommandAction.runWriteCommandAction(project, () -> {
+PsiElementFactory factory = JavaPsiFacade.getInstance(project).getElementFactory();
+PsiMethod method = factory.createMethodFromText("public void test(){}", null);
+psiClass.add(method);
+});
+```
+
+⸻
+
+🔹 后台任务 + UI 更新模板（强制使用）
+
+```java
+ApplicationManager.getApplication().executeOnPooledThread(() -> {
+String data = loadRemoteData();
+
+    ApplicationManager.getApplication().invokeLater(() -> {
+        panel.update(data);
+    });
+});
+```
+
+⸻
+
+📌 5. checklist
+
+在代码 Review / Refactor / 补全时，必须自问：
+
+1. 是否有 UI 更新在 BGT？
+2. 是否有耗时逻辑在 EDT？
+3. 是否涉及 PSI 读取？是否加了 ReadAction？
+4. 是否涉及 PSI 修改？是否加了 WriteCommandAction？
+5. 是否有 EDT/BGT 切换遗漏？
+6. 是否使用了现代 API（nonBlocking）而非旧的 readAction？
+7. 是否避免阻塞 Swing UI？
+
+若检查失败，Cursor 必须自动修正为正确用法。
+
+
+

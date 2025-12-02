@@ -406,8 +406,21 @@ public class NacosSettingsPanel {
         serverAddrField.setText(settings.serverAddr);
         usernameField.setText(settings.username);
         globalAdminCheckBox.setSelected(settings.globalAdmin);
-        String password = settings.getPassword();
-        passwordField.setText(password != null ? password : "");
+        // 密码获取是慢操作，需要在后台线程执行
+        passwordField.setText(""); // 先清空，避免显示旧密码
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                String password = settings.getPassword();
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    passwordField.setText(password != null ? password : "");
+                }, ModalityState.any());
+            } catch (Exception e) {
+                LOG.warn("Failed to get password", e);
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    passwordField.setText("");
+                }, ModalityState.any());
+            }
+        });
         localRegistryCheckBox.setSelected(settings.useLocalRegistry);
 
         // 回显版本选择
