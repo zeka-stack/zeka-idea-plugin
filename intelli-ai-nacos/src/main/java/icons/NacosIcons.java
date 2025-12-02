@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.nacos.icons;
+package icons;
 
 import com.intellij.openapi.util.IconLoader;
 

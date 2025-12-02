@@ -34,7 +34,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.exception.NoProviderdException;
 
 /**
  * 变更日志服务类
@@ -307,10 +306,6 @@ public final class ChangelogService {
 
         // 获取当前配置的供应商
         AIProviderConfig config = settings.providerConfig;
-        // 获取 AI 配置
-        if (config == null) {
-            throw new NoProviderdException();
-        }
 
         // 获取系统提示词
         String systemPrompt = settings.systemPrompt;

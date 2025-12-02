@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -15,11 +13,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
 
@@ -93,22 +92,13 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
             return;
         }
 
-        log.info("Git 提交页面：开始生成提交记录");
-
-        SettingsState settings = SettingsState.getInstance();
-
-        // 获取当前配置的供应商
-        AIProviderConfig config = settings.providerConfig;
-        if (config == null) {
-            Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
-                                                         ChangelogBundle.message("notification.error.title"),
-                                                         ChangelogBundle.message("settings.ai.provider.no.available.warning"),
-                                                         NotificationType.ERROR);
-            // 添加设置动作
-            NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+        // 检查 AI Provider 配置
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
             return;
         }
 
+        log.info("Git 提交页面：开始生成提交记录");
         // 获取提交的文件变更
         Collection<Change> changes = getCommittedChanges(project);
         if (changes.isEmpty()) {

@@ -14,7 +14,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
+import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -77,6 +81,12 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
                            Editor editor,
                            @NotNull PsiFile psiFile,
                            boolean needEditor) {
+
+        // 检查 AI Provider 配置
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            return;
+        }
 
         if (!(psiFile instanceof PsiJavaFile)) {
             return;

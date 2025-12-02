@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import dev.dong4j.zeka.stack.idea.plugin.nacos.PluginContents;
+
 /**
  * Nacos 插件设置状态管理
  * 使用 @State 注解自动持久化配置
@@ -142,7 +144,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 凭证属性
      */
     private CredentialAttributes createCredentialAttributes() {
-        return new CredentialAttributes("IntelliAI Nacos", serverAddr + ":" + username);
+        return new CredentialAttributes(PluginContents.PLUGIN_NAME, serverAddr + ":" + username);
     }
 
     private void ensureDefaults() {

@@ -59,19 +59,6 @@ public class TaskExecutor {
     }
 
     /**
-     * 检查 AI 服务是否可用
-     *
-     * @return 如果 AI 服务可用返回 true，否则返回 false
-     */
-    public boolean isServiceAvailable() {
-        try {
-            return aiService != null && settings.providerConfig != null && settings.providerConfig.configurationVerified;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    /**
      * 处理任务列表
      *
      * <p>批量处理文档生成任务列表，按顺序执行每个任务。

@@ -76,6 +76,7 @@ public class TracerSettingsPanel {
             .getPanel();
 
         mainPanel.setBorder(JBUI.Borders.empty(10));
+        mainPanel.setMinimumSize(new Dimension(550, 760));
 
         registerProviderSettingsListener();
         setupListeners();

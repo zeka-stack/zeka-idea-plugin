@@ -46,17 +46,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public AIProviderConfig providerConfig;
 
     /**
-     * 是否显示高级设置
+     * 是否显示提示词设置
      * <p>
-     * 控制设置页面中高级设置区域的显示/隐藏。
-     * 高级设置包括 Prompt 模板配置。
-     * 用户可以通过复选框控制是否显示高级设置，减少设置页面长度。
+     * 控制设置页面中提示词设置区域的显示/隐藏。
+     * 提示词设置包括系统提示词和模板配置。
+     * 用户可以通过复选框控制是否显示提示词设置，减少设置页面长度。
      *
-     * <p>默认值: false（默认隐藏，减少页面长度）
+     * <p>默认值: true（默认显示，方便用户配置）
      */
-    public boolean showAdvancedSettings = false;
+    public boolean showPromptSettings = true;
 
-    // 提示词配置
     /**
      * 系统提示词模板
      *

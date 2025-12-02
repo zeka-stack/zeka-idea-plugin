@@ -150,7 +150,7 @@ public class ChangelogSettingsPanel {
             || !dailyReportTemplateTextArea.getText().equals(settings.dailyReportTemplate)
             || !weeklyReportTemplateTextArea.getText().equals(settings.weeklyReportTemplate)
             || !commitMessageTemplateTextArea.getText().equals(settings.commitMessageTemplate)
-            || showAdvancedSettingsCheckBox.isSelected() != settings.showAdvancedSettings) {
+            || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings) {
             return true;
         }
         if (providerComboBox == null || !providerComboBox.isEnabled()) {
@@ -179,7 +179,7 @@ public class ChangelogSettingsPanel {
         settings.dailyReportTemplate = dailyReportTemplateTextArea.getText();
         settings.weeklyReportTemplate = weeklyReportTemplateTextArea.getText();
         settings.commitMessageTemplate = commitMessageTemplateTextArea.getText();
-        settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
+        settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
         if (providerComboBox != null && providerComboBox.isEnabled()) {
             AIProviderConfig selectedConfig = (AIProviderConfig) providerComboBox.getSelectedItem();
             if (selectedConfig != null) {
@@ -202,8 +202,8 @@ public class ChangelogSettingsPanel {
         dailyReportTemplateTextArea.setText(settings.dailyReportTemplate);
         weeklyReportTemplateTextArea.setText(settings.weeklyReportTemplate);
         commitMessageTemplateTextArea.setText(settings.commitMessageTemplate);
-        showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
-        advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
+        showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
+        advancedSettingsPanel.setVisible(settings.showPromptSettings);
         if (providerComboBox != null && providerComboBox.isEnabled()) {
             // 尝试恢复之前选中的供应商
             if (settings.providerConfig != null) {

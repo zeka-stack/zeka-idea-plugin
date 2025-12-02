@@ -47,7 +47,7 @@
         <toolWindow factoryClass="dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow.NacosToolWindowFactory"
                     id="Nacos"
                     anchor="bottom"
-                    icon="/icons/nacos_16.svg"/>
+                    icon="icons.NacosIcons.NACOS_16"/>
 
         <!-- 意图操作 -->
         <intentionAction>

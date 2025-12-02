@@ -38,7 +38,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 是否显示提示词设置区域。
      */
-    public boolean showPromptSettings = false;
+    public boolean showPromptSettings = true;
 
     /**
      * 系统提示词。

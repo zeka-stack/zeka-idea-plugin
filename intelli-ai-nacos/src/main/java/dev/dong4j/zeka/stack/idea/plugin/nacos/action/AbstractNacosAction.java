@@ -53,7 +53,6 @@ public abstract class AbstractNacosAction extends AnAction {
             actionPerformed(e, project);
         } catch (Exception ex) {
             NotificationUtil.showError(project, NacosBundle.message("error.general", ex.getMessage()));
-            ex.printStackTrace();
         }
     }
 

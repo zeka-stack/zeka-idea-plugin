@@ -288,7 +288,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: false（默认关闭）
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor#showProviderStatistics(java.util.Map)
      * @since 2.0.0
      */
     public boolean showProviderStatistics = false;

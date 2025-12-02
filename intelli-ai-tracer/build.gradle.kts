@@ -1,3 +1,6 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import java.util.*
+
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.1.0"
@@ -5,6 +8,16 @@ plugins {
 
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
+
+// 读取 intelli-ai-engine 的版本号
+val aiEnginePropertiesFile = file("../intelli-ai-engine/gradle.properties")
+val aiEngineVersion: String? = if (aiEnginePropertiesFile.exists()) {
+    val properties = Properties()
+    aiEnginePropertiesFile.inputStream().use { properties.load(it) }
+    properties.getProperty("pluginVersion", "1.4.0")
+} else {
+    "1.4.0" // 默认版本号
+}
 
 repositories {
     mavenCentral()
@@ -68,11 +81,6 @@ dependencies {
         // bundledPlugin("com.intellij.mermaid")
         bundledPlugin("org.intellij.plugins.markdown")
 
-        // 依赖 IntelliAI Engine 插件
-        // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
-        // 发布到市场后，取消注释下面这行，并移除 copyAiCommonPlugin 任务
-        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")
-
         // Plugin development utilities
         instrumentationTools()
 
@@ -83,13 +91,14 @@ dependencies {
         pluginVerifier()
 
         // Test framework
-        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
+        testFramework(TestFrameworkType.Platform)
     }
 
-    // 编译使用：本地开发时，includeBuild 会自动将 "dev.dong4j:intelli-ai-engine:1.0.0" 替换为本地项目
-    // 发布到市场后，其他开发者可以直接使用 compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
+    // 编译使用：本地开发时，includeBuild 会自动将 "dev.dong4j:intelli-ai-engine:${aiEngineVersion}" 替换为本地项目
+    // 发布到市场后，其他开发者可以直接使用 compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
     // 运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    compileOnly("dev.dong4j:intelli-ai-engine:1.4.0")
+    // 注意：不要使用 implementation，会导致类加载器冲突（同一个类被两个不同的 PluginClassLoader 加载）
+    compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")

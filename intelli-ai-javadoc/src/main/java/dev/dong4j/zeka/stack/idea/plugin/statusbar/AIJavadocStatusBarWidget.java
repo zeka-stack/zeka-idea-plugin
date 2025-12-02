@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.statusbar;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -23,17 +21,17 @@ import com.intellij.util.IconUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.Icon;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
-import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import icons.AICommonIcons;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
@@ -163,16 +161,13 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     @Override
     protected @Nullable ListPopup createPopup(@NotNull DataContext context) {
-        // 获取可用的提供商列表
-        List<AIProviderConfig> providers = getAvailableProviders();
-        if (providers.isEmpty()) {
-            showErrorNotification(
-                JavaDocBundle.message("statusbar.provider.switch.failed.title"),
-                JavaDocBundle.message("statusbar.provider.no.available")
-                                 );
+        // 检查 AI Provider 配置
+        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
             return null;
         }
 
+        // 获取可用的提供商列表
+        List<AIProviderConfig> providers = AIProviderUtils.getProviders();
         // 创建 Action 组
         DefaultActionGroup group = new DefaultActionGroup();
 
@@ -231,20 +226,6 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 获取可用的 AI 提供商配置列表
-     * <p>
-     * 该方法从全局 AIProviderSettings 实例中读取已验证的提供商配置,
-     * 并返回一个新的 {@link java.util.ArrayList} 以避免外部修改原始集合.
-     *
-     * @return 已验证的 AIProviderConfig 列表, 永不为 {@code null}
-     */
-    @NotNull
-    private List<AIProviderConfig> getAvailableProviders() {
-        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-        return new ArrayList<>(globalSettings.getVerifiedProviders());
-    }
-
-    /**
      * 获取当前提供商的模型名称
      * <p>
      * 获取当前选中的 AI 提供商类型的默认配置, 并返回其模型名称
@@ -264,7 +245,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * 根据指定的提供商类型和配置更新默认的 AI 提供商设置
      *
      * @param providerType AI 提供商类型, 不能为空
-     * @param config AI 提供商配置, 不能为空
+     * @param config       AI 提供商配置, 不能为空
      */
     private void switchDefaultProvider(@NotNull AIProviderType providerType, @NotNull AIProviderConfig config) {
         // 更新插件配置中的默认提供商选择
@@ -273,25 +254,6 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 更新全局配置中的提供商配置
         AIProviderSettings globalSettings = AIProviderSettings.getInstance();
         globalSettings.updateDefaultProviderConfig(providerType, config);
-    }
-
-    /**
-     * 显示错误通知
-     * <p>
-     * 创建并显示一个错误类型的通知, 包含指定的标题和内容
-     *
-     * @param title 通知标题, 不能为空
-     * @param content 通知内容, 不能为空
-     */
-    private void showErrorNotification(@NotNull String title, @NotNull String content) {
-        Notification notification = new Notification(
-            NotificationUtil.NOTIFICATION_GROUP_ID,
-            title,
-            content,
-            NotificationType.ERROR
-        );
-        NotificationUtil.addOpenConfigurablePanelAction(notification, project);
-        notification.notify(project);
     }
 
     /**
@@ -359,11 +321,8 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
          */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (config.providerType == null) {
-                showErrorNotification(
-                    JavaDocBundle.message("statusbar.provider.switch.failed.title"),
-                    JavaDocBundle.message("statusbar.provider.error.missing.type")
-                                     );
+            // 检查 AI Provider 配置
+            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
                 return;
             }
 
@@ -380,10 +339,6 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
                     });
                 } catch (Exception exception) {
                     log.error("切换默认服务商失败", exception);
-                    showErrorNotification(
-                        JavaDocBundle.message("statusbar.provider.switch.failed.title"),
-                        JavaDocBundle.message("statusbar.provider.switch.failed", exception.getMessage())
-                                         );
                 } finally {
                     StatusBar currentStatusBar = statusBar;
                     if (currentStatusBar != null) {

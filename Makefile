@@ -1,7 +1,7 @@
 # IntelliAI 插件套件 Makefile
 # 为所有插件提供构建、运行、测试和发布的便捷操作
 
-.PHONY: help build run test clean doc publish-install publish-repo verify check-format
+.PHONY: help build run test clean doc publish-install publish-repo verify check-format copy-zips
 
 # 插件目录
 ENGINE_DIR := intelli-ai-engine
@@ -9,6 +9,9 @@ JAVADOC_DIR := intelli-ai-javadoc
 CHANGELOG_DIR := intelli-ai-changelog
 NACOS_DIR := intelli-ai-nacos
 TRACER_DIR := intelli-ai-tracer
+
+# 构建产物输出目录
+DIST_DIR := ~/Downloads/IntelliAI
 
 build-javadoc:
 	@echo "正在构建 intelli-ai-javadoc 插件..."
@@ -98,19 +101,33 @@ deploy-tracer:
 	@echo "正在部署 intelli-ai-tracer 插件..."
 	./deploy.sh tracer
 
+# 拷贝构建产物到 Downloads 目录
+copy-zips:
+	@echo "正在拷贝构建产物到 $(DIST_DIR)..."
+	@mkdir -p $(DIST_DIR)
+	@for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
+		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
+		if [ -n "$$zip_file" ]; then \
+			echo "  拷贝 $$zip_file -> $(DIST_DIR)/$$(basename $$zip_file)"; \
+			cp -f $$zip_file $(DIST_DIR)/; \
+		else \
+			echo "  警告: 未找到 $$dir 的构建产物"; \
+		fi; \
+	done
+	@echo "✓ 构建产物拷贝完成"
+
 # 清理命令
-clean: clean-javadoc clean-engine clean-changelog clean-nacos clean-tracer
-# 构建命令
-build: build-javadoc build-engine build-changelog build-nacos  build-tracer clean
+clean: clean-engine clean-javadoc clean-changelog clean-nacos clean-tracer
+# 构建命令（包含拷贝构建产物）
+build: build-engine build-javadoc  build-changelog build-nacos build-tracer copy-zips
 
 deploy-sub: deploy-javadoc deploy-changelog deploy-tracer deploy-nacos
 
 # 插件版本信息
 version:
 	@echo "插件版本："
-	@cd $(ENGINE_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
-	@cd $(JAVADOC_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
-	@cd $(CHANGELOG_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
-	@cd $(TRACER_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
-	@cd $(NACOS_DIR) && ./gradlew properties -q | grep version | grep -v kotlin
+	@for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(TRACER_DIR) $(NACOS_DIR); do \
+		version=$$(cd $$dir && ./gradlew properties -q | grep "^version:" | awk -F: '{print $$2}' | xargs); \
+		printf "  %-25s %s\n" "$$dir:" "$$version"; \
+	done
 

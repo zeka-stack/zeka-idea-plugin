@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.workflow.service;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
@@ -23,7 +21,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.exception.NoProviderdException;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.ai.TracerAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.ClassRelationshipContext;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.model.MethodCallerChainContext;
@@ -33,7 +30,6 @@ import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.ui.WorkflowResultToolWindow;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.JSONSerializer;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.MethodContextExtractor;
-import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.PSIUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
 
@@ -165,13 +161,6 @@ public class WorkflowExplainerService {
 
             // 阶段3：追加 AI 结果到文件
             appendAIResult(aiMarkdown);
-        } catch (NoProviderdException e) {
-            Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
-                                                         WorkflowBundle.message("notification.error.title"),
-                                                         WorkflowBundle.message("settings.ai.provider.no.available.warning"),
-                                                         NotificationType.ERROR);
-            // 添加设置动作
-            NotificationUtil.addOpenConfigurablePanelAction(notification, project);
         } catch (Exception e) {
             throw new RuntimeException("Failed to explain workflow", e);
         }
@@ -468,9 +457,6 @@ public class WorkflowExplainerService {
     private String callAI(@NotNull String json, @NotNull WorkflowType workflowType) throws Exception {
         // 获取 AI 配置
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
-        if (config == null) {
-            throw new NoProviderdException();
-        }
 
         // 构建 Prompt
         String systemPrompt = buildSystemPrompt();

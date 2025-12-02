@@ -1,11 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.workflow.action;
 
 import com.intellij.codeInsight.intention.IntentionAction;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Iconable;
 import com.intellij.psi.PsiFile;
@@ -16,9 +12,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.workflow.service.WorkflowExplainerService;
-import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.PSIUtil;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowAnalysisUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
 import icons.TracerIcons;
 
@@ -63,27 +58,8 @@ public class ExplainWorkflowIntentionAction implements IntentionAction, Iconable
     @Override
     public void invoke(@NotNull Project project, Editor editor, PsiFile file) throws IncorrectOperationException {
         int caretOffset = editor.getCaretModel().getOffset();
-
-        // 异步执行工作流分析，避免阻塞 UI
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, WorkflowBundle.message("progress.analyzing"), true) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setIndeterminate(true);
-                indicator.setText(WorkflowBundle.message("progress.analyzing.call.chain"));
-
-                try {
-                    // 创建服务实例并执行分析
-                    WorkflowExplainerService service = new WorkflowExplainerService(project);
-                    indicator.setText(WorkflowBundle.message("progress.calling.ai"));
-                    service.explainWorkflow(file, caretOffset);
-                } catch (Exception e) {
-                    // 在 EDT 中显示错误通知
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        NotificationUtil.showError(project, WorkflowBundle.message("error.analysis.failed", e.getMessage()));
-                    });
-                }
-            }
-        });
+        // 使用工具类执行工作流分析
+        WorkflowAnalysisUtil.executeWorkflowAnalysis(project, file, caretOffset);
     }
 
     @Override

@@ -17,6 +17,7 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
@@ -149,7 +150,7 @@ public class DocumentationInserterHelper {
                     }
                 }),
                 "Insert JavaDoc",
-                "IntelliAI JavaDoc"
+                PluginContents.PLUGIN_NAME
                                                          );
         });
     }

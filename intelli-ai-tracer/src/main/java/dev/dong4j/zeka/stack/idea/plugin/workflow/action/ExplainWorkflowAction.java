@@ -4,17 +4,13 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
-import dev.dong4j.zeka.stack.idea.plugin.workflow.service.WorkflowExplainerService;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowAnalysisUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
 import icons.TracerIcons;
 
@@ -50,29 +46,8 @@ public class ExplainWorkflowAction extends AnAction {
         // 获取光标位置（在 EDT 中安全）
         int caretOffset = editor.getCaretModel().getOffset();
 
-        // 异步执行，避免阻塞 UI
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, WorkflowBundle.message("progress.analyzing"), true) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setIndeterminate(true);
-                indicator.setText(WorkflowBundle.message("progress.analyzing.call.chain"));
-
-                try {
-                    // 创建服务实例
-                    WorkflowExplainerService service = new WorkflowExplainerService(project);
-
-                    // 分析工作流（传递 PSI 文件和光标位置）
-                    // 服务内部会处理两阶段写入：先创建文件并写入元数据，然后调用 AI 并追加结果
-                    indicator.setText(WorkflowBundle.message("progress.calling.ai"));
-                    service.explainWorkflow(psiFile, caretOffset);
-                } catch (Exception ex) {
-                    // 在 EDT 中显示错误
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        NotificationUtil.showError(project, WorkflowBundle.message("error.analysis.failed", ex.getMessage()));
-                    });
-                }
-            }
-        });
+        // 使用工具类执行工作流分析
+        WorkflowAnalysisUtil.executeWorkflowAnalysis(project, psiFile, caretOffset);
     }
 
 

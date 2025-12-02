@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -335,7 +337,7 @@ public class NotificationUtilTest {
             NotificationUtil.notifyNoTask(mockProject, "没有需要生成文档的元素");
 
             verify(mockNotificationGroup).createNotification(
-                eq("IntelliAI JavaDoc"),
+                eq(PluginContents.PLUGIN_NAME),
                 eq("没有需要生成文档的元素"),
                 eq(NotificationType.INFORMATION)
                                                             );
@@ -399,7 +401,7 @@ public class NotificationUtilTest {
             ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
 
             verify(mockNotificationGroup).createNotification(
-                eq("IntelliAI JavaDoc"),
+                eq(PluginContents.PLUGIN_NAME),
                 contentCaptor.capture(),
                 eq(NotificationType.WARNING)
                                                             );

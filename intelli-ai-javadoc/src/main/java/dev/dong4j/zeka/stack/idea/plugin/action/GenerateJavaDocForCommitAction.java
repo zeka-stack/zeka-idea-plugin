@@ -16,7 +16,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocGenerator;
+import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +94,12 @@ public class GenerateJavaDocForCommitAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        // 检查 AI Provider 配置
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
             return;
         }
 

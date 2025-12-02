@@ -23,6 +23,8 @@ import java.io.IOException;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.workflow.PluginContents;
+
 /**
  * 工作流结果展示工具窗口（使用 MarkdownHtmlPanel 渲染）
  * <p>
@@ -45,7 +47,7 @@ import javax.swing.JPanel;
 public final class WorkflowResultToolWindow {
 
     /** 工具窗口 ID */
-    public static final String TOOL_WINDOW_ID = "IntelliAI Tracer";
+    public static final String TOOL_WINDOW_ID = PluginContents.PLUGIN_NAME;
 
     /** 主面板 */
     private JPanel mainPanel;

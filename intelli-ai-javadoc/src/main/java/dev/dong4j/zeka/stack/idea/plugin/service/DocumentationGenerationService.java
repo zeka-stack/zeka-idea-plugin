@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.service;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -71,17 +69,6 @@ public class DocumentationGenerationService {
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
                     TaskExecutor executor = new TaskExecutor(project, indicator);
-
-                    // 检查 AI 服务是否可用
-                    if (!executor.isServiceAvailable()) {
-                        Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
-                                                                     JavaDocBundle.message("notification.error.title"),
-                                                                     JavaDocBundle.message("notification.service.config.error"),
-                                                                     NotificationType.ERROR);
-                        // 添加设置动作
-                        NotificationUtil.addOpenConfigurablePanelAction(notification, project);
-                        return;
-                    }
 
                     // 执行任务
                     boolean success = executor.processTasks(tasks);
