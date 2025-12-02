@@ -48,7 +48,7 @@ public final class AICommonIcons {
      *
      * @see IconUtil
      */
-    public static final Icon TOOL_ICON = IconUtil.scale(PLUGIN, null, 0.8125f);
+    public static final Icon TOOL_ICON = PLUGIN;
     /**
      * OpenAI API 提供商图标 (16x16)
      * <p>

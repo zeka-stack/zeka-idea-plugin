@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -211,7 +213,13 @@ public class NacosToolWindow {
         try {
             NacosClient client = NacosClientUtils.getDefaultClient();
             if (client == null) {
-                throw new IllegalStateException(NacosBundle.message("error.nacos.not.configured"));
+                Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
+                                                             NacosBundle.message("notification.error.title"),
+                                                             NacosBundle.message("notification.service.config.error"),
+                                                             NotificationType.ERROR);
+                // 添加设置动作
+                NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+                return root;
             }
             client.login();
             SettingsState settings = SettingsState.getInstance();
