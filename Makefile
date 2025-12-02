@@ -101,7 +101,7 @@ deploy-tracer:
 # 清理命令
 clean: clean-javadoc clean-engine clean-changelog clean-nacos clean-tracer
 # 构建命令
-build: build-javadoc build-engine build-changelog build-nacos  build-tracer
+build: build-javadoc build-engine build-changelog build-nacos  build-tracer clean
 
 deploy-sub: deploy-javadoc deploy-changelog deploy-tracer deploy-nacos
 
