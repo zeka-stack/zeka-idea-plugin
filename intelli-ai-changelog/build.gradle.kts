@@ -87,7 +87,7 @@ dependencies {
     // 编译使用：本地开发时，includeBuild 会自动将 "dev.dong4j:intelli-ai-engine:1.0.0" 替换为本地项目
     // 发布到市场后，其他开发者可以直接使用 compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
     // 运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    compileOnly("dev.dong4j:intelli-ai-engine:1.3.0")
+    compileOnly("dev.dong4j:intelli-ai-engine:1.3.1")
 
     // JGit for Git operations (排除 SLF4J 依赖，使用 IntelliJ 平台的日志框架)
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r") {
