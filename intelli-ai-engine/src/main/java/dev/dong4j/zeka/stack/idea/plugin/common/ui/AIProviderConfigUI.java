@@ -45,7 +45,9 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
 
@@ -642,6 +644,8 @@ public final class AIProviderConfigUI {
         private final String[] columnNames = {
             AICommonBundle.message("settings.available.providers.column.provider"),
             AICommonBundle.message("settings.available.providers.column.model"),
+            AICommonBundle.message("settings.available.providers.column.timeout"),
+            AICommonBundle.message("settings.available.providers.column.max.tokens"),
             AICommonBundle.message("settings.available.providers.column.remark")
         };
         private final List<AIProviderConfig> data = new java.util.ArrayList<>();
@@ -686,21 +690,62 @@ public final class AIProviderConfigUI {
             return switch (columnIndex) {
                 case 0 -> config;
                 case 1 -> config.modelName != null ? config.modelName : "";
-                case 2 -> config.remark != null ? config.remark : "";
+                case 2 -> {
+                    AIRuntimeSettings runtime = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
+                    yield runtime.timeout;
+                }
+                case 3 -> {
+                    AIModelParameters params = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
+                    yield params.maxTokens;
+                }
+                case 4 -> config.remark != null ? config.remark : "";
                 default -> "";
             };
         }
 
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
-            return columnIndex == 2;
+            return columnIndex == 2 || columnIndex == 3 || columnIndex == 4;
         }
 
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-            if (columnIndex == 2 && rowIndex >= 0 && rowIndex < data.size()) {
-                data.get(rowIndex).remark = aValue != null ? aValue.toString() : "";
-                fireTableCellUpdated(rowIndex, columnIndex);
+            if (rowIndex < 0 || rowIndex >= data.size()) {
+                return;
+            }
+            AIProviderConfig config = data.get(rowIndex);
+            switch (columnIndex) {
+                case 2 -> {
+                    // 超时时间
+                    if (config.runtimeSettings == null) {
+                        config.runtimeSettings = new AIRuntimeSettings();
+                    }
+                    try {
+                        int timeout = Integer.parseInt(aValue != null ? aValue.toString() : "10");
+                        config.runtimeSettings.timeout = Math.max(1, Math.min(600, timeout));
+                        fireTableCellUpdated(rowIndex, columnIndex);
+                    } catch (NumberFormatException ignored) {
+                        // 忽略无效输入
+                    }
+                }
+                case 3 -> {
+                    // 最大 Token
+                    if (config.modelParameters == null) {
+                        config.modelParameters = new AIModelParameters();
+                    }
+                    try {
+                        int maxTokens = Integer.parseInt(aValue != null ? aValue.toString() : "4000");
+                        config.modelParameters.maxTokens = Math.max(100, Math.min(1000000, maxTokens));
+                        fireTableCellUpdated(rowIndex, columnIndex);
+                    } catch (NumberFormatException ignored) {
+                        // 忽略无效输入
+                    }
+                }
+                case 4 -> {
+                    // 备注
+                    config.remark = aValue != null ? aValue.toString() : "";
+                    fireTableCellUpdated(rowIndex, columnIndex);
+                }
             }
         }
     }

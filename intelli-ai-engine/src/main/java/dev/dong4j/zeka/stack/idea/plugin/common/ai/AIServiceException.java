@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import lombok.Getter;
 
 /**
@@ -127,17 +128,17 @@ public class AIServiceException extends Exception {
         ErrorCode errorCode = e.getErrorCode();
 
         if (errorCode == null) {
-            return "AI 服务调用失败: " + e.getMessage();
+            return AICommonBundle.message("error.ai.service.call.failed", e.getMessage());
         }
 
         return switch (errorCode) {
-            case INVALID_API_KEY -> "API Key 无效，请在设置中检查并更新 API Key";
-            case RATE_LIMIT -> "已到达模型调用配额限制, 请更换其他模型";
-            case SERVICE_UNAVAILABLE -> "AI 服务暂时不可用，请稍后再试";
-            case NETWORK_ERROR -> "网络连接失败，请检查网络连接或服务器地址";
-            case CONFIGURATION_ERROR -> "配置错误: " + e.getMessage();
-            case INVALID_RESPONSE -> "服务返回的数据格式错误。可能是模型名称不正确或服务异常";
-            default -> "AI 服务调用失败: " + e.getMessage();
+            case INVALID_API_KEY -> AICommonBundle.message("error.ai.service.invalid.api.key");
+            case RATE_LIMIT -> AICommonBundle.message("error.ai.service.rate.limit");
+            case SERVICE_UNAVAILABLE -> AICommonBundle.message("error.ai.service.unavailable");
+            case NETWORK_ERROR -> AICommonBundle.message("error.ai.service.network.error");
+            case CONFIGURATION_ERROR -> AICommonBundle.message("error.ai.service.configuration.error", e.getMessage());
+            case INVALID_RESPONSE -> AICommonBundle.message("error.ai.service.invalid.response");
+            default -> AICommonBundle.message("error.ai.service.call.failed.with.suggestion", e.getMessage());
         };
     }
 }
