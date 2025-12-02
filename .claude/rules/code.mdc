@@ -1,3 +1,7 @@
+---
+alwaysApply: false
+---
+
 # IntelliJ IDEA Plugin Development Rules
 
 ## 项目上下文
