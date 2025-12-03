@@ -145,15 +145,6 @@ public class NacosEndpoint {
         }
     }
 
-    /**
-     * 检查是否是全局管理员
-     *
-     * @return 是否是全局管理员
-     */
-    public boolean isGlobalAdmin() {
-        return securityProxy.isGlobalAdmin();
-    }
-
     // ==================== 配置管理相关 ====================
 
     /**

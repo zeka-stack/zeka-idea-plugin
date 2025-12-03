@@ -54,13 +54,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public String type = "YAML";
 
     /**
-     * 是否为全局管理员
-     * <p>
-     * 影响删除配置的权限控制
-     */
-    public boolean globalAdmin = false;
-
-    /**
      * 是否已认证
      * <p>
      * 标识当前连接是否已通过认证

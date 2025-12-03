@@ -37,14 +37,6 @@ public class ConsumSecurityProxy {
     private final ConsumServerHttpAgent httpAgent;
     private final AtomicReference<String> accessToken = new AtomicReference<>("");
     private volatile long tokenExpireAt = -1L;
-    /**
-     * -- GETTER --
-     * 是否为全局管理员
-     *
-     * @return 全局管理员标识
-     */
-    @Getter
-    private volatile boolean globalAdmin;
     private String username;
     private String password;
 
@@ -103,7 +95,6 @@ public class ConsumSecurityProxy {
                 }
                 String token = node.path("accessToken").asText("");
                 long ttl = node.path("tokenTtl").asLong(18000L);
-                this.globalAdmin = node.path("globalAdmin").asBoolean(false);
                 if (StringUtils.isNotBlank(token)) {
                     accessToken.set(token);
                     tokenExpireAt = System.currentTimeMillis() + ttl * 1000L - 5_000L;

@@ -105,9 +105,6 @@ public class NacosSettingsPanel {
     /** 连接状态标签 */
     private final JBLabel connectionStatusLabel;
 
-    /** 全局管理员复选框 */
-    private final JBCheckBox globalAdminCheckBox;
-
     /** 使用本地注册中心复选框 */
     private final JBCheckBox localRegistryCheckBox;
 
@@ -154,7 +151,6 @@ public class NacosSettingsPanel {
         testConnectionButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         testConnectionButton.setIconTextGap(JBUI.scale(6));
         connectionStatusLabel = new JBLabel();
-        globalAdminCheckBox = new JBCheckBox(NacosBundle.message("settings.nacos.global.admin"));
         localRegistryCheckBox = new JBCheckBox(NacosBundle.message("settings.nacos.local.enable"));
         startLocalButton = new JButton(NacosBundle.message("settings.nacos.local.start"));
         startLocalButton.setHorizontalTextPosition(SwingConstants.RIGHT);
@@ -230,7 +226,6 @@ public class NacosSettingsPanel {
             .addLabeledComponent(new JBLabel(NacosBundle.message("settings.nacos.password")), passwordField)
             .addLabeledComponent(new JBLabel(" "), createTestButtonRow())
             .addLabeledComponent(new JBLabel(" "), connectionStatusLabel)
-            .addComponent(globalAdminCheckBox)
             .getPanel();
         customRegistryPanel.setBorder(sectionBorder());
 
@@ -314,12 +309,10 @@ public class NacosSettingsPanel {
 
                 boolean success;
                 String message;
-                boolean globalAdmin = false;
                 try {
                     NacosClientUtils.removeClient(serverAddr, username);
                     NacosClient client = NacosClient.getInstance(serverAddr, username, password);
                     success = client.login();
-                    globalAdmin = client.isGlobalAdmin();
                     message = success
                               ? NacosBundle.message("settings.nacos.connection.success")
                               : NacosBundle.message("settings.nacos.connection.failed", "Unauthorized");
@@ -327,7 +320,6 @@ public class NacosSettingsPanel {
                         SettingsState settings = SettingsState.getInstance();
                         settings.serverAddr = serverAddr;
                         settings.username = username;
-                        settings.globalAdmin = globalAdmin;
                         settings.isAuthed = true;
                         settings.setPassword(password);
                     }
@@ -337,15 +329,11 @@ public class NacosSettingsPanel {
                 }
 
                 boolean finalSuccess = success;
-                boolean finalGlobalAdmin = globalAdmin;
                 String finalMessage = message;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     connectionStatusLabel.setText(finalMessage);
                     connectionStatusLabel.setForeground(finalSuccess ? JBColor.GREEN : JBColor.RED);
                     testButtonIndicator.setColor(finalSuccess ? DOT_COLOR_GREEN : DOT_COLOR_RED);
-                    if (finalSuccess) {
-                        globalAdminCheckBox.setSelected(finalGlobalAdmin);
-                    }
                 }, ModalityState.defaultModalityState());
             }
         }.queue();
@@ -364,7 +352,6 @@ public class NacosSettingsPanel {
         String selectedVersion = (String) versionComboBox.getSelectedItem();
         return !serverAddrField.getText().equals(settings.serverAddr)
                || !usernameField.getText().equals(settings.username)
-               || globalAdminCheckBox.isSelected() != settings.globalAdmin
                || localRegistryCheckBox.isSelected() != settings.useLocalRegistry
                || !Objects.equals(selectedVersion, settings.localNacosVersion)
                || passwordChanged
@@ -377,7 +364,6 @@ public class NacosSettingsPanel {
     public void apply(SettingsState settings) {
         settings.serverAddr = serverAddrField.getText();
         settings.username = usernameField.getText();
-        settings.globalAdmin = globalAdminCheckBox.isSelected();
         settings.useLocalRegistry = localRegistryCheckBox.isSelected();
         String selectedVersion = (String) versionComboBox.getSelectedItem();
         if (selectedVersion == null || selectedVersion.isEmpty()) {
@@ -405,7 +391,6 @@ public class NacosSettingsPanel {
     public void reset(SettingsState settings) {
         serverAddrField.setText(settings.serverAddr);
         usernameField.setText(settings.username);
-        globalAdminCheckBox.setSelected(settings.globalAdmin);
         // 密码获取是慢操作，需要在后台线程执行
         passwordField.setText(""); // 先清空，避免显示旧密码
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
@@ -474,7 +459,6 @@ public class NacosSettingsPanel {
         passwordField.setEnabled(remoteEnabled);
         testConnectionButton.setEnabled(remoteEnabled);
         connectionStatusLabel.setEnabled(remoteEnabled);
-        globalAdminCheckBox.setEnabled(remoteEnabled);
     }
 
     private void startLocalNacos() {

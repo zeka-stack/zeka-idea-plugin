@@ -224,7 +224,6 @@ public class NacosToolWindow {
             client.login();
             SettingsState settings = SettingsState.getInstance();
             settings.isAuthed = true;
-            settings.globalAdmin = client.isGlobalAdmin();
 
             List<Namespace> namespaces = client.getNamespaces();
             for (Namespace namespace : namespaces) {

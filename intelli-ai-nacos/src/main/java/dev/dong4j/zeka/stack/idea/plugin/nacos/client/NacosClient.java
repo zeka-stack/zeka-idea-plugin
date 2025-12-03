@@ -48,8 +48,6 @@ public class NacosClient {
     /** 检查是否已登录 */
     @Getter
     private boolean isLoggedIn = false;
-    @Getter
-    private boolean globalAdmin;
 
     private NacosClient(String serverAddr, String username, String password) throws NacosException {
         this.serverAddr = serverAddr;
@@ -97,7 +95,6 @@ public class NacosClient {
         }
         boolean success = securityProxy.login(username, password);
         this.isLoggedIn = success;
-        this.globalAdmin = success && securityProxy.isGlobalAdmin();
         return success;
     }
 

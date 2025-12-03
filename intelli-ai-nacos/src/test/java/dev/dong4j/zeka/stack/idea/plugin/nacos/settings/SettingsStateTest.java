@@ -30,7 +30,6 @@ class SettingsStateTest {
         assertEquals("", settingsState.serverAddr);
         assertEquals("", settingsState.username);
         assertEquals("YAML", settingsState.type);
-        assertFalse(settingsState.globalAdmin);
         assertFalse(settingsState.isAuthed);
     }
 
@@ -53,12 +52,6 @@ class SettingsStateTest {
         String type = "JSON";
         settingsState.type = type;
         assertEquals(type, settingsState.type);
-    }
-
-    @Test
-    void testSetAndGetGlobalAdmin() {
-        settingsState.globalAdmin = true;
-        assertTrue(settingsState.globalAdmin);
     }
 
     @Test
