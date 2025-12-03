@@ -38,21 +38,6 @@ public final class LocalNacosService {
     }
 
     /**
-     * 启动本地 Nacos 注册中心
-     * <p>
-     * 从设置中获取当前选择的版本号
-     *
-     * @return 异步任务
-     */
-    public CompletableFuture<Void> startLocalRegistry() {
-        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
-            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
-        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
-                         ? settings.localNacosVersion : "2.4.3";
-        return startLocalRegistry(version);
-    }
-
-    /**
      * 启动本地 Nacos 注册中心（支持版本号）
      *
      * @param version Nacos 版本号

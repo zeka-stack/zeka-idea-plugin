@@ -144,6 +144,29 @@ public class LocalRegistryManager {
      */
     public static void downloadRegistry(final LocalRegistry registry, final String version, ProgressIndicator indicator,
                                         final RegistryLogger logger) throws InterruptedException {
+        // 获取远程文件大小
+        SettingsState settings = SettingsState.getInstance();
+        String remotePath = LocalRegistryConstants.getNacosRemotePath(
+            version,
+            settings.enableGitHubProxy,
+            settings.gitHubProxyUrl
+                                                                     );
+        final long[] remoteFileSize = {RegistryUtils.getRemoteFileSize(remotePath)};
+
+        // 如果无法获取远程文件大小，使用本地文件大小（如果已存在部分下载）
+        if (remoteFileSize[0] <= 0) {
+            File existingFile = new File(getRegisterPackageFilePath(registry, version));
+            if (existingFile.exists()) {
+                // 如果本地文件已存在，假设文件大小至少为当前大小
+                remoteFileSize[0] = existingFile.length();
+            } else {
+                // 如果无法获取且文件不存在，使用默认值 72MB
+                remoteFileSize[0] = 72L * 1024 * 1024;
+            }
+        }
+
+        final long finalFileSize = remoteFileSize[0];
+        
         Thread t = new Thread(new Runnable() {
             public void run() {
                 try {
@@ -169,32 +192,15 @@ public class LocalRegistryManager {
 
         for (; t.isAlive() && !indicator.isCanceled(); Thread.sleep(100L)) {
             File file = new File(getRegisterPackageFilePath(registry, version));
-            if (file.exists()) {
+            if (file.exists() && finalFileSize > 0) {
                 double length = (double) file.length();
-                indicator.setFraction(length / (double) 7.2E7F);
+                indicator.setFraction(length / (double) finalFileSize);
             }
         }
 
         if (t.isAlive()) {
             t.interrupt();
         }
-    }
-
-    /**
-     * 执行实际的下载操作
-     * <p>
-     * 从设置中获取当前选择的版本号
-     *
-     * @param registry 注册中心类型
-     * @param logger   日志记录器
-     * @throws Exception 异常
-     */
-    private static void download0(LocalRegistry registry, RegistryLogger logger) throws Exception {
-        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
-            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
-        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
-                         ? settings.localNacosVersion : "2.4.3";
-        download0(registry, version, logger);
     }
 
     /**
@@ -212,7 +218,14 @@ public class LocalRegistryManager {
         String localPath = RegistryUtils.isWindows()
                            ? LocalRegistryConstants.getNacosLocalPathForWin(version)
                            : LocalRegistryConstants.getNacosLocalPathForMac(version);
-        String remotePath = LocalRegistryConstants.getNacosRemotePath(version);
+
+        // 从设置中获取代理配置
+        SettingsState settings = SettingsState.getInstance();
+        String remotePath = LocalRegistryConstants.getNacosRemotePath(
+            version,
+            settings.enableGitHubProxy,
+            settings.gitHubProxyUrl
+                                                                     );
 
         // 如果启动文件不存在，或者本地 zip 文件不存在，则下载
         if (!checkRegisterExists(startupFile) || !new File(localPath).exists()) {
@@ -272,22 +285,6 @@ public class LocalRegistryManager {
     }
 
     /**
-     * 从设置页面启动注册中心
-     * <p>
-     * 从设置中获取当前选择的版本号
-     *
-     * @param registryContext 注册中心上下文
-     * @throws Exception 异常
-     */
-    public static void startRegistryFromPreferencePage(final LocalRegistryContext registryContext) throws Exception {
-        dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState settings =
-            dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState.getInstance();
-        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
-                         ? settings.localNacosVersion : "2.4.3";
-        startRegistryFromPreferencePage(registryContext, version);
-    }
-
-    /**
      * 从设置页面启动注册中心（支持版本号）
      *
      * @param registryContext 注册中心上下文
@@ -321,18 +318,30 @@ public class LocalRegistryManager {
 
                     final String target = "Nacos Server " + version;
                     if (!LocalRegistryManager.isRegisterDownloaded(registryContext.getRegistry())) {
+                        // 获取文件大小用于显示
+                        SettingsState settings = SettingsState.getInstance();
+                        String remotePath = LocalRegistryConstants.getNacosRemotePath(
+                            version,
+                            settings.enableGitHubProxy,
+                            settings.gitHubProxyUrl
+                                                                                     );
+                        long fileSize = RegistryUtils.getRemoteFileSize(remotePath);
+                        final String sizeText = fileSize > 0
+                                                ? " (" + RegistryUtils.formatFileSize(fileSize) + ")"
+                                                : "";
+                        
                         ProgressManager.getInstance().runProcessWithProgressSynchronously(new Runnable() {
                             public void run() {
                                 try {
                                     ProgressIndicator indicator = ProgressManager.getInstance().getProgressIndicator();
-                                    indicator.setText("Downloading " + target + " (72MB)");
+                                    indicator.setText("Downloading " + target + sizeText);
                                     LocalRegistryManager.downloadRegistry(registryContext.getRegistry(), version, indicator,
                                                                           EmptyLogger.instance);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             }
-                        }, "Downloading " + target, true, registryContext.getProject());
+                        }, "Downloading " + target + sizeText, true, registryContext.getProject());
                     }
 
                     if (!LocalRegistryManager.isRegisterDownloaded(registryContext.getRegistry())) {

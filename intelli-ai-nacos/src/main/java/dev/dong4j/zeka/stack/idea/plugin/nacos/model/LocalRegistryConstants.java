@@ -43,6 +43,27 @@ public class LocalRegistryConstants {
     }
 
     /**
+     * 获取 Nacos 远程下载地址（支持代理）
+     *
+     * @param version     Nacos 版本号
+     * @param enableProxy 是否启用代理
+     * @param proxyUrl    代理地址
+     * @return 远程下载地址
+     */
+    public static String getNacosRemotePath(String version, boolean enableProxy, String proxyUrl) {
+        String baseUrl = getNacosRemotePath(version);
+        if (enableProxy && proxyUrl != null && !proxyUrl.trim().isEmpty()) {
+            String proxy = proxyUrl.trim();
+            // 确保代理地址以 / 结尾
+            if (!proxy.endsWith("/")) {
+                proxy += "/";
+            }
+            return proxy + baseUrl;
+        }
+        return baseUrl;
+    }
+
+    /**
      * 获取 Nacos Mac 本地路径
      *
      * @param version Nacos 版本号

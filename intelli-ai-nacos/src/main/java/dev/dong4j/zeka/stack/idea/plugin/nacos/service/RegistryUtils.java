@@ -73,6 +73,62 @@ public class RegistryUtils {
     }
 
     /**
+     * 获取远程文件大小
+     *
+     * @param url 文件 URL
+     * @return 文件大小（字节），如果无法获取则返回 -1
+     */
+    public static long getRemoteFileSize(String url) {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) (new URI(url).toURL()).openConnection();
+            connection.setRequestMethod("HEAD");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                String contentLength = connection.getHeaderField("Content-Length");
+                if (contentLength != null && !contentLength.isEmpty()) {
+                    return Long.parseLong(contentLength);
+                }
+            }
+        } catch (Exception e) {
+            // 静默处理，返回 -1 表示无法获取
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.disconnect();
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 格式化文件大小
+     *
+     * @param size 文件大小（字节）
+     * @return 格式化后的文件大小字符串
+     */
+    public static String formatFileSize(long size) {
+        if (size < 0) {
+            return "unknown";
+        }
+        if (size < 1024) {
+            return size + "B";
+        }
+        if (size < 1024 * 1024) {
+            return String.format("%.1fKB", size / 1024.0);
+        }
+        if (size < 1024 * 1024 * 1024) {
+            return String.format("%.1fMB", size / (1024.0 * 1024.0));
+        }
+        return String.format("%.1fGB", size / (1024.0 * 1024.0 * 1024.0));
+    }
+
+    /**
      * 从指定 URL 下载文件
      *
      * @param url    下载 URL

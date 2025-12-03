@@ -123,6 +123,12 @@ public class NacosSettingsPanel {
     /** Nacos 版本下拉列表 */
     private final ComboBox<String> versionComboBox;
 
+    /** 启用 GitHub 加速下载复选框 */
+    private final JBCheckBox enableGitHubProxyCheckBox;
+
+    /** GitHub 代理地址输入框 */
+    private final JBTextField gitHubProxyUrlField;
+
     /** 启动按钮呼吸指示器 */
     private final BreathingDotIcon startButtonIndicator;
 
@@ -165,6 +171,12 @@ public class NacosSettingsPanel {
         openLocalDirButton = new JButton(NacosBundle.message("settings.nacos.local.open.dir"));
         openLocalDirButton.addActionListener(e -> openLocalNacosDir());
 
+        // 初始化 GitHub 加速下载复选框和输入框
+        enableGitHubProxyCheckBox = new JBCheckBox(NacosBundle.message("settings.nacos.local.github.proxy.enable"));
+        gitHubProxyUrlField = new JBTextField();
+        gitHubProxyUrlField.getEmptyText().setText("https://gh-proxy.org/");
+        gitHubProxyUrlField.setEnabled(false); // 默认禁用
+
         // 初始化版本下拉列表
         versionComboBox = new ComboBox<>(new String[] {"2.4.3"});
         Dimension versionSize = versionComboBox.getPreferredSize();
@@ -202,7 +214,7 @@ public class NacosSettingsPanel {
 
         // 设置组件提示信息
         //noinspection DialogTitleCapitalization
-        serverAddrField.getEmptyText().setText("http://localhost:8848");
+        serverAddrField.getEmptyText().setText("http://127.0.0.1:8848");
         usernameField.getEmptyText().setText(NacosBundle.message("settings.nacos.username.placeholder"));
 
         JPanel versionAndActionsPanel = createVersionAndActionsPanel();
@@ -211,6 +223,7 @@ public class NacosSettingsPanel {
         JPanel localRegistryPanel = FormBuilder.createFormBuilder()
             .addComponent(new TitledSeparator(NacosBundle.message("settings.nacos.local.section")))
             .addComponent(localRegistryCheckBox)
+            .addComponent(createGitHubProxyPanel())
             .addComponent(versionAndActionsPanel)
             .addComponent(createConsoleLinkPanel())
             .addSeparator(8)
@@ -264,6 +277,10 @@ public class NacosSettingsPanel {
             } else {
                 autoStopLocalNacos();
             }
+        });
+        enableGitHubProxyCheckBox.addActionListener(e -> {
+            boolean selected = enableGitHubProxyCheckBox.isSelected();
+            gitHubProxyUrlField.setEnabled(selected);
         });
         startLocalButton.addActionListener(e -> startLocalNacos());
         stopLocalButton.addActionListener(e -> stopLocalNacos());
@@ -354,6 +371,8 @@ public class NacosSettingsPanel {
                || !usernameField.getText().equals(settings.username)
                || localRegistryCheckBox.isSelected() != settings.useLocalRegistry
                || !Objects.equals(selectedVersion, settings.localNacosVersion)
+               || enableGitHubProxyCheckBox.isSelected() != settings.enableGitHubProxy
+               || !Objects.equals(gitHubProxyUrlField.getText(), settings.gitHubProxyUrl)
                || passwordChanged
                || isJvmOptionModified(settings);
     }
@@ -365,6 +384,8 @@ public class NacosSettingsPanel {
         settings.serverAddr = serverAddrField.getText();
         settings.username = usernameField.getText();
         settings.useLocalRegistry = localRegistryCheckBox.isSelected();
+        settings.enableGitHubProxy = enableGitHubProxyCheckBox.isSelected();
+        settings.gitHubProxyUrl = gitHubProxyUrlField.getText();
         String selectedVersion = (String) versionComboBox.getSelectedItem();
         if (selectedVersion == null || selectedVersion.isEmpty()) {
             selectedVersion = "2.4.3";
@@ -407,6 +428,10 @@ public class NacosSettingsPanel {
             }
         });
         localRegistryCheckBox.setSelected(settings.useLocalRegistry);
+        enableGitHubProxyCheckBox.setSelected(settings.enableGitHubProxy);
+        gitHubProxyUrlField.setText(settings.gitHubProxyUrl != null && !settings.gitHubProxyUrl.isEmpty()
+                                    ? settings.gitHubProxyUrl : "https://gh-proxy.org/");
+        gitHubProxyUrlField.setEnabled(settings.enableGitHubProxy);
 
         // 回显版本选择
         String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
@@ -459,6 +484,11 @@ public class NacosSettingsPanel {
         passwordField.setEnabled(remoteEnabled);
         testConnectionButton.setEnabled(remoteEnabled);
         connectionStatusLabel.setEnabled(remoteEnabled);
+
+        // GitHub 代理相关组件根据本地注册中心状态和复选框状态控制
+        boolean proxyEnabled = useLocalRegistry && !localOperationInProgress && enableGitHubProxyCheckBox.isSelected();
+        enableGitHubProxyCheckBox.setEnabled(useLocalRegistry && !localOperationInProgress);
+        gitHubProxyUrlField.setEnabled(proxyEnabled);
     }
 
     private void startLocalNacos() {
@@ -685,6 +715,33 @@ public class NacosSettingsPanel {
         return JBUI.Borders.compound(
             BorderFactory.createLineBorder(UIManager.getColor("Separator.separatorColor")),
             JBUI.Borders.empty(10));
+    }
+
+    private JPanel createGitHubProxyPanel() {
+        JPanel panel = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+        panel.setOpaque(false);
+        panel.setBorder(JBUI.Borders.emptyLeft(20));
+
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        // 复选框
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.BASELINE_LEADING;
+        gbc.insets = JBUI.insetsRight(JBUI.scale(8));
+        contentPanel.add(enableGitHubProxyCheckBox, gbc);
+
+        // 输入框
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = JBUI.emptyInsets();
+        contentPanel.add(gitHubProxyUrlField, gbc);
+
+        panel.add(contentPanel, BorderLayout.CENTER);
+        return panel;
     }
 
     private JPanel createVersionAndActionsPanel() {

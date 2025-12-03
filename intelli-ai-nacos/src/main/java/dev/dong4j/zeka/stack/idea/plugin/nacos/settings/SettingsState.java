@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 
 /**
  * Nacos 插件设置状态管理
@@ -31,20 +32,15 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.PluginContents;
     storages = @Storage("zeka.stack.nacos.plugin.xml")
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
-
-    /**
-     * Nacos 服务器地址
-     * <p>
-     * 格式：http://host:port 或 https://host:port
-     */
-    public String serverAddr = "";
+    /** 服务器地址 */
+    public String serverAddr = "http://127.0.0.1:8848";
 
     /**
      * 用户名
      * <p>
      * Nacos 认证用户名
      */
-    public String username = "";
+    public String username = NacosBundle.message("settings.nacos.username.placeholder");
 
     /**
      * 配置类型
@@ -78,6 +74,20 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 本地 Nacos 启动时使用的自定义 JVM 环境变量
      */
     public List<EnvVariable> localJvmOptions = new ArrayList<>();
+
+    /**
+     * 是否启用 GitHub 加速下载
+     * <p>
+     * 勾选后使用代理地址加速下载 Nacos
+     */
+    public boolean enableGitHubProxy = false;
+
+    /**
+     * GitHub 代理地址
+     * <p>
+     * 用于加速下载 GitHub 资源的代理地址
+     */
+    public String gitHubProxyUrl = "https://gh-proxy.org/";
 
     /**
      * 获取 SettingsState 的单例实例
