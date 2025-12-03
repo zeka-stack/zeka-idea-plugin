@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.ui.popup.ListPopup;
@@ -30,6 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import icons.AICommonIcons;
@@ -186,6 +188,9 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         group.add(new GenerateForFieldToggleAction());
         group.add(new PerformanceModeToggleAction());
         group.add(Separator.create());
+
+        // 3. 添加打开设置按钮
+        group.add(new OpenSettingsAction());
 
         // 创建弹出菜单
         return JBPopupFactory.getInstance().createActionGroupPopup(
@@ -543,6 +548,56 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().performanceMode = state;
+        }
+    }
+
+    /**
+     * 打开设置页面动作类
+     * <p>
+     * 该类继承自 AnAction, 用于在状态栏弹出菜单中提供快速打开插件设置页面的功能.
+     * 点击该动作后会打开 IntelliAI JavaDoc 的设置配置页面.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
+     */
+    private class OpenSettingsAction extends AnAction {
+        /**
+         * 构造函数, 创建打开设置动作实例
+         * <p>
+         * 使用国际化的文本标签初始化动作
+         */
+        OpenSettingsAction() {
+            super(JavaDocBundle.message("statusbar.quick.settings.open.settings"));
+        }
+
+        /**
+         * 处理动作事件, 打开插件设置页面
+         * <p>
+         * 当用户点击该动作时, 打开 IntelliAI JavaDoc 的设置配置页面
+         *
+         * @param e 动作事件对象, 包含事件的相关信息
+         */
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            ShowSettingsUtil.getInstance().showSettingsDialog(
+                project, JavaDocSettingsConfigurable.class
+                                                             );
+        }
+
+        /**
+         * 获取动作更新线程
+         * <p>
+         * 返回动作更新所使用的线程类型, 固定返回后台线程 (BGT)
+         *
+         * @return 动作更新线程, 非空值
+         * @since 1.0
+         */
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
         }
     }
 }
