@@ -121,6 +121,8 @@ clean: clean-engine clean-javadoc clean-changelog clean-nacos clean-tracer
 # 构建命令（包含拷贝构建产物）
 build: build-engine build-javadoc  build-changelog build-nacos build-tracer copy-zips
 
+# 子插件部署（可以并发执行，因为它们操作不同的目录和远程路径）
+# 使用 make -j4 deploy-sub 可以并发执行 4 个任务
 deploy-sub: deploy-javadoc deploy-changelog deploy-tracer deploy-nacos
 
 # 插件版本信息
@@ -131,3 +133,11 @@ version:
 		printf "  %-25s %s\n" "$$dir:" "$$version"; \
 	done
 
+# GNU Make 官方推荐使用 $(MAKE) 进行递归调用
+quick-clean:
+	@echo "正在快速清理插件..."
+	$(MAKE) -j5 clean
+
+quick-deploy:
+	@echo "正在快速部署插件..."
+	$(MAKE) -j4 deploy-sub
