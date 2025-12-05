@@ -137,6 +137,9 @@ version:
 quick-clean:
 	@echo "正在快速清理插件..."
 	$(MAKE) -j5 clean
+quick-build:
+	@echo "正在快速构建插件..."
+	$(MAKE) -j5 build
 
 quick-deploy:
 	@echo "正在快速部署插件..."

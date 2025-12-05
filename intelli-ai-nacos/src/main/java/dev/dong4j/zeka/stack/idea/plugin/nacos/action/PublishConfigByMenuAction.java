@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.action;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
@@ -87,25 +88,28 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
 
     @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
-        // VIRTUAL_FILE 只能在 EDT 中访问，所以必须在 EDT 中执行 update
-        return ActionUpdateThread.EDT;
+        // ProjectViewPopup 中的 Action 应该在后台线程执行 update
+        // 访问 VIRTUAL_FILE 需要使用 ReadAction
+        return ActionUpdateThread.BGT;
     }
 
     @Override
     public void update(@NotNull AnActionEvent e) {
         super.update(e);
 
-        // 只在选中文件时启用
-        VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        if (virtualFile != null) {
-            // 检查是否是配置文件
-            String fileName = virtualFile.getName();
-            boolean isConfigFile = fileName.startsWith("application") &&
-                                   (fileName.endsWith(".yml") || fileName.endsWith(".yaml") ||
-                                    fileName.endsWith(".properties") || fileName.endsWith(".json"));
-            e.getPresentation().setVisible(isConfigFile);
-        } else {
-            e.getPresentation().setVisible(false);
-        }
+        // 在后台线程中使用 ReadAction 同步访问 VirtualFile
+        boolean isConfigFile = ReadAction.compute(() -> {
+            VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
+            if (virtualFile != null) {
+                // 检查是否是配置文件
+                String fileName = virtualFile.getName();
+                return fileName.startsWith("application") &&
+                       (fileName.endsWith(".yml") || fileName.endsWith(".yaml") ||
+                        fileName.endsWith(".properties") || fileName.endsWith(".json"));
+            }
+            return false;
+        });
+
+        e.getPresentation().setVisible(isConfigFile);
     }
 }

@@ -40,7 +40,6 @@ bin/
 .intellijPlatform/
 # Ignore all JAR files except Gradle Wrapper
 *.jar
-!**/gradle/wrapper/gradle-wrapper.jar
 .gradle/
 chain.crt
 private.pem
