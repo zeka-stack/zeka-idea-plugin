@@ -98,7 +98,7 @@ Engine 会自动处理：
 
 ## 📄 许可证
 
-本项目基于 Apache License 2.0 开源许可证。详见 [LICENSE](../LICENSE) 文件。
+本项目基于 MIT 开源许可证。详见 [LICENSE](https://github.com/zeka-stack/zeka-stack/blob/main/LICENSE) 文件。
 
 ## 🙏 致谢
 

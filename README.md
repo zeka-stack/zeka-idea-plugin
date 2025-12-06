@@ -660,7 +660,7 @@ includes/
 
 ## 📄 许可证
 
-Apache License 2.0
+MIT License
 
 ---
 
