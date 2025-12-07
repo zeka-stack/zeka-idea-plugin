@@ -1,7 +1,7 @@
 # IntelliAI 插件套件 Makefile
 # 为所有插件提供构建、运行、测试和发布的便捷操作
 
-.PHONY: help build run test clean doc publish-install publish-repo verify check-format copy-zips
+.PHONY: help build run test clean doc publish-install publish-repo verify check-format copy-zips install-plugins
 
 # 插件目录
 ENGINE_DIR := intelli-ai-engine
@@ -12,14 +12,15 @@ TRACER_DIR := intelli-ai-tracer
 
 # 构建产物输出目录
 DIST_DIR := ~/Downloads/IntelliAI
-
-build-javadoc:
-	@echo "正在构建 intelli-ai-javadoc 插件..."
-	cd $(JAVADOC_DIR) && ./gradlew buildPlugin
+IDEA_PLUGINS_DIR := ~/Developer/4.Tools/JetBrains/IDEA/plugins
 
 build-engine:
 	@echo "正在构建 intelli-ai-engine 插件..."
 	cd $(ENGINE_DIR) && ./gradlew buildPlugin
+
+build-javadoc:
+	@echo "正在构建 intelli-ai-javadoc 插件..."
+	cd $(JAVADOC_DIR) && ./gradlew buildPlugin
 
 build-changelog:
 	@echo "正在构建 intelli-ai-changelog 插件..."
@@ -101,25 +102,10 @@ deploy-tracer:
 	@echo "正在部署 intelli-ai-tracer 插件..."
 	./deploy.sh tracer
 
-# 拷贝构建产物到 Downloads 目录
-copy-zips:
-	@echo "正在拷贝构建产物到 $(DIST_DIR)..."
-	@mkdir -p $(DIST_DIR)
-	@for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
-		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
-		if [ -n "$$zip_file" ]; then \
-			echo "  拷贝 $$zip_file -> $(DIST_DIR)/$$(basename $$zip_file)"; \
-			cp -f $$zip_file $(DIST_DIR)/; \
-		else \
-			echo "  警告: 未找到 $$dir 的构建产物"; \
-		fi; \
-	done
-	@echo "✓ 构建产物拷贝完成"
-
 # 清理命令
 clean: clean-engine clean-javadoc clean-changelog clean-nacos clean-tracer
 # 构建命令（包含拷贝构建产物）
-build: build-engine build-javadoc  build-changelog build-nacos build-tracer copy-zips
+build: build-javadoc  build-changelog build-nacos build-tracer copy-zips
 
 # 子插件部署（可以并发执行，因为它们操作不同的目录和远程路径）
 # 使用 make -j4 deploy-sub 可以并发执行 4 个任务
@@ -137,10 +123,57 @@ version:
 quick-clean:
 	@echo "正在快速清理插件..."
 	$(MAKE) -j5 clean
-quick-build:
+
+# 必须先构建 engine
+quick-build: build-engine
 	@echo "正在快速构建插件..."
-	$(MAKE) -j5 build
+	$(MAKE) -j4 build
 
 quick-deploy:
 	@echo "正在快速部署插件..."
 	$(MAKE) -j4 deploy-sub
+
+# 拷贝构建产物到指定目录
+# 用法: make copy-zips [TARGET_DIR=/path/to/dir]
+copy-zips:
+	@TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
+	echo "正在拷贝构建产物到 $$TARGET..."; \
+	mkdir -p $$TARGET; \
+	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
+		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
+		if [ -n "$$zip_file" ]; then \
+			echo "  拷贝 $$zip_file -> $$TARGET/$$(basename $$zip_file)"; \
+			cp -f $$zip_file $$TARGET/; \
+		else \
+			echo "  警告: 未找到 $$dir 的构建产物"; \
+		fi; \
+	done; \
+	echo "✓ 构建产物拷贝完成"
+
+# 拷贝构建产物到 IDEA 插件目录（解压后拷贝目录）
+install-plugins:
+	@TARGET=$(IDEA_PLUGINS_DIR); \
+	echo "正在安装插件到 $$TARGET..."; \
+	mkdir -p $$TARGET; \
+	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
+		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
+		if [ -n "$$zip_file" ]; then \
+			temp_dir=$$(mktemp -d); \
+			echo "  解压 $$zip_file..."; \
+			unzip -q -o $$zip_file -d $$temp_dir; \
+			plugin_dir=$$(find $$temp_dir -maxdepth 1 -type d ! -path $$temp_dir | head -n1); \
+			if [ -n "$$plugin_dir" ] && [ -d $$plugin_dir ]; then \
+				plugin_name=$$(basename $$plugin_dir); \
+				target_plugin_dir=$$TARGET/$$plugin_name; \
+				echo "  拷贝 $$plugin_dir -> $$target_plugin_dir"; \
+				rm -rf $$target_plugin_dir; \
+				mv $$plugin_dir $$target_plugin_dir; \
+			else \
+				echo "  警告: 解压后未找到插件目录"; \
+			fi; \
+			rm -rf $$temp_dir; \
+		else \
+			echo "  警告: 未找到 $$dir 的构建产物"; \
+		fi; \
+	done; \
+	echo "✓ 插件安装完成,请重启 IDEA 以应用更改"
