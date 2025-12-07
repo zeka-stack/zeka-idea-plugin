@@ -16,6 +16,7 @@ import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +45,7 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
@@ -333,7 +335,7 @@ public class JavaDocSettingsPanel {
                 // 打开 IntelliAI Engine 全局设置页面（应用级配置）
                 // 使用 null 作为 parent 参数表示打开应用级（全局）配置，而不是项目级配置
                 // 直接创建 Configurable 实例，确保能够正确打开配置页面
-                ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliAI Engine");
+                ShowSettingsUtil.getInstance().editConfigurable(null, EngineContents.PLUGIN_NAME);
             });
 
             // 创建空的下拉框（禁用状态）
@@ -379,9 +381,11 @@ public class JavaDocSettingsPanel {
                 .getPanel();
         }
 
-        panel.setBorder(BorderFactory.createTitledBorder(
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.ai.provider.selection")));
+            JavaDocBundle.message("settings.ai.provider.selection"));
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
 
         return panel;
     }
@@ -505,6 +509,7 @@ public class JavaDocSettingsPanel {
             BorderFactory.createEtchedBorder(),
             JavaDocBundle.message("settings.advanced.settings.prompt.templates")
                                                                     );
+        configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
 
         return panel;
@@ -537,6 +542,7 @@ public class JavaDocSettingsPanel {
             BorderFactory.createEtchedBorder(),
             JavaDocBundle.message(borderTitle)
                                                                     );
+        configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
 
         return panel;
@@ -591,6 +597,7 @@ public class JavaDocSettingsPanel {
             BorderFactory.createEtchedBorder(),
             JavaDocBundle.message("settings.generation.rules.config")
                                                                     );
+        configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
 
         return panel;
@@ -1017,6 +1024,20 @@ public class JavaDocSettingsPanel {
             default -> "";
         };
         textArea.setText(defaultTemplate);
+    }
+
+    /**
+     * 配置 TitledBorder 的字体和颜色
+     * <p>
+     * 显式设置字体和颜色，确保在 2025 版本中正常显示。
+     * 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题。
+     *
+     * @param titledBorder 要配置的 TitledBorder
+     */
+    private void configureTitledBorder(@NotNull TitledBorder titledBorder) {
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
     }
 
     /**
@@ -1488,7 +1509,7 @@ public class JavaDocSettingsPanel {
         /**
          * 设置表格指定单元格的值.
          * <p>
-         * 仅当行索引在有效范围内且传入值不为 {@code null} 时才会进行处理. 
+         * 仅当行索引在有效范围内且传入值不为 {@code null} 时才会进行处理.
          * 对于标签名称列，会进行合法性校验和重复检查。
          * 对于默认值列，直接更新值。
          *

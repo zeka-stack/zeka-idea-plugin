@@ -13,6 +13,8 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
+
 /**
  * 通知工具类
  *
@@ -20,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
  * @version 1.0.0
  */
 public class NotificationUtil {
-    public static final String NOTIFICATION_TITLE = "IntelliAI Engine";
+    public static final String NOTIFICATION_TITLE = EngineContents.PLUGIN_NAME;
     public static final String NOTIFICATION_GROUP_ID = NOTIFICATION_TITLE + " Notifications";
 
     /**

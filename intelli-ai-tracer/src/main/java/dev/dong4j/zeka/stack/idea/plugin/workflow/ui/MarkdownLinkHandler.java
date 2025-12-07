@@ -76,8 +76,9 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
      * 使用 invokeLaterIfNeeded 确保回调在 EDT 中执行。
      *
      * @param link 链接地址
+     * @return 是否成功处理了链接
      */
-    private void handleLink(@NotNull String link) {
+    private boolean handleLink(@NotNull String link) {
         // 使用 invokeLaterIfNeeded 确保在 EDT 中执行
         // 如果当前在 EDT 中，立即执行；否则调度到 EDT
         ApplicationManager.getApplication().invokeLater(() -> {
@@ -96,6 +97,8 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
                 // 忽略错误，避免影响其他功能
             }
         });
+        // 返回 true 表示已接受处理（异步执行）
+        return true;
     }
 
     /**

@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.JComponent;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
@@ -39,7 +40,7 @@ public class AICommonSettingsConfigurable implements SearchableConfigurable {
     @Override
     @Nls(capitalization = Nls.Capitalization.Title)
     public String getDisplayName() {
-        return "IntelliAI Engine";
+        return EngineContents.PLUGIN_NAME;
     }
 
     @Override

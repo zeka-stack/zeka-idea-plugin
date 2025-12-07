@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderConfigPanel;
@@ -25,7 +26,7 @@ public class AICommonSettingsPanel {
     private final AIProviderConfigPanel configPanel;
 
     public AICommonSettingsPanel() {
-        AICredentialManager credentialManager = new AICredentialManager("IntelliAI Engine", "AI_COMMON_");
+        AICredentialManager credentialManager = new AICredentialManager(EngineContents.PLUGIN_NAME, "AI_COMMON_");
         this.configPanel = new AIProviderConfigPanel(credentialManager, null);
         // 创建 UI 后立即加载配置，确保复选框等组件显示正确的初始状态
         this.configPanel.loadSettings(AIProviderSettings.getInstance());

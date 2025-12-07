@@ -290,7 +290,7 @@ public final class WorkflowResultToolWindow {
 
             // 初次渲染：将 Markdown 转换为 HTML
             String htmlContent = convertMarkdownToHtml(project, initialContent);
-            this.htmlPanel.setHtml(htmlContent, 0, null);
+            this.htmlPanel.setHtml(htmlContent, 0, markdownFile);
         }
 
 
@@ -304,12 +304,12 @@ public final class WorkflowResultToolWindow {
                 try {
                     // 将 Markdown 转换为 HTML 后刷新显示
                     String htmlContent = convertMarkdownToHtml(project, newContent);
-                    htmlPanel.setHtml(htmlContent, 0, null);
+                    htmlPanel.setHtml(htmlContent, 0, markdownFile);
                     currentContent = newContent;
                 } catch (Exception e) {
                     // 如果转换失败，尝试直接使用原始内容
                     try {
-                        htmlPanel.setHtml(newContent, 0, null);
+                        htmlPanel.setHtml(newContent, 0, markdownFile);
                         currentContent = newContent;
                     } catch (Exception ex) {
                         // 忽略错误

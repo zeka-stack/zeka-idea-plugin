@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -26,6 +27,8 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.border.TitledBorder;
 
 import lombok.Getter;
 
@@ -353,6 +356,20 @@ public class PersonalInfoPanel {
     }
 
     /**
+     * 配置 TitledBorder 的字体和颜色
+     * <p>
+     * 显式设置字体和颜色，确保在 2025 版本中正常显示。
+     * 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题。
+     *
+     * @param titledBorder 要配置的 TitledBorder
+     */
+    private void configureTitledBorder(@NotNull TitledBorder titledBorder) {
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
+    }
+
+    /**
      * 创建可折叠的标题栏
      *
      * @param title 标题文本
@@ -361,8 +378,10 @@ public class PersonalInfoPanel {
     private JPanel createCollapsibleTitle(@NotNull String title) {
         JPanel titlePanel = new JPanel(new BorderLayout());
         // 默认折叠状态，使用右箭头
+        TitledBorder titledBorder = BorderFactory.createTitledBorder("▶ " + title);
+        configureTitledBorder(titledBorder);
         titlePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder("▶ " + title),
+            titledBorder,
             JBUI.Borders.empty(5)
                                                                ));
         titlePanel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
@@ -380,8 +399,10 @@ public class PersonalInfoPanel {
      */
     private void updateCollapsibleTitle(@NotNull JPanel titlePanel, @NotNull String title, boolean expanded) {
         String arrow = expanded ? "▼ " : "▶ ";
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(arrow + title);
+        configureTitledBorder(titledBorder);
         titlePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(arrow + title),
+            titledBorder,
             JBUI.Borders.empty(5)
                                                                ));
     }

@@ -6,6 +6,7 @@ import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -39,7 +40,7 @@ public final class AIServiceImpl implements AIService {
      * @see AICredentialManager
      */
     private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER =
-        new AICredentialManager("IntelliAI Engine", "AI_COMMON_");
+        new AICredentialManager(EngineContents.PLUGIN_NAME, "AI_COMMON_");
 
     /**
      * 生成内容

@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform") version "2.1.0"
+    id("org.jetbrains.intellij.platform") version "2.10.5"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -31,25 +31,25 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            ide("IC", "2022.3")
-            ide("IC", "2023.1")
-            ide("IC", "2023.2")
-            ide("IC", "2023.3")
-            ide("IC", "2024.1")
-            ide("IC", "2024.2")
-            ide("IC", "2024.3")
-            ide("IC", "2025.1")
-            ide("IC", "2025.2")
+            create("IC", "2022.3")
+            create("IC", "2023.1")
+            create("IC", "2023.2")
+            create("IC", "2023.3")
+            create("IC", "2024.1")
+            create("IC", "2024.2")
+            create("IC", "2024.3")
+            create("IC", "2025.1")
+            create("IC", "2025.2")
 
-            ide("IU", "2022.3")
-            ide("IU", "2023.1")
-            ide("IU", "2023.2")
-            ide("IU", "2023.3")
-            ide("IU", "2024.1")
-            ide("IU", "2024.2")
-            ide("IU", "2024.3")
-            ide("IU", "2025.1")
-            ide("IU", "2025.2")
+            create("IU", "2022.3")
+            create("IU", "2023.1")
+            create("IU", "2023.2")
+            create("IU", "2023.3")
+            create("IU", "2024.1")
+            create("IU", "2024.2")
+            create("IU", "2024.3")
+            create("IU", "2025.1")
+            create("IU", "2025.2")
         }
     }
 }
@@ -59,7 +59,6 @@ dependencies {
         create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
 
         bundledPlugin("com.intellij.java")
-        instrumentationTools()
         zipSigner()
         pluginVerifier()
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)

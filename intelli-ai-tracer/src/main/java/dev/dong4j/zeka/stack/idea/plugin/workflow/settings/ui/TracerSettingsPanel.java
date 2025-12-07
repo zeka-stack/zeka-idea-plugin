@@ -11,6 +11,9 @@ import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -28,6 +31,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
@@ -168,7 +172,7 @@ public class TracerSettingsPanel {
             warningLabel.setForeground(warningColor);
 
             HyperlinkLabel linkLabel = new HyperlinkLabel(WorkflowBundle.message("settings.ai.provider.open.engine.settings"));
-            linkLabel.addHyperlinkListener(e -> ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliAI Engine"));
+            linkLabel.addHyperlinkListener(e -> ShowSettingsUtil.getInstance().editConfigurable(null, EngineContents.PLUGIN_NAME));
 
             providerComboBox = new ComboBox<>(new AIProviderConfig[0]);
             providerComboBox.setEnabled(false);
@@ -210,9 +214,11 @@ public class TracerSettingsPanel {
                 .getPanel();
         }
 
-        panel.setBorder(BorderFactory.createTitledBorder(
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            WorkflowBundle.message("settings.ai.provider.selection")));
+            WorkflowBundle.message("settings.ai.provider.selection"));
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
 
         return panel;
     }
@@ -283,6 +289,20 @@ public class TracerSettingsPanel {
         showPromptSettingsCheckBox.addActionListener(e -> promptSettingsPanel.setVisible(showPromptSettingsCheckBox.isSelected()));
     }
 
+    /**
+     * 配置 TitledBorder 的字体和颜色
+     * <p>
+     * 显式设置字体和颜色，确保在 2025 版本中正常显示。
+     * 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题。
+     *
+     * @param titledBorder 要配置的 TitledBorder
+     */
+    private void configureTitledBorder(@NotNull TitledBorder titledBorder) {
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
+    }
+
     private JPanel createPromptTemplatesPanel() {
         JPanel content = FormBuilder.createFormBuilder()
             .addComponent(new JBLabel("  " + WorkflowBundle.message("settings.prompt.hint")))
@@ -295,6 +315,7 @@ public class TracerSettingsPanel {
         TitledBorder border = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
             WorkflowBundle.message("settings.prompt.section.title"));
+        configureTitledBorder(border);
         panel.setBorder(border);
         return panel;
     }

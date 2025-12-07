@@ -11,6 +11,7 @@ import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -33,6 +34,7 @@ import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
@@ -255,7 +257,7 @@ public class ChangelogSettingsPanel {
             HyperlinkLabel linkLabel = new HyperlinkLabel(ChangelogBundle.message("settings.ai.provider.open.ai.common.settings"));
             linkLabel.addHyperlinkListener(e -> {
                 // 打开 IntelliAI Engine 全局设置页面（应用级配置）
-                ShowSettingsUtil.getInstance().editConfigurable(null, "IntelliAI Engine");
+                ShowSettingsUtil.getInstance().editConfigurable(null, EngineContents.PLUGIN_NAME);
             });
 
             // 创建空的下拉框（禁用状态）
@@ -300,9 +302,11 @@ public class ChangelogSettingsPanel {
                 .getPanel();
         }
 
-        panel.setBorder(BorderFactory.createTitledBorder(
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            ChangelogBundle.message("settings.ai.provider.selection")));
+            ChangelogBundle.message("settings.ai.provider.selection"));
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
 
         return panel;
     }
@@ -405,6 +409,20 @@ public class ChangelogSettingsPanel {
     }
 
     /**
+     * 配置 TitledBorder 的字体和颜色
+     * <p>
+     * 显式设置字体和颜色，确保在 2025 版本中正常显示。
+     * 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题。
+     *
+     * @param titledBorder 要配置的 TitledBorder
+     */
+    private void configureTitledBorder(@NotNull TitledBorder titledBorder) {
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
+    }
+
+    /**
      * 创建提示词模板面板
      * <p>
      * 创建一个包含提示词模板 Tab 页的面板，并添加边框。
@@ -425,6 +443,7 @@ public class ChangelogSettingsPanel {
         TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
             ChangelogBundle.message("settings.advanced.settings.prompt.templates"));
+        configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
 
         return panel;

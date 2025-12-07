@@ -14,6 +14,7 @@ import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.ImageUtil;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -371,10 +372,7 @@ public final class AIProviderConfigUI {
             .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
             .getPanel();
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.add(panel, BorderLayout.CENTER);
-        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.basic.connection.config")));
-        return wrapper;
+        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
     }
 
     /**
@@ -400,14 +398,7 @@ public final class AIProviderConfigUI {
             .addComponent(availableProvidersPanel)
             .getPanel();
 
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
-        panel.setBorder(new TitledBorder(
-            BorderFactory.createEtchedBorder(),
-            AICommonBundle.message("settings.show.available.providers")
-        ));
-
-        return panel;
+        return createPanelWithTitledBorder(contentPanel, AICommonBundle.message("settings.show.available.providers"));
     }
 
     /**
@@ -422,10 +413,7 @@ public final class AIProviderConfigUI {
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .getPanel();
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.add(panel, BorderLayout.CENTER);
-        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.basic.config")));
-        return wrapper;
+        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));
     }
 
     /**
@@ -460,10 +448,7 @@ public final class AIProviderConfigUI {
             .addComponent(advancedSettingsContentPanel)
             .getPanel();
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.add(panel, BorderLayout.CENTER);
-        wrapper.setBorder(new TitledBorder(AICommonBundle.message("settings.advanced.config")));
-        return wrapper;
+        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.advanced.config"));
     }
 
     /**
@@ -583,6 +568,35 @@ public final class AIProviderConfigUI {
         } else {
             hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         }
+    }
+
+    /**
+     * 创建带标题边框的面板
+     * <p>
+     * 创建一个带标题边框的面板，显式设置字体和颜色以确保在不同 IntelliJ 版本中都能正常显示。
+     *
+     * @param contentPanel 内容面板
+     * @param title        标题文本
+     * @return 带标题边框的面板
+     */
+    private JPanel createPanelWithTitledBorder(@NotNull JPanel contentPanel, @NotNull String title) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.add(contentPanel, BorderLayout.CENTER);
+
+        // 创建 TitledBorder 并显式设置字体和颜色
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            title
+                                                                    );
+
+        // 显式设置字体和颜色，确保在 2025 版本中正常显示
+        // 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
+
+        wrapper.setBorder(titledBorder);
+        return wrapper;
     }
 
     /**
