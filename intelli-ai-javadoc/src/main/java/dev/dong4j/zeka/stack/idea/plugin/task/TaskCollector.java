@@ -19,6 +19,13 @@ import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.kdoc.psi.api.KDoc;
+import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtDeclaration;
+import org.jetbrains.kotlin.psi.KtFile;
+import org.jetbrains.kotlin.psi.KtNamedFunction;
+import org.jetbrains.kotlin.psi.KtProperty;
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,6 +94,7 @@ public class TaskCollector {
     public List<DocumentationTask> collectFromElement(@NotNull PsiElement element) {
         List<DocumentationTask> tasks = new ArrayList<>();
 
+        // Java 元素处理
         if (element instanceof PsiMethod method) {
             // 为单个方法生成
             if (settings.generateForMethod && shouldGenerateForElement(method)) {
@@ -106,6 +114,26 @@ public class TaskCollector {
             // 2025.11.08 只为类本身生成
             if (settings.generateForClass && shouldGenerateForElement(psiClass)) {
                 tasks.add(createTask(psiClass, DocumentationTask.TaskType.CLASS));
+            }
+        }
+        // Kotlin 元素处理
+        else if (element instanceof KtNamedFunction function) {
+            // 为单个 Kotlin 函数生成
+            if (settings.generateForMethod && shouldGenerateForElement(function)) {
+                DocumentationTask.TaskType type = isKotlinTestMethod(function)
+                                                  ? DocumentationTask.TaskType.TEST_METHOD
+                                                  : DocumentationTask.TaskType.METHOD;
+                tasks.add(createTask(function, type));
+            }
+        } else if (element instanceof KtProperty property) {
+            // 为单个 Kotlin 属性生成
+            if (settings.generateForField && shouldGenerateForElement(property)) {
+                tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
+            }
+        } else if (element instanceof KtClassOrObject ktClass) {
+            // 为 Kotlin 类/对象生成
+            if (settings.generateForClass && shouldGenerateForElement(ktClass)) {
+                tasks.add(createTask(ktClass, DocumentationTask.TaskType.CLASS));
             }
         } else if (element instanceof PsiFile) {
             // 为整个文件生成
@@ -199,61 +227,100 @@ public class TaskCollector {
      * @return 文档生成任务列表
      * @see JavaRecursiveElementVisitor
      */
+    @SuppressWarnings("D")
     @NotNull
     private List<DocumentationTask> collectFromFileInternal(@NotNull PsiFile psiFile,
                                                             @NotNull Predicate<PsiElement> elementPredicate) {
         List<DocumentationTask> tasks = new ArrayList<>();
 
-        if (!(psiFile instanceof PsiJavaFile)) {
-            return tasks;
+        // 处理 Java 文件
+        if (psiFile instanceof PsiJavaFile) {
+            psiFile.accept(new JavaRecursiveElementVisitor() {
+                /**
+                 * 访问类元素并根据配置和判断条件决定是否生成文档任务
+                 *
+                 * @param aClass 被访问的类元素
+                 */
+                @Override
+                public void visitClass(@NotNull PsiClass aClass) {
+                    super.visitClass(aClass);
+
+                    if (settings.generateForClass && elementPredicate.test(aClass)) {
+                        tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
+                    }
+                }
+
+                /**
+                 * 处理方法节点，根据配置和判断条件决定是否生成文档任务
+                 *
+                 * @param method 被访问的方法节点
+                 */
+                @Override
+                public void visitMethod(@NotNull PsiMethod method) {
+                    super.visitMethod(method);
+
+                    if (settings.generateForMethod && elementPredicate.test(method)) {
+                        DocumentationTask.TaskType type = isTestMethod(method)
+                                                          ? DocumentationTask.TaskType.TEST_METHOD
+                                                          : DocumentationTask.TaskType.METHOD;
+                        tasks.add(createTask(method, type));
+                    }
+                }
+
+                /**
+                 * 处理字段元素，根据配置和判断条件决定是否生成文档任务
+                 *
+                 * @param field 被访问的字段元素
+                 */
+                @Override
+                public void visitField(@NotNull PsiField field) {
+                    super.visitField(field);
+
+                    if (settings.generateForField && elementPredicate.test(field)) {
+                        tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+                    }
+                }
+            });
         }
-
-        psiFile.accept(new JavaRecursiveElementVisitor() {
-            /**
-             * 访问类元素并根据配置和判断条件决定是否生成文档任务
-             *
-             * @param aClass 被访问的类元素
-             */
-            @Override
-            public void visitClass(@NotNull PsiClass aClass) {
-                super.visitClass(aClass);
-
-                if (settings.generateForClass && elementPredicate.test(aClass)) {
-                    tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
-                }
+        // 处理 Kotlin 文件
+        else if (psiFile instanceof KtFile ktFile) {
+            // 检查是否支持 Kotlin
+            if (!settings.isLanguageSupported("kotlin")) {
+                return tasks;
             }
 
-            /**
-             * 处理方法节点，根据配置和判断条件决定是否生成文档任务
-             *
-             * @param method 被访问的方法节点
-             */
-            @Override
-            public void visitMethod(@NotNull PsiMethod method) {
-                super.visitMethod(method);
+            ktFile.accept(new KtTreeVisitorVoid() {
+                @Override
+                public void visitClassOrObject(@NotNull KtClassOrObject classOrObject) {
+                    super.visitClassOrObject(classOrObject);
 
-                if (settings.generateForMethod && elementPredicate.test(method)) {
-                    DocumentationTask.TaskType type = isTestMethod(method)
-                                                      ? DocumentationTask.TaskType.TEST_METHOD
-                                                      : DocumentationTask.TaskType.METHOD;
-                    tasks.add(createTask(method, type));
+                    if (settings.generateForClass && elementPredicate.test(classOrObject)) {
+                        tasks.add(createTask(classOrObject, DocumentationTask.TaskType.CLASS));
+                    }
                 }
-            }
 
-            /**
-             * 处理字段元素，根据配置和判断条件决定是否生成文档任务
-             *
-             * @param field 被访问的字段元素
-             */
-            @Override
-            public void visitField(@NotNull PsiField field) {
-                super.visitField(field);
+                @Override
+                public void visitNamedFunction(@NotNull KtNamedFunction function) {
+                    super.visitNamedFunction(function);
 
-                if (settings.generateForField && elementPredicate.test(field)) {
-                    tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+                    if (settings.generateForMethod && elementPredicate.test(function)) {
+                        DocumentationTask.TaskType type = isKotlinTestMethod(function)
+                                                          ? DocumentationTask.TaskType.TEST_METHOD
+                                                          : DocumentationTask.TaskType.METHOD;
+                        tasks.add(createTask(function, type));
+                    }
                 }
-            }
-        });
+
+                @Override
+                public void visitProperty(@NotNull KtProperty property) {
+                    super.visitProperty(property);
+
+                    if (settings.generateForField && elementPredicate.test(property)) {
+                        tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
+                    }
+                }
+            });
+        }
 
         return tasks;
     }
@@ -322,64 +389,107 @@ public class TaskCollector {
      * @see #collectFromFile(PsiFile)
      * @see JavaRecursiveElementVisitor
      */
+    @SuppressWarnings("D")
     @NotNull
     public List<DocumentationTask> collectMissingJavaDocFromFile(@NotNull PsiFile psiFile) {
         List<DocumentationTask> tasks = new ArrayList<>();
 
-        if (!(psiFile instanceof PsiJavaFile)) {
-            return tasks;
+        // 处理 Java 文件
+        if (psiFile instanceof PsiJavaFile) {
+            // 专门用于 Git 提交场景，强制检查所有类型的元素，不受配置影响
+            psiFile.accept(new JavaRecursiveElementVisitor() {
+                /**
+                 * 访问类元素，强制检查所有类（不受 generateForClass 配置影响）
+                 *
+                 * @param aClass 被访问的类元素
+                 */
+                @Override
+                public void visitClass(@NotNull PsiClass aClass) {
+                    super.visitClass(aClass);
+
+                    // 强制检查类，不受 generateForClass 配置影响
+                    if (hasNoJavaDoc(aClass)) {
+                        tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
+                    }
+                }
+
+                /**
+                 * 处理方法节点，强制检查所有方法（不受 generateForMethod 配置影响）
+                 *
+                 * @param method 被访问的方法节点
+                 */
+                @Override
+                public void visitMethod(@NotNull PsiMethod method) {
+                    super.visitMethod(method);
+
+                    // 强制检查方法，不受 generateForMethod 配置影响
+                    if (hasNoJavaDoc(method)) {
+                        DocumentationTask.TaskType type = isTestMethod(method)
+                                                          ? DocumentationTask.TaskType.TEST_METHOD
+                                                          : DocumentationTask.TaskType.METHOD;
+                        tasks.add(createTask(method, type));
+                    }
+                }
+
+                /**
+                 * 处理字段元素，强制检查所有字段（不受 generateForField 配置影响）
+                 *
+                 * @param field 被访问的字段元素
+                 */
+                @Override
+                public void visitField(@NotNull PsiField field) {
+                    super.visitField(field);
+
+                    // 强制检查字段，不受 generateForField 配置影响
+                    if (hasNoJavaDoc(field)) {
+                        tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+                    }
+                }
+            });
         }
-
-        // 专门用于 Git 提交场景，强制检查所有类型的元素，不受配置影响
-        psiFile.accept(new JavaRecursiveElementVisitor() {
-            /**
-             * 访问类元素，强制检查所有类（不受 generateForClass 配置影响）
-             *
-             * @param aClass 被访问的类元素
-             */
-            @Override
-            public void visitClass(@NotNull PsiClass aClass) {
-                super.visitClass(aClass);
-
-                // 强制检查类，不受 generateForClass 配置影响
-                if (hasNoJavaDoc(aClass)) {
-                    tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
-                }
+        // 处理 Kotlin 文件
+        else if (psiFile instanceof KtFile ktFile) {
+            // 检查是否支持 Kotlin
+            if (!settings.isLanguageSupported("kotlin")) {
+                return tasks;
             }
 
-            /**
-             * 处理方法节点，强制检查所有方法（不受 generateForMethod 配置影响）
-             *
-             * @param method 被访问的方法节点
-             */
-            @Override
-            public void visitMethod(@NotNull PsiMethod method) {
-                super.visitMethod(method);
+            // 专门用于 Git 提交场景，强制检查所有类型的元素，不受配置影响
+            ktFile.accept(new KtTreeVisitorVoid() {
+                @Override
+                public void visitClassOrObject(@NotNull KtClassOrObject classOrObject) {
+                    super.visitClassOrObject(classOrObject);
 
-                // 强制检查方法，不受 generateForMethod 配置影响
-                if (hasNoJavaDoc(method)) {
-                    DocumentationTask.TaskType type = isTestMethod(method)
-                                                      ? DocumentationTask.TaskType.TEST_METHOD
-                                                      : DocumentationTask.TaskType.METHOD;
-                    tasks.add(createTask(method, type));
+                    // 强制检查类，不受 generateForClass 配置影响
+                    if (hasNoJavaDoc(classOrObject)) {
+                        tasks.add(createTask(classOrObject, DocumentationTask.TaskType.CLASS));
+                    }
                 }
-            }
 
-            /**
-             * 处理字段元素，强制检查所有字段（不受 generateForField 配置影响）
-             *
-             * @param field 被访问的字段元素
-             */
-            @Override
-            public void visitField(@NotNull PsiField field) {
-                super.visitField(field);
+                @Override
+                public void visitNamedFunction(@NotNull KtNamedFunction function) {
+                    super.visitNamedFunction(function);
 
-                // 强制检查字段，不受 generateForField 配置影响
-                if (hasNoJavaDoc(field)) {
-                    tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+                    // 强制检查方法，不受 generateForMethod 配置影响
+                    if (hasNoJavaDoc(function)) {
+                        DocumentationTask.TaskType type = isKotlinTestMethod(function)
+                                                          ? DocumentationTask.TaskType.TEST_METHOD
+                                                          : DocumentationTask.TaskType.METHOD;
+                        tasks.add(createTask(function, type));
+                    }
                 }
-            }
-        });
+
+                @Override
+                public void visitProperty(@NotNull KtProperty property) {
+                    super.visitProperty(property);
+
+                    // 强制检查字段，不受 generateForField 配置影响
+                    if (hasNoJavaDoc(property)) {
+                        tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
+                    }
+                }
+            });
+        }
 
         return tasks;
     }
@@ -564,11 +674,12 @@ public class TaskCollector {
             final PsiElement reformat = CodeStyleManager.getInstance(project).reformat(element.copy());
 
             // 类级别的代码使用 optimizeClassCode 方法
-            if (element instanceof PsiClass) {
+            if (element instanceof PsiClass || element instanceof KtClassOrObject) {
                 reformatCode = AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()));
             }
             // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
-            if (element instanceof PsiMethod || element instanceof PsiField) {
+            if (element instanceof PsiMethod || element instanceof PsiField ||
+                element instanceof KtNamedFunction || element instanceof KtProperty) {
                 reformatCode = AiCodePreprocessor.preprocess(reformat.getText());
             }
         } catch (Exception e) {
@@ -638,25 +749,40 @@ public class TaskCollector {
     }
 
     /**
-     * 判断元素是否没有 JavaDoc 注释
+     * 判断元素是否没有 JavaDoc/KDoc 注释
      *
-     * <p>专门用于检查元素是否缺失 JavaDoc 注释，
+     * <p>专门用于检查元素是否缺失文档注释（JavaDoc 或 KDoc），
      * 忽略 overrideExisting 配置，只检查元素是否已有文档。
      *
      * <p>检查逻辑：
      * <ul>
-     *   <li>如果元素支持文档注释（PsiDocCommentOwner），检查是否有 JavaDoc</li>
-     *   <li>如果没有 JavaDoc 返回 true，否则返回 false</li>
+     *   <li>Java 元素：如果元素支持文档注释（PsiDocCommentOwner），检查是否有 JavaDoc</li>
+     *   <li>Kotlin 元素：检查是否有 KDoc 注释</li>
+     *   <li>如果没有文档注释返回 true，否则返回 false</li>
      *   <li>如果元素不支持文档注释，返回 true（允许处理）</li>
      * </ul>
      *
      * @param element PSI 元素
-     * @return 如果元素没有 JavaDoc 返回 true，否则返回 false
+     * @return 如果元素没有文档注释返回 true，否则返回 false
      * @see #shouldGenerateForElement(PsiElement)
      */
     private boolean hasNoJavaDoc(@NotNull PsiElement element) {
+        // Java 元素检查
         if (element instanceof PsiDocCommentOwner) {
             PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
+            return docComment == null;
+        }
+        // Kotlin 元素检查 - 直接检查具体的 Kotlin 元素类型
+        if (element instanceof KtClassOrObject) {
+            KDoc docComment = ((KtDeclaration) element).getDocComment();
+            return docComment == null;
+        }
+        if (element instanceof KtNamedFunction) {
+            KDoc docComment = ((KtNamedFunction) element).getDocComment();
+            return docComment == null;
+        }
+        if (element instanceof KtProperty) {
+            KDoc docComment = ((KtProperty) element).getDocComment();
             return docComment == null;
         }
         return true;
@@ -716,16 +842,56 @@ public class TaskCollector {
     }
 
     /**
-     * 判断是否为 Java 文件
+     * 判断是否为 Kotlin 测试函数
      *
-     * <p>通过文件扩展名判断是否为 Java 文件。
-     * 不区分大小写，支持 .java 扩展名。
+     * <p>检查 Kotlin 函数是否被 JUnit 4 或 JUnit 5 的 @Test 注解标记。
+     * 用于区分普通函数和测试函数，以便使用不同的 Prompt 模板。
+     *
+     * <p>支持的注解：
+     * <ul>
+     *   <li>org.junit.Test (JUnit 4)</li>
+     *   <li>org.junit.jupiter.api.Test (JUnit 5)</li>
+     * </ul>
+     *
+     * @param function Kotlin 函数对象
+     * @return 如果是测试函数返回 true，否则返回 false
+     */
+    private boolean isKotlinTestMethod(@NotNull KtNamedFunction function) {
+        for (org.jetbrains.kotlin.psi.KtAnnotationEntry entry : function.getAnnotationEntries()) {
+            // 获取注解的短名称
+            org.jetbrains.kotlin.name.Name shortName = entry.getShortName();
+            if (shortName != null && "Test".equals(shortName.asString())) {
+                // 检查注解文本中是否包含 JUnit 包名
+                String entryText = entry.getText();
+                if (entryText != null) {
+                    // 检查是否包含 JUnit 4 或 JUnit 5 的 Test 注解
+                    if (entryText.contains("org.junit.Test") ||
+                        entryText.contains("org.junit.jupiter.api.Test") ||
+                        entryText.contains("junit.Test") ||
+                        entryText.contains("jupiter.api.Test")) {
+                        return true;
+                    }
+                }
+                // 如果注解名是 Test，也认为是测试方法（大多数情况下）
+                // 因为 Kotlin 中通常使用 @Test 注解
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 判断是否为 Java 或 Kotlin 文件
+     *
+     * <p>通过文件扩展名判断是否为 Java 或 Kotlin 文件。
+     * 不区分大小写，支持 .java 和 .kt 扩展名。
      *
      * @param file 虚拟文件对象
-     * @return 如果是 Java 文件返回 true，否则返回 false
+     * @return 如果是 Java 或 Kotlin 文件返回 true，否则返回 false
      */
     private boolean isJavaFile(@NotNull VirtualFile file) {
-        return "java".equalsIgnoreCase(file.getExtension());
+        String extension = file.getExtension();
+        return "java".equalsIgnoreCase(extension) || "kt".equalsIgnoreCase(extension);
     }
 }
 

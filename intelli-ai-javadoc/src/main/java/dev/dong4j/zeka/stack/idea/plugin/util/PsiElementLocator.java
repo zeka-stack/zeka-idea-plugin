@@ -14,6 +14,10 @@ import com.intellij.psi.util.PsiTreeUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtFile;
+import org.jetbrains.kotlin.psi.KtNamedFunction;
+import org.jetbrains.kotlin.psi.KtProperty;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -215,11 +219,24 @@ public class PsiElementLocator {
      */
     @Nullable
     public static LocateResult locateElementAtOffset(@NotNull PsiFile psiFile, int offset) {
-        if (!(psiFile instanceof PsiJavaFile)) {
-            log.debug("Not a Java file: {}", psiFile.getName());
-            return null;
+        // 处理 Java 文件
+        if (psiFile instanceof PsiJavaFile) {
+            return locateJavaElement(psiFile, offset);
+        }
+        // 处理 Kotlin 文件
+        else if (psiFile instanceof KtFile) {
+            return locateKotlinElement((KtFile) psiFile, offset);
         }
 
+        log.debug("Not a supported file type: {}", psiFile.getName());
+        return null;
+    }
+
+    /**
+     * 定位 Java 元素
+     */
+    @NotNull
+    private static LocateResult locateJavaElement(@NotNull PsiFile psiFile, int offset) {
         // 获取光标位置的元素
         PsiElement elementAtCaret = psiFile.findElementAt(offset);
         if (elementAtCaret == null) {
@@ -260,6 +277,75 @@ public class PsiElementLocator {
         // 4. 默认为整个文件生成
         log.info("No specific element found, using whole file");
         return new LocateResult(psiFile, LocateType.FILE, true);
+    }
+
+    /**
+     * 定位 Kotlin 元素
+     */
+    @NotNull
+    private static LocateResult locateKotlinElement(@NotNull KtFile ktFile, int offset) {
+        // 获取光标位置的元素
+        PsiElement elementAtCaret = ktFile.findElementAt(offset);
+        if (elementAtCaret == null) {
+            log.debug("No element at offset: {}", offset);
+            return new LocateResult(ktFile, LocateType.FILE, true);
+        }
+
+        log.debug("Element at caret: {} ({})", elementAtCaret.getText(), elementAtCaret.getClass().getSimpleName());
+
+        // 1. 优先查找函数
+        KtNamedFunction function = PsiTreeUtil.getParentOfType(elementAtCaret, KtNamedFunction.class);
+        if (function != null) {
+            log.info("Located function: {}", function.getName());
+            return new LocateResult(function, LocateType.METHOD, false);
+        }
+
+        // 2. 查找属性
+        KtProperty property = PsiTreeUtil.getParentOfType(elementAtCaret, KtProperty.class);
+        if (property != null) {
+            log.info("Located property: {}", property.getName());
+            return new LocateResult(property, LocateType.FIELD, false);
+        }
+
+        // 3. 查找类/对象
+        KtClassOrObject ktClass = PsiTreeUtil.getParentOfType(elementAtCaret, KtClassOrObject.class);
+        if (ktClass != null) {
+            // 检查是否在类声明行（类名附近）
+            if (isOnKotlinClassDeclaration(elementAtCaret, ktClass)) {
+                log.info("Located class (on declaration): {}", ktClass.getName());
+                return new LocateResult(ktClass, LocateType.CLASS, false);
+            } else {
+                // 光标在类内部但不在特定成员上，为整个类生成
+                log.info("Located class (inside class body): {}", ktClass.getName());
+                return new LocateResult(ktClass, LocateType.CLASS, true);
+            }
+        }
+
+        // 4. 默认为整个文件生成
+        log.info("No specific element found, using whole file");
+        return new LocateResult(ktFile, LocateType.FILE, true);
+    }
+
+    /**
+     * 判断光标是否在 Kotlin 类声明行上
+     */
+    private static boolean isOnKotlinClassDeclaration(@NotNull PsiElement element, @NotNull KtClassOrObject ktClass) {
+        // 获取类的名称标识符
+        PsiElement nameReference = ktClass.getNameIdentifier();
+        if (nameReference == null) {
+            return false;
+        }
+
+        // 检查当前元素是否是类名或在类名附近
+        PsiElement current = element;
+        while (current != null && current != ktClass) {
+            if (current == nameReference) {
+                return true;
+            }
+            current = current.getParent();
+        }
+
+        return false;
     }
 
     /**
@@ -312,25 +398,41 @@ public class PsiElementLocator {
     }
 
     /**
-     * 检查元素是否已有 JavaDoc 注释
+     * 检查元素是否已有 JavaDoc/KDoc 注释
      *
-     * <p>检查指定 PSI 元素是否已有 JavaDoc 注释。
+     * <p>检查指定 PSI 元素是否已有文档注释（JavaDoc 或 KDoc）。
      * 用于跳过已有文档的元素，避免重复生成。
      *
      * <p>检查条件：
      * <ul>
-     *   <li>元素必须实现 PsiDocCommentOwner 接口</li>
-     *   <li>元素的 getDocComment() 方法不返回 null</li>
+     *   <li>Java 元素：必须实现 PsiDocCommentOwner 接口，getDocComment() 方法不返回 null</li>
+     *   <li>Kotlin 元素：检查是否有 KDoc 注释</li>
      * </ul>
      *
      * @param element PSI 元素
-     * @return 如果已有 JavaDoc 返回 true
+     * @return 如果已有文档注释返回 true
      * @see PsiDocCommentOwner#getDocComment()
      */
     public static boolean hasJavaDoc(@NotNull PsiElement element) {
+        // Java 元素检查
         if (element instanceof PsiDocCommentOwner docOwner) {
             return docOwner.getDocComment() != null;
         }
+
+        // Kotlin 元素检查
+        if (element instanceof KtClassOrObject) {
+            org.jetbrains.kotlin.kdoc.psi.api.KDoc docComment = ((KtClassOrObject) element).getDocComment();
+            return docComment != null;
+        }
+        if (element instanceof KtNamedFunction) {
+            org.jetbrains.kotlin.kdoc.psi.api.KDoc docComment = ((KtNamedFunction) element).getDocComment();
+            return docComment != null;
+        }
+        if (element instanceof KtProperty) {
+            org.jetbrains.kotlin.kdoc.psi.api.KDoc docComment = ((KtProperty) element).getDocComment();
+            return docComment != null;
+        }
+
         return false;
     }
 
@@ -360,6 +462,12 @@ public class PsiElementLocator {
             return "字段: " + field.getName();
         } else if (element instanceof PsiClass psiClass) {
             return "类: " + psiClass.getName();
+        } else if (element instanceof KtNamedFunction function) {
+            return "函数: " + function.getName() + "()";
+        } else if (element instanceof KtProperty property) {
+            return "属性: " + property.getName();
+        } else if (element instanceof KtClassOrObject ktClass) {
+            return "类: " + ktClass.getName();
         } else if (element instanceof PsiFile) {
             return "文件: " + ((PsiFile) element).getName();
         } else {

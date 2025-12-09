@@ -191,7 +191,7 @@ public class JavaDocSettingsPanel {
         javaCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.java"));
         javaCheckBox.setEnabled(true);
         kotlinCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.kotlin"));
-        kotlinCheckBox.setEnabled(false);
+        kotlinCheckBox.setEnabled(true);
 
         // 创建自定义 JavaDoc 标签组件
         showCustomJavaDocTagsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.custom.javadoc.tags"));

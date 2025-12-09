@@ -6,10 +6,11 @@ import com.intellij.codeInspection.ex.InspectionToolWrapper;
 import com.intellij.codeInspection.javaDoc.JavadocDeclarationInspection;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.StartupActivity;
+import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.profile.codeInspection.ProjectInspectionProfileManager;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,11 +20,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 
 /**
  * 自定义 JavaDoc 标签注册器
  * <p>
- * 该类实现了 StartupActivity 接口, 用于在 IDE 启动时同步自定义的 JavaDoc 标签配置.
+ * 该类实现了 ProjectActivity 接口, 用于在 IDE 启动时同步自定义的 JavaDoc 标签配置.
  * 通过反射机制操作 JavadocDeclarationInspection 检查工具, 动态添加或移除自定义的 JavaDoc 标签,
  * 使 IDE 能够识别和验证项目中使用的自定义 JavaDoc 标签. 主要功能包括: 同步配置的自定义标签,
  * 解析和管理标签字符串, 以及通过反射操作检查工具的内部字段.
@@ -34,21 +37,25 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class CustomJavaDocTagRegistrar implements StartupActivity {
+public class CustomJavaDocTagRegistrar implements ProjectActivity {
 
     /**
      * 在项目启动时运行，注册自定义的 JavaDoc 标签
      *
      * @param project 启动的项目
+     * @param continuation Kotlin 协程 continuation
+     * @return Unit 对象
      */
+    @Nullable
     @Override
-    public void runActivity(@NotNull Project project) {
+    public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         // 在写操作中执行标签注册
         ApplicationManager.getApplication().invokeLater(() -> {
             ApplicationManager.getApplication().runWriteAction(() -> {
                 syncCustomTags(project);
             });
         });
+        return Unit.INSTANCE;
     }
 
     /**
@@ -85,7 +92,7 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
                 if (tool instanceof JavadocDeclarationInspection inspection) {
                     // 执行标签同步
                     performTagSync(inspection);
-                    
+
                     // 通知配置已更改
                     profileManager.fireProfileChanged();
 
@@ -310,4 +317,5 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
             }
         }
     }
+
 }

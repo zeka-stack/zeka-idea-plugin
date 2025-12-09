@@ -6,7 +6,6 @@ import com.intellij.openapi.options.SearchableConfigurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 
-import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -71,7 +70,6 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      * @return 显示名称
      * @see JavaDocBundle#message(String, Object...))
      */
-    @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
         return JavaDocBundle.message("settings.display.name");

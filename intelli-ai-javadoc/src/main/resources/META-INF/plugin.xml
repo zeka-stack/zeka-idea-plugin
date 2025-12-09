@@ -15,6 +15,7 @@
     <idea-version since-build="223" until-build="252.*"/>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
     <depends>com.intellij.modules.vcs</depends>
     <depends>org.jetbrains.idea.maven</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->
@@ -22,6 +23,10 @@
 
     <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true"/>
+    </extensions>
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- 配置持久化 -->
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState"/>
@@ -60,7 +65,6 @@
         </intentionAction>
 
     </extensions>
-
 
     <!-- 插件定义的动作 -->
     <actions>

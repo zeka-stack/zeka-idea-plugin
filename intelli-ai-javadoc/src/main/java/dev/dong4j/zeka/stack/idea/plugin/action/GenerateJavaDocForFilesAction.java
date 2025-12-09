@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
+import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -137,15 +138,32 @@ public class GenerateJavaDocForFilesAction extends AnAction {
     }
 
     /**
-     * 判断给定文件是否为Java文件
+     * 判断给定文件是否为Java或Kotlin文件
      * <p>
-     * 通过检查文件的扩展名是否为"java"（不区分大小写）来判断文件类型
+     * 通过检查文件的扩展名是否为"java"或"kt"（不区分大小写）来判断文件类型
      *
      * @param file 要判断的文件对象
-     * @return 如果文件是Java文件，返回true；否则返回false
+     * @return 如果文件是Java或Kotlin文件，返回true；否则返回false
      */
     private boolean isJavaFile(VirtualFile file) {
-        return "java".equalsIgnoreCase(file.getExtension());
+        String extension = file.getExtension();
+        if (extension == null) {
+            return false;
+        }
+        String extLower = extension.toLowerCase();
+
+        // 检查是否为 Java 文件
+        if ("java".equals(extLower)) {
+            return true;
+        }
+
+        // 检查是否为 Kotlin 文件
+        if ("kt".equals(extLower)) {
+            SettingsState settings = SettingsState.getInstance();
+            return settings.isLanguageSupported("kotlin");
+        }
+
+        return false;
     }
 
 }

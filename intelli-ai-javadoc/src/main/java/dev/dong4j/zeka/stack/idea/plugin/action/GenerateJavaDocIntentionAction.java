@@ -12,8 +12,8 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.util.IncorrectOperationException;
 
-import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.psi.KtFile;
 
 import javax.swing.Icon;
 
@@ -74,7 +74,6 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
      *
      * @return 生成 JavaDoc 的文本内容
      */
-    @Nls(capitalization = Nls.Capitalization.Sentence)
     @NotNull
     @Override
     public String getText() {
@@ -88,7 +87,6 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
      *
      * @return 插件家族名称
      */
-    @Nls(capitalization = Nls.Capitalization.Sentence)
     @NotNull
     @Override
     public String getFamilyName() {
@@ -121,6 +119,7 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
      * @return 若满足上述所有条件且 (若不覆盖已有注释时) 目标元素未包含 Javadoc, 则返回 {@code true};
      *     否则返回 {@code false}
      */
+    @SuppressWarnings("D")
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, @NotNull PsiElement element) {
         // 如果处于预览模式，则直接返回 false，避免在预览阶段执行会产生副作用的操作
@@ -130,9 +129,17 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
 
         PsiFile file = element.getContainingFile();
 
-        // 1. 必须是 Java 文件
-        if (!(file instanceof PsiJavaFile)) {
+        // 1. 必须是 Java 或 Kotlin 文件
+        if (!(file instanceof PsiJavaFile) && !(file instanceof KtFile)) {
             return false;
+        }
+
+        // 检查是否支持 Kotlin
+        if (file instanceof KtFile) {
+            SettingsState settings = SettingsState.getInstance();
+            if (!settings.isLanguageSupported("kotlin")) {
+                return false;
+            }
         }
 
         // 2. 智能定位元素
@@ -148,22 +155,39 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
         }
 
         // 4. 检查元素是否为拥有文档注释的元素（如类、方法、字段等）
-        if (!(locateResult.element() instanceof PsiDocCommentOwner docOwner)) {
-            return false;
+        PsiElement locatedElement = locateResult.element();
+
+        // 检查 Java 元素的文档注释
+        if (locatedElement instanceof PsiDocCommentOwner docOwner) {
+            // 5. 获取配置：是否允许覆盖现有文档
+            SettingsState settings = SettingsState.getInstance();
+            boolean overrideExisting = settings.overrideExisting;
+
+            // 6. 根据 overrideExisting 设置决定是否显示
+            if (overrideExisting) {
+                // 允许覆盖：无论是否已有 JavaDoc 都显示
+                return true;
+            } else {
+                // 不允许覆盖：只在没有 JavaDoc 时显示
+                return docOwner.getDocComment() == null;
+            }
         }
 
-        // 5. 获取配置：是否允许覆盖现有文档
-        SettingsState settings = SettingsState.getInstance();
-        boolean overrideExisting = settings.overrideExisting;
+        // 检查 Kotlin 元素的文档注释
+        if (file instanceof KtFile) {
+            // 使用 PsiElementLocator 的 hasJavaDoc 方法检查（已支持 Kotlin）
+            boolean hasDoc = PsiElementLocator.hasJavaDoc(locatedElement);
+            SettingsState settings = SettingsState.getInstance();
+            boolean overrideExisting = settings.overrideExisting;
 
-        // 6. 根据 overrideExisting 设置决定是否显示
-        if (overrideExisting) {
-            // 允许覆盖：无论是否已有 JavaDoc 都显示
-            return true;
-        } else {
-            // 不允许覆盖：只在没有 JavaDoc 时显示
-            return docOwner.getDocComment() == null;
+            if (overrideExisting) {
+                return true;
+            } else {
+                return !hasDoc;
+            }
         }
+
+        return false;
     }
 
     /**

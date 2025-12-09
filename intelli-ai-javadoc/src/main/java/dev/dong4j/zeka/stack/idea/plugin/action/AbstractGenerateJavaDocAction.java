@@ -11,6 +11,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.psi.KtFile;
 
 import java.util.List;
 
@@ -77,6 +78,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      * @param psiFile    Psi 文件对象
      * @param needEditor 是否需要编辑器
      */
+    @SuppressWarnings("D")
     protected void process(@NotNull Project project,
                            Editor editor,
                            @NotNull PsiFile psiFile,
@@ -88,8 +90,17 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
             return;
         }
 
-        if (!(psiFile instanceof PsiJavaFile)) {
+        // 检查是否为支持的文件类型（Java 或 Kotlin）
+        if (!(psiFile instanceof PsiJavaFile) && !(psiFile instanceof KtFile)) {
             return;
+        }
+
+        // 检查是否支持 Kotlin
+        if (psiFile instanceof KtFile) {
+            SettingsState settings = SettingsState.getInstance();
+            if (!settings.isLanguageSupported("kotlin")) {
+                return;
+            }
         }
 
         if (needEditor && editor == null) {
@@ -105,10 +116,12 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
 
         // 如果为 null, 就为整个文件生成 javadoc
         if (editor == null) {
-            log.info("为文件生成 JavaDoc: {}", psiFile.getName());
+            String fileType = psiFile instanceof KtFile ? "Kotlin" : "Java";
+            log.info("为文件生成文档: {} ({})", psiFile.getName(), fileType);
             tasks = collector.collectFromElement(psiFile.getOriginalElement());
         } else {
-            log.info("为正在编辑的 Java 文件生成 JavaDoc: {}", psiFile.getName());
+            String fileType = psiFile instanceof KtFile ? "Kotlin" : "Java";
+            log.info("为正在编辑的 {} 文件生成文档: {}", fileType, psiFile.getName());
             // 定位元素
             PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
             if (locateResult == null) {
@@ -169,8 +182,16 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
-        e.getPresentation().setEnabled(psiFile instanceof PsiJavaFile);
-        e.getPresentation().setVisible(psiFile instanceof PsiJavaFile);
+        boolean isSupportedFile = psiFile instanceof PsiJavaFile || psiFile instanceof KtFile;
+
+        // 如果是 Kotlin 文件，检查是否支持
+        if (psiFile instanceof KtFile) {
+            SettingsState settings = SettingsState.getInstance();
+            isSupportedFile = settings.isLanguageSupported("kotlin");
+        }
+
+        e.getPresentation().setEnabled(isSupportedFile);
+        e.getPresentation().setVisible(isSupportedFile);
         e.getPresentation().setText(JavaDocBundle.message("action.generate.javadoc"));
         e.getPresentation().setDescription(JavaDocBundle.message("action.generate.javadoc.description"));
     }

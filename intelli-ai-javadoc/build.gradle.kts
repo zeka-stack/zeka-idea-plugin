@@ -59,6 +59,7 @@ dependencies {
         create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
 
         bundledPlugin("com.intellij.java")
+        bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("org.jetbrains.idea.maven")
         // 依赖 IntelliAI Engine 插件
         // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
@@ -169,6 +170,9 @@ tasks {
 
     // 在 runIde 之前执行复制任务（在 prepareSandbox 之后）
     runIde {
+        jvmArgumentProviders += CommandLineArgumentProvider {
+            listOf("-Didea.kotlin.plugin.use.k2=true")
+        }
         dependsOn(copyAiCommonPlugin)
         // 热更新
         // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
