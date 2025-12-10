@@ -12,12 +12,12 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * 提供将多行 JavaDoc 单行注释压缩为单行格式的功能。
  * 当 JavaDoc 注释只有一行内容时，将其格式化为 {@code /** comment
- */}格式。
-    *
-    *@author zeka.stack.team
- *@version 1.0.0
-    *@since 1.0.0
-    */
+ * /}格式。
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 
 public final class JavaDocSingleLineFormatter {
     /**
