@@ -20,8 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocSingleLineFormatter;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocFormatter;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocSingleLineFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -136,7 +136,7 @@ public class DocumentationInserterHelper {
                         // 注意：需要在格式化后重新获取元素，因为格式化可能改变了 PSI 结构
                         // 使用原始元素进行查找，因为格式化不会改变元素本身
                         if (settings.compressSingleLineJavaDoc && element instanceof PsiDocCommentOwner) {
-                            JavaDocSingleLineFormatter.compressSingleLineJavaDoc(element, document);
+                            JavadocSingleLineFormatter.compressSingleLineJavaDoc(element, document);
                             // 提交压缩后的变更
                             PsiDocumentManager.getInstance(project).commitDocument(document);
                         }
@@ -347,7 +347,7 @@ public class DocumentationInserterHelper {
             return javadoc;
         }
 
-        return JavaDocFormatter.format(
+        return JavadocFormatter.format(
             javadoc,
             settings.addSpaceBetweenChineseAndEnglish,
             settings.replaceChinesePunctuation

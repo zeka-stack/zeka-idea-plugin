@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class GenerateJavaDocShortcutAction extends AbstractGenerateJavaDocAction {
+public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction {
     /**
      * 处理动作事件
      * <p>

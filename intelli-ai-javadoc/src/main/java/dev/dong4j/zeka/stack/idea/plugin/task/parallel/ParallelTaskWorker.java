@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIRequestComposer;
-import dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.ai.JavadocAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -217,7 +217,7 @@ public class ParallelTaskWorker implements Runnable {
         AIChatRequest request = AIRequestComposer.compose(settings, task);
 
         // 生成文档内容
-        AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project) : null;
+        AIResponseListener listener = verboseLogging ? new JavadocAIResponseListener(project) : null;
         String documentation = aiService.generateContent(project, request, provider, listener);
 
         if (documentation.trim().isEmpty()) {

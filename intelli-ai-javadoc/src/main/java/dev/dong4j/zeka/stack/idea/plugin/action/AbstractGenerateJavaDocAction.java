@@ -22,7 +22,7 @@ import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import lombok.extern.slf4j.Slf4j;
@@ -177,7 +177,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      *
      * @param e 动作事件，包含上下文信息
      * @see CommonDataKeys#PSI_FILE
-     * @see JavaDocBundle
+     * @see JavadocBundle
      */
     @Override
     public void update(@NotNull AnActionEvent e) {
@@ -192,8 +192,8 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
 
         e.getPresentation().setEnabled(isSupportedFile);
         e.getPresentation().setVisible(isSupportedFile);
-        e.getPresentation().setText(JavaDocBundle.message("action.generate.javadoc"));
-        e.getPresentation().setDescription(JavaDocBundle.message("action.generate.javadoc.description"));
+        e.getPresentation().setText(JavadocBundle.message("action.generate.javadoc"));
+        e.getPresentation().setDescription(JavadocBundle.message("action.generate.javadoc.description"));
     }
 
     /**
@@ -220,7 +220,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      */
     @NotNull
     protected String getEmptyTaskMessage() {
-        return JavaDocBundle.message("notification.no.task.default");
+        return JavadocBundle.message("notification.no.task.default");
     }
 
     /**

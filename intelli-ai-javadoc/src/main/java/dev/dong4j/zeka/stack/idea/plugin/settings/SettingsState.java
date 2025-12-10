@@ -20,7 +20,11 @@ import java.util.stream.Collectors;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavadocTagRegistrar;
+import dev.dong4j.zeka.stack.idea.plugin.component.JavadocFileTemplatesHandler;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocFormatter;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocSingleLineFormatter;
 
 /**
  * Javadoc AI 设置状态类
@@ -190,14 +194,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * ]
      * </pre>
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar
+     * @see CustomJavadocTagRegistrar
      * @since 2.0.0
      */
-    public List<CustomJavaDocTag> customJavaDocTags = new ArrayList<>() {
+    public List<CustomJavadocTag> customJavadocTags = new ArrayList<>() {
         {
-            add(new CustomJavaDocTag("author", "zeka.stack.team"));
-            add(new CustomJavaDocTag("date", "yyyy.MM.dd"));
-            add(new CustomJavaDocTag("email", "mailto:zeka.stack@gmail.com"));
+            add(new CustomJavadocTag("author", "zeka.stack.team"));
+            add(new CustomJavadocTag("date", "yyyy.MM.dd"));
+            add(new CustomJavadocTag("email", "mailto:zeka.stack@gmail.com"));
         }
     };
 
@@ -221,7 +225,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: false（默认禁用）
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler
+     * @see JavadocFileTemplatesHandler
      * @since 2.5.0
      */
     public boolean enableClassJavaDocTemplate = false;
@@ -253,8 +257,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *  /
      * </pre>
      *
-     * @see #customJavaDocTags
-     * @see dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler
+     * @see #customJavadocTags
+     * @see JavadocFileTemplatesHandler
      * @since 2.5.0
      */
     public String classJavaDocTemplate = """
@@ -298,7 +302,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: true（默认启用）
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocSingleLineFormatter
+     * @see JavadocSingleLineFormatter
      * @since 1.5.0
      */
     public boolean compressSingleLineJavaDoc = true;
@@ -311,7 +315,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: true（默认启用，提升可读性）
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter
+     * @see JavadocFormatter
      * @since 1.4.0
      */
     public boolean addSpaceBetweenChineseAndEnglish = true;
@@ -324,7 +328,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: true（默认启用，符合 Javadoc 规范）
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter
+     * @see JavadocFormatter
      * @since 1.4.0
      */
     public boolean replaceChinesePunctuation = true;
@@ -922,11 +926,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     @NotNull
     public List<String> getNormalizedCustomJavaDocTags() {
-        if (customJavaDocTags == null) {
+        if (customJavadocTags == null) {
             return new ArrayList<>();
         }
 
-        return customJavaDocTags.stream()
+        return customJavadocTags.stream()
             .filter(tag -> tag != null && !tag.tagName.trim().isEmpty())
             .map(tag -> tag.tagName.trim().toLowerCase())
             .distinct()

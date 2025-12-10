@@ -22,7 +22,7 @@ import java.util.List;
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class CommitJavaDocGenerator {
+public class CommitJavadocGenerator {
     /** 项目对象, 用于表示当前操作所关联的项目信息 */
     private final Project project;
 
@@ -50,7 +50,7 @@ public class CommitJavaDocGenerator {
      *
      * @param project 项目对象, 用于存储项目相关信息
      */
-    public CommitJavaDocGenerator(@NotNull Project project) {
+    public CommitJavadocGenerator(@NotNull Project project) {
         this.project = project;
     }
 
@@ -72,7 +72,7 @@ public class CommitJavaDocGenerator {
 
         // 在后台任务中执行检测和生成
         ProgressManager.getInstance().run(
-            new Task.Backgroundable(project, JavaDocBundle.message("commit.detecting.progress"), true) {
+            new Task.Backgroundable(project, JavadocBundle.message("commit.detecting.progress"), true) {
                 /**
                  * 执行检测缺失 Javadoc 的任务
                  * <p>
@@ -89,7 +89,7 @@ public class CommitJavaDocGenerator {
                     if (tasks.isEmpty()) {
                         ApplicationManager.getApplication().invokeLater(() -> {
                             NotificationUtil.notifyNoTask(project,
-                                                          JavaDocBundle.message("commit.no.missing.javadoc"));
+                                                          JavadocBundle.message("commit.no.missing.javadoc"));
                         });
                         return;
                     }
@@ -117,7 +117,7 @@ public class CommitJavaDocGenerator {
                         int result = Messages.showYesNoDialog(
                             project,
                             message,
-                            JavaDocBundle.message("commit.detection.title"),
+                            JavadocBundle.message("commit.detection.title"),
                             Messages.getQuestionIcon());
 
                         if (result != Messages.YES) {
@@ -148,7 +148,7 @@ public class CommitJavaDocGenerator {
 
         for (int i = 0; i < javaFiles.size(); i++) {
             VirtualFile virtualFile = javaFiles.get(i);
-            indicator.setText(JavaDocBundle.message("commit.detecting.file", virtualFile.getName()));
+            indicator.setText(JavadocBundle.message("commit.detecting.file", virtualFile.getName()));
             indicator.setFraction((double) i / javaFiles.size());
 
             // 在 read-action 中将 VirtualFile 转换为 PsiFile 并收集任务
@@ -179,7 +179,7 @@ public class CommitJavaDocGenerator {
      */
     private void generateDocumentation(@NotNull List<DocumentationTask> tasks) {
         DocumentationGenerationService service = new DocumentationGenerationService();
-        service.generateDocumentation(project, tasks, JavaDocBundle.message("commit.target.description"),
+        service.generateDocumentation(project, tasks, JavadocBundle.message("commit.target.description"),
                                       stats -> {
                                           // 显示生成结果
                                           NotificationUtil.notifyTargetCompletion(project,
@@ -208,20 +208,20 @@ public class CommitJavaDocGenerator {
         List<String> parts = new ArrayList<>();
 
         if (classCount > 0) {
-            parts.add(JavaDocBundle.message("commit.detection.classes", classCount));
+            parts.add(JavadocBundle.message("commit.detection.classes", classCount));
         }
         if (methodCount > 0) {
-            parts.add(JavaDocBundle.message("commit.detection.methods", methodCount));
+            parts.add(JavadocBundle.message("commit.detection.methods", methodCount));
         }
         if (fieldCount > 0) {
-            parts.add(JavaDocBundle.message("commit.detection.fields", fieldCount));
+            parts.add(JavadocBundle.message("commit.detection.fields", fieldCount));
         }
 
         if (parts.isEmpty()) {
-            return JavaDocBundle.message("commit.no.missing.javadoc");
+            return JavadocBundle.message("commit.no.missing.javadoc");
         }
 
-        return JavaDocBundle.message("commit.detection.message", String.join("、", parts));
+        return JavadocBundle.message("commit.detection.message", String.join("、", parts));
     }
 }
 

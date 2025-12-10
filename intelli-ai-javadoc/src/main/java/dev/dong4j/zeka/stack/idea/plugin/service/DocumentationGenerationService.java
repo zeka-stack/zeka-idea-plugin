@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskStatistics;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -120,12 +120,12 @@ public class DocumentationGenerationService {
      */
     @NotNull
     private String buildProgressTitle(@NotNull String targetDescription) {
-        String baseTitle = JavaDocBundle.message("background.task.title");
-        String defaultTarget = JavaDocBundle.message("task.target.selection");
+        String baseTitle = JavadocBundle.message("background.task.title");
+        String defaultTarget = JavadocBundle.message("task.target.selection");
 
         // 如果目标描述不是默认值，则添加到标题中
         if (!targetDescription.isEmpty() && !defaultTarget.equals(targetDescription)) {
-            return JavaDocBundle.message("background.task.title.with.target", targetDescription);
+            return JavadocBundle.message("background.task.title.with.target", targetDescription);
         }
 
         return baseTitle;

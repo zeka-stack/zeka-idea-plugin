@@ -18,7 +18,7 @@ import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings("DuplicatedCode")
 @Slf4j
-public class GenerateJavaDocForFilesAction extends AnAction {
+public class GenerateJavadocForFilesAction extends AnAction {
 
     /**
      * 处理动作事件，用于为选中的文件或目录生成 Javadoc 注释
@@ -81,7 +81,7 @@ public class GenerateJavaDocForFilesAction extends AnAction {
 
         // 使用文档生成服务处理任务
         DocumentationGenerationService service = new DocumentationGenerationService();
-        if (service.checkEmptyTasks(project, tasks, JavaDocBundle.message("notification.no.task.selection"))) {
+        if (service.checkEmptyTasks(project, tasks, JavadocBundle.message("notification.no.task.selection"))) {
             return;
         }
 
@@ -89,8 +89,8 @@ public class GenerateJavaDocForFilesAction extends AnAction {
         if (tasks.size() > 50) {
             int result = Messages.showYesNoDialog(
                 project,
-                JavaDocBundle.message("confirmation.batch.generation.message", tasks.size()),
-                JavaDocBundle.message("confirmation.batch.generation.title"),
+                JavadocBundle.message("confirmation.batch.generation.message", tasks.size()),
+                JavadocBundle.message("confirmation.batch.generation.title"),
                 Messages.getQuestionIcon()
                                                  );
 
@@ -100,7 +100,7 @@ public class GenerateJavaDocForFilesAction extends AnAction {
         }
 
         // 使用服务生成文档，带自定义完成回调
-        service.generateDocumentation(project, tasks, JavaDocBundle.message("task.target.selection"));
+        service.generateDocumentation(project, tasks, JavadocBundle.message("task.target.selection"));
     }
 
     /**
@@ -133,8 +133,8 @@ public class GenerateJavaDocForFilesAction extends AnAction {
             return;
         }
 
-        e.getPresentation().setText(JavaDocBundle.message("action.generate.javadoc"));
-        e.getPresentation().setDescription(JavaDocBundle.message("action.generate.javadoc.selection.description"));
+        e.getPresentation().setText(JavadocBundle.message("action.generate.javadoc"));
+        e.getPresentation().setDescription(JavadocBundle.message("action.generate.javadoc.selection.description"));
     }
 
     /**

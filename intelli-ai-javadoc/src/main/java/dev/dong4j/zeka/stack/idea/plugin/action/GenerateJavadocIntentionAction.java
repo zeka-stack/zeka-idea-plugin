@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.psi.KtFile;
 import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import icons.AIJicons;
@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction implements Iconable {
+public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionAction implements Iconable {
     /** 用于执行 Javadoc 生成操作的基础动作对象 */
     private final AbstractGenerateJavaDocAction baseAction = new AbstractGenerateJavaDocAction() {
         /**
@@ -63,7 +63,7 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
          */
         @Override
         protected void onLocateFailed(@NotNull Project project) {
-            NotificationUtil.notifyNoTask(project, JavaDocBundle.message("notification.no.task.location"));
+            NotificationUtil.notifyNoTask(project, JavadocBundle.message("notification.no.task.location"));
         }
     };
 
@@ -77,7 +77,7 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     @NotNull
     @Override
     public String getText() {
-        return JavaDocBundle.message("action.generate.javadoc");
+        return JavadocBundle.message("action.generate.javadoc");
     }
 
     /**
@@ -90,7 +90,7 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     @NotNull
     @Override
     public String getFamilyName() {
-        return JavaDocBundle.message("plugin.name");
+        return JavadocBundle.message("plugin.name");
     }
 
     /**

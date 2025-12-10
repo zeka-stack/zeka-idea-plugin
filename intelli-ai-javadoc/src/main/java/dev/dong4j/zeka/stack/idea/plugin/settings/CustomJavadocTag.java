@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class CustomJavaDocTag {
+public class CustomJavadocTag {
     /**
      * 标签名称
      * <p>
@@ -40,7 +40,7 @@ public class CustomJavaDocTag {
      * @param tagName      标签名称
      * @param defaultValue 默认值
      */
-    public CustomJavaDocTag(@NotNull String tagName, @NotNull String defaultValue) {
+    public CustomJavadocTag(@NotNull String tagName, @NotNull String defaultValue) {
         this.tagName = tagName;
         this.defaultValue = defaultValue;
     }
@@ -50,7 +50,7 @@ public class CustomJavaDocTag {
      * <p>
      * 用于 XML 序列化。
      */
-    public CustomJavaDocTag() {
+    public CustomJavadocTag() {
         this.tagName = "";
         this.defaultValue = "";
     }
@@ -102,7 +102,7 @@ public class CustomJavaDocTag {
             return false;
         }
 
-        CustomJavaDocTag that = (CustomJavaDocTag) o;
+        CustomJavadocTag that = (CustomJavadocTag) o;
 
         return tagName.equalsIgnoreCase(that.tagName);
     }

@@ -15,10 +15,10 @@ import java.util.Objects;
 
 import javax.swing.JComponent;
 
-import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar;
-import dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler;
+import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavadocTagRegistrar;
+import dev.dong4j.zeka.stack.idea.plugin.component.JavadocFileTemplatesHandler;
 import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 
 /**
  * Javadoc 设置可配置类
@@ -34,7 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
  * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")
-public class JavaDocSettingsConfigurable implements SearchableConfigurable {
+public class JavadocSettingsConfigurable implements SearchableConfigurable {
 
     /**
      * 设置面板 UI 组件
@@ -70,11 +70,11 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      * <p>显示位置：Settings → Tools → IntelliAI Javadoc
      *
      * @return 显示名称
-     * @see JavaDocBundle#message(String, Object...))
+     * @see JavadocBundle#message(String, Object...))
      */
     @Override
     public String getDisplayName() {
-        return JavaDocBundle.message("settings.display.name");
+        return JavadocBundle.message("settings.display.name");
     }
 
     /**
@@ -270,7 +270,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         // 验证配置
         if (!validateSettings(panelSettings)) {
-            throw new ConfigurationException(JavaDocBundle.message("error.validation.failed"));
+            throw new ConfigurationException(JavadocBundle.message("error.validation.failed"));
         }
 
         // 应用配置
@@ -295,7 +295,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.supportedLanguages = panelSettings.supportedLanguages;
 
         // 保存自定义 Javadoc 标签配置
-        currentSettings.customJavaDocTags = panelSettings.customJavaDocTags;
+        currentSettings.customJavadocTags = panelSettings.customJavadocTags;
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
         currentSettings.enableClassJavaDocTemplate = panelSettings.enableClassJavaDocTemplate;
         currentSettings.classJavaDocTemplate = panelSettings.classJavaDocTemplate;
@@ -308,14 +308,14 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
                 Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
                 for (Project project : openProjects) {
                     if (project != null && !project.isDisposed()) {
-                        JavaDocFileTemplatesHandler.applyTemplateConfiguration(project, currentSettings);
+                        JavadocFileTemplatesHandler.applyTemplateConfiguration(project, currentSettings);
                     }
                 }
                 // 如果没有打开的项目，至少应用到默认项目
                 if (openProjects.length == 0) {
                     Project defaultProject = ProjectManager.getInstance().getDefaultProject();
                     if (defaultProject != null && !defaultProject.isDisposed()) {
-                        JavaDocFileTemplatesHandler.applyTemplateConfiguration(defaultProject, currentSettings);
+                        JavadocFileTemplatesHandler.applyTemplateConfiguration(defaultProject, currentSettings);
                     }
                 }
             });
@@ -332,7 +332,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
             ApplicationManager.getApplication().runWriteAction(() -> {
                 Project project = ProjectManager.getInstance().getDefaultProject();
                 if (!project.isDisposed()) {
-                    CustomJavaDocTagRegistrar.syncCustomTags(project);
+                    CustomJavadocTagRegistrar.syncCustomTags(project);
                 }
             });
         });

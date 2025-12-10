@@ -19,9 +19,9 @@ import java.util.stream.Collectors;
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
-import dev.dong4j.zeka.stack.idea.plugin.git.CommitJavaDocGenerator;
+import dev.dong4j.zeka.stack.idea.plugin.git.CommitJavadocGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class GenerateJavaDocForCommitAction extends AnAction {
+public class GenerateJavadocForCommitAction extends AnAction {
 
     /**
      * 更新动作状态
@@ -59,7 +59,7 @@ public class GenerateJavaDocForCommitAction extends AnAction {
         }
 
         // 设置按钮文本和图标
-        e.getPresentation().setText(JavaDocBundle.message("commit.action.text"));
+        e.getPresentation().setText(JavadocBundle.message("commit.action.text"));
         e.getPresentation().setIcon(AIJicons.AIJ_16);
 
         // 检查是否有 Java 文件变更（需要在 read-action 中访问 VCS 数据）
@@ -122,7 +122,7 @@ public class GenerateJavaDocForCommitAction extends AnAction {
         log.info("Git 提交页面：找到 {} 个 Java 文件", javaFiles.size());
 
         // 使用生成器检测和生成文档
-        CommitJavaDocGenerator generator = new CommitJavaDocGenerator(project);
+        CommitJavadocGenerator generator = new CommitJavadocGenerator(project);
         generator.generateForChanges(changes, javaFiles);
     }
 

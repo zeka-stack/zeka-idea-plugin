@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.ai.AIRequestComposer;
-import dev.dong4j.zeka.stack.idea.plugin.ai.JavaDocAIResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.ai.JavadocAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -193,7 +193,7 @@ public class SequentialTaskProcessor {
             }
 
             // 使用 AIService API 生成内容
-            AIResponseListener listener = verboseLogging ? new JavaDocAIResponseListener(project) : null;
+            AIResponseListener listener = verboseLogging ? new JavadocAIResponseListener(project) : null;
             String documentation = aiService.generateContent(project, request, provider, listener);
 
             if (documentation.trim().isEmpty()) {

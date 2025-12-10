@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  * @version 1.0.0
  * @since 1.0.0
  */
-public final class JavaDocSingleLineFormatter {
+public final class JavadocSingleLineFormatter {
     /**
      * 单行注释的最大长度限制（字符数）
      * <p>
@@ -29,7 +29,7 @@ public final class JavaDocSingleLineFormatter {
     /**
      * 私有构造函数，防止实例化
      */
-    private JavaDocSingleLineFormatter() {
+    private JavadocSingleLineFormatter() {
         throw new UnsupportedOperationException("Utility class");
     }
 

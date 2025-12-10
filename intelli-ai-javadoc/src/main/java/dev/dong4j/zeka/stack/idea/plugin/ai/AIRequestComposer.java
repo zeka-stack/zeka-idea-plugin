@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
-import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
@@ -157,10 +157,10 @@ public final class AIRequestComposer {
         final PsiElement element = task.getElement();
 
         SettingsState settings = SettingsState.getInstance();
-        final Map<String, String> customTagsMap = settings.customJavaDocTags.stream()
+        final Map<String, String> customTagsMap = settings.customJavadocTags.stream()
             .collect(Collectors.toMap(
-                CustomJavaDocTag::getTagName,
-                CustomJavaDocTag::getDefaultValue,
+                CustomJavadocTag::getTagName,
+                CustomJavadocTag::getDefaultValue,
                 (existing, replacement) -> existing));
 
         template = template.replace("${author}", MavenUtil.getAuthor(customTagsMap.get("author")));

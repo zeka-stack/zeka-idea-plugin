@@ -31,9 +31,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
-import dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable;
+import dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import icons.AICommonIcons;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
@@ -139,7 +139,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     @Override
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
         String displayText = getCurrentProviderModelName();
-        String tooltip = JavaDocBundle.message("statusbar.provider.tooltip", displayText);
+        String tooltip = JavadocBundle.message("statusbar.provider.tooltip", displayText);
         WidgetState state = new WidgetState(tooltip, " " + displayText, true);
 
         // 获取当前提供商的图标（已缩放为 13x13）
@@ -174,14 +174,14 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         DefaultActionGroup group = new DefaultActionGroup();
 
         // 1. 添加提供商切换选项（用分隔符包裹，形成边框效果）
-        group.add(Separator.create(JavaDocBundle.message("statusbar.provider.list.title")));
+        group.add(Separator.create(JavadocBundle.message("statusbar.provider.list.title")));
         for (AIProviderConfig config : providers) {
             group.add(new SwitchProviderAction(config));
         }
         group.add(Separator.create());
 
         // 2. 添加快捷配置 ToggleAction（用分隔符包裹，形成边框效果）
-        group.add(Separator.create(JavaDocBundle.message("statusbar.quick.settings.title")));
+        group.add(Separator.create(JavadocBundle.message("statusbar.quick.settings.title")));
         group.add(new OverrideExistingToggleAction());
         group.add(new GenerateForClassToggleAction());
         group.add(new GenerateForMethodToggleAction());
@@ -194,7 +194,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
 
         // 创建弹出菜单
         return JBPopupFactory.getInstance().createActionGroupPopup(
-            JavaDocBundle.message("statusbar.provider.popup.title"),
+            JavadocBundle.message("statusbar.provider.popup.title"),
             group,
             context,
             JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
@@ -398,7 +398,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     private static class OverrideExistingToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         OverrideExistingToggleAction() {
-            super(JavaDocBundle.message("settings.override.existing"));
+            super(JavadocBundle.message("settings.override.existing"));
         }
 
         @Override
@@ -431,7 +431,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     private static class GenerateForClassToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         GenerateForClassToggleAction() {
-            super(JavaDocBundle.message("statusbar.quick.settings.generate.for.class"));
+            super(JavadocBundle.message("statusbar.quick.settings.generate.for.class"));
         }
 
         @Override
@@ -464,7 +464,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     private static class GenerateForMethodToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         GenerateForMethodToggleAction() {
-            super(JavaDocBundle.message("statusbar.quick.settings.generate.for.method"));
+            super(JavadocBundle.message("statusbar.quick.settings.generate.for.method"));
         }
 
         @Override
@@ -498,7 +498,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     private static class GenerateForFieldToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         GenerateForFieldToggleAction() {
-            super(JavaDocBundle.message("statusbar.quick.settings.generate.for.field"));
+            super(JavadocBundle.message("statusbar.quick.settings.generate.for.field"));
         }
 
         @Override
@@ -532,7 +532,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     private static class PerformanceModeToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         PerformanceModeToggleAction() {
-            super(JavaDocBundle.message("settings.performance.mode"));
+            super(JavadocBundle.message("settings.performance.mode"));
         }
 
         @Override
@@ -570,7 +570,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
          * 使用国际化的文本标签初始化动作
          */
         OpenSettingsAction() {
-            super(JavaDocBundle.message("statusbar.quick.settings.open.settings"));
+            super(JavadocBundle.message("statusbar.quick.settings.open.settings"));
         }
 
         /**
@@ -583,7 +583,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             ShowSettingsUtil.getInstance().showSettingsDialog(
-                project, JavaDocSettingsConfigurable.class
+                project, JavadocSettingsConfigurable.class
                                                              );
         }
 

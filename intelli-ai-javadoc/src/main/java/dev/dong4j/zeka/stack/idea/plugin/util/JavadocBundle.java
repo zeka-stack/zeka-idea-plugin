@@ -22,7 +22,7 @@ import java.util.function.Supplier;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class JavaDocBundle extends DynamicBundle {
+public class JavadocBundle extends DynamicBundle {
 
     /** 消息资源包名称，用于加载国际化消息 */
     @NonNls
@@ -37,7 +37,7 @@ public class JavaDocBundle extends DynamicBundle {
      * @see #message(String, Object...)
      * @see #messagePointer(String, Object...)
      */
-    private static final JavaDocBundle INSTANCE = new JavaDocBundle();
+    private static final JavadocBundle INSTANCE = new JavadocBundle();
 
     /**
      * 私有构造函数
@@ -47,7 +47,7 @@ public class JavaDocBundle extends DynamicBundle {
      *
      * @see DynamicBundle#DynamicBundle(String)
      */
-    private JavaDocBundle() {
+    private JavadocBundle() {
         super(BUNDLE);
     }
 

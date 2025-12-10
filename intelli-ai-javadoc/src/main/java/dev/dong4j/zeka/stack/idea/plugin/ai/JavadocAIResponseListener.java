@@ -20,7 +20,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @date 2025.12.01
  * @since 1.0.0
  */
-public class JavaDocAIResponseListener implements AIResponseListener {
+public class JavadocAIResponseListener implements AIResponseListener {
 
     /**
      * 当前操作的项目对象
@@ -37,7 +37,7 @@ public class JavaDocAIResponseListener implements AIResponseListener {
      * @param project 关联的项目对象, 用于操作项目相关资源
      * @since 1.0
      */
-    public JavaDocAIResponseListener(@NotNull Project project) {
+    public JavadocAIResponseListener(@NotNull Project project) {
         this.project = project;
     }
 

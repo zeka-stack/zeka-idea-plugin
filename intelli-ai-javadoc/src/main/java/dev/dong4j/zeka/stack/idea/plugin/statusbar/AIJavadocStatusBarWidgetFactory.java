@@ -8,7 +8,7 @@ import com.intellij.openapi.wm.StatusBarWidgetFactory;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 
 /**
  * AI Javadoc 状态栏组件工厂类
@@ -41,7 +41,7 @@ public class AIJavadocStatusBarWidgetFactory implements StatusBarWidgetFactory {
      */
     @Override
     public @NotNull String getDisplayName() {
-        return JavaDocBundle.message("statusbar.provider.factory.name");
+        return JavadocBundle.message("statusbar.provider.factory.name");
     }
 
     /**

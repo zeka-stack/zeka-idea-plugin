@@ -146,7 +146,7 @@ public class NotificationUtil {
      * @param message 通知内容, 不能为空
      */
     public static void notifyNoTask(@Nullable Project project, @NotNull String message) {
-        notify(project, JavaDocBundle.message("notification.title"), message, NotificationType.INFORMATION);
+        notify(project, JavadocBundle.message("notification.title"), message, NotificationType.INFORMATION);
     }
 
     /**
@@ -158,7 +158,7 @@ public class NotificationUtil {
      * @param message 要显示的错误消息内容
      */
     public static void notifyErrorMessage(@Nullable Project project, @NotNull String message) {
-        notify(project, JavaDocBundle.message("notification.error.title"), message, NotificationType.ERROR);
+        notify(project, JavadocBundle.message("notification.error.title"), message, NotificationType.ERROR);
     }
 
     /**
@@ -169,8 +169,8 @@ public class NotificationUtil {
      * @param project 项目对象, 可以为 null
      */
     public static void notifyIndexing(@Nullable Project project) {
-        notify(project, JavaDocBundle.message("notification.title"),
-               JavaDocBundle.message("notification.indexing.warning"),
+        notify(project, JavadocBundle.message("notification.title"),
+               JavadocBundle.message("notification.indexing.warning"),
                NotificationType.WARNING);
     }
 

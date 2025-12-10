@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 
 /**
  * 进度管理器
@@ -277,7 +277,7 @@ public class ProgressManager {
      */
     public void finish() {
         indicator.setFraction(1.0);
-        indicator.setText(JavaDocBundle.message("task.progress.completed"));
+        indicator.setText(JavadocBundle.message("task.progress.completed"));
     }
 
     /**

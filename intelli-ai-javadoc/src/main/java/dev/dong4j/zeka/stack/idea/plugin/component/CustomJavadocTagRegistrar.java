@@ -37,7 +37,7 @@ import kotlin.coroutines.Continuation;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class CustomJavaDocTagRegistrar implements ProjectActivity {
+public class CustomJavadocTagRegistrar implements ProjectActivity {
 
     /**
      * 在项目启动时运行，注册自定义的 Javadoc 标签

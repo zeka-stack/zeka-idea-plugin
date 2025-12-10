@@ -50,9 +50,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
-import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import icons.AICommonIcons;
 
 /**
@@ -188,15 +188,15 @@ public class JavaDocSettingsPanel {
      */
     private void createUI() {
         // 功能配置
-        generateForClassCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.class"));
-        generateForMethodCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.method"));
-        generateForFieldCheckBox = new JBCheckBox(JavaDocBundle.message("settings.generate.for.field"));
-        overrideExistingCheckBox = new JBCheckBox(JavaDocBundle.message("settings.override.existing"));
-        enableCodeCompressionCheckBox = new JBCheckBox(JavaDocBundle.message("settings.enable.code.compression"));
+        generateForClassCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.class"));
+        generateForMethodCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.method"));
+        generateForFieldCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.field"));
+        overrideExistingCheckBox = new JBCheckBox(JavadocBundle.message("settings.override.existing"));
+        enableCodeCompressionCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
-        compressSingleLineJavaDocCheckBox = new JBCheckBox(JavaDocBundle.message("settings.compress.single.line.javadoc"));
-        addSpaceBetweenChineseAndEnglishCheckBox = new JBCheckBox(JavaDocBundle.message("settings.add.space.between.chinese.and.english"));
-        replaceChinesePunctuationCheckBox = new JBCheckBox(JavaDocBundle.message("settings.replace.chinese.punctuation"));
+        compressSingleLineJavaDocCheckBox = new JBCheckBox(JavadocBundle.message("settings.compress.single.line.javadoc"));
+        addSpaceBetweenChineseAndEnglishCheckBox = new JBCheckBox(JavadocBundle.message("settings.add.space.between.chinese.and.english"));
+        replaceChinesePunctuationCheckBox = new JBCheckBox(JavadocBundle.message("settings.replace.chinese.punctuation"));
 
         // 注释语言选择下拉框
         commentLanguageComboBox = new ComboBox<>(CommentLanguage.values());
@@ -218,18 +218,18 @@ public class JavaDocSettingsPanel {
         // 设置默认值为中文
         commentLanguageComboBox.setSelectedItem(CommentLanguage.ZH);
 
-        performanceModeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.performance.mode"));
-        showProviderStatisticsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.provider.statistics"));
+        performanceModeCheckBox = new JBCheckBox(JavadocBundle.message("settings.performance.mode"));
+        showProviderStatisticsCheckBox = new JBCheckBox(JavadocBundle.message("settings.show.provider.statistics"));
 
         // 语言支持
-        javaCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.java"));
+        javaCheckBox = new JBCheckBox(JavadocBundle.message("settings.language.java"));
         javaCheckBox.setEnabled(true);
-        kotlinCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.kotlin"));
+        kotlinCheckBox = new JBCheckBox(JavadocBundle.message("settings.language.kotlin"));
         kotlinCheckBox.setEnabled(true);
 
         // 创建自定义 Javadoc 标签组件
-        showCustomJavaDocTagsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.custom.javadoc.tags"));
-        enableClassJavaDocTemplateCheckBox = new JBCheckBox(JavaDocBundle.message("settings.enable.class.javadoc.template"));
+        showCustomJavaDocTagsCheckBox = new JBCheckBox(JavadocBundle.message("settings.custom.javadoc.tags"));
+        enableClassJavaDocTemplateCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.class.javadoc.template"));
         customJavaDocTagsTableModel = new CustomJavaDocTagsTableModel();
         customJavaDocTagsTable = new JBTable(customJavaDocTagsTableModel);
         customJavaDocTagsTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
@@ -238,7 +238,7 @@ public class JavaDocSettingsPanel {
         classJavaDocTemplateTextArea = new JTextArea(10, 50);
         classJavaDocTemplateTextArea.setLineWrap(true);
         classJavaDocTemplateTextArea.setWrapStyleWord(true);
-        classJavaDocTemplateTextArea.setToolTipText(JavaDocBundle.message("settings.class.javadoc.template.hint"));
+        classJavaDocTemplateTextArea.setToolTipText(JavadocBundle.message("settings.class.javadoc.template.hint"));
         classJavaDocTemplatePanel = createClassJavaDocTemplatePanel();
         classJavaDocTemplatePanel.setVisible(false); // 默认隐藏
 
@@ -251,8 +251,8 @@ public class JavaDocSettingsPanel {
                     removeCustomJavaDocTag(selectedRow);
                 }
             })
-            .addExtraAction(new AnAction(JavaDocBundle.message("settings.custom.javadoc.tags.clear.all"),
-                                         JavaDocBundle.message("settings.custom.javadoc.tags.clear.all.description"),
+            .addExtraAction(new AnAction(JavadocBundle.message("settings.custom.javadoc.tags.clear.all"),
+                                         JavadocBundle.message("settings.custom.javadoc.tags.clear.all.description"),
                                          com.intellij.icons.AllIcons.Actions.GC) {
                 /**
                  * 处理动作事件, 清除所有自定义的 Javadoc 标签
@@ -306,7 +306,7 @@ public class JavaDocSettingsPanel {
         testPromptTextArea = new JTextArea(15, 50);
 
         // 创建高级设置复选框
-        showAdvancedSettingsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.prompt.settings.show"));
+        showAdvancedSettingsCheckBox = new JBCheckBox(JavadocBundle.message("settings.prompt.settings.show"));
 
         // 创建高级设置容器面板
         advancedSettingsPanel = new JPanel(new BorderLayout());
@@ -364,7 +364,7 @@ public class JavaDocSettingsPanel {
         // 如果没有可用服务商，显示提示信息和跳转链接
         if (aiProviderTypes.isEmpty()) {
             // 创建提示信息面板
-            JBLabel warningLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.no.available.warning"));
+            JBLabel warningLabel = new JBLabel(JavadocBundle.message("settings.ai.provider.no.available.warning"));
             // 使用警告颜色（如果系统不支持，则使用默认的警告颜色）
             java.awt.Color warningColor = UIManager.getColor("Label.warningForeground");
             if (warningColor == null) {
@@ -373,7 +373,7 @@ public class JavaDocSettingsPanel {
             warningLabel.setForeground(warningColor);
 
             // 创建跳转链接
-            HyperlinkLabel linkLabel = new HyperlinkLabel(JavaDocBundle.message("settings.ai.provider.open.ai.common.settings"));
+            HyperlinkLabel linkLabel = new HyperlinkLabel(JavadocBundle.message("settings.ai.provider.open.ai.common.settings"));
             linkLabel.addHyperlinkListener(e -> {
                 // 打开 IntelliAI Engine 全局设置页面（应用级配置）
                 // 使用 null 作为 parent 参数表示打开应用级（全局）配置，而不是项目级配置
@@ -389,7 +389,7 @@ public class JavaDocSettingsPanel {
                 .addComponent(warningLabel)
                 .addComponent(linkLabel)
                 .addComponent(new JBLabel()) // 空行
-                .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.ai.provider") + ":"), providerComboBox)
+                .addLabeledComponent(new JBLabel(JavadocBundle.message("settings.ai.provider") + ":"), providerComboBox)
                 .getPanel();
         } else {
             // 创建供应商下拉框
@@ -413,8 +413,8 @@ public class JavaDocSettingsPanel {
                 return label;
             });
 
-            JBLabel providerLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider") + ":");
-            JBLabel hintLabel = new JBLabel(JavaDocBundle.message("settings.ai.provider.hint"));
+            JBLabel providerLabel = new JBLabel(JavadocBundle.message("settings.ai.provider") + ":");
+            JBLabel hintLabel = new JBLabel(JavadocBundle.message("settings.ai.provider.hint"));
             hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
             hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
 
@@ -426,7 +426,7 @@ public class JavaDocSettingsPanel {
 
         TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.ai.provider.selection"));
+            JavadocBundle.message("settings.ai.provider.selection"));
         configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
 
@@ -539,7 +539,7 @@ public class JavaDocSettingsPanel {
      */
     private JPanel createPromptTemplatesPanel() {
         JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(new JBLabel("  " + JavaDocBundle.message("settings.prompt.hint")))
+            .addComponent(new JBLabel("  " + JavadocBundle.message("settings.prompt.hint")))
             .addComponent(createPromptTabbedPane())
             .getPanel();
 
@@ -578,7 +578,7 @@ public class JavaDocSettingsPanel {
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(javaCheckBox)
             .addComponent(kotlinCheckBox)
-            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.comment.language") + ":"), commentLanguageComboBox)
+            .addLabeledComponent(new JBLabel(JavadocBundle.message("settings.comment.language") + ":"), commentLanguageComboBox)
             .getPanel();
 
         // 创建带边框的面板
@@ -604,7 +604,7 @@ public class JavaDocSettingsPanel {
         // 添加带标题的边框
         TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message(bundleKey)
+            JavadocBundle.message(bundleKey)
                                                                     );
         configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
@@ -656,7 +656,7 @@ public class JavaDocSettingsPanel {
      */
     private JPanel createOtherSettingsPanel() {
         // 创建自定义 Javadoc 标签提示标签（保存为字段，以便控制显示/隐藏）
-        customTagsHintLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.hint"));
+        customTagsHintLabel = new JBLabel(JavadocBundle.message("settings.custom.javadoc.tags.hint"));
         customTagsHintLabel.setFont(customTagsHintLabel.getFont().deriveFont(customTagsHintLabel.getFont().getSize() - 1f));
         customTagsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         customTagsHintLabel.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
@@ -693,7 +693,7 @@ public class JavaDocSettingsPanel {
         panel.add(scrollWrapper, BorderLayout.CENTER);
 
         // 创建重置按钮（参考提示词模板的样式）
-        JButton resetButton = new JButton(JavaDocBundle.message("settings.class.javadoc.template.reset"));
+        JButton resetButton = new JButton(JavadocBundle.message("settings.class.javadoc.template.reset"));
         resetButton.addActionListener(e -> resetClassJavaDocTemplateToDefault());
         JPanel buttonPanel = new JPanel(new BorderLayout());
         buttonPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
@@ -757,7 +757,7 @@ public class JavaDocSettingsPanel {
         panel.add(checkBox, BorderLayout.WEST);
 
         // 提示文本放在右侧
-        JBLabel hintLabel = new JBLabel(JavaDocBundle.message(hintKey));
+        JBLabel hintLabel = new JBLabel(JavadocBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
         hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
 
@@ -791,10 +791,10 @@ public class JavaDocSettingsPanel {
         indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
 
         // 创建标签
-        maxClassCodeLinesLabel = new JBLabel(JavaDocBundle.message("settings.max.class.code.lines"));
+        maxClassCodeLinesLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines"));
 
         // 创建提示标签
-        maxClassCodeLinesHintLabel = new JBLabel(JavaDocBundle.message("settings.max.class.code.lines.hint"));
+        maxClassCodeLinesHintLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines.hint"));
         maxClassCodeLinesHintLabel.setFont(maxClassCodeLinesHintLabel.getFont().deriveFont(maxClassCodeLinesHintLabel.getFont().getSize() - 2.0f));
         maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         maxClassCodeLinesHintLabel.setPreferredSize(new Dimension(300, maxClassCodeLinesHintLabel.getPreferredSize().height));
@@ -926,7 +926,7 @@ public class JavaDocSettingsPanel {
 
             // 添加提示文本
             if (i < hintKeys.length && hintKeys[i] != null) {
-                JBLabel hintLabel = new JBLabel(JavaDocBundle.message(hintKeys[i]));
+                JBLabel hintLabel = new JBLabel(JavadocBundle.message(hintKeys[i]));
                 hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
                 hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
                 checkBoxPanel.add(hintLabel, BorderLayout.CENTER);
@@ -952,11 +952,11 @@ public class JavaDocSettingsPanel {
         promptTabbedPane.setPreferredSize(new Dimension(600, 400));
 
         // 创建各个 Tab 页
-        promptTabbedPane.addTab(JavaDocBundle.message("settings.prompt.tab.system"), createPromptTab(systemPromptTextArea, "system"));
-        promptTabbedPane.addTab(JavaDocBundle.message("settings.prompt.tab.class"), createPromptTab(classPromptTextArea, "class"));
-        promptTabbedPane.addTab(JavaDocBundle.message("settings.prompt.tab.method"), createPromptTab(methodPromptTextArea, "method"));
-        promptTabbedPane.addTab(JavaDocBundle.message("settings.prompt.tab.field"), createPromptTab(fieldPromptTextArea, "field"));
-        promptTabbedPane.addTab(JavaDocBundle.message("settings.prompt.tab.test"), createPromptTab(testPromptTextArea, "test"));
+        promptTabbedPane.addTab(JavadocBundle.message("settings.prompt.tab.system"), createPromptTab(systemPromptTextArea, "system"));
+        promptTabbedPane.addTab(JavadocBundle.message("settings.prompt.tab.class"), createPromptTab(classPromptTextArea, "class"));
+        promptTabbedPane.addTab(JavadocBundle.message("settings.prompt.tab.method"), createPromptTab(methodPromptTextArea, "method"));
+        promptTabbedPane.addTab(JavadocBundle.message("settings.prompt.tab.field"), createPromptTab(fieldPromptTextArea, "field"));
+        promptTabbedPane.addTab(JavadocBundle.message("settings.prompt.tab.test"), createPromptTab(testPromptTextArea, "test"));
 
         return promptTabbedPane;
     }
@@ -976,7 +976,7 @@ public class JavaDocSettingsPanel {
         // 创建文本区域
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
-        textArea.setToolTipText(JavaDocBundle.message("settings.prompt." + promptType + ".tooltip"));
+        textArea.setToolTipText(JavadocBundle.message("settings.prompt." + promptType + ".tooltip"));
 
         // 添加文档监听器，根据内容自动调整大小
         textArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -1029,7 +1029,7 @@ public class JavaDocSettingsPanel {
 
         // 如果是类提示，添加占位符说明
         if ("class".equals(promptType)) {
-            JBLabel placeholderHint = new JBLabel(JavaDocBundle.message("settings.prompt.class.placeholder.hint"));
+            JBLabel placeholderHint = new JBLabel(JavadocBundle.message("settings.prompt.class.placeholder.hint"));
             placeholderHint.setFont(placeholderHint.getFont().deriveFont(placeholderHint.getFont().getSize() - 1f));
             placeholderHint.setForeground(UIManager.getColor("Label.disabledForeground"));
             placeholderHint.setBorder(JBUI.Borders.empty(5, 10));
@@ -1040,7 +1040,7 @@ public class JavaDocSettingsPanel {
         tabPanel.add(contentPanel, BorderLayout.CENTER);
 
         // 创建重置按钮
-        JButton resetButton = new JButton(JavaDocBundle.message("settings.prompt.reset"));
+        JButton resetButton = new JButton(JavadocBundle.message("settings.prompt.reset"));
         resetButton.addActionListener(e -> resetPromptToDefault(promptType, textArea));
         tabPanel.add(resetButton, BorderLayout.SOUTH);
 
@@ -1239,7 +1239,7 @@ public class JavaDocSettingsPanel {
         settings.testPromptTemplate = testPromptTextArea.getText().trim();
 
         // 获取标签列表（已经是 List<CustomJavaDocTag>）
-        settings.customJavaDocTags = new ArrayList<>(customJavaDocTagsTableModel.getData());
+        settings.customJavadocTags = new ArrayList<>(customJavaDocTagsTableModel.getData());
         settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
         settings.enableClassJavaDocTemplate = enableClassJavaDocTemplateCheckBox.isSelected();
         settings.classJavaDocTemplate = classJavaDocTemplateTextArea.getText().trim();
@@ -1302,8 +1302,8 @@ public class JavaDocSettingsPanel {
         testPromptTextArea.setText(settings.testPromptTemplate);
 
         // 设置标签列表（已经是 List<CustomJavaDocTag>）
-        if (settings.customJavaDocTags != null) {
-            customJavaDocTagsTableModel.setData(new ArrayList<>(settings.customJavaDocTags));
+        if (settings.customJavadocTags != null) {
+            customJavaDocTagsTableModel.setData(new ArrayList<>(settings.customJavadocTags));
         } else {
             customJavaDocTagsTableModel.setData(new ArrayList<>());
         }
@@ -1353,9 +1353,9 @@ public class JavaDocSettingsPanel {
         JPanel panel = new JPanel();
         panel.setLayout(new java.awt.GridLayout(2, 2, 5, 5));
 
-        JBLabel tagNameLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.column.name") + ":");
+        JBLabel tagNameLabel = new JBLabel(JavadocBundle.message("settings.custom.javadoc.tags.column.name") + ":");
         JBTextField tagNameField = new JBTextField();
-        JBLabel defaultValueLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.column.default.value") + ":");
+        JBLabel defaultValueLabel = new JBLabel(JavadocBundle.message("settings.custom.javadoc.tags.column.default.value") + ":");
         JBTextField defaultValueField = new JBTextField();
 
         panel.add(tagNameLabel);
@@ -1366,7 +1366,7 @@ public class JavaDocSettingsPanel {
         int result = JOptionPane.showConfirmDialog(
             getParentWindow(),
             panel,
-            JavaDocBundle.message("settings.custom.javadoc.tags.add.title"),
+            JavadocBundle.message("settings.custom.javadoc.tags.add.title"),
             JOptionPane.OK_CANCEL_OPTION,
             JOptionPane.QUESTION_MESSAGE
                                                   );
@@ -1378,8 +1378,8 @@ public class JavaDocSettingsPanel {
             if (tagName.isEmpty()) {
                 JOptionPane.showMessageDialog(
                     getParentWindow(),
-                    JavaDocBundle.message("settings.custom.javadoc.tags.invalid.name", tagName),
-                    JavaDocBundle.message("settings.error.title"),
+                    JavadocBundle.message("settings.custom.javadoc.tags.invalid.name", tagName),
+                    JavadocBundle.message("settings.error.title"),
                     JOptionPane.ERROR_MESSAGE
                                              );
                 return;
@@ -1389,21 +1389,21 @@ public class JavaDocSettingsPanel {
             if (!SettingsState.isValidTagName(tagName)) {
                 JOptionPane.showMessageDialog(
                     getParentWindow(),
-                    JavaDocBundle.message("settings.custom.javadoc.tags.invalid.name", tagName),
-                    JavaDocBundle.message("settings.error.title"),
+                    JavadocBundle.message("settings.custom.javadoc.tags.invalid.name", tagName),
+                    JavadocBundle.message("settings.error.title"),
                     JOptionPane.ERROR_MESSAGE
                                              );
                 return;
             }
 
             // 检查是否已存在
-            List<CustomJavaDocTag> currentTags = customJavaDocTagsTableModel.getData();
+            List<CustomJavadocTag> currentTags = customJavaDocTagsTableModel.getData();
             String tagNameLower = tagName.toLowerCase();
             if (currentTags.stream().anyMatch(t -> t.tagName.toLowerCase().equals(tagNameLower))) {
                 JOptionPane.showMessageDialog(
                     getParentWindow(),
-                    JavaDocBundle.message("settings.custom.javadoc.tags.already.exists", tagName),
-                    JavaDocBundle.message("settings.error.title"),
+                    JavadocBundle.message("settings.custom.javadoc.tags.already.exists", tagName),
+                    JavadocBundle.message("settings.error.title"),
                     JOptionPane.WARNING_MESSAGE
                                              );
                 return;
@@ -1411,7 +1411,7 @@ public class JavaDocSettingsPanel {
 
             // 添加到表格
             customJavaDocTagsTableModel.addTag(
-                new CustomJavaDocTag(tagName, defaultValue)
+                new CustomJavadocTag(tagName, defaultValue)
                                               );
         }
     }
@@ -1424,13 +1424,13 @@ public class JavaDocSettingsPanel {
             return;
         }
 
-        CustomJavaDocTag tag = customJavaDocTagsTableModel.getData().get(selectedRow);
+        CustomJavadocTag tag = customJavaDocTagsTableModel.getData().get(selectedRow);
         String tagName = tag.tagName;
 
         int result = JOptionPane.showConfirmDialog(
             getParentWindow(),
-            JavaDocBundle.message("settings.custom.javadoc.tags.delete.confirm", tagName),
-            JavaDocBundle.message("settings.custom.javadoc.tags.delete.title"),
+            JavadocBundle.message("settings.custom.javadoc.tags.delete.confirm", tagName),
+            JavadocBundle.message("settings.custom.javadoc.tags.delete.title"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
                                                   );
@@ -1450,9 +1450,9 @@ public class JavaDocSettingsPanel {
 
         int result = JOptionPane.showConfirmDialog(
             getParentWindow(),
-            JavaDocBundle.message("settings.custom.javadoc.tags.clear.confirm",
+            JavadocBundle.message("settings.custom.javadoc.tags.clear.confirm",
                                   customJavaDocTagsTableModel.getRowCount()),
-            JavaDocBundle.message("settings.custom.javadoc.tags.clear.title"),
+            JavadocBundle.message("settings.custom.javadoc.tags.clear.title"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE
                                                   );
@@ -1482,11 +1482,11 @@ public class JavaDocSettingsPanel {
          * 数组中的元素通过 JavaDocBundle 获取国际化字符串
          */
         private final String[] columnNames = {
-            JavaDocBundle.message("settings.custom.javadoc.tags.column.name"),
-            JavaDocBundle.message("settings.custom.javadoc.tags.column.default.value")
+            JavadocBundle.message("settings.custom.javadoc.tags.column.name"),
+            JavadocBundle.message("settings.custom.javadoc.tags.column.default.value")
         };
         /** 数据列表 */
-        private final List<CustomJavaDocTag> data;
+        private final List<CustomJavadocTag> data;
 
         /**
          * 构造函数, 初始化 CustomJavaDocTagsTableModel 实例
@@ -1507,7 +1507,7 @@ public class JavaDocSettingsPanel {
          * @param newData 要设置的新数据列表
          * @since 2.0.0
          */
-        public void setData(List<CustomJavaDocTag> newData) {
+        public void setData(List<CustomJavadocTag> newData) {
             this.data.clear();
             if (newData != null) {
                 this.data.addAll(newData);
@@ -1522,7 +1522,7 @@ public class JavaDocSettingsPanel {
          *
          * @return 数据列表
          */
-        public List<CustomJavaDocTag> getData() {
+        public List<CustomJavadocTag> getData() {
             return new ArrayList<>(data);
         }
 
@@ -1533,7 +1533,7 @@ public class JavaDocSettingsPanel {
          *
          * @param tag 要添加的标签
          */
-        public void addTag(CustomJavaDocTag tag) {
+        public void addTag(CustomJavadocTag tag) {
             data.add(tag);
             fireTableRowsInserted(data.size() - 1, data.size() - 1);
         }
@@ -1617,7 +1617,7 @@ public class JavaDocSettingsPanel {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             if (rowIndex >= 0 && rowIndex < data.size()) {
-                CustomJavaDocTag tag = data.get(rowIndex);
+                CustomJavadocTag tag = data.get(rowIndex);
                 if (columnIndex == 0) {
                     return tag.tagName;
                 } else if (columnIndex == 1) {
@@ -1656,7 +1656,7 @@ public class JavaDocSettingsPanel {
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             if (rowIndex >= 0 && rowIndex < data.size() && aValue != null) {
-                CustomJavaDocTag tag = data.get(rowIndex);
+                CustomJavadocTag tag = data.get(rowIndex);
 
                 if (columnIndex == 0) {
                     // 编辑标签名称

@@ -5,7 +5,7 @@
 ### 警告日志
 
 ```
-WARN - #c.i.o.a.i.PreCachedDataContext - 'virtualFileArray' is requested on EDT by GenerateJavaDocForSelectionAction#update@ProjectViewPopup (dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocForFilesAction). See ActionUpdateThread javadoc.
+WARN - #c.i.o.a.i.PreCachedDataContext - 'virtualFileArray' is requested on EDT by GenerateJavaDocForSelectionAction#update@ProjectViewPopup (dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavadocForFilesAction). See ActionUpdateThread javadoc.
 ```
 
 ### 问题分析
@@ -81,7 +81,7 @@ public @NotNull ActionUpdateThread getActionUpdateThread() {
 
 ```java
 public class GenerateJavaDocForSelectionAction extends AnAction {
-    
+
     @Override
     public void update(@NotNull AnActionEvent e) {
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
@@ -97,13 +97,13 @@ public class GenerateJavaDocForSelectionAction extends AnAction {
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 
 public class GenerateJavaDocForSelectionAction extends AnAction {
-    
+
     @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
         // 在后台线程中执行 update，避免阻塞 EDT
         return ActionUpdateThread.BGT;
     }
-    
+
     @Override
     public void update(@NotNull AnActionEvent e) {
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);

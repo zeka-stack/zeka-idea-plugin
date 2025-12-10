@@ -32,25 +32,25 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            ide("IC", "2022.3")
-            ide("IC", "2023.1")
-            ide("IC", "2023.2")
-            ide("IC", "2023.3")
-            ide("IC", "2024.1")
-            ide("IC", "2024.2")
-            ide("IC", "2024.3")
-            ide("IC", "2025.1")
-            ide("IC", "2025.2")
+            create("IC", "2022.3")
+            create("IC", "2023.1")
+            create("IC", "2023.2")
+            create("IC", "2023.3")
+            create("IC", "2024.1")
+            create("IC", "2024.2")
+            create("IC", "2024.3")
+            create("IC", "2025.1")
+            create("IC", "2025.2")
 
-            ide("IU", "2022.3")
-            ide("IU", "2023.1")
-            ide("IU", "2023.2")
-            ide("IU", "2023.3")
-            ide("IU", "2024.1")
-            ide("IU", "2024.2")
-            ide("IU", "2024.3")
-            ide("IU", "2025.1")
-            ide("IU", "2025.2")
+            create("IU", "2022.3")
+            create("IU", "2023.1")
+            create("IU", "2023.2")
+            create("IU", "2023.3")
+            create("IU", "2024.1")
+            create("IU", "2024.2")
+            create("IU", "2024.3")
+            create("IU", "2025.1")
+            create("IU", "2025.2")
         }
     }
 }
@@ -69,7 +69,6 @@ dependencies {
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")
 
         // Plugin development utilities
-        instrumentationTools()
 
         // Marketplace ZIP Signer for plugin signing
         zipSigner()

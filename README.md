@@ -274,7 +274,7 @@ dependencies {
         // 本地开发时注释掉，发布时取消注释
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")
 
-        instrumentationTools()
+
         zipSigner()
         pluginVerifier()
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)

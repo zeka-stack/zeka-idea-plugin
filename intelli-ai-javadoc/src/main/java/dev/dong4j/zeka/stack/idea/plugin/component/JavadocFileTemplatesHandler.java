@@ -8,17 +8,21 @@ import com.intellij.ide.fileTemplates.impl.FileTemplateManagerImpl;
 import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.StartupActivity;
+import com.intellij.openapi.project.ProjectManagerListener;
+import com.intellij.openapi.startup.ProjectActivity;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -36,12 +40,11 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class JavaDocFileTemplatesHandler implements StartupActivity {
-    /**
-     * Java Class Header 模板名称
-     */
+public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectManagerListener {
+    /** Java 类头模板名称 */
     private static final String JAVA_CLASS_HEADER_TEMPLATE_NAME = "Java Class Header";
-    private static final String JAVA_CLASS_TEMPLATE_NAME = "Javadoc Class";
+    /** JavaDoc Class 模板名称 */
+    private static final String JAVA_CLASS_TEMPLATE_NAME = "JavaDoc Class";
 
     /**
      * Java Class 代码模板默认内容（用户禁用模板时的默认配置）
@@ -77,8 +80,9 @@ public class JavaDocFileTemplatesHandler implements StartupActivity {
      *
      * @param project 项目对象
      */
+    @Nullable
     @Override
-    public void runActivity(@NotNull Project project) {
+    public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         ApplicationManager.getApplication().invokeLater(() -> {
             try {
                 SettingsState settings = SettingsState.getInstance();
@@ -87,6 +91,7 @@ public class JavaDocFileTemplatesHandler implements StartupActivity {
                 log.error("配置文件模板失败", e);
             }
         });
+        return Unit.INSTANCE;
     }
 
     /**
@@ -139,7 +144,7 @@ public class JavaDocFileTemplatesHandler implements StartupActivity {
     private static String generateTemplateContent(@NotNull SettingsState settings) {
         // 获取自定义标签映射（标签名转小写以便匹配）
         Map<String, String> tagMap = new HashMap<>();
-        for (CustomJavaDocTag tag : settings.customJavaDocTags) {
+        for (CustomJavadocTag tag : settings.customJavadocTags) {
             tagMap.put(tag.getTagName().toLowerCase(), tag.getDefaultValue());
         }
 
@@ -223,10 +228,9 @@ public class JavaDocFileTemplatesHandler implements StartupActivity {
             JavaFileType.DEFAULT_EXTENSION,
             templateContent,
             new FileTemplate[0]
-                                                                  );
 
-        // 使用 FileTemplateConfigurable 设置模板（参考 uniform-format 的实现）
-        FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
+            // 使用 FileTemplateConfigurable 设置模板（参考 uniform-format 的实现）
+            FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
         FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
         configurable.setTemplate(newTemplate, templateManagerImpl.getDefaultTemplateDescription());
 
@@ -257,29 +261,11 @@ public class JavaDocFileTemplatesHandler implements StartupActivity {
         }
 
         // 删除旧模板
-        templateManager.removeTemplate(javaClassTemplate);
-
-        // 创建新模板
-        FileTemplate newTemplate = FileTemplateUtil.createTemplate(
-            JAVA_CLASS_TEMPLATE_NAME,
-            JavaFileType.DEFAULT_EXTENSION,
-            JAVA_CLASS_CODE_TEMPLATE,
-            new FileTemplate[0]
-                                                                  );
-
-        // 使用 FileTemplateConfigurable 设置模板
-        FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
-        FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
-        configurable.setTemplate(newTemplate, templateManagerImpl.getDefaultTemplateDescription());
-
-        // 重新获取 Code 模板列表（删除后）
-        FileTemplate[] remainingTemplates = templateManager.getTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY);
-        List<FileTemplate> codeTemplates = new ArrayList<>(List.of(remainingTemplates));
-        codeTemplates.add(newTemplate);
-        templateManager.setTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY, codeTemplates);
+        removeTemplate(templateManager, javaClassTemplate, JAVA_CLASS_CODE_TEMPLATE, project);
 
         log.info("已更新 '{}' 代码模板", JAVA_CLASS_TEMPLATE_NAME);
     }
+
 
     /**
      * 清理文件模板
@@ -365,26 +351,48 @@ public class JavaDocFileTemplatesHandler implements StartupActivity {
         FileTemplate javaClassTemplate = templateManager.getCodeTemplate(JAVA_CLASS_TEMPLATE_NAME);
         String currentText = javaClassTemplate.getText();
         if (currentText.trim().equals(JAVA_CLASS_CODE_TEMPLATE.trim())) {
-            templateManager.removeTemplate(javaClassTemplate);
-
-            FileTemplate defaultTemplate = FileTemplateUtil.createTemplate(
-                JAVA_CLASS_TEMPLATE_NAME,
-                JavaFileType.DEFAULT_EXTENSION,
-                DEFAULT_JAVA_CLASS_JAVADOC_TEMPLATE,
-                new FileTemplate[0]
-                                                                          );
-
-            FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
-            FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
-            configurable.setTemplate(defaultTemplate, templateManagerImpl.getDefaultTemplateDescription());
-
-            FileTemplate[] remainingTemplates = templateManager.getTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY);
-            List<FileTemplate> codeTemplates = new ArrayList<>(List.of(remainingTemplates));
-            codeTemplates.add(defaultTemplate);
-            templateManager.setTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY, codeTemplates);
+            removeTemplate(templateManager, javaClassTemplate, DEFAULT_JAVA_CLASS_JAVADOC_TEMPLATE, project);
 
             log.info("已使用硬编码默认模板恢复 'Java Class' 代码模板");
         }
     }
+
+    /**
+     * 移除并重新创建文件模板
+     * <p>
+     * 该方法首先从 {@link FileTemplateManager} 中移除指定的 {@link FileTemplate}, 随后根据提供的代码模板字符串创建一个新的模板, 并将其添加回模板管理器. 新模板会被设置为默认模板描述, 并更新项目中的模板列表.
+     *
+     * @param templateManager       用于管理文件模板的 {@link FileTemplateManager} 实例
+     * @param javaClassTemplate     需要被移除的原始模板
+     * @param javaClassCodeTemplate 新模板的代码内容
+     * @param project               当前项目实例
+     */
+    private static void removeTemplate(@NotNull FileTemplateManager templateManager,
+                                       FileTemplate javaClassTemplate,
+                                       String javaClassCodeTemplate,
+                                       @NotNull Project project) {
+        templateManager.removeTemplate(javaClassTemplate);
+
+        // 创建新模板
+        FileTemplate newTemplate = FileTemplateUtil.createTemplate(
+            JAVA_CLASS_TEMPLATE_NAME,
+            JavaFileType.DEFAULT_EXTENSION,
+            javaClassCodeTemplate,
+            new FileTemplate[0]
+                                                                  );
+
+        // 使用 FileTemplateConfigurable 设置模板
+        FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
+        FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
+        configurable.setTemplate(newTemplate, templateManagerImpl.getDefaultTemplateDescription());
+
+        // 重新获取 Code 模板列表（删除后）
+        FileTemplate[] remainingTemplates = templateManager.getTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY);
+        List<FileTemplate> codeTemplates = new ArrayList<>(List.of(remainingTemplates));
+        codeTemplates.add(newTemplate);
+        templateManager.setTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY, codeTemplates);
+    }
+
+
 }
 

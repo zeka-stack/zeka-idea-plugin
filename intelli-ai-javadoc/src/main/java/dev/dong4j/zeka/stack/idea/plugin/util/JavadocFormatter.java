@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public final class JavaDocFormatter {
+public final class JavadocFormatter {
     /**
      * 中英文标点符号映射表
      * <p>
@@ -47,7 +47,7 @@ public final class JavaDocFormatter {
     /**
      * 私有构造函数，防止实例化
      */
-    private JavaDocFormatter() {
+    private JavadocFormatter() {
         throw new UnsupportedOperationException("Utility class");
     }
 
