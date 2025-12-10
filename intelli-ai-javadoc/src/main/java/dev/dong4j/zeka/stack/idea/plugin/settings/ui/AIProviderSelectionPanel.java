@@ -24,6 +24,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
 import icons.AICommonIcons;
 
 /**
@@ -62,6 +63,8 @@ public class AIProviderSelectionPanel {
         // 从 intelli-ai-engine 获取可用服务商列表
         final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
 
+        JPanel contentPanel;
+
         // 如果没有可用服务商，显示提示信息和跳转链接
         if (aiProviderTypes.isEmpty()) {
             // 创建提示信息面板
@@ -85,7 +88,7 @@ public class AIProviderSelectionPanel {
             providerComboBox = new ComboBox<>(new AIProviderConfig[0]);
             providerComboBox.setEnabled(false);
 
-            panel = FormBuilder.createFormBuilder()
+            contentPanel = FormBuilder.createFormBuilder()
                 .addComponent(warningLabel)
                 .addComponent(linkLabel)
                 .addComponent(new JBLabel()) // 空行
@@ -117,20 +120,13 @@ public class AIProviderSelectionPanel {
             hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
             hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
 
-            panel = FormBuilder.createFormBuilder()
+            contentPanel = FormBuilder.createFormBuilder()
                 .addLabeledComponent(providerLabel, providerComboBox)
                 .addComponent(hintLabel)
                 .getPanel();
         }
 
-        // TitledBorder titledBorder = BorderFactory.createTitledBorder(
-        //     BorderFactory.createEtchedBorder(),
-        //     JavadocBundle.message("settings.ai.provider.selection"));
-        // PanelUtil.configureTitledBorder(titledBorder);
-        // panel.setBorder(titledBorder);
-
-
-        panel = PanelUtil.createBorderPanel(panel, JavadocBundle.message("settings.ai.provider.selection"));
+        panel = PanelUtil.createBorderPanel(contentPanel, "settings.ai.provider.selection");
     }
 
     /**

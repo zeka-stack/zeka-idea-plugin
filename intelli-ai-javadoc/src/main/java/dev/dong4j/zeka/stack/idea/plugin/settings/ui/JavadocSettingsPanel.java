@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
 
 /**
  * Javadoc 设置面板类
@@ -61,7 +62,6 @@ public class JavadocSettingsPanel {
      */
     public JavadocSettingsPanel() {
         createUI();
-        setupListeners();
     }
 
     /**
@@ -140,8 +140,6 @@ public class JavadocSettingsPanel {
         }
     }
 
-
-
     /**
      * 创建带边框的面板
      *
@@ -177,15 +175,6 @@ public class JavadocSettingsPanel {
                                      classJavaDocTemplatePanel.getPanel());
     }
 
-    /**
-     * 初始化各种监听器，用于响应用户界面组件的变化
-     * <p>
-     * 该方法为各个输入组件添加动作监听器，当组件内容发生变化时，触发相应的更新或验证状态清除操作。
-     * 包括提供商、Base URL、API Key、模型选择以及代码优化配置等变化的监听。
-     */
-    private void setupListeners() {
-        // 所有监听器已移到各自的面板类中
-    }
 
     /**
      * 获取当前设置状态对象, 用于保存用户配置的各类设置信息.

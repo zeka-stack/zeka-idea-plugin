@@ -8,12 +8,12 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.UIManager;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
@@ -70,7 +70,7 @@ public class ClassJavaDocTemplatePanel {
         // 创建提示标签
         JBLabel hintLabel = new JBLabel(JavadocBundle.message("settings.enable.class.javadoc.template.hint"));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
+        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
         // 构建主面板
         JPanel checkBoxPanel = new JPanel(new BorderLayout(5, 0));

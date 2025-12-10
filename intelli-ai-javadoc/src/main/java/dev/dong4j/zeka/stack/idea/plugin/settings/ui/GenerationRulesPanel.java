@@ -17,6 +17,7 @@ import javax.swing.UIManager;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
 
 /**
  * 生成规则配置面板
@@ -65,14 +66,9 @@ public class GenerationRulesPanel {
     /** 类代码最大行数标签，用于控制其可用性 */
     private JBLabel maxClassCodeLinesLabel;
 
-    /** 类代码最大行数提示标签，用于控制其可用性 */
-    private JBLabel maxClassCodeLinesHintLabel;
-
     /** 主面板 */
     private JPanel panel;
 
-    /** 存储复选框和提示标签的映射关系，用于更新提示文本颜色 */
-    private final java.util.Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new java.util.HashMap<>();
 
     /**
      * 构造函数
@@ -181,7 +177,6 @@ public class GenerationRulesPanel {
 
         updateMaxClassCodeLinesEnabled();
         updatePerformanceModeSubConfigEnabled();
-        updateAllCheckBoxHintColors();
     }
 
     /**
@@ -219,13 +214,7 @@ public class GenerationRulesPanel {
      * 创建包含复选框和提示文本的面板
      * <p>
      * 该方法用于创建一个包含复选框和提示文本的面板，提示文本通过指定的键从资源文件中获取。
-     * 当复选框被勾选时，提示文本会以正常颜色（高亮）显示；未勾选时，提示文本以较暗的颜色显示。
-     *
-     * <p>特殊处理：
-     * <ul>
-     *   <li>显示统计信息复选框：不在这里添加监听器，因为它需要依赖性能模式的状态，监听器在 setupListeners 中添加</li>
-     *   <li>其他复选框：自动添加监听器来更新提示文本颜色</li>
-     * </ul>
+     * 提示文本默认显示为灰色。
      *
      * @param checkBox 要添加到面板中的复选框
      * @param hintKey  用于获取提示文本的资源键
@@ -237,22 +226,11 @@ public class GenerationRulesPanel {
         // 复选框放在左侧
         panel.add(checkBox, BorderLayout.WEST);
 
-        // 提示文本放在右侧
+        // 提示文本放在右侧，默认显示为灰色
         JBLabel hintLabel = new JBLabel(JavadocBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
         hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
-
-        // 保存映射关系，用于后续更新颜色
-        checkBoxHintLabelMap.put(checkBox, hintLabel);
-
-        // 根据复选框状态设置提示文本颜色
-        updateHintLabelColor(hintLabel, checkBox.isSelected());
-
-        // 监听复选框状态变化，动态更新提示文本颜色
-        // 但性能模式的监听器在 setupListeners 中添加，因为它需要特殊处理
-        if (checkBox != performanceModeCheckBox) {
-            checkBox.addActionListener(e -> updateHintLabelColor(hintLabel, checkBox.isSelected()));
-        }
+        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
         panel.add(hintLabel, BorderLayout.CENTER);
 
@@ -278,7 +256,7 @@ public class GenerationRulesPanel {
         maxClassCodeLinesLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines"));
 
         // 创建提示标签
-        maxClassCodeLinesHintLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines.hint"));
+        JBLabel maxClassCodeLinesHintLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines.hint"));
         maxClassCodeLinesHintLabel.setFont(maxClassCodeLinesHintLabel.getFont().deriveFont(maxClassCodeLinesHintLabel.getFont().getSize() - 2.0f));
         maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         maxClassCodeLinesHintLabel.setPreferredSize(new Dimension(300, maxClassCodeLinesHintLabel.getPreferredSize().height));
@@ -370,28 +348,10 @@ public class GenerationRulesPanel {
     }
 
     /**
-     * 更新提示标签的颜色
-     * <p>
-     * 根据复选框的选中状态，设置提示标签的前景色。
-     * 选中时使用正常颜色（高亮），未选中时使用较暗的颜色。
-     *
-     * @param hintLabel 提示标签
-     * @param selected  是否选中
-     */
-    private void updateHintLabelColor(JBLabel hintLabel, boolean selected) {
-        if (selected) {
-            // 选中时使用正常颜色（高亮显示）
-            hintLabel.setForeground(UIManager.getColor("Label.foreground"));
-        } else {
-            // 未选中时使用较暗的颜色
-            hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        }
-    }
-
-    /**
      * 更新类代码最大行数输入框的可用性
      * <p>
-     * 根据代码压缩复选框的状态，设置类代码最大行数输入框、标签和提示的可用性。
+     * 根据代码压缩复选框的状态，设置类代码最大行数输入框和标签的可用性。
+     * 提示文本始终保持灰色显示，不随可用性变化。
      */
     private void updateMaxClassCodeLinesEnabled() {
         boolean enabled = enableCodeCompressionCheckBox.isSelected();
@@ -399,21 +359,14 @@ public class GenerationRulesPanel {
         if (maxClassCodeLinesLabel != null) {
             maxClassCodeLinesLabel.setEnabled(enabled);
         }
-        if (maxClassCodeLinesHintLabel != null) {
-            maxClassCodeLinesHintLabel.setEnabled(enabled);
-            // 根据可用性更新提示文本颜色
-            if (enabled) {
-                maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.foreground"));
-            } else {
-                maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            }
-        }
+        // 提示文本保持灰色，不再根据可用性更新颜色
     }
 
     /**
      * 更新性能模式子配置的启用状态
      * <p>
-     * 根据性能模式复选框的状态, 启用或禁用相关配置项, 并更新提示标签的显示状态和颜色.
+     * 根据性能模式复选框的状态, 启用或禁用相关配置项.
+     * 提示文本始终保持灰色显示，不随可用性变化。
      */
     private void updatePerformanceModeSubConfigEnabled() {
         boolean enabled = performanceModeCheckBox.isSelected();
@@ -421,27 +374,7 @@ public class GenerationRulesPanel {
         if (!enabled) {
             showProviderStatisticsCheckBox.setSelected(false);
         }
-
-        // 更新提示文本颜色
-        JBLabel statisticsHintLabel = checkBoxHintLabelMap.get(showProviderStatisticsCheckBox);
-        if (statisticsHintLabel != null) {
-            if (enabled) {
-                updateHintLabelColor(statisticsHintLabel, showProviderStatisticsCheckBox.isSelected());
-            } else {
-                statisticsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            }
-        }
-    }
-
-    /**
-     * 更新所有复选框的提示文本颜色
-     * <p>
-     * 根据每个复选框的当前选中状态，更新对应的提示文本颜色。
-     * 用于在加载设置时初始化提示文本的颜色。
-     */
-    private void updateAllCheckBoxHintColors() {
-        checkBoxHintLabelMap.forEach((checkBox, hintLabel) ->
-                                         updateHintLabelColor(hintLabel, checkBox.isSelected()));
+        // 提示文本保持灰色，不再根据可用性更新颜色
     }
 }
 

@@ -21,6 +21,7 @@ import javax.swing.UIManager;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
 
 /**
  * 提示词模板面板

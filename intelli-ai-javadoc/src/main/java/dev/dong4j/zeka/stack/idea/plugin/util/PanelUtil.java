@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
+package dev.dong4j.zeka.stack.idea.plugin.util;
 
 import com.intellij.util.ui.UIUtil;
 
@@ -11,8 +11,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
-
-import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 
 /**
  * 面板工具类
