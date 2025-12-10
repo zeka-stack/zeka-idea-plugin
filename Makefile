@@ -135,7 +135,7 @@ quick-deploy:
 
 # 拷贝构建产物到指定目录
 # 用法: make copy-zips [TARGET_DIR=/path/to/dir]
-copy-zips:
+copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer
 	@TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
 	echo "正在拷贝构建产物到 $$TARGET..."; \
 	mkdir -p $$TARGET; \
@@ -151,7 +151,7 @@ copy-zips:
 	echo "✓ 构建产物拷贝完成"
 
 # 拷贝构建产物到 IDEA 插件目录（解压后拷贝目录）
-install-plugins:
+install-plugins: build-engine build-javadoc  build-changelog build-nacos build-tracer
 	@TARGET=$(IDEA_PLUGINS_DIR); \
 	echo "正在安装插件到 $$TARGET..."; \
 	mkdir -p $$TARGET; \
