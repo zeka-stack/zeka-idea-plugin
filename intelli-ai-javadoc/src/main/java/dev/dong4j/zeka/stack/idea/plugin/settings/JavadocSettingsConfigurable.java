@@ -17,7 +17,7 @@ import javax.swing.JComponent;
 
 import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavadocTagRegistrar;
 import dev.dong4j.zeka.stack.idea.plugin.component.JavadocFileTemplatesHandler;
-import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
+import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavadocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 
 /**
@@ -43,9 +43,9 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
      * 延迟初始化，在 createComponent 方法中创建。
      *
      * @see #createComponent()
-     * @see JavaDocSettingsPanel
+     * @see JavadocSettingsPanel
      */
-    private JavaDocSettingsPanel settingsPanel;
+    private JavadocSettingsPanel settingsPanel;
 
     /**
      * 获取插件的唯一标识符
@@ -99,20 +99,20 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
      *
      * <p>生命周期：
      * <ol>
-     *   <li>首次调用时创建 JavaDocSettingsPanel</li>
+     *   <li>首次调用时创建 JavadocSettingsPanel</li>
      *   <li>后续调用返回已创建的面板</li>
      *   <li>在 disposeUIResources 中释放资源</li>
      * </ol>
      *
      * @return 设置面板的根组件
-     * @see JavaDocSettingsPanel#getPanel()
+     * @see JavadocSettingsPanel#getPanel()
      * @see #disposeUIResources()
      */
     @Nullable
     @Override
     public JComponent createComponent() {
         if (settingsPanel == null) {
-            settingsPanel = new JavaDocSettingsPanel();
+            settingsPanel = new JavadocSettingsPanel();
             // 加载已保存的配置
             settingsPanel.loadSettings(SettingsState.getInstance());
         }
@@ -142,7 +142,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
      *
      * @return 如果配置已修改返回 true，否则返回 false
      * @see SettingsState#getInstance()
-     * @see JavaDocSettingsPanel#getSettings()
+     * @see JavadocSettingsPanel#getSettings()
      */
     @SuppressWarnings("D")
     @Override
@@ -211,7 +211,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         if (!Objects.equals(currentSettings.classJavaDocTemplate, panelSettings.classJavaDocTemplate)) {
             return true;
         }
-        if (currentSettings.showAdvancedSettings != panelSettings.showAdvancedSettings) {
+        if (currentSettings.showPromptTemplates != panelSettings.showPromptTemplates) {
             return true;
         }
         if (currentSettings.compressSingleLineJavaDoc != panelSettings.compressSingleLineJavaDoc) {
@@ -299,7 +299,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
         currentSettings.enableClassJavaDocTemplate = panelSettings.enableClassJavaDocTemplate;
         currentSettings.classJavaDocTemplate = panelSettings.classJavaDocTemplate;
-        currentSettings.showAdvancedSettings = panelSettings.showAdvancedSettings;
+        currentSettings.showPromptTemplates = panelSettings.showPromptTemplates;
 
         // 应用类 Javadoc 模板配置到所有打开的项目（需要在写操作中执行）
         ApplicationManager.getApplication().invokeLater(() -> {
@@ -351,7 +351,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
      *   <li>将配置加载到面板</li>
      * </ol>
      *
-     * @see JavaDocSettingsPanel#loadSettings(SettingsState)
+     * @see JavadocSettingsPanel#loadSettings(SettingsState)
      * @see SettingsState#getInstance()
      */
     @Override
