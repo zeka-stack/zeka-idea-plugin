@@ -235,7 +235,7 @@ public class JavaDocSettingsPanel {
         customJavaDocTagsTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
 
         // 创建类 Javadoc 模板编辑器
-        classJavaDocTemplateTextArea = new JTextArea(10, 50);
+        classJavaDocTemplateTextArea = new JTextArea(10, 10);
         classJavaDocTemplateTextArea.setLineWrap(true);
         classJavaDocTemplateTextArea.setWrapStyleWord(true);
         classJavaDocTemplateTextArea.setToolTipText(JavadocBundle.message("settings.class.javadoc.template.hint"));
@@ -299,11 +299,11 @@ public class JavaDocSettingsPanel {
 
         // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
         // 增加初始高度：15行（原来10行），宽度保持50列不变
-        systemPromptTextArea = new JTextArea(15, 50);
-        classPromptTextArea = new JTextArea(15, 50);
-        methodPromptTextArea = new JTextArea(15, 50);
-        fieldPromptTextArea = new JTextArea(15, 50);
-        testPromptTextArea = new JTextArea(15, 50);
+        systemPromptTextArea = new JTextArea(15, 15);
+        classPromptTextArea = new JTextArea(15, 15);
+        methodPromptTextArea = new JTextArea(15, 15);
+        fieldPromptTextArea = new JTextArea(15, 15);
+        testPromptTextArea = new JTextArea(15, 15);
 
         // 创建高级设置复选框
         showAdvancedSettingsCheckBox = new JBCheckBox(JavadocBundle.message("settings.prompt.settings.show"));
@@ -948,8 +948,8 @@ public class JavaDocSettingsPanel {
     private JBTabbedPane createPromptTabbedPane() {
         // Prompt 配置 - Tab 页
         JBTabbedPane promptTabbedPane = new JBTabbedPane();
-        // 增加 Tab 页的高度：宽度保持600不变，高度从200增加到400
-        promptTabbedPane.setPreferredSize(new Dimension(600, 400));
+        // 只设置首选高度，宽度自适应父容器（参考 intelli-ai-engine 的实现）
+        promptTabbedPane.setPreferredSize(new Dimension(0, 400));
 
         // 创建各个 Tab 页
         promptTabbedPane.addTab(JavadocBundle.message("settings.prompt.tab.system"), createPromptTab(systemPromptTextArea, "system"));
@@ -1689,4 +1689,3 @@ public class JavaDocSettingsPanel {
     }
 
 }
-

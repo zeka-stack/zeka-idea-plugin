@@ -314,7 +314,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
                 // 如果没有打开的项目，至少应用到默认项目
                 if (openProjects.length == 0) {
                     Project defaultProject = ProjectManager.getInstance().getDefaultProject();
-                    if (defaultProject != null && !defaultProject.isDisposed()) {
+                    if (!defaultProject.isDisposed()) {
                         JavadocFileTemplatesHandler.applyTemplateConfiguration(defaultProject, currentSettings);
                     }
                 }

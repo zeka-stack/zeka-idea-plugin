@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -31,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  * 用于在项目启动时自动配置文件模板，包括：
  * <ul>
  *   <li>在 Includes 中添加 "Java Class Header" 模板（如果启用）</li>
- *   <li>修改 "Java Class" 代码模板以使用该 Header 模板</li>
+ *   <li>修改 "JavaDoc Class" 代码模板以使用该 Header 模板</li>
  *   <li>支持从设置中读取配置并动态生成模板</li>
  * </ul>
  *
@@ -41,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectManagerListener {
-    /** Java 类头模板名称 */
+    /** JavaDoc 类头模板名称 */
     private static final String JAVA_CLASS_HEADER_TEMPLATE_NAME = "Java Class Header";
     /** JavaDoc Class 模板名称 */
     private static final String JAVA_CLASS_TEMPLATE_NAME = "JavaDoc Class";
@@ -227,10 +228,10 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
             JAVA_CLASS_HEADER_TEMPLATE_NAME,
             JavaFileType.DEFAULT_EXTENSION,
             templateContent,
-            new FileTemplate[0]
+            new FileTemplate[0]);
 
-            // 使用 FileTemplateConfigurable 设置模板（参考 uniform-format 的实现）
-            FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
+        // 使用 FileTemplateConfigurable 设置模板（参考 uniform-format 的实现）
+        FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
         FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
         configurable.setTemplate(newTemplate, templateManagerImpl.getDefaultTemplateDescription());
 
@@ -314,18 +315,11 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
                     JAVA_CLASS_TEMPLATE_NAME,
                     JavaFileType.DEFAULT_EXTENSION,
                     defaultTemplateText,
-                    new FileTemplate[0]
-                                                                               );
+                    new FileTemplate[0]);
 
                 // 使用 FileTemplateConfigurable 设置模板
                 FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
-                configurable.setTemplate(restoredTemplate, templateManagerImpl.getDefaultTemplateDescription());
-
-                // 重新获取 Code 模板列表（删除后）
-                FileTemplate[] remainingTemplates = templateManager.getTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY);
-                List<FileTemplate> codeTemplates = new ArrayList<>(List.of(remainingTemplates));
-                codeTemplates.add(restoredTemplate);
-                templateManager.setTemplates(FileTemplateManager.CODE_TEMPLATES_CATEGORY, codeTemplates);
+                setTemplates(templateManager, configurable, restoredTemplate, templateManagerImpl);
 
                 log.info("已恢复 '{}' 代码模板为默认配置", JAVA_CLASS_TEMPLATE_NAME);
             } else {
@@ -384,6 +378,27 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
         // 使用 FileTemplateConfigurable 设置模板
         FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
         FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
+        setTemplates(templateManager, configurable, newTemplate, templateManagerImpl);
+    }
+
+    /**
+     * 将指定的新模板添加到模板管理器中, 并更新可配置对象.
+     *
+     * <p> 该方法首先使用 {@link FileTemplateConfigurable#setTemplate(FileTemplate, Supplier)} 将
+     * {@code newTemplate} 与 {@code templateManagerImpl} 的默认模板描述关联. 随后从
+     * {@code templateManager} 读取当前代码模板类别下的所有模板, 构造一个新的列表,
+     * 将 {@code newTemplate} 添加到列表末尾, 并最终通过 {@code templateManager.setTemplates}
+     * 将更新后的模板集合写回. 此过程会覆盖原有模板集合, 确保新模板被正确注册.
+     *
+     * @param templateManager     用于获取和设置模板的 {@link FileTemplateManager} 实例, 不能为空
+     * @param configurable        用于更新模板描述的 {@link FileTemplateConfigurable} 对象
+     * @param newTemplate         要添加的新模板
+     * @param templateManagerImpl 用于提供默认模板描述的 {@link FileTemplateManagerImpl} 实例
+     */
+    private static void setTemplates(@NotNull FileTemplateManager templateManager,
+                                     FileTemplateConfigurable configurable,
+                                     FileTemplate newTemplate,
+                                     FileTemplateManagerImpl templateManagerImpl) {
         configurable.setTemplate(newTemplate, templateManagerImpl.getDefaultTemplateDescription());
 
         // 重新获取 Code 模板列表（删除后）
