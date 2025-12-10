@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Objects;
 
 import javax.swing.JComponent;
 
@@ -111,6 +112,8 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
     public JComponent createComponent() {
         if (settingsPanel == null) {
             settingsPanel = new JavaDocSettingsPanel();
+            // 加载已保存的配置
+            settingsPanel.loadSettings(SettingsState.getInstance());
         }
         return settingsPanel.getPanel();
     }
@@ -209,6 +212,9 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.replaceChinesePunctuation != panelSettings.replaceChinesePunctuation) {
             return true;
         }
+        if (!Objects.equals(currentSettings.commentLanguage, panelSettings.commentLanguage)) {
+            return true;
+        }
         if (currentSettings.performanceMode != panelSettings.performanceMode) {
             return true;
         }
@@ -282,6 +288,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.showAdvancedSettings = panelSettings.showAdvancedSettings;
         currentSettings.addSpaceBetweenChineseAndEnglish = panelSettings.addSpaceBetweenChineseAndEnglish;
         currentSettings.replaceChinesePunctuation = panelSettings.replaceChinesePunctuation;
+        currentSettings.commentLanguage = panelSettings.commentLanguage;
         currentSettings.performanceMode = panelSettings.performanceMode;
         currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
 

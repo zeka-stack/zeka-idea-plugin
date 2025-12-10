@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
@@ -54,8 +55,33 @@ public final class AIRequestComposer {
                                         @NotNull DocumentationTask task) {
         String systemPrompt = resolveSystemPrompt(settings);
         String userPrompt = buildUserPrompt(settings, task);
+
+        // 根据语言选择替换提示词中的语言占位符
+        // 必须在所有其他占位符（如 ${author}、${date} 等）替换完成后进行
+        CommentLanguage commentLanguage = settings.commentLanguage != null
+                                          ? settings.commentLanguage : CommentLanguage.ZH;
+        String languageText = commentLanguage.getDesc();
+
+        // 替换系统提示词和用户提示词中的所有 ${commentLanguage} 占位符
+        systemPrompt = replaceCommentLanguagePlaceholder(systemPrompt, languageText);
+        userPrompt = replaceCommentLanguagePlaceholder(userPrompt, languageText);
+
         int tokenEstimate = TokenCounter.estimateTokens(systemPrompt) + TokenCounter.estimateTokens(userPrompt);
         return new AIChatRequest(systemPrompt, userPrompt, tokenEstimate);
+    }
+
+    /**
+     * 替换提示词中的注释语言占位符
+     * <p>
+     * 将提示词中的所有 ${commentLanguage} 占位符替换为实际的语言文本。
+     * 支持多次替换，确保所有占位符都被正确替换。
+     *
+     * @param prompt       包含占位符的提示词
+     * @param languageText 要替换的语言文本（"中文" 或 "英文"）
+     * @return 替换后的提示词
+     */
+    private static String replaceCommentLanguagePlaceholder(@NotNull String prompt, @NotNull String languageText) {
+        return prompt.replace("${commentLanguage}", languageText);
     }
 
     /**

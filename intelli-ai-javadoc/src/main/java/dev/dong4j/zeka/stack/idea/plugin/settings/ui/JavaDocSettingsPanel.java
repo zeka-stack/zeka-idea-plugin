@@ -49,6 +49,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavaDocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
@@ -91,6 +92,8 @@ public class JavaDocSettingsPanel {
     private JBCheckBox addSpaceBetweenChineseAndEnglishCheckBox;
     /** 将中文标点符号转为英文标点符号复选框 */
     private JBCheckBox replaceChinesePunctuationCheckBox;
+    /** 注释语言选择下拉框 */
+    private JComboBox<CommentLanguage> commentLanguageComboBox;
     /** 最大类代码行数设置控件 */
     private JSpinner maxClassCodeLinesSpinner;
     /** 性能模式复选框 */
@@ -184,6 +187,27 @@ public class JavaDocSettingsPanel {
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
         addSpaceBetweenChineseAndEnglishCheckBox = new JBCheckBox(JavaDocBundle.message("settings.add.space.between.chinese.and.english"));
         replaceChinesePunctuationCheckBox = new JBCheckBox(JavaDocBundle.message("settings.replace.chinese.punctuation"));
+
+        // 注释语言选择下拉框
+        commentLanguageComboBox = new ComboBox<>(CommentLanguage.values());
+        commentLanguageComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JBLabel label = new JBLabel();
+            if (value != null) {
+                label.setText(value.getDesc());
+            }
+            if (isSelected) {
+                label.setBackground(list.getSelectionBackground());
+                label.setForeground(list.getSelectionForeground());
+            } else {
+                label.setBackground(list.getBackground());
+                label.setForeground(list.getForeground());
+            }
+            label.setOpaque(true);
+            return label;
+        });
+        // 设置默认值为中文
+        commentLanguageComboBox.setSelectedItem(CommentLanguage.ZH);
+
         performanceModeCheckBox = new JBCheckBox(JavaDocBundle.message("settings.performance.mode"));
         showProviderStatisticsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.show.provider.statistics"));
 
@@ -500,19 +524,7 @@ public class JavaDocSettingsPanel {
             .addComponent(createPromptTabbedPane())
             .getPanel();
 
-        // 创建带边框的面板
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
-
-        // 添加带标题的边框
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.advanced.settings.prompt.templates")
-                                                                    );
-        configureTitledBorder(titledBorder);
-        panel.setBorder(titledBorder);
-
-        return panel;
+        return createBorderPanel(contentPanel, "settings.advanced.settings.prompt.templates");
     }
 
     /**
@@ -533,19 +545,7 @@ public class JavaDocSettingsPanel {
         }
         JPanel contentPanel = formBuilder.getPanel();
 
-        // 创建带边框的面板
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
-
-        // 添加带标题的边框
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message(borderTitle)
-                                                                    );
-        configureTitledBorder(titledBorder);
-        panel.setBorder(titledBorder);
-
-        return panel;
+        return createBorderPanel(contentPanel, borderTitle);
     }
 
     /**
@@ -556,9 +556,42 @@ public class JavaDocSettingsPanel {
      * @return 语言支持面板
      */
     private JPanel createLanguageSupportPanel() {
-        return createPanelWithBorder("settings.language.support", javaCheckBox, kotlinCheckBox);
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(javaCheckBox)
+            .addComponent(kotlinCheckBox)
+            .addLabeledComponent(new JBLabel(JavaDocBundle.message("settings.comment.language") + ":"), commentLanguageComboBox)
+            .getPanel();
+
+        // 创建带边框的面板
+        return createBorderPanel(contentPanel, "settings.language.support");
     }
 
+    /**
+     * 创建一个带标题边框的面板
+     * <p>
+     * 该方法将传入的 {@code contentPanel} 放置在中心位置, 并为其设置一个
+     * 具有 {@link BorderFactory#createEtchedBorder() EtchedBorder} 样式的标题边框.
+     * 从资源文件中获取. 随后调用 {@link #configureTitledBorder(TitledBorder)}
+     * 对边框进行进一步配置.
+     *
+     * @param contentPanel 需要被包装的内容面板
+     * @param bundleKey    用于从资源文件中获取标题文本的键
+     * @return 包含标题边框的 {@link JPanel}
+     */
+    private JPanel createBorderPanel(JPanel contentPanel, String bundleKey) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            JavaDocBundle.message(bundleKey)
+                                                                    );
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
 
     /**
      * 创建生成规则配置面板
@@ -589,18 +622,7 @@ public class JavaDocSettingsPanel {
             .getPanel();
 
         // 创建带边框的面板
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(contentPanel, BorderLayout.CENTER);
-
-        // 添加带标题的边框
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            JavaDocBundle.message("settings.generation.rules.config")
-                                                                    );
-        configureTitledBorder(titledBorder);
-        panel.setBorder(titledBorder);
-
-        return panel;
+        return createBorderPanel(contentPanel, "settings.generation.rules.config");
     }
 
     /**
@@ -1110,6 +1132,14 @@ public class JavaDocSettingsPanel {
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
         settings.addSpaceBetweenChineseAndEnglish = addSpaceBetweenChineseAndEnglishCheckBox.isSelected();
         settings.replaceChinesePunctuation = replaceChinesePunctuationCheckBox.isSelected();
+
+        // 保存注释语言配置，如果为空则使用默认值 ZH
+        CommentLanguage selectedLanguage = (CommentLanguage) commentLanguageComboBox.getSelectedItem();
+        if (selectedLanguage == null) {
+            selectedLanguage = CommentLanguage.ZH; // 默认中文
+        }
+        settings.commentLanguage = selectedLanguage;
+
         settings.performanceMode = performanceModeCheckBox.isSelected();
         settings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
 
@@ -1164,6 +1194,14 @@ public class JavaDocSettingsPanel {
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
         addSpaceBetweenChineseAndEnglishCheckBox.setSelected(settings.addSpaceBetweenChineseAndEnglish);
         replaceChinesePunctuationCheckBox.setSelected(settings.replaceChinesePunctuation);
+
+        // 加载注释语言配置，如果为空则使用默认值 ZH
+        CommentLanguage commentLanguage = settings.commentLanguage;
+        if (commentLanguage == null) {
+            commentLanguage = CommentLanguage.ZH; // 默认中文
+        }
+        commentLanguageComboBox.setSelectedItem(commentLanguage);
+
         performanceModeCheckBox.setSelected(settings.performanceMode);
         showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
 

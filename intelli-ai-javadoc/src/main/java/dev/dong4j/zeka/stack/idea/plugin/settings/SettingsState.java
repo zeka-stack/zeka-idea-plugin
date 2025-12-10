@@ -252,6 +252,22 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean replaceChinesePunctuation = true;
 
+    /**
+     * 注释生成语言
+     *
+     * <p>控制生成 JavaDoc 注释时使用的语言。
+     * 可选值：
+     * <ul>
+     *   <li>ZH - 中文（默认）</li>
+     *   <li>EN - 英文</li>
+     * </ul>
+     *
+     * <p>默认值: ZH（中文）
+     *
+     * @since 2.1.0
+     */
+    public CommentLanguage commentLanguage = CommentLanguage.ZH;
+
     // ==================== 性能模式配置 ====================
 
     /**
@@ -386,15 +402,15 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultClassPromptTemplate() {
         return """
-            请为以下类/接口/枚举/对象生成类级别的文档注释（中文）。
+            请为以下类/接口/枚举/对象生成类级别的文档注释（${commentLanguage}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
-            
+
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
             - 只返回类/接口/枚举/对象级别的文档注释，不要返回方法/函数、字段/属性等其他元素的注释
             - 不要返回代码本身，只返回注释
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
-            
+
             # 格式要求
             1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             2. 使用中文编写注释内容
@@ -410,7 +426,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 如果已存在 @email 则保持不变, 否则使用 ${email} 作为邮箱
                - 如果已存在 @date ,需要格式化为 yyyy.mm.dd, 否则使用 ${date} 作为时间戳
                - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
-            
+
             # 示例
             示例1 - Java 代码：
             输入代码：
@@ -418,7 +434,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 public User findById(int id) { ... }
                 public void save(User user) { ... }
             }
-            
+
             输出注释：
             /**
              * 用户服务类
@@ -431,14 +447,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * @date 2025.10.24
              * @since 1.0.0
              */
-            
+
             示例2 - Kotlin 代码：
             输入代码：
             class UserService {
                 fun findById(id: Int): User? { ... }
                 fun save(user: User) { ... }
             }
-            
+
             输出注释：
             /**
              * 用户服务类
@@ -451,11 +467,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * @date 2025.10.24
              * @since 1.0.0
              */
-            
+
             待处理的代码片段:
-            
+
             %s
-            
+
             """;
     }
 
@@ -478,18 +494,18 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultMethodPromptTemplate() {
         return """
-            请为以下方法/函数生成文档注释（中文）。
+            请为以下方法/函数生成文档注释（${commentLanguage}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
-            
+
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
             - 只返回方法/函数级别的文档注释，不要返回类、字段/属性等其他元素的注释
             - 不要返回代码本身，只返回注释
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
-            
+
             # 格式要求
             1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用中文编写注释内容
+            2. 使用${commentLanguage}编写注释内容
             3. 注释要准确描述方法/函数的功能、参数、返回值、异常
             4. 如果有参数, 必须包含 @param 标签
             5. 如果有返回值（Java 方法或 Kotlin 非 Unit 函数），必须包含 @return 标签
@@ -497,14 +513,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             7. 不要添加不存在的参数,返回值和异常的注释标签
             8. 可以使用 @since, @Deprecated 等标签
             9. Kotlin: 注意可空类型（如 String?）和默认参数
-            
+
             # 示例
             示例1 - Java 代码：
             输入代码：
             public String getUserName(int userId) throws UserNotFoundException {
                 return userService.findById(userId).getName();
             }
-            
+
             输出注释：
             /**
              * 根据用户ID获取用户名称
@@ -515,13 +531,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * @return 用户名称
              * @throws UserNotFoundException 当用户不存在时抛出
              */
-            
+
             示例2 - Kotlin 代码：
             输入代码：
             fun getUserName(userId: Int): String? {
                 return userService.findById(userId)?.name
             }
-            
+
             输出注释：
             /**
              * 根据用户ID获取用户名称
@@ -531,11 +547,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * @param userId 用户ID
              * @return 用户名称，如果用户不存在则返回 null
              */
-            
+
             待处理的代码片段:
-            
+
             %s
-            
+
             """;
     }
 
@@ -558,38 +574,38 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultFieldPromptTemplate() {
         return """
-            请为以下字段/属性生成文档注释（中文）。
+            请为以下字段/属性生成文档注释（${commentLanguage}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
-            
+
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
             - 只返回字段/属性级别的文档注释，不要返回类、方法/函数等其他元素的注释
             - 不要返回代码本身，只返回注释
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
-            
+
             # 格式要求
             1. 必须返回完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用中文编写注释内容
+            2. 使用${commentLanguage}编写注释内容
             3. 注释要准确描述字段/属性的用途和含义
             4. **格式规则（重要）**：
                - 如果字段/属性说明简单（不超过 80 个字符，没有 @tag 标签），必须使用单行格式：/** 字段/属性说明 */
                - 如果字段/属性说明复杂（包含多个信息点、有 @tag 标签、或超过 80 个字符），使用多行格式
             5. Kotlin: 注意属性的可空类型（如 String?）和可变性（var/val）
-            
+
             # 示例
             示例1 - Java 简单字段：
             输入：private String username;
             输出：/** 用户名 */
-            
+
             示例2 - Kotlin 简单属性：
             输入：private val username: String
             输出：/** 用户名 */
-            
+
             示例3 - 带旧注释的字段/属性：
             Java: 输入：/** 旧注释 */ private String tokenValue;
             Kotlin: 输入：/** 旧注释 */ private var tokenValue: String?
             输出：/** AccessToken 值 */
-            
+
             示例4 - 复杂字段/属性：
             Java: 输入：private UserConfig config;
             Kotlin: 输入：private val config: UserConfig
@@ -601,11 +617,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              *
              * @see UserConfig
              */
-            
+
             待处理的代码片段:
-            
+
             %s
-            
+
             """;
     }
 
@@ -628,22 +644,22 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultTestPromptTemplate() {
         return """
-            请为以下测试方法/函数生成文档注释（中文）。
+            请为以下测试方法/函数生成文档注释（${commentLanguage}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
-            
+
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
             - 只返回测试方法/函数级别的文档注释，不要返回类、字段/属性等其他元素的注释
             - 不要返回代码本身，只返回注释
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
-            
+
             # 格式要求
             1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用中文编写注释内容
+            2. 使用${commentLanguage}编写注释内容
             3. 注释应描述：测试目标、测试场景、预期结果
             4. 如果代码中有 @link 引用，请在注释中使用 {@link ClassName#methodName} 格式
             5. 如果运行单元测试需要特殊的场景, 尽量添加上说明
-            
+
             # 示例
             示例1 - Java 代码：
             输入代码：
@@ -653,7 +669,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 when(userService.findById(1)).thenReturn(user);
                 assertEquals("John", service.getUserName(1));
             }
-            
+
             输出注释：
             /**
              * 测试获取用户名称功能
@@ -661,7 +677,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * 测试场景：当用户存在时
              * 预期结果：应返回正确的用户名称
              */
-            
+
             示例2 - Kotlin 代码：
             输入代码：
             @Test
@@ -670,7 +686,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 `when`(userService.findById(1)).thenReturn(user)
                 assertEquals("John", service.getUserName(1))
             }
-            
+
             输出注释：
             /**
              * 测试获取用户名称功能
@@ -678,11 +694,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * 测试场景：当用户存在时
              * 预期结果：应返回正确的用户名称
              */
-            
+
             待处理的代码片段:
-            
+
             %s
-            
+
             """;
     }
 
@@ -707,16 +723,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultSystemPromptTemplate() {
         return """
             你是一个专业的 Java/Kotlin 开发工程师，专门负责为代码生成高质量的文档注释,
-            精通 Java 和 Kotlin 编程语言，以及 JavaDoc 和 KDoc 规范，能够准确理解代码逻辑并生成清晰、准确的中文注释。
+            精通 Java 和 Kotlin 编程语言，以及 JavaDoc 和 KDoc 规范，能够准确理解代码逻辑并生成清晰、准确的${commentLanguage}注释。
             现在的任务是分析用户提供的代码片段，自动识别代码语言（Java 或 Kotlin），并生成符合相应标准的注释。
-            
+
             重要要求：
             - 自动识别代码语言：如果是 Java 代码，生成 JavaDoc 格式；如果是 Kotlin 代码，生成 KDoc 格式
             - 只返回文档注释，不要返回代码本身
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
             - JavaDoc 和 KDoc 都使用相同的注释格式（/** */）和标签格式（@param, @return, @throws 等）
             - 注释内容要准确描述代码的功能和用途
-            - 请始终使用中文编写注释，确保注释内容准确、简洁、易懂
+            - 请始终使用${commentLanguage}编写注释，确保注释内容准确、简洁、易懂
             """;
     }
 
@@ -758,13 +774,19 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 加载状态信息到当前对象
      * <p>
-     * 通过复制传入的 SettingsState 对象的状态数据到当前对象中
+     * 通过复制传入的 SettingsState 对象的状态数据到当前对象中。
+     * 包含对旧版本字符串类型 commentLanguage 的兼容性处理。
      *
      * @param state 要加载的状态对象
      */
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
+
+        // 确保 commentLanguage 不为 null（兼容旧版本字符串类型配置）
+        if (this.commentLanguage == null) {
+            this.commentLanguage = CommentLanguage.ZH;
+        }
     }
 
     // ==================== 辅助方法 ====================
