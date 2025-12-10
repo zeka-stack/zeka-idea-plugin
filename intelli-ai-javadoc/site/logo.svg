@@ -20,8 +20,8 @@
         </g>
         <circle cx="35" cy="29" r="3.5" fill="#EF4444" stroke="#FFFFFF" stroke-width="0.5"/>
     </svg>
-    <!-- 文字部分：IntelliAI JavaDoc，使用绿色渐变 -->
+    <!-- 文字部分：IntelliAI Javadoc，使用绿色渐变 -->
     <text x="48" y="26" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700"
-          fill="url(#textGradientLogo)">IntelliAI JavaDoc
+          fill="url(#textGradientLogo)">IntelliAI Javadoc
     </text>
 </svg>

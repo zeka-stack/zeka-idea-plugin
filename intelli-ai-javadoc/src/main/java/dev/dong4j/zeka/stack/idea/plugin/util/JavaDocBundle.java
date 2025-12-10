@@ -10,9 +10,9 @@ import org.jetbrains.annotations.PropertyKey;
 import java.util.function.Supplier;
 
 /**
- * JavaDoc 国际化资源绑定类
+ * Javadoc 国际化资源绑定类
  * <p>
- * 继承自 DynamicBundle, 用于管理 JavaDoc 相关的国际化消息资源.
+ * 继承自 DynamicBundle, 用于管理 Javadoc 相关的国际化消息资源.
  * 提供静态方法来获取本地化的消息字符串, 支持参数替换和延迟加载功能.
  * 该类采用单例模式, 确保资源的统一管理和高效访问.
  *

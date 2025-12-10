@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * 注释生成语言枚举
  * <p>
- * 用于表示 JavaDoc 注释生成时使用的语言类型。
+ * 用于表示 Javadoc 注释生成时使用的语言类型。
  * 包含语言代码（value）和显示描述（desc）两个字段。
  *
  * @author zeka.stack.team

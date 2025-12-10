@@ -3,10 +3,10 @@ package dev.dong4j.zeka.stack.idea.plugin.util;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * JavaDoc 格式化工具类
+ * Javadoc 格式化工具类
  * <p>
- * 提供 JavaDoc 注释的格式化功能, 包括中文标点符号替换和中英文间空格添加,
- * 用于规范化 JavaDoc 注释的格式, 提升代码文档的可读性和一致性
+ * 提供 Javadoc 注释的格式化功能, 包括中文标点符号替换和中英文间空格添加,
+ * 用于规范化 Javadoc 注释的格式, 提升代码文档的可读性和一致性
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -52,9 +52,9 @@ public final class JavaDocFormatter {
     }
 
     /**
-     * 格式化 JavaDoc 文本
+     * 格式化 Javadoc 文本
      *
-     * <p>对 AI 生成的 JavaDoc 文本进行格式化处理：
+     * <p>对 AI 生成的 Javadoc 文本进行格式化处理：
      * <ol>
      *   <li>在中英文之间添加空格（可选）</li>
      *   <li>将中文标点符号替换为英文标点符号（可选）</li>
@@ -66,7 +66,7 @@ public final class JavaDocFormatter {
      *   <li>输出: "这是一个 User 类, 用于处理用户数据."</li>
      * </ul>
      *
-     * @param text 原始 JavaDoc 文本
+     * @param text 原始 Javadoc 文本
      * @return 格式化后的文本
      */
     @NotNull
@@ -75,11 +75,11 @@ public final class JavaDocFormatter {
     }
 
     /**
-     * 格式化 JavaDoc 文本（支持配置）
+     * 格式化 Javadoc 文本（支持配置）
      *
-     * <p>对 AI 生成的 JavaDoc 文本进行格式化处理，根据配置决定是否执行各项格式化操作。
+     * <p>对 AI 生成的 Javadoc 文本进行格式化处理，根据配置决定是否执行各项格式化操作。
      *
-     * @param text                             原始 JavaDoc 文本
+     * @param text                             原始 Javadoc 文本
      * @param addSpaceBetweenChineseAndEnglish 是否在中英文之间添加空格
      * @param replaceChinesePunctuation        是否将中文标点符号替换为英文标点符号
      * @return 格式化后的文本

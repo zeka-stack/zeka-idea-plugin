@@ -26,10 +26,10 @@ import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Git 提交页面 JavaDoc 生成动作类
+ * Git 提交页面 Javadoc 生成动作类
  * <p>
- * 该类继承自 AnAction, 用于在 Git 提交页面检测并生成缺失的 JavaDoc 注释.
- * 提供了在提交代码时自动检测 Java 文件并为其生成 JavaDoc 的功能,
+ * 该类继承自 AnAction, 用于在 Git 提交页面检测并生成缺失的 Javadoc 注释.
+ * 提供了在提交代码时自动检测 Java 文件并为其生成 Javadoc 的功能,
  * 帮助开发者在提交代码前完善文档注释.
  *
  * @author zeka.stack.team
@@ -85,7 +85,7 @@ public class GenerateJavaDocForCommitAction extends AnAction {
     /**
      * 执行动作
      *
-     * <p>当用户点击按钮时，检测提交的 Java 文件中缺少 JavaDoc 的元素，
+     * <p>当用户点击按钮时，检测提交的 Java 文件中缺少 Javadoc 的元素，
      * 并批量生成文档。
      *
      * @param e 动作事件
@@ -103,7 +103,7 @@ public class GenerateJavaDocForCommitAction extends AnAction {
             return;
         }
 
-        log.info("Git 提交页面：开始检测缺少 JavaDoc 的代码");
+        log.info("Git 提交页面：开始检测缺少 Javadoc 的代码");
 
         // 获取提交的文件变更
         Collection<Change> changes = getCommittedChanges(project);

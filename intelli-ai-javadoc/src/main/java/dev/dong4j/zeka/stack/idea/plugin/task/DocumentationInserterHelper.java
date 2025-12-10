@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 文档插入辅助类
  * <p>
- * 负责将生成的 JavaDoc 文档插入到源代码中，包括删除旧注释、确定插入位置、
+ * 负责将生成的 Javadoc 文档插入到源代码中，包括删除旧注释、确定插入位置、
  * 格式化文档内容等操作。
  *
  * @author zeka.stack.team
@@ -115,14 +115,14 @@ public class DocumentationInserterHelper {
                             javadoc = javadoc + "\n */";
                         }
 
-                        // 5. 格式化 JavaDoc 内容（根据配置进行格式化）
+                        // 5. 格式化 Javadoc 内容（根据配置进行格式化）
                         javadoc = formatJavaDocContent(javadoc);
 
-                        // 6. 插入新 JavaDoc
+                        // 6. 插入新 Javadoc
                         document.insertString(lineStartPosition, javadoc + "\n");
                         PsiDocumentManager.getInstance(project).commitDocument(document);
 
-                        // 7. 格式化插入的 JavaDoc
+                        // 7. 格式化插入的 Javadoc
                         PsiFile psiFile = element.getContainingFile();
                         if (psiFile != null) {
                             int endPosition = lineStartPosition + javadoc.length() + 1;
@@ -141,8 +141,8 @@ public class DocumentationInserterHelper {
                             PsiDocumentManager.getInstance(project).commitDocument(document);
                         }
 
-                        // Console 日志：输出最终插入的 JavaDoc（仅详细日志模式）
-                        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 最终插入的 JavaDoc ===");
+                        // Console 日志：输出最终插入的 Javadoc（仅详细日志模式）
+                        AIConsoleLoggerUtil.printWithTimestamp(project, "=== 最终插入的 Javadoc ===");
                         AIConsoleLoggerUtil.print(project, javadoc);
                         AIConsoleLoggerUtil.print(project, "");
 
@@ -162,16 +162,16 @@ public class DocumentationInserterHelper {
                         log.info("插入文档失败", e);
                     }
                 }),
-                "Insert JavaDoc",
+                "Insert Javadoc",
                 PluginContents.PLUGIN_NAME
                                                          );
         });
     }
 
     /**
-     * 删除元素的旧 JavaDoc 注释
+     * 删除元素的旧 Javadoc 注释
      *
-     * <p>删除元素已有的 JavaDoc 注释，为新注释腾出空间。
+     * <p>删除元素已有的 Javadoc 注释，为新注释腾出空间。
      * 同时删除注释前后的空白行，防止空行累积。
      *
      * <p>删除策略：
@@ -330,16 +330,16 @@ public class DocumentationInserterHelper {
     }
 
     /**
-     * 格式化 JavaDoc 内容
+     * 格式化 Javadoc 内容
      *
-     * <p>对 JavaDoc 注释进行格式化处理，根据用户配置决定是否执行各项格式化操作：
+     * <p>对 Javadoc 注释进行格式化处理，根据用户配置决定是否执行各项格式化操作：
      * <ul>
      *   <li>在中英文之间添加空格（如果配置启用）</li>
      *   <li>将中文标点符号替换为英文标点符号（如果配置启用）</li>
      * </ul>
      *
-     * @param javadoc 原始 JavaDoc 文本
-     * @return 格式化后的 JavaDoc 文本
+     * @param javadoc 原始 Javadoc 文本
+     * @return 格式化后的 Javadoc 文本
      */
     @NotNull
     private String formatJavaDocContent(@NotNull String javadoc) {

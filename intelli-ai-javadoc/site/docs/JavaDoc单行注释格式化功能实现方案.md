@@ -1,8 +1,8 @@
-# JavaDoc 单行注释格式化功能实现方案
+# Javadoc 单行注释格式化功能实现方案
 
 ## 功能概述
 
-实现 JavaDoc 单行注释的自动格式化功能，当 JavaDoc 注释只有一行内容时，自动格式化为单行格式，而不是多行格式。
+实现 Javadoc 单行注释的自动格式化功能，当 Javadoc 注释只有一行内容时，自动格式化为单行格式，而不是多行格式。
 
 ### 需求描述
 
@@ -29,12 +29,12 @@ public abstract String sampleMethod2();
 经过分析，有两种实现方案：
 
 1. **方案一：配置 CodeStyleSettings**
-    - 通过编程方式修改 `CodeStyleSettings` 中的 JavaDoc 格式化选项
+    - 通过编程方式修改 `CodeStyleSettings` 中的 Javadoc 格式化选项
     - 优点：利用 IDE 内置格式化机制
     - 缺点：可能影响全局格式化设置，需要临时修改和恢复
 
 2. **方案二：后处理格式化结果**（推荐）
-    - 在格式化完成后，检测 JavaDoc 是否为单行注释
+    - 在格式化完成后，检测 Javadoc 是否为单行注释
     - 如果是单行注释，将其压缩为单行格式
     - 优点：不影响全局设置，实现简单，可控性强
     - 缺点：需要手动处理格式转换
@@ -49,7 +49,7 @@ public abstract String sampleMethod2();
 
 #### 1. 单行注释检测逻辑
 
-检测 JavaDoc 注释是否为单行注释的标准：
+检测 Javadoc 注释是否为单行注释的标准：
 
 - 注释内容只有一行（不包括开始标记 `/**` 和结束标记 `*/`）
 - 注释内容不包含 `@param`、`@return`、`@throws` 等标签
@@ -68,7 +68,7 @@ public abstract String sampleMethod2();
 在 `DocumentationInserterHelper.insertDocumentation()` 方法中，格式化完成后进行后处理：
 
 ```java
-// 7. 格式化插入的 JavaDoc
+// 7. 格式化插入的 Javadoc
 CodeStyleManager.getInstance(project).reformatText(psiFile, lineStartPosition, endPosition);
 
 // 8. 后处理：如果是单行注释，压缩为单行格式

@@ -362,15 +362,15 @@ public class TaskCollector {
     }
 
     /**
-     * 从 PSI 文件收集缺失 JavaDoc 的任务
+     * 从 PSI 文件收集缺失 Javadoc 的任务
      *
-     * <p>专门用于 Git 提交场景，只收集没有 JavaDoc 的元素，
+     * <p>专门用于 Git 提交场景，只收集没有 Javadoc 的元素，
      * 忽略所有配置（generateForClass、generateForMethod、generateForField、overrideExisting），
      * 强制检查所有类型的元素，确保只为缺失文档的元素生成任务。
      *
      * <p>与 collectFromFile 的区别：
      * <ul>
-     *   <li>强制只收集没有 JavaDoc 的元素</li>
+     *   <li>强制只收集没有 Javadoc 的元素</li>
      *   <li>忽略所有配置（generateForClass、generateForMethod、generateForField、overrideExisting）</li>
      *   <li>强制检查类、方法、字段所有类型的元素</li>
      *   <li>适用于提交前的文档检查场景</li>
@@ -381,11 +381,11 @@ public class TaskCollector {
      *   <li>检查文件是否为 Java 文件</li>
      *   <li>使用 visitor 模式遍历所有元素</li>
      *   <li>强制检查所有类型的元素（类、方法、字段）</li>
-     *   <li>只收集没有 JavaDoc 的元素</li>
+     *   <li>只收集没有 Javadoc 的元素</li>
      * </ol>
      *
      * @param psiFile PSI 文件对象
-     * @return 缺失 JavaDoc 的文档生成任务列表
+     * @return 缺失 Javadoc 的文档生成任务列表
      * @see #collectFromFile(PsiFile)
      * @see JavaRecursiveElementVisitor
      */
@@ -590,7 +590,7 @@ public class TaskCollector {
      * 创建任务
      *
      * <p>创建 DocumentationTask 对象，包含处理所需的全部信息。
-     * 获取元素的代码时，会包含已有的 JavaDoc 注释（如果存在）。
+     * 获取元素的代码时，会包含已有的 Javadoc 注释（如果存在）。
      * 这样 AI 可以看到当前的注释，从而生成更准确的新注释或改进现有注释。
      *
      * <p>任务包含的信息：
@@ -609,7 +609,7 @@ public class TaskCollector {
     @NotNull
     private DocumentationTask createTask(@NotNull PsiElement element,
                                          @NotNull DocumentationTask.TaskType type) {
-        // 获取代码，包含已有的 JavaDoc 注释
+        // 获取代码，包含已有的 Javadoc 注释
         String code = getCodeWithComment(element);
 
         // 获取文件路径，处理 VirtualFile 为 null 的情况（例如 Scratch 文件）
@@ -627,10 +627,10 @@ public class TaskCollector {
     }
 
     /**
-     * 获取元素的代码，包含已有的 JavaDoc 注释
+     * 获取元素的代码，包含已有的 Javadoc 注释
      *
      * <p>通过 element.getText() 方法获取元素的完整文本表示，
-     * 包括已有的 JavaDoc 注释。这样可以为 AI 提供上下文信息，
+     * 包括已有的 Javadoc 注释。这样可以为 AI 提供上下文信息，
      * 有助于生成更准确和一致的文档。
      *
      * <p>对于类级别的代码，会进行优化以减少 token 消耗：
@@ -695,7 +695,7 @@ public class TaskCollector {
      * <ul>
      *   <li>删除多余的空行和空白字符</li>
      *   <li>删除单行注释（// 注释）</li>
-     *   <li>保留 JavaDoc 注释（/** 注释）</li>
+     *   <li>保留 Javadoc 注释（/** 注释）</li>
      *   <li>保留必要的空格以维持代码结构</li>
      *   <li>如果超过 1000 行，截取前 1000 行</li>
      * </ul>
@@ -728,7 +728,7 @@ public class TaskCollector {
                 continue;
             }
 
-            // 跳过单行注释（// 注释），但保留 JavaDoc 注释（/** 注释）
+            // 跳过单行注释（// 注释），但保留 Javadoc 注释（/** 注释）
             if (trimmedLine.startsWith("//") && !trimmedLine.startsWith("/**")) {
                 continue;
             }
@@ -749,14 +749,14 @@ public class TaskCollector {
     }
 
     /**
-     * 判断元素是否没有 JavaDoc/KDoc 注释
+     * 判断元素是否没有 Javadoc/KDoc 注释
      *
-     * <p>专门用于检查元素是否缺失文档注释（JavaDoc 或 KDoc），
+     * <p>专门用于检查元素是否缺失文档注释（Javadoc 或 KDoc），
      * 忽略 overrideExisting 配置，只检查元素是否已有文档。
      *
      * <p>检查逻辑：
      * <ul>
-     *   <li>Java 元素：如果元素支持文档注释（PsiDocCommentOwner），检查是否有 JavaDoc</li>
+     *   <li>Java 元素：如果元素支持文档注释（PsiDocCommentOwner），检查是否有 Javadoc</li>
      *   <li>Kotlin 元素：检查是否有 KDoc 注释</li>
      *   <li>如果没有文档注释返回 true，否则返回 false</li>
      *   <li>如果元素不支持文档注释，返回 true（允许处理）</li>
@@ -799,7 +799,7 @@ public class TaskCollector {
      *   <li>如果 overrideExisting 为 true，总是返回 true（覆盖已有注释）</li>
      *   <li>如果 overrideExisting 为 false（默认）且元素支持文档：
      *     <ul>
-     *       <li>检查元素是否已有 JavaDoc 注释</li>
+     *       <li>检查元素是否已有 Javadoc 注释</li>
      *       <li>如果已有注释返回 false（跳过），否则返回 true（生成）</li>
      *     </ul>
      *   </li>

@@ -24,11 +24,11 @@ import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 
 /**
- * 自定义 JavaDoc 标签注册器
+ * 自定义 Javadoc 标签注册器
  * <p>
- * 该类实现了 ProjectActivity 接口, 用于在 IDE 启动时同步自定义的 JavaDoc 标签配置.
- * 通过反射机制操作 JavadocDeclarationInspection 检查工具, 动态添加或移除自定义的 JavaDoc 标签,
- * 使 IDE 能够识别和验证项目中使用的自定义 JavaDoc 标签. 主要功能包括: 同步配置的自定义标签,
+ * 该类实现了 ProjectActivity 接口, 用于在 IDE 启动时同步自定义的 Javadoc 标签配置.
+ * 通过反射机制操作 JavadocDeclarationInspection 检查工具, 动态添加或移除自定义的 Javadoc 标签,
+ * 使 IDE 能够识别和验证项目中使用的自定义 Javadoc 标签. 主要功能包括: 同步配置的自定义标签,
  * 解析和管理标签字符串, 以及通过反射操作检查工具的内部字段.
  *
  * @author zeka.stack.team
@@ -40,7 +40,7 @@ import kotlin.coroutines.Continuation;
 public class CustomJavaDocTagRegistrar implements ProjectActivity {
 
     /**
-     * 在项目启动时运行，注册自定义的 JavaDoc 标签
+     * 在项目启动时运行，注册自定义的 Javadoc 标签
      *
      * @param project 启动的项目
      * @param continuation Kotlin 协程 continuation

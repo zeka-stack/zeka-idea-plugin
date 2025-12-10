@@ -220,7 +220,7 @@ class TokenCounterTest {
         assertThat(stats.getChineseChars()).isGreaterThan(0);
         assertThat(stats.getEnglishWords()).isGreaterThan(0);
 
-        System.out.println("JavaDoc stats: " + stats);
+        System.out.println("Javadoc stats: " + stats);
     }
 
     @Test
@@ -246,7 +246,7 @@ class TokenCounterTest {
 
     @Test
     void testRealWorldExample_MixedContent() {
-        String mixed = "这是一个使用 AI 生成 JavaDoc 的插件。\n" +
+        String mixed = "这是一个使用 AI 生成 Javadoc 的插件。\n" +
                        "It supports multiple AI providers including QianWen and Ollama.\n" +
                        "代码示例：\n" +
                        "```java\n" +

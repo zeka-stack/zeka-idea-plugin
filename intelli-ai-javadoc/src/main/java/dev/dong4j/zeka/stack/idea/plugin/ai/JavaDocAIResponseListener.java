@@ -32,7 +32,7 @@ public class JavaDocAIResponseListener implements AIResponseListener {
     /**
      * 初始化 JavaDocAIResponseListener 实例
      * <p>
-     * 创建一个用于处理 JavaDoc AI 响应的监听器, 关联到指定的项目并设置日志详细程度.
+     * 创建一个用于处理 Javadoc AI 响应的监听器, 关联到指定的项目并设置日志详细程度.
      *
      * @param project 关联的项目对象, 用于操作项目相关资源
      * @since 1.0

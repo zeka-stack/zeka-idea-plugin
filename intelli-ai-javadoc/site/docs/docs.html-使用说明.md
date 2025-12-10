@@ -190,7 +190,7 @@ npx http-server
 编辑 `docs.html`，找到 logo 部分：
 
 ```html
-<span>IntelliAI JavaDoc</span>
+<span>IntelliAI Javadoc</span>
 ```
 
 ## 注意事项

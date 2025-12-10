@@ -8,17 +8,16 @@ import com.intellij.psi.javadoc.PsiDocComment;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * JavaDoc 单行注释格式化工具类
+ * Javadoc 单行注释格式化工具类
  * <p>
- * 提供将多行 JavaDoc 单行注释压缩为单行格式的功能。
- * 当 JavaDoc 注释只有一行内容时，将其格式化为 {@code /** comment
+ * 提供将多行 Javadoc 单行注释压缩为单行格式的功能。
+ * 当 Javadoc 注释只有一行内容时，将其格式化为 {@code /** comment
  * /}格式。
  *
  * @author zeka.stack.team
  * @version 1.0.0
  * @since 1.0.0
  */
-
 public final class JavaDocSingleLineFormatter {
     /**
      * 单行注释的最大长度限制（字符数）
@@ -35,9 +34,9 @@ public final class JavaDocSingleLineFormatter {
     }
 
     /**
-     * 压缩元素的 JavaDoc 注释为单行格式（如果是单行注释）
+     * 压缩元素的 Javadoc 注释为单行格式（如果是单行注释）
      * <p>
-     * 检查元素的 JavaDoc 注释是否为单行注释，如果是则压缩为单行格式。
+     * 检查元素的 Javadoc 注释是否为单行注释，如果是则压缩为单行格式。
      *
      * @param element  目标元素
      * @param document 文档对象
@@ -70,16 +69,16 @@ public final class JavaDocSingleLineFormatter {
     }
 
     /**
-     * 判断 JavaDoc 注释是否为单行注释
+     * 判断 Javadoc 注释是否为单行注释
      * <p>
      * 单行注释的判断标准：
      * <ul>
      *   <li>注释内容只有一行（不包括开始标记和结束标记）</li>
-     *   <li>注释内容不包含 JavaDoc 标签（@param、@return、@throws 等）</li>
+     *   <li>注释内容不包含 Javadoc 标签（@param、@return、@throws 等）</li>
      *   <li>注释内容长度不超过限制</li>
      * </ul>
      *
-     * @param commentText JavaDoc 注释文本
+     * @param commentText Javadoc 注释文本
      * @return 如果是单行注释返回 true，否则返回 false
      */
     @SuppressWarnings("D")
@@ -121,7 +120,7 @@ public final class JavaDocSingleLineFormatter {
             return false;
         }
 
-        // 检查是否包含 JavaDoc 标签
+        // 检查是否包含 Javadoc 标签
         if (containsJavaDocTags(finalContent)) {
             return false;
         }
@@ -153,13 +152,13 @@ public final class JavaDocSingleLineFormatter {
     }
 
     /**
-     * 检查内容是否包含 JavaDoc 标签
+     * 检查内容是否包含 Javadoc 标签
      *
      * @param content 注释内容
      * @return 如果包含标签返回 true，否则返回 false
      */
     private static boolean containsJavaDocTags(@NotNull String content) {
-        // 常见的 JavaDoc 标签
+        // 常见的 Javadoc 标签
         String[] tags = {
             "@param", "@return", "@throws", "@exception", "@see",
             "@since", "@author", "@version", "@deprecated", "@inheritDoc",
@@ -178,7 +177,7 @@ public final class JavaDocSingleLineFormatter {
     }
 
     /**
-     * 将多行 JavaDoc 注释压缩为单行格式
+     * 将多行 Javadoc 注释压缩为单行格式
      * <p>
      * 将格式如下的注释：
      * <pre>
@@ -191,7 +190,7 @@ public final class JavaDocSingleLineFormatter {
      * /** Comment text /
      * </pre>
      *
-     * @param commentText 原始 JavaDoc 注释文本
+     * @param commentText 原始 Javadoc 注释文本
      * @return 压缩后的单行注释，如果无法压缩返回 null
      */
     private static String compressToSingleLine(@NotNull String commentText) {

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * TaskCollector 代码优化功能测试类
  * <p>
- * 该类用于测试 TaskCollector 中的代码优化功能，包括删除空行、删除单行注释、保留 JavaDoc 注释、行数截取、禁用优化以及空代码和 null 处理等场景。
+ * 该类用于测试 TaskCollector 中的代码优化功能，包括删除空行、删除单行注释、保留 Javadoc 注释、行数截取、禁用优化以及空代码和 null 处理等场景。
  * <p>
  * 测试通过反射调用 TaskCollector 的私有方法 optimizeClassCode，验证其在不同输入情况下的行为是否符合预期。
  *
@@ -57,13 +57,13 @@ class TaskCollectorCodeOptimizationTest {
         // 使用反射访问私有方法进行测试
         String originalCode = """
             public class TestClass {
-            
+
                 private String name;
-            
+
                 public String getName() {
                     return name;
                 }
-            
+
             }
             """;
 
@@ -91,7 +91,7 @@ class TaskCollectorCodeOptimizationTest {
             public class TestClass {
                 // 这是一个测试类
                 private String name;
-            
+
                 // 获取名称的方法
                 public String getName() {
                     return name; // 返回名称
@@ -113,15 +113,15 @@ class TaskCollectorCodeOptimizationTest {
     }
 
     /**
-     * 测试代码优化功能中的 JavaDoc 注释保留逻辑
+     * 测试代码优化功能中的 Javadoc 注释保留逻辑
      * <p>
-     * 测试场景：验证优化代码时是否能够正确保留原有的 JavaDoc 注释
-     * 预期结果：优化后的代码应包含原始的 JavaDoc 注释内容，包括类注释和方法注释
+     * 测试场景：验证优化代码时是否能够正确保留原有的 Javadoc 注释
+     * 预期结果：优化后的代码应包含原始的 Javadoc 注释内容，包括类注释和方法注释
      * <p>
-     * 特殊说明：测试数据中包含一个带有 JavaDoc 注释的测试类，优化过程应确保注释内容完整保留
+     * 特殊说明：测试数据中包含一个带有 Javadoc 注释的测试类，优化过程应确保注释内容完整保留
      */
     @Test
-    @DisplayName("测试代码优化功能 - 保留 JavaDoc 注释")
+    @DisplayName("测试代码优化功能 - 保留 Javadoc 注释")
     void testOptimizeClassCode_preserveJavaDocComments() {
         String originalCode = """
             /**
@@ -141,7 +141,7 @@ class TaskCollectorCodeOptimizationTest {
 
         String optimized = invokeOptimizeClassCode(originalCode);
 
-        // 验证 JavaDoc 注释被保留
+        // 验证 Javadoc 注释被保留
         assertThat(optimized).contains("/**");
         assertThat(optimized).contains("测试类");
         assertThat(optimized).contains("获取名称");
@@ -204,10 +204,10 @@ class TaskCollectorCodeOptimizationTest {
 
         String originalCode = """
             public class TestClass {
-            
+
                 // 这是一个注释
                 private String name;
-            
+
             }
             """;
 

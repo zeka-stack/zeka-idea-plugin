@@ -106,7 +106,7 @@
 1. **Provider 切换**：设置页选择 ModelScope，确认默认 BaseURL/模型回填正常，API Key 输入为必填。
 2. **刷新模型成功**：输入有效 Token，点击“刷新模型”，模型列表更新且提示成功，`modelComboBox` 使用 `model_id` 赋值。
 3. **刷新失败路径**：空 Token、网络错误、API 错误码，按钮状态与提示一致，日志记录错误信息。
-4. **生成调用**：配置 ModelScope 模型后执行一次 JavaDoc 生成，确保请求走 ModelScopeProvider 并成功返回内容（可使用 mock Token）。
+4. **生成调用**：配置 ModelScope 模型后执行一次 Javadoc 生成，确保请求走 ModelScopeProvider 并成功返回内容（可使用 mock Token）。
 5. **回退到其他 Provider**：切换回 QianWen，确认既有功能无回归。
 
 ## ⚠️ 风险与缓解

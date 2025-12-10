@@ -398,9 +398,9 @@ public class PsiElementLocator {
     }
 
     /**
-     * 检查元素是否已有 JavaDoc/KDoc 注释
+     * 检查元素是否已有 Javadoc/KDoc 注释
      *
-     * <p>检查指定 PSI 元素是否已有文档注释（JavaDoc 或 KDoc）。
+     * <p>检查指定 PSI 元素是否已有文档注释（Javadoc 或 KDoc）。
      * 用于跳过已有文档的元素，避免重复生成。
      *
      * <p>检查条件：

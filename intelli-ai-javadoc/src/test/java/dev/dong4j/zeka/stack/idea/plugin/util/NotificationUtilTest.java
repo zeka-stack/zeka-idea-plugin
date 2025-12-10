@@ -165,7 +165,7 @@ public class NotificationUtilTest {
     /**
      * 测试完成通知功能, 包含失败情况
      * <p>
-     * 测试场景: 当生成 JavaDoc 时存在成功, 失败和跳过的测试用例
+     * 测试场景: 当生成 Javadoc 时存在成功, 失败和跳过的测试用例
      * 预期结果: 通知内容应包含成功, 失败和跳过的数量, 并且通知类型应为 WARNING
      * <p>
      * 该测试模拟了 NotificationGroupManager 和相关对象的行为, 验证通知内容是否正确
@@ -188,7 +188,7 @@ public class NotificationUtilTest {
             ArgumentCaptor<NotificationType> typeCaptor = ArgumentCaptor.forClass(NotificationType.class);
 
             verify(mockNotificationGroup).createNotification(
-                eq("JavaDoc 生成完成"),
+                eq("Javadoc 生成完成"),
                 contentCaptor.capture(),
                 typeCaptor.capture()
                                                             );
@@ -231,7 +231,7 @@ public class NotificationUtilTest {
             ArgumentCaptor<NotificationType> typeCaptor = ArgumentCaptor.forClass(NotificationType.class);
 
             verify(mockNotificationGroup).createNotification(
-                eq("JavaDoc 生成完成"),
+                eq("Javadoc 生成完成"),
                 anyString(),
                 typeCaptor.capture()
                                                             );
@@ -245,7 +245,7 @@ public class NotificationUtilTest {
      * 测试完成通知功能
      * <p>
      * 测试场景: 当没有完成任何任务时
-     * 预期结果: 应创建标题为「JavaDoc 生成完成」且类型为 {@link NotificationType#WARNING} 的通知
+     * 预期结果: 应创建标题为「Javadoc 生成完成」且类型为 {@link NotificationType#WARNING} 的通知
      */
     @Test
     @DisplayName("测试完成通知 - 没有完成任何任务")
@@ -263,7 +263,7 @@ public class NotificationUtilTest {
             ArgumentCaptor<NotificationType> typeCaptor = ArgumentCaptor.forClass(NotificationType.class);
 
             verify(mockNotificationGroup).createNotification(
-                eq("JavaDoc 生成完成"),
+                eq("Javadoc 生成完成"),
                 anyString(),
                 typeCaptor.capture()
                                                             );
@@ -299,7 +299,7 @@ public class NotificationUtilTest {
             ArgumentCaptor<String> contentCaptor = ArgumentCaptor.forClass(String.class);
 
             verify(mockNotificationGroup).createNotification(
-                eq("JavaDoc 生成完成"),
+                eq("Javadoc 生成完成"),
                 contentCaptor.capture(),
                 any(NotificationType.class)
                                                             );
@@ -368,7 +368,7 @@ public class NotificationUtilTest {
             NotificationUtil.notifyErrorMessage(mockProject, "API 调用失败");
 
             verify(mockNotificationGroup).createNotification(
-                eq("IntelliAI JavaDoc - 错误"),
+                eq("IntelliAI Javadoc - 错误"),
                 eq("API 调用失败"),
                 eq(NotificationType.ERROR)
                                                             );

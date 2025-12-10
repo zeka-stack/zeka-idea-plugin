@@ -1,9 +1,9 @@
 @echo off
-REM IntelliJ IntelliAI JavaDoc 插件 - 测试运行脚本 (Windows)
+REM IntelliJ IntelliAI Javadoc 插件 - 测试运行脚本 (Windows)
 REM 此脚本用于运行所有单元测试
 
 echo ========================================
-echo IntelliJ IntelliAI JavaDoc Plugin - 测试运行
+echo IntelliJ IntelliAI Javadoc Plugin - 测试运行
 echo ========================================
 echo.
 

@@ -250,7 +250,7 @@ public class SequentialTaskProcessor {
      * <ul>
      *   <li>overrideExisting 配置为 false（默认）</li>
      *   <li>元素支持文档（PsiDocCommentOwner）</li>
-     *   <li>元素已有 JavaDoc 注释</li>
+     *   <li>元素已有 Javadoc 注释</li>
      * </ul>
      *
      * <p>逻辑说明：

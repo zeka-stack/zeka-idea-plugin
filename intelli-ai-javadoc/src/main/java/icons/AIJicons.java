@@ -43,7 +43,7 @@ public class AIJicons {
     // ========== 16x16 图标 - 用于 Toolbar/Action/Menu/ToolWindow ==========
 
     /**
-     * IntelliAI JavaDoc 主图标 (16x16)
+     * IntelliAI Javadoc 主图标 (16x16)
      * <p>
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */

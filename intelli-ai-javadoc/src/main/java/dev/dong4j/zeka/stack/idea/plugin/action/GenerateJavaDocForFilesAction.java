@@ -23,11 +23,11 @@ import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 为文件生成 JavaDoc 的动作类
+ * 为文件生成 Javadoc 的动作类
  * <p>
- * 该类继承自 AnAction, 用于在 IntelliJ IDEA 等 IDE 中提供生成 JavaDoc 的功能.
- * 支持为单个 Java 文件或整个目录中的 Java 文件批量生成 JavaDoc 注释.
- * 该动作可以处理选中的虚拟文件数组, 自动识别 Java 文件并为其生成相应的 JavaDoc 注释.
+ * 该类继承自 AnAction, 用于在 IntelliJ IDEA 等 IDE 中提供生成 Javadoc 的功能.
+ * 支持为单个 Java 文件或整个目录中的 Java 文件批量生成 Javadoc 注释.
+ * 该动作可以处理选中的虚拟文件数组, 自动识别 Java 文件并为其生成相应的 Javadoc 注释.
  * 当处理大量文件时, 会显示确认对话框以避免误操作.
  *
  * @author zeka.stack.team
@@ -41,12 +41,12 @@ import lombok.extern.slf4j.Slf4j;
 public class GenerateJavaDocForFilesAction extends AnAction {
 
     /**
-     * 处理动作事件，用于为选中的文件或目录生成 JavaDoc 注释
+     * 处理动作事件，用于为选中的文件或目录生成 Javadoc 注释
      * <p>
      * 该方法首先获取当前项目和选中的文件列表，若项目或文件为空则直接返回。
-     * 然后收集所有需要生成 JavaDoc 的任务，检查任务是否为空，若为空则返回。
+     * 然后收集所有需要生成 Javadoc 的任务，检查任务是否为空，若为空则返回。
      * 若任务数量较多，会弹出确认对话框，用户确认后才继续执行。
-     * 最后调用文档生成服务，生成 JavaDoc 并显示完成信息。
+     * 最后调用文档生成服务，生成 Javadoc 并显示完成信息。
      *
      * @param e 动作事件对象，包含项目和选中的文件信息
      */
@@ -65,7 +65,7 @@ public class GenerateJavaDocForFilesAction extends AnAction {
             return;
         }
 
-        log.info("为 {} 个文件/目录生成 JavaDoc", files.length);
+        log.info("为 {} 个文件/目录生成 Javadoc", files.length);
 
         // 收集任务
         TaskCollector collector = new TaskCollector(project);
@@ -118,9 +118,9 @@ public class GenerateJavaDocForFilesAction extends AnAction {
     }
 
     /**
-     * 更新操作的呈现信息, 设置文本和描述为生成 JavaDoc 的相关提示
+     * 更新操作的呈现信息, 设置文本和描述为生成 Javadoc 的相关提示
      * <p>
-     * 该方法用于在 IDE 中更新动作的显示文本和描述, 用于提示用户生成 JavaDoc
+     * 该方法用于在 IDE 中更新动作的显示文本和描述, 用于提示用户生成 Javadoc
      *
      * @param e 事件对象, 包含当前操作的相关信息
      */

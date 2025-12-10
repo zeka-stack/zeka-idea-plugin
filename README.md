@@ -39,20 +39,20 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 
 > 以下插件均依赖 IntelliAI Engine,需要先安装 IntelliAI Engine 才能使用
 
-#### [IntelliAI JavaDoc](./intelli-ai-javadoc)
+#### [IntelliAI Javadoc](./intelli-ai-javadoc)
 
-专为批量生成符合规范的 JavaDoc 注释而设计,解决传统工具翻译质量差、生成速度慢的问题。
+专为批量生成符合规范的 Javadoc 注释而设计,解决传统工具翻译质量差、生成速度慢的问题。
 
 **核心功能:**
 
 - ✍️ AI 生成有意义的注释内容,而非简单翻译或空模板
 - ⚡ 快速批量处理,支持整个项目级别的注释生成
-- ✅ 生成符合 Checkstyle 和公司标准的 JavaDoc
+- ✅ 生成符合 Checkstyle 和公司标准的 Javadoc
 - 🎯 多种触发方式:快捷键(`Cmd/Ctrl+Shift+D`)、右键菜单、Generate 菜单等
 - 🧪 智能识别类、方法、测试方法等不同元素
 - 📊 实时进度显示和结果统计
 
-**JetBrains Marketplace:** [IntelliAI JavaDoc](https://plugins.jetbrains.com/plugin/28835)
+**JetBrains Marketplace:** [IntelliAI Javadoc](https://plugins.jetbrains.com/plugin/28835)
 
 **[使用指南](./intelli-ai-javadoc/docs/用户手册.md)**
 
@@ -179,7 +179,7 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 
 1. 打开 IntelliJ IDEA
 2. 进入 `Settings/Preferences` → `Plugins`
-3. 搜索插件名称(如 `IntelliAI JavaDoc`)
+3. 搜索插件名称(如 `IntelliAI Javadoc`)
 4. 点击 `Install`
 
 **注意:** 如果安装 AI 驱动插件,需要先安装 `IntelliAI Engine`
@@ -399,7 +399,7 @@ cd zeka-idea-plugin
 ```
 zeka-idea-plugin/
 ├── intelli-ai-engine/      # AI 引擎(其他 AI 插件的依赖)
-├── intelli-ai-javadoc/     # JavaDoc 生成插件
+├── intelli-ai-javadoc/     # Javadoc 生成插件
 ├── intelli-ai-changelog/   # Changelog 生成插件
 ├── intelli-ai-tracer/      # 调用链追踪插件
 ├── intelli-ai-nacos/       # Nacos 配置管理插件
@@ -572,7 +572,7 @@ AI 插件使用 IntelliJ Platform 的 `PasswordSafe` 机制:
 
 ```
 IntelliAI Engine (基础引擎)
-    ├── IntelliAI JavaDoc
+    ├── IntelliAI Javadoc
     ├── IntelliAI Changelog
     ├── IntelliAI Tracer
     └── IntelliAI Nacos
@@ -630,8 +630,8 @@ includes/
 
 - [IntelliAI Engine - AI 工作流解释器](./intelli-ai-engine/docs/AI工作流解释器功能实现方案.md)
 - [IntelliAI Engine - 扩展点实现方案](./intelli-ai-engine/docs/扩展点实现方案.md)
-- [IntelliAI JavaDoc - 开发指南](./intelli-ai-javadoc/docs/DEVELOPMENT_GUIDE.md)
-- [IntelliAI JavaDoc - 快速开始](./intelli-ai-javadoc/docs/QUICK_START.md)
+- [IntelliAI Javadoc - 开发指南](./intelli-ai-javadoc/docs/DEVELOPMENT_GUIDE.md)
+- [IntelliAI Javadoc - 快速开始](./intelli-ai-javadoc/docs/QUICK_START.md)
 - [IntelliAI Changelog - 方案设计](./intelli-ai-changelog/docs/方案设计.md)
 - [IntelliAI Tracer - 功能设计](./intelli-ai-tracer/docs/)
 - [Archiver Man - 功能规划](./archiver-man/docs/ArchiverMan功能规划清单.md)

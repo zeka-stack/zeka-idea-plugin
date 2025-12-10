@@ -7,10 +7,10 @@ import org.jetbrains.annotations.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 生成 JavaDoc 生成动作类
+ * 生成 Javadoc 生成动作类
  * <p>
- * 该类继承自 AbstractGenerateJavaDocAction, 用于处理生成 JavaDoc 的 IDE 动作事件,
- * 当用户触发该动作时, 会执行 JavaDoc 生成的相关处理逻辑
+ * 该类继承自 AbstractGenerateJavaDocAction, 用于处理生成 Javadoc 的 IDE 动作事件,
+ * 当用户触发该动作时, 会执行 Javadoc 生成的相关处理逻辑
  *
  * @author zeka.stack.team
  * @version 1.0.0

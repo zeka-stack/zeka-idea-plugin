@@ -26,16 +26,16 @@ alwaysApply: true
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
     public List<String> customTags = new ArrayList<>();
-    
+
     public static SettingsState getInstance() {
         return ApplicationManager.getApplication().getService(SettingsState.class);
     }
-    
+
     @Override
     public SettingsState getState() {
         return this;
     }
-    
+
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
@@ -64,7 +64,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 ```java
 public class PluginSettingsConfigurable implements SearchableConfigurable {
     private PluginSettingsPanel settingsPanel;
-    
+
     @Override
     public JComponent createComponent() {
         if (settingsPanel == null) {
@@ -72,7 +72,7 @@ public class PluginSettingsConfigurable implements SearchableConfigurable {
         }
         return settingsPanel.getPanel();
     }
-    
+
     @Override
     public boolean isModified() {
         if (settingsPanel == null) return false;
@@ -81,7 +81,7 @@ public class PluginSettingsConfigurable implements SearchableConfigurable {
         // 比较所有配置项
         return !current.someField.equals(panel.someField);
     }
-    
+
     @Override
     public void apply() throws ConfigurationException {
         if (settingsPanel == null) return;
@@ -166,12 +166,12 @@ String title = "添加标签"; // ❌
 
 ```properties
 # AIJBundle_zh_CN.properties
-settings.custom.javadoc.tags=自定义 JavaDoc 标签:
+settings.custom.javadoc.tags=自定义 Javadoc 标签:
 settings.custom.javadoc.tags.add.title=添加标签
 settings.custom.javadoc.tags.delete.confirm=确定要删除标签 \"{0}\" 吗？
 
 # AIJBundle_en_US.properties
-settings.custom.javadoc.tags=Custom JavaDoc Tags:
+settings.custom.javadoc.tags=Custom Javadoc Tags:
 settings.custom.javadoc.tags.add.title=Add Tag
 settings.custom.javadoc.tags.delete.confirm=Are you sure you want to delete tag \"{0}\"?
 ```
@@ -315,7 +315,7 @@ private static void setFieldValue(Object target, String fieldName, Object value)
 
 在编写代码注释时：
 
-- 所有公共类和方法必须有完整的 JavaDoc 注释
+- 所有公共类和方法必须有完整的 Javadoc 注释
 - 使用 `<p>` 标签分段
 - 使用 `<ul>` 和 `<li>` 列出要点
 - 使用 `@author`, `@version`, `@since` 标签
@@ -379,7 +379,7 @@ try {
 try {
     performAction();
 } catch (Exception e) {
-    NotificationUtil.showError(project, 
+    NotificationUtil.showError(project,
         JavaDocBundle.message("error.action.failed", e.getMessage()));
     log.error("操作失败", e);
 }
@@ -406,25 +406,25 @@ try {
 private static class CustomTableModel extends AbstractTableModel {
     private final String[] columnNames = {JavaDocBundle.message("column.name")};
     private final List<String> data = new ArrayList<>();
-    
+
     public void setData(List<String> newData) {
         this.data.clear();
         this.data.addAll(newData);
         fireTableDataChanged();
     }
-    
+
     public void removeRow(int row) {
         if (row >= 0 && row < data.size()) {
             data.remove(row);
             fireTableRowsDeleted(row, row);
         }
     }
-    
+
     @Override
     public int getRowCount() {
         return data.size();
     }
-    
+
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
         return data.get(rowIndex);
@@ -454,17 +454,17 @@ private static class CustomTableModel extends AbstractTableModel {
 <extensions defaultExtensionNs="com.intellij">
     <!-- 应用级服务 -->
     <applicationService serviceImplementation="com.example.SettingsState"/>
-    
+
     <!-- 设置页面 -->
     <projectConfigurable
             parentId="tools"
             instance="com.example.SettingsConfigurable"
             id="com.example.SettingsConfigurable"
             displayName="Plugin Settings"/>
-    
+
     <!-- 启动活动 -->
     <postStartupActivity implementation="com.example.StartupActivity"/>
-    
+
     <!-- 通知组 -->
     <notificationGroup id="Plugin Notifications"
                      displayType="BALLOON"
@@ -490,7 +490,7 @@ private static class CustomTableModel extends AbstractTableModel {
 
 - 使用静态方法提供便捷功能
 - 工具类应该是 `final` 且构造函数私有
-- 提供清晰的 JavaDoc 注释
+- 提供清晰的 Javadoc 注释
 - 使用 `@NotNull` 和 `@Nullable` 注解标注参数和返回值
 - 方法应该是无状态的（不依赖实例变量）
 
@@ -504,7 +504,7 @@ public final class ConfigUtil {
     private ConfigUtil() {
         // 工具类，禁止实例化
     }
-    
+
     /**
      * 验证配置是否有效
      *
@@ -606,7 +606,7 @@ private void updateSubComponentEnabled() {
 public void apply() throws ConfigurationException {
     // 保存配置
     currentSettings.someField = panelSettings.someField;
-    
+
     // 触发同步
     ApplicationManager.getApplication().invokeLater(() -> {
         ApplicationManager.getApplication().runWriteAction(() -> {
@@ -643,15 +643,15 @@ public void apply() throws ConfigurationException {
 ```html
 <h3>1.4.0</h3>
 <ul>
-    <li>新增自定义 JavaDoc 标签配置功能，支持在设置页面动态添加、删除和编辑自定义标签</li>
+    <li>新增自定义 Javadoc 标签配置功能，支持在设置页面动态添加、删除和编辑自定义标签</li>
     <li>优化标签同步机制，自动同步配置到 JavadocDeclarationInspection，支持标签的动态添加和删除</li>
-    <li>优化设置页面布局，自定义 JavaDoc 标签配置使用复选框控制显示，减少页面长度</li>
+    <li>优化设置页面布局，自定义 Javadoc 标签配置使用复选框控制显示，减少页面长度</li>
 </ul>
 <h3>1.4.0</h3>
 <ul>
-    <li>Added custom JavaDoc tags configuration feature, supporting dynamic addition, deletion, and editing of custom tags in settings page</li>
+    <li>Added custom Javadoc tags configuration feature, supporting dynamic addition, deletion, and editing of custom tags in settings page</li>
     <li>Optimized tag synchronization mechanism, automatically synchronizing configuration to JavadocDeclarationInspection, supporting dynamic addition and deletion of tags</li>
-    <li>Optimized settings page layout, custom JavaDoc tags configuration uses checkbox to control display, reducing page length</li>
+    <li>Optimized settings page layout, custom Javadoc tags configuration uses checkbox to control display, reducing page length</li>
 </ul>
 ```
 
@@ -694,7 +694,7 @@ public void apply() throws ConfigurationException {
 ### Example
 
 ```
-用户请求：添加自定义 JavaDoc 标签配置功能
+用户请求：添加自定义 Javadoc 标签配置功能
 
 步骤1：创建方案文档
 文件：{插件项目根目录}/docs/自定义JavaDoc标签配置功能实现方案.md
@@ -738,19 +738,19 @@ public void apply() throws ConfigurationException {
 
 ### Example
 
-如果新增了"自定义 JavaDoc 标签配置"功能，应该在用户手册中添加：
+如果新增了"自定义 Javadoc 标签配置"功能，应该在用户手册中添加：
 
 ```markdown
-## 自定义 JavaDoc 标签配置
+## 自定义 Javadoc 标签配置
 
 ### 功能说明
 
-支持在设置页面动态添加、删除和编辑自定义 JavaDoc 标签。
+支持在设置页面动态添加、删除和编辑自定义 Javadoc 标签。
 
 ### 使用方法
 
-1. 打开设置页面：`Settings` → `Tools` → `IntelliAI JavaDoc`
-2. 勾选"自定义 JavaDoc 标签"复选框
+1. 打开设置页面：`Settings` → `Tools` → `IntelliAI Javadoc`
+2. 勾选"自定义 Javadoc 标签"复选框
 3. 点击"+"按钮添加新标签
 4. 输入标签名称（不包含 @ 符号）
 5. 点击"确定"保存配置
@@ -759,7 +759,7 @@ public void apply() throws ConfigurationException {
 
 - 标签名称只能包含字母、数字、下划线和连字符
 - 标签名称不区分大小写
-- 配置保存后会自动同步到 JavaDoc 检查工具
+- 配置保存后会自动同步到 Javadoc 检查工具
 ```
 
 ### 工作流程

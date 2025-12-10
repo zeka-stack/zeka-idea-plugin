@@ -1,6 +1,6 @@
 # IntelliJ IDEA Plugin 开发完整指南
 
-本文档基于 IntelliJ IntelliAI JavaDoc 项目，详细介绍 IntelliJ IDEA 插件的开发流程、核心概念、最佳实践和常见问题。
+本文档基于 IntelliJ IntelliAI Javadoc 项目，详细介绍 IntelliJ IDEA 插件的开发流程、核心概念、最佳实践和常见问题。
 
 ## 目录
 
@@ -89,13 +89,13 @@ tasks {
 intellij {
     // IDE 版本
     version.set("2021.3")
-    
+
     // IDE 类型：IC (Community) 或 IU (Ultimate)
     type.set("IC")
-    
+
     // 依赖的插件
     plugins.set(listOf("java", "kotlin"))
-    
+
     // 下载源码（用于调试）
     downloadSources.set(true)
 }
@@ -107,7 +107,7 @@ intellij {
 patchPluginXml {
     // 最低支持版本（213 = 2021.3）
     sinceBuild.set("213")
-    
+
     // 最高支持版本（223.* = 2022.3.x）
     untilBuild.set("223.*")
 }
@@ -169,15 +169,15 @@ my-plugin/
 <idea-plugin>
     <!-- 插件唯一标识符 -->
     <id>com.example.my-plugin</id>
-    
+
     <!-- 插件名称 -->
     <name>My Awesome Plugin</name>
-    
+
     <!-- 开发者信息 -->
     <vendor email="support@example.com" url="https://example.com">
         Example Corp
     </vendor>
-    
+
     <!-- 插件描述 -->
     <description><![CDATA[
         This plugin does amazing things.
@@ -186,7 +186,7 @@ my-plugin/
             <li>Feature 2</li>
         </ul>
     ]]></description>
-    
+
     <!-- 变更日志 -->
     <change-notes><![CDATA[
         <h3>Version 1.0</h3>
@@ -194,40 +194,40 @@ my-plugin/
             <li>Initial release</li>
         </ul>
     ]]></change-notes>
-    
+
     <!-- 依赖的模块 -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
-    
+
     <!-- 扩展点 -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- 项目服务 -->
-        <projectService 
+        <projectService
             serviceImplementation="com.example.plugin.MyService"/>
-        
+
         <!-- 应用级服务 -->
-        <applicationService 
+        <applicationService
             serviceImplementation="com.example.plugin.MyAppService"/>
-        
+
         <!-- 配置面板 -->
-        <projectConfigurable 
+        <projectConfigurable
             instance="com.example.plugin.MyConfigurable"/>
     </extensions>
-    
+
     <!-- 动作 -->
     <actions>
-        <action 
-            id="com.example.MyAction" 
+        <action
+            id="com.example.MyAction"
             class="com.example.plugin.action.MyAction"
-            text="My Action" 
+            text="My Action"
             description="Does something cool">
             <!-- 快捷键 -->
-            <keyboard-shortcut 
-                keymap="$default" 
+            <keyboard-shortcut
+                keymap="$default"
                 first-keystroke="shift ctrl A"/>
             <!-- 添加到菜单 -->
-            <add-to-group 
-                group-id="ToolsMenu" 
+            <add-to-group
+                group-id="ToolsMenu"
                 anchor="first"/>
         </action>
     </actions>
@@ -305,7 +305,7 @@ psiFile.accept(new JavaRecursiveElementVisitor() {
         super.visitClass(aClass);
         System.out.println("Found class: " + aClass.getName());
     }
-    
+
     @Override
     public void visitMethod(PsiMethod method) {
         super.visitMethod(method);
@@ -385,7 +385,7 @@ PsiDocumentManager.getInstance(project).commitDocument(document);
 
 ```java
 // Document 变更 → PSI
-PsiDocumentManager psiDocManager = 
+PsiDocumentManager psiDocManager =
     PsiDocumentManager.getInstance(project);
 
 // 立即提交
@@ -479,13 +479,13 @@ import com.intellij.openapi.ui.Messages;
 import org.jetbrains.annotations.NotNull;
 
 public class MyAction extends AnAction {
-    
+
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         // 获取上下文
         Project project = e.getProject();
         if (project == null) return;
-        
+
         // 执行操作
         Messages.showMessageDialog(
             project,
@@ -494,7 +494,7 @@ public class MyAction extends AnAction {
             Messages.getInformationIcon()
         );
     }
-    
+
     @Override
     public void update(@NotNull AnActionEvent e) {
         // 更新动作状态
@@ -510,27 +510,27 @@ public class MyAction extends AnAction {
 
 ```xml
 <actions>
-    <action 
-        id="MyPlugin.MyAction" 
+    <action
+        id="MyPlugin.MyAction"
         class="com.example.plugin.action.MyAction"
         text="My Action"
         description="My action description"
         icon="AllIcons.Actions.Execute">
-        
+
         <!-- 添加到工具菜单 -->
         <add-to-group group-id="ToolsMenu" anchor="first"/>
-        
+
         <!-- 快捷键 -->
-        <keyboard-shortcut 
-            keymap="$default" 
+        <keyboard-shortcut
+            keymap="$default"
             first-keystroke="shift ctrl M"/>
     </action>
-    
+
     <!-- 动作组 -->
     <group id="MyPlugin.ActionGroup" text="My Plugin">
-        <action id="MyPlugin.Action1" 
+        <action id="MyPlugin.Action1"
                 class="com.example.plugin.action.Action1"/>
-        <action id="MyPlugin.Action2" 
+        <action id="MyPlugin.Action2"
                 class="com.example.plugin.action.Action2"/>
         <add-to-group group-id="ToolsMenu" anchor="last"/>
     </group>
@@ -557,16 +557,16 @@ public class MyAction extends AnAction {
 public void actionPerformed(@NotNull AnActionEvent e) {
     // 项目
     Project project = e.getProject();
-    
+
     // 编辑器
     Editor editor = e.getData(CommonDataKeys.EDITOR);
-    
+
     // PSI 文件
     PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
-    
+
     // 虚拟文件
     VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
-    
+
     // 选中的文件数组
     VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
 }
@@ -595,15 +595,15 @@ import com.intellij.openapi.project.Project;
 
 public class MyProjectService {
     private final Project project;
-    
+
     public MyProjectService(Project project) {
         this.project = project;
     }
-    
+
     public void doSomething() {
         // 项目相关操作
     }
-    
+
     // 获取服务实例的静态方法
     public static MyProjectService getInstance(Project project) {
         return project.getService(MyProjectService.class);
@@ -619,11 +619,11 @@ package com.example.plugin.service;
 import com.intellij.openapi.application.ApplicationManager;
 
 public class MyApplicationService {
-    
+
     public void doSomething() {
         // 应用级操作
     }
-    
+
     // 获取服务实例
     public static MyApplicationService getInstance() {
         return ApplicationManager.getApplication()
@@ -639,11 +639,11 @@ public class MyApplicationService {
 ```xml
 <extensions defaultExtensionNs="com.intellij">
     <!-- 项目服务 -->
-    <projectService 
+    <projectService
         serviceImplementation="com.example.plugin.service.MyProjectService"/>
-    
+
     <!-- 应用服务 -->
-    <applicationService 
+    <applicationService
         serviceImplementation="com.example.plugin.service.MyApplicationService"/>
 </extensions>
 ```
@@ -657,7 +657,7 @@ MyProjectService service = project.getService(MyProjectService.class);
 MyProjectService service = MyProjectService.getInstance(project);
 
 // 获取应用服务
-MyApplicationService appService = 
+MyApplicationService appService =
     ApplicationManager.getApplication()
         .getService(MyApplicationService.class);
 // 或
@@ -674,7 +674,7 @@ Extensions 允许插件扩展 IDE 的功能。
 
 ```xml
 <extensions defaultExtensionNs="com.intellij">
-    <projectConfigurable 
+    <projectConfigurable
         instance="com.example.plugin.MyConfigurable"
         displayName="My Plugin Settings"/>
 </extensions>
@@ -686,19 +686,19 @@ public class MyConfigurable implements Configurable {
     public String getDisplayName() {
         return "My Plugin";
     }
-    
+
     @Override
     public JComponent createComponent() {
         // 创建 UI 组件
         return new JPanel();
     }
-    
+
     @Override
     public boolean isModified() {
         // 检查是否有修改
         return false;
     }
-    
+
     @Override
     public void apply() {
         // 应用设置
@@ -710,7 +710,7 @@ public class MyConfigurable implements Configurable {
 
 ```xml
 <extensions defaultExtensionNs="com.intellij">
-    <fileType 
+    <fileType
         name="My File Type"
         implementationClass="com.example.plugin.MyFileType"
         fieldName="INSTANCE"
@@ -724,12 +724,12 @@ public class MyConfigurable implements Configurable {
 ```xml
 <extensions defaultExtensionNs="com.intellij">
     <!-- 语法高亮 -->
-    <lang.syntaxHighlighterFactory 
+    <lang.syntaxHighlighterFactory
         language="MyLanguage"
         implementationClass="com.example.plugin.MySyntaxHighlighter"/>
-    
+
     <!-- 代码补全 -->
-    <completion.contributor 
+    <completion.contributor
         language="MyLanguage"
         implementationClass="com.example.plugin.MyCompletionContributor"/>
 </extensions>
@@ -769,20 +769,20 @@ if (result == Messages.YES) {
 
 ```java
 public class MyDialog extends DialogWrapper {
-    
+
     public MyDialog(Project project) {
         super(project);
         init();
         setTitle("My Dialog");
     }
-    
+
     @Override
     protected JComponent createCenterPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JLabel("Content"), BorderLayout.CENTER);
         return panel;
     }
-    
+
     @Override
     protected void doOKAction() {
         // OK 按钮处理
@@ -842,7 +842,7 @@ Notifications.Bus.notify(notification, project);
 
 ```xml
 <extensions defaultExtensionNs="com.intellij">
-    <toolWindow 
+    <toolWindow
         id="MyToolWindow"
         factoryClass="com.example.plugin.MyToolWindowFactory"
         anchor="right"
@@ -852,14 +852,14 @@ Notifications.Bus.notify(notification, project);
 
 ```java
 public class MyToolWindowFactory implements ToolWindowFactory {
-    
+
     @Override
     public void createToolWindowContent(
-            @NotNull Project project, 
+            @NotNull Project project,
             @NotNull ToolWindow toolWindow) {
-        
+
         MyToolWindow myToolWindow = new MyToolWindow(project);
-        ContentFactory contentFactory = 
+        ContentFactory contentFactory =
             ContentFactory.SERVICE.getInstance();
         Content content = contentFactory.createContent(
             myToolWindow.getContent(), "", false);
@@ -869,12 +869,12 @@ public class MyToolWindowFactory implements ToolWindowFactory {
 
 public class MyToolWindow {
     private JPanel contentPanel;
-    
+
     public MyToolWindow(Project project) {
         contentPanel = new JPanel();
         // 初始化 UI
     }
-    
+
     public JComponent getContent() {
         return contentPanel;
     }
@@ -891,18 +891,18 @@ public class MyToolWindow {
 
 ```java
 public class MyInspection extends LocalInspectionTool {
-    
+
     @NotNull
     @Override
     public PsiElementVisitor buildVisitor(
-            @NotNull ProblemsHolder holder, 
+            @NotNull ProblemsHolder holder,
             boolean isOnTheFly) {
-        
+
         return new JavaElementVisitor() {
             @Override
             public void visitMethod(PsiMethod method) {
                 super.visitMethod(method);
-                
+
                 // 检查逻辑
                 if (method.getName().startsWith("bad")) {
                     holder.registerProblem(
@@ -918,18 +918,18 @@ public class MyInspection extends LocalInspectionTool {
 
 // 快速修复
 public class MyQuickFix implements LocalQuickFix {
-    
+
     @NotNull
     @Override
     public String getFamilyName() {
         return "Fix method name";
     }
-    
+
     @Override
     public void applyFix(
-            @NotNull Project project, 
+            @NotNull Project project,
             @NotNull ProblemDescriptor descriptor) {
-        
+
         // 修复逻辑
         PsiElement element = descriptor.getPsiElement();
         // ...
@@ -941,7 +941,7 @@ public class MyQuickFix implements LocalQuickFix {
 
 ```xml
 <extensions defaultExtensionNs="com.intellij">
-    <localInspection 
+    <localInspection
         language="JAVA"
         displayName="My Inspection"
         groupName="My Plugin"
@@ -957,35 +957,35 @@ public class MyQuickFix implements LocalQuickFix {
 
 ```java
 public class MyIntentionAction extends PsiElementBaseIntentionAction {
-    
+
     @NotNull
     @Override
     public String getText() {
         return "Do something";
     }
-    
+
     @NotNull
     @Override
     public String getFamilyName() {
         return "My Plugin";
     }
-    
+
     @Override
     public boolean isAvailable(
-            @NotNull Project project, 
-            Editor editor, 
+            @NotNull Project project,
+            Editor editor,
             @NotNull PsiElement element) {
-        
+
         // 判断是否可用
         return element instanceof PsiMethod;
     }
-    
+
     @Override
     public void invoke(
-            @NotNull Project project, 
-            Editor editor, 
+            @NotNull Project project,
+            Editor editor,
             @NotNull PsiElement element) {
-        
+
         // 执行意图
         PsiMethod method = (PsiMethod) element;
         // ...
@@ -1007,29 +1007,29 @@ public class MyIntentionAction extends PsiElementBaseIntentionAction {
 
 ```java
 public class MyGenerator {
-    
+
     public void generateMethod(PsiClass psiClass, Project project) {
         // 创建方法
-        PsiElementFactory factory = 
+        PsiElementFactory factory =
             JavaPsiFacade.getInstance(project).getElementFactory();
-        
+
         PsiMethod method = factory.createMethodFromText(
             "public void myMethod() { }",
             psiClass
         );
-        
+
         // 添加到类中
         ApplicationManager.getApplication().runWriteAction(() -> {
             psiClass.add(method);
         });
     }
-    
+
     public void generateClass(PsiDirectory directory, Project project) {
-        PsiElementFactory factory = 
+        PsiElementFactory factory =
             JavaPsiFacade.getInstance(project).getElementFactory();
-        
+
         PsiClass psiClass = factory.createClass("MyClass");
-        
+
         ApplicationManager.getApplication().runWriteAction(() -> {
             directory.add(psiClass);
         });
@@ -1043,30 +1043,30 @@ public class MyGenerator {
 
 ```java
 public class MyRefactoringProcessor extends BaseRefactoringProcessor {
-    
+
     public MyRefactoringProcessor(Project project) {
         super(project);
     }
-    
+
     @NotNull
     @Override
     protected UsageViewDescriptor createUsageViewDescriptor(
             @NotNull UsageInfo[] usages) {
         return new MyUsageViewDescriptor();
     }
-    
+
     @NotNull
     @Override
     protected UsageInfo[] findUsages() {
         // 查找需要修改的位置
         return new UsageInfo[0];
     }
-    
+
     @Override
     protected void performRefactoring(@NotNull UsageInfo[] usages) {
         // 执行重构
     }
-    
+
     @NotNull
     @Override
     protected String getCommandName() {
@@ -1085,7 +1085,7 @@ public class MyRefactoringProcessor extends BaseRefactoringProcessor {
 
 ```java
 public class MyPluginTest extends BasePlatformTestCase {
-    
+
     @Test
     public void testMyAction() {
         // 准备测试数据
@@ -1093,24 +1093,24 @@ public class MyPluginTest extends BasePlatformTestCase {
             JavaFileType.INSTANCE,
             "public class Test { <caret> }"
         );
-        
+
         // 执行动作
         myFixture.testAction(new MyAction());
-        
+
         // 验证结果
         PsiFile file = myFixture.getFile();
         assertNotNull(file);
     }
-    
+
     @Test
     public void testCodeGeneration() {
         PsiClass psiClass = myFixture.addClass(
             "public class TestClass {}"
         );
-        
+
         MyGenerator generator = new MyGenerator();
         generator.generateMethod(psiClass, getProject());
-        
+
         assertEquals(1, psiClass.getMethods().length);
     }
 }
@@ -1159,7 +1159,7 @@ import com.intellij.openapi.diagnostic.Logger;
 
 public class MyClass {
     private static final Logger LOG = Logger.getInstance(MyClass.class);
-    
+
     public void myMethod() {
         LOG.info("Info message");
         LOG.warn("Warning message");
@@ -1188,7 +1188,7 @@ LOG.info("Operation took " + duration + "ms");
 // 使用 PerformanceWatcher
 import com.intellij.diagnostic.PerformanceWatcher;
 
-PerformanceWatcher.Snapshot snapshot = 
+PerformanceWatcher.Snapshot snapshot =
     PerformanceWatcher.takeSnapshot();
 // 执行操作
 snapshot.logResponsivenessSinceCreation("My operation");
@@ -1344,7 +1344,7 @@ String projectName = e.getProject().getName();
 
 ```java
 // ✅ 正确（一次遍历）
-Collection<PsiMethod> methods = 
+Collection<PsiMethod> methods =
     PsiTreeUtil.findChildrenOfType(psiClass, PsiMethod.class);
 
 // ❌ 错误（多次遍历）
@@ -1360,9 +1360,9 @@ for (PsiElement child : psiClass.getChildren()) {
 ```java
 @Service
 public final class MyCacheService {
-    private final Map<String, CachedValue<String>> cache = 
+    private final Map<String, CachedValue<String>> cache =
         new ConcurrentHashMap<>();
-    
+
     public String getCachedValue(Project project, String key) {
         return CachedValuesManager.getManager(project)
             .getCachedValue(
@@ -1464,8 +1464,8 @@ CommandProcessor.getInstance().executeCommand(
 
 ```xml
 <!-- 使用标准修饰键 -->
-<keyboard-shortcut 
-    keymap="$default" 
+<keyboard-shortcut
+    keymap="$default"
     first-keystroke="shift ctrl A"/>
 
 <!-- 避免与 IDE 默认快捷键冲突 -->
@@ -1507,16 +1507,16 @@ if (ApplicationInfo.getInstance().getBuild().getBaselineVersion() >= 213) {
 <description><![CDATA[
     <h1>Plugin Name</h1>
     <p>Brief description of what the plugin does.</p>
-    
+
     <h2>Features</h2>
     <ul>
         <li>Feature 1</li>
         <li>Feature 2</li>
     </ul>
-    
+
     <h2>Usage</h2>
     <p>How to use the plugin...</p>
-    
+
     <h2>Support</h2>
     <p>Report issues at: <a href="...">GitHub Issues</a></p>
 ]]></description>

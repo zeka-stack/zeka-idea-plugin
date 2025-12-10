@@ -27,7 +27,7 @@ public class NotificationUtil {
     /**
      * 通知分组的 ID
      * <p>
-     * 用于标识一组与 JavaDoc 生成相关的通知
+     * 用于标识一组与 Javadoc 生成相关的通知
      */
     public static final String NOTIFICATION_GROUP_ID = PluginContents.PLUGIN_NAME + " Notifications";
 

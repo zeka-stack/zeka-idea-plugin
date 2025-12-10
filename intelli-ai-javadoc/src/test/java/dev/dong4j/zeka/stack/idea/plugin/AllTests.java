@@ -12,7 +12,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocatorTest;
 /**
  * 测试套件 - 运行所有测试
  * <p>
- * 该测试套件用于组织和运行 IntelliJ IntelliAI JavaDoc 插件相关的所有测试类，包括单元测试和集成测试。
+ * 该测试套件用于组织和运行 IntelliJ IntelliAI Javadoc 插件相关的所有测试类，包括单元测试和集成测试。
  * <p>
  * 使用 JUnit 5 Platform Suite 来统一管理测试执行，确保所有测试用例能够被正确识别和执行。
  *
@@ -22,7 +22,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocatorTest;
  * @since 1.0.0
  */
 @Suite
-@SuiteDisplayName("IntelliJ IntelliAI JavaDoc 插件 - 完整测试套件")
+@SuiteDisplayName("IntelliJ IntelliAI Javadoc 插件 - 完整测试套件")
 @SelectClasses( {
 
     // Task 模块

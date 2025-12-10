@@ -434,7 +434,7 @@ intelli-ai-nacos/
 
 - 遵循 IntelliJ Platform 开发规范
 - 使用 Lombok 简化代码
-- 完整的 JavaDoc 注释
+- 完整的 Javadoc 注释
 - 使用 `@NotNull` 和 `@Nullable` 注解
 
 ### 5.2 UI 规范

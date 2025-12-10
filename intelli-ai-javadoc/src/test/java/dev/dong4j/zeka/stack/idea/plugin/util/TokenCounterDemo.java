@@ -28,7 +28,7 @@ public class TokenCounterDemo {
         // 示例 4: 代码文本
         demo4_CodeText();
 
-        // 示例 5: JavaDoc 注释
+        // 示例 5: Javadoc 注释
         demo5_JavaDocComment();
 
         // 示例 6: 检查限制和截断
@@ -74,7 +74,7 @@ public class TokenCounterDemo {
         System.out.println("【示例 3】中英文混合");
         System.out.println("--------------------------------------------------");
 
-        String text = "IntelliAI JavaDoc 是一个使用 AI 生成 JavaDoc 的插件。\n" +
+        String text = "IntelliAI Javadoc 是一个使用 AI 生成 Javadoc 的插件。\n" +
                       "It supports multiple AI providers including QianWen and Ollama.\n" +
                       "支持多种 AI 服务提供商，包括通义千问和本地 Ollama 模型。";
 
@@ -119,7 +119,7 @@ public class TokenCounterDemo {
     }
 
     private static void demo5_JavaDocComment() {
-        System.out.println("【示例 5】JavaDoc 注释");
+        System.out.println("【示例 5】Javadoc 注释");
         System.out.println("--------------------------------------------------");
 
         String javaDoc = "/**\n" +
@@ -135,7 +135,7 @@ public class TokenCounterDemo {
 
         TokenStats stats = TokenCounter.analyze(javaDoc);
 
-        System.out.println("JavaDoc:\n" + javaDoc);
+        System.out.println("Javadoc:\n" + javaDoc);
         System.out.println("\n" + stats);
         System.out.println();
     }
@@ -173,7 +173,7 @@ public class TokenCounterDemo {
         System.out.println("--------------------------------------------------");
 
         String systemPrompt = "你是一个专业的 Java 文档生成助手。";
-        String userPrompt = "请为以下方法生成 JavaDoc 注释：";
+        String userPrompt = "请为以下方法生成 Javadoc 注释：";
         String code = "public void processTask(Task task) { }";
 
         int tokens1 = TokenCounter.estimateTokens(systemPrompt);

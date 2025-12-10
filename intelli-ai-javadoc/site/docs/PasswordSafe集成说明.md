@@ -142,7 +142,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     // ==================== PasswordSafe 相关常量 ====================
 
     /** PasswordSafe 服务名称 */
-    private static final String PASSWORD_SAFE_SERVICE_NAME = "IntelliAI JavaDoc";
+    private static final String PASSWORD_SAFE_SERVICE_NAME = "IntelliAI Javadoc";
 
     /** PasswordSafe 默认服务商的存储键名 */
     private static final String PASSWORD_SAFE_KEY_DEFAULT = "AI_JAVADOC_API_KEY_DEFAULT";
@@ -159,7 +159,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 ```java
 /**
  * 默认服务提供商配置映射
- * 
+ *
  * Key: AIProviderType（服务商类型）
  * Value: ProviderConfig（该服务商的默认配置）
  */
@@ -179,22 +179,22 @@ public Map<AIProviderType, ProviderConfig> defaultProviders = new HashMap<>();
 public static class ProviderConfig {
     /** 唯一标识符，用于关联 PasswordSafe 中的 API 密钥 */
     public String uuid;
-    
+
     /** 提供商标识符 */
     public AIProviderType providerType;
-    
+
     /** 模型名称 */
     public String modelName;
-    
+
     /** 基础请求地址 */
     public String baseUrl;
-    
+
     // ❌ 移除 apiKey 字段
     // public String apiKey;
-    
+
     /** 配置是否已验证的标志 */
     public boolean configurationVerified;
-    
+
     /** 最近一次验证的时间戳，单位为毫秒 */
     public long lastVerifiedTime;
 
@@ -209,7 +209,7 @@ public static class ProviderConfig {
      * 完整构造函数
      * API 密钥将通过 PasswordSafe 单独存储
      */
-    public ProviderConfig(AIProviderType providerType, String modelName, 
+    public ProviderConfig(AIProviderType providerType, String modelName,
                           String baseUrl, boolean configurationVerified) {
         this.uuid = UUID.randomUUID().toString();
         this.providerType = providerType;
@@ -223,7 +223,7 @@ public static class ProviderConfig {
      * 构造函数（指定 UUID）
      * 用于复用已有的 UUID，确保 API Key 正确关联
      */
-    public ProviderConfig(@Nullable String uuid, AIProviderType providerType, 
+    public ProviderConfig(@Nullable String uuid, AIProviderType providerType,
                           String modelName, String baseUrl, boolean configurationVerified) {
         this.uuid = uuid != null ? uuid : UUID.randomUUID().toString();
         this.providerType = providerType;
@@ -263,7 +263,7 @@ public ProviderConfig getDefaultProviderConfig(@NotNull AIProviderType providerT
 /**
  * 更新指定服务商类型的默认配置
  */
-public void updateDefaultProviderConfig(@NotNull AIProviderType providerType, 
+public void updateDefaultProviderConfig(@NotNull AIProviderType providerType,
                                         @NotNull ProviderConfig config) {
     defaultProviders.put(providerType, config);
 }
@@ -276,7 +276,7 @@ public void updateDefaultProviderConfig(@NotNull AIProviderType providerType,
 ```java
 /**
  * 创建 CredentialAttributes
- * 
+ *
  * @param key 存储键名
  * @return CredentialAttributes 对象
  */
@@ -293,7 +293,7 @@ private static CredentialAttributes createCredentialAttributes(@NotNull String k
 ```java
 /**
  * 获取默认服务商的 API Key
- * 
+ *
  * @return API Key，如果不存在则返回 null
  */
 @Nullable
@@ -306,7 +306,7 @@ public String getDefaultApiKey() {
 
 /**
  * 设置默认服务商的 API Key
- * 
+ *
  * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
  */
 public void setDefaultApiKey(@Nullable String apiKey) {
@@ -341,7 +341,7 @@ public void deleteDefaultApiKey() {
 ```java
 /**
  * 获取指定 ProviderConfig 的 API Key
- * 
+ *
  * @param uuid 提供商配置的 UUID
  * @return API Key，如果不存在则返回 null
  */
@@ -359,7 +359,7 @@ public static String getApiKey(@Nullable String uuid) {
 
 /**
  * 设置指定 ProviderConfig 的 API Key
- * 
+ *
  * @param uuid   提供商配置的 UUID
  * @param apiKey API 密钥，如果为 null 或空字符串则删除已存储的密钥
  */
@@ -385,7 +385,7 @@ public static void setApiKey(@Nullable String uuid, @Nullable String apiKey) {
 
 /**
  * 删除指定 ProviderConfig 的 API Key
- * 
+ *
  * @param uuid 提供商配置的 UUID
  */
 public static void deleteApiKey(@Nullable String uuid) {
@@ -409,13 +409,13 @@ public static void deleteApiKey(@Nullable String uuid) {
 @NotNull
 public SettingsState getSettings() {
     SettingsState settings = new SettingsState();
-    
+
     // ... 设置其他配置项
-    
+
     // 将 API Key 存储到 PasswordSafe
     String apiKey = new String(apiKeyField.getPassword()).trim();
     settings.setDefaultApiKey(apiKey);
-    
+
     return settings;
 }
 ```
@@ -426,7 +426,7 @@ public SettingsState getSettings() {
 // JavaDocSettingsPanel.java
 public void loadSettings(@NotNull SettingsState settings) {
     // ... 加载其他配置项
-    
+
     // 从 PasswordSafe 读取 API Key
     String apiKey = settings.getDefaultApiKey();
     apiKeyField.setText(apiKey != null ? apiKey : "");
@@ -449,7 +449,7 @@ private String sendRequestWithBody(...) throws AIServiceException {
                 );
             }
         }
-        
+
         // 使用 HttpRequests 发送请求
         String responseBody = HttpRequests.post(url, "application/json")
             .tuner(connection -> {
@@ -463,7 +463,7 @@ private String sendRequestWithBody(...) throws AIServiceException {
                 request.write(requestBody);
                 return request.readString();
             });
-        
+
         return responseBody;
     } catch (Exception e) {
         // 错误处理
@@ -483,7 +483,7 @@ public static AIServiceProvider createProvider(@NotNull SettingsState.ProviderCo
         tempSettings.modelName = config.modelName;
         tempSettings.baseUrl = config.baseUrl;
         tempSettings.configurationVerified = config.configurationVerified;
-        
+
         // 从 PasswordSafe 获取 API Key 并设置到临时配置中
         String apiKey = SettingsState.getApiKey(config.uuid);
         tempSettings.setDefaultApiKey(apiKey);
@@ -504,7 +504,7 @@ public static AIServiceProvider createProvider(@NotNull SettingsState.ProviderCo
 private void addToAvailableProviders() {
     SettingsState settings = SettingsState.getInstance();
     SettingsState currentSettings = getSettings();
-    
+
     // 创建提供商配置（不包含 apiKey）
     SettingsState.ProviderConfig providerConfig = new SettingsState.ProviderConfig(
         currentSettings.providerType,
@@ -512,7 +512,7 @@ private void addToAvailableProviders() {
         currentSettings.baseUrl,
         true
     );
-    
+
     // 将 API Key 存储到 PasswordSafe
     String apiKey = currentSettings.getDefaultApiKey();
     if (apiKey != null && !apiKey.trim().isEmpty()) {

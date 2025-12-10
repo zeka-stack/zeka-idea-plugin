@@ -39,7 +39,7 @@ import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * AI JavaDoc 状态栏组件
+ * AI Javadoc 状态栏组件
  * <p>
  * 该组件用于在 IDE 状态栏中显示当前使用的 AI 服务商信息, 并提供切换服务商的功能.
  * 继承自 EditorBasedStatusBarPopup, 实现了状态栏弹出菜单和状态显示功能.
@@ -387,7 +387,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     /**
      * 覆盖已有注释切换动作类
      * <p>
-     * 该类继承自 ToggleAction, 用于控制是否覆盖已有 JavaDoc 注释的开关动作.
+     * 该类继承自 ToggleAction, 用于控制是否覆盖已有 Javadoc 注释的开关动作.
      * 通过该动作可以切换覆盖已有注释的开关状态, 状态信息保存在 SettingsState 中.
      *
      * @author zeka.stack.team
@@ -418,10 +418,10 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 生成类级别 JavaDoc 切换动作类
+     * 生成类级别 Javadoc 切换动作类
      * <p>
-     * 该类继承自 ToggleAction, 用于控制是否为类生成 JavaDoc 注释的开关动作.
-     * 通过该动作可以切换生成类级别 JavaDoc 注释的开关状态, 状态信息保存在 SettingsState 中.
+     * 该类继承自 ToggleAction, 用于控制是否为类生成 Javadoc 注释的开关动作.
+     * 通过该动作可以切换生成类级别 Javadoc 注释的开关状态, 状态信息保存在 SettingsState 中.
      *
      * @author zeka.stack.team
      * @version 1.0.0
@@ -451,10 +451,10 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 生成方法 JavaDoc 切换动作类
+     * 生成方法 Javadoc 切换动作类
      * <p>
-     * 该类继承自 ToggleAction, 用于控制是否为方法生成 JavaDoc 的功能开关,
-     * 通过状态栏快速设置选项来切换生成方法 JavaDoc 的开关状态
+     * 该类继承自 ToggleAction, 用于控制是否为方法生成 Javadoc 的功能开关,
+     * 通过状态栏快速设置选项来切换生成方法 Javadoc 的开关状态
      *
      * @author zeka.stack.team
      * @version 1.0.0
@@ -555,7 +555,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * 打开设置页面动作类
      * <p>
      * 该类继承自 AnAction, 用于在状态栏弹出菜单中提供快速打开插件设置页面的功能.
-     * 点击该动作后会打开 IntelliAI JavaDoc 的设置配置页面.
+     * 点击该动作后会打开 IntelliAI Javadoc 的设置配置页面.
      *
      * @author zeka.stack.team
      * @version 1.0.0
@@ -576,7 +576,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         /**
          * 处理动作事件, 打开插件设置页面
          * <p>
-         * 当用户点击该动作时, 打开 IntelliAI JavaDoc 的设置配置页面
+         * 当用户点击该动作时, 打开 IntelliAI Javadoc 的设置配置页面
          *
          * @param e 动作事件对象, 包含事件的相关信息
          */

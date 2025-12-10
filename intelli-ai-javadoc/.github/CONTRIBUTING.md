@@ -1,6 +1,6 @@
 # 贡献指南
 
-感谢您对 IntelliJ IntelliAI JavaDoc 插件项目的关注！
+感谢您对 IntelliJ IntelliAI Javadoc 插件项目的关注！
 
 ## 🚀 快速开始
 
@@ -43,21 +43,21 @@ cd zeka-idea-plugin/intelli-ai-javadoc
 ```java
 @DisplayName("功能描述")
 class MyFeatureTest {
-    
+
     @BeforeEach
     void setUp() {
         // 初始化代码
     }
-    
+
     @Test
     @DisplayName("测试场景描述")
     void testFeature_withSpecificScenario() {
         // Given
         // 准备测试数据
-        
+
         // When
         // 执行测试
-        
+
         // Then
         // 验证结果
         assertThat(result).isEqualTo(expected);
@@ -77,7 +77,7 @@ class MyFeatureTest {
 
 - 使用 4 个空格缩进
 - 遵循 Google Java Style Guide
-- 添加必要的 JavaDoc 注释
+- 添加必要的 Javadoc 注释
 
 ### 提交信息格式
 

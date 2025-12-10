@@ -7,10 +7,10 @@ import org.jetbrains.annotations.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 生成 JavaDoc 快捷操作类
+ * 生成 Javadoc 快捷操作类
  * <p>
- * 该类继承自 AbstractGenerateJavaDocAction, 用于处理 JavaDoc 生成的快捷操作,
- * 通过 actionPerformed 方法响应用户操作事件, 调用父类的 process 方法执行具体的 JavaDoc 生成逻辑
+ * 该类继承自 AbstractGenerateJavaDocAction, 用于处理 Javadoc 生成的快捷操作,
+ * 通过 actionPerformed 方法响应用户操作事件, 调用父类的 process 方法执行具体的 Javadoc 生成逻辑
  *
  * @author zeka.stack.team
  * @version 1.0.0

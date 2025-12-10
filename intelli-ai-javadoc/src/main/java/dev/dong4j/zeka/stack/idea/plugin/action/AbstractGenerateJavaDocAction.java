@@ -28,12 +28,12 @@ import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 抽象 JavaDoc 生成动作类
+ * 抽象 Javadoc 生成动作类
  * <p>
- * 该类继承自 AnAction, 提供 JavaDoc 生成的核心功能实现. 主要负责处理 IDE 中的 JavaDoc 生成请求,
- * 包括获取当前项目, 文件和编辑器信息, 定位需要生成 JavaDoc 的元素, 并执行具体的生成任务.
- * 支持在编辑器中定位到具体元素进行 JavaDoc 生成, 也支持对整个文件进行 JavaDoc 生成.
- * 该类采用模板方法模式, 定义了 JavaDoc 生成的通用流程, 具体的生成逻辑由子类实现.
+ * 该类继承自 AnAction, 提供 Javadoc 生成的核心功能实现. 主要负责处理 IDE 中的 Javadoc 生成请求,
+ * 包括获取当前项目, 文件和编辑器信息, 定位需要生成 Javadoc 的元素, 并执行具体的生成任务.
+ * 支持在编辑器中定位到具体元素进行 Javadoc 生成, 也支持对整个文件进行 Javadoc 生成.
+ * 该类采用模板方法模式, 定义了 Javadoc 生成的通用流程, 具体的生成逻辑由子类实现.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -67,9 +67,9 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
     }
 
     /**
-     * 处理生成 JavaDoc 的逻辑
+     * 处理生成 Javadoc 的逻辑
      * <p>
-     * 根据传入的项目, 编辑器,Psi 文件和是否需要编辑器标志, 判断是否生成 JavaDoc.
+     * 根据传入的项目, 编辑器,Psi 文件和是否需要编辑器标志, 判断是否生成 Javadoc.
      * 如果文件不是 Java 文件, 则直接返回. 若需要编辑器但未提供, 则记录日志并返回.
      * 否则, 根据编辑器是否存在, 定位 Psi 元素并收集文档任务, 最后调用生成文档方法.
      *
@@ -114,7 +114,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         List<DocumentationTask> tasks;
         String targetDescription = psiFile.getName();
 
-        // 如果为 null, 就为整个文件生成 javadoc
+        // 如果为 null, 就为整个文件生成 Javadoc
         if (editor == null) {
             String fileType = psiFile instanceof KtFile ? "Kotlin" : "Java";
             log.info("为文件生成文档: {} ({})", psiFile.getName(), fileType);
@@ -241,7 +241,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      * <p>在 IntelliJ IDEA 中，当项目正在进行索引（扫描和分析代码结构）时，
      * 会进入"Dumb Mode"。在此模式下，许多需要代码分析的功能会被禁用。
      *
-     * <p>如果项目处于 Dumb Mode，会显示提示对话框告知用户当前无法生成 JavaDoc。
+     * <p>如果项目处于 Dumb Mode，会显示提示对话框告知用户当前无法生成 Javadoc。
      *
      * @param project 当前项目对象
      * @return 如果处于 Dumb Mode 返回 true，否则返回 false

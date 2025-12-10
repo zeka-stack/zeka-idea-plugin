@@ -91,9 +91,9 @@ public class NotificationUtil {
     public static void addOpenConfigurablePanelAction(Notification notification, Project project, String configurableId) {
         notification.addAction(new NotificationAction(AICommonBundle.message("settings.ai.provider.open.engine.settings")) {
             /**
-             * 处理动作事件, 用于显示 JavaDoc 设置配置界面并关闭通知
+             * 处理动作事件, 用于显示 Javadoc 设置配置界面并关闭通知
              * <p>
-             * 该方法在接收到动作事件时, 创建 JavaDoc 设置配置界面并打开编辑窗口, 随后关闭传入的通知
+             * 该方法在接收到动作事件时, 创建 Javadoc 设置配置界面并打开编辑窗口, 随后关闭传入的通知
              *
              * @param e            动作事件对象, 包含触发动作的相关信息
              * @param notification 通知对象, 用于在操作完成后关闭通知

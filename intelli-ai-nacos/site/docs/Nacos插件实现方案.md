@@ -164,7 +164,7 @@
 ### 4.2 代码质量
 
 - 遵循 IntelliJ Platform 开发规范
-- 完整的 JavaDoc 注释
+- 完整的 Javadoc 注释
 - 使用 Lombok 简化代码
 - 适当的异常处理
 

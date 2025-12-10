@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
  * 测试内容涵盖：
  * - 定位非 Java 文件时返回 null 的情况
  * - 定位偏移量处无元素时返回文件
- * - 检查元素是否包含 JavaDoc 注释
+ * - 检查元素是否包含 Javadoc 注释
  * - 获取不同类型的元素描述（方法、字段、类、文件等）
  * - 获取 LocateType 枚举的类型描述
  * - LocateResult 的各种方法测试
@@ -136,16 +136,16 @@ public class PsiElementLocatorTest {
     }
 
     /**
-     * 测试检查元素是否已有 JavaDoc 注释功能
+     * 测试检查元素是否已有 Javadoc 注释功能
      * <p>
-     * 测试场景：当元素已包含 JavaDoc 注释时
-     * 预期结果：应返回 true 表示元素具有 JavaDoc 注释
+     * 测试场景：当元素已包含 Javadoc 注释时
+     * 预期结果：应返回 true 表示元素具有 Javadoc 注释
      * <p>
-     * 该测试通过模拟 PsiDocCommentOwner 对象并设置其 getDocComment 方法返回一个 mock 的 JavaDoc 注释对象
+     * 该测试通过模拟 PsiDocCommentOwner 对象并设置其 getDocComment 方法返回一个 mock 的 Javadoc 注释对象
      * 来验证 hasJavaDoc 方法的正确性
      */
     @Test
-    @DisplayName("测试检查元素是否已有 JavaDoc - 有注释")
+    @DisplayName("测试检查元素是否已有 Javadoc - 有注释")
     void testHasJavaDoc_withDocComment() {
         PsiDocCommentOwner mockDocOwner = mock(PsiDocCommentOwner.class);
         when(mockDocOwner.getDocComment()).thenReturn(mockDocComment);
@@ -156,15 +156,15 @@ public class PsiElementLocatorTest {
     }
 
     /**
-     * 测试检查元素是否已有 JavaDoc 注释功能
+     * 测试检查元素是否已有 Javadoc 注释功能
      * <p>
-     * 测试场景：当元素没有 JavaDoc 注释时
+     * 测试场景：当元素没有 Javadoc 注释时
      * 预期结果：应返回 false
      * <p>
      * 该测试用于验证 PsiElementLocator.hasJavaDoc 方法在元素无注释情况下的行为
      */
     @Test
-    @DisplayName("测试检查元素是否已有 JavaDoc - 无注释")
+    @DisplayName("测试检查元素是否已有 Javadoc - 无注释")
     void testHasJavaDoc_withoutDocComment() {
         PsiDocCommentOwner mockDocOwner = mock(PsiDocCommentOwner.class);
         when(mockDocOwner.getDocComment()).thenReturn(null);
@@ -175,15 +175,15 @@ public class PsiElementLocatorTest {
     }
 
     /**
-     * 测试检查元素是否已有 JavaDoc 注释的方法
+     * 测试检查元素是否已有 Javadoc 注释的方法
      * <p>
      * 测试场景：当元素不是 DocCommentOwner 类型时
-     * 预期结果：返回 false，表示该元素不支持 JavaDoc 注释
+     * 预期结果：返回 false，表示该元素不支持 Javadoc 注释
      * <p>
      * 说明：此测试用于验证 PsiElementLocator.hasJavaDoc 方法在非 DocCommentOwner 元素上的行为
      */
     @Test
-    @DisplayName("测试检查元素是否已有 JavaDoc - 非 DocCommentOwner")
+    @DisplayName("测试检查元素是否已有 Javadoc - 非 DocCommentOwner")
     void testHasJavaDoc_notDocCommentOwner() {
         boolean result = PsiElementLocator.hasJavaDoc(mockElement);
 

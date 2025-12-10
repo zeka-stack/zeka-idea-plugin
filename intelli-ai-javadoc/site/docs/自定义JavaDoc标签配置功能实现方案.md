@@ -1,16 +1,16 @@
-# 自定义 JavaDoc 标签配置功能实现方案
+# 自定义 Javadoc 标签配置功能实现方案
 
 ## 1. 需求概述
 
 ### 1.1 当前问题
 
 - `CustomJavaDocTagRegistrar` 中硬编码了 `date` 和 `email` 两个标签
-- 用户无法自定义需要注册的 JavaDoc 标签
+- 用户无法自定义需要注册的 Javadoc 标签
 - 无法删除已注册的标签
 
 ### 1.2 目标
 
-- 在设置页面添加自定义 JavaDoc 标签配置功能
+- 在设置页面添加自定义 Javadoc 标签配置功能
 - 支持动态添加、删除、编辑标签
 - 实现标签的同步机制（添加新标签、删除旧标签）
 - 复用现有的标签注册逻辑
@@ -123,12 +123,12 @@
 **文件**: `intelli-ai-javadoc/src/main/java/dev/dong4j/zeka/stack/idea/plugin/settings/SettingsState.java`
 
 ```java
-// ==================== JavaDoc 标签配置 ====================
+// ==================== Javadoc 标签配置 ====================
 
 /**
- * 自定义 JavaDoc 标签列表
+ * 自定义 Javadoc 标签列表
  *
- * <p>用户可以在设置页面配置自定义的 JavaDoc 标签。
+ * <p>用户可以在设置页面配置自定义的 Javadoc 标签。
  * 这些标签会被自动注册到 JavadocDeclarationInspection 中，
  * 使得 IntelliJ IDEA 不会将这些标签标记为未知标签。
  *
@@ -156,7 +156,7 @@ public List<String> customJavaDocTags = new ArrayList<>();
 
 ```java
 /**
- * 获取自定义 JavaDoc 标签列表（去重、去空、转小写）
+ * 获取自定义 Javadoc 标签列表（去重、去空、转小写）
  *
  * <p>对标签列表进行规范化处理：
  * <ul>
@@ -173,7 +173,7 @@ public List<String> getNormalizedCustomJavaDocTags() {
     if (customJavaDocTags == null) {
         return new ArrayList<>();
     }
-    
+
     return customJavaDocTags.stream()
         .filter(tag -> tag != null && !tag.trim().isEmpty())
         .map(String::trim)
@@ -200,7 +200,7 @@ public static boolean isValidTagName(@Nullable String tagName) {
     if (tagName == null || tagName.trim().isEmpty()) {
         return false;
     }
-    
+
     // 标签名称只能包含字母、数字、下划线、连字符
     return tagName.matches("^[a-zA-Z0-9_-]+$");
 }
@@ -213,12 +213,12 @@ public static boolean isValidTagName(@Nullable String tagName) {
 **文件**: `intelli-ai-javadoc/src/main/java/dev/dong4j/zeka/stack/idea/plugin/settings/ui/JavaDocSettingsPanel.java`
 
 ```java
-// JavaDoc 标签配置
-/** 自定义 JavaDoc 标签列表表格 */
+// Javadoc 标签配置
+/** 自定义 Javadoc 标签列表表格 */
 private JBTable customJavaDocTagsTable;
-/** 自定义 JavaDoc 标签列表面板（包含表格和工具栏） */
+/** 自定义 Javadoc 标签列表面板（包含表格和工具栏） */
 private JPanel customJavaDocTagsPanel;
-/** 自定义 JavaDoc 标签列表表格模型 */
+/** 自定义 Javadoc 标签列表表格模型 */
 private CustomJavaDocTagsTableModel customJavaDocTagsTableModel;
 ```
 
@@ -227,7 +227,7 @@ private CustomJavaDocTagsTableModel customJavaDocTagsTableModel;
 在 `createUI()` 方法中添加：
 
 ```java
-// 创建自定义 JavaDoc 标签列表组件
+// 创建自定义 Javadoc 标签列表组件
 customJavaDocTagsTableModel = new CustomJavaDocTagsTableModel();
 customJavaDocTagsTable = new JBTable(customJavaDocTagsTableModel);
 customJavaDocTagsTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
@@ -275,7 +275,7 @@ customJavaDocTagsPanel = decorator.createPanel();
 
 ```java
 /**
- * 添加自定义 JavaDoc 标签
+ * 添加自定义 Javadoc 标签
  */
 private void addCustomJavaDocTag() {
     String tagName = JOptionPane.showInputDialog(
@@ -284,10 +284,10 @@ private void addCustomJavaDocTag() {
         JavaDocBundle.message("settings.custom.javadoc.tags.add.title"),
         JOptionPane.QUESTION_MESSAGE
     );
-    
+
     if (tagName != null && !tagName.trim().isEmpty()) {
         tagName = tagName.trim();
-        
+
         // 验证标签名称
         if (!SettingsState.isValidTagName(tagName)) {
             JOptionPane.showMessageDialog(
@@ -298,7 +298,7 @@ private void addCustomJavaDocTag() {
             );
             return;
         }
-        
+
         // 检查是否已存在
         List<String> currentTags = customJavaDocTagsTableModel.getData();
         String tagNameLower = tagName.toLowerCase();
@@ -311,22 +311,22 @@ private void addCustomJavaDocTag() {
             );
             return;
         }
-        
+
         // 添加到表格
         customJavaDocTagsTableModel.addTag(tagName);
     }
 }
 
 /**
- * 删除自定义 JavaDoc 标签
+ * 删除自定义 Javadoc 标签
  */
 private void removeCustomJavaDocTag(int selectedRow) {
     if (selectedRow < 0 || selectedRow >= customJavaDocTagsTableModel.getRowCount()) {
         return;
     }
-    
+
     String tagName = customJavaDocTagsTableModel.getData().get(selectedRow);
-    
+
     int result = JOptionPane.showConfirmDialog(
         getParentWindow(),
         String.format("确定要删除标签 \"%s\" 吗？", tagName),
@@ -334,29 +334,29 @@ private void removeCustomJavaDocTag(int selectedRow) {
         JOptionPane.YES_NO_OPTION,
         JOptionPane.WARNING_MESSAGE
     );
-    
+
     if (result == JOptionPane.YES_OPTION) {
         customJavaDocTagsTableModel.removeRow(selectedRow);
     }
 }
 
 /**
- * 清空所有自定义 JavaDoc 标签
+ * 清空所有自定义 Javadoc 标签
  */
 private void clearAllCustomJavaDocTags() {
     if (customJavaDocTagsTableModel.getRowCount() == 0) {
         return;
     }
-    
+
     int result = JOptionPane.showConfirmDialog(
         getParentWindow(),
-        String.format("确定要清空所有自定义标签吗(%d 个)？", 
+        String.format("确定要清空所有自定义标签吗(%d 个)？",
                      customJavaDocTagsTableModel.getRowCount()),
         "确认清空",
         JOptionPane.YES_NO_OPTION,
         JOptionPane.WARNING_MESSAGE
     );
-    
+
     if (result == JOptionPane.YES_OPTION) {
         customJavaDocTagsTableModel.clearAll();
     }
@@ -367,7 +367,7 @@ private void clearAllCustomJavaDocTags() {
 
 ```java
 /**
- * 自定义 JavaDoc 标签列表的表格模型
+ * 自定义 Javadoc 标签列表的表格模型
  */
 private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
     private final String[] columnNames = {"标签名称"};
@@ -441,13 +441,13 @@ private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         if (rowIndex >= 0 && rowIndex < data.size() && aValue != null) {
             String newTagName = aValue.toString().trim();
-            
+
             // 验证标签名称
             if (!SettingsState.isValidTagName(newTagName)) {
                 // 可以显示错误提示，这里简单处理为不更新
                 return;
             }
-            
+
             // 检查是否与其他标签重复
             String newTagNameLower = newTagName.toLowerCase();
             for (int i = 0; i < data.size(); i++) {
@@ -456,7 +456,7 @@ private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
                     return;
                 }
             }
-            
+
             data.set(rowIndex, newTagName);
             fireTableCellUpdated(rowIndex, columnIndex);
         }
@@ -507,7 +507,7 @@ import java.util.stream.Collectors;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 
 /**
- * 在插件启动时自动注册自定义的 JavaDoc 标签
+ * 在插件启动时自动注册自定义的 Javadoc 标签
  * <p>
  * 这个组件会在 IntelliJ 启动时自动运行，从配置中读取自定义标签列表，
  * 并将这些标签注册到 JavadocDeclarationInspection 中。
@@ -521,7 +521,7 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 public class CustomJavaDocTagRegistrar implements StartupActivity {
 
     /**
-     * 在项目启动时运行，注册自定义的 JavaDoc 标签
+     * 在项目启动时运行，注册自定义的 Javadoc 标签
      *
      * @param project 启动的项目
      */
@@ -551,14 +551,14 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
     public static void syncCustomTags(@NotNull Project project) {
         try {
             // 获取项目的检查配置管理器
-            ProjectInspectionProfileManager profileManager = 
+            ProjectInspectionProfileManager profileManager =
                 ProjectInspectionProfileManager.getInstance(project);
 
             // 获取当前的检查配置
             InspectionProfile profile = profileManager.getCurrentProfile();
 
             // 获取 JavadocDeclarationInspection 工具
-            InspectionToolWrapper<?, ?> toolWrapper = 
+            InspectionToolWrapper<?, ?> toolWrapper =
                 profile.getInspectionTool("JavadocDeclaration", project);
 
             if (toolWrapper != null) {
@@ -569,7 +569,7 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
                 if (tool instanceof JavadocDeclarationInspection inspection) {
                     // 执行标签同步
                     performTagSync(inspection);
-                    
+
                     // 通知配置已更改
                     profileManager.fireProfileChanged();
                 }
@@ -599,30 +599,30 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
             // 1. 读取配置中的标签列表（规范化处理）
             SettingsState settings = SettingsState.getInstance();
             List<String> configuredTags = settings.getNormalizedCustomJavaDocTags();
-            
+
             // 2. 读取当前已注册的标签
             String currentTagsString = getCurrentAdditionalTags(inspection);
             List<String> currentTags = parseTagsString(currentTagsString);
-            
+
             // 3. 计算差异
             Set<String> configuredTagsSet = new HashSet<>(configuredTags);
             Set<String> currentTagsSet = new HashSet<>(currentTags);
-            
+
             // 需要删除的标签：已注册但配置中没有的
             List<String> tagsToRemove = currentTags.stream()
                 .filter(tag -> !configuredTagsSet.contains(tag))
                 .collect(Collectors.toList());
-            
+
             // 需要添加的标签：配置中有但未注册的
             List<String> tagsToAdd = configuredTags.stream()
                 .filter(tag -> !currentTagsSet.contains(tag))
                 .collect(Collectors.toList());
-            
+
             // 4. 执行删除操作
             if (!tagsToRemove.isEmpty()) {
                 removeTags(inspection, tagsToRemove);
             }
-            
+
             // 5. 执行添加操作
             if (!tagsToAdd.isEmpty()) {
                 addTags(inspection, tagsToAdd);
@@ -640,7 +640,7 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
      */
     private static String getCurrentAdditionalTags(JavadocDeclarationInspection inspection) {
         try {
-            java.lang.reflect.Field additionalTagsField = 
+            java.lang.reflect.Field additionalTagsField =
                 JavadocDeclarationInspection.class.getDeclaredField("ADDITIONAL_TAGS");
             additionalTagsField.setAccessible(true);
             Object value = additionalTagsField.get(inspection);
@@ -662,7 +662,7 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
         if (tagsString == null || tagsString.trim().isEmpty()) {
             return new ArrayList<>();
         }
-        
+
         return Arrays.stream(tagsString.split(","))
             .map(String::trim)
             .filter(s -> !s.isEmpty())
@@ -677,10 +677,10 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
      * @param inspection Javadoc 检查工具实例
      * @param tagsString 新的标签字符串
      */
-    private static void setAdditionalTags(JavadocDeclarationInspection inspection, 
+    private static void setAdditionalTags(JavadocDeclarationInspection inspection,
                                          String tagsString) {
         try {
-            java.lang.reflect.Field additionalTagsField = 
+            java.lang.reflect.Field additionalTagsField =
                 JavadocDeclarationInspection.class.getDeclaredField("ADDITIONAL_TAGS");
             additionalTagsField.setAccessible(true);
             additionalTagsField.set(inspection, tagsString);
@@ -688,11 +688,11 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
             // 如果直接设置字段失败，尝试使用反射调用方法
             try {
                 // 先清空，再逐个添加
-                java.lang.reflect.Method method = 
+                java.lang.reflect.Method method =
                     JavadocDeclarationInspection.class.getDeclaredMethod("registerAdditionalTag",
                                                                          String.class);
                 method.setAccessible(true);
-                
+
                 // 注意：这里无法直接删除，只能通过重新设置整个字符串来实现
                 // 所以删除操作需要先读取、解析、过滤、重组
             } catch (Exception ignored) {
@@ -706,20 +706,20 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
      * @param inspection Javadoc 检查工具实例
      * @param tagsToAdd 要添加的标签列表
      */
-    private static void addTags(JavadocDeclarationInspection inspection, 
+    private static void addTags(JavadocDeclarationInspection inspection,
                                List<String> tagsToAdd) {
         try {
             // 读取当前标签
             String currentTagsString = getCurrentAdditionalTags(inspection);
             List<String> currentTags = parseTagsString(currentTagsString);
-            
+
             // 合并标签（去重）
             Set<String> allTags = new HashSet<>(currentTags);
             allTags.addAll(tagsToAdd);
-            
+
             // 重新组合为字符串
             String newTagsString = String.join(",", allTags.stream().sorted().collect(Collectors.toList()));
-            
+
             // 设置新标签字符串
             setAdditionalTags(inspection, newTagsString);
         } catch (Exception e) {
@@ -736,24 +736,24 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
      * @param inspection Javadoc 检查工具实例
      * @param tagsToRemove 要删除的标签列表
      */
-    private static void removeTags(JavadocDeclarationInspection inspection, 
+    private static void removeTags(JavadocDeclarationInspection inspection,
                                   List<String> tagsToRemove) {
         try {
             // 读取当前标签
             String currentTagsString = getCurrentAdditionalTags(inspection);
             List<String> currentTags = parseTagsString(currentTagsString);
-            
+
             // 过滤掉要删除的标签
             Set<String> tagsToRemoveSet = new HashSet<>(tagsToRemove);
             List<String> remainingTags = currentTags.stream()
                 .filter(tag -> !tagsToRemoveSet.contains(tag))
                 .collect(Collectors.toList());
-            
+
             // 重新组合为字符串
-            String newTagsString = remainingTags.isEmpty() 
-                ? "" 
+            String newTagsString = remainingTags.isEmpty()
+                ? ""
                 : String.join(",", remainingTags.stream().sorted().collect(Collectors.toList()));
-            
+
             // 设置新标签字符串
             setAdditionalTags(inspection, newTagsString);
         } catch (Exception e) {
@@ -769,11 +769,11 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
      * @param inspection Javadoc 检查工具实例
      * @param tagName    要注册的标签名称
      */
-    private static void registerAdditionalTag(JavadocDeclarationInspection inspection, 
+    private static void registerAdditionalTag(JavadocDeclarationInspection inspection,
                                             String tagName) {
         try {
             // 尝试直接访问 ADDITIONAL_TAGS 字段（推荐方式）
-            java.lang.reflect.Field additionalTagsField = 
+            java.lang.reflect.Field additionalTagsField =
                 JavadocDeclarationInspection.class.getDeclaredField("ADDITIONAL_TAGS");
             additionalTagsField.setAccessible(true);
             String additionalTags = (String) additionalTagsField.get(inspection);
@@ -792,7 +792,7 @@ public class CustomJavaDocTagRegistrar implements StartupActivity {
         } catch (Exception e) {
             // 如果直接访问字段失败，尝试使用反射调用 registerAdditionalTag 方法
             try {
-                java.lang.reflect.Method method = 
+                java.lang.reflect.Method method =
                     JavadocDeclarationInspection.class.getDeclaredMethod("registerAdditionalTag",
                                                                          String.class);
                 method.setAccessible(true);
@@ -827,8 +827,8 @@ public void apply() throws ConfigurationException {
     // 应用配置
     SettingsState currentSettings = SettingsState.getInstance();
     // ... 其他配置应用代码 ...
-    
-    // 保存自定义 JavaDoc 标签配置
+
+    // 保存自定义 Javadoc 标签配置
     currentSettings.customJavaDocTags = panelSettings.customJavaDocTags;
 
     // 触发标签同步（需要在写操作中执行）
@@ -857,7 +857,7 @@ public boolean isModified() {
 
     // ... 其他配置比较代码 ...
 
-    // 比较自定义 JavaDoc 标签
+    // 比较自定义 Javadoc 标签
     List<String> currentTags = currentSettings.getNormalizedCustomJavaDocTags();
     List<String> panelTags = panelSettings.getNormalizedCustomJavaDocTags();
     if (!currentTags.equals(panelTags)) {
@@ -865,7 +865,7 @@ public boolean isModified() {
     }
 
     // ... 其他配置比较代码 ...
-    
+
     return false;
 }
 ```
@@ -875,8 +875,8 @@ public boolean isModified() {
 **文件**: `intelli-ai-javadoc/src/main/resources/messages/JavaDocBundle.properties`
 
 ```properties
-# 自定义 JavaDoc 标签配置
-settings.custom.javadoc.tags=自定义 JavaDoc 标签
+# 自定义 Javadoc 标签配置
+settings.custom.javadoc.tags=自定义 Javadoc 标签
 settings.custom.javadoc.tags.add.title=添加标签
 settings.custom.javadoc.tags.add.prompt=请输入标签名称（不包含 @ 符号）：
 settings.custom.javadoc.tags.invalid.name=标签名称无效：{0}\n标签名称只能包含字母、数字、下划线和连字符
@@ -894,9 +894,9 @@ settings.custom.javadoc.tags.already.exists=标签 \"{0}\" 已存在
 void testGetNormalizedCustomJavaDocTags() {
     SettingsState settings = new SettingsState();
     settings.customJavaDocTags = Arrays.asList("Date", "  email  ", "DATE", "", null);
-    
+
     List<String> normalized = settings.getNormalizedCustomJavaDocTags();
-    
+
     assertEquals(2, normalized.size());
     assertTrue(normalized.contains("date"));
     assertTrue(normalized.contains("email"));
@@ -908,7 +908,7 @@ void testIsValidTagName() {
     assertTrue(SettingsState.isValidTagName("email"));
     assertTrue(SettingsState.isValidTagName("custom-tag"));
     assertTrue(SettingsState.isValidTagName("tag_123"));
-    
+
     assertFalse(SettingsState.isValidTagName(""));
     assertFalse(SettingsState.isValidTagName(null));
     assertFalse(SettingsState.isValidTagName("tag name")); // 包含空格
@@ -923,25 +923,25 @@ void testIsValidTagName() {
 void testTagSync() {
     // 模拟当前已注册标签：date,email,xxx
     List<String> currentTags = Arrays.asList("date", "email", "xxx");
-    
+
     // 配置中的标签：email,xxx
     List<String> configuredTags = Arrays.asList("email", "xxx");
-    
+
     // 计算需要删除的标签
     Set<String> configuredSet = new HashSet<>(configuredTags);
     List<String> toRemove = currentTags.stream()
         .filter(tag -> !configuredSet.contains(tag))
         .collect(Collectors.toList());
-    
+
     assertEquals(1, toRemove.size());
     assertTrue(toRemove.contains("date"));
-    
+
     // 计算需要添加的标签
     Set<String> currentSet = new HashSet<>(currentTags);
     List<String> toAdd = configuredTags.stream()
         .filter(tag -> !currentSet.contains(tag))
         .collect(Collectors.toList());
-    
+
     assertEquals(0, toAdd.size()); // email 和 xxx 已存在
 }
 ```
@@ -951,7 +951,7 @@ void testTagSync() {
 #### 4.2.1 场景 1：添加标签
 
 1. 打开设置页面
-2. 在自定义 JavaDoc 标签区域点击"添加"
+2. 在自定义 Javadoc 标签区域点击"添加"
 3. 输入标签名称：`custom`
 4. 点击 Apply
 5. 验证：标签已注册到 JavadocDeclarationInspection
@@ -1017,7 +1017,7 @@ void testTagSync() {
 
 ## 7. 总结
 
-本方案实现了自定义 JavaDoc 标签的完整配置功能，包括：
+本方案实现了自定义 Javadoc 标签的完整配置功能，包括：
 
 - ✅ 数据存储：在 `SettingsState` 中存储标签列表
 - ✅ UI 界面：提供标签的添加、删除、编辑功能
@@ -1026,5 +1026,5 @@ void testTagSync() {
 - ✅ 配置验证：验证标签名称的有效性
 - ✅ 向后兼容：处理旧版本配置
 
-通过本方案，用户可以灵活配置自定义 JavaDoc 标签，满足不同项目的需求。
+通过本方案，用户可以灵活配置自定义 Javadoc 标签，满足不同项目的需求。
 

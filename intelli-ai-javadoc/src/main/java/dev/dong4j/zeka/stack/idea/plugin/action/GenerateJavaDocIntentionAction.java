@@ -25,11 +25,11 @@ import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 生成 JavaDoc 意图动作类
+ * 生成 Javadoc 意图动作类
  * <p>
- * 该类实现了 IDEA 插件中的意图动作功能, 用于为 Java 代码元素生成 JavaDoc 注释.
- * 继承自 PsiElementBaseIntentionAction 并实现 Iconable 接口, 提供在 IDE 中通过意图操作快速生成 JavaDoc 的功能.
- * 该动作会在编辑器中选中的代码元素上生成标准的 JavaDoc 注释, 支持类, 方法, 字段等 Java 元素的文档注释生成.
+ * 该类实现了 IDEA 插件中的意图动作功能, 用于为 Java 代码元素生成 Javadoc 注释.
+ * 继承自 PsiElementBaseIntentionAction 并实现 Iconable 接口, 提供在 IDE 中通过意图操作快速生成 Javadoc 的功能.
+ * 该动作会在编辑器中选中的代码元素上生成标准的 Javadoc 注释, 支持类, 方法, 字段等 Java 元素的文档注释生成.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionAction implements Iconable {
-    /** 用于执行 JavaDoc 生成操作的基础动作对象 */
+    /** 用于执行 Javadoc 生成操作的基础动作对象 */
     private final AbstractGenerateJavaDocAction baseAction = new AbstractGenerateJavaDocAction() {
         /**
          * 处理用户操作事件
@@ -68,11 +68,11 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
     };
 
     /**
-     * 获取生成 JavaDoc 的文本内容
+     * 获取生成 Javadoc 的文本内容
      * <p>
-     * 返回用于生成 JavaDoc 的提示文本, 通常用于界面展示或提示信息
+     * 返回用于生成 Javadoc 的提示文本, 通常用于界面展示或提示信息
      *
-     * @return 生成 JavaDoc 的文本内容
+     * @return 生成 Javadoc 的文本内容
      */
     @NotNull
     @Override
@@ -165,10 +165,10 @@ public class GenerateJavaDocIntentionAction extends PsiElementBaseIntentionActio
 
             // 6. 根据 overrideExisting 设置决定是否显示
             if (overrideExisting) {
-                // 允许覆盖：无论是否已有 JavaDoc 都显示
+                // 允许覆盖：无论是否已有 Javadoc 都显示
                 return true;
             } else {
-                // 不允许覆盖：只在没有 JavaDoc 时显示
+                // 不允许覆盖：只在没有 Javadoc 时显示
                 return docOwner.getDocComment() == null;
             }
         }

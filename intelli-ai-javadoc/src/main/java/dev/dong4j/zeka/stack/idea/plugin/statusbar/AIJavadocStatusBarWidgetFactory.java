@@ -11,9 +11,9 @@ import org.jetbrains.annotations.NotNull;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * AI JavaDoc 状态栏组件工厂类
+ * AI Javadoc 状态栏组件工厂类
  * <p>
- * 该类实现了 StatusBarWidgetFactory 接口, 用于创建和管理 AI JavaDoc 相关的状态栏组件.
+ * 该类实现了 StatusBarWidgetFactory 接口, 用于创建和管理 AI Javadoc 相关的状态栏组件.
  * 负责创建 AIJavadocStatusBarWidget 实例, 并提供组件的标识符, 显示名称等信息.
  *
  * @author zeka.stack.team

@@ -94,7 +94,7 @@ newHeight = height + 2N
   ```xml
   <!-- 64×64 版本 -->
   <svg width="64" height="64" viewBox="0 0 1024 1024">
-  
+
   <!-- 32×32 版本（只改 width/height）-->
   <svg width="32" height="32" viewBox="0 0 1024 1024">
   ```
@@ -139,13 +139,13 @@ public final class PluginIcons {
 
     // ========== 16x16 图标 ==========
     public static final Icon ICON_16 = load("/icons/icon_16.svg");
-    
+
     // ========== 24x24 图标 ==========
     public static final Icon NOTIFICATION_24 = load("/icons/notification_24.svg");
-    
+
     // ========== 32x32 图标 ==========
     public static final Icon DIALOG_32 = load("/icons/dialog_32.svg");
-    
+
     // ========== 64x64 图标 ==========
     public static final Icon ERROR_64 = load("/icons/error_64.svg");
 }
@@ -161,7 +161,7 @@ public final class PluginIcons {
 
 ```xml
 <actions>
-    <action id="MyAction" 
+    <action id="MyAction"
             class="com.example.MyAction"
             icon="/icons/icon_16.svg"/>
 </actions>
@@ -207,7 +207,7 @@ public final class PluginIcons {
 
 - 创建统一的图标管理类（必须）
 - 按尺寸分类组织常量
-- 添加清晰的 JavaDoc 注释说明用途
+- 添加清晰的 Javadoc 注释说明用途
 - 图标管理类使用 `final` 修饰，私有构造函数防止实例化
 
 ### 常见问题

@@ -50,7 +50,7 @@ graph TB
         Provider2[QianWen Provider]
         Provider3[Ollama Provider]
         Provider4[其他 Provider...]
-        
+
         Engine --> Config
         Engine --> Service
         Service --> Provider1
@@ -58,19 +58,19 @@ graph TB
         Service --> Provider3
         Service --> Provider4
     end
-    
+
     subgraph "业务插件"
-        JavaDoc[JavaDoc 生成]
+        Javadoc[Javadoc 生成]
         Changelog[变更日志生成]
         Tracer[代码追踪]
     end
-    
-    JavaDoc -->|依赖| Engine
+
+    Javadoc -->|依赖| Engine
     Changelog -->|依赖| Engine
     Tracer -->|依赖| Engine
-    
+
     style Engine fill:#4a63d4,stroke:#333,stroke-width:3px,color:#fff
-    style JavaDoc fill:#90EE90,stroke:#333,stroke-width:2px
+    style Javadoc fill:#90EE90,stroke:#333,stroke-width:2px
     style Changelog fill:#90EE90,stroke:#333,stroke-width:2px
     style Tracer fill:#90EE90,stroke:#333,stroke-width:2px
 ```
@@ -84,7 +84,7 @@ graph TB
 AIService aiService = AIService.getInstance();
 
 // 2. 调用 AI 服务
-String prompt = "生成 JavaDoc 注释";
+String prompt = "生成 Javadoc 注释";
 String response = aiService.call(prompt, systemPrompt);
 ```
 

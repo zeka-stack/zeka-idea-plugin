@@ -1,22 +1,22 @@
-# IntelliJ IntelliAI JavaDoc 插件
+# IntelliJ IntelliAI Javadoc 插件
 
 **中文** | [English](./README.md)
 
 > 🌟 [查看精美的推广页面](https://aij.dong4j.site) - 更直观地了解插件功能！
 
-IntelliJ IntelliAI JavaDoc 插件是一个功能强大的工具，利用人工智能为您的 Java 代码生成 JavaDoc 注释。它支持多种 AI 服务提供商，包括通义千问和
+IntelliJ IntelliAI Javadoc 插件是一个功能强大的工具，利用人工智能为您的 Java 代码生成 Javadoc 注释。它支持多种 AI 服务提供商，包括通义千问和
 Ollama
 本地模型，提供智能且上下文感知的文档建议，适用于方法、类和接口。
 
 ## 功能特性
 
 - **多 AI 提供商支持**：支持通义千问（阿里云）和 Ollama 本地模型，满足不同用户需求
-- **自动生成 JavaDoc**：让插件为您生成 JavaDoc 注释，简化文档编写过程
+- **自动生成 Javadoc**：让插件为您生成 Javadoc 注释，简化文档编写过程
 - **智能元素识别**：根据光标位置智能识别要生成文档的元素（方法、字段、类）
-- **上下文感知建议**：插件会分析您的代码并考虑周围的上下文，以提供更精确和有意义的 JavaDoc 建议
+- **上下文感知建议**：插件会分析您的代码并考虑周围的上下文，以提供更精确和有意义的 Javadoc 建议
 - **多种触发方式**：支持快捷键、右键菜单、Generate 菜单和 Intention Action
 - **批量处理**：支持为整个文件或选中的多个文件批量生成文档
-- **增量更新**：只为没有 JavaDoc 注释的类和方法生成文档，不会覆盖已有的注释
+- **增量更新**：只为没有 Javadoc 注释的类和方法生成文档，不会覆盖已有的注释
 - **测试方法识别**：自动识别 JUnit 4 和 JUnit 5 的测试方法，使用专门的模板生成文档
 - **配置验证**：内置连接测试功能，确保配置正确
 
@@ -26,7 +26,7 @@ Ollama
 2. 进入 **Settings**（macOS 上为 Preferences）→ **Plugins**。
 3. 点击 **Marketplace** 标签。
 4. 在搜索栏中搜索"AIJavadoc"。
-5. 点击 IntelliJ IntelliAI JavaDoc 插件旁边的 **Install**。
+5. 点击 IntelliJ IntelliAI Javadoc 插件旁边的 **Install**。
 6. 重启 IntelliJ IDEA 以激活插件。
 
 ## 使用方法
@@ -68,7 +68,7 @@ Ollama
 
 1. 访问 [阿里云 DashScope 控制台](https://dashscope.console.aliyun.com/) 注册账户
 2. 获取 API Key
-3. 在 IntelliJ IDEA 中进入 **Settings** → **Tools** → **IntelliAI JavaDoc**
+3. 在 IntelliJ IDEA 中进入 **Settings** → **Tools** → **IntelliAI Javadoc**
 4. 选择 **AI Provider** 为 "qianwen"
 5. 输入您的 **API Key**
 6. **Base URL** 使用默认值：`https://dashscope.aliyuncs.com/compatible-mode/v1`
@@ -143,7 +143,7 @@ Ollama 支持在本地运行开源大语言模型，数据完全私有，无需 
 在设置面板中，您还可以配置：
 
 - **生成选项**：选择为类、方法、字段生成文档
-- **跳过已有文档**：避免覆盖现有 JavaDoc
+- **跳过已有文档**：避免覆盖现有 Javadoc
 - **语言支持**：目前支持 Java（Kotlin 即将支持）
 - **高级参数**：重试次数、超时时间、温度参数等
 - **Prompt 模板**：自定义文档生成模板
@@ -151,13 +151,13 @@ Ollama 支持在本地运行开源大语言模型，数据完全私有，无需 
 ## 限制
 
 - 插件依赖于所选 AI 服务提供商的可用性和性能。网络连接和 API 速率限制可能会影响其功能
-- 生成的 JavaDoc 注释的准确性和质量取决于底层 AI 模型的能力和限制
+- 生成的 Javadoc 注释的准确性和质量取决于底层 AI 模型的能力和限制
 - 使用 Ollama 本地模型需要足够的系统资源（内存、CPU）来运行模型
 - 通义千问服务需要有效的 API Key 和网络连接
 
 ## 贡献
 
-欢迎为 IntelliJ IntelliAI JavaDoc 插件做出贡献！如果您遇到任何错误、有功能请求或想要贡献代码改进，请在 GitHub 仓库上提交问题或拉取请求。
+欢迎为 IntelliJ IntelliAI Javadoc 插件做出贡献！如果您遇到任何错误、有功能请求或想要贡献代码改进，请在 GitHub 仓库上提交问题或拉取请求。
 
 ## 作者
 
@@ -202,7 +202,7 @@ intelli-ai-javadoc/
 ├── src/main/java/com/github/intellijjavadocai/
 │   ├── action/          # 动作处理（用户交互入口）
 │   ├── config/          # 配置管理（API 配置）
-│   ├── generator/       # JavaDoc 生成器
+│   ├── generator/       # Javadoc 生成器
 │   ├── service/         # 服务层（HTTP 请求、Prompt 管理）
 │   └── ErrorHandler.java  # 错误处理
 ├── src/main/resources/
@@ -234,7 +234,7 @@ intelli-ai-javadoc/
 
 ### 2. 增量更新
 
-只为没有 JavaDoc 注释的类和方法生成文档，不会覆盖已有的注释。
+只为没有 Javadoc 注释的类和方法生成文档，不会覆盖已有的注释。
 
 ### 3. 错误重试机制
 

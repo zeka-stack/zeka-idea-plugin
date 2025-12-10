@@ -141,7 +141,7 @@ class PanguTest {
 
     @Test
     void testSpacingText_ComplexJavaDoc() {
-        // JavaDoc 注释场景
+        // Javadoc 注释场景
         String input = "这是一个User类，用于处理用户数据。包含100个方法，使用Java开发。";
         String expected = "这是一个 User 类，用于处理用户数据。包含 100 个方法，使用 Java 开发。";
         assertThat(pangu.spacingText(input)).isEqualTo(expected);

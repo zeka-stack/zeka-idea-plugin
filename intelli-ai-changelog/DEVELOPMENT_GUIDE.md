@@ -2,7 +2,7 @@
 
 ## 概述
 
-这个模板是基于现有的 IntelliAI JavaDoc 插件项目抽离出来的完整 IntelliJ IDEA 插件开发模板。它包含了插件开发所需的所有基础组件和最佳实践。
+这个模板是基于现有的 IntelliAI Javadoc 插件项目抽离出来的完整 IntelliJ IDEA 插件开发模板。它包含了插件开发所需的所有基础组件和最佳实践。
 
 ## 模板特点
 
@@ -132,22 +132,22 @@ public class MyIntentionAction implements IntentionAction, PriorityAction {
     public @NotNull String getText() {
         return "My Intention Action";
     }
-    
+
     @Override
     public @NotNull String getFamilyName() {
         return "My Plugin";
     }
-    
+
     @Override
     public boolean isAvailable(@NotNull Project project, Editor editor, PsiFile file) {
         return file != null && file.getName().endsWith(".java");
     }
-    
+
     @Override
     public void invoke(@NotNull Project project, Editor editor, PsiFile file) {
         // 你的逻辑
     }
-    
+
     @Override
     public boolean startInWriteAction() {
         return false;
@@ -216,7 +216,7 @@ public final class MyNewService {
 # messages.properties
 my.new.message=My new message: {0}
 
-# messages_zh_CN.properties  
+# messages_zh_CN.properties
 my.new.message=我的新消息: {0}
 ```
 

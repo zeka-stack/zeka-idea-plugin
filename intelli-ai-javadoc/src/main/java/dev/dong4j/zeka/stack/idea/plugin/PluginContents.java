@@ -14,5 +14,5 @@ package dev.dong4j.zeka.stack.idea.plugin;
 public class PluginContents {
 
     /** 插件名称 */
-    public static final String PLUGIN_NAME = "IntelliAI JavaDoc";
+    public static final String PLUGIN_NAME = "IntelliAI Javadoc";
 }

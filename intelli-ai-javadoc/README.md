@@ -1,11 +1,11 @@
-# IntelliJ IntelliAI JavaDoc Plugin
+# IntelliJ IntelliAI Javadoc Plugin
 
 [中文](./README_CN.md) | **English** | [📄 Beautiful Landing Page](./index.html)
 
 > 🌟 [View our beautiful landing page](https://aij.dong4j.site) - Get an intuitive overview of plugin features!
 
 
-The IntelliJ IntelliAI JavaDoc Plugin is a powerful tool that utilizes artificial intelligence to generate JavaDoc comments for your Java
+The IntelliJ IntelliAI Javadoc Plugin is a powerful tool that utilizes artificial intelligence to generate Javadoc comments for your Java
 code. It
 supports multiple AI service providers including QianWen (Alibaba Cloud) and Ollama local models, providing intelligent and context-aware
 suggestions for documenting your methods, classes, and interfaces.
@@ -13,13 +13,13 @@ suggestions for documenting your methods, classes, and interfaces.
 ## Features
 
 - **Multiple AI Providers**: Support for QianWen (Alibaba Cloud) and Ollama local models to meet different user needs
-- **Automatic JavaDoc Generation**: Simplify the process of writing JavaDoc comments by letting the plugin generate them for you
+- **Automatic Javadoc Generation**: Simplify the process of writing Javadoc comments by letting the plugin generate them for you
 - **Smart Element Recognition**: Intelligently identify elements to document based on cursor position (methods, fields, classes)
 - **Context-aware Suggestions**: The plugin analyzes your code and takes into account the surrounding context to provide more precise and
-  meaningful JavaDoc suggestions
+  meaningful Javadoc suggestions
 - **Multiple Trigger Methods**: Support for shortcuts, right-click menu, Generate menu, and Intention Action
 - **Batch Processing**: Support for generating documentation for entire files or multiple selected files
-- **Incremental Updates**: Only generate documentation for classes and methods without existing JavaDoc comments
+- **Incremental Updates**: Only generate documentation for classes and methods without existing Javadoc comments
 - **Test Method Recognition**: Automatically identify JUnit 4 and JUnit 5 test methods and use specialized templates
 - **Configuration Validation**: Built-in connection testing to ensure proper configuration
 
@@ -29,7 +29,7 @@ suggestions for documenting your methods, classes, and interfaces.
 2. Go to **Settings** (Preferences on macOS) -> **Plugins**.
 3. Click on the **Marketplace** tab.
 4. Search for "AIJavadoc" in the search bar.
-5. Click **Install** next to the IntelliJ IntelliAI JavaDoc Plugin.
+5. Click **Install** next to the IntelliJ IntelliAI Javadoc Plugin.
 6. Restart IntelliJ IDEA to activate the plugin.
 
 ## Usage
@@ -72,7 +72,7 @@ documentation generation.
 
 1. Visit [Alibaba Cloud DashScope Console](https://dashscope.console.aliyun.com/) to register an account
 2. Get your API Key
-3. In IntelliJ IDEA, go to **Settings** → **Tools** → **IntelliAI JavaDoc**
+3. In IntelliJ IDEA, go to **Settings** → **Tools** → **IntelliAI Javadoc**
 4. Select **AI Provider** as "qianwen"
 5. Enter your **API Key**
 6. Use default **Base URL**: `https://dashscope.aliyuncs.com/compatible-mode/v1`
@@ -148,7 +148,7 @@ etc.
 In the settings panel, you can also configure:
 
 - **Generation Options**: Choose to generate documentation for classes, methods, fields
-- **Skip Existing Documentation**: Avoid overwriting existing JavaDoc
+- **Skip Existing Documentation**: Avoid overwriting existing Javadoc
 - **Language Support**: Currently supports Java (Kotlin coming soon)
 - **Advanced Parameters**: Retry count, timeout, temperature parameters, etc.
 - **Prompt Templates**: Customize documentation generation templates
@@ -157,13 +157,13 @@ In the settings panel, you can also configure:
 
 - The plugin relies on the availability and performance of the selected AI service provider. Network connectivity and API rate limits may
   impact its functionality
-- The accuracy and quality of the generated JavaDoc comments are dependent on the capabilities and limitations of the underlying AI model
+- The accuracy and quality of the generated Javadoc comments are dependent on the capabilities and limitations of the underlying AI model
 - Using Ollama local models requires sufficient system resources (memory, CPU) to run the models
 - QianWen service requires a valid API Key and network connection
 
 ## Contributing
 
-Contributions to the IntelliJ IntelliAI JavaDoc Plugin are welcome! If you encounter any bugs, have feature requests, or would like to
+Contributions to the IntelliJ IntelliAI Javadoc Plugin are welcome! If you encounter any bugs, have feature requests, or would like to
 contribute
 code improvements, please submit an issue or pull request on the GitHub repository.
 
@@ -211,7 +211,7 @@ intelli-ai-javadoc/
 │   ├── action/          # Action handlers (user interaction entry points)
 │   ├── ai/              # AI service providers (QianWen, Ollama)
 │   ├── config/          # Configuration management
-│   ├── generator/       # JavaDoc generators
+│   ├── generator/       # Javadoc generators
 │   ├── service/         # Service layer (HTTP requests, Prompt management)
 │   ├── settings/        # Settings and UI
 │   ├── task/            # Task management (async processing)
@@ -244,7 +244,7 @@ fits the characteristics of test methods.
 
 ### 2. Incremental Updates
 
-Only generates documentation for classes and methods without existing JavaDoc comments, without overwriting existing comments.
+Only generates documentation for classes and methods without existing Javadoc comments, without overwriting existing comments.
 
 ### 3. Error Retry Mechanism
 

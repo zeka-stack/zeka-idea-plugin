@@ -65,7 +65,7 @@ clean-tracer:
 doc: doc-javadoc doc-engine
 
 doc-javadoc:
-	@echo "正在生成 JavaDoc 文档..."
+	@echo "正在生成 Javadoc 文档..."
 	cd $(JAVADOC_DIR) && ./gradlew javadoc
 
 doc-engine:

@@ -44,7 +44,7 @@ System.out.println("代码 tokens: " + codeTokens);
 ### 2. 获取详细统计
 
 ```java
-String text = "这是一个使用 AI 生成 JavaDoc 的插件。\n" +
+String text = "这是一个使用 AI 生成 Javadoc 的插件。\n" +
               "It supports multiple AI providers.";
 
 TokenStats stats = TokenCounter.analyze(text);
@@ -80,7 +80,7 @@ if (TokenCounter.exceedsLimit(text, maxTokens)) {
 
 ```java
 String systemPrompt = "你是一个专业的 Java 文档生成助手。";
-String userPrompt = "请为以下方法生成 JavaDoc 注释：";
+String userPrompt = "请为以下方法生成 Javadoc 注释：";
 String code = "public void test() { }";
 
 int totalTokens = TokenCounter.estimateTotalTokens(systemPrompt, userPrompt, code);
@@ -106,16 +106,16 @@ System.out.println(truncated);
 ```java
 public class AIServiceProvider {
     private static final int MAX_CONTEXT_TOKENS = 4096;
-    
+
     public String generateDocumentation(String code) {
         // 检查代码 token 数量
         int codeTokens = TokenCounter.estimateCodeTokens(code);
-        
+
         if (codeTokens > MAX_CONTEXT_TOKENS * 0.8) {
             // 代码太长，需要截断或分段处理
             throw new AIServiceException("代码太长，超过了上下文限制");
         }
-        
+
         // 调用 AI API
         return callAIAPI(code);
     }
@@ -129,7 +129,7 @@ public class TaskExecutor {
     private void logTaskInfo(DocumentationTask task) {
         String code = task.getCode();
         TokenStats stats = TokenCounter.analyze(code);
-        
+
         String message = String.format(
             "任务: %s, 代码长度: %d 字符, 估算 tokens: %d, 行数: %d",
             task.getType(),
@@ -137,7 +137,7 @@ public class TaskExecutor {
             stats.getEstimatedTokens(),
             stats.getLines()
         );
-        
+
         JavaDocConsoleView.print(project, message);
     }
 }
@@ -149,25 +149,25 @@ public class TaskExecutor {
 public class CostCalculator {
     // GPT-3.5 价格：$0.0005 / 1K tokens (输入)
     private static final double PRICE_PER_1K_TOKENS = 0.0005;
-    
+
     public double estimateCost(String text) {
         int tokens = TokenCounter.estimateTokens(text);
         return (tokens / 1000.0) * PRICE_PER_1K_TOKENS;
     }
-    
+
     public void displayCostInfo(List<DocumentationTask> tasks) {
         int totalTokens = 0;
         for (DocumentationTask task : tasks) {
             totalTokens += TokenCounter.estimateCodeTokens(task.getCode());
         }
-        
+
         double cost = (totalTokens / 1000.0) * PRICE_PER_1K_TOKENS;
-        
+
         String message = String.format(
             "预计消耗: %d tokens, 约 $%.4f",
             totalTokens, cost
         );
-        
+
         System.out.println(message);
     }
 }
@@ -180,15 +180,15 @@ public class PromptOptimizer {
     public String optimizePrompt(String template, String code, int maxTokens) {
         // 估算模板的 token 数
         int templateTokens = TokenCounter.estimateTokens(template);
-        
+
         // 计算代码可用的 token 数量
         int availableForCode = maxTokens - templateTokens - 100; // 预留 100 tokens
-        
+
         // 如果代码太长，截断它
         if (TokenCounter.estimateCodeTokens(code) > availableForCode) {
             code = TokenCounter.truncateToTokenLimit(code, availableForCode);
         }
-        
+
         return template + "\n\n" + code;
     }
 }

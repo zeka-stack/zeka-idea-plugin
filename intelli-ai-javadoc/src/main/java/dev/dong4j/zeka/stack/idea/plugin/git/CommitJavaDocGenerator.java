@@ -27,10 +27,10 @@ import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Git 提交页面 JavaDoc 生成器
+ * Git 提交页面 Javadoc 生成器
  * <p>
- * 该类负责在 Git 提交页面中检测和生成缺失的 JavaDoc 注释, 提供对 Java 文件中类, 方法, 字段等元素的 JavaDoc 自动生成功能.
- * 通过分析指定的 Java 文件集合, 检测其中缺少 JavaDoc 的元素, 并提供批量生成 JavaDoc 的交互式操作.
+ * 该类负责在 Git 提交页面中检测和生成缺失的 Javadoc 注释, 提供对 Java 文件中类, 方法, 字段等元素的 Javadoc 自动生成功能.
+ * 通过分析指定的 Java 文件集合, 检测其中缺少 Javadoc 的元素, 并提供批量生成 Javadoc 的交互式操作.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -46,7 +46,7 @@ public class CommitJavaDocGenerator {
     /**
      * 初始化 CommitJavaDocGenerator 实例
      * <p>
-     * 通过传入的 Project 对象进行初始化, 用于后续生成 JavaDoc 注释的相关操作
+     * 通过传入的 Project 对象进行初始化, 用于后续生成 Javadoc 注释的相关操作
      *
      * @param project 项目对象, 用于存储项目相关信息
      */
@@ -55,9 +55,9 @@ public class CommitJavaDocGenerator {
     }
 
     /**
-     * 处理代码变更, 生成 JavaDoc 注释
+     * 处理代码变更, 生成 Javadoc 注释
      * <p>
-     * 该方法用于处理提交的代码变更, 检查是否有需要生成 JavaDoc 的任务.
+     * 该方法用于处理提交的代码变更, 检查是否有需要生成 Javadoc 的任务.
      * 如果存在任务, 会提示用户确认是否生成, 并执行生成操作.
      *
      * @param changes   变更集合
@@ -74,16 +74,16 @@ public class CommitJavaDocGenerator {
         ProgressManager.getInstance().run(
             new Task.Backgroundable(project, JavaDocBundle.message("commit.detecting.progress"), true) {
                 /**
-                 * 执行检测缺失 JavaDoc 的任务
+                 * 执行检测缺失 Javadoc 的任务
                  * <p>
-                 * 检测指定 Java 文件中缺失 JavaDoc 的类, 方法和字段, 并根据检测结果提示用户是否生成缺失的 JavaDoc.
+                 * 检测指定 Java 文件中缺失 Javadoc 的类, 方法和字段, 并根据检测结果提示用户是否生成缺失的 Javadoc.
                  *
                  * @param indicator 进度指示器, 用于显示任务执行进度
                  * @throws IllegalStateException 如果在非 EDT 线程中调用此方法
                  */
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
-                    // 检测缺少 JavaDoc 的元素
+                    // 检测缺少 Javadoc 的元素
                     List<DocumentationTask> tasks = detectMissingJavaDoc(javaFiles, indicator);
 
                     if (tasks.isEmpty()) {
@@ -132,13 +132,13 @@ public class CommitJavaDocGenerator {
     }
 
     /**
-     * 检测指定 Java 文件中缺少 JavaDoc 的文档任务
+     * 检测指定 Java 文件中缺少 Javadoc 的文档任务
      * <p>
-     * 遍历给定的 Java 文件列表, 检测其中缺少 JavaDoc 的元素, 并生成对应的文档任务.
+     * 遍历给定的 Java 文件列表, 检测其中缺少 Javadoc 的元素, 并生成对应的文档任务.
      *
      * @param javaFiles 要检测的 Java 文件列表
      * @param indicator 进度指示器, 用于显示检测进度
-     * @return 缺少 JavaDoc 的文档任务列表
+     * @return 缺少 Javadoc 的文档任务列表
      */
     @NotNull
     private List<DocumentationTask> detectMissingJavaDoc(@NotNull List<VirtualFile> javaFiles,
@@ -156,7 +156,7 @@ public class CommitJavaDocGenerator {
                 (Computable<List<DocumentationTask>>) () -> {
                     PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
                     if (psiFile instanceof PsiJavaFile) {
-                        // 使用专门的方法收集缺失 JavaDoc 的任务（忽略 overrideExisting 配置）
+                        // 使用专门的方法收集缺失 Javadoc 的任务（忽略 overrideExisting 配置）
                         return collector.collectMissingJavaDocFromFile(psiFile);
                     }
                     return new ArrayList<>();
@@ -165,7 +165,7 @@ public class CommitJavaDocGenerator {
             tasks.addAll(fileTasks);
         }
 
-        log.info("Git 提交页面：检测到 {} 个缺少 JavaDoc 的元素", tasks.size());
+        log.info("Git 提交页面：检测到 {} 个缺少 Javadoc 的元素", tasks.size());
         return tasks;
     }
 
@@ -193,14 +193,14 @@ public class CommitJavaDocGenerator {
     }
 
     /**
-     * 构建检测消息, 用于提示缺少的 JavaDoc 注释信息
+     * 构建检测消息, 用于提示缺少的 Javadoc 注释信息
      * <p>
-     * 根据传入的类, 方法, 字段数量, 生成对应的检测提示信息. 如果所有数量都为 0, 则返回无 JavaDoc 的提示信息; 否则, 返回包含具体缺失项的提示信息.
+     * 根据传入的类, 方法, 字段数量, 生成对应的检测提示信息. 如果所有数量都为 0, 则返回无 Javadoc 的提示信息; 否则, 返回包含具体缺失项的提示信息.
      *
-     * @param classCount  缺失 JavaDoc 的类数量
-     * @param methodCount 缺失 JavaDoc 的方法数量
-     * @param fieldCount  缺失 JavaDoc 的字段数量
-     * @return 包含缺失 JavaDoc 信息的提示字符串
+     * @param classCount  缺失 Javadoc 的类数量
+     * @param methodCount 缺失 Javadoc 的方法数量
+     * @param fieldCount  缺失 Javadoc 的字段数量
+     * @return 包含缺失 Javadoc 信息的提示字符串
      * @since 1.0
      */
     @NotNull

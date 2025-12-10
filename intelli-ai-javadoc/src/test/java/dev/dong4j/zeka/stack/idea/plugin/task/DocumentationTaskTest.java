@@ -142,7 +142,7 @@ public class DocumentationTaskTest {
     @Test
     @DisplayName("测试设置结果")
     void testSetResult() {
-        String expectedResult = "/** 测试方法 JavaDoc */";
+        String expectedResult = "/** 测试方法 Javadoc */";
         task.setResult(expectedResult);
 
         assertThat(task.getResult()).isEqualTo(expectedResult);

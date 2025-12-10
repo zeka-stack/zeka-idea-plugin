@@ -123,7 +123,7 @@ import org.jetbrains.annotations.Nullable;
  * AI 流式响应监听器接口
  * <p>
  * 用于接收 AI 服务的流式响应数据，支持增量内容回调、完成回调和错误处理。
- * 
+ *
  * <p>典型使用场景：
  * <ul>
  *   <li>实时显示 AI 生成的内容到 Console</li>
@@ -136,12 +136,12 @@ import org.jetbrains.annotations.Nullable;
  * @since 1.0.0
  */
 public interface AIStreamResponseListener {
-    
+
     /**
      * 接收增量内容块
      * <p>
      * 当 AI 服务返回新的内容块时调用此方法。内容块可能是单个字符、单词或句子。
-     * 
+     *
      * <p>注意：
      * <ul>
      *   <li>此方法可能在后台线程调用，如需更新 UI 请使用 {@code ApplicationManager.getApplication().invokeLater()}</li>
@@ -152,7 +152,7 @@ public interface AIStreamResponseListener {
      * @param chunk 增量内容块
      */
     default void onChunk(@NotNull String chunk) {}
-    
+
     /**
      * 流式响应完成
      * <p>
@@ -161,7 +161,7 @@ public interface AIStreamResponseListener {
      * @param fullText 完整的响应文本
      */
     default void onComplete(@NotNull String fullText) {}
-    
+
     /**
      * 流式响应过程中发生错误
      * <p>
@@ -171,7 +171,7 @@ public interface AIStreamResponseListener {
      * @param exception 异常对象（可能为 null）
      */
     default void onError(@NotNull String error, @Nullable Throwable exception) {}
-    
+
     /**
      * 流式响应开始
      * <p>
@@ -271,12 +271,12 @@ void completeStream();
 private JsonObject buildRequestBody(AIChatRequest request, boolean stream) {
     JsonObject body = new JsonObject();
     // ... 现有代码 ...
-    
+
     // 添加流式参数
     if (stream) {
         body.addProperty("stream", true);
     }
-    
+
     return body;
 }
 ```
@@ -309,17 +309,17 @@ private void sendStreamRequest(JsonObject body,
 
     try {
         listener.onStart();
-        
+
         HttpRequests.post(url, "application/json")
             .connect(request -> {
                 HttpURLConnection connection = (HttpURLConnection) request.getConnection();
                 tuneConnection(connection, apiKey);
                 request.write(requestBody);
-                
+
                 // 读取流式响应
                 return readStreamResponse(connection, listener);
             });
-            
+
     } catch (HttpRequests.HttpStatusException e) {
         AIServiceException.ErrorCode code = switch (e.getStatusCode()) {
             case 401 -> AIServiceException.ErrorCode.INVALID_API_KEY;
@@ -351,26 +351,26 @@ private void sendStreamRequest(JsonObject body,
 private String readStreamResponse(HttpURLConnection connection,
                                  @NotNull AIStreamResponseListener listener) throws IOException {
     StringBuilder fullText = new StringBuilder();
-    
+
     try (BufferedReader reader = new BufferedReader(
             new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-        
+
         String line;
         while ((line = reader.readLine()) != null) {
             // 跳过空行
             if (line.trim().isEmpty()) {
                 continue;
             }
-            
+
             // SSE 格式: "data: {...}" 或 "data: [DONE]"
             if (line.startsWith("data: ")) {
                 String data = line.substring(6).trim();
-                
+
                 // 检查是否结束
                 if ("[DONE]".equals(data)) {
                     break;
                 }
-                
+
                 // 解析 JSON 并提取内容
                 try {
                     String chunk = parseStreamChunk(data);
@@ -385,7 +385,7 @@ private String readStreamResponse(HttpURLConnection connection,
             }
         }
     }
-    
+
     String result = fullText.toString();
     listener.onComplete(result);
     return result;
@@ -429,11 +429,11 @@ public void generateContentStream(@NotNull Project project,
     // 获取配置
     AIProviderConfig effectiveConfig = config != null ? config : getDefaultConfig(project);
     AIServiceProvider provider = AIServiceFactory.createProvider(effectiveConfig);
-    
+
     // 获取 API Key
     String apiKey = AICredentialManager.getInstance().getApiKey(
         effectiveConfig.providerType, effectiveConfig.apiKey);
-    
+
     // 在后台线程执行流式请求
     ApplicationManager.getApplication().executeOnPooledThread(() -> {
         try {
@@ -475,10 +475,10 @@ public void printStream(@NotNull String chunk) {
     if (verboseLoggingDisable()) {
         return;
     }
-    
+
     // 累积内容到缓冲区
     streamBuffer.append(chunk);
-    
+
     // 在 EDT 线程中更新 Console
     ApplicationManager.getApplication().invokeLater(() -> {
         JavaDocConsoleView consoleView = JavaDocConsoleView.getInstance(project);
@@ -494,14 +494,14 @@ public void completeStream() {
     if (verboseLoggingDisable()) {
         return;
     }
-    
+
     // 在 EDT 线程中完成流式输出
     ApplicationManager.getApplication().invokeLater(() -> {
         JavaDocConsoleView consoleView = JavaDocConsoleView.getInstance(project);
         if (consoleView != null) {
             consoleView.completeStream();
         }
-        
+
         // 清空缓冲区
         streamBuffer.setLength(0);
     });
@@ -526,7 +526,7 @@ public void printStream(@NotNull String chunk) {
     if (verboseLoggingDisable()) {
         return;
     }
-    
+
     currentStream.append(chunk);
     printInternal(chunk, ConsoleViewContentType.NORMAL_OUTPUT);
 }
@@ -540,13 +540,13 @@ public void completeStream() {
     if (verboseLoggingDisable()) {
         return;
     }
-    
+
     String fullText = currentStream.toString();
     currentStream.setLength(0);
-    
+
     // 添加换行
     printInternal("\n", ConsoleViewContentType.NORMAL_OUTPUT);
-    
+
     // 可选：显示统计信息
     if (runtimeSettings.verboseLogging && !fullText.isEmpty()) {
         printWithTimestamp(String.format("流式响应完成，总长度: %d 字符", fullText.length()));
@@ -573,22 +573,22 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLoggerProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
 /**
- * IntelliAI JavaDoc 的流式响应监听器实现
+ * IntelliAI Javadoc 的流式响应监听器实现
  * <p>
  * 将流式响应实时输出到 Console。
  */
 public class JavaDocAIStreamResponseListener implements AIStreamResponseListener {
-    
+
     private final Project project;
     private final boolean verboseLogging;
     private final AIConsoleLogger consoleLogger;
-    
+
     public JavaDocAIStreamResponseListener(@NotNull Project project) {
         this.project = project;
         this.verboseLogging = AIProviderSettings.getInstance().runtimeSettings.verboseLogging;
         this.consoleLogger = AIConsoleLoggerProvider.getConsoleLogger(project);
     }
-    
+
     @Override
     public void onStart() {
         if (verboseLogging && consoleLogger != null) {
@@ -597,14 +597,14 @@ public class JavaDocAIStreamResponseListener implements AIStreamResponseListener
             });
         }
     }
-    
+
     @Override
     public void onChunk(@NotNull String chunk) {
         if (verboseLogging && consoleLogger != null && !chunk.isEmpty()) {
             consoleLogger.printStream(chunk);
         }
     }
-    
+
     @Override
     public void onComplete(@NotNull String fullText) {
         if (verboseLogging && consoleLogger != null) {
@@ -614,7 +614,7 @@ public class JavaDocAIStreamResponseListener implements AIStreamResponseListener
             });
         }
     }
-    
+
     @Override
     public void onError(@NotNull String error, @Nullable Throwable exception) {
         if (consoleLogger != null) {
@@ -675,12 +675,12 @@ try {
 ```java
 AIStreamResponseListener customListener = new AIStreamResponseListener() {
     private final StringBuilder buffer = new StringBuilder();
-    
+
     @Override
     public void onStart() {
         System.out.println("开始接收流式响应...");
     }
-    
+
     @Override
     public void onChunk(@NotNull String chunk) {
         buffer.append(chunk);
@@ -689,14 +689,14 @@ AIStreamResponseListener customListener = new AIStreamResponseListener() {
             textArea.append(chunk);
         });
     }
-    
+
     @Override
     public void onComplete(@NotNull String fullText) {
         System.out.println("接收完成，总长度: " + fullText.length());
         // 处理完整内容
         processCompleteResponse(fullText);
     }
-    
+
     @Override
     public void onError(@NotNull String error, @Nullable Throwable exception) {
         System.err.println("错误: " + error);
@@ -711,7 +711,7 @@ AIStreamResponseListener customListener = new AIStreamResponseListener() {
 public void explainWorkflow(@NotNull Project project, @NotNull PsiMethod method) {
     AIService aiService = AIService.getInstance();
     AIChatRequest request = buildExplainRequest(method);
-    
+
     // 创建流式监听器，输出到 Console
     AIStreamResponseListener listener = new AIStreamResponseListener() {
         @Override
@@ -722,7 +722,7 @@ public void explainWorkflow(@NotNull Project project, @NotNull PsiMethod method)
                 logger.printStream(chunk);
             }
         }
-        
+
         @Override
         public void onComplete(@NotNull String fullText) {
             AIConsoleLogger logger = AIConsoleLoggerProvider.getConsoleLogger(project);
@@ -731,7 +731,7 @@ public void explainWorkflow(@NotNull Project project, @NotNull PsiMethod method)
             }
         }
     };
-    
+
     try {
         aiService.generateContentStream(project, request, null, listener);
     } catch (AIServiceException e) {
