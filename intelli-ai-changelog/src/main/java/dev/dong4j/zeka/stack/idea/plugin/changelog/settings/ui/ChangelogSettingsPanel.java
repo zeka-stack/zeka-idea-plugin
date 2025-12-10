@@ -1,9 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ui;
 
-import com.intellij.openapi.options.ShowSettingsUtil;
-import com.intellij.openapi.ui.ComboBox;
-import com.intellij.ui.HyperlinkLabel;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
@@ -18,13 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.Icon;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -34,11 +26,8 @@ import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
-import icons.AICommonIcons;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
 import lombok.Getter;
 
 /**
@@ -59,12 +48,8 @@ public class ChangelogSettingsPanel {
     /** 主面板 */
     @Getter
     private final JPanel mainPanel;
-    /** AI 提供商选择下拉框 */
-    private JComboBox<AIProviderConfig> providerComboBox;
-    /** AI 提供商设置变更监听器 */
-    private AIProviderSettingsListener providerSettingsListener;
-    /** AI 提供商选择面板（用于动态刷新） */
-    private JPanel aiProviderSelectionPanel;
+    /** AI 提供商选择面板（使用 engine 插件中的通用类） */
+    private final AIProviderSelectionPanel aiProviderSelectionPanel;
 
     // 高级设置
     /** 显示高级设置的复选框 */
@@ -111,10 +96,20 @@ public class ChangelogSettingsPanel {
 
         advancedSettingsPanel.add(advancedSettingsContent, BorderLayout.NORTH);
 
+        // 初始化 AI 提供商选择面板（使用 engine 插件中的通用类）
+        aiProviderSelectionPanel = new AIProviderSelectionPanel(
+            ChangelogBundle::message,
+            () -> {
+                // 面板刷新后的回调：恢复选中的供应商
+                SettingsState settings = SettingsState.getInstance();
+                reset(settings);
+            }
+        );
+
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()
             // 第一组：AI 提供商选择
-            .addComponent(aiProviderSelectionPanel = createAIProviderSelectionPanel())
+            .addComponent(aiProviderSelectionPanel.getPanel())
             .addSeparator(10)
 
             // 第二组：高级设置（可折叠）
@@ -126,9 +121,6 @@ public class ChangelogSettingsPanel {
 
         // 设置边框
         mainPanel.setBorder(JBUI.Borders.empty(10));
-
-        // 注册供应商设置变更监听器
-        registerProviderSettingsListener();
 
         // 设置高级设置复选框的监听器
         setupListeners();
@@ -155,10 +147,7 @@ public class ChangelogSettingsPanel {
             || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings) {
             return true;
         }
-        if (providerComboBox == null || !providerComboBox.isEnabled()) {
-            return false;
-        }
-        AIProviderConfig selectedConfig = (AIProviderConfig) providerComboBox.getSelectedItem();
+        AIProviderConfig selectedConfig = aiProviderSelectionPanel != null ? aiProviderSelectionPanel.getSelectedProvider() : null;
         if (selectedConfig == null) {
             return providerSettings != null;
         }
@@ -182,8 +171,8 @@ public class ChangelogSettingsPanel {
         settings.weeklyReportTemplate = weeklyReportTemplateTextArea.getText();
         settings.commitMessageTemplate = commitMessageTemplateTextArea.getText();
         settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
-        if (providerComboBox != null && providerComboBox.isEnabled()) {
-            AIProviderConfig selectedConfig = (AIProviderConfig) providerComboBox.getSelectedItem();
+        if (aiProviderSelectionPanel != null) {
+            AIProviderConfig selectedConfig = aiProviderSelectionPanel.getSelectedProvider();
             if (selectedConfig != null) {
                 settings.providerConfig = selectedConfig.copy();
             }
@@ -206,194 +195,9 @@ public class ChangelogSettingsPanel {
         commitMessageTemplateTextArea.setText(settings.commitMessageTemplate);
         showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
         advancedSettingsPanel.setVisible(settings.showPromptSettings);
-        if (providerComboBox != null && providerComboBox.isEnabled()) {
-            // 尝试恢复之前选中的供应商
-            if (settings.providerConfig != null) {
-                // 检查当前列表中是否包含保存的配置
-                List<AIProviderConfig> availableProviders = getAiProviderTypes();
-                AIProviderConfig matchingConfig = availableProviders.stream()
-                    .filter(config -> config.credentialId != null
-                                      && config.credentialId.equals(settings.providerConfig.credentialId))
-                    .findFirst()
-                    .orElse(null);
-                if (matchingConfig != null) {
-                    providerComboBox.setSelectedItem(matchingConfig);
-                } else if (!availableProviders.isEmpty()) {
-                    // 如果找不到匹配的，选择第一个
-                    providerComboBox.setSelectedIndex(0);
-                }
-            } else if (providerComboBox.getItemCount() > 0) {
-                // 如果没有保存的配置，选择第一个
-                providerComboBox.setSelectedIndex(0);
-            }
-        }
-    }
-
-    /**
-     * 创建 AI 提供商选择面板
-     * <p>
-     * 只显示供应商选择下拉框，其他 AI 配置在 Settings → Tools → IntelliAI Engine 中管理。
-     *
-     * @return AI 提供商选择面板
-     */
-    private JPanel createAIProviderSelectionPanel() {
-        // 从 intelli-ai-engine 获取可用服务商列表
-        final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
-
-        JPanel panel;
-
-        // 如果没有可用服务商，显示提示信息和跳转链接
-        if (aiProviderTypes.isEmpty()) {
-            // 创建提示信息面板
-            JBLabel warningLabel = new JBLabel(ChangelogBundle.message("settings.ai.provider.no.available.warning"));
-            // 使用警告颜色
-            java.awt.Color warningColor = UIManager.getColor("Label.warningForeground");
-            if (warningColor == null) {
-                warningColor = new JBColor(new Color(255, 140, 0), new Color(255, 140, 0)); // 橙色作为警告颜色
-            }
-            warningLabel.setForeground(warningColor);
-
-            // 创建跳转链接
-            HyperlinkLabel linkLabel = new HyperlinkLabel(ChangelogBundle.message("settings.ai.provider.open.ai.common.settings"));
-            linkLabel.addHyperlinkListener(e -> {
-                // 打开 IntelliAI Engine 全局设置页面（应用级配置）
-                ShowSettingsUtil.getInstance().editConfigurable(null, EngineContents.PLUGIN_NAME);
-            });
-
-            // 创建空的下拉框（禁用状态）
-            providerComboBox = new ComboBox<>(new AIProviderConfig[0]);
-            providerComboBox.setEnabled(false);
-
-            panel = FormBuilder.createFormBuilder()
-                .addComponent(warningLabel)
-                .addComponent(linkLabel)
-                .addComponent(new JBLabel()) // 空行
-                .addLabeledComponent(new JBLabel(ChangelogBundle.message("settings.ai.provider") + ":"), providerComboBox)
-                .getPanel();
-        } else {
-            // 创建供应商下拉框
-            providerComboBox = new ComboBox<>(aiProviderTypes.toArray(new AIProviderConfig[0]));
-            providerComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
-                JBLabel label = new JBLabel();
-                if (value != null) {
-                    Icon icon = AICommonIcons.getProviderIcon(value.providerType);
-                    label.setIcon(icon);
-                    label.setText(value.providerType.getDisplayName() + ":" + value.modelName);
-                }
-                if (isSelected) {
-                    label.setBackground(list.getSelectionBackground());
-                    label.setForeground(list.getSelectionForeground());
-                } else {
-                    label.setBackground(list.getBackground());
-                    label.setForeground(list.getForeground());
-                }
-                label.setOpaque(true);
-                return label;
-            });
-
-            JBLabel providerLabel = new JBLabel(ChangelogBundle.message("settings.ai.provider") + ":");
-            JBLabel hintLabel = new JBLabel(ChangelogBundle.message("settings.ai.provider.hint"));
-            hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
-
-            panel = FormBuilder.createFormBuilder()
-                .addLabeledComponent(providerLabel, providerComboBox)
-                .addComponent(hintLabel)
-                .getPanel();
-        }
-
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            ChangelogBundle.message("settings.ai.provider.selection"));
-        configureTitledBorder(titledBorder);
-        panel.setBorder(titledBorder);
-
-        return panel;
-    }
-
-    /**
-     * 获取已验证的 AI 服务提供商类型列表
-     * <p>
-     * 从全局设置中获取已验证的 AI 服务提供商配置, 并提取其中唯一的提供商类型.
-     *
-     * @return 包含已验证 AI 服务提供商类型的列表
-     */
-    @NotNull
-    private static List<AIProviderConfig> getAiProviderTypes() {
-        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-        return globalSettings.getVerifiedProviders();
-    }
-
-    /**
-     * 注册 AI 提供商设置变更监听器
-     * <p>
-     * 当 IntelliAI Engine 设置中的可用提供商列表发生变化时，自动刷新下拉列表。
-     */
-    private void registerProviderSettingsListener() {
-        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-        providerSettingsListener = settings -> refreshProviderComboBox();
-        globalSettings.addListener(providerSettingsListener);
-    }
-
-    /**
-     * 刷新提供商下拉框
-     * <p>
-     * 从 IntelliAI Engine 设置中重新获取可用提供商列表，并更新下拉框内容。
-     * 如果之前没有可用提供商，现在有了，会重新创建面板。
-     */
-    @SuppressWarnings("D")
-    private void refreshProviderComboBox() {
-        if (aiProviderSelectionPanel == null) {
-            return;
-        }
-
-        // 从 intelli-ai-engine 获取可用服务商列表
-        final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
-
-        // 判断之前是否有可用提供商（通过下拉框是否启用来判断）
-        boolean hadProviders = providerComboBox != null && providerComboBox.isEnabled();
-        boolean hasProviders = !aiProviderTypes.isEmpty();
-
-        // 如果状态没有变化，只需要更新下拉框内容
-        if (hadProviders && hasProviders) {
-            // 保存当前选中的值
-            AIProviderConfig selectedValue = (AIProviderConfig) providerComboBox.getSelectedItem();
-
-            // 更新下拉框模型
-            providerComboBox.setModel(new DefaultComboBoxModel<>(aiProviderTypes.toArray(new AIProviderConfig[0])));
-
-            // 恢复之前选中的值（如果还存在）
-            if (selectedValue != null && aiProviderTypes.contains(selectedValue)) {
-                providerComboBox.setSelectedItem(selectedValue);
-            } else if (!aiProviderTypes.isEmpty()) {
-                // 如果之前选中的值不存在了，选择第一个
-                providerComboBox.setSelectedIndex(0);
-            }
-            return;
-        }
-
-        // 如果状态发生变化（从无到有，或从有到无），需要重新创建整个面板
-        JPanel parent = (JPanel) aiProviderSelectionPanel.getParent();
-        if (parent != null) {
-            int index = -1;
-            for (int i = 0; i < parent.getComponentCount(); i++) {
-                if (parent.getComponent(i) == aiProviderSelectionPanel) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index >= 0) {
-                parent.remove(index);
-                JPanel newPanel = createAIProviderSelectionPanel();
-                aiProviderSelectionPanel = newPanel;
-                parent.add(newPanel, index);
-                parent.revalidate();
-                parent.repaint();
-
-                // 恢复选中的供应商
-                SettingsState settings = SettingsState.getInstance();
-                reset(settings);
-            }
+        if (aiProviderSelectionPanel != null) {
+            // 设置选中的提供商配置
+            aiProviderSelectionPanel.setSelectedProvider(settings.providerConfig);
         }
     }
 
@@ -624,10 +428,8 @@ public class ChangelogSettingsPanel {
      * 移除注册的监听器，避免内存泄漏。
      */
     public void dispose() {
-        if (providerSettingsListener != null) {
-            AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-            globalSettings.removeListener(providerSettingsListener);
-            providerSettingsListener = null;
+        if (aiProviderSelectionPanel != null) {
+            aiProviderSelectionPanel.dispose();
         }
     }
 }

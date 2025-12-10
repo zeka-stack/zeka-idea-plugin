@@ -13,7 +13,9 @@ import javax.swing.JPanel;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
 
 /**
@@ -82,23 +84,26 @@ public class JavadocSettingsPanel {
      * 连接测试按钮、模型刷新按钮、生成选项、语言支持、高级配置参数以及提示模板区域。
      */
     private void createUI() {
-        // 初始化语言支持面板
-        languageSupportPanel = new LanguageSupportPanel();
-
-        // 初始化自定义 Javadoc 标签面板
-        customJavaDocTagsPanel = new CustomJavaDocTagsPanel();
-
-        // 初始化类 Javadoc 模板面板
-        classJavaDocTemplatePanel = new ClassJavaDocTemplatePanel();
-
+        // 初始化 AI 提供商选择面板（使用 engine 插件中的通用类）
+        aiProviderSelectionPanel = new AIProviderSelectionPanel(
+            JavadocBundle::message,
+            () -> {
+                // 面板刷新后的回调：恢复选中的供应商
+                SettingsState settings = SettingsState.getInstance();
+                loadSettings(settings);
+            }
+        );
         // 初始化提示词模板面板
         promptTemplatesPanel = new PromptTemplatesPanel();
-
+        // 初始化语言支持面板
+        languageSupportPanel = new LanguageSupportPanel();
         // 初始化生成规则配置面板
         generationRulesPanel = new GenerationRulesPanel();
 
-        // 初始化 AI 提供商选择面板
-        aiProviderSelectionPanel = new AIProviderSelectionPanel();
+        // 初始化自定义 Javadoc 标签面板
+        customJavaDocTagsPanel = new CustomJavaDocTagsPanel();
+        // 初始化类 Javadoc 模板面板
+        classJavaDocTemplatePanel = new ClassJavaDocTemplatePanel();
 
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()

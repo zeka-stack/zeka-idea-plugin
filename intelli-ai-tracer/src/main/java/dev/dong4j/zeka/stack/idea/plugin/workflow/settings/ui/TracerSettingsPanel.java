@@ -1,9 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.workflow.settings.ui;
 
-import com.intellij.openapi.options.ShowSettingsUtil;
-import com.intellij.openapi.ui.ComboBox;
-import com.intellij.ui.HyperlinkLabel;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
@@ -18,26 +14,19 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.Icon;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
-import icons.AICommonIcons;
 import lombok.Getter;
 
 /**
@@ -52,9 +41,8 @@ public class TracerSettingsPanel {
     @Getter
     private final JPanel mainPanel;
 
-    private JComboBox<AIProviderConfig> providerComboBox;
-    private JPanel aiProviderSelectionPanel;
-    private AIProviderSettingsListener providerSettingsListener;
+    /** AI 提供商选择面板（使用 engine 插件中的通用类） */
+    private final AIProviderSelectionPanel aiProviderSelectionPanel;
 
     private final JBCheckBox showPromptSettingsCheckBox;
     private final JPanel promptSettingsPanel;
@@ -71,8 +59,18 @@ public class TracerSettingsPanel {
         promptSettingsPanel.add(createPromptTemplatesPanel(), BorderLayout.NORTH);
         promptSettingsPanel.setVisible(false);
 
+        // 初始化 AI 提供商选择面板（使用 engine 插件中的通用类）
+        aiProviderSelectionPanel = new AIProviderSelectionPanel(
+            WorkflowBundle::message,
+            () -> {
+                // 面板刷新后的回调：恢复选中的供应商
+                SettingsState settings = SettingsState.getInstance();
+                reset(settings);
+            }
+        );
+
         mainPanel = FormBuilder.createFormBuilder()
-            .addComponent(aiProviderSelectionPanel = createAIProviderSelectionPanel())
+            .addComponent(aiProviderSelectionPanel.getPanel())
             .addSeparator(10)
             .addComponent(showPromptSettingsCheckBox)
             .addComponent(promptSettingsPanel)
@@ -81,7 +79,6 @@ public class TracerSettingsPanel {
 
         mainPanel.setBorder(JBUI.Borders.empty(10));
 
-        registerProviderSettingsListener();
         setupListeners();
     }
 
@@ -94,10 +91,7 @@ public class TracerSettingsPanel {
             || showPromptSettingsCheckBox.isSelected() != settings.showPromptSettings) {
             return true;
         }
-        if (providerComboBox == null || !providerComboBox.isEnabled()) {
-            return providerSettings != null;
-        }
-        AIProviderConfig selected = (AIProviderConfig) providerComboBox.getSelectedItem();
+        AIProviderConfig selected = aiProviderSelectionPanel != null ? aiProviderSelectionPanel.getSelectedProvider() : null;
         if (selected == null) {
             return providerSettings != null;
         }
@@ -114,8 +108,8 @@ public class TracerSettingsPanel {
         settings.systemPrompt = systemPromptTextArea.getText();
         settings.workflowTemplate = workflowTemplateTextArea.getText();
         settings.showPromptSettings = showPromptSettingsCheckBox.isSelected();
-        if (providerComboBox != null && providerComboBox.isEnabled()) {
-            AIProviderConfig selected = (AIProviderConfig) providerComboBox.getSelectedItem();
+        if (aiProviderSelectionPanel != null) {
+            AIProviderConfig selected = aiProviderSelectionPanel.getSelectedProvider();
             if (selected != null) {
                 settings.providerConfig = selected.copy();
             }
@@ -130,22 +124,9 @@ public class TracerSettingsPanel {
         workflowTemplateTextArea.setText(settings.workflowTemplate);
         showPromptSettingsCheckBox.setSelected(settings.showPromptSettings);
         promptSettingsPanel.setVisible(settings.showPromptSettings);
-
-        if (providerComboBox != null && providerComboBox.isEnabled()) {
-            if (settings.providerConfig != null) {
-                List<AIProviderConfig> providers = getVerifiedProviders();
-                AIProviderConfig matching = providers.stream()
-                    .filter(config -> config.contentEquals(settings.providerConfig))
-                    .findFirst()
-                    .orElse(null);
-                if (matching != null) {
-                    providerComboBox.setSelectedItem(matching);
-                } else if (!providers.isEmpty()) {
-                    providerComboBox.setSelectedIndex(0);
-                }
-            } else if (providerComboBox.getItemCount() > 0) {
-                providerComboBox.setSelectedIndex(0);
-            }
+        if (aiProviderSelectionPanel != null) {
+            // 设置选中的提供商配置
+            aiProviderSelectionPanel.setSelectedProvider(settings.providerConfig);
         }
     }
 
@@ -153,135 +134,8 @@ public class TracerSettingsPanel {
      * 释放资源。
      */
     public void dispose() {
-        if (providerSettingsListener != null) {
-            AIProviderSettings.getInstance().removeListener(providerSettingsListener);
-            providerSettingsListener = null;
-        }
-    }
-
-    private JPanel createAIProviderSelectionPanel() {
-        final List<AIProviderConfig> providers = getVerifiedProviders();
-        JPanel panel;
-
-        if (providers.isEmpty()) {
-            JBLabel warningLabel = new JBLabel(WorkflowBundle.message("settings.ai.provider.no.available.warning"));
-            Color warningColor = UIManager.getColor("Label.warningForeground");
-            if (warningColor == null) {
-                warningColor = new JBColor(new Color(255, 140, 0), new Color(255, 140, 0));
-            }
-            warningLabel.setForeground(warningColor);
-
-            HyperlinkLabel linkLabel = new HyperlinkLabel(WorkflowBundle.message("settings.ai.provider.open.engine.settings"));
-            linkLabel.addHyperlinkListener(e -> ShowSettingsUtil.getInstance().editConfigurable(null, EngineContents.PLUGIN_NAME));
-
-            providerComboBox = new ComboBox<>(new AIProviderConfig[0]);
-            providerComboBox.setEnabled(false);
-
-            panel = FormBuilder.createFormBuilder()
-                .addComponent(warningLabel)
-                .addComponent(linkLabel)
-                .addComponent(new JBLabel())
-                .addLabeledComponent(new JBLabel(WorkflowBundle.message("settings.ai.provider") + ":"), providerComboBox)
-                .getPanel();
-        } else {
-            providerComboBox = new ComboBox<>(providers.toArray(new AIProviderConfig[0]));
-            providerComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
-                JBLabel label = new JBLabel();
-                if (value != null) {
-                    Icon icon = AICommonIcons.getProviderIcon(value.providerType);
-                    label.setIcon(icon);
-                    label.setText(value.providerType.getDisplayName() + ":" + value.modelName);
-                }
-                if (isSelected) {
-                    label.setBackground(list.getSelectionBackground());
-                    label.setForeground(list.getSelectionForeground());
-                } else {
-                    label.setBackground(list.getBackground());
-                    label.setForeground(list.getForeground());
-                }
-                label.setOpaque(true);
-                return label;
-            });
-
-            JBLabel providerLabel = new JBLabel(WorkflowBundle.message("settings.ai.provider") + ":");
-            JBLabel hintLabel = new JBLabel(WorkflowBundle.message("settings.ai.provider.hint"));
-            hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
-
-            panel = FormBuilder.createFormBuilder()
-                .addLabeledComponent(providerLabel, providerComboBox)
-                .addComponent(hintLabel)
-                .getPanel();
-        }
-
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(
-            BorderFactory.createEtchedBorder(),
-            WorkflowBundle.message("settings.ai.provider.selection"));
-        configureTitledBorder(titledBorder);
-        panel.setBorder(titledBorder);
-
-        return panel;
-    }
-
-    private static List<AIProviderConfig> getVerifiedProviders() {
-        return AIProviderSettings.getInstance().getVerifiedProviders();
-    }
-
-    private void registerProviderSettingsListener() {
-        providerSettingsListener = settings -> refreshProviderComboBox();
-        AIProviderSettings.getInstance().addListener(providerSettingsListener);
-    }
-
-    @SuppressWarnings("D")
-    private void refreshProviderComboBox() {
-        if (aiProviderSelectionPanel == null) {
-            return;
-        }
-        List<AIProviderConfig> providers = getVerifiedProviders();
-        boolean hadProviders = providerComboBox != null && providerComboBox.isEnabled();
-        boolean hasProviders = !providers.isEmpty();
-
-        if (hadProviders && hasProviders) {
-            AIProviderConfig selected = (AIProviderConfig) providerComboBox.getSelectedItem();
-            providerComboBox.setModel(new DefaultComboBoxModel<>(providers.toArray(new AIProviderConfig[0])));
-            if (selected != null) {
-                providers.stream()
-                    .filter(config -> config.contentEquals(selected))
-                    .findFirst()
-                    .ifPresentOrElse(
-                        match -> providerComboBox.setSelectedItem(match),
-                        () -> {
-                            if (!providers.isEmpty()) {
-                                providerComboBox.setSelectedIndex(0);
-                            }
-                        }
-                                    );
-            } else if (!providers.isEmpty()) {
-                providerComboBox.setSelectedIndex(0);
-            }
-            return;
-        }
-
-        JPanel parent = (JPanel) aiProviderSelectionPanel.getParent();
-        if (parent != null) {
-            int index = -1;
-            for (int i = 0; i < parent.getComponentCount(); i++) {
-                if (parent.getComponent(i) == aiProviderSelectionPanel) {
-                    index = i;
-                    break;
-                }
-            }
-            if (index >= 0) {
-                parent.remove(index);
-                JPanel newPanel = createAIProviderSelectionPanel();
-                aiProviderSelectionPanel = newPanel;
-                parent.add(newPanel, index);
-                parent.revalidate();
-                parent.repaint();
-
-                SettingsState settings = SettingsState.getInstance();
-                reset(settings);
-            }
+        if (aiProviderSelectionPanel != null) {
+            aiProviderSelectionPanel.dispose();
         }
     }
 
