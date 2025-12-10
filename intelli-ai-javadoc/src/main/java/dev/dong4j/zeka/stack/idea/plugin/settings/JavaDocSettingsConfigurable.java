@@ -206,6 +206,9 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.showAdvancedSettings != panelSettings.showAdvancedSettings) {
             return true;
         }
+        if (currentSettings.compressSingleLineJavaDoc != panelSettings.compressSingleLineJavaDoc) {
+            return true;
+        }
         if (currentSettings.addSpaceBetweenChineseAndEnglish != panelSettings.addSpaceBetweenChineseAndEnglish) {
             return true;
         }
@@ -286,6 +289,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.customJavaDocTags = panelSettings.customJavaDocTags;
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
         currentSettings.showAdvancedSettings = panelSettings.showAdvancedSettings;
+        currentSettings.compressSingleLineJavaDoc = panelSettings.compressSingleLineJavaDoc;
         currentSettings.addSpaceBetweenChineseAndEnglish = panelSettings.addSpaceBetweenChineseAndEnglish;
         currentSettings.replaceChinesePunctuation = panelSettings.replaceChinesePunctuation;
         currentSettings.commentLanguage = panelSettings.commentLanguage;

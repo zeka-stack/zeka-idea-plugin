@@ -227,6 +227,28 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean showAdvancedSettings = false;
 
     /**
+     * 是否压缩单行 JavaDoc 注释
+     *
+     * <p>控制是否将只有一行内容的 JavaDoc 注释压缩为单行格式。
+     * 例如：
+     * <pre>
+     * /**
+     *  * One-line comment
+     *  /
+     * </pre>
+     * 会压缩为：
+     * <pre>
+     * /** One-line comment /
+     * </pre>
+     *
+     * <p>默认值: true（默认启用）
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocSingleLineFormatter
+     * @since 1.5.0
+     */
+    public boolean compressSingleLineJavaDoc = true;
+
+    /**
      * 是否在中英文之间添加空格
      *
      * <p>控制是否在格式化 JavaDoc 时，在中文字符和英文字符/数字之间自动添加空格。

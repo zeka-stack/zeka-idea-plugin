@@ -21,6 +21,7 @@ import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter;
+import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocSingleLineFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -126,6 +127,18 @@ public class DocumentationInserterHelper {
                         if (psiFile != null) {
                             int endPosition = lineStartPosition + javadoc.length() + 1;
                             CodeStyleManager.getInstance(project).reformatText(psiFile, lineStartPosition, endPosition);
+                        }
+
+                        // 8. 提交格式化后的文档变更
+                        PsiDocumentManager.getInstance(project).commitDocument(document);
+
+                        // 9. 后处理：如果是单行注释，压缩为单行格式（如果配置启用）
+                        // 注意：需要在格式化后重新获取元素，因为格式化可能改变了 PSI 结构
+                        // 使用原始元素进行查找，因为格式化不会改变元素本身
+                        if (settings.compressSingleLineJavaDoc && element instanceof PsiDocCommentOwner) {
+                            JavaDocSingleLineFormatter.compressSingleLineJavaDoc(element, document);
+                            // 提交压缩后的变更
+                            PsiDocumentManager.getInstance(project).commitDocument(document);
                         }
 
                         // Console 日志：输出最终插入的 JavaDoc（仅详细日志模式）
