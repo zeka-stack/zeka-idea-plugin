@@ -36,7 +36,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
  * @version 1.0.0
  * @since 1.4.0
  */
-public class CustomJavaDocTagsPanel {
+public class CustomJavadocTagsPanel {
 
     /** 显示自定义 Javadoc 标签的复选框 */
     private JBCheckBox showCustomJavaDocTagsCheckBox;
@@ -59,7 +59,7 @@ public class CustomJavaDocTagsPanel {
     /**
      * 构造函数
      */
-    public CustomJavaDocTagsPanel() {
+    public CustomJavadocTagsPanel() {
         createUI();
         setupListeners();
     }

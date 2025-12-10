@@ -8,6 +8,7 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 
 import javax.swing.JPanel;
@@ -81,12 +82,15 @@ public class GenerationRulesPanel {
     /**
      * 创建 UI
      */
+    @SuppressWarnings("DuplicatedCode")
     private void createUI() {
         // 功能配置
         generateForClassCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.class"));
         generateForMethodCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.method"));
         generateForFieldCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.field"));
         overrideExistingCheckBox = new JBCheckBox(JavadocBundle.message("settings.override.existing"));
+
+
         enableCodeCompressionCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
         compressSingleLineJavaDocCheckBox = new JBCheckBox(JavadocBundle.message("settings.compress.single.line.javadoc"));
@@ -216,20 +220,20 @@ public class GenerationRulesPanel {
      * 该方法用于创建一个包含复选框和提示文本的面板，提示文本通过指定的键从资源文件中获取。
      * 提示文本默认显示为灰色。
      *
-     * @param checkBox 要添加到面板中的复选框
-     * @param hintKey  用于获取提示文本的资源键
+     * @param comp    要添加到面板中的复选框
+     * @param hintKey 用于获取提示文本的资源键
      * @return 包含复选框和提示文本的面板
      */
-    public JPanel createCheckBoxWithHint(JBCheckBox checkBox, String hintKey) {
+    public JPanel createCheckBoxWithHint(Component comp, String hintKey) {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
 
         // 复选框放在左侧
-        panel.add(checkBox, BorderLayout.WEST);
+        panel.add(comp, BorderLayout.WEST);
 
         // 提示文本放在右侧，默认显示为灰色
         JBLabel hintLabel = new JBLabel(JavadocBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
+        hintLabel.setPreferredSize(new Dimension(300, hintLabel.getPreferredSize().height));
         hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
         panel.add(hintLabel, BorderLayout.CENTER);
@@ -255,23 +259,15 @@ public class GenerationRulesPanel {
         // 创建标签
         maxClassCodeLinesLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines"));
 
-        // 创建提示标签
-        JBLabel maxClassCodeLinesHintLabel = new JBLabel(JavadocBundle.message("settings.max.class.code.lines.hint"));
-        maxClassCodeLinesHintLabel.setFont(maxClassCodeLinesHintLabel.getFont().deriveFont(maxClassCodeLinesHintLabel.getFont().getSize() - 2.0f));
-        maxClassCodeLinesHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        maxClassCodeLinesHintLabel.setPreferredSize(new Dimension(300, maxClassCodeLinesHintLabel.getPreferredSize().height));
-
         // 创建包含标签、输入框和提示的面板
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.add(maxClassCodeLinesLabel, BorderLayout.WEST);
 
         // 创建输入框和提示的面板
-        JPanel spinnerPanel = new JPanel(new BorderLayout(5, 0));
+        JPanel spinnerPanel = createCheckBoxWithHint(maxClassCodeLinesSpinner, "settings.max.class.code.lines.hint");
         maxClassCodeLinesSpinner.setPreferredSize(new Dimension(120, maxClassCodeLinesSpinner.getPreferredSize().height));
         spinnerPanel.add(maxClassCodeLinesSpinner, BorderLayout.WEST);
-        spinnerPanel.add(maxClassCodeLinesHintLabel, BorderLayout.CENTER);
         contentPanel.add(spinnerPanel, BorderLayout.CENTER);
-
         indentPanel.add(contentPanel, BorderLayout.CENTER);
         panel.add(indentPanel, BorderLayout.CENTER);
 

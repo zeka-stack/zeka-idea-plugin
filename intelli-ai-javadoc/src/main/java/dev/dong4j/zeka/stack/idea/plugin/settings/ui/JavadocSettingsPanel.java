@@ -45,13 +45,13 @@ public class JavadocSettingsPanel {
 
     // Javadoc 标签配置
     /** 自定义 Javadoc 标签面板 */
-    private CustomJavaDocTagsPanel customJavaDocTagsPanel;
+    private CustomJavadocTagsPanel customJavaDocTagsPanel;
 
     /** 生成规则配置面板 */
     private GenerationRulesPanel generationRulesPanel;
 
     /** 类 Javadoc 模板面板 */
-    private ClassJavaDocTemplatePanel classJavaDocTemplatePanel;
+    private ClassJavadocTemplatePanel classJavaDocTemplatePanel;
 
     /** 提示词模板面板 */
     private PromptTemplatesPanel promptTemplatesPanel;
@@ -99,11 +99,10 @@ public class JavadocSettingsPanel {
         languageSupportPanel = new LanguageSupportPanel();
         // 初始化生成规则配置面板
         generationRulesPanel = new GenerationRulesPanel();
-
         // 初始化自定义 Javadoc 标签面板
-        customJavaDocTagsPanel = new CustomJavaDocTagsPanel();
+        customJavaDocTagsPanel = new CustomJavadocTagsPanel();
         // 初始化类 Javadoc 模板面板
-        classJavaDocTemplatePanel = new ClassJavaDocTemplatePanel();
+        classJavaDocTemplatePanel = new ClassJavadocTemplatePanel();
 
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()

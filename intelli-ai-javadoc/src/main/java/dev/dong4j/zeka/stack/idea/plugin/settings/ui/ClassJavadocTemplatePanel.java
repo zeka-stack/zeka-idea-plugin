@@ -28,7 +28,7 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
  * @version 1.0.0
  * @since 1.4.0
  */
-public class ClassJavaDocTemplatePanel {
+public class ClassJavadocTemplatePanel {
 
     /** 启用类 Javadoc 模板复选框 */
     private JBCheckBox enableClassJavaDocTemplateCheckBox;
@@ -39,13 +39,16 @@ public class ClassJavaDocTemplatePanel {
     /** 类 Javadoc 模板编辑器面板（包含文本区域和重置按钮） */
     private JPanel classJavaDocTemplateEditorPanel;
 
+    /** 类 Javadoc 模板提示标签 */
+    private JBLabel classJavaDocTemplateHintLabel;
+
     /** 主面板 */
     private JPanel panel;
 
     /**
      * 构造函数
      */
-    public ClassJavaDocTemplatePanel() {
+    public ClassJavadocTemplatePanel() {
         createUI();
         setupListeners();
     }
@@ -68,18 +71,22 @@ public class ClassJavaDocTemplatePanel {
         classJavaDocTemplateEditorPanel.setVisible(false); // 默认隐藏
 
         // 创建提示标签
-        JBLabel hintLabel = new JBLabel(JavadocBundle.message("settings.enable.class.javadoc.template.hint"));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
-        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        classJavaDocTemplateHintLabel = new JBLabel(JavadocBundle.message("settings.enable.class.javadoc.template.hint"));
+        classJavaDocTemplateHintLabel.setFont(classJavaDocTemplateHintLabel.getFont().deriveFont(classJavaDocTemplateHintLabel.getFont().getSize() - 1f));
+        classJavaDocTemplateHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        classJavaDocTemplateHintLabel.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
 
         // 构建主面板
-        JPanel checkBoxPanel = new JPanel(new BorderLayout(5, 0));
-        checkBoxPanel.add(enableClassJavaDocTemplateCheckBox, BorderLayout.WEST);
-        checkBoxPanel.add(hintLabel, BorderLayout.CENTER);
-
         panel = new JPanel(new BorderLayout());
-        panel.add(checkBoxPanel, BorderLayout.NORTH);
-        panel.add(classJavaDocTemplateEditorPanel, BorderLayout.CENTER);
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(enableClassJavaDocTemplateCheckBox, BorderLayout.NORTH);
+        contentPanel.add(classJavaDocTemplateHintLabel, BorderLayout.CENTER);
+        contentPanel.add(classJavaDocTemplateEditorPanel, BorderLayout.SOUTH);
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 初始可见性
+        classJavaDocTemplateEditorPanel.setVisible(false);
+        classJavaDocTemplateHintLabel.setVisible(false);
     }
 
     /**
@@ -89,9 +96,8 @@ public class ClassJavaDocTemplatePanel {
         enableClassJavaDocTemplateCheckBox.addActionListener(e -> {
             boolean selected = enableClassJavaDocTemplateCheckBox.isSelected();
             classJavaDocTemplateEditorPanel.setVisible(selected);
-            if (panel.getParent() != null) {
-                panel.getParent().revalidate();
-                panel.getParent().repaint();
+            if (classJavaDocTemplateHintLabel != null) {
+                classJavaDocTemplateHintLabel.setVisible(selected);
             }
         });
     }
@@ -164,6 +170,10 @@ public class ClassJavaDocTemplatePanel {
             classJavaDocTemplateTextArea.setText(defaultSettings.classJavaDocTemplate);
         }
         classJavaDocTemplateEditorPanel.setVisible(settings.enableClassJavaDocTemplate);
+        // 提示语也随复选框状态显示/隐藏
+        if (classJavaDocTemplateHintLabel != null) {
+            classJavaDocTemplateHintLabel.setVisible(settings.enableClassJavaDocTemplate);
+        }
     }
 
     /**
