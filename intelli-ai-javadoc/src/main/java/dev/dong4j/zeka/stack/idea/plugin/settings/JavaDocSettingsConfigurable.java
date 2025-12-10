@@ -16,14 +16,15 @@ import java.util.Objects;
 import javax.swing.JComponent;
 
 import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar;
+import dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler;
 import dev.dong4j.zeka.stack.idea.plugin.settings.ui.JavaDocSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 
 /**
- * JavaDoc 设置可配置类
+ * Javadoc 设置可配置类
  * <p>
- * 实现了 SearchableConfigurable 接口, 用于在 IDE 中提供 JavaDoc 生成插件的配置界面.
- * 该类负责管理 JavaDoc 生成的相关设置, 包括 AI 提供商配置, 生成选项, 提示模板,
+ * 实现了 SearchableConfigurable 接口, 用于在 IDE 中提供 Javadoc 生成插件的配置界面.
+ * 该类负责管理 Javadoc 生成的相关设置, 包括 AI 提供商配置, 生成选项, 提示模板,
  * 自定义标签等配置项, 并提供配置的验证, 应用和重置功能.
  *
  * @author zeka.stack.team
@@ -66,7 +67,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      * <p>返回在设置界面中显示的面板名称。
      * 使用国际化资源文件获取名称，支持多语言。
      *
-     * <p>显示位置：Settings → Tools → IntelliAI JavaDoc
+     * <p>显示位置：Settings → Tools → IntelliAI Javadoc
      *
      * @return 显示名称
      * @see JavaDocBundle#message(String, Object...))
@@ -194,13 +195,20 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
             return true;
         }
 
-        // 比较自定义 JavaDoc 标签
+        // 比较自定义 Javadoc 标签
         List<String> currentTags = currentSettings.getNormalizedCustomJavaDocTags();
         List<String> panelTags = panelSettings.getNormalizedCustomJavaDocTags();
         if (!currentTags.equals(panelTags)) {
             return true;
         }
         if (currentSettings.showCustomJavaDocTags != panelSettings.showCustomJavaDocTags) {
+            return true;
+        }
+        if (currentSettings.enableClassJavaDocTemplate != panelSettings.enableClassJavaDocTemplate) {
+            return true;
+        }
+        // 检查类 Javadoc 模板内容是否被修改
+        if (!Objects.equals(currentSettings.classJavaDocTemplate, panelSettings.classJavaDocTemplate)) {
             return true;
         }
         if (currentSettings.showAdvancedSettings != panelSettings.showAdvancedSettings) {
@@ -251,6 +259,7 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
      * @see #validateSettings(SettingsState)
      * @see SettingsState#getInstance()
      */
+    @SuppressWarnings("D")
     @Override
     public void apply() throws ConfigurationException {
         if (settingsPanel == null) {
@@ -285,10 +294,32 @@ public class JavaDocSettingsConfigurable implements SearchableConfigurable {
 
         currentSettings.supportedLanguages = panelSettings.supportedLanguages;
 
-        // 保存自定义 JavaDoc 标签配置
+        // 保存自定义 Javadoc 标签配置
         currentSettings.customJavaDocTags = panelSettings.customJavaDocTags;
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
+        currentSettings.enableClassJavaDocTemplate = panelSettings.enableClassJavaDocTemplate;
+        currentSettings.classJavaDocTemplate = panelSettings.classJavaDocTemplate;
         currentSettings.showAdvancedSettings = panelSettings.showAdvancedSettings;
+
+        // 应用类 Javadoc 模板配置到所有打开的项目（需要在写操作中执行）
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ApplicationManager.getApplication().runWriteAction(() -> {
+                // 对所有打开的项目应用模板配置
+                Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
+                for (Project project : openProjects) {
+                    if (project != null && !project.isDisposed()) {
+                        JavaDocFileTemplatesHandler.applyTemplateConfiguration(project, currentSettings);
+                    }
+                }
+                // 如果没有打开的项目，至少应用到默认项目
+                if (openProjects.length == 0) {
+                    Project defaultProject = ProjectManager.getInstance().getDefaultProject();
+                    if (defaultProject != null && !defaultProject.isDisposed()) {
+                        JavaDocFileTemplatesHandler.applyTemplateConfiguration(defaultProject, currentSettings);
+                    }
+                }
+            });
+        });
         currentSettings.compressSingleLineJavaDoc = panelSettings.compressSingleLineJavaDoc;
         currentSettings.addSpaceBetweenChineseAndEnglish = panelSettings.addSpaceBetweenChineseAndEnglish;
         currentSettings.replaceChinesePunctuation = panelSettings.replaceChinesePunctuation;

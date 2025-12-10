@@ -23,11 +23,11 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 
 /**
- * JavaDoc AI 设置状态类
+ * Javadoc AI 设置状态类
  * <p>
- * 该类用于管理 JavaDoc AI 插件的各项配置参数, 包括 AI 提供商配置, 支持的语言类型,
+ * 该类用于管理 Javadoc AI 插件的各项配置参数, 包括 AI 提供商配置, 支持的语言类型,
  * 生成选项, 自定义标签配置, 提示模板等. 实现了持久化状态组件接口, 支持配置的保存和加载.
- * 通过单例模式提供全局访问入口, 用于控制 JavaDoc 生成的行为和外观设置.
+ * 通过单例模式提供全局访问入口, 用于控制 Javadoc 生成的行为和外观设置.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -75,7 +75,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 是否为类生成文档
      *
-     * <p>控制是否为类元素生成 JavaDoc 文档。
+     * <p>控制是否为类元素生成 Javadoc 文档。
      * 用户可在设置界面中切换。
      *
      * <p>默认值: true
@@ -85,7 +85,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 是否为方法生成文档
      *
-     * <p>控制是否为方法元素生成 JavaDoc 文档。
+     * <p>控制是否为方法元素生成 Javadoc 文档。
      * 包括普通方法和测试方法。
      *
      * <p>默认值: true
@@ -97,7 +97,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 是否为字段生成文档
      *
-     * <p>控制是否为字段（成员变量）元素生成 JavaDoc 文档。
+     * <p>控制是否为字段（成员变量）元素生成 Javadoc 文档。
      * 默认关闭，因为字段通常较简单。
      *
      * <p>默认值: true
@@ -128,7 +128,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <ul>
      *   <li>删除多余的空行和空白字符</li>
      *   <li>删除单行注释（// 注释）</li>
-     *   <li>保留 JavaDoc 注释（/** 注释）</li>
+     *   <li>保留 Javadoc 注释（/** 注释）</li>
      *   <li>如果超过最大行数限制，进行截取</li>
      * </ul>
      *
@@ -162,12 +162,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public int maxClassCodeLines = 1000;
 
 
-    // ==================== JavaDoc 标签配置 ====================
+    // ==================== Javadoc 标签配置 ====================
 
     /**
-     * 自定义 JavaDoc 标签列表
+     * 自定义 Javadoc 标签列表
      *
-     * <p>用户可以在设置页面配置自定义的 JavaDoc 标签。
+     * <p>用户可以在设置页面配置自定义的 Javadoc 标签。
      * 这些标签会被自动注册到 JavadocDeclarationInspection 中，
      * 使得 IntelliJ IDEA 不会将这些标签标记为未知标签。
      *
@@ -202,9 +202,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     };
 
     /**
-     * 是否显示自定义 JavaDoc 标签配置面板
+     * 是否显示自定义 Javadoc 标签配置面板
      *
-     * <p>控制设置页面中自定义 JavaDoc 标签配置表格的显示/隐藏。
+     * <p>控制设置页面中自定义 Javadoc 标签配置表格的显示/隐藏。
      * 用户可以通过复选框控制是否显示标签管理表格，减少设置页面长度。
      *
      * <p>默认值: false（默认隐藏，减少页面长度）
@@ -212,6 +212,61 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @since 1.4.0
      */
     public boolean showCustomJavaDocTags = false;
+
+    /**
+     * 是否启用类 Javadoc 模板
+     *
+     * <p>控制是否为新建的 Java 类自动添加 Javadoc 注释模板。
+     * 启用后，在创建新的 Java 类时会自动添加包含作者、日期、邮箱等信息的 Javadoc 注释。
+     *
+     * <p>默认值: false（默认禁用）
+     *
+     * @see dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler
+     * @since 2.5.0
+     */
+    public boolean enableClassJavaDocTemplate = false;
+
+    /**
+     * 类 Javadoc 模板内容
+     *
+     * <p>用于生成 Java 类的 Javadoc 注释模板。
+     * 支持使用变量：
+     * <ul>
+     *   <li>${description} - 类描述（由用户输入）</li>
+     *   <li>${author} - 作者（从自定义标签配置中的 author 标签获取）</li>
+     *   <li>${email} - 邮箱（从自定义标签配置中的 email 标签获取）</li>
+     *   <li>${YEAR}, ${MONTH}, ${DAY}, ${HOUR}, ${MINUTE} - 日期时间变量</li>
+     * </ul>
+     *
+     * <p>注意：${author} 和 ${email} 会在应用配置时自动替换为自定义标签中的实际值。
+     *
+     * <p>默认模板：
+     * <pre>
+     * /**
+     *  * ${description}
+     *  *
+     *  * @author ${author}
+     *  * @version 1.0.0
+     *  * @email ${email}
+     *  * @date ${YEAR}.${MONTH}.${DAY} ${HOUR}:${MINUTE}
+     *  * @since x.x.x
+     *  /
+     * </pre>
+     *
+     * @see #customJavaDocTags
+     * @see dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler
+     * @since 2.5.0
+     */
+    public String classJavaDocTemplate = """
+        /**
+         * ${description}
+         *
+         * @author ${author}
+         * @version 1.0.0
+         * @email ${email}
+         * @date ${YEAR}.${MONTH}.${DAY} ${HOUR}:${MINUTE}
+         * @since x.x.x
+         */""";
 
     /**
      * 是否显示高级设置
@@ -227,9 +282,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean showAdvancedSettings = false;
 
     /**
-     * 是否压缩单行 JavaDoc 注释
+     * 是否压缩单行 Javadoc 注释
      *
-     * <p>控制是否将只有一行内容的 JavaDoc 注释压缩为单行格式。
+     * <p>控制是否将只有一行内容的 Javadoc 注释压缩为单行格式。
      * 例如：
      * <pre>
      * /**
@@ -251,7 +306,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 是否在中英文之间添加空格
      *
-     * <p>控制是否在格式化 JavaDoc 时，在中文字符和英文字符/数字之间自动添加空格。
+     * <p>控制是否在格式化 Javadoc 时，在中文字符和英文字符/数字之间自动添加空格。
      * 例如："这是一个User类" 会格式化为 "这是一个 User 类"。
      *
      * <p>默认值: true（默认启用，提升可读性）
@@ -264,10 +319,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 是否将中文标点符号转换为英文标点符号
      *
-     * <p>控制是否在格式化 JavaDoc 时，将中文标点符号替换为对应的英文标点符号。
+     * <p>控制是否在格式化 Javadoc 时，将中文标点符号替换为对应的英文标点符号。
      * 例如："这是一个类，用于处理数据。" 会格式化为 "这是一个类, 用于处理数据."。
      *
-     * <p>默认值: true（默认启用，符合 JavaDoc 规范）
+     * <p>默认值: true（默认启用，符合 Javadoc 规范）
      *
      * @see dev.dong4j.zeka.stack.idea.plugin.util.JavaDocFormatter
      * @since 1.4.0
@@ -277,7 +332,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /**
      * 注释生成语言
      *
-     * <p>控制生成 JavaDoc 注释时使用的语言。
+     * <p>控制生成 Javadoc 注释时使用的语言。
      * 可选值：
      * <ul>
      *   <li>ZH - 中文（默认）</li>
@@ -296,7 +351,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 是否启用性能模式
      *
      * <p>控制是否使用多个已验证的 AI 服务提供商并行处理任务，以提高批量处理速度。
-     * 启用后，批量生成 JavaDoc 时会同时使用多个服务商，显著提高处理速度。
+     * 启用后，批量生成 Javadoc 时会同时使用多个服务商，显著提高处理速度。
      *
      * <p>使用要求：
      * <ul>
@@ -394,7 +449,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>系统提示词的作用：
      * <ul>
      *   <li>设定 AI 的专业角色（Java 开发工程师）</li>
-     *   <li>建立响应格式要求（中文 JavaDoc）</li>
+     *   <li>建立响应格式要求（中文 Javadoc）</li>
      *   <li>定义输出规范（只返回注释，不返回代码）</li>
      *   <li>确保一致性和专业性</li>
      * </ul>
@@ -414,7 +469,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>模板特点:
      * <ul>
      *   <li>要求使用中文编写</li>
-     *   <li>包含完整的 JavaDoc/KDoc 格式</li>
+     *   <li>包含完整的 Javadoc/KDoc 格式</li>
      *   <li>提供 Java 和 Kotlin 两种示例</li>
      *   <li>使用 %s 作为代码占位符</li>
      * </ul>
@@ -425,7 +480,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultClassPromptTemplate() {
         return """
             请为以下类/接口/枚举/对象生成类级别的文档注释（${commentLanguage}）。
-            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
@@ -517,7 +572,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultMethodPromptTemplate() {
         return """
             请为以下方法/函数生成文档注释（${commentLanguage}）。
-            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
@@ -597,7 +652,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultFieldPromptTemplate() {
         return """
             请为以下字段/属性生成文档注释（${commentLanguage}）。
-            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
@@ -667,7 +722,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultTestPromptTemplate() {
         return """
             请为以下测试方法/函数生成文档注释（${commentLanguage}）。
-            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 JavaDoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
             - 下面的代码可能已经包含旧的文档注释，请忽略或改进它
@@ -734,7 +789,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>模板特点:
      * <ul>
      *   <li>设定 AI 的专业角色（Java/Kotlin 开发工程师）</li>
-     *   <li>建立响应格式要求（中文 JavaDoc/KDoc）</li>
+     *   <li>建立响应格式要求（中文 Javadoc/KDoc）</li>
      *   <li>定义输出规范（只返回注释，不返回代码）</li>
      *   <li>确保一致性和专业性</li>
      * </ul>
@@ -745,14 +800,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultSystemPromptTemplate() {
         return """
             你是一个专业的 Java/Kotlin 开发工程师，专门负责为代码生成高质量的文档注释,
-            精通 Java 和 Kotlin 编程语言，以及 JavaDoc 和 KDoc 规范，能够准确理解代码逻辑并生成清晰、准确的${commentLanguage}注释。
+            精通 Java 和 Kotlin 编程语言，以及 Javadoc 和 KDoc 规范，能够准确理解代码逻辑并生成清晰、准确的${commentLanguage}注释。
             现在的任务是分析用户提供的代码片段，自动识别代码语言（Java 或 Kotlin），并生成符合相应标准的注释。
 
             重要要求：
-            - 自动识别代码语言：如果是 Java 代码，生成 JavaDoc 格式；如果是 Kotlin 代码，生成 KDoc 格式
+            - 自动识别代码语言：如果是 Java 代码，生成 Javadoc 格式；如果是 Kotlin 代码，生成 KDoc 格式
             - 只返回文档注释，不要返回代码本身
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
-            - JavaDoc 和 KDoc 都使用相同的注释格式（/** */）和标签格式（@param, @return, @throws 等）
+            - Javadoc 和 KDoc 都使用相同的注释格式（/** */）和标签格式（@param, @return, @throws 等）
             - 注释内容要准确描述代码的功能和用途
             - 请始终使用${commentLanguage}编写注释，确保注释内容准确、简洁、易懂
             """;
@@ -852,7 +907,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
-     * 获取自定义 JavaDoc 标签列表（去重、去空、转小写）
+     * 获取自定义 Javadoc 标签列表（去重、去空、转小写）
      *
      * <p>对标签列表进行规范化处理：
      * <ul>

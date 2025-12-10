@@ -56,11 +56,11 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavaDocBundle;
 import icons.AICommonIcons;
 
 /**
- * JavaDoc 设置面板类
+ * Javadoc 设置面板类
  * <p>
- * 提供 JavaDoc 生成工具的配置界面, 允许用户配置 AI 提供商, 生成规则, 语言支持,
+ * 提供 Javadoc 生成工具的配置界面, 允许用户配置 AI 提供商, 生成规则, 语言支持,
  * 代码压缩, 性能模式等各项设置. 该面板包含多个功能区域, 如 AI 提供商选择,
- * 生成规则配置, 自定义 JavaDoc 标签管理, 高级提示模板设置等.
+ * 生成规则配置, 自定义 Javadoc 标签管理, 高级提示模板设置等.
  * 支持 Java 和 Kotlin 语言, 提供中文英文间距调整, 中文标点替换等本地化功能.
  *
  * @author zeka.stack.team
@@ -108,15 +108,23 @@ public class JavaDocSettingsPanel {
     /** Kotlin 语言支持开关控件 */
     private JBCheckBox kotlinCheckBox;
 
-    // JavaDoc 标签配置
-    /** 显示自定义 JavaDoc 标签的复选框 */
+    // Javadoc 标签配置
+    /** 显示自定义 Javadoc 标签的复选框 */
     private JBCheckBox showCustomJavaDocTagsCheckBox;
-    /** 自定义 JavaDoc 标签列表表格 */
+    /** 自定义 Javadoc 标签列表表格 */
     private JBTable customJavaDocTagsTable;
-    /** 自定义 JavaDoc 标签列表面板（包含表格和工具栏） */
+    /** 自定义 Javadoc 标签列表面板（包含表格和工具栏） */
     private JPanel customJavaDocTagsPanel;
-    /** 自定义 JavaDoc 标签列表表格模型 */
+    /** 自定义 Javadoc 标签提示标签 */
+    private JBLabel customTagsHintLabel;
+    /** 自定义 Javadoc 标签列表表格模型 */
     private CustomJavaDocTagsTableModel customJavaDocTagsTableModel;
+    /** 启用类 Javadoc 模板复选框 */
+    private JBCheckBox enableClassJavaDocTemplateCheckBox;
+    /** 类 Javadoc 模板文本区域 */
+    private JTextArea classJavaDocTemplateTextArea;
+    /** 类 Javadoc 模板编辑器面板（包含文本区域和重置按钮） */
+    private JPanel classJavaDocTemplatePanel;
 
     // 高级设置
     /** 显示高级设置的复选框 */
@@ -151,7 +159,7 @@ public class JavaDocSettingsPanel {
 
 
     /**
-     * 构造函数，初始化 JavaDoc 设置面板
+     * 构造函数，初始化 Javadoc 设置面板
      * <p>
      * 调用创建用户界面和设置事件监听器的方法，完成面板的初始化
      */
@@ -219,11 +227,20 @@ public class JavaDocSettingsPanel {
         kotlinCheckBox = new JBCheckBox(JavaDocBundle.message("settings.language.kotlin"));
         kotlinCheckBox.setEnabled(true);
 
-        // 创建自定义 JavaDoc 标签组件
+        // 创建自定义 Javadoc 标签组件
         showCustomJavaDocTagsCheckBox = new JBCheckBox(JavaDocBundle.message("settings.custom.javadoc.tags"));
+        enableClassJavaDocTemplateCheckBox = new JBCheckBox(JavaDocBundle.message("settings.enable.class.javadoc.template"));
         customJavaDocTagsTableModel = new CustomJavaDocTagsTableModel();
         customJavaDocTagsTable = new JBTable(customJavaDocTagsTableModel);
         customJavaDocTagsTable.setPreferredScrollableViewportSize(new Dimension(500, 100));
+
+        // 创建类 Javadoc 模板编辑器
+        classJavaDocTemplateTextArea = new JTextArea(10, 50);
+        classJavaDocTemplateTextArea.setLineWrap(true);
+        classJavaDocTemplateTextArea.setWrapStyleWord(true);
+        classJavaDocTemplateTextArea.setToolTipText(JavaDocBundle.message("settings.class.javadoc.template.hint"));
+        classJavaDocTemplatePanel = createClassJavaDocTemplatePanel();
+        classJavaDocTemplatePanel.setVisible(false); // 默认隐藏
 
         // 创建带工具栏的面板
         ToolbarDecorator tagsDecorator = ToolbarDecorator.createDecorator(customJavaDocTagsTable)
@@ -238,9 +255,9 @@ public class JavaDocSettingsPanel {
                                          JavaDocBundle.message("settings.custom.javadoc.tags.clear.all.description"),
                                          com.intellij.icons.AllIcons.Actions.GC) {
                 /**
-                 * 处理动作事件, 清除所有自定义的 JavaDoc 标签
+                 * 处理动作事件, 清除所有自定义的 Javadoc 标签
                  * <p>
-                 * 该方法用于响应动作事件, 执行清除自定义 JavaDoc 标签的操作
+                 * 该方法用于响应动作事件, 执行清除自定义 Javadoc 标签的操作
                  *
                  * @param e 动作事件对象
                  */
@@ -252,7 +269,7 @@ public class JavaDocSettingsPanel {
                 /**
                  * 根据表格数据状态更新操作按钮的启用状态
                  * <p>
-                 * 检查自定义 JavaDoc 标签表格中是否有数据行, 若有则启用按钮, 否则禁用
+                 * 检查自定义 Javadoc 标签表格中是否有数据行, 若有则启用按钮, 否则禁用
                  *
                  * @param e 动作事件对象, 包含操作相关的上下文信息
                  */
@@ -638,8 +655,8 @@ public class JavaDocSettingsPanel {
      * @return 其他设置面板
      */
     private JPanel createOtherSettingsPanel() {
-        // 创建自定义 JavaDoc 标签提示标签
-        JBLabel customTagsHintLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.hint"));
+        // 创建自定义 Javadoc 标签提示标签（保存为字段，以便控制显示/隐藏）
+        customTagsHintLabel = new JBLabel(JavaDocBundle.message("settings.custom.javadoc.tags.hint"));
         customTagsHintLabel.setFont(customTagsHintLabel.getFont().deriveFont(customTagsHintLabel.getFont().getSize() - 1f));
         customTagsHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         customTagsHintLabel.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
@@ -647,7 +664,43 @@ public class JavaDocSettingsPanel {
         return createPanelWithBorder("settings.other.settings",
                                      showCustomJavaDocTagsCheckBox,
                                      customTagsHintLabel,
-                                     customJavaDocTagsPanel);
+                                     customJavaDocTagsPanel,
+                                     createCheckBoxWithHint(enableClassJavaDocTemplateCheckBox,
+                                                            "settings.enable.class.javadoc.template.hint"),
+                                     classJavaDocTemplatePanel);
+    }
+
+    /**
+     * 创建类 Javadoc 模板编辑器面板
+     * <p>
+     * 创建一个包含模板文本区域和重置按钮的面板，参考提示词的展示方式。
+     *
+     * @return 类 Javadoc 模板编辑器面板
+     */
+    private JPanel createClassJavaDocTemplatePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 创建滚动面板，并添加边框以在四周留出空间
+        JBScrollPane scrollPane = new JBScrollPane(classJavaDocTemplateTextArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // 添加边框，在四周留出10像素的空间，并添加左侧缩进（22像素，与复选框对齐）
+        scrollPane.setBorder(JBUI.Borders.empty(10));
+        JPanel scrollWrapper = new JPanel(new BorderLayout());
+        scrollWrapper.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
+        scrollWrapper.add(scrollPane, BorderLayout.CENTER);
+
+        panel.add(scrollWrapper, BorderLayout.CENTER);
+
+        // 创建重置按钮（参考提示词模板的样式）
+        JButton resetButton = new JButton(JavaDocBundle.message("settings.class.javadoc.template.reset"));
+        resetButton.addActionListener(e -> resetClassJavaDocTemplateToDefault());
+        JPanel buttonPanel = new JPanel(new BorderLayout());
+        buttonPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 与复选框对齐
+        buttonPanel.add(resetButton, BorderLayout.CENTER); // 按钮占据整个宽度
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panel;
     }
 
     /**
@@ -1054,6 +1107,16 @@ public class JavaDocSettingsPanel {
     }
 
     /**
+     * 将类 Javadoc 模板重置为默认值
+     * <p>
+     * 从 SettingsState 获取默认的类 Javadoc 模板内容，并将其设置到模板文本区域中。
+     */
+    private void resetClassJavaDocTemplateToDefault() {
+        SettingsState defaultSettings = new SettingsState();
+        classJavaDocTemplateTextArea.setText(defaultSettings.classJavaDocTemplate);
+    }
+
+    /**
      * 配置 TitledBorder 的字体和颜色
      * <p>
      * 显式设置字体和颜色，确保在 2025 版本中正常显示。
@@ -1083,9 +1146,21 @@ public class JavaDocSettingsPanel {
             mainPanel.repaint();
         });
 
-        showCustomJavaDocTagsCheckBox.addActionListener(e ->
-                                                            customJavaDocTagsPanel.setVisible(showCustomJavaDocTagsCheckBox.isSelected())
-                                                       );
+        showCustomJavaDocTagsCheckBox.addActionListener(e -> {
+            boolean selected = showCustomJavaDocTagsCheckBox.isSelected();
+            customJavaDocTagsPanel.setVisible(selected);
+            // 提示语也随复选框状态显示/隐藏
+            if (customTagsHintLabel != null) {
+                customTagsHintLabel.setVisible(selected);
+            }
+        });
+
+        enableClassJavaDocTemplateCheckBox.addActionListener(e -> {
+            boolean selected = enableClassJavaDocTemplateCheckBox.isSelected();
+            classJavaDocTemplatePanel.setVisible(selected);
+            mainPanel.revalidate();
+            mainPanel.repaint();
+        });
 
         performanceModeCheckBox.addActionListener(e -> updatePerformanceModeSubConfigEnabled());
     }
@@ -1117,7 +1192,7 @@ public class JavaDocSettingsPanel {
      * 获取当前设置状态对象, 用于保存用户配置的各类设置信息.
      * <p>
      * 该方法会从界面组件中读取用户选择的配置项, 并将其封装到 SettingsState 对象中.
-     * 包括提供者设置, 生成选项, 语言支持, 提示模板, 自定义 JavaDoc 标签等.
+     * 包括提供者设置, 生成选项, 语言支持, 提示模板, 自定义 Javadoc 标签等.
      *
      * @return 当前设置状态对象
      * @since 1.0
@@ -1166,6 +1241,8 @@ public class JavaDocSettingsPanel {
         // 获取标签列表（已经是 List<CustomJavaDocTag>）
         settings.customJavaDocTags = new ArrayList<>(customJavaDocTagsTableModel.getData());
         settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
+        settings.enableClassJavaDocTemplate = enableClassJavaDocTemplateCheckBox.isSelected();
+        settings.classJavaDocTemplate = classJavaDocTemplateTextArea.getText().trim();
         settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
 
         return settings;
@@ -1175,7 +1252,7 @@ public class JavaDocSettingsPanel {
      * 加载设置配置到界面组件中
      * <p>
      * 将传入的 SettingsState 对象中的配置信息同步到各个 UI 控件中, 包括生成选项, 代码压缩设置,
-     * 提示模板, 自定义 JavaDoc 标签等高级设置.
+     * 提示模板, 自定义 Javadoc 标签等高级设置.
      *
      * @param settings 包含所有设置信息的 SettingsState 对象
      */
@@ -1232,6 +1309,19 @@ public class JavaDocSettingsPanel {
         }
         showCustomJavaDocTagsCheckBox.setSelected(settings.showCustomJavaDocTags);
         customJavaDocTagsPanel.setVisible(settings.showCustomJavaDocTags);
+        // 提示语也随复选框状态显示/隐藏
+        if (customTagsHintLabel != null) {
+            customTagsHintLabel.setVisible(settings.showCustomJavaDocTags);
+        }
+        enableClassJavaDocTemplateCheckBox.setSelected(settings.enableClassJavaDocTemplate);
+        if (settings.classJavaDocTemplate != null && !settings.classJavaDocTemplate.isEmpty()) {
+            classJavaDocTemplateTextArea.setText(settings.classJavaDocTemplate);
+        } else {
+            // 如果设置中没有模板内容，使用默认模板
+            SettingsState defaultSettings = new SettingsState();
+            classJavaDocTemplateTextArea.setText(defaultSettings.classJavaDocTemplate);
+        }
+        classJavaDocTemplatePanel.setVisible(settings.enableClassJavaDocTemplate);
 
         showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
         advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
@@ -1251,7 +1341,7 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 添加自定义 JavaDoc 标签
+     * 添加自定义 Javadoc 标签
      * <p>
      * 该方法弹出输入框提示用户输入自定义标签名称和默认值, 随后对输入进行合法性校验
      * (使用 {@link SettingsState#isValidTagName(String)}), 并检查当前标签列表中是否已存在相同名称 (不区分大小写).<br>
@@ -1327,7 +1417,7 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 删除自定义 JavaDoc 标签
+     * 删除自定义 Javadoc 标签
      */
     private void removeCustomJavaDocTag(int selectedRow) {
         if (selectedRow < 0 || selectedRow >= customJavaDocTagsTableModel.getRowCount()) {
@@ -1351,7 +1441,7 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 清空所有自定义 JavaDoc 标签
+     * 清空所有自定义 Javadoc 标签
      */
     private void clearAllCustomJavaDocTags() {
         if (customJavaDocTagsTableModel.getRowCount() == 0) {
@@ -1373,11 +1463,11 @@ public class JavaDocSettingsPanel {
     }
 
     /**
-     * 自定义 JavaDoc 标签表格模型
+     * 自定义 Javadoc 标签表格模型
      * <p>
-     * 该模型用于管理自定义 JavaDoc 标签的数据, 继承自 AbstractTableModel,
+     * 该模型用于管理自定义 Javadoc 标签的数据, 继承自 AbstractTableModel,
      * 提供了对自定义标签的增删改查操作, 支持表格界面的数据展示和编辑功能.
-     * 主要用于 JavaDoc 设置界面中自定义标签的管理, 包括标签名称和默认值的配置.
+     * 主要用于 Javadoc 设置界面中自定义标签的管理, 包括标签名称和默认值的配置.
      *
      * @author zeka.stack.team
      * @version 1.0.0
@@ -1387,7 +1477,7 @@ public class JavaDocSettingsPanel {
      */
     private static class CustomJavaDocTagsTableModel extends AbstractTableModel {
         /**
-         * 列名数组, 用于显示自定义 JavaDoc 标签的设置界面
+         * 列名数组, 用于显示自定义 Javadoc 标签的设置界面
          * <p>
          * 数组中的元素通过 JavaDocBundle 获取国际化字符串
          */
@@ -1401,7 +1491,7 @@ public class JavaDocSettingsPanel {
         /**
          * 构造函数, 初始化 CustomJavaDocTagsTableModel 实例
          * <p>
-         * 创建一个空的表格模型, 用于展示 JavaDoc 标签信息
+         * 创建一个空的表格模型, 用于展示 Javadoc 标签信息
          *
          * @since 2.0.0
          */

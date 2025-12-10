@@ -5,7 +5,7 @@
 
     <!-- 公共插件名称应使用标题大小写书写。
          指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
-    <name>IntelliAI JavaDoc</name>
+    <name>IntelliAI Javadoc</name>
 
     <!-- 在插件页面上显示的供应商名称或组织ID。 -->
     <vendor email="dong4j@gmail.com">dong4j</vendor>
@@ -37,19 +37,22 @@
                 parentId="tools"
                 instance="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.settings.JavaDocSettingsConfigurable"
-                displayName="IntelliAI JavaDoc"/>
+                displayName="IntelliAI Javadoc"/>
 
         <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
         <!--suppress PluginXmlI18n -->
-        <notificationGroup id="IntelliAI JavaDoc Notifications"
+        <notificationGroup id="IntelliAI Javadoc Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
 
-        <!-- 自动注册自定义 JavaDoc 标签 -->
+        <!-- 自动注册自定义 Javadoc 标签 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.CustomJavaDocTagRegistrar"/>
 
         <!-- Maven 缓存清理监听器（在启动活动中注册） -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.MavenCacheCleanupListener"/>
+
+        <!-- Javadoc 文件模板处理器 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.JavaDocFileTemplatesHandler"/>
 
 
         <!-- 状态栏默认服务商控件 -->
@@ -60,7 +63,7 @@
         <intentionAction>
             <language/>
             <className>dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavaDocIntentionAction</className>
-            <!--<category>IntelliAI JavaDoc</category>-->
+            <!--<category>IntelliAI Javadoc</category>-->
             <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
         </intentionAction>
 
