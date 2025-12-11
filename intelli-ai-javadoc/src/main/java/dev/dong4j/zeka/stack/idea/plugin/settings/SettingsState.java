@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
@@ -73,7 +74,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>默认值: {"java"}
      */
     public Set<String> supportedLanguages = new HashSet<>() {{
-        add("java");
+        add(PluginContents.JAVA);
     }};
 
     /**

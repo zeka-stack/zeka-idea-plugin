@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.kotlin.psi.KtProperty;
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid;
 
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.action.AbstractGenerateJavaDocAction;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
@@ -165,7 +167,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
 
             // 检查是否支持 Kotlin
             if (psiFile instanceof KtFile) {
-                if (!settings.isLanguageSupported("kotlin")) {
+                if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
                     return null;
                 }
             }
@@ -220,6 +222,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * @param project  当前项目上下文
      * @param settings 当前设置状态
      */
+    @SuppressWarnings("D")
     private void collectJavaEntries(@NotNull PsiJavaFile javaFile,
                                     @NotNull ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entries,
                                     @NotNull Project project,
@@ -237,52 +240,79 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
         }
 
         // 并行处理类级别的 Code Vision 条目
+        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
         if (settings.generateForClass) {
             Stream.of(allClasses)
                 .parallel()
-                .filter(psiClass -> shouldShowHintElement(psiClass, settings))
-                .forEach(psiClass -> entries.add(createCodeVisionEntry(psiClass, project, settings)));
+                .forEach(psiClass -> {
+                    ReadAction.run(() -> {
+                        if (shouldShowHintElement(psiClass, settings)) {
+                            entries.add(createCodeVisionEntry(psiClass, project, settings));
+                        }
+                    });
+                });
         }
 
         // 并行处理类内的方法和字段
+        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
         Stream.of(allClasses)
             .parallel()
             .forEach(psiClass -> {
-                // 收集方法
-                if (settings.generateForMethod) {
-                    PsiMethod[] methods = psiClass.getMethods();
-                    if (methods.length > 0) {
-                        Stream.of(methods)
-                            .filter(method -> shouldShowHintElement(method, settings))
-                            .forEach(method -> entries.add(createCodeVisionEntry(method, project, settings)));
+                ReadAction.run(() -> {
+                    // 收集方法
+                    if (settings.generateForMethod) {
+                        PsiMethod[] methods = psiClass.getMethods();
+                        if (methods.length > 0) {
+                            Stream.of(methods)
+                                .forEach(method -> {
+                                    ReadAction.run(() -> {
+                                        if (shouldShowHintElement(method, settings)) {
+                                            entries.add(createCodeVisionEntry(method, project, settings));
+                                        }
+                                    });
+                                });
+                        }
                     }
-                }
 
-                // 收集字段
-                if (settings.generateForField) {
-                    PsiField[] fields = psiClass.getFields();
-                    if (fields.length > 0) {
-                        Stream.of(fields)
-                            .filter(field -> shouldShowHintElement(field, settings))
-                            .forEach(field -> entries.add(createCodeVisionEntry(field, project, settings)));
+                    // 收集字段
+                    if (settings.generateForField) {
+                        PsiField[] fields = psiClass.getFields();
+                        if (fields.length > 0) {
+                            Stream.of(fields)
+                                .forEach(field -> {
+                                    ReadAction.run(() -> {
+                                        if (shouldShowHintElement(field, settings)) {
+                                            entries.add(createCodeVisionEntry(field, project, settings));
+                                        }
+                                    });
+                                });
+                        }
                     }
-                }
+                });
             });
     }
 
     /**
      * 根据当前项目设置收集 Kotlin 文件中的 CodeVision 条目.
      * <p>
-     * 该方法首先检查 Kotlin 语言是否被启用; 若未启用则直接返回. 随后根据 {@link SettingsState}
-     * 的配置决定是否为类, 方法和字段生成 CodeVision 条目. 对于每一种类型, 方法会遍历
-     * {@link KtFile} 中对应的 PSI 节点, 调用 {@link #shouldShowHintElement} 判断是否需要显示提示,
-     * 并通过 {@link #createCodeVisionEntry} 创建条目后追加到 {@code entries} 队列.
+     * 该方法首先检查 Kotlin 语言是否被启用; 若未启用则直接返回. 随后使用 {@link KtTreeVisitorVoid}
+     * 递归遍历整个 Kotlin 文件, 收集所有类、函数和属性, 然后使用并行流处理这些元素,
+     * 根据 {@link SettingsState} 的配置决定是否为各种类型的元素生成 CodeVision 条目.
+     * <p>
+     * <b>遍历范围：</b>
+     * <ul>
+     *   <li>顶层函数和属性（不在类内部的）</li>
+     *   <li>类内部的函数和属性</li>
+     *   <li>嵌套类内部的函数和属性</li>
+     *   <li>所有层级的类和对象声明</li>
+     * </ul>
      * <p>
      * <b>性能优化：</b>
      * <ul>
-     *   <li>使用并行流处理多个类，加快收集速度</li>
-     *   <li>使用并行流处理类内的函数和属性</li>
+     *   <li>先收集所有元素到列表（单次遍历）</li>
+     *   <li>使用并行流处理收集到的元素，加快处理速度</li>
      *   <li>使用线程安全的队列收集结果</li>
+     *   <li>与 Java 版本的并行处理方式保持一致</li>
      * </ul>
      *
      * @param ktFile   需要分析的 Kotlin 文件
@@ -295,48 +325,75 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                                       @NotNull ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entries,
                                       @NotNull Project project, SettingsState settings) {
         // 检查是否支持 Kotlin 语言
-        if (!settings.isLanguageSupported("kotlin")) {
+        if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
             return;
         }
 
-        // 获取所有类（只获取一次，避免重复遍历）
-        KtClassOrObject[] allClasses = PsiTreeUtil.getChildrenOfType(ktFile, KtClassOrObject.class);
-        if (allClasses == null || allClasses.length == 0) {
-            return;
-        }
+        // 收集所有元素到列表
+        List<KtClassOrObject> allClasses = new ArrayList<>();
+        List<KtNamedFunction> allFunctions = new ArrayList<>();
+        List<KtProperty> allProperties = new ArrayList<>();
+
+        // 使用 KtTreeVisitorVoid 递归遍历整个文件，收集所有元素
+        // 这样可以获取到所有层级的函数和属性，而不仅仅是类的直接子节点
+        ktFile.accept(new KtTreeVisitorVoid() {
+            @Override
+            public void visitClassOrObject(@NotNull KtClassOrObject classOrObject) {
+                super.visitClassOrObject(classOrObject);
+                allClasses.add(classOrObject);
+            }
+
+            @Override
+            public void visitNamedFunction(@NotNull KtNamedFunction function) {
+                super.visitNamedFunction(function);
+                allFunctions.add(function);
+            }
+
+            @Override
+            public void visitProperty(@NotNull KtProperty property) {
+                super.visitProperty(property);
+                allProperties.add(property);
+            }
+        });
 
         // 并行处理类级别的 Code Vision 条目
-        if (settings.generateForClass) {
-            Stream.of(allClasses)
-                .parallel()
-                .filter(ktClass -> shouldShowHintElement(ktClass, settings))
-                .forEach(ktClass -> entries.add(createCodeVisionEntry(ktClass, project, settings)));
+        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        if (settings.generateForClass && !allClasses.isEmpty()) {
+            allClasses.parallelStream()
+                .forEach(ktClass -> {
+                    ReadAction.run(() -> {
+                        if (shouldShowHintElement(ktClass, settings)) {
+                            entries.add(createCodeVisionEntry(ktClass, project, settings));
+                        }
+                    });
+                });
         }
 
-        // 并行处理类内的函数和属性
-        Stream.of(allClasses)
-            .parallel()
-            .forEach(ktClass -> {
-                // 收集函数
-                if (settings.generateForMethod) {
-                    KtNamedFunction[] functions = PsiTreeUtil.getChildrenOfType(ktClass, KtNamedFunction.class);
-                    if (functions != null && functions.length > 0) {
-                        Stream.of(functions)
-                            .filter(function -> shouldShowHintElement(function, settings))
-                            .forEach(function -> entries.add(createCodeVisionEntry(function, project, settings)));
-                    }
-                }
+        // 并行处理函数级别的 Code Vision 条目（包括顶层函数和类内函数）
+        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        if (settings.generateForMethod && !allFunctions.isEmpty()) {
+            allFunctions.parallelStream()
+                .forEach(function -> {
+                    ReadAction.run(() -> {
+                        if (shouldShowHintElement(function, settings)) {
+                            entries.add(createCodeVisionEntry(function, project, settings));
+                        }
+                    });
+                });
+        }
 
-                // 收集属性
-                if (settings.generateForField) {
-                    KtProperty[] properties = PsiTreeUtil.getChildrenOfType(ktClass, KtProperty.class);
-                    if (properties != null && properties.length > 0) {
-                        Stream.of(properties)
-                            .filter(property -> shouldShowHintElement(property, settings))
-                            .forEach(property -> entries.add(createCodeVisionEntry(property, project, settings)));
-                    }
-                }
-            });
+        // 并行处理属性级别的 Code Vision 条目（包括顶层属性和类内属性）
+        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        if (settings.generateForField && !allProperties.isEmpty()) {
+            allProperties.parallelStream()
+                .forEach(property -> {
+                    ReadAction.run(() -> {
+                        if (shouldShowHintElement(property, settings)) {
+                            entries.add(createCodeVisionEntry(property, project, settings));
+                        }
+                    });
+                });
+        }
     }
 
     /**

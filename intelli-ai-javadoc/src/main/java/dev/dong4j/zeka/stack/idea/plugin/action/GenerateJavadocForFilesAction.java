@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
@@ -153,14 +154,14 @@ public class GenerateJavadocForFilesAction extends AnAction {
         String extLower = extension.toLowerCase();
 
         // 检查是否为 Java 文件
-        if ("java".equals(extLower)) {
+        if (PluginContents.JAVA.equals(extLower)) {
             return true;
         }
 
         // 检查是否为 Kotlin 文件
         if ("kt".equals(extLower)) {
             SettingsState settings = SettingsState.getInstance();
-            return settings.isLanguageSupported("kotlin");
+            return settings.isLanguageSupported(PluginContents.KOTLIN);
         }
 
         return false;

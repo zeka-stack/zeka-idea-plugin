@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.psi.KtFile;
 
 import javax.swing.Icon;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil;
@@ -137,7 +138,7 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
         // 检查是否支持 Kotlin
         if (file instanceof KtFile) {
             SettingsState settings = SettingsState.getInstance();
-            if (!settings.isLanguageSupported("kotlin")) {
+            if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
                 return false;
             }
         }

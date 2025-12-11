@@ -98,7 +98,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         // 检查是否支持 Kotlin
         if (psiFile instanceof KtFile) {
             SettingsState settings = SettingsState.getInstance();
-            if (!settings.isLanguageSupported("kotlin")) {
+            if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
                 return;
             }
         }
@@ -116,11 +116,11 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
 
         // 如果为 null, 就为整个文件生成 Javadoc
         if (editor == null) {
-            String fileType = psiFile instanceof KtFile ? "Kotlin" : "Java";
+            String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
             log.info("为文件生成文档: {} ({})", psiFile.getName(), fileType);
             tasks = collector.collectFromElement(psiFile.getOriginalElement());
         } else {
-            String fileType = psiFile instanceof KtFile ? "Kotlin" : "Java";
+            String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
             log.info("为正在编辑的 {} 文件生成文档: {}", fileType, psiFile.getName());
             // 定位元素
             PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
@@ -187,7 +187,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         // 如果是 Kotlin 文件，检查是否支持
         if (psiFile instanceof KtFile) {
             SettingsState settings = SettingsState.getInstance();
-            isSupportedFile = settings.isLanguageSupported("kotlin");
+            isSupportedFile = settings.isLanguageSupported(PluginContents.KOTLIN);
         }
 
         e.getPresentation().setEnabled(isSupportedFile);

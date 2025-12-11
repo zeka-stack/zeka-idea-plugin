@@ -159,7 +159,7 @@ public class GenerateJavadocForCommitAction extends AnAction {
     private List<VirtualFile> filterJavaFiles(@NotNull Collection<Change> changes) {
         return changes.stream()
             .map(Change::getVirtualFile)
-            .filter(file -> file != null && "java".equalsIgnoreCase(file.getExtension()))
+            .filter(file -> file != null && PluginContents.JAVA.equalsIgnoreCase(file.getExtension()))
             .collect(Collectors.toList());
     }
 }

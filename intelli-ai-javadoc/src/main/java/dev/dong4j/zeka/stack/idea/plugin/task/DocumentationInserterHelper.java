@@ -16,6 +16,7 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.kotlin.psi.KtProperty;
@@ -99,7 +100,7 @@ public class DocumentationInserterHelper {
                 () -> ApplicationManager.getApplication().runWriteAction(() -> {
                     try {
                         // 1. 先删除旧注释（如果存在）
-                        deleteOldDocComment(element, document, verboseLogging);
+                        deleteOldDocComment(element, verboseLogging);
 
                         // 2. 提交删除操作
                         PsiDocumentManager.getInstance(project).commitDocument(document);
@@ -198,27 +199,11 @@ public class DocumentationInserterHelper {
      * </ul>
      *
      * @param element        目标元素
-     * @param document       文档对象（保留参数以保持接口兼容性，但实际使用 PSI API 不需要）
      * @param verboseLogging 是否启用详细日志
      */
-    @SuppressWarnings("D")
     private void deleteOldDocComment(@NotNull PsiElement element,
-                                     @NotNull Document document,
                                      boolean verboseLogging) {
-        PsiElement oldComment = null;
-
-        // 处理 Java 元素的 Javadoc
-        if (element instanceof PsiDocCommentOwner) {
-            oldComment = ((PsiDocCommentOwner) element).getDocComment();
-        }
-        // 处理 Kotlin 元素的 KDoc
-        else if (element instanceof KtClassOrObject) {
-            oldComment = ((KtClassOrObject) element).getDocComment();
-        } else if (element instanceof KtNamedFunction) {
-            oldComment = ((KtNamedFunction) element).getDocComment();
-        } else if (element instanceof KtProperty) {
-            oldComment = ((KtProperty) element).getDocComment();
-        }
+        final PsiElement oldComment = getOldComment(element);
 
         // 如果没有注释，直接返回
         if (oldComment == null) {
@@ -237,6 +222,33 @@ public class DocumentationInserterHelper {
         } catch (Exception e) {
             log.warn("删除旧注释失败", e);
         }
+    }
+
+    /**
+     * 获取指定元素的旧文档注释
+     * <p>
+     * 根据元素的类型获取对应的文档注释. 支持 PsiDocCommentOwner 类型以及 Kotlin 中的类, 对象, 函数和属性.
+     *
+     * @param element 要获取文档注释的元素, 不能为 null
+     * @return 元素的文档注释, 如果元素不支持文档注释或没有文档注释则返回 null
+     */
+    @Nullable
+    private static PsiElement getOldComment(@NotNull PsiElement element) {
+        PsiElement oldComment = null;
+
+        // 处理 Java 元素的 Javadoc
+        if (element instanceof PsiDocCommentOwner) {
+            oldComment = ((PsiDocCommentOwner) element).getDocComment();
+        }
+        // 处理 Kotlin 元素的 KDoc
+        else if (element instanceof KtClassOrObject) {
+            oldComment = ((KtClassOrObject) element).getDocComment();
+        } else if (element instanceof KtNamedFunction) {
+            oldComment = ((KtNamedFunction) element).getDocComment();
+        } else if (element instanceof KtProperty) {
+            oldComment = ((KtProperty) element).getDocComment();
+        }
+        return oldComment;
     }
 
     /**

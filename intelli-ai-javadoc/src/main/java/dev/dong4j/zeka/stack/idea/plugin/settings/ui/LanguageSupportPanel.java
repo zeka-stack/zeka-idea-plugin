@@ -11,6 +11,7 @@ import java.util.HashSet;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
@@ -121,10 +122,10 @@ public class LanguageSupportPanel {
 
         settings.supportedLanguages = new HashSet<>();
         if (javaCheckBox.isSelected()) {
-            settings.supportedLanguages.add("java");
+            settings.supportedLanguages.add(PluginContents.JAVA);
         }
         if (kotlinCheckBox.isSelected()) {
-            settings.supportedLanguages.add("kotlin");
+            settings.supportedLanguages.add(PluginContents.KOTLIN);
         }
 
         // 保存显示生成 Javadoc 提示配置
@@ -144,8 +145,8 @@ public class LanguageSupportPanel {
         }
         commentLanguageComboBox.setSelectedItem(commentLanguage);
 
-        javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
-        kotlinCheckBox.setSelected(settings.supportedLanguages.contains("kotlin"));
+        javaCheckBox.setSelected(settings.supportedLanguages.contains(PluginContents.JAVA));
+        kotlinCheckBox.setSelected(settings.supportedLanguages.contains(PluginContents.KOTLIN));
 
         // 加载显示生成 Javadoc 提示配置
         showGenerateJavadocHintCheckBox.setSelected(settings.showGenerateJavadocHint);

@@ -16,13 +16,12 @@ class UserRepository {
     private val users = mutableListOf<User>()
 
     /**
-     * 根据用户 ID 在用户列表中查找对应的用户
+     * 根据指定的 ID 查找用户
      * <p>
-     * 通过遍历 {@code users} 集合, 返回与给定 {@code id} 匹配的 {@link User} 对象.
-     * 若未找到匹配的用户, 则返回 {@code null}.
+     * 在用户列表中查找具有指定 ID 的用户, 并返回该用户对象. 如果未找到匹配的用户, 则返回 null.
      *
      * @param id 要查找的用户 ID
-     * @return 匹配的 {@link User} 对象; 若不存在则返回 {@code null}
+     * @return 匹配 ID 的用户对象, 如果未找到则返回 null
      */
     fun findById(id: Int): User? {
         return users.find { it.id == id }

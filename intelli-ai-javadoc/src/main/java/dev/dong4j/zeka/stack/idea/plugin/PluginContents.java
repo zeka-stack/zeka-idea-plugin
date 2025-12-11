@@ -15,4 +15,10 @@ public class PluginContents {
 
     /** 插件名称 */
     public static final String PLUGIN_NAME = "IntelliAI Javadoc";
+    /** Kotlin 语言标识 */
+    public static final String KOTLIN = "kotlin";
+    /** Kotlin 语言的文件扩展名 */
+    public static final String KOTLIN_EXTENSION = "kt";
+    /** Java 语言标识 */
+    public static final String JAVA = "java";
 }

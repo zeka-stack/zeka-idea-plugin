@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor;
 
@@ -285,7 +286,7 @@ public class TaskCollector {
         // 处理 Kotlin 文件
         else if (psiFile instanceof KtFile ktFile) {
             // 检查是否支持 Kotlin
-            if (!settings.isLanguageSupported("kotlin")) {
+            if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
                 return tasks;
             }
 
@@ -450,7 +451,7 @@ public class TaskCollector {
         // 处理 Kotlin 文件
         else if (psiFile instanceof KtFile ktFile) {
             // 检查是否支持 Kotlin
-            if (!settings.isLanguageSupported("kotlin")) {
+            if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
                 return tasks;
             }
 
@@ -891,7 +892,7 @@ public class TaskCollector {
      */
     private boolean isJavaFile(@NotNull VirtualFile file) {
         String extension = file.getExtension();
-        return "java".equalsIgnoreCase(extension) || "kt".equalsIgnoreCase(extension);
+        return PluginContents.JAVA.equalsIgnoreCase(extension) || PluginContents.KOTLIN_EXTENSION.equalsIgnoreCase(extension);
     }
 }
 
