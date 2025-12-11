@@ -31,6 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
@@ -146,7 +147,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         AIProviderType providerType = getCurrentProviderType();
         Icon providerIcon = AICommonIcons.getProviderIcon(providerType);
         // 如果提供商有图标则使用（已缩放），否则缩放主图标
-        Icon iconToUse = providerIcon != null ? providerIcon : scaleIconForStatusBar(AIJicons.AIJ_16);
+        Icon iconToUse = providerIcon != null ? providerIcon : IconUtil.scale(AIJicons.AIJ_16, null, 0.8125f);
         state.setIcon(iconToUse);
 
         return state;
@@ -173,12 +174,8 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 创建 Action 组
         DefaultActionGroup group = new DefaultActionGroup();
 
-        // 1. 添加提供商切换选项（用分隔符包裹，形成边框效果）
-        group.add(Separator.create(JavadocBundle.message("statusbar.provider.list.title")));
-        for (AIProviderConfig config : providers) {
-            group.add(new SwitchProviderAction(config));
-        }
-        group.add(Separator.create());
+        // 1. 添加 AI Provider 选择子菜单（放在最上面，作为模型选择）
+        group.add(new ProviderSelectionActionGroup(providers));
 
         // 2. 添加快捷配置 ToggleAction（用分隔符包裹，形成边框效果）
         group.add(Separator.create(JavadocBundle.message("statusbar.quick.settings.title")));
@@ -187,6 +184,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         group.add(new GenerateForMethodToggleAction());
         group.add(new GenerateForFieldToggleAction());
         group.add(new PerformanceModeToggleAction());
+        group.add(new ShowGenerateJavadocHintToggleAction());
+
+        // 添加 Comment Language 子菜单
+        group.add(new CommentLanguageActionGroup());
+
         group.add(Separator.create());
 
         // 3. 添加打开设置按钮
@@ -259,23 +261,6 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 更新全局配置中的提供商配置
         AIProviderSettings globalSettings = AIProviderSettings.getInstance();
         globalSettings.updateDefaultProviderConfig(providerType, config);
-    }
-
-    /**
-     * 为状态栏缩放图标
-     * <p>
-     * 将传入的图标按比例缩放以适应状态栏显示, 缩放比例为 0.8125 倍
-     *
-     * @param icon 待缩放的图标, 可为 null
-     * @return 缩放后的图标, 如果输入图标为 null 则返回 null
-     */
-    @Nullable
-    private Icon scaleIconForStatusBar(@Nullable Icon icon) {
-        if (icon == null) {
-            return null;
-        }
-        // 状态栏图标通常使用 13x13 尺寸，将 16x16 的图标缩放到 13x13
-        return IconUtil.scale(icon, null, 0.8125f);
     }
 
     /**
@@ -548,6 +533,113 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().performanceMode = state;
+        }
+    }
+
+    /**
+     * 显示生成 Javadoc 提示切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否显示生成 Javadoc 的 Code Vision 提示.
+     * 通过该动作可以切换显示提示的开关状态, 状态信息保存在 SettingsState 中.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.6.0
+     */
+    private static class ShowGenerateJavadocHintToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        ShowGenerateJavadocHintToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.show.generate.javadoc.hint"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().showGenerateJavadocHint;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().showGenerateJavadocHint = state;
+        }
+    }
+
+    /**
+     * 注释语言选择动作组
+     * <p>
+     * 该类继承自 DefaultActionGroup, 用于在状态栏弹出菜单中提供注释语言选择的子菜单.
+     * 包含中文和英文两个选项.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.6.0
+     */
+    private static class CommentLanguageActionGroup extends DefaultActionGroup {
+        CommentLanguageActionGroup() {
+            super(JavadocBundle.message("statusbar.quick.settings.comment.language"), true);
+            add(new CommentLanguageAction(CommentLanguage.ZH));
+            add(new CommentLanguageAction(CommentLanguage.EN));
+        }
+    }
+
+    /**
+     * 注释语言选择动作类
+     * <p>
+     * 该类继承自 AnAction, 用于选择注释生成语言.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.6.0
+     */
+    private static class CommentLanguageAction extends AnAction {
+        private final CommentLanguage language;
+
+        CommentLanguageAction(CommentLanguage language) {
+            super(language == CommentLanguage.ZH
+                  ? JavadocBundle.message("statusbar.quick.settings.comment.language.chinese")
+                  : JavadocBundle.message("statusbar.quick.settings.comment.language.english"));
+            this.language = language;
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState.getInstance().commentLanguage = language;
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            boolean isSelected = settings.commentLanguage == language;
+            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+    }
+
+    /**
+     * AI Provider 选择动作组
+     * <p>
+     * 该类继承自 DefaultActionGroup, 用于在状态栏弹出菜单中提供 AI Provider 选择的子菜单.
+     * 从可用服务商列表中选择，每个服务商配置包含模型信息，因此这就是模型选择.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.6.0
+     */
+    private class ProviderSelectionActionGroup extends DefaultActionGroup {
+        ProviderSelectionActionGroup(List<AIProviderConfig> providers) {
+            super(JavadocBundle.message("statusbar.provider.list.title"), true);
+
+            // 添加所有可用的服务商（每个服务商配置都包含模型信息）
+            for (AIProviderConfig config : providers) {
+                add(new SwitchProviderAction(config));
+            }
         }
     }
 
