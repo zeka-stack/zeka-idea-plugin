@@ -10,9 +10,6 @@
     <!-- 在插件页面上显示的供应商名称或组织ID。 -->
     <vendor email="dong4j@gmail.com">dong4j</vendor>
 
-    <!-- 产品和插件兼容性要求。
-         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
-    <idea-version since-build="223" until-build="252.*"/>
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->

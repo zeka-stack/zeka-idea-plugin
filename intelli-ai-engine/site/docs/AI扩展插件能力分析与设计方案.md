@@ -114,31 +114,29 @@ IntelliJ 平台支持插件之间的依赖关系：
     <name>IntelliAI Engine</name>
     <version>1.0.0</version>
     <vendor>dong4j</vendor>
-    
+
     <description>通用的 AI 服务插件，为其他 IntelliJ 插件提供 AI 能力</description>
-    
-    <idea-version since-build="223" until-build="252.*"/>
-    
+
     <depends>com.intellij.modules.platform</depends>
-    
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- 应用级服务：全局 AI 配置 -->
-        <applicationService 
+        <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings"/>
-        
+
         <!-- 应用级服务：统一的 AI 服务入口 -->
-        <applicationService 
+        <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"/>
-        
+
         <!-- 设置页面：IntelliAI Engine 的全局配置 -->
         <projectConfigurable
             parentId="tools"
             instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
             id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
             displayName="IntelliAI Engine"/>
-        
+
         <!-- 状态栏组件 -->
-        <statusBarWidgetFactory 
+        <statusBarWidgetFactory
             implementation="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderStatusBarWidgetFactory"/>
     </extensions>
 </idea-plugin>
@@ -193,12 +191,12 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
  * AI 服务统一入口
  * <p>
  * 为外部插件提供简洁的 AI 能力，自动从插件配置中读取默认供应商。
- * 
+ *
  * @author dong4j
  * @version 1.0.0
  */
 public interface AIService {
-    
+
     /**
      * 生成 AI 内容（最简单的方式 - 使用插件配置的默认供应商）
      * <p>
@@ -217,7 +215,7 @@ public interface AIService {
                           @NotNull String systemPrompt,
                           @NotNull String userPrompt,
                           @Nullable AIResponseListener listener) throws AIServiceException;
-    
+
     /**
      * 生成 AI 内容（使用插件配置的默认供应商）
      * <p>
@@ -233,7 +231,7 @@ public interface AIService {
     String generateContent(@NotNull Project project,
                           @NotNull AIChatRequest request,
                           @Nullable AIResponseListener listener) throws AIServiceException;
-    
+
     /**
      * 生成 AI 内容（指定供应商类型）
      * <p>
@@ -251,7 +249,7 @@ public interface AIService {
                           @NotNull AIProviderType providerType,
                           @NotNull AIChatRequest request,
                           @Nullable AIResponseListener listener) throws AIServiceException;
-    
+
     /**
      * 生成 AI 内容（自定义配置）
      * <p>
@@ -269,7 +267,7 @@ public interface AIService {
                           @NotNull AIChatRequest request,
                           @Nullable AIServiceConfig config,
                           @Nullable AIResponseListener listener) throws AIServiceException;
-    
+
     /**
      * 获取全局配置（可用供应商列表）
      * <p>
@@ -279,7 +277,7 @@ public interface AIService {
      */
     @NotNull
     AIProviderSettings getGlobalSettings();
-    
+
     /**
      * 验证插件配置
      * <p>
@@ -313,7 +311,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai;
  * 用于处理 AI 服务请求、响应以及使用量统计的回调方法。
  */
 public interface AIResponseListener {
-    
+
     /**
      * 处理请求回调
      * <p>
@@ -324,9 +322,9 @@ public interface AIResponseListener {
      * @param requestBody  请求体内容
      * @param validation   是否进行参数校验
      */
-    default void onRequest(String providerName, String modelName, 
+    default void onRequest(String providerName, String modelName,
                           String requestBody, boolean validation) {}
-    
+
     /**
      * 处理响应回调
      * <p>
@@ -337,9 +335,9 @@ public interface AIResponseListener {
      * @param responseBody 响应体内容
      * @param validation   验证结果标志
      */
-    default void onResponse(String providerName, String modelName, 
+    default void onResponse(String providerName, String modelName,
                            String responseBody, boolean validation) {}
-    
+
     /**
      * 处理 token 使用量回调
      * <p>
@@ -384,31 +382,31 @@ public class AIServiceConfig {
     /** AI 服务提供商类型 */
     @NotNull
     public AIProviderType providerType = AIProviderType.QIANWEN;
-    
+
     /** 模型名称 */
     @NotNull
     public String modelName;
-    
+
     /** 基础 URL（可选，使用默认值） */
     @Nullable
     public String baseUrl;
-    
+
     /** API 密钥 */
     @NotNull
     public String apiKey;
-    
+
     /** 温度参数（0.0-2.0，默认 0.7） */
     public double temperature = 0.7;
-    
+
     /** 最大 Token 数（默认 2000） */
     public int maxTokens = 2000;
-    
+
     /** 最大重试次数（默认 3） */
     public int maxRetries = 3;
-    
+
     /** 请求超时时间（毫秒，默认 30000） */
     public int timeout = 30000;
-    
+
     /**
      * 快速创建配置（使用默认值）
      */
@@ -454,10 +452,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  */
 @Service(Service.Level.APPLICATION)
 public final class AIServiceImpl implements AIService {
-    
-    private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER = 
+
+    private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER =
         new AICredentialManager("IntelliAI Engine", "AI_COMMON_");
-    
+
     @Override
     @NotNull
     public String generateContent(@NotNull Project project,
@@ -467,7 +465,7 @@ public final class AIServiceImpl implements AIService {
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
         return generateContent(project, request, null, listener);
     }
-    
+
     @Override
     @NotNull
     public String generateContent(@NotNull Project project,
@@ -475,7 +473,7 @@ public final class AIServiceImpl implements AIService {
                                  @Nullable AIResponseListener listener) throws AIServiceException {
         return generateContent(project, request, null, listener);
     }
-    
+
     @Override
     @NotNull
     public String generateContent(@NotNull Project project,
@@ -485,7 +483,7 @@ public final class AIServiceImpl implements AIService {
         // 使用指定的供应商类型，从全局配置中读取详情
         return generateContentWithProvider(project, providerType, request, listener);
     }
-    
+
     @Override
     @NotNull
     public String generateContent(@NotNull Project project,
@@ -501,7 +499,7 @@ public final class AIServiceImpl implements AIService {
             return generateContentWithProvider(project, pluginSettings.providerType, request, listener);
         }
     }
-    
+
     /**
      * 使用指定供应商生成内容
      */
@@ -512,20 +510,20 @@ public final class AIServiceImpl implements AIService {
         // 从全局配置中获取供应商详情
         AIProviderSettings globalSettings = getGlobalSettings();
         AIProviderConfig providerConfig = globalSettings.getDefaultProviderConfig(providerType);
-        
+
         // 从插件配置中获取模型参数和运行时设置（可选，如果没有则使用全局默认值）
         AIProviderSettings pluginSettings = getPluginSettings(project);
         AIModelParameters modelParams = pluginSettings.modelParameters;
         AIRuntimeSettings runtimeSettings = pluginSettings.runtimeSettings;
-        
+
         // 从全局凭证管理器获取 API Key
         String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(providerConfig.credentialId);
         if (apiKey == null) {
             throw new AIServiceException(
-                "API Key not configured for provider: " + providerType.getDisplayName() + 
+                "API Key not configured for provider: " + providerType.getDisplayName() +
                 ". Please configure it in Settings → Tools → IntelliAI Engine");
         }
-        
+
         // 创建服务提供者
         AIServiceProvider provider = AIServiceFactory.createProvider(
             providerConfig,
@@ -534,15 +532,15 @@ public final class AIServiceImpl implements AIService {
             null,
             pluginSettings.performanceMode
         );
-        
+
         if (provider == null) {
             throw new AIServiceException("Failed to create AI service provider");
         }
-        
+
         // 生成内容（传递 listener）
         return provider.generateContent(request, apiKey, listener);
     }
-    
+
     /**
      * 使用临时配置生成内容
      */
@@ -554,7 +552,7 @@ public final class AIServiceImpl implements AIService {
         AIProviderConfig providerConfig = convertToProviderConfig(config);
         AIModelParameters modelParams = convertToModelParameters(config);
         AIRuntimeSettings runtimeSettings = convertToRuntimeSettings(config);
-        
+
         // 创建服务提供者
         AIServiceProvider provider = AIServiceFactory.createProvider(
             providerConfig,
@@ -563,15 +561,15 @@ public final class AIServiceImpl implements AIService {
             null,
             false
         );
-        
+
         if (provider == null) {
             throw new AIServiceException("Failed to create AI service provider");
         }
-        
+
         // 生成内容（传递 listener）
         return provider.generateContent(request, config.apiKey, listener);
     }
-    
+
     /**
      * 获取插件配置（需要插件实现）
      * <p>
@@ -583,7 +581,7 @@ public final class AIServiceImpl implements AIService {
         // 方式1：通过接口获取（推荐）
         // PluginSettingsProvider provider = project.getService(PluginSettingsProvider.class);
         // return provider.getAIProviderSettings();
-        
+
         // 方式2：通过反射获取（兼容性更好）
         // 这里需要插件在 SettingsState 中包含 AIProviderSettings providerSettings 字段
         // 暂时返回全局默认配置
@@ -594,13 +592,13 @@ public final class AIServiceImpl implements AIService {
         pluginSettings.runtimeSettings = globalSettings.runtimeSettings.copy();
         return pluginSettings;
     }
-    
+
     @Override
     @NotNull
     public AIProviderSettings getGlobalSettings() {
         return ApplicationManager.getApplication().getService(AIProviderSettings.class);
     }
-    
+
     @Override
     @NotNull
     public ValidationResult validatePluginConfiguration(@NotNull Project project) {
@@ -608,11 +606,11 @@ public final class AIServiceImpl implements AIService {
         AIProviderSettings globalSettings = getGlobalSettings();
         AIProviderConfig config = globalSettings.getDefaultProviderConfig(pluginSettings.providerType);
         String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
-        
+
         if (apiKey == null) {
             return ValidationResult.failure("API Key not configured for provider: " + pluginSettings.providerType.getDisplayName());
         }
-        
+
         AIServiceProvider provider = AIServiceFactory.createProvider(
             config,
             pluginSettings.modelParameters,
@@ -620,21 +618,21 @@ public final class AIServiceImpl implements AIService {
             null,
             false
         );
-        
+
         if (provider == null) {
             return ValidationResult.failure("Failed to create provider");
         }
-        
+
         return provider.validateConfiguration(apiKey);
     }
-    
+
     /**
      * 获取服务实例
      */
     public static AIService getInstance() {
         return ApplicationManager.getApplication().getService(AIService.class);
     }
-    
+
     // 内部转换方法（仅在需要临时配置时使用）
     private AIProviderConfig convertToProviderConfig(AIServiceConfig config) {
         AIProviderConfig providerConfig = new AIProviderConfig(config.providerType);
@@ -644,14 +642,14 @@ public final class AIServiceImpl implements AIService {
         }
         return providerConfig;
     }
-    
+
     private AIModelParameters convertToModelParameters(AIServiceConfig config) {
         AIModelParameters params = new AIModelParameters();
         params.temperature = config.temperature;
         params.maxTokens = config.maxTokens;
         return params;
     }
-    
+
     private AIRuntimeSettings convertToRuntimeSettings(AIServiceConfig config) {
         AIRuntimeSettings settings = new AIRuntimeSettings();
         settings.maxRetries = config.maxRetries;
@@ -675,10 +673,10 @@ public final class AIServiceImpl implements AIService {
 <idea-plugin>
     <id>com.example.myplugin</id>
     <name>My Plugin</name>
-    
+
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
-    
+
     <!-- 其他配置 -->
 </idea-plugin>
 ```
@@ -692,11 +690,11 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 
 public class MyService {
-    
+
     public void generateContent(Project project) {
         // 获取 AI 服务实例
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 使用插件配置的默认供应商生成内容（最简单！）
         // 默认供应商从插件的 SettingsState 中读取
         // 供应商详情从全局配置中读取
@@ -706,7 +704,7 @@ public class MyService {
             "请解释这段代码的功能",
             null  // 不使用监听器
         );
-        
+
         System.out.println(result);
     }
 }
@@ -721,26 +719,26 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 
 public class MyService {
-    
+
     public void generateContentWithListener(Project project) {
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 创建响应监听器，处理请求、响应和 token 使用量
         AIResponseListener listener = new AIResponseListener() {
             @Override
-            public void onRequest(String providerName, String modelName, 
+            public void onRequest(String providerName, String modelName,
                                  String requestBody, boolean validation) {
                 System.out.println("发送请求到: " + providerName + " / " + modelName);
                 // 可以记录请求日志、统计等
             }
-            
+
             @Override
-            public void onResponse(String providerName, String modelName, 
+            public void onResponse(String providerName, String modelName,
                                   String responseBody, boolean validation) {
                 System.out.println("收到响应 from: " + providerName + " / " + modelName);
                 // 可以记录响应日志、保存响应等
             }
-            
+
             @Override
             public void onUsage(String providerName, String modelName,
                                int promptTokens, int completionTokens, int totalTokens) {
@@ -751,7 +749,7 @@ public class MyService {
                 // 可以统计 token 使用量、计费等
             }
         };
-        
+
         // 使用监听器生成内容
         String result = aiService.generateContent(
             project,
@@ -759,7 +757,7 @@ public class MyService {
             "请解释这段代码的功能",
             listener  // 传入监听器
         );
-        
+
         System.out.println("生成的内容: " + result);
     }
 }
@@ -782,16 +780,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 public class MyService {
-    
+
     public void generateContent(Project project) {
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 临时使用指定的供应商类型（从全局可用列表中选取）
         AIChatRequest request = new AIChatRequest(
             "你是一个代码助手",
             "请解释这段代码的功能"
         );
-        
+
         // 使用指定的供应商类型，供应商详情从全局配置中读取
         String result = aiService.generateContent(
             project,
@@ -799,7 +797,7 @@ public class MyService {
             request,
             null  // 不使用监听器
         );
-        
+
         System.out.println(result);
     }
 }
@@ -900,7 +898,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 public class SimpleExample {
     public void generateText(Project project) {
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 使用插件配置的默认供应商（不使用监听器）
         String result = aiService.generateContent(
             project,
@@ -908,7 +906,7 @@ public class SimpleExample {
             "请解释什么是单例模式",
             null
         );
-        
+
         System.out.println(result);
     }
 }
@@ -925,23 +923,23 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 public class SimpleExampleWithListener {
     public void generateText(Project project) {
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 创建响应监听器
         AIResponseListener listener = new AIResponseListener() {
             @Override
-            public void onRequest(String providerName, String modelName, 
+            public void onRequest(String providerName, String modelName,
                                  String requestBody, boolean validation) {
                 // 处理请求：记录日志、统计等
                 System.out.println("请求: " + providerName + " / " + modelName);
             }
-            
+
             @Override
-            public void onResponse(String providerName, String modelName, 
+            public void onResponse(String providerName, String modelName,
                                   String responseBody, boolean validation) {
                 // 处理响应：记录日志、保存响应等
                 System.out.println("响应: " + providerName + " / " + modelName);
             }
-            
+
             @Override
             public void onUsage(String providerName, String modelName,
                                int promptTokens, int completionTokens, int totalTokens) {
@@ -952,7 +950,7 @@ public class SimpleExampleWithListener {
                 ));
             }
         };
-        
+
         // 使用监听器生成内容
         String result = aiService.generateContent(
             project,
@@ -960,7 +958,7 @@ public class SimpleExampleWithListener {
             "请解释什么是单例模式",
             listener
         );
-        
+
         System.out.println(result);
     }
 }
@@ -977,7 +975,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 public class AdvancedExample {
     public void generateText() {
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 创建自定义配置
         AIServiceConfig config = new AIServiceConfig();
         config.providerType = AIProviderType.CUSTOM;
@@ -988,16 +986,16 @@ public class AdvancedExample {
         config.maxTokens = 4000;
         config.maxRetries = 5;
         config.timeout = 60000;
-        
+
         // 创建请求
         AIChatRequest request = new AIChatRequest(
             "你是一个专业的代码审查专家",
             "请审查这段代码并提出改进建议：\n" + code
         );
-        
+
         // 生成内容
         String result = aiService.generateContent(request, config);
-        
+
         System.out.println(result);
     }
 }
@@ -1014,13 +1012,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 public class ConfigExample {
     public void validatePluginConfig(Project project) {
         AIService aiService = AIServiceImpl.getInstance();
-        
+
         // 验证插件配置是否有效
         ValidationResult result = aiService.validatePluginConfiguration(project);
-        
+
         if (result.isValid()) {
             System.out.println("插件配置验证成功");
-            
+
             // 获取全局配置信息（可用供应商列表）
             AIProviderSettings globalSettings = aiService.getGlobalSettings();
             System.out.println("可用供应商数量：" + globalSettings.availableProviders.size());

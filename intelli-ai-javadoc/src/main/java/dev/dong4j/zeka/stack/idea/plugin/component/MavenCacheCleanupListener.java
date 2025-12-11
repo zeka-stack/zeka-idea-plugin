@@ -10,6 +10,7 @@ import com.intellij.openapi.util.Disposer;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginDisposable;
 import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
@@ -45,8 +46,7 @@ public final class MavenCacheCleanupListener implements ProjectActivity, Project
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         // 获取项目级别的服务作为 Disposable 父对象
-        // 使用 SettingsState 作为父 Disposable（它是应用级别的服务，但我们可以创建一个项目级别的 Disposable）
-        Disposable parentDisposable = Disposer.newDisposable(project, "MavenCacheCleanupListener");
+        Disposable parentDisposable = Disposer.newDisposable(PluginDisposable.getInstance(project), "MavenCacheCleanupListener");
 
         // 使用应用级别的 MessageBus 订阅 ProjectManager.TOPIC（应用级别的话题）
         // 使用项目级别的 Disposable 作为父对象

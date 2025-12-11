@@ -145,6 +145,9 @@ public class NacosSettingsPanel {
     /** 当前本地 Nacos 运行状态 */
     private volatile boolean localRegistryRunning = false;
 
+    /** 缓存的存储密码（用于 isModified 比较，避免在 EDT 上调用慢操作） */
+    private String cachedStoredPassword = null;
+
     /**
      * 构造函数, 初始化设置面板
      */
@@ -358,9 +361,13 @@ public class NacosSettingsPanel {
 
     /**
      * 判断当前设置是否与给定的设置状态发生修改
+     * <p>
+     * 注意：此方法在 EDT 上调用，不能执行慢操作（如 PasswordSafe.get()）。
+     * 因此使用缓存的密码值进行比较。
      */
     public boolean isModified(SettingsState settings) {
-        String storedPassword = settings.getPassword();
+        // 使用缓存的密码值，避免在 EDT 上调用慢操作
+        String storedPassword = cachedStoredPassword;
         String currentPassword = new String(passwordField.getPassword());
         boolean passwordChanged = storedPassword != null
                                   ? !Objects.equals(storedPassword, currentPassword)
@@ -396,8 +403,10 @@ public class NacosSettingsPanel {
         String password = new String(passwordField.getPassword());
         if (password.isEmpty()) {
             settings.setPassword(null);
+            cachedStoredPassword = null; // 更新缓存
         } else {
             settings.setPassword(password);
+            cachedStoredPassword = password; // 更新缓存
         }
 
         // 删除非当前版本的其他 zip 包
@@ -417,11 +426,14 @@ public class NacosSettingsPanel {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 String password = settings.getPassword();
+                // 缓存密码值，用于 isModified() 比较（避免在 EDT 上调用慢操作）
+                cachedStoredPassword = password;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     passwordField.setText(password != null ? password : "");
                 }, ModalityState.any());
             } catch (Exception e) {
                 LOG.warn("Failed to get password", e);
+                cachedStoredPassword = null;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     passwordField.setText("");
                 }, ModalityState.any());

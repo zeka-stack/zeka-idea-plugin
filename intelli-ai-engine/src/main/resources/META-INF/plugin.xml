@@ -9,9 +9,6 @@
     <!-- 供应商信息 -->
     <vendor email="dong4j@gmail.com">dong4j</vendor>
 
-    <!-- 产品和插件兼容性要求 -->
-    <idea-version since-build="223" until-build="252.*"/>
-
     <!-- 依赖的平台模块 -->
     <depends>com.intellij.modules.platform</depends>
 
