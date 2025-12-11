@@ -84,7 +84,7 @@ dependencies {
     // 编译使用：本地开发时，includeBuild 会自动将 "dev.dong4j:intelli-ai-engine:1.0.0" 替换为本地项目
     // 发布到市场后，其他开发者可以直接使用 compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
     // 运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    compileOnly("dev.dong4j:intelli-ai-engine:1.5.0")
+    compileOnly("dev.dong4j:intelli-ai-engine:1.6.0")
 
     // Nacos Client 依赖
     implementation("com.alibaba.nacos:nacos-client:2.2.0")
