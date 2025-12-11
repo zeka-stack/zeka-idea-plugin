@@ -18,6 +18,15 @@ public class User {
         this.id = 0;
     }
 
+    /**
+     * 用户构造函数
+     * <p>
+     * 初始化一个 User 对象, 设置用户名称, 电子邮件和用户 ID
+     *
+     * @param name  用户名称
+     * @param email 电子邮件地址
+     * @param id    用户 ID
+     */
     public User(String name, String email, int id) {
         this.name = name;
         this.email = email;

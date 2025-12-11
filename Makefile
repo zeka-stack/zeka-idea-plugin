@@ -11,8 +11,8 @@ NACOS_DIR := intelli-ai-nacos
 TRACER_DIR := intelli-ai-tracer
 
 # 构建产物输出目录
-DIST_DIR := ~/Downloads/IntelliAI
-IDEA_PLUGINS_DIR := ~/Developer/4.Tools/JetBrains/IDEA/plugins
+DIST_DIR := /Users/dong4j/Downloads/IntelliAI
+IDEA_PLUGINS_DIR := /Users/dong4j/Developer/4.Tools/JetBrains/IDEA/plugins
 
 build-engine:
 	@echo "正在构建 intelli-ai-engine 插件..."
@@ -151,7 +151,7 @@ copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer
 	echo "✓ 构建产物拷贝完成"
 
 # 拷贝构建产物到 IDEA 插件目录（解压后拷贝目录）
-install-plugins: build-engine build-javadoc  build-changelog build-nacos build-tracer
+install-plugins: build-engine build-javadoc build-changelog build-nacos build-tracer
 	@TARGET=$(IDEA_PLUGINS_DIR); \
 	echo "正在安装插件到 $$TARGET..."; \
 	mkdir -p $$TARGET; \

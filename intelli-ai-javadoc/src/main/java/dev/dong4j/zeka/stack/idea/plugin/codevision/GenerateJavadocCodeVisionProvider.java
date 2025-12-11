@@ -14,7 +14,11 @@ import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.JarFileSystem;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
@@ -138,28 +142,30 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * 包含所有条目的列表. 若项目已释放, 设置未开启或文件类型不支持, 则返回空列表.
      *
      * @param editor 当前编辑器实例
-     * @param data   传入的 Unit 对象 (此方法不使用该参数)
+     * @param data   从 {@link #precomputeOnUiThread} 返回的 Unit 对象，如果为 null 表示早期检查失败
      * @return 包含收集到的 Code Vision 条目的 {@link CodeVisionState.Ready} 实例
      */
     @SuppressWarnings("D")
     @Override
     public @NotNull CodeVisionState computeCodeVision(@NotNull Editor editor, Unit data) {
         try {
+            // 如果 precomputeOnUiThread 返回 null，说明快速检查失败，直接返回空列表
+            if (data == null) {
+                return new CodeVisionState.Ready(Collections.emptyList());
+            }
+
             Project project = editor.getProject();
             if (project == null || project.isDisposed()) {
                 return new CodeVisionState.Ready(Collections.emptyList());
             }
 
-            // 检查编辑器是否有效
-            if (editor.getVirtualFile() == null || editor.isDisposed()) {
+            // 获取文件（已经在 precomputeOnUiThread 中检查过文件系统类型，这里再次获取用于后续处理）
+            VirtualFile virtualFile = editor.getVirtualFile();
+            if (virtualFile == null || editor.isDisposed()) {
                 return new CodeVisionState.Ready(Collections.emptyList());
             }
 
-            // 检查设置：是否显示 Code Vision
             SettingsState settings = SettingsState.getInstance();
-            if (!settings.showGenerateJavadocHint) {
-                return new CodeVisionState.Ready(Collections.emptyList());
-            }
 
             // 使用线程安全的集合来收集条目
             ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entriesQueue = new ConcurrentLinkedQueue<>();
@@ -172,8 +178,9 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                         return null;
                     }
 
-                    com.intellij.openapi.vfs.VirtualFile virtualFile = editor.getVirtualFile();
-                    if (virtualFile == null) {
+                    // 检查文件是否在项目内（必须在 ReadAction 中执行）
+                    // 注意：ProjectFileIndex.isInProject() 需要 ReadAction 保护
+                    if (!isFileInProject(project, virtualFile)) {
                         return null;
                     }
 
@@ -278,7 +285,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
         // 获取所有类（包括内部类，递归查找）
         // 使用 findChildrenOfType 而不是 getChildrenOfType，以支持内部类
         Collection<PsiClass> allClassesCollection = PsiTreeUtil.findChildrenOfType(javaFile, PsiClass.class);
-        if (allClassesCollection == null || allClassesCollection.isEmpty()) {
+        if (allClassesCollection.isEmpty()) {
             return;
         }
         PsiClass[] allClasses = allClassesCollection.toArray(new PsiClass[0]);
@@ -604,20 +611,119 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
     }
 
     /**
-     * 检查是否适用于项目
+     * 判断是否适用于指定的项目
+     * <p>
+     * 该方法检查以下条件：
+     * <ol>
+     *   <li>项目是否有效（未 disposed）</li>
+     *   <li>设置中是否启用了 Code Vision 提示</li>
+     * </ol>
+     * <p>
+     * 注意：该方法只检查项目级别的可用性，不检查具体文件。
+     * 文件级别的检查（如是否在项目内、是否在 jar 中等）在 {@link #computeCodeVision} 中进行。
      *
-     * @param project 项目
-     * @return 总是返回 true
+     * @param project 目标项目
+     * @return 如果项目有效且启用了 Code Vision 提示，返回 true；否则返回 false
      */
     @Override
     public boolean isAvailableFor(@NotNull Project project) {
-        return true;
+        // 检查项目是否有效
+        if (project.isDisposed()) {
+            return false;
+        }
+
+        // 检查设置：是否显示 Code Vision
+        SettingsState settings = SettingsState.getInstance();
+        return settings.showGenerateJavadocHint;
     }
 
+    /**
+     * 检查文件是否在项目内（排除 jar 中的源码）
+     * <p>
+     * 该方法检查以下条件：
+     * <ol>
+     *   <li>文件是否在 JarFileSystem 中（jar 中的源码）</li>
+     *   <li>文件是否在本地文件系统中（不是 jar 中的文件）</li>
+     *   <li>文件是否在项目的源码根目录或资源根目录中</li>
+     * </ol>
+     * <p>
+     * <b>重要：</b>该方法必须在 ReadAction 中调用，因为 {@link ProjectFileIndex#isInProject(VirtualFile)}
+     * 需要访问项目文件索引，必须在 ReadAction 中执行。
+     *
+     * @param project     项目对象
+     * @param virtualFile 虚拟文件
+     * @return 如果文件在项目内且不是 jar 中的源码，返回 true；否则返回 false
+     */
+    private boolean isFileInProject(@NotNull Project project, @NotNull VirtualFile virtualFile) {
+        // 检查文件是否在 jar 中（jar 中的源码不应该生成 Code Vision）
+        if (virtualFile.getFileSystem() instanceof JarFileSystem) {
+            return false;
+        }
+
+        // 检查文件是否在本地文件系统中
+        if (!(virtualFile.getFileSystem() instanceof LocalFileSystem)) {
+            return false;
+        }
+
+        // 检查文件是否在项目的源码根目录或资源根目录中
+        ProjectFileIndex fileIndex = ProjectFileIndex.getInstance(project);
+        return fileIndex.isInProject(virtualFile);
+    }
+
+    /**
+     * 在 UI 线程上预计算操作
+     * <p>
+     * 该方法在 UI 线程上执行快速检查，避免在后台线程中执行不必要的计算。
+     * 检查结果通过返回值传递给 {@link #computeCodeVision} 方法。
+     * <p>
+     * 检查内容（仅快速检查，不涉及慢操作）：
+     * <ol>
+     *   <li>项目是否有效（未 disposed）</li>
+     *   <li>编辑器是否有效</li>
+     *   <li>文件系统类型检查（排除 jar 中的源码）</li>
+     * </ol>
+     * <p>
+     * 注意：文件是否在项目内的详细检查（使用 ProjectFileIndex）是慢操作，
+     * 不能在 EDT 上执行，因此移到 {@link #computeCodeVision} 的后台线程中。
+     * <p>
+     * 如果检查失败，返回 {@code null}，{@link #computeCodeVision} 将提前返回空列表。
+     *
+     * @param editor 编辑器实例, 用于操作或获取编辑相关数据
+     * @return 如果快速检查通过返回 {@link Unit#INSTANCE}，否则返回 {@code null}
+     */
     @Override
     public Unit precomputeOnUiThread(@NotNull Editor editor) {
-        // 不需要预计算
-        return null;
+        // 检查项目是否有效
+        Project project = editor.getProject();
+        if (project == null || project.isDisposed()) {
+            return null;
+        }
+
+        SettingsState settings = SettingsState.getInstance();
+        if (!settings.showGenerateJavadocHint) {
+            return null;
+        }
+
+        // 检查编辑器是否有效
+        VirtualFile virtualFile = editor.getVirtualFile();
+        if (virtualFile == null || editor.isDisposed()) {
+            return null;
+        }
+
+        // 快速检查：文件系统类型（排除 jar 中的源码）
+        // 注意：这是快速检查，不涉及慢操作
+        if (virtualFile.getFileSystem() instanceof JarFileSystem) {
+            return null;
+        }
+
+        // 快速检查：只处理本地文件系统
+        if (!(virtualFile.getFileSystem() instanceof LocalFileSystem)) {
+            return null;
+        }
+
+        // 快速检查通过，返回 Unit.INSTANCE 表示可以继续处理
+        // 详细的文件索引检查将在 computeCodeVision 的后台线程中执行
+        return Unit.INSTANCE;
     }
 
     /**
@@ -636,11 +742,28 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
         private final K first;
         private final V second;
 
+        /**
+         * 构造一个包含两个元素的 Pair 对象
+         * <p>
+         * 用于初始化一个包含第一个元素和第二个元素的不可变对对象
+         *
+         * @param first  第一个元素
+         * @param second 第二个元素
+         */
         private Pair(K first, V second) {
             this.first = first;
             this.second = second;
         }
 
+        /**
+         * 创建一个包含两个元素的 Pair 对象
+         * <p>
+         * 该方法接收两个参数, 分别作为 Pair 的第一个和第二个元素, 并返回一个新的 Pair 实例.
+         *
+         * @param first  Pair 的第一个元素
+         * @param second Pair 的第二个元素
+         * @return 包含两个元素的 Pair 对象
+         */
         public static <K, V> Pair<K, V> create(K first, V second) {
             return new Pair<>(first, second);
         }
