@@ -67,6 +67,9 @@
             <descriptionDirectoryName>GenerateJavaDocIntention</descriptionDirectoryName>
         </intentionAction>
 
+        <!-- Code Vision Provider (代码上方显示"Generate Javadoc"链接) -->
+        <codeInsight.codeVisionProvider implementation="dev.dong4j.zeka.stack.idea.plugin.codevision.GenerateJavadocCodeVisionProvider"/>
+
     </extensions>
 
     <!-- 插件定义的动作 -->

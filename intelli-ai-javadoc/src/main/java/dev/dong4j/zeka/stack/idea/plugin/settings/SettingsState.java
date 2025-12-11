@@ -276,6 +276,18 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean showPromptTemplates = false;
 
     /**
+     * 是否显示"生成 Javadoc"的 Code Vision 提示
+     *
+     * <p>控制是否在代码上方显示"Generate Javadoc"的可点击提示链接。
+     * 类似于 IDEA 中的"x usages"提示，会在没有 Javadoc 的代码元素上显示可点击的链接。
+     *
+     * <p>默认值: true（默认启用）
+     *
+     * @since 2.6.0
+     */
+    public boolean showGenerateJavadocHint = true;
+
+    /**
      * 是否压缩单行 Javadoc 注释
      *
      * <p>控制是否将只有一行内容的 Javadoc 注释压缩为单行格式。

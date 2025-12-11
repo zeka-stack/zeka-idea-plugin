@@ -148,7 +148,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      * @param tasks             任务列表
      * @param targetDescription 目标描述信息
      */
-    protected void generateDocumentation(@NotNull Project project,
+    public void generateDocumentation(@NotNull Project project,
                                          @NotNull List<DocumentationTask> tasks,
                                          @NotNull String targetDescription) {
         // 使用文档生成服务处理任务

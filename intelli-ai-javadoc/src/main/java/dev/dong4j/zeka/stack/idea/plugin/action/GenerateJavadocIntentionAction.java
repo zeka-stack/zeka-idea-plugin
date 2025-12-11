@@ -142,7 +142,7 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
             }
         }
 
-        // 2. 智能定位元素
+        // 2. 定位元素
         PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElementAtOffset(file, editor.getCaretModel().getOffset());
 
         if (locateResult == null) {

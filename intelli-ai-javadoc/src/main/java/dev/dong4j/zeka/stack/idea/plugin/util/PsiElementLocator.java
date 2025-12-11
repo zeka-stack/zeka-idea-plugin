@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@SuppressWarnings( {"LoggingSimilarMessage", "DuplicatedCode"})
 @Slf4j
 public class PsiElementLocator {
     /**
