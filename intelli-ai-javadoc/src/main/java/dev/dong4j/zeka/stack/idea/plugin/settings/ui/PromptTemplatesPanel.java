@@ -68,7 +68,9 @@ public class PromptTemplatesPanel {
     }
 
     /**
-     * 创建 UI
+     * 创建用户界面组件
+     * <p>
+     * 初始化多个文本区域用于输入提示信息, 并构建包含提示模板设置的面板结构
      */
     private void createUI() {
         // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
@@ -103,7 +105,9 @@ public class PromptTemplatesPanel {
     }
 
     /**
-     * 设置监听器
+     * 设置监听器以响应显示提示模板复选框的状态变化
+     * <p>
+     * 当复选框状态改变时, 根据选中状态显示或隐藏提示模板内容面板, 并重新验证和绘制父容器
      */
     private void setupListeners() {
         showPromptTemplatesCheckBox.addActionListener(e -> {
@@ -117,9 +121,11 @@ public class PromptTemplatesPanel {
     }
 
     /**
-     * 获取主面板
+     * 获取面板组件
+     * <p>
+     * 返回当前的面板对象
      *
-     * @return 主面板组件
+     * @return 面板组件, 保证不为 null
      */
     @NotNull
     public JPanel getPanel() {

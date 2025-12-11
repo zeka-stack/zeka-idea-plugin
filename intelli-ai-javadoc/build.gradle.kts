@@ -6,6 +6,9 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
+// IntelliAI Engine 插件版本号（从 gradle.properties 中获取）
+val aiEngineVersion: String = providers.gradleProperty("aiEngineVersion").get()
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -31,25 +34,17 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            create("IC", "2022.3")
-            create("IC", "2023.1")
-            create("IC", "2023.2")
-            create("IC", "2023.3")
-            create("IC", "2024.1")
             create("IC", "2024.2")
             create("IC", "2024.3")
             create("IC", "2025.1")
             create("IC", "2025.2")
+            create("IC", "2025.3")
 
-            create("IU", "2022.3")
-            create("IU", "2023.1")
-            create("IU", "2023.2")
-            create("IU", "2023.3")
-            create("IU", "2024.1")
             create("IU", "2024.2")
             create("IU", "2024.3")
             create("IU", "2025.1")
             create("IU", "2025.2")
+            create("IU", "2025.3")
         }
     }
 }
@@ -62,19 +57,22 @@ dependencies {
         bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("org.jetbrains.idea.maven")
         // 依赖 IntelliAI Engine 插件
+        // 注意：运行时依赖通过 plugin.xml 中的 <depends> 声明
         // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
-        // 发布到市场后，取消注释下面这行，并移除 copyAiCommonPlugin 任务
-        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")
+        // 发布到市场后，用户需要单独安装 IntelliAI Engine 插件
+        // 不要在这里使用 plugin()，否则会导致发布到市场时找不到相关 class
+        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai", aiEngineVersion)
 
         zipSigner()
         pluginVerifier()
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
-    // 编译使用：本地开发时，includeBuild 会自动将 "dev.dong4j:intelli-ai-engine:1.0.0" 替换为本地项目
-    // 发布到市场后，其他开发者可以直接使用 compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
-    // 运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    compileOnly("dev.dong4j:intelli-ai-engine:1.6.0")
+    // 编译时依赖：本地开发时，includeBuild 会自动将依赖替换为本地项目
+    // 发布到市场后，编译时使用 compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
+    // 运行时依赖通过 plugin.xml 中的 <depends> 声明，用户需要单独安装 IntelliAI Engine 插件
+    // 本地开发时，运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
+    compileOnly("dev.dong4j:intelli-ai-engine:$aiEngineVersion")
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
@@ -176,5 +174,11 @@ tasks {
         dependsOn(copyAiCommonPlugin)
         // 热更新
         // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
+    }
+
+    // 确保验证任务能找到依赖插件（通过 includeBuild 自动解析）
+    // 注意：由于使用了 includeBuild("../intelli-ai-engine")，Gradle 会自动构建依赖插件
+    verifyPlugin {
+        // 验证器会自动从 includeBuild 中解析插件依赖，无需额外配置
     }
 }

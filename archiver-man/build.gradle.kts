@@ -32,21 +32,11 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            create("IC", "2022.3")
-            create("IC", "2023.1")
-            create("IC", "2023.2")
-            create("IC", "2023.3")
-            create("IC", "2024.1")
             create("IC", "2024.2")
             create("IC", "2024.3")
             create("IC", "2025.1")
             create("IC", "2025.2")
 
-            create("IU", "2022.3")
-            create("IU", "2023.1")
-            create("IU", "2023.2")
-            create("IU", "2023.3")
-            create("IU", "2024.1")
             create("IU", "2024.2")
             create("IU", "2024.3")
             create("IU", "2025.1")

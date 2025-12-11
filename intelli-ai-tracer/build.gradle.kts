@@ -9,15 +9,8 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
-// 读取 intelli-ai-engine 的版本号
-val aiEnginePropertiesFile = file("../intelli-ai-engine/gradle.properties")
-val aiEngineVersion: String? = if (aiEnginePropertiesFile.exists()) {
-    val properties = Properties()
-    aiEnginePropertiesFile.inputStream().use { properties.load(it) }
-    properties.getProperty("pluginVersion", "1.4.0")
-} else {
-    "1.4.0" // 默认版本号
-}
+// IntelliAI Engine 插件版本号（从 gradle.properties 中获取）
+val aiEngineVersion: String = providers.gradleProperty("aiEngineVersion").get()
 
 repositories {
     mavenCentral()
@@ -48,25 +41,17 @@ intellijPlatform {
 
     pluginVerification {
         ides {
-            create("IC", "2022.3")
-            create("IC", "2023.1")
-            create("IC", "2023.2")
-            create("IC", "2023.3")
-            create("IC", "2024.1")
             create("IC", "2024.2")
             create("IC", "2024.3")
             create("IC", "2025.1")
             create("IC", "2025.2")
+            create("IC", "2025.3")
 
-            create("IU", "2022.3")
-            create("IU", "2023.1")
-            create("IU", "2023.2")
-            create("IU", "2023.3")
-            create("IU", "2024.1")
             create("IU", "2024.2")
             create("IU", "2024.3")
             create("IU", "2025.1")
             create("IU", "2025.2")
+            create("IU", "2025.3")
         }
     }
 }
@@ -81,24 +66,23 @@ dependencies {
         // bundledPlugin("com.intellij.mermaid")
         bundledPlugin("org.intellij.plugins.markdown")
 
-        // Plugin development utilities
+        // 依赖 IntelliAI Engine 插件
+        // 注意：运行时依赖通过 plugin.xml 中的 <depends> 声明
+        // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
+        // 发布到市场后，用户需要单独安装 IntelliAI Engine 插件
+        // 不要在这里使用 plugin()，否则会导致发布到市场时找不到相关 class
+        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai", aiEngineVersion)
 
-
-        // Marketplace ZIP Signer for plugin signing
         zipSigner()
-
-        // Plugin verifier for validation
         pluginVerifier()
-
-        // Test framework
-        testFramework(TestFrameworkType.Platform)
+        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
-    // 编译使用：本地开发时，includeBuild 会自动将 "dev.dong4j:intelli-ai-engine:${aiEngineVersion}" 替换为本地项目
-    // 发布到市场后，其他开发者可以直接使用 compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
-    // 运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    // 注意：不要使用 implementation，会导致类加载器冲突（同一个类被两个不同的 PluginClassLoader 加载）
-    compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
+    // 编译时依赖：本地开发时，includeBuild 会自动将依赖替换为本地项目
+    // 发布到市场后，编译时使用 compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
+    // 运行时依赖通过 plugin.xml 中的 <depends> 声明，用户需要单独安装 IntelliAI Engine 插件
+    // 本地开发时，运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
+    compileOnly("dev.dong4j:intelli-ai-engine:$aiEngineVersion")
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")

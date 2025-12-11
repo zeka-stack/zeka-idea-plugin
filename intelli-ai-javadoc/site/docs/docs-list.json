@@ -24,6 +24,10 @@
     "path": "./docs/IDEA_Plugin_开发文档.md"
   },
   {
+    "name": "JavaDoc单行注释格式化功能实现方案",
+    "path": "./docs/JavaDoc单行注释格式化功能实现方案.md"
+  },
+  {
     "name": "PasswordSafe集成说明",
     "path": "./docs/PasswordSafe集成说明.md"
   },
