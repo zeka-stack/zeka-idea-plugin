@@ -85,7 +85,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      */
     @Override
     public @NotNull CodeVisionAnchorKind getDefaultAnchor() {
-        return CodeVisionAnchorKind.Top;
+        return CodeVisionAnchorKind.Right;
     }
 
     /**
@@ -169,12 +169,12 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
 
             // 处理 Java 文件
             if (psiFile instanceof PsiJavaFile) {
-                collectJavaEntries((PsiJavaFile) psiFile, entries, project);
+                collectJavaEntries((PsiJavaFile) psiFile, entries, project, settings);
             }
 
             // 处理 Kotlin 文件
             if (psiFile instanceof KtFile) {
-                collectKotlinEntries((KtFile) psiFile, entries, project);
+                collectKotlinEntries((KtFile) psiFile, entries, project, settings);
             }
         }).inSmartMode(project).executeSynchronously();
 
@@ -203,12 +203,13 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * @param javaFile 当前要分析的 Java 文件
      * @param entries  用于收集生成的 {@link CodeVisionEntry} 与其文本范围的列表
      * @param project  当前项目上下文
+     * @param settings 当前设置状态
      */
     @SuppressWarnings("D")
     private void collectJavaEntries(@NotNull PsiJavaFile javaFile,
                                     @NotNull List<Pair<TextRange, CodeVisionEntry>> entries,
-                                    @NotNull Project project) {
-        SettingsState settings = SettingsState.getInstance();
+                                    @NotNull Project project,
+                                    SettingsState settings) {
 
         // 检查是否支持 Java 语言
         if (!settings.isLanguageSupported("java")) {
@@ -221,7 +222,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             if (classes != null) {
                 for (PsiClass psiClass : classes) {
                     if (shouldShowHintElement(psiClass, settings)) {
-                        entries.add(createCodeVisionEntry(psiClass, project));
+                        entries.add(createCodeVisionEntry(psiClass, project, settings));
                     }
                 }
             }
@@ -236,7 +237,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                     PsiMethod[] methods = psiClass.getMethods();
                     for (PsiMethod method : methods) {
                         if (shouldShowHintElement(method, settings)) {
-                            entries.add(createCodeVisionEntry(method, project));
+                            entries.add(createCodeVisionEntry(method, project, settings));
                         }
                     }
                 }
@@ -246,7 +247,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                     PsiField[] fields = psiClass.getFields();
                     for (PsiField field : fields) {
                         if (shouldShowHintElement(field, settings)) {
-                            entries.add(createCodeVisionEntry(field, project));
+                            entries.add(createCodeVisionEntry(field, project, settings));
                         }
                     }
                 }
@@ -262,16 +263,15 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * {@link KtFile} 中对应的 PSI 节点, 调用 {@link #shouldShowHintElement} 判断是否需要显示提示,
      * 并通过 {@link #createCodeVisionEntry} 创建条目后追加到 {@code entries} 列表.
      *
-     * @param ktFile  需要分析的 Kotlin 文件
-     * @param entries 用于收集生成的 CodeVision 条目的列表, 方法会向其中追加条目
-     * @param project 当前项目上下文
+     * @param ktFile   需要分析的 Kotlin 文件
+     * @param entries  用于收集生成的 CodeVision 条目的列表, 方法会向其中追加条目
+     * @param project  当前项目上下文
+     * @param settings 当前设置状态
      */
     @SuppressWarnings("D")
     private void collectKotlinEntries(@NotNull KtFile ktFile,
                                       @NotNull List<Pair<TextRange, CodeVisionEntry>> entries,
-                                      @NotNull Project project) {
-        SettingsState settings = SettingsState.getInstance();
-
+                                      @NotNull Project project, SettingsState settings) {
         // 检查是否支持 Kotlin 语言
         if (!settings.isLanguageSupported("kotlin")) {
             return;
@@ -283,7 +283,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             if (classes != null) {
                 for (KtClassOrObject ktClass : classes) {
                     if (shouldShowHintElement(ktClass, settings)) {
-                        entries.add(createCodeVisionEntry(ktClass, project));
+                        entries.add(createCodeVisionEntry(ktClass, project, settings));
                     }
                 }
             }
@@ -299,7 +299,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                     if (functions != null) {
                         for (KtNamedFunction function : functions) {
                             if (shouldShowHintElement(function, settings)) {
-                                entries.add(createCodeVisionEntry(function, project));
+                                entries.add(createCodeVisionEntry(function, project, settings));
                             }
                         }
                     }
@@ -311,7 +311,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                     if (properties != null) {
                         for (KtProperty property : properties) {
                             if (shouldShowHintElement(property, settings)) {
-                                entries.add(createCodeVisionEntry(property, project));
+                                entries.add(createCodeVisionEntry(property, project, settings));
                             }
                         }
                     }
@@ -349,14 +349,20 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * 该方法统一处理 Java 和 Kotlin 元素的 Code Vision 条目创建，
      * 因为两者的创建逻辑完全相同。
      *
-     * @param element 元素（可以是 Java 或 Kotlin 元素）
-     * @param project 项目
+     * @param element  元素（可以是 Java 或 Kotlin 元素）
+     * @param project  项目
+     * @param settings 当前设置状态
      * @return 条目对（TextRange 和 CodeVisionEntry）
      */
     @NotNull
-    private Pair<TextRange, CodeVisionEntry> createCodeVisionEntry(@NotNull PsiElement element, @NotNull Project project) {
+    private Pair<TextRange, CodeVisionEntry> createCodeVisionEntry(@NotNull PsiElement element,
+                                                                   @NotNull Project project,
+                                                                   SettingsState settings) {
         TextRange textRange = element.getTextRange();
         String text = JavadocBundle.message("codevision.generate.javadoc");
+        if (settings.overrideExisting && PsiElementLocator.hasJavaDoc(element)) {
+            text = JavadocBundle.message("codevision.override.javadoc");
+        }
 
         ClickableTextCodeVisionEntry entry = new ClickableTextCodeVisionEntry(
             text,
@@ -398,20 +404,19 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             // 创建一个临时的 AnActionEvent 来触发生成
             // 由于我们需要精确定位到元素，我们需要手动定位编辑器光标到元素位置
             // 或者直接调用 TaskCollector 收集该元素的任务
-            ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                ReadAction.run(() -> {
-                    // 收集该元素的任务
-                    TaskCollector collector = new TaskCollector(project);
-                    List<DocumentationTask> tasks = collector.collectFromElement(element);
+            ApplicationManager.getApplication().executeOnPooledThread(
+                () -> ReadAction.run(
+                    () -> {
+                        // 收集该元素的任务
+                        TaskCollector collector = new TaskCollector(project);
+                        List<DocumentationTask> tasks = collector.collectFromElement(element);
 
-                    // 生成文档
-                    String targetDescription = PsiElementLocator.getElementDescription(element);
+                        // 生成文档
+                        String targetDescription = PsiElementLocator.getElementDescription(element);
 
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        baseAction.generateDocumentation(project, tasks, targetDescription);
-                    });
-                });
-            });
+                        ApplicationManager.getApplication().invokeLater(
+                            () -> baseAction.generateDocumentation(project, tasks, targetDescription));
+                    }));
 
             return Unit.INSTANCE;
         };
