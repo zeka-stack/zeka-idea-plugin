@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtTreeVisitorVoid;
 
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -274,11 +275,13 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             return;
         }
 
-        // 获取所有类（只获取一次，避免重复遍历）
-        PsiClass[] allClasses = PsiTreeUtil.getChildrenOfType(javaFile, PsiClass.class);
-        if (allClasses == null || allClasses.length == 0) {
+        // 获取所有类（包括内部类，递归查找）
+        // 使用 findChildrenOfType 而不是 getChildrenOfType，以支持内部类
+        Collection<PsiClass> allClassesCollection = PsiTreeUtil.findChildrenOfType(javaFile, PsiClass.class);
+        if (allClassesCollection == null || allClassesCollection.isEmpty()) {
             return;
         }
+        PsiClass[] allClasses = allClassesCollection.toArray(new PsiClass[0]);
 
         // 并行处理类级别的 Code Vision 条目
         // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问

@@ -68,6 +68,7 @@
         </intentionAction>
 
         <!-- Code Vision Provider (代码上方显示"Generate Javadoc"链接) -->
+        <!--suppress PluginXmlValidity -->
         <codeInsight.codeVisionProvider implementation="dev.dong4j.zeka.stack.idea.plugin.codevision.GenerateJavadocCodeVisionProvider"/>
 
     </extensions>
