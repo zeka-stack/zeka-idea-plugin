@@ -1,15 +1,14 @@
 package com.example
 
 /**
- * 用户仓储类
+ * 用户仓库类
  * <p>
- * 负责对 User 实体进行增删改查操作, 使用内存列表模拟持久化存储.
- * 提供根据 ID 查询, 保存, 更新, 删除以及获取全部用户列表等方法.
+ * 提供用户数据的持久化操作, 包括用户的查询, 创建, 更新, 删除和获取所有用户等操作. 该类使用内存列表来存储用户数据, 适用于简单的数据存储场景.
  *
  * @author zeka.stack.team
  * @version 1.0.0
  * @email "mailto:zeka.stack@gmail.com"
- * @date 2025.12.09
+ * @date 2025.12.11
  * @since 1.0.0
  */
 class UserRepository {

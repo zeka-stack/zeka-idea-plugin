@@ -63,6 +63,13 @@ public class UserRepository {
         return new ArrayList<>(users);
     }
 
+    /**
+     * 返回用户列表的大小
+     * <p>
+     * 获取当前用户集合中的元素数量
+     *
+     * @return 用户列表的大小
+     */
     public int count() {
         return users.size();
     }

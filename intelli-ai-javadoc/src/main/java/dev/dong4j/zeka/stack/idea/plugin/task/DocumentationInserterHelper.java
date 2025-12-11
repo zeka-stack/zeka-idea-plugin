@@ -174,8 +174,8 @@ public class DocumentationInserterHelper {
     /**
      * 删除元素的旧 Javadoc/KDoc 注释
      *
-     * <p>删除元素已有的文档注释（Java 的 Javadoc 或 Kotlin 的 KDoc），为新注释腾出空间。
-     * 同时删除注释前后的空白行，防止空行累积。
+     * <p>使用 IntelliJ Platform PSI API 直接删除元素已有的文档注释
+     * （Java 的 Javadoc 或 Kotlin 的 KDoc），为新注释腾出空间。
      *
      * <p>支持的元素类型：
      * <ul>
@@ -183,11 +183,11 @@ public class DocumentationInserterHelper {
      *   <li>Kotlin 元素：KtClassOrObject、KtNamedFunction、KtProperty 的 KDoc</li>
      * </ul>
      *
-     * <p>删除策略：
+     * <p>实现方式：
      * <ul>
-     *   <li>删除注释本身</li>
-     *   <li>删除注释后面的一个换行符（如果有）</li>
-     *   <li>删除注释前面的所有空白行（防止累积）</li>
+     *   <li>使用 PSI 元素的 delete() 方法直接删除注释</li>
+     *   <li>IntelliJ Platform 会自动处理 PSI 树的更新和文档同步</li>
+     *   <li>比手动操作 Document 更安全可靠</li>
      * </ul>
      *
      * <p>安全措施：
@@ -195,11 +195,10 @@ public class DocumentationInserterHelper {
      *   <li>检查元素是否支持文档</li>
      *   <li>检查是否已有注释</li>
      *   <li>捕获异常防止中断操作</li>
-     *   <li>边界检查防止越界</li>
      * </ul>
      *
      * @param element        目标元素
-     * @param document       文档对象
+     * @param document       文档对象（保留参数以保持接口兼容性，但实际使用 PSI API 不需要）
      * @param verboseLogging 是否启用详细日志
      */
     @SuppressWarnings("D")
@@ -227,97 +226,17 @@ public class DocumentationInserterHelper {
         }
 
         try {
-            int startOffset = oldComment.getTextRange().getStartOffset();
-            int endOffset = oldComment.getTextRange().getEndOffset();
-
-            // 计算实际删除范围
-            int deleteStart = startOffset;
-            final int deleteEnd = getDeleteEnd(document, endOffset);
-
-            // 2. 向前扩展：删除注释前面的所有空白行（包括空格、制表符）
-            int lineStart = document.getLineStartOffset(document.getLineNumber(startOffset));
-            while (deleteStart > lineStart) {
-                char prevChar = document.getCharsSequence().charAt(deleteStart - 1);
-                // 只删除空白字符（空格和制表符），但保留换行符
-                if (prevChar == ' ' || prevChar == '\t') {
-                    deleteStart--;
-                } else {
-                    break;
-                }
-            }
-
-            // 如果注释前面只有空白字符，则从行首开始删除
-            if (deleteStart == lineStart) {
-                // 检查是否可以继续向前删除空行
-                while (lineStart > 0) {
-                    int prevLineEnd = lineStart - 1;
-                    // 跳过换行符
-                    if (document.getCharsSequence().charAt(prevLineEnd) == '\n') {
-                        int prevLineStart = document.getLineStartOffset(document.getLineNumber(prevLineEnd));
-                        // 检查前一行是否为空行（只包含空白字符）
-                        boolean isEmptyLine = true;
-                        for (int i = prevLineStart; i < prevLineEnd; i++) {
-                            char c = document.getCharsSequence().charAt(i);
-                            if (c != ' ' && c != '\t' && c != '\r') {
-                                isEmptyLine = false;
-                                break;
-                            }
-                        }
-
-                        if (isEmptyLine) {
-                            // 是空行，继续向前删除
-                            deleteStart = prevLineStart;
-                            lineStart = prevLineStart;
-                        } else {
-                            // 不是空行，停止向前扩展
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            // 执行删除
-            document.deleteString(deleteStart, deleteEnd);
-
             if (verboseLogging) {
-                log.debug("删除旧注释: 从 {} 到 {} (原注释: {} 到 {})",
-                          deleteStart, deleteEnd, startOffset, endOffset);
+                log.debug("删除旧注释: {} (使用 PSI API)", oldComment.getTextRange());
             }
+
+            // 使用 IntelliJ Platform PSI API 直接删除注释
+            // 这会自动更新 PSI 树和文档，比手动操作 Document 更可靠
+            oldComment.delete();
 
         } catch (Exception e) {
             log.warn("删除旧注释失败", e);
         }
-    }
-
-    /**
-     * 计算删除操作的结束位置
-     * <p>
-     * 根据给定的文档对象和结束偏移量，计算删除操作的实际结束位置。该方法会处理换行符，包括Windows风格的\r\n换行符。
-     *
-     * @param document  文档对象，用于获取文本内容和长度
-     * @param endOffset 初始的结束偏移量
-     * @return 调整后的删除结束位置
-     */
-    private static int getDeleteEnd(@NotNull Document document, int endOffset) {
-        int deleteEnd = endOffset;
-
-        // 1. 向后扩展：删除注释后面的一个换行符（如果有）
-        if (deleteEnd < document.getTextLength()) {
-            char nextChar = document.getCharsSequence().charAt(deleteEnd);
-            if (nextChar == '\n') {
-                deleteEnd++;
-            } else if (nextChar == '\r' && deleteEnd + 1 < document.getTextLength()) {
-                // 处理 Windows 风格的换行符 \r\n
-                if (document.getCharsSequence().charAt(deleteEnd + 1) == '\n') {
-                    deleteEnd += 2;
-                } else {
-                    deleteEnd++;
-                }
-            }
-        }
-        return deleteEnd;
     }
 
     /**
