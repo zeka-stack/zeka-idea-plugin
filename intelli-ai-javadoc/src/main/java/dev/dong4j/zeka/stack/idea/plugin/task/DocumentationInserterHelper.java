@@ -16,6 +16,9 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.psi.KtClassOrObject;
+import org.jetbrains.kotlin.psi.KtNamedFunction;
+import org.jetbrains.kotlin.psi.KtProperty;
 
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
@@ -169,10 +172,16 @@ public class DocumentationInserterHelper {
     }
 
     /**
-     * 删除元素的旧 Javadoc 注释
+     * 删除元素的旧 Javadoc/KDoc 注释
      *
-     * <p>删除元素已有的 Javadoc 注释，为新注释腾出空间。
+     * <p>删除元素已有的文档注释（Java 的 Javadoc 或 Kotlin 的 KDoc），为新注释腾出空间。
      * 同时删除注释前后的空白行，防止空行累积。
+     *
+     * <p>支持的元素类型：
+     * <ul>
+     *   <li>Java 元素：通过 PsiDocCommentOwner 接口获取 Javadoc</li>
+     *   <li>Kotlin 元素：KtClassOrObject、KtNamedFunction、KtProperty 的 KDoc</li>
+     * </ul>
      *
      * <p>删除策略：
      * <ul>
@@ -197,11 +206,22 @@ public class DocumentationInserterHelper {
     private void deleteOldDocComment(@NotNull PsiElement element,
                                      @NotNull Document document,
                                      boolean verboseLogging) {
-        if (!(element instanceof PsiDocCommentOwner)) {
-            return;
+        PsiElement oldComment = null;
+
+        // 处理 Java 元素的 Javadoc
+        if (element instanceof PsiDocCommentOwner) {
+            oldComment = ((PsiDocCommentOwner) element).getDocComment();
+        }
+        // 处理 Kotlin 元素的 KDoc
+        else if (element instanceof KtClassOrObject) {
+            oldComment = ((KtClassOrObject) element).getDocComment();
+        } else if (element instanceof KtNamedFunction) {
+            oldComment = ((KtNamedFunction) element).getDocComment();
+        } else if (element instanceof KtProperty) {
+            oldComment = ((KtProperty) element).getDocComment();
         }
 
-        com.intellij.psi.javadoc.PsiDocComment oldComment = ((PsiDocCommentOwner) element).getDocComment();
+        // 如果没有注释，直接返回
         if (oldComment == null) {
             return;
         }
@@ -215,7 +235,6 @@ public class DocumentationInserterHelper {
             final int deleteEnd = getDeleteEnd(document, endOffset);
 
             // 2. 向前扩展：删除注释前面的所有空白行（包括空格、制表符）
-            // 这是防止空行累积的关键！
             int lineStart = document.getLineStartOffset(document.getLineNumber(startOffset));
             while (deleteStart > lineStart) {
                 char prevChar = document.getCharsSequence().charAt(deleteStart - 1);
