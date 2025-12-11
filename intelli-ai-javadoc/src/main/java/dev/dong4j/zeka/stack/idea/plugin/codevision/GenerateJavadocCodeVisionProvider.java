@@ -12,6 +12,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiClass;
@@ -142,63 +143,103 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
     @SuppressWarnings("D")
     @Override
     public @NotNull CodeVisionState computeCodeVision(@NotNull Editor editor, Unit data) {
-        Project project = editor.getProject();
-        if (project == null || project.isDisposed()) {
-            return new CodeVisionState.Ready(Collections.emptyList());
-        }
-
-        // 检查设置：是否显示 Code Vision
-        SettingsState settings = SettingsState.getInstance();
-        if (!settings.showGenerateJavadocHint) {
-            return new CodeVisionState.Ready(Collections.emptyList());
-        }
-
-        // 使用线程安全的集合来收集条目
-        ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entriesQueue = new ConcurrentLinkedQueue<>();
-
-        // 使用 NonBlockingReadAction 等待索引就绪（推荐替代已弃用的 DumbService.runReadActionInSmartMode）
-        ReadAction.nonBlocking(() -> {
-            PsiFile psiFile = PsiUtil.getPsiFile(project, editor.getVirtualFile());
-
-            // 只支持 Java 和 Kotlin 文件
-            if (!(psiFile instanceof PsiJavaFile) && !(psiFile instanceof KtFile)) {
-                return null;
+        try {
+            Project project = editor.getProject();
+            if (project == null || project.isDisposed()) {
+                return new CodeVisionState.Ready(Collections.emptyList());
             }
 
-            // 检查是否支持 Kotlin
-            if (psiFile instanceof KtFile) {
-                if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
+            // 检查编辑器是否有效
+            if (editor.getVirtualFile() == null || editor.isDisposed()) {
+                return new CodeVisionState.Ready(Collections.emptyList());
+            }
+
+            // 检查设置：是否显示 Code Vision
+            SettingsState settings = SettingsState.getInstance();
+            if (!settings.showGenerateJavadocHint) {
+                return new CodeVisionState.Ready(Collections.emptyList());
+            }
+
+            // 使用线程安全的集合来收集条目
+            ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entriesQueue = new ConcurrentLinkedQueue<>();
+
+            // 使用 NonBlockingReadAction 等待索引就绪（推荐替代已弃用的 DumbService.runReadActionInSmartMode）
+            try {
+                ReadAction.nonBlocking(() -> {
+                    // 再次检查项目状态（在 ReadAction 内部）
+                    if (project.isDisposed() || editor.isDisposed()) {
+                        return null;
+                    }
+
+                    com.intellij.openapi.vfs.VirtualFile virtualFile = editor.getVirtualFile();
+                    if (virtualFile == null) {
+                        return null;
+                    }
+
+                    PsiFile psiFile = PsiUtil.getPsiFile(project, virtualFile);
+
+                    // 只支持 Java 和 Kotlin 文件
+                    if (!(psiFile instanceof PsiJavaFile) && !(psiFile instanceof KtFile)) {
+                        return null;
+                    }
+
+                    // 检查是否支持 Kotlin
+                    if (psiFile instanceof KtFile) {
+                        if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
+                            return null;
+                        }
+                    }
+
+                    // 处理 Java 文件
+                    if (psiFile instanceof PsiJavaFile) {
+                        collectJavaEntries((PsiJavaFile) psiFile, entriesQueue, project, settings);
+                    }
+
+                    // 处理 Kotlin 文件
+                    if (psiFile instanceof KtFile) {
+                        collectKotlinEntries((KtFile) psiFile, entriesQueue, project, settings);
+                    }
+
                     return null;
+                }).inSmartMode(project).executeSynchronously();
+            } catch (ProcessCanceledException e) {
+                // 如果 ReadAction 被取消（例如项目被 disposed），返回空列表
+                log.debug("计算 Code Vision 时被取消", e);
+                // ProcessCanceledException 必须抛出, 不能捕获处理
+                throw e;
+            } catch (Exception ex) {
+                // 如果 ReadAction 执行失败（例如项目被 disposed），返回空列表
+                log.debug("计算 Code Vision 时发生异常", ex);
+                return new CodeVisionState.Ready(Collections.emptyList());
+            }
+
+            // 再次检查项目状态（在执行后）
+            if (project.isDisposed() || editor.isDisposed()) {
+                return new CodeVisionState.Ready(Collections.emptyList());
+            }
+
+            // 将队列转换为列表
+            List<Pair<TextRange, CodeVisionEntry>> entries = new ArrayList<>(entriesQueue);
+
+            // 转换 Pair 列表为 IntelliJ Platform API 需要的格式
+            // 注意：CodeVisionState.Ready 接受 List<Pair<TextRange, CodeVisionEntry>>
+            // 但由于 Java 没有标准的 Pair，我们需要使用 kotlin.Pair 或者创建兼容的列表
+            // 实际上，Kotlin 的 Pair 在 Java 中可以作为元组使用
+            // 但 IntelliJ Platform 的 API 可能期望特定的类型
+            // 让我们直接传递 entries，让 API 处理类型转换
+            List<kotlin.Pair<TextRange, CodeVisionEntry>> kotlinPairs = new ArrayList<>();
+            for (Pair<TextRange, CodeVisionEntry> entry : entries) {
+                // 检查 entry 的有效性
+                if (entry != null && entry.getFirst() != null && entry.getSecond() != null) {
+                    kotlinPairs.add(new kotlin.Pair<>(entry.getFirst(), entry.getSecond()));
                 }
             }
-
-            // 处理 Java 文件
-            if (psiFile instanceof PsiJavaFile) {
-                collectJavaEntries((PsiJavaFile) psiFile, entriesQueue, project, settings);
-            }
-
-            // 处理 Kotlin 文件
-            if (psiFile instanceof KtFile) {
-                collectKotlinEntries((KtFile) psiFile, entriesQueue, project, settings);
-            }
-
-            return null;
-        }).inSmartMode(project).executeSynchronously();
-
-        // 将队列转换为列表
-        List<Pair<TextRange, CodeVisionEntry>> entries = new ArrayList<>(entriesQueue);
-
-        // 转换 Pair 列表为 IntelliJ Platform API 需要的格式
-        // 注意：CodeVisionState.Ready 接受 List<Pair<TextRange, CodeVisionEntry>>
-        // 但由于 Java 没有标准的 Pair，我们需要使用 kotlin.Pair 或者创建兼容的列表
-        // 实际上，Kotlin 的 Pair 在 Java 中可以作为元组使用
-        // 但 IntelliJ Platform 的 API 可能期望特定的类型
-        // 让我们直接传递 entries，让 API 处理类型转换
-        List<kotlin.Pair<TextRange, CodeVisionEntry>> kotlinPairs = new ArrayList<>();
-        for (Pair<TextRange, CodeVisionEntry> entry : entries) {
-            kotlinPairs.add(new kotlin.Pair<>(entry.getFirst(), entry.getSecond()));
+            return new CodeVisionState.Ready(kotlinPairs);
+        } catch (Exception e) {
+            // 捕获所有异常，避免影响 Code Vision 系统
+            log.debug("计算 Code Vision 时发生未预期的异常", e);
+            return new CodeVisionState.Ready(Collections.emptyList());
         }
-        return new CodeVisionState.Ready(kotlinPairs);
     }
 
     /**
@@ -222,14 +263,14 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * @param project  当前项目上下文
      * @param settings 当前设置状态
      */
-    @SuppressWarnings("D")
+    @SuppressWarnings( {"D", "DuplicatedCode"})
     private void collectJavaEntries(@NotNull PsiJavaFile javaFile,
                                     @NotNull ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entries,
                                     @NotNull Project project,
                                     SettingsState settings) {
 
         // 检查是否支持 Java 语言
-        if (!settings.isLanguageSupported("java")) {
+        if (!settings.isLanguageSupported(PluginContents.JAVA)) {
             return;
         }
 
@@ -246,8 +287,15 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
                 .parallel()
                 .forEach(psiClass -> {
                     ReadAction.run(() -> {
-                        if (shouldShowHintElement(psiClass, settings)) {
-                            entries.add(createCodeVisionEntry(psiClass, project, settings));
+                        // 检查元素有效性
+                        if (psiClass != null && psiClass.isValid() && !project.isDisposed()) {
+                            try {
+                                if (shouldShowHintElement(psiClass, settings)) {
+                                    entries.add(createCodeVisionEntry(psiClass, project, settings));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理类时发生异常", e);
+                            }
                         }
                     });
                 });
@@ -259,34 +307,55 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             .parallel()
             .forEach(psiClass -> {
                 ReadAction.run(() -> {
-                    // 收集方法
-                    if (settings.generateForMethod) {
-                        PsiMethod[] methods = psiClass.getMethods();
-                        if (methods.length > 0) {
-                            Stream.of(methods)
-                                .forEach(method -> {
-                                    ReadAction.run(() -> {
-                                        if (shouldShowHintElement(method, settings)) {
-                                            entries.add(createCodeVisionEntry(method, project, settings));
-                                        }
-                                    });
-                                });
-                        }
+                    // 检查元素有效性
+                    if (psiClass == null || !psiClass.isValid() || project.isDisposed()) {
+                        return;
                     }
 
-                    // 收集字段
-                    if (settings.generateForField) {
-                        PsiField[] fields = psiClass.getFields();
-                        if (fields.length > 0) {
-                            Stream.of(fields)
-                                .forEach(field -> {
-                                    ReadAction.run(() -> {
-                                        if (shouldShowHintElement(field, settings)) {
-                                            entries.add(createCodeVisionEntry(field, project, settings));
-                                        }
+                    try {
+                        // 收集方法
+                        if (settings.generateForMethod) {
+                            PsiMethod[] methods = psiClass.getMethods();
+                            if (methods.length > 0) {
+                                Stream.of(methods)
+                                    .forEach(method -> {
+                                        ReadAction.run(() -> {
+                                            if (method != null && method.isValid() && !project.isDisposed()) {
+                                                try {
+                                                    if (shouldShowHintElement(method, settings)) {
+                                                        entries.add(createCodeVisionEntry(method, project, settings));
+                                                    }
+                                                } catch (Exception e) {
+                                                    log.debug("处理方法时发生异常", e);
+                                                }
+                                            }
+                                        });
                                     });
-                                });
+                            }
                         }
+
+                        // 收集字段
+                        if (settings.generateForField) {
+                            PsiField[] fields = psiClass.getFields();
+                            if (fields.length > 0) {
+                                Stream.of(fields)
+                                    .forEach(field -> {
+                                        ReadAction.run(() -> {
+                                            if (field != null && field.isValid() && !project.isDisposed()) {
+                                                try {
+                                                    if (shouldShowHintElement(field, settings)) {
+                                                        entries.add(createCodeVisionEntry(field, project, settings));
+                                                    }
+                                                } catch (Exception e) {
+                                                    log.debug("处理字段时发生异常", e);
+                                                }
+                                            }
+                                        });
+                                    });
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.debug("处理类的方法和字段时发生异常", e);
                     }
                 });
             });
@@ -320,7 +389,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * @param project  当前项目上下文
      * @param settings 当前设置状态
      */
-    @SuppressWarnings("D")
+    @SuppressWarnings( {"D", "DuplicatedCode"})
     private void collectKotlinEntries(@NotNull KtFile ktFile,
                                       @NotNull ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entries,
                                       @NotNull Project project, SettingsState settings) {
@@ -362,8 +431,15 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             allClasses.parallelStream()
                 .forEach(ktClass -> {
                     ReadAction.run(() -> {
-                        if (shouldShowHintElement(ktClass, settings)) {
-                            entries.add(createCodeVisionEntry(ktClass, project, settings));
+                        // 检查元素有效性
+                        if (ktClass != null && ktClass.isValid() && !project.isDisposed()) {
+                            try {
+                                if (shouldShowHintElement(ktClass, settings)) {
+                                    entries.add(createCodeVisionEntry(ktClass, project, settings));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理 Kotlin 类时发生异常", e);
+                            }
                         }
                     });
                 });
@@ -375,8 +451,15 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             allFunctions.parallelStream()
                 .forEach(function -> {
                     ReadAction.run(() -> {
-                        if (shouldShowHintElement(function, settings)) {
-                            entries.add(createCodeVisionEntry(function, project, settings));
+                        // 检查元素有效性
+                        if (function != null && function.isValid() && !project.isDisposed()) {
+                            try {
+                                if (shouldShowHintElement(function, settings)) {
+                                    entries.add(createCodeVisionEntry(function, project, settings));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理 Kotlin 函数时发生异常", e);
+                            }
                         }
                     });
                 });
@@ -388,8 +471,15 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             allProperties.parallelStream()
                 .forEach(property -> {
                     ReadAction.run(() -> {
-                        if (shouldShowHintElement(property, settings)) {
-                            entries.add(createCodeVisionEntry(property, project, settings));
+                        // 检查元素有效性
+                        if (property != null && property.isValid() && !project.isDisposed()) {
+                            try {
+                                if (shouldShowHintElement(property, settings)) {
+                                    entries.add(createCodeVisionEntry(property, project, settings));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理 Kotlin 属性时发生异常", e);
+                            }
                         }
                     });
                 });
@@ -434,7 +524,19 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
     private Pair<TextRange, CodeVisionEntry> createCodeVisionEntry(@NotNull PsiElement element,
                                                                    @NotNull Project project,
                                                                    SettingsState settings) {
+        // 获取文本范围，如果为 null 则使用空范围
         TextRange textRange = element.getTextRange();
+        if (textRange == null) {
+            // 如果无法获取文本范围，使用元素所在文件的起始位置
+            PsiFile containingFile = element.getContainingFile();
+            if (containingFile != null) {
+                textRange = new TextRange(0, 0);
+            } else {
+                // 如果连文件都无法获取，返回空范围
+                textRange = TextRange.EMPTY_RANGE;
+            }
+        }
+
         String text = JavadocBundle.message("codevision.generate.javadoc");
         if (settings.overrideExisting && PsiElementLocator.hasJavaDoc(element)) {
             text = JavadocBundle.message("codevision.override.javadoc");
