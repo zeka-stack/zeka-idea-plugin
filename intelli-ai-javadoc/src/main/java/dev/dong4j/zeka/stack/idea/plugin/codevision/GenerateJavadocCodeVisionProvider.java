@@ -33,6 +33,8 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 
 import dev.dong4j.zeka.stack.idea.plugin.action.AbstractGenerateJavaDocAction;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -149,7 +151,8 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             return new CodeVisionState.Ready(Collections.emptyList());
         }
 
-        List<Pair<TextRange, CodeVisionEntry>> entries = new ArrayList<>();
+        // 使用线程安全的集合来收集条目
+        ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entriesQueue = new ConcurrentLinkedQueue<>();
 
         // 使用 NonBlockingReadAction 等待索引就绪（推荐替代已弃用的 DumbService.runReadActionInSmartMode）
         ReadAction.nonBlocking(() -> {
@@ -157,26 +160,31 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
 
             // 只支持 Java 和 Kotlin 文件
             if (!(psiFile instanceof PsiJavaFile) && !(psiFile instanceof KtFile)) {
-                return;
+                return null;
             }
 
             // 检查是否支持 Kotlin
             if (psiFile instanceof KtFile) {
                 if (!settings.isLanguageSupported("kotlin")) {
-                    return;
+                    return null;
                 }
             }
 
             // 处理 Java 文件
             if (psiFile instanceof PsiJavaFile) {
-                collectJavaEntries((PsiJavaFile) psiFile, entries, project, settings);
+                collectJavaEntries((PsiJavaFile) psiFile, entriesQueue, project, settings);
             }
 
             // 处理 Kotlin 文件
             if (psiFile instanceof KtFile) {
-                collectKotlinEntries((KtFile) psiFile, entries, project, settings);
+                collectKotlinEntries((KtFile) psiFile, entriesQueue, project, settings);
             }
+
+            return null;
         }).inSmartMode(project).executeSynchronously();
+
+        // 将队列转换为列表
+        List<Pair<TextRange, CodeVisionEntry>> entries = new ArrayList<>(entriesQueue);
 
         // 转换 Pair 列表为 IntelliJ Platform API 需要的格式
         // 注意：CodeVisionState.Ready 接受 List<Pair<TextRange, CodeVisionEntry>>
@@ -192,22 +200,28 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
     }
 
     /**
-     * 根据当前项目设置, 收集 Java 文件中的类, 方法, 字段的 CodeVisionEntry 并添加到 {@code entries} 列表.
+     * 根据当前项目设置, 收集 Java 文件中的类, 方法, 字段的 CodeVisionEntry 并添加到 {@code entries} 队列.
      * <p>
      * 该方法首先检查是否支持 Java 语言; 若不支持则直接返回. 若 {@link SettingsState#generateForClass} 为 {@code true},
      * 则遍历文件中的所有类并根据 {@link GenerateJavadocCodeVisionProvider#shouldShowHintElement(PsiElement, SettingsState)} 判断是否需要生成类级别的提示.
      * 接着再次遍历所有类, 对每个类根据 {@link SettingsState#generateForMethod} 与 {@link SettingsState#generateForField}
      * 的配置分别收集方法和字段级别的提示信息. 所有生成的 {@link CodeVisionEntry} 都会与对应的文本范围一起
-     * 添加到 {@code entries} 列表中.
+     * 添加到 {@code entries} 队列中.
+     * <p>
+     * <b>性能优化：</b>
+     * <ul>
+     *   <li>使用并行流处理多个类，加快收集速度</li>
+     *   <li>使用并行流处理类内的方法和字段</li>
+     *   <li>使用线程安全的队列收集结果</li>
+     * </ul>
      *
      * @param javaFile 当前要分析的 Java 文件
-     * @param entries  用于收集生成的 {@link CodeVisionEntry} 与其文本范围的列表
+     * @param entries  用于收集生成的 {@link CodeVisionEntry} 与其文本范围的线程安全队列
      * @param project  当前项目上下文
      * @param settings 当前设置状态
      */
-    @SuppressWarnings("D")
     private void collectJavaEntries(@NotNull PsiJavaFile javaFile,
-                                    @NotNull List<Pair<TextRange, CodeVisionEntry>> entries,
+                                    @NotNull ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entries,
                                     @NotNull Project project,
                                     SettingsState settings) {
 
@@ -216,43 +230,44 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             return;
         }
 
-        // 收集类
-        if (settings.generateForClass) {
-            PsiClass[] classes = PsiTreeUtil.getChildrenOfType(javaFile, PsiClass.class);
-            if (classes != null) {
-                for (PsiClass psiClass : classes) {
-                    if (shouldShowHintElement(psiClass, settings)) {
-                        entries.add(createCodeVisionEntry(psiClass, project, settings));
-                    }
-                }
-            }
+        // 获取所有类（只获取一次，避免重复遍历）
+        PsiClass[] allClasses = PsiTreeUtil.getChildrenOfType(javaFile, PsiClass.class);
+        if (allClasses == null || allClasses.length == 0) {
+            return;
         }
 
-        // 收集方法和字段（遍历所有类）
-        PsiClass[] allClasses = PsiTreeUtil.getChildrenOfType(javaFile, PsiClass.class);
-        if (allClasses != null) {
-            for (PsiClass psiClass : allClasses) {
+        // 并行处理类级别的 Code Vision 条目
+        if (settings.generateForClass) {
+            Stream.of(allClasses)
+                .parallel()
+                .filter(psiClass -> shouldShowHintElement(psiClass, settings))
+                .forEach(psiClass -> entries.add(createCodeVisionEntry(psiClass, project, settings)));
+        }
+
+        // 并行处理类内的方法和字段
+        Stream.of(allClasses)
+            .parallel()
+            .forEach(psiClass -> {
                 // 收集方法
                 if (settings.generateForMethod) {
                     PsiMethod[] methods = psiClass.getMethods();
-                    for (PsiMethod method : methods) {
-                        if (shouldShowHintElement(method, settings)) {
-                            entries.add(createCodeVisionEntry(method, project, settings));
-                        }
+                    if (methods.length > 0) {
+                        Stream.of(methods)
+                            .filter(method -> shouldShowHintElement(method, settings))
+                            .forEach(method -> entries.add(createCodeVisionEntry(method, project, settings)));
                     }
                 }
 
                 // 收集字段
                 if (settings.generateForField) {
                     PsiField[] fields = psiClass.getFields();
-                    for (PsiField field : fields) {
-                        if (shouldShowHintElement(field, settings)) {
-                            entries.add(createCodeVisionEntry(field, project, settings));
-                        }
+                    if (fields.length > 0) {
+                        Stream.of(fields)
+                            .filter(field -> shouldShowHintElement(field, settings))
+                            .forEach(field -> entries.add(createCodeVisionEntry(field, project, settings)));
                     }
                 }
-            }
-        }
+            });
     }
 
     /**
@@ -261,63 +276,67 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * 该方法首先检查 Kotlin 语言是否被启用; 若未启用则直接返回. 随后根据 {@link SettingsState}
      * 的配置决定是否为类, 方法和字段生成 CodeVision 条目. 对于每一种类型, 方法会遍历
      * {@link KtFile} 中对应的 PSI 节点, 调用 {@link #shouldShowHintElement} 判断是否需要显示提示,
-     * 并通过 {@link #createCodeVisionEntry} 创建条目后追加到 {@code entries} 列表.
+     * 并通过 {@link #createCodeVisionEntry} 创建条目后追加到 {@code entries} 队列.
+     * <p>
+     * <b>性能优化：</b>
+     * <ul>
+     *   <li>使用并行流处理多个类，加快收集速度</li>
+     *   <li>使用并行流处理类内的函数和属性</li>
+     *   <li>使用线程安全的队列收集结果</li>
+     * </ul>
      *
      * @param ktFile   需要分析的 Kotlin 文件
-     * @param entries  用于收集生成的 CodeVision 条目的列表, 方法会向其中追加条目
+     * @param entries  用于收集生成的 CodeVision 条目的线程安全队列, 方法会向其中追加条目
      * @param project  当前项目上下文
      * @param settings 当前设置状态
      */
     @SuppressWarnings("D")
     private void collectKotlinEntries(@NotNull KtFile ktFile,
-                                      @NotNull List<Pair<TextRange, CodeVisionEntry>> entries,
+                                      @NotNull ConcurrentLinkedQueue<Pair<TextRange, CodeVisionEntry>> entries,
                                       @NotNull Project project, SettingsState settings) {
         // 检查是否支持 Kotlin 语言
         if (!settings.isLanguageSupported("kotlin")) {
             return;
         }
 
-        // 收集类
-        if (settings.generateForClass) {
-            KtClassOrObject[] classes = PsiTreeUtil.getChildrenOfType(ktFile, KtClassOrObject.class);
-            if (classes != null) {
-                for (KtClassOrObject ktClass : classes) {
-                    if (shouldShowHintElement(ktClass, settings)) {
-                        entries.add(createCodeVisionEntry(ktClass, project, settings));
-                    }
-                }
-            }
+        // 获取所有类（只获取一次，避免重复遍历）
+        KtClassOrObject[] allClasses = PsiTreeUtil.getChildrenOfType(ktFile, KtClassOrObject.class);
+        if (allClasses == null || allClasses.length == 0) {
+            return;
         }
 
-        // 收集函数和属性（遍历所有类）
-        KtClassOrObject[] allClasses = PsiTreeUtil.getChildrenOfType(ktFile, KtClassOrObject.class);
-        if (allClasses != null) {
-            for (KtClassOrObject ktClass : allClasses) {
+        // 并行处理类级别的 Code Vision 条目
+        if (settings.generateForClass) {
+            Stream.of(allClasses)
+                .parallel()
+                .filter(ktClass -> shouldShowHintElement(ktClass, settings))
+                .forEach(ktClass -> entries.add(createCodeVisionEntry(ktClass, project, settings)));
+        }
+
+        // 并行处理类内的函数和属性
+        Stream.of(allClasses)
+            .parallel()
+            .forEach(ktClass -> {
                 // 收集函数
                 if (settings.generateForMethod) {
                     KtNamedFunction[] functions = PsiTreeUtil.getChildrenOfType(ktClass, KtNamedFunction.class);
-                    if (functions != null) {
-                        for (KtNamedFunction function : functions) {
-                            if (shouldShowHintElement(function, settings)) {
-                                entries.add(createCodeVisionEntry(function, project, settings));
-                            }
-                        }
+                    if (functions != null && functions.length > 0) {
+                        Stream.of(functions)
+                            .filter(function -> shouldShowHintElement(function, settings))
+                            .forEach(function -> entries.add(createCodeVisionEntry(function, project, settings)));
                     }
                 }
 
                 // 收集属性
                 if (settings.generateForField) {
                     KtProperty[] properties = PsiTreeUtil.getChildrenOfType(ktClass, KtProperty.class);
-                    if (properties != null) {
-                        for (KtProperty property : properties) {
-                            if (shouldShowHintElement(property, settings)) {
-                                entries.add(createCodeVisionEntry(property, project, settings));
-                            }
-                        }
+                    if (properties != null && properties.length > 0) {
+                        Stream.of(properties)
+                            .filter(property -> shouldShowHintElement(property, settings))
+                            .forEach(property -> entries.add(createCodeVisionEntry(property, project, settings)));
                     }
                 }
-            }
-        }
+            });
     }
 
     /**

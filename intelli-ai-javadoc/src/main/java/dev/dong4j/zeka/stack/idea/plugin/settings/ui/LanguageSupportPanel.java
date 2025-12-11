@@ -36,6 +36,9 @@ public class LanguageSupportPanel {
     /** 注释语言选择下拉框 */
     private ComboBox<CommentLanguage> commentLanguageComboBox;
 
+    /** 显示生成 Javadoc 提示复选框 */
+    private JBCheckBox showGenerateJavadocHintCheckBox;
+
     /** 主面板 */
     private JPanel panel;
 
@@ -76,10 +79,16 @@ public class LanguageSupportPanel {
         // 设置默认值为中文
         commentLanguageComboBox.setSelectedItem(CommentLanguage.ZH);
 
+        // 显示生成 Javadoc 提示复选框
+        showGenerateJavadocHintCheckBox = new JBCheckBox(JavadocBundle.message("settings.show.generate.javadoc.hint"));
+        showGenerateJavadocHintCheckBox.setToolTipText(JavadocBundle.message("settings.show.generate.javadoc.hint.hint"));
+        showGenerateJavadocHintCheckBox.setEnabled(true);
+
         // 创建内容面板
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(javaCheckBox)
             .addComponent(kotlinCheckBox)
+            .addComponent(showGenerateJavadocHintCheckBox)
             .addLabeledComponent(new JBLabel(JavadocBundle.message("settings.comment.language") + ":"), commentLanguageComboBox)
             .getPanel();
 
@@ -117,6 +126,9 @@ public class LanguageSupportPanel {
         if (kotlinCheckBox.isSelected()) {
             settings.supportedLanguages.add("kotlin");
         }
+
+        // 保存显示生成 Javadoc 提示配置
+        settings.showGenerateJavadocHint = showGenerateJavadocHintCheckBox.isSelected();
     }
 
     /**
@@ -134,6 +146,9 @@ public class LanguageSupportPanel {
 
         javaCheckBox.setSelected(settings.supportedLanguages.contains("java"));
         kotlinCheckBox.setSelected(settings.supportedLanguages.contains("kotlin"));
+
+        // 加载显示生成 Javadoc 提示配置
+        showGenerateJavadocHintCheckBox.setSelected(settings.showGenerateJavadocHint);
     }
 }
 

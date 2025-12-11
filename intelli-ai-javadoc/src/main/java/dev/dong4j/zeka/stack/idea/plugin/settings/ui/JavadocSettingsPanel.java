@@ -137,11 +137,18 @@ public class JavadocSettingsPanel {
      * <p>
      * 取消注册监听器，避免内存泄漏。
      * 应该在设置页面关闭时调用。
+     * <p>
+     * 当前只有 AIProviderSelectionPanel 注册了全局监听器需要手动释放。
+     * 其他 panel 使用的是标准 Swing 监听器（ActionListener、DocumentListener），
+     * 这些监听器会随着组件的销毁而自动清理，不需要手动释放。
      */
     public void dispose() {
         if (aiProviderSelectionPanel != null) {
             aiProviderSelectionPanel.dispose();
         }
+        // 注意：其他 panel（promptTemplatesPanel, languageSupportPanel,
+        // generationRulesPanel, customJavaDocTagsPanel, classJavaDocTemplatePanel）
+        // 只使用了标准 Swing 监听器，会随着组件销毁自动清理，不需要手动释放
     }
 
     /**

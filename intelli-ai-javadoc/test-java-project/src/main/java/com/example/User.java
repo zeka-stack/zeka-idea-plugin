@@ -52,6 +52,13 @@ public class User {
         return id;
     }
 
+    /**
+     * 设置实体的唯一标识符
+     * <p>
+     * 将传入的整数值赋给当前对象的 id 属性
+     *
+     * @param id 要设置的唯一标识符
+     */
     public void setId(int id) {
         this.id = id;
     }

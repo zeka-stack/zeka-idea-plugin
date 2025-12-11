@@ -22,11 +22,11 @@ data class User(
 
 
     /**
-     * 获取显示名称
+     * 获取用户的显示名称
      * <p>
-     * 以 "name(email)" 的格式返回用户的显示名称
+     * 返回用户的显示名称, 格式为 "姓名 (邮箱)"
      *
-     * @return 用户的显示名称, 格式为 "name(email)"
+     * @return 用户的显示名称
      */
     fun getDisplayName(): String {
         return "$name ($email)"

@@ -232,6 +232,9 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.showProviderStatistics != panelSettings.showProviderStatistics) {
             return true;
         }
+        if (currentSettings.showGenerateJavadocHint != panelSettings.showGenerateJavadocHint) {
+            return true;
+        }
 
         return !currentSettings.supportedLanguages.equals(panelSettings.supportedLanguages);
     }
@@ -326,6 +329,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.commentLanguage = panelSettings.commentLanguage;
         currentSettings.performanceMode = panelSettings.performanceMode;
         currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
+        currentSettings.showGenerateJavadocHint = panelSettings.showGenerateJavadocHint;
 
         // 触发标签同步（需要在写操作中执行）
         ApplicationManager.getApplication().invokeLater(() -> {
