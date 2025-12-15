@@ -1,17 +1,21 @@
-<h3>2.5.1</h3>
+<h3>2.6.0</h3>
+<p><b>围绕提升 Javadoc 生成质量所做的改进：</b></p>
 <ul>
+    <li><b>✨ 新增</b>：新增“添加上下文”开关，可在方法/字段注释时将所属类前 500 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力；支持按需一键开启/关闭以控制
+        Token 消耗
+    </li>
     <li><b>🔧 优化</b>：优化性能模式处理逻辑，提高并发度，修复单文件多服务商时只有一个服务商在处理的问题</li>
     <li><b>🔧 优化</b>：优化性能模式统计弹窗样式，使用 IDE 当前主题颜色构建表格，修复暗色主题下文字不可见问题，并统一服务商名称列为居中显示</li>
     <li><b>🐛 修复</b>：因模型不稳定性,在插入 Javadoc 前增加清洗逻辑，自动移除 LLM 返回的多余 Markdown 代码块与原始代码行；并根据方法签名移除不存在的
         <code>@param</code> / <code>@throws</code> / <code>@exception</code> 标签，避免生成错误注释
     </li>
-    <li><b>✨ 新增</b>：新增“添加上下文”开关，可在方法/字段注释时将所属类前 500 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力；支持按需一键开启/关闭以控制
-        Token
-        消耗
-    </li>
 </ul>
-<h3>2.5.1</h3>
+<h3>2.6.0</h3>
 <ul>
+    <li><b>✨ Added</b>: Introduced a new "Add context" toggle that, when enabled, injects up to the first 500 lines of the enclosing
+        class (after compression) into the user prompt as contextual code, improving the accuracy of generated comments for methods
+        and fields while allowing you to disable it to control token usage
+    </li>
     <li><b>🔧 Optimized</b>: Optimized performance mode processing logic to improve concurrency; fixed issue where only one provider was used
         when multiple providers were configured for a single file
     </li>
@@ -22,10 +26,6 @@
         lines returned by LLM, and to drop <code>@param</code> / <code>@throws</code> / <code>@exception</code> tags that do not exist in
         the
         actual method signature, preventing incorrect documentation
-    </li>
-    <li><b>✨ Added</b>: Introduced a new "Add context" toggle that, when enabled, injects up to the first 500 lines of the enclosing
-        class (after compression) into the user prompt as contextual code, improving the accuracy of generated comments for methods
-        and fields while allowing you to disable it to control token usage
     </li>
 </ul>
 <p><b>⚠️ 特别注意事项：</b></p>
