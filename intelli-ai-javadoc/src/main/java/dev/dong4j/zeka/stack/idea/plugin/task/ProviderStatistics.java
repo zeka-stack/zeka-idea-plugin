@@ -45,6 +45,17 @@ public class ProviderStatistics {
     }
 
     /**
+     * 允许指定开始时间的构造函数（用于测试/演示）。
+     *
+     * @param providerName 提供商名称
+     * @param startTime    自定义开始时间戳
+     */
+    public ProviderStatistics(String providerName, long startTime) {
+        this.providerName = providerName;
+        this.startTime = startTime;
+    }
+
+    /**
      * 获取已完成任务的数量
      * <p>
      * 返回当前已完成任务的计数值
@@ -149,4 +160,3 @@ public class ProviderStatistics {
                              getSkippedCount(), getTotalCount(), getDuration() / 1000.0);
     }
 }
-

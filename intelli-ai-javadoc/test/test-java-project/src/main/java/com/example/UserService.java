@@ -15,25 +15,25 @@ public class UserService {
     /** 用户数据访问对象, 用于操作用户相关数据 */
     private UserRepository userRepository = new UserRepository();
 
-    /** 当前用户对象 */
+    /** 当前用户 */
     private User currentUser;
 
     /**
      * 根据用户 ID 查找用户
      * <p>
-     * 通过用户 ID 在用户仓库中查找并返回对应的用户对象
+     * 通过指定的用户 ID 从用户仓库中查找对应的用户对象
      *
      * @param id 用户 ID
-     * @return 用户对象, 如果未找到则返回 {@code null}
+     * @return 匹配 ID 的用户对象, 如果未找到则返回 null
      */
     public User findUserById(int id) {
         return userRepository.findById(id);
     }
 
     /**
-     * 创建并保存一个用户
+     * 创建并保存一个新用户
      * <p>
-     * 根据提供的姓名和邮箱创建用户对象, 并保存到数据库中
+     * 根据提供的姓名和邮箱创建用户对象, 并将其保存到用户仓库中, 最后返回创建的用户对象
      *
      * @param name  用户姓名
      * @param email 用户邮箱
@@ -46,9 +46,9 @@ public class UserService {
     }
 
     /**
-     * 更新指定用户信息
+     * 更新指定用户的信息
      * <p>
-     * 根据传入的用户对象更新对应用户信息, 返回更新是否成功
+     * 通过用户对象更新数据库中的用户信息
      *
      * @param user 要更新的用户对象
      * @return 更新操作是否成功
@@ -70,9 +70,9 @@ public class UserService {
     }
 
     /**
-     * 获取当前用户
+     * 获取当前用户信息
      * <p>
-     * 返回当前已登录或已设置的用户对象
+     * 返回当前登录用户的对象, 通常用于权限校验或用户信息获取
      *
      * @return 当前用户对象
      */
@@ -83,9 +83,9 @@ public class UserService {
     /**
      * 设置当前用户
      * <p>
-     * 将指定的用户对象设置为当前用户
+     * 将传入的 {@code currentUser} 赋值给当前实例的 {@code currentUser} 字段, 以便后续业务逻辑使用.
      *
-     * @param currentUser 当前用户对象
+     * @param currentUser 当前用户对象, 可能为 {@code null}, 表示无登录用户
      */
     public void setCurrentUser(User currentUser) {
         this.currentUser = currentUser;

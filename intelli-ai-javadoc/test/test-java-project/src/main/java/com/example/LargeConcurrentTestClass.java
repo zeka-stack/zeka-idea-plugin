@@ -9,10 +9,24 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * 大型并发测试类
+ * LargeConcurrentTestClass
  * <p>
- * 这个类包含了大量的成员，用于测试 Code Vision 和并发处理的性能。
- * 包含多个嵌套类、匿名类、接口、枚举等复杂的代码结构。
+ * 该类演示了在并发环境下对多种数据结构 (List,Set,Map,Optional,Future 等) 的封装与操作. 它提供了:
+ * <ul>
+ *   <li>实例化工厂与全局注册表, 支持按名称获取实例.</li>
+ *   <li>Builder 模式, 便于链式构造对象.</li>
+ *   <li>内置验证器, 校验名称,ID, 数值等合法性.</li>
+ *   <li>多种处理器接口 (ItemProcessor,DataTransformer) 以及对应的实现示例.</li>
+ *   <li>元数据管理, 状态枚举 (Status) 与优先级枚举 (Priority) 等辅助功能.</li>
+ *   <li>匿名类与比较器示例, 展示常见的 Java 语法用法.</li>
+ * </ul>
+ * 该类可用于快速搭建并发测试场景或作为示例代码参考.
+ *
+ * @author zeka.stack.team
+ * @version 1.0.0
+ * @email "mailto:zeka.stack@gmail.com"
+ * @date 2025.12.15
+ * @since 1.0.0
  */
 public class LargeConcurrentTestClass {
 
@@ -1144,12 +1158,12 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 根据给定的 {@link Predicate} 过滤 {@code items} 集合中的元素
+     * 根据给定的条件过滤项目列表
      * <p>
-     * 该方法遍历 {@code items}, 将满足 {@code predicate} 条件的元素收集到新的 {@link List} 中并返回.
+     * 使用提供的 Predicate 对项目列表进行过滤, 并将符合条件的项目收集到结果列表中
      *
-     * @param predicate 用于判断元素是否满足条件的 {@link Predicate}
-     * @return 满足条件的元素列表
+     * @param predicate 过滤条件, 用于判断每个项目是否符合要求
+     * @return 符合条件的项目列表
      */
     public List<String> filterItems(Predicate<String> predicate) {
         List<String> result = new ArrayList<>();
@@ -1211,13 +1225,15 @@ public class LargeConcurrentTestClass {
  */
 
     /**
-     * DeepInterface
+     * 嵌套类
      * <p>
-     * 定义了深层处理的接口, 包含一个无返回值的方法和一个字符串转换方法.
-     * 该接口可被 DeeplyNestedClass 或其他实现类实现, 以实现自定义的深层业务逻辑.
+     * 该类用于演示嵌套类的结构和使用方式, 包含一个内部类和一个接口. 主要用于展示 Java 中嵌套类和内部类的定义与使用.
      *
      * @author zeka.stack.team
-     * @version 1
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.12.15
+     * @since 1.0.0
      */
     public static class NestedClass {
         /** 嵌套对象名称 */
@@ -1250,7 +1266,8 @@ public class LargeConcurrentTestClass {
         /**
          * 深度嵌套类
          * <p>
-         * 该类用于演示深度嵌套结构的使用, 包含一个私有字段 deepName 和一个公共方法 deepProcess 用于执行深度处理逻辑. 同时定义了一个内部接口 DeepInterface, 用于声明深度处理相关的抽象方法.
+         * 该类用于演示嵌套结构的使用, 包含一个私有字段 deepName 和一个用于执行深度处理的方法 deepProcess.
+         * 同时定义了一个内部接口 DeepInterface, 用于声明深度处理相关的抽象方法.
          *
          * @author zeka.stack.team
          * @version 1.0.0
@@ -1287,7 +1304,7 @@ public class LargeConcurrentTestClass {
             /**
              * 深度处理接口
              * <p>
-             * 定义了深度处理相关的操作, 包括执行深度方法和对输入字符串进行深度转换
+             * 定义一组用于深度处理数据的抽象方法, 主要提供对输入数据进行深度转换和操作的功能
              *
              * @author zeka.stack.team
              * @version 1.0.0
@@ -1336,12 +1353,12 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 将列表中的每个元素通过指定的映射函数转换为新的列表
+     * 将列表中的每个元素通过指定的映射函数转换为另一种类型, 并返回转换后的列表
      * <p>
-     * 该方法接收一个原始列表和一个映射函数, 对原始列表中的每个元素应用映射函数, 最终返回转换后的列表
+     * 该方法接受一个原始列表和一个映射函数, 对列表中的每个元素应用该函数, 并将结果收集到新的列表中返回
      *
      * @param source 原始元素列表
-     * @param mapper 用于将每个元素转换为新元素的函数
+     * @param mapper 用于将每个元素转换为目标类型的函数
      * @return 转换后的元素列表
      */
     public <T, R> List<R> mapList(List<T> source, Function<T, R> mapper) {
@@ -1353,14 +1370,14 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 根据给定的条件过滤映射中的条目并返回新的映射
+     * 根据指定的 {@link Predicate} 过滤源 {@link Map}, 返回满足条件的新 {@link Map}.
      * <p>
-     * 该方法接收一个原始映射和一个条件谓词, 遍历原始映射的所有条目, 将满足条件的条目
-     * 添加到新的映射中并返回.
+     * 该方法不会修改原始 {@code source} Map, 而是创建一个新的 {@code HashMap},
+     * 并将所有满足 {@code predicate} 条件的条目复制到新 Map 中.
      *
-     * @param source    原始映射, 包含需要过滤的条目
-     * @param predicate 用于判断条目是否保留的条件谓词
-     * @return 包含满足条件的条目的新映射
+     * @param source    需要过滤的原始 Map, 不能为 {@code null}
+     * @param predicate 用于判断 Map 条目是否满足条件的 {@link Predicate}
+     * @return 一个新的 {@link Map}, 包含所有满足 {@code predicate} 的条目
      */
     public <K, V> Map<K, V> filterMap(Map<K, V> source, Predicate<Map.Entry<K, V>> predicate) {
         Map<K, V> result = new HashMap<>();
@@ -1373,20 +1390,20 @@ public class LargeConcurrentTestClass {
     // ========== 更多方法用于增加代码量 ==========
 
     /**
-     * 打印方法执行信息
+     * 执行方法 1, 输出字符串 "Method 1"
      * <p>
-     * 该方法在控制台输出字符串 "Method 1".
+     * 该方法用于演示或测试目的, 仅打印固定信息到控制台
+     *
+     * @since 1.0
      */
     public void method1() {
         System.out.println("Method 1");
     }
 
     /**
-     * 执行方法 2, 输出字符串 "Method 2"
+     * 执行方法 2 的操作
      * <p>
-     * 该方法用于演示或测试目的, 仅打印固定字符串信息
-     *
-     * @since 1.0
+     * 该方法用于执行方法 2 的逻辑, 输出字符串 "Method 2"
      */
     public void method2() {
         System.out.println("Method 2");
@@ -1402,29 +1419,29 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 打印方法 4 的执行信息
+     * 执行方法 4, 输出字符串 "Method 4"
      * <p>
-     * 该方法在控制台输出字符串 "Method 4".
+     * 该方法用于演示或测试目的, 仅打印指定信息到控制台
      */
     public void method4() {
         System.out.println("Method 4");
     }
 
     /**
-     * 执行方法 5 的操作
+     * 打印方法 5 的信息
      * <p>
-     * 该方法用于输出字符串 "Method 5" 到控制台
+     * 该方法在控制台输出字符串 "Method 5".
      */
     public void method5() {
         System.out.println("Method 5");
     }
 
     /**
-     * 计算并返回整数 {@code 1}.
+     * 计算方法, 返回固定值 1
      * <p>
-     * 该方法不接受任何参数, 直接返回固定值 {@code 1}, 常用于占位或示例场景.
+     * 该方法执行简单的计算操作, 始终返回整数值 1
      *
-     * @return 整数 {@code 1}
+     * @return 固定值 1
      */
     public int calculate1() {
         return 1;
@@ -1433,7 +1450,7 @@ public class LargeConcurrentTestClass {
     /**
      * 计算并返回固定值 2
      * <p>
-     * 该方法直接返回整数值 2, 无任何业务逻辑处理
+     * 该方法返回一个固定的整数值 2
      *
      * @return 固定值 2
      */
@@ -1444,7 +1461,7 @@ public class LargeConcurrentTestClass {
     /**
      * 计算并返回固定值 3
      * <p>
-     * 该方法直接返回整数值 3, 无任何业务逻辑处理
+     * 该方法直接返回整数值 3, 无任何参数和逻辑处理
      *
      * @return 固定值 3
      */
@@ -1455,7 +1472,7 @@ public class LargeConcurrentTestClass {
     /**
      * 计算并返回固定值 4
      * <p>
-     * 该方法直接返回整数值 4, 无任何业务逻辑处理
+     * 该方法返回一个固定的整数值 4, 无任何参数输入.
      *
      * @return 固定值 4
      */
@@ -1475,23 +1492,20 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 返回格式 1 字符串
+     * 返回格式 1 的字符串
      * <p>
-     * 该方法返回固定字符串 {@code "Format 1"}.
+     * 该方法返回一个固定的字符串 "Format 1"
      *
-     * @return 格式 1 字符串
+     * @return 格式 1 的字符串
      */
     public String format1() {
         return "Format 1";
     }
 
     /**
-     * 返回格式化字符串 "Format 2".
+     * 返回格式化字符串 "Format 2"
      *
-     * <p>
-     * 该方法返回固定字符串 {@code "Format 2"}, 可用于演示或占位用途.
-     *
-     * @return 格式化字符串 {@code "Format 2"}.
+     * @return 格式化字符串 "Format 2"
      */
     public String format2() {
         return "Format 2";
@@ -1500,7 +1514,7 @@ public class LargeConcurrentTestClass {
     /**
      * 返回格式为 "Format 3" 的字符串
      * <p>
-     * 该方法用于返回一个固定的字符串 "Format 3"
+     * 该方法用于生成一个固定格式的字符串, 内容为 "Format 3"
      *
      * @return 格式为 "Format 3" 的字符串
      */
@@ -1509,7 +1523,7 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 检查某个条件是否满足
+     * 检查条件是否满足
      * <p>
      * 返回一个布尔值, 表示检查结果
      *
@@ -1524,18 +1538,18 @@ public class LargeConcurrentTestClass {
      * <p>
      * 该方法用于检查某个条件是否成立, 目前始终返回 false
      *
-     * @return 是否满足条件, 目前始终返回 false
+     * @return 始终返回 false
      */
     public boolean check2() {
         return false;
     }
 
     /**
-     * 检查某个条件是否满足
+     * 检查某个状态是否为激活状态
      * <p>
-     * 返回 active 变量的值, 用于判断某个条件是否成立
+     * 返回当前 active 变量的值, 用于判断是否处于激活状态
      *
-     * @return 是否满足条件,true 表示满足,false 表示不满足
+     * @return 是否处于激活状态
      */
     public boolean check3() {
         return active;
@@ -1546,10 +1560,10 @@ public class LargeConcurrentTestClass {
     /**
      * 判断当前对象与指定对象是否相等
      * <p>
-     * 先比较引用是否相同, 然后检查对象类型是否相同, 最后比较 {@code id} 和 {@code name} 字段是否相等
+     * 比较两个 LargeConcurrentTestClass 实例的 id 和 name 字段是否相等
      *
      * @param obj 要比较的对象
-     * @return 如果 {@code obj} 与当前对象相等返回 {@code true}, 否则返回 {@code false}
+     * @return 如果对象相等则返回 true, 否则返回 false
      */
     @Override
     public boolean equals(Object obj) {
@@ -1560,11 +1574,11 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 生成对象的哈希码
+     * 重写 hashCode 方法, 根据 name 和 id 生成对象的哈希值
      * <p>
-     * 根据对象的 name 和 id 属性计算并返回哈希码
+     * 该方法用于计算对象的哈希码, 基于 name 和 id 字段的组合值
      *
-     * @return 对象的哈希码
+     * @return 对象的哈希值
      */
     @Override
     public int hashCode() {
@@ -1572,11 +1586,11 @@ public class LargeConcurrentTestClass {
     }
 
     /**
-     * 返回对象的字符串表示形式
+     * 返回该对象的字符串表示形式
      * <p>
-     * 该方法重写 Object 类的 toString 方法, 返回包含对象关键属性的字符串表示
+     * 该方法重写了 Object 类的 toString 方法, 用于返回对象的详细信息字符串, 包括名称,ID, 值, 是否激活以及项目数量.
      *
-     * @return 对象的字符串表示, 格式为 "LargeConcurrentTestClass{属性名 = 属性值, ...}"
+     * @return 对象的字符串表示形式
      */
     @Override
     public String toString() {

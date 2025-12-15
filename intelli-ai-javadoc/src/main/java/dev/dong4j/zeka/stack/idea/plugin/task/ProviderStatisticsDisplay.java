@@ -6,8 +6,6 @@ import java.util.Map;
 
 import javax.swing.SwingUtilities;
 
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * 提供商统计信息显示类
  * <p>
@@ -19,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
  * @date 2025.12.01
  * @since 1.0.0
  */
-@Slf4j
 public final class ProviderStatisticsDisplay {
 
     private ProviderStatisticsDisplay() {
@@ -37,27 +34,27 @@ public final class ProviderStatisticsDisplay {
     public static void showProviderStatistics(@NotNull Map<String, ProviderStatistics> providerStats) {
         // 创建HTML格式的统计信息
         StringBuilder htmlContent = new StringBuilder();
-        // formatter:off
         htmlContent.append("<html><head><style>");
-        htmlContent.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; font-size: 12px; }");
-        htmlContent.append("h2 { color: #2E7D32; margin-bottom: 15px; font-size: 16px; }");
-        htmlContent.append("h3 { color: #1976D2; margin-bottom: 10px; font-size: 14px; }");
-        htmlContent.append("table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 11px; border: 1px solid #ddd; }");
-        htmlContent.append("th { background-color:rgb(122, 127, 131); color: white; padding: 8px; text-align: center; font-weight: bold; font-size: 11px; border: 1px solid #ddd; }");
+        // 回归简洁明亮样式，避免 JEditorPane 不支持的 CSS 属性
+        htmlContent.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; font-size: 12px; color: #1f2937; }");
+        htmlContent.append("h2 { color: #2E7D32; margin-bottom: 12px; font-size: 16px; }");
+        htmlContent.append("h3 { color: #1976D2; margin-bottom: 8px; font-size: 14px; }");
+        htmlContent.append("table { border-collapse: collapse; width: 100%; margin-bottom: 16px; font-size: 11px; border: 1px solid #ddd;" +
+                           " }");
+        htmlContent.append("th { background-color: #7a7f83; color: white; padding: 8px; text-align: center; font-weight: bold; font-size:" +
+                           " 11px; border: 1px solid #ddd; }");
         htmlContent.append("td { padding: 8px; text-align: center; font-size: 11px; border: 1px solid #ddd; }");
-        htmlContent.append("td.provider-name { text-align: left; }");
+        htmlContent.append("td.provider-name { text-align: left; font-weight: 600; }");
         htmlContent.append("tr:nth-child(even) { background-color: #f8f9fa; }");
         htmlContent.append("tr:hover { background-color: #e3f2fd; }");
-        htmlContent.append(".summary-row { background-color:rgb(41, 96, 123); color: white; font-weight: bold; }");
+        htmlContent.append(".summary-row { background-color: #29607b; color: white; font-weight: bold; }");
         htmlContent.append(".summary-row td { border: 1px solid #ddd; }");
         htmlContent.append("</style></head><body>");
-        // formatter:on
-        // 添加标题
         htmlContent.append("<h2>🚀 性能模式处理完成</h2>");
 
         // 创建提供商统计表格
         htmlContent.append("<table>");
-        htmlContent.append("<tr><th>服务商名称</th><th>完成数量</th><th>失败数量</th><th>跳过数量</th><th>耗时</th></tr>");
+        htmlContent.append("<tr><th>服务商名称</th><th>完成数量</th><th>失败数量</th><th>跳过数量</th><th>耗时</th><th>成功率</th><th>吞吐量(条/秒)</th></tr>");
 
         int totalCompleted = 0;
         int totalFailed = 0;
@@ -65,12 +62,19 @@ public final class ProviderStatisticsDisplay {
         long totalDuration = 0;
 
         for (ProviderStatistics stats : providerStats.values()) {
+            long handled = stats.getCompletedCount() + stats.getFailedCount();
+            double successRate = handled == 0 ? 0.0 : (double) stats.getCompletedCount() / handled;
+            double durationSec = stats.getDuration() / 1000.0;
+            double throughput = durationSec <= 0 ? 0.0 : stats.getCompletedCount() / durationSec;
+
             htmlContent.append("<tr>");
             htmlContent.append("<td class='provider-name'>").append(stats.getProviderName()).append("</td>");
             htmlContent.append("<td>").append(stats.getCompletedCount()).append("</td>");
             htmlContent.append("<td>").append(stats.getFailedCount()).append("</td>");
             htmlContent.append("<td>").append(stats.getSkippedCount()).append("</td>");
             htmlContent.append("<td>").append(String.format("%.1fs", stats.getDuration() / 1000.0)).append("</td>");
+            htmlContent.append("<td>").append(String.format("%.1f%%", successRate * 100)).append("</td>");
+            htmlContent.append("<td>").append(String.format("%.2f", throughput)).append("</td>");
             htmlContent.append("</tr>");
 
             totalCompleted += stats.getCompletedCount();
@@ -86,9 +90,16 @@ public final class ProviderStatisticsDisplay {
         htmlContent.append("<td>").append(totalFailed).append("</td>");
         htmlContent.append("<td>").append(totalSkipped).append("</td>");
         htmlContent.append("<td>").append(String.format("%.1fs", totalDuration / 1000.0)).append("</td>");
+        double totalHandled = totalCompleted + totalFailed;
+        double totalSuccessRate = totalHandled == 0 ? 0.0 : totalCompleted / totalHandled;
+        double totalDurationSec = totalDuration / 1000.0;
+        double totalThroughput = totalDurationSec <= 0 ? 0.0 : totalCompleted / totalDurationSec;
+        htmlContent.append("<td>").append(String.format("%.1f%%", totalSuccessRate * 100)).append("</td>");
+        htmlContent.append("<td>").append(String.format("%.2f", totalThroughput)).append("</td>");
         htmlContent.append("</tr>");
 
         htmlContent.append("</table>");
+        htmlContent.append("</div>");
         htmlContent.append("</body></html>");
 
         // 在日志中记录详细信息
@@ -97,7 +108,18 @@ public final class ProviderStatisticsDisplay {
         logMessage.append("各提供商处理统计：\n");
 
         for (ProviderStatistics stats : providerStats.values()) {
-            logMessage.append("• ").append(stats.toString()).append("\n");
+            long handled = stats.getCompletedCount() + stats.getFailedCount();
+            double successRate = handled == 0 ? 0.0 : (double) stats.getCompletedCount() / handled;
+            double durationSec = stats.getDuration() / 1000.0;
+            double throughput = durationSec <= 0 ? 0.0 : stats.getCompletedCount() / durationSec;
+            logMessage.append(String.format("• %s | 完成:%d 失败:%d 跳过:%d 耗时:%.1fs 成功率:%.1f%% 吞吐量:%.2f条/秒%n",
+                                            stats.getProviderName(),
+                                            stats.getCompletedCount(),
+                                            stats.getFailedCount(),
+                                            stats.getSkippedCount(),
+                                            durationSec,
+                                            successRate * 100,
+                                            throughput));
         }
 
         logMessage.append("\n总体统计：\n");
@@ -109,10 +131,15 @@ public final class ProviderStatisticsDisplay {
 
         if (totalCompleted > 0) {
             double avgTimePerTask = (double) totalDuration / totalCompleted;
-            logMessage.append(String.format("• 平均每任务耗时: %.1f 秒", avgTimePerTask / 1000.0));
+            logMessage.append(String.format("• 平均每任务耗时: %.1f 秒%n", avgTimePerTask / 1000.0));
         }
-
-        log.info("{}", logMessage);
+        double handled = totalCompleted + totalFailed;
+        if (handled > 0) {
+            totalSuccessRate = totalCompleted / handled;
+            totalThroughput = totalDuration > 0 ? totalCompleted / (totalDuration / 1000.0) : 0.0;
+            logMessage.append(String.format("• 总体成功率: %.1f%%%n", totalSuccessRate * 100));
+            logMessage.append(String.format("• 总体吞吐量: %.2f 条/秒", totalThroughput));
+        }
 
         // 显示HTML格式的通知给用户
         SwingUtilities.invokeLater(() -> {
@@ -139,10 +166,6 @@ public final class ProviderStatisticsDisplay {
             // 应用阈值限制
             int finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
 
-            // 记录高度计算信息
-            log.debug("动态高度计算: 提供商数量={}, 计算高度={}, 最终高度={}",
-                      providerCount, calculatedHeight, finalHeight);
-
             // 设置滚动面板
             javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(editorPane);
             scrollPane.setPreferredSize(new java.awt.Dimension(800, finalHeight));
@@ -165,5 +188,36 @@ public final class ProviderStatisticsDisplay {
             dialog.setVisible(true);
         });
     }
-}
 
+    /**
+     * 便于独立运行的演示入口（使用模拟数据直接弹出统计窗口）。
+     */
+    public static void main(String[] args) {
+        long now = System.currentTimeMillis();
+
+        ProviderStatistics p1 = new ProviderStatistics("QianWen", now - 5_000);
+        p1.incrementCompleted();
+        p1.incrementCompleted();
+        p1.incrementFailed();
+        p1.finish();
+
+        ProviderStatistics p2 = new ProviderStatistics("Ollama", now - 8_000);
+        p2.incrementCompleted();
+        p2.incrementCompleted();
+        p2.incrementCompleted();
+        p2.incrementSkipped();
+        p2.finish();
+
+        ProviderStatistics p3 = new ProviderStatistics("Custom", now - 3_500);
+        p3.incrementFailed();
+        p3.incrementFailed();
+        p3.finish();
+
+        Map<String, ProviderStatistics> demo = new java.util.LinkedHashMap<>();
+        demo.put("qianwen", p1);
+        demo.put("ollama", p2);
+        demo.put("custom", p3);
+
+        showProviderStatistics(demo);
+    }
+}
