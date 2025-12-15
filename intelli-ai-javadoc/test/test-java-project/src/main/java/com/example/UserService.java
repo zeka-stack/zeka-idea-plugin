@@ -14,7 +14,7 @@ public class UserService {
     /** 用户数据访问对象, 用于操作用户相关数据 */
     private UserRepository userRepository = new UserRepository();
 
-    /** 当前用户 */
+    /** 当前登录用户信息 */
     private User currentUser;
 
     /**

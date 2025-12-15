@@ -14,6 +14,7 @@ import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
+import dev.dong4j.zeka.stack.idea.plugin.task.GenerationContext;
 import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
 import dev.dong4j.zeka.stack.idea.plugin.util.TokenCounter;
 
@@ -122,7 +123,37 @@ public final class AIRequestComposer {
             default -> resolveTemplate(settings.methodPromptTemplate,
                                        SettingsState.getDefaultMethodPromptTemplate());
         };
-        return String.format(template, task.getCode());
+        String codeWithContext = mergeContextAndCode(task.getContext(), task.getCode());
+        return String.format(template, codeWithContext);
+    }
+
+    /**
+     * 将上下文信息合并到待处理代码中, 作为 user 提示的一部分。
+     * <p>
+     * 目前仅使用类级别代码片段作为上下文, 通过显式标记块的方式传给模型, 避免与目标代码混淆。
+     * 如果上下文为空或仅包含空白, 则仅返回原始代码。
+     *
+     * @param context 上下文信息
+     * @param code    当前元素代码
+     * @return 合并后的代码片段, 供模板中的 %s 使用
+     */
+    @NotNull
+    private static String mergeContextAndCode(@NotNull GenerationContext context,
+                                              @NotNull String code) {
+        String classSnippet = context.classCodeSnippet();
+        if (classSnippet == null || classSnippet.isBlank()) {
+            return code;
+        }
+
+        return """
+            # 类级上下文（仅供参考，不直接生成注释）
+            <CLASS_CONTEXT_START>
+            %s
+            <CLASS_CONTEXT_END>
+
+            # 待处理的代码片段
+            %s
+            """.formatted(classSnippet, code);
     }
 
     /**

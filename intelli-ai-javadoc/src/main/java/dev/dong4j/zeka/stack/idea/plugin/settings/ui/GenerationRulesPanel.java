@@ -44,6 +44,9 @@ public class GenerationRulesPanel {
     /** 覆盖已有注释复选框 */
     private JBCheckBox overrideExistingCheckBox;
 
+    /** 启用类级上下文的复选框 */
+    private JBCheckBox enableGenerationContextCheckBox;
+
     /** 启用代码压缩的复选框 */
     private JBCheckBox enableCodeCompressionCheckBox;
 
@@ -89,8 +92,7 @@ public class GenerationRulesPanel {
         generateForMethodCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.method"));
         generateForFieldCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.field"));
         overrideExistingCheckBox = new JBCheckBox(JavadocBundle.message("settings.override.existing"));
-
-
+        enableGenerationContextCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.generation.context"));
         enableCodeCompressionCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
         compressSingleLineJavaDocCheckBox = new JBCheckBox(JavadocBundle.message("settings.compress.single.line.javadoc"));
@@ -104,6 +106,7 @@ public class GenerationRulesPanel {
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(createGenerationOptionsPanel())
             .addComponent(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"))
+            .addComponent(createCheckBoxWithHint(enableGenerationContextCheckBox, "settings.enable.generation.context.hint"))
             .addComponent(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"))
             .addComponent(createCodeCompressionSubConfigPanel())
             .addComponent(
@@ -150,6 +153,7 @@ public class GenerationRulesPanel {
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
         settings.generateForField = generateForFieldCheckBox.isSelected();
         settings.overrideExisting = overrideExistingCheckBox.isSelected();
+        settings.enableGenerationContext = enableGenerationContextCheckBox.isSelected();
         settings.enableCodeCompression = enableCodeCompressionCheckBox.isSelected();
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
         settings.compressSingleLineJavaDoc = compressSingleLineJavaDocCheckBox.isSelected();
@@ -170,6 +174,7 @@ public class GenerationRulesPanel {
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
         generateForFieldCheckBox.setSelected(settings.generateForField);
         overrideExistingCheckBox.setSelected(settings.overrideExisting);
+        enableGenerationContextCheckBox.setSelected(settings.enableGenerationContext);
         enableCodeCompressionCheckBox.setSelected(settings.enableCodeCompression);
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
         compressSingleLineJavaDocCheckBox.setSelected(settings.compressSingleLineJavaDoc);

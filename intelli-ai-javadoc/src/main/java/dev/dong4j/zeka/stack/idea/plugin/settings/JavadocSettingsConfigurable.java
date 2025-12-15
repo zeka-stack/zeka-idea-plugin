@@ -171,6 +171,9 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.overrideExisting != panelSettings.overrideExisting) {
             return true;
         }
+        if (currentSettings.enableGenerationContext != panelSettings.enableGenerationContext) {
+            return true;
+        }
         if (currentSettings.enableCodeCompression != panelSettings.enableCodeCompression) {
             return true;
         }
@@ -285,6 +288,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.generateForMethod = panelSettings.generateForMethod;
         currentSettings.generateForField = panelSettings.generateForField;
         currentSettings.overrideExisting = panelSettings.overrideExisting;
+        currentSettings.enableGenerationContext = panelSettings.enableGenerationContext;
         currentSettings.enableCodeCompression = panelSettings.enableCodeCompression;
         currentSettings.maxClassCodeLines = panelSettings.maxClassCodeLines;
 

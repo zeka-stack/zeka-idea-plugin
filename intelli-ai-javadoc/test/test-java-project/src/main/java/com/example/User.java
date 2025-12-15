@@ -11,13 +11,13 @@ package com.example;
  * @since 1.0.0
  */
 public class User {
-    /** 名称 */
+    /** 用户姓名 */
     private String name;
-    /** 用户的电子邮件地址 */
+    /** 用户邮箱地址 */
     private String email;
     /** ID */
     private int id;
-    /** 年龄 */
+    /** 用户年龄 */
     private int age;
     /** 用户地址 */
     private String address;

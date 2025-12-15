@@ -125,6 +125,20 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean overrideExisting = false;
 
     /**
+     * 是否为文档生成提供类级别上下文信息
+     *
+     * <p>控制是否在生成注释时, 额外携带当前元素所属类(或 Kotlin 类/对象)的前若干行代码作为上下文。
+     * 当开启时, {@link dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector} 会为每个任务构建
+     * {@link dev.dong4j.zeka.stack.idea.plugin.task.GenerationContext}, 在提示词中附带类级别代码片段,
+     * 以提升字段/方法注释的语境理解能力。
+     *
+     * <p>默认值: false (默认不传递额外上下文, 以减少 token 消耗)
+     *
+     * @since 2.5.1
+     */
+    public boolean enableGenerationContext = false;
+
+    /**
      * 是否启用代码压缩以减少 token 使用量
      *
      * <p>控制是否为代码元素进行压缩处理以减少传递给 AI 的 token 数量。

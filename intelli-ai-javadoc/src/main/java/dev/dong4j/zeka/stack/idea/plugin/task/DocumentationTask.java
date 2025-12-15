@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.task;
 import com.intellij.psi.PsiElement;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -37,7 +36,7 @@ public class DocumentationTask {
      * 包含与当前元素相关的额外上下文, 如所属类的代码片段等, 用于帮助 AI 生成更精准的注释。
      * 该字段为可选，某些场景下可能不存在上下文信息。
      */
-    @Nullable
+    @NotNull
     @Getter
     private final GenerationContext context;
     /** 任务当前状态 */
@@ -138,7 +137,7 @@ public class DocumentationTask {
                              @NotNull String code,
                              @NotNull TaskType type,
                              @NotNull String filePath) {
-        this(element, code, type, filePath, GenerationContext.ofClassCode(""));
+        this(element, code, type, filePath, GenerationContext.empty());
     }
 
     /**

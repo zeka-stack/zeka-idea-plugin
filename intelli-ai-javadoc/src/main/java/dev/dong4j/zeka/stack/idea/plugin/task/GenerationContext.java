@@ -37,5 +37,16 @@ public record GenerationContext(@Nullable String classCodeSnippet) {
     public static GenerationContext ofClassCode(@Nullable String classCodeSnippet) {
         return new GenerationContext(classCodeSnippet);
     }
+
+    /**
+     * 创建一个空的 GenerationContext 实例
+     * <p>
+     * 该方法返回一个使用空字符串初始化的 GenerationContext 对象, 通常用于表示没有内容或初始状态的上下文.
+     *
+     * @return 新创建的空 GenerationContext 实例
+     */
+    public static GenerationContext empty() {
+        return new GenerationContext("");
+    }
 }
 

@@ -615,7 +615,9 @@ public class TaskCollector {
         String code = getCodeWithComment(element);
 
         // 构建上下文信息（当前仅提供类级别代码片段，后续可扩展）
-        GenerationContext context = buildGenerationContext(element);
+        GenerationContext context = settings.enableGenerationContext
+                                    ? buildGenerationContext(element)
+                                    : GenerationContext.empty();
 
         // 获取文件路径，处理 VirtualFile 为 null 的情况（例如 Scratch 文件）
         PsiFile containingFile = element.getContainingFile();
@@ -649,49 +651,52 @@ public class TaskCollector {
     private GenerationContext buildGenerationContext(@NotNull PsiElement element) {
         // 元素本身就是 Java 类
         if (element instanceof PsiClass) {
-            return GenerationContext.ofClassCode("");
+            return GenerationContext.empty();
         }
         // 元素本身就是 Kotlin 类/对象
         if (element instanceof KtClassOrObject) {
-            return GenerationContext.ofClassCode("");
+            return GenerationContext.empty();
         }
 
         // 优先查找最近的 Java 类
         PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
         if (psiClass != null) {
-            String snippet = limitLines(psiClass.getText(), 500);
+            // 先压缩代码
+            String reformatCode = AiCodePreprocessor.preprocess(optimizeClassCode(psiClass.getText()));
+            String snippet = limitLines(reformatCode);
             return GenerationContext.ofClassCode(snippet);
         }
 
         // 再查找最近的 Kotlin 类/对象
         KtClassOrObject ktClass = PsiTreeUtil.getParentOfType(element, KtClassOrObject.class);
         if (ktClass != null) {
-            String snippet = limitLines(ktClass.getText(), 500);
+            // 先压缩代码
+            String reformatCode = AiCodePreprocessor.preprocess(optimizeClassCode(ktClass.getText()));
+            String snippet = limitLines(reformatCode);
             return GenerationContext.ofClassCode(snippet);
         }
 
         // 没有找到合适的类级上下文
-        return GenerationContext.ofClassCode("");
+        return GenerationContext.empty();
     }
 
     /**
      * 将多行字符串限制在指定的最大行数内。
      *
-     * @param text     原始文本
-     * @param maxLines 最大行数
+     * @param text 原始文本
      * @return 截断后的文本，如果原始文本行数不足则返回原文
      */
     @NotNull
-    private String limitLines(@NotNull String text, int maxLines) {
-        if (text.isEmpty() || maxLines <= 0) {
+    private String limitLines(@NotNull String text) {
+        if (text.isEmpty() || settings.maxClassCodeLines <= 0) {
             return text;
         }
         String[] lines = text.split("\n", -1);
-        if (lines.length <= maxLines) {
+        if (lines.length <= settings.maxClassCodeLines) {
             return text;
         }
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < maxLines; i++) {
+        for (int i = 0; i < settings.maxClassCodeLines; i++) {
             sb.append(lines[i]).append("\n");
         }
         return sb.toString();
