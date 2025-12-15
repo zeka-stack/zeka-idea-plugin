@@ -154,5 +154,13 @@
   {
     "name": "集成测试说明",
     "path": "./docs/集成测试说明.md"
+  },
+  {
+    "name": "并行生成Javadoc逻辑梳理与优化建议",
+    "path": "./docs/并行生成Javadoc逻辑梳理与优化建议.md"
+  },
+  {
+    "name": "并行生成Javadoc技术细节",
+    "path": "./docs/并行生成Javadoc技术细节.md"
   }
 ]

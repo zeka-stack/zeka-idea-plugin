@@ -6,6 +6,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import lombok.Getter;
@@ -33,12 +36,25 @@ public class ProviderManager {
     @Getter
     private final Map<String, ExecutorService> providerExecutors;
 
+    /** AI 请求执行器（隔离于工作线程池，避免使用 commonPool） */
+    private final ExecutorService requestExecutor;
+
     /**
      * 构造函数
      */
     public ProviderManager() {
         this.providerStatuses = new ConcurrentHashMap<>();
         this.providerExecutors = new ConcurrentHashMap<>();
+        this.requestExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
+            private final AtomicInteger index = new AtomicInteger(1);
+
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r, "AIJ-Request-" + index.getAndIncrement());
+                t.setDaemon(true);
+                return t;
+            }
+        });
     }
 
     /**
@@ -52,6 +68,16 @@ public class ProviderManager {
         providerStatuses.put(providerId, ProviderStatus.AVAILABLE);
         providerExecutors.put(providerId, executor);
         log.debug("注册服务商: {}", providerId);
+    }
+
+    /**
+     * 获取 AI 请求执行器
+     *
+     * @return 执行器
+     */
+    @NotNull
+    public ExecutorService getRequestExecutor() {
+        return requestExecutor;
     }
 
     /**
@@ -99,6 +125,17 @@ public class ProviderManager {
     }
 
     /**
+     * 获取可用服务商数量
+     *
+     * @return 可用数量
+     */
+    public int getAvailableProviderCount() {
+        return (int) providerStatuses.values().stream()
+            .filter(status -> status == ProviderStatus.AVAILABLE)
+            .count();
+    }
+
+    /**
      * 获取服务商执行器
      *
      * @param provider 服务商配置
@@ -121,6 +158,7 @@ public class ProviderManager {
         });
         providerExecutors.clear();
         providerStatuses.clear();
+        requestExecutor.shutdownNow();
         log.info("已关闭所有服务商执行器");
     }
 
@@ -135,4 +173,3 @@ public class ProviderManager {
         return provider.providerType.getProviderId();
     }
 }
-

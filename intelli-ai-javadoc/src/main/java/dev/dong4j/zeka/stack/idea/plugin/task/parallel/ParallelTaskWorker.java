@@ -91,6 +91,10 @@ public class ParallelTaskWorker implements Runnable {
     @NotNull
     private final ProgressManager progressManager;
 
+    /** 在途任务计数 */
+    @NotNull
+    private final java.util.concurrent.atomic.AtomicInteger inflightCount;
+
     /** 默认超时时间（秒） */
     private static final int DEFAULT_TIMEOUT_SECONDS = 10;
 
@@ -151,19 +155,25 @@ public class ParallelTaskWorker implements Runnable {
 
         // 设置任务状态
         task.setStatus(DocumentationTask.TaskStatus.PROCESSING);
+        inflightCount.incrementAndGet();
 
-        // 使用 CompletableFuture 实现超时控制
+        // 使用可控执行器实现超时控制
         CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
             try {
                 return executeTask(task);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, providerManager.getRequestExecutor());
 
         try {
             // 设置超时时间（默认 10 秒）
             String documentation = future.get(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+            // 已跳过的任务不再走成功/失败流程
+            if (task.getStatus() == DocumentationTask.TaskStatus.SKIPPED) {
+                return;
+            }
 
             // 任务成功完成
             handleTaskSuccess(task, documentation, isRetryTask);
@@ -182,6 +192,8 @@ public class ParallelTaskWorker implements Runnable {
             } else {
                 handleTaskFailure(task, taskWrapper, e.getMessage(), isRetryTask);
             }
+        } finally {
+            inflightCount.decrementAndGet();
         }
     }
 
@@ -192,7 +204,7 @@ public class ParallelTaskWorker implements Runnable {
      * @return 生成的文档内容
      * @throws AIServiceException AI 服务异常
      */
-    @NotNull
+    @Nullable
     private String executeTask(@NotNull DocumentationTask task) throws AIServiceException {
         // 输出任务开始信息
         outputTaskStartInfo(task);
@@ -204,7 +216,7 @@ public class ParallelTaskWorker implements Runnable {
             updateProgress(task);
             AIConsoleLoggerUtil.printWarning(project, "⏭ 任务已跳过（已有文档）");
             AIConsoleLoggerUtil.print(project, "");
-            throw new AIServiceException("任务已跳过", AIServiceException.ErrorCode.UNKNOWN_ERROR);
+            return null;
         }
 
         // 输出代码位置信息（详细日志模式）
@@ -241,9 +253,6 @@ public class ParallelTaskWorker implements Runnable {
         ApplicationManager.getApplication().runReadAction(() -> {
             try {
                 PsiElement element = task.getElement();
-                if (element == null) {
-                    return;
-                }
 
                 VirtualFile virtualFile = element.getContainingFile().getVirtualFile();
                 if (virtualFile == null) {
@@ -276,9 +285,6 @@ public class ParallelTaskWorker implements Runnable {
         ApplicationManager.getApplication().runReadAction(() -> {
             try {
                 PsiElement element = task.getElement();
-                if (element == null) {
-                    return;
-                }
 
                 VirtualFile virtualFile = element.getContainingFile().getVirtualFile();
                 if (virtualFile == null) {
@@ -362,13 +368,24 @@ public class ParallelTaskWorker implements Runnable {
             // 429 错误：标记服务商不可用，销毁所有线程
             log.error("服务商 {} 出现限流错误（429），销毁所有线程", provider.providerType.getDisplayName());
             providerManager.markProviderRateLimited(provider);
-            stats.incrementFailed();
-            updateProgress(task);
-
-            // 将任务重新分配（放回队列）
-            task.setStatus(DocumentationTask.TaskStatus.FAILED);
-            task.setErrorMessage(errorMessage);
-            // 注意：任务已经处理失败，不需要重新入队
+            // 将任务重新分配给其他可用服务商（如果存在）
+            if (providerManager.getAvailableProviderCount() > 0) {
+                RetryableTask retryableTask = taskWrapper.retryableTask();
+                if (retryableTask == null) {
+                    retryableTask = new RetryableTask(task);
+                }
+                retryableTask.setLastError(errorMessage);
+                taskDispatcher.addToRetryQueue(retryableTask);
+                AIConsoleLoggerUtil.printWarning(project,
+                                                 String.format("⚠ 服务商限流，任务转交其他可用服务商: %s", task.getFilePath()));
+            } else {
+                stats.incrementFailed();
+                task.setStatus(DocumentationTask.TaskStatus.FAILED);
+                task.setErrorMessage(errorMessage);
+                updateProgress(task);
+                AIConsoleLoggerUtil.printError(project,
+                                               "✗ 所有服务商不可用，任务失败: " + task.getFilePath());
+            }
 
         } else {
             // 其他错误：放入重试队列
@@ -390,36 +407,28 @@ public class ParallelTaskWorker implements Runnable {
                                    boolean isRetryTask) {
         RetryableTask retryableTask = taskWrapper.retryableTask();
 
-        if (retryableTask != null) {
-            // 已经是重试任务，检查重试次数
-            if (retryableTask.isMaxRetriesExceeded()) {
-                // 超过最大重试次数，标记失败
-                task.setStatus(DocumentationTask.TaskStatus.FAILED);
-                task.setErrorMessage(errorMessage);
-                stats.incrementFailed();
-                updateProgress(task);
-                AIConsoleLoggerUtil.printError(project,
-                                               String.format("✗ 任务失败（重试 %d 次后仍失败）: %s",
-                                                             retryableTask.getRetryCount(), errorMessage));
-                AIConsoleLoggerUtil.print(project, "");
-            } else {
-                // 未超过最大重试次数，重新加入重试队列（复用现有的 RetryableTask）
-                retryableTask.setLastError(errorMessage);
-                taskDispatcher.addToRetryQueue(retryableTask);
-                AIConsoleLoggerUtil.printWarning(project,
-                                                 String.format("⚠ 任务失败，将重试（第 %d 次）: %s",
-                                                               retryableTask.getRetryCount() + 1, errorMessage));
-                AIConsoleLoggerUtil.print(project, "");
-            }
-        } else {
-            // 首次失败，创建重试任务并加入重试队列
+        if (retryableTask == null) {
             retryableTask = new RetryableTask(task);
-            retryableTask.setLastError(errorMessage);
-            taskDispatcher.addToRetryQueue(task, errorMessage);
-            AIConsoleLoggerUtil.printWarning(project,
-                                             String.format("⚠ 任务失败，将重试: %s", errorMessage));
-            AIConsoleLoggerUtil.print(project, "");
         }
+
+        if (retryableTask.isMaxRetriesExceeded()) {
+            task.setStatus(DocumentationTask.TaskStatus.FAILED);
+            task.setErrorMessage(errorMessage);
+            stats.incrementFailed();
+            updateProgress(task);
+            AIConsoleLoggerUtil.printError(project,
+                                           String.format("✗ 任务失败（重试 %d 次后仍失败）: %s",
+                                                         retryableTask.getRetryCount(), errorMessage));
+            AIConsoleLoggerUtil.print(project, "");
+            return;
+        }
+
+        retryableTask.setLastError(errorMessage);
+        taskDispatcher.addToRetryQueue(retryableTask);
+        AIConsoleLoggerUtil.printWarning(project,
+                                         String.format("⚠ 任务失败，将重试（第 %d 次）: %s",
+                                                       retryableTask.getRetryCount(), errorMessage));
+        AIConsoleLoggerUtil.print(project, "");
     }
 
     /**
@@ -451,4 +460,3 @@ public class ParallelTaskWorker implements Runnable {
         return AIProviderSettings.getInstance().verboseLogging;
     }
 }
-

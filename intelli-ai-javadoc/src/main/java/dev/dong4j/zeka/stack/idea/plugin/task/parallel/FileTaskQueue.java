@@ -59,16 +59,12 @@ public class FileTaskQueue {
     }
 
     /**
-     * 从队列头部获取任务（需要加锁）
-     * <p>
-     * 该方法会获取锁，确保同一文件的任务按顺序处理。
-     * 调用者需要在使用完任务后调用 {@link #unlock()} 释放锁。
+     * 从队列头部获取任务（调用方需已持有锁）
      *
      * @return 任务，如果队列为空返回 null
      */
     @Nullable
-    public DocumentationTask pollTask() {
-        lock.lock();
+    public DocumentationTask pollTaskLocked() {
         return taskQueue.poll();
     }
 
@@ -112,4 +108,3 @@ public class FileTaskQueue {
         return taskQueue.size();
     }
 }
-

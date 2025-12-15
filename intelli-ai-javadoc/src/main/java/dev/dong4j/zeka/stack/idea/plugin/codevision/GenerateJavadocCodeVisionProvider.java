@@ -51,9 +51,9 @@ import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import icons.AIJicons;
+import kotlin.Pair;
 import kotlin.Unit;
 import kotlin.jvm.functions.Function2;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -100,8 +100,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
 
     /**
      * 获取此实现的唯一标识符
-     * <p>
-     * 该方法返回固定字符串 {@code GenerateJavadocCodeVisionProvider}, 用于标识当前实现
+     * <p>该方法返回固定字符串 {@code GenerateJavadocCodeVisionProvider}, 用于标识当前实现
      *
      * @return 该实现的唯一标识符
      */
@@ -228,21 +227,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
 
             // 将队列转换为列表
             List<Pair<TextRange, CodeVisionEntry>> entries = new ArrayList<>(entriesQueue);
-
-            // 转换 Pair 列表为 IntelliJ Platform API 需要的格式
-            // 注意：CodeVisionState.Ready 接受 List<Pair<TextRange, CodeVisionEntry>>
-            // 但由于 Java 没有标准的 Pair，我们需要使用 kotlin.Pair 或者创建兼容的列表
-            // 实际上，Kotlin 的 Pair 在 Java 中可以作为元组使用
-            // 但 IntelliJ Platform 的 API 可能期望特定的类型
-            // 让我们直接传递 entries，让 API 处理类型转换
-            List<kotlin.Pair<TextRange, CodeVisionEntry>> kotlinPairs = new ArrayList<>();
-            for (Pair<TextRange, CodeVisionEntry> entry : entries) {
-                // 检查 entry 的有效性
-                if (entry != null && entry.getFirst() != null && entry.getSecond() != null) {
-                    kotlinPairs.add(new kotlin.Pair<>(entry.getFirst(), entry.getSecond()));
-                }
-            }
-            return new CodeVisionState.Ready(kotlinPairs);
+            return new CodeVisionState.Ready(entries);
         } catch (Exception e) {
             // 捕获所有异常，避免影响 Code Vision 系统
             log.debug("计算 Code Vision 时发生未预期的异常", e);
@@ -562,7 +547,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             Collections.emptyList()
         );
 
-        return Pair.create(textRange, entry);
+        return new Pair<>(textRange, entry);
     }
 
     /**
@@ -724,50 +709,6 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
         // 快速检查通过，返回 Unit.INSTANCE 表示可以继续处理
         // 详细的文件索引检查将在 computeCodeVision 的后台线程中执行
         return Unit.INSTANCE;
-    }
-
-    /**
-     * 泛型不可变键值对容器
-     * <p>
-     * 该类用于存储一对相关联的对象, 提供对键 (first) 和值 (second) 的只读访问. 通过 {@code create} 静态工厂方法可以方便地创建实例, 避免显式调用构造函数.
-     *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @email "mailto:zeka.stack@gmail.com"
-     * @date 2025.12.11
-     * @since 1.0.0
-     */
-    @Getter
-    public static class Pair<K, V> {
-        private final K first;
-        private final V second;
-
-        /**
-         * 构造一个包含两个元素的 Pair 对象
-         * <p>
-         * 用于初始化一个包含第一个元素和第二个元素的不可变对对象
-         *
-         * @param first  第一个元素
-         * @param second 第二个元素
-         */
-        private Pair(K first, V second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        /**
-         * 创建一个包含两个元素的 Pair 对象
-         * <p>
-         * 该方法接收两个参数, 分别作为 Pair 的第一个和第二个元素, 并返回一个新的 Pair 实例.
-         *
-         * @param first  Pair 的第一个元素
-         * @param second Pair 的第二个元素
-         * @return 包含两个元素的 Pair 对象
-         */
-        public static <K, V> Pair<K, V> create(K first, V second) {
-            return new Pair<>(first, second);
-        }
-
     }
 
 }

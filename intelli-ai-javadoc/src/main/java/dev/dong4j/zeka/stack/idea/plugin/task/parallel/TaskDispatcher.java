@@ -89,7 +89,7 @@ public class TaskDispatcher {
             // 尝试获取锁并取任务
             if (queue.tryLock()) {
                 try {
-                    DocumentationTask task = queue.pollTask();
+                    DocumentationTask task = queue.pollTaskLocked();
                     if (task != null) {
                         return new TaskWrapper(task, queue, null);
                     }
@@ -174,4 +174,3 @@ public class TaskDispatcher {
             }
         }
 }
-

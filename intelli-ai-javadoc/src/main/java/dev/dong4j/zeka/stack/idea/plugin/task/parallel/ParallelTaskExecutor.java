@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -87,6 +88,10 @@ public class ParallelTaskExecutor {
     @Getter
     private Map<String, ProviderStatistics> providerStats;
 
+    /** 在途任务计数（队列外仍在执行的任务数） */
+    @Getter
+    private final AtomicInteger inflightCount = new AtomicInteger(0);
+
     /**
      * 执行并行任务处理
      *
@@ -158,9 +163,10 @@ public class ParallelTaskExecutor {
                 // 计算当前服务商的线程数
                 int currentProviderThreads = threadsPerProvider + (i < remainder ? 1 : 0);
 
+                AtomicInteger threadIndex = new AtomicInteger(1);
                 // 创建服务商的执行器
                 ExecutorService executor = Executors.newFixedThreadPool(currentProviderThreads, r -> {
-                    Thread t = new Thread(r, "ParallelWorker-" + providerName + "-" + System.currentTimeMillis());
+                    Thread t = new Thread(r, "ParallelWorker-" + providerName + "-" + threadIndex.getAndIncrement());
                     t.setDaemon(true);
                     return t;
                 });
@@ -187,7 +193,8 @@ public class ParallelTaskExecutor {
                         indicator,
                         stats,
                         documentationInserter,
-                        progressManager
+                        progressManager,
+                        inflightCount
                     );
                     executor.submit(worker);
                 }
@@ -274,33 +281,10 @@ public class ParallelTaskExecutor {
      */
     @SuppressWarnings("D")
     private void waitForCompletion(@NotNull Map<String, ExecutorService> providerExecutors) {
-        // 1. 等待所有队列为空（包括重试队列）
+        // 1. 等待所有队列为空且在途计数归零
         waitForQueuesEmpty();
 
-        // 2. 等待一小段时间，确保正在处理的任务完成（包括重试任务）
-        // 因为任务可能正在执行 AI 请求，需要给一些时间完成
-        try {
-            Thread.sleep(2000); // 等待 2 秒，确保正在处理的任务完成
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // 3. 再次检查队列，确保没有新加入的重试任务
-        // 如果还有任务，继续等待
-        int retryCount = 0;
-        while (taskDispatcher.hasTasks() && retryCount < 10) {
-            log.debug("检测到还有任务，继续等待... (重试次数: {})", retryCount);
-            waitForQueuesEmpty();
-            try {
-                Thread.sleep(1000); // 等待 1 秒
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            retryCount++;
-        }
-
-        // 4. 关闭所有执行器并等待线程退出
+        // 2. 关闭所有执行器并等待线程退出
         CompletableFuture<?>[] futures = providerExecutors.values().stream()
             .map(executor -> CompletableFuture.runAsync(() -> {
                 try {
@@ -327,8 +311,7 @@ public class ParallelTaskExecutor {
     /**
      * 等待所有队列为空
      * <p>
-     * 轮询检查文件队列和重试队列，直到所有队列都为空。
-     * 同时检查是否有线程正在处理任务（通过检查线程池的活动线程数）。
+     * 轮询检查文件队列、重试队列及在途计数，直到全部清空。
      */
     private void waitForQueuesEmpty() {
         int maxWaitTime = 300; // 最多等待 30 秒（300 * 100ms）
@@ -337,8 +320,9 @@ public class ParallelTaskExecutor {
 
         while (waitCount < maxWaitTime) {
             boolean hasTasks = taskDispatcher.hasTasks();
+            boolean hasInflight = inflightCount.get() > 0;
 
-            if (!hasTasks) {
+            if (!hasTasks && !hasInflight) {
                 consecutiveEmptyChecks++;
                 // 连续 5 次检查都为空，认为队列确实为空
                 if (consecutiveEmptyChecks >= 5) {
@@ -387,4 +371,3 @@ public class ParallelTaskExecutor {
                                                       totalCompleted, totalFailed, totalSkipped));
     }
 }
-

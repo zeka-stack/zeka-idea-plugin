@@ -522,8 +522,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             输出注释：
             /**
              * 用户服务类
-             * <p>
-             * 提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
+             * <p>提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
              *
              * @author dong4j
              * @version 1.0.0
@@ -542,8 +541,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             输出注释：
             /**
              * 用户服务类
-             * <p>
-             * 提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
+             * <p>提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
              *
              * @author dong4j
              * @version 1.0.0
@@ -608,8 +606,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             输出注释：
             /**
              * 根据用户ID获取用户名称
-             * <p>
-             * 通过用户ID查找用户并返回用户名称
+             * <p>通过用户ID查找用户并返回用户名称
              *
              * @param userId 用户ID
              * @return 用户名称
@@ -696,8 +693,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             输出：
             /**
              * 用户配置信息
-             * <p>
-             * 包含用户偏好设置、主题配置等
+             * <p>包含用户偏好设置、主题配置等
              *
              * @see UserConfig
              */
