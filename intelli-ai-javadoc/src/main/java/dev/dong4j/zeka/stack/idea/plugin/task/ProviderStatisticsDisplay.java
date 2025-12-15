@@ -1,10 +1,26 @@
 package dev.dong4j.zeka.stack.idea.plugin.task;
 
+import com.intellij.openapi.project.Project;
+import com.intellij.ui.Gray;
+import com.intellij.ui.JBColor;
+
 import org.jetbrains.annotations.NotNull;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Frame;
 import java.util.Map;
 
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * 提供商统计信息显示类
@@ -31,24 +47,65 @@ public final class ProviderStatisticsDisplay {
      *
      * @param providerStats 包含提供商统计信息的Map，键为服务商名称，值为对应的统计对象
      */
-    public static void showProviderStatistics(@NotNull Map<String, ProviderStatistics> providerStats) {
+    public static void showProviderStatistics(Project project, @NotNull Map<String, ProviderStatistics> providerStats) {
+        // 根据当前 IDE 主题颜色构建 HTML 样式，兼容明亮/暗色模式
+        Color panelBg = UIManager.getColor("Panel.background");
+        Color labelFg = UIManager.getColor("Label.foreground");
+        Color tableBg = UIManager.getColor("Table.background");
+        Color tableFg = UIManager.getColor("Table.foreground");
+        Color tableGrid = UIManager.getColor("Table.gridColor");
+        Color headerBg = UIManager.getColor("TableHeader.background");
+        Color headerFg = UIManager.getColor("TableHeader.foreground");
+
+        // 先得到用于计算的 Color，再统一转成十六进制，避免出现 Serializable 推断错误
+        Color bodyBgColor = panelBg != null ? panelBg : JBColor.WHITE;
+        Color bodyFgColor = labelFg != null ? labelFg : JBColor.BLACK;
+        Color tableBgColor = tableBg != null ? tableBg : bodyBgColor;
+        Color tableFgColor = tableFg != null ? tableFg : bodyFgColor;
+        Color gridColor = tableGrid != null ? tableGrid : Gray._68;
+        Color headerBgColor = headerBg != null ? headerBg : tableBgColor;
+        Color headerFgColor = headerFg != null ? headerFg : bodyFgColor;
+
+        String bodyBgHex = toHex(bodyBgColor);
+        String bodyFgHex = toHex(bodyFgColor);
+        String tableBgHex = toHex(tableBgColor);
+        String tableFgHex = toHex(tableFgColor);
+        String gridHex = toHex(gridColor);
+        String headerBgHex = toHex(headerBgColor);
+        String headerFgHex = toHex(headerFgColor);
+
         // 创建HTML格式的统计信息
         StringBuilder htmlContent = new StringBuilder();
         htmlContent.append("<html><head><style>");
-        // 回归简洁明亮样式，避免 JEditorPane 不支持的 CSS 属性
-        htmlContent.append("body { font-family: 'Segoe UI', Arial, sans-serif; margin: 10px; font-size: 12px; color: #1f2937; }");
-        htmlContent.append("h2 { color: #2E7D32; margin-bottom: 12px; font-size: 16px; }");
-        htmlContent.append("h3 { color: #1976D2; margin-bottom: 8px; font-size: 14px; }");
-        htmlContent.append("table { border-collapse: collapse; width: 100%; margin-bottom: 16px; font-size: 11px; border: 1px solid #ddd;" +
-                           " }");
-        htmlContent.append("th { background-color: #7a7f83; color: white; padding: 8px; text-align: center; font-weight: bold; font-size:" +
-                           " 11px; border: 1px solid #ddd; }");
-        htmlContent.append("td { padding: 8px; text-align: center; font-size: 11px; border: 1px solid #ddd; }");
-        htmlContent.append("td.provider-name { text-align: left; font-weight: 600; }");
-        htmlContent.append("tr:nth-child(even) { background-color: #f8f9fa; }");
-        htmlContent.append("tr:hover { background-color: #e3f2fd; }");
-        htmlContent.append(".summary-row { background-color: #29607b; color: white; font-weight: bold; }");
-        htmlContent.append(".summary-row td { border: 1px solid #ddd; }");
+        // 使用 IDE 当前主题的前景/背景色，避免在暗色模式下文字不可见
+        htmlContent.append("body {")
+            .append("margin: 10px; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px;")
+            .append("color: ").append(bodyFgHex).append(";")
+            .append("background-color: ").append(bodyBgHex).append(";")
+            .append("}");
+        htmlContent.append("h2 { margin-bottom: 12px; font-size: 16px; font-weight: bold; color: ")
+            .append(bodyFgHex).append("; }");
+        htmlContent.append("h3 { margin-bottom: 8px; font-size: 14px; font-weight: bold; color: ")
+            .append(bodyFgHex).append("; }");
+        htmlContent.append("table { border-collapse: collapse; width: 100%; margin-bottom: 16px; font-size: 11px; ")
+            .append("background-color: ").append(tableBgHex).append(";")
+            .append("color: ").append(tableFgHex).append(";")
+            .append("border: 1px solid ").append(gridHex).append(";")
+            .append(" }");
+        htmlContent.append("th { padding: 6px 8px; text-align: center; font-weight: bold; font-size: 11px; ")
+            .append("background-color: ").append(headerBgHex).append(";")
+            .append("color: ").append(headerFgHex).append(";")
+            .append("border: 1px solid ").append(gridHex).append(";")
+            .append(" }");
+        htmlContent.append("td { padding: 6px 8px; text-align: center; font-size: 11px; ")
+            .append("border: 1px solid ").append(gridHex).append(";")
+            .append(" }");
+        // 第一列（服务商名称）也居中显示，统一风格
+        htmlContent.append("td.provider-name { text-align: center; font-weight: 600; }");
+        // 总体统计行使用表头背景色以保证在暗色模式下可读
+        htmlContent.append(".summary-row { font-weight: bold; background-color: ").append(headerBgHex)
+            .append("; color: ").append(headerFgHex).append("; }");
+        htmlContent.append(".summary-row td { border: 1px solid ").append(gridHex).append("; }");
         htmlContent.append("</style></head><body>");
         htmlContent.append("<h2>🚀 性能模式处理完成</h2>");
 
@@ -141,18 +198,20 @@ public final class ProviderStatisticsDisplay {
             logMessage.append(String.format("• 总体吞吐量: %.2f 条/秒", totalThroughput));
         }
 
+        AIConsoleLoggerUtil.print(project, logMessage.toString());
+
         // 显示HTML格式的通知给用户
         SwingUtilities.invokeLater(() -> {
             // 创建自定义对话框（非模态）
-            javax.swing.JDialog dialog = new javax.swing.JDialog((java.awt.Frame) null, "性能模式处理完成", false);
-            dialog.setDefaultCloseOperation(javax.swing.JDialog.DISPOSE_ON_CLOSE);
+            JDialog dialog = new JDialog((Frame) null, "性能模式处理完成", false);
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
             // 创建HTML内容面板
-            javax.swing.JEditorPane editorPane = new javax.swing.JEditorPane();
+            JEditorPane editorPane = new JEditorPane();
             editorPane.setContentType("text/html");
             editorPane.setText(htmlContent.toString());
             editorPane.setEditable(false);
-            editorPane.setBackground(javax.swing.UIManager.getColor("Panel.background"));
+            editorPane.setBackground(UIManager.getColor("Panel.background"));
 
             // 计算动态高度
             int providerCount = providerStats.size();
@@ -167,26 +226,40 @@ public final class ProviderStatisticsDisplay {
             int finalHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
 
             // 设置滚动面板
-            javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(editorPane);
-            scrollPane.setPreferredSize(new java.awt.Dimension(800, finalHeight));
+            JScrollPane scrollPane = new JScrollPane(editorPane);
+            scrollPane.setPreferredSize(new Dimension(800, finalHeight));
 
             // 添加确定按钮
-            javax.swing.JButton okButton = new javax.swing.JButton("确定");
+            JButton okButton = new JButton("确定");
             okButton.addActionListener(e -> dialog.dispose());
 
-            javax.swing.JPanel buttonPanel = new javax.swing.JPanel();
+            JPanel buttonPanel = new JPanel();
             buttonPanel.add(okButton);
 
             // 设置布局
-            dialog.setLayout(new java.awt.BorderLayout());
-            dialog.add(scrollPane, java.awt.BorderLayout.CENTER);
-            dialog.add(buttonPanel, java.awt.BorderLayout.SOUTH);
+            dialog.setLayout(new BorderLayout());
+            dialog.add(scrollPane, BorderLayout.CENTER);
+            dialog.add(buttonPanel, BorderLayout.SOUTH);
 
             // 设置对话框属性
             dialog.pack();
             dialog.setLocationRelativeTo(null);
             dialog.setVisible(true);
         });
+    }
+
+    /**
+     * 将 {@link Color} 转换为 HTML 可用的十六进制颜色字符串（#RRGGBB）。
+     *
+     * @param color 颜色对象，如果为 null 则返回黑色
+     * @return 十六进制颜色字符串
+     */
+    @NotNull
+    private static String toHex(Color color) {
+        if (color == null) {
+            return "#000000";
+        }
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 
     /**
@@ -218,6 +291,6 @@ public final class ProviderStatisticsDisplay {
         demo.put("ollama", p2);
         demo.put("custom", p3);
 
-        showProviderStatistics(demo);
+        showProviderStatistics(null, demo);
     }
 }

@@ -2,8 +2,7 @@ package com.example;
 
 /**
  * 用户服务类
- * <p>
- * 提供用户相关的业务逻辑处理, 包括用户的查询, 创建, 更新, 删除以及当前用户的获取与设置等操作
+ * <p> 提供用户相关的业务逻辑处理, 包括用户的查询, 创建, 更新, 删除以及当前用户的获取与设置等操作
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -21,7 +20,7 @@ public class UserService {
     /**
      * 根据用户 ID 查找用户
      * <p>
-     * 通过指定的用户 ID 从用户仓库中查找对应的用户对象
+     * 通过指定的用户 ID 从数据库中查找对应的用户对象
      *
      * @param id 用户 ID
      * @return 匹配 ID 的用户对象, 如果未找到则返回 null
@@ -31,9 +30,9 @@ public class UserService {
     }
 
     /**
-     * 创建并保存一个新用户
+     * 创建并保存一个用户
      * <p>
-     * 根据提供的姓名和邮箱创建用户对象, 并将其保存到用户仓库中, 最后返回创建的用户对象
+     * 根据提供的姓名和邮箱创建用户对象, 并保存到数据库中
      *
      * @param name  用户姓名
      * @param email 用户邮箱
@@ -46,12 +45,12 @@ public class UserService {
     }
 
     /**
-     * 更新指定用户的信息
+     * 更新用户信息
      * <p>
-     * 通过用户对象更新数据库中的用户信息
+     * 将传入的 {@link User} 对象持久化到数据库, 返回更新是否成功.
      *
      * @param user 要更新的用户对象
-     * @return 更新操作是否成功
+     * @return {@code true} 表示更新成功,{@code false} 表示更新失败
      */
     public boolean updateUser(User user) {
         return userRepository.update(user);
@@ -72,7 +71,7 @@ public class UserService {
     /**
      * 获取当前用户信息
      * <p>
-     * 返回当前登录用户的对象, 通常用于权限校验或用户信息获取
+     * 返回当前登录的用户对象, 通常用于权限校验或用户信息获取
      *
      * @return 当前用户对象
      */
@@ -85,7 +84,7 @@ public class UserService {
      * <p>
      * 将传入的 {@code currentUser} 赋值给当前实例的 {@code currentUser} 字段, 以便后续业务逻辑使用.
      *
-     * @param currentUser 当前用户对象, 可能为 {@code null}, 表示无登录用户
+     * @param currentUser 当前用户对象
      */
     public void setCurrentUser(User currentUser) {
         this.currentUser = currentUser;

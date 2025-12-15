@@ -369,7 +369,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: false（默认关闭）
      *
-     * @see dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor#processTasks(java.util.List)
+     * @see dev.dong4j.zeka.stack.idea.plugin.task.TaskExecutor#processTasks(com.intellij.openapi.project.Project, List)
      * @since 2.0.0
      */
     public boolean performanceMode = false;
@@ -622,8 +622,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             输出注释：
             /**
              * 根据用户ID获取用户名称
-             * <p>
-             * 通过用户ID查找用户并返回用户名称，如果用户不存在则返回 null
+             * <p>通过用户ID查找用户并返回用户名称，如果用户不存在则返回 null
              *
              * @param userId 用户ID
              * @return 用户名称，如果用户不存在则返回 null

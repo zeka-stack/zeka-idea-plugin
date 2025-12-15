@@ -77,7 +77,7 @@ public class ParallelTaskProcessor {
      * @param tasks 任务列表，包含需要处理的文档任务
      * @return 处理是否成功
      */
-    public boolean processTasks(@NotNull List<DocumentationTask> tasks) {
+    public boolean processTasks(@NotNull Project project, @NotNull List<DocumentationTask> tasks) {
         final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
 
         if (aiProviderTypes.isEmpty()) {
@@ -109,7 +109,7 @@ public class ParallelTaskProcessor {
 
             // 显示每个提供商的统计信息（如果启用）
             if (settings.showProviderStatistics) {
-                ProviderStatisticsDisplay.showProviderStatistics(parallelExecutor.getProviderStats());
+                ProviderStatisticsDisplay.showProviderStatistics(project, parallelExecutor.getProviderStats());
             }
         }
 

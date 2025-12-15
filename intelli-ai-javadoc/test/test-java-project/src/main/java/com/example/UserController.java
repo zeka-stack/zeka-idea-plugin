@@ -4,8 +4,7 @@ import java.util.List;
 
 /**
  * 用户控制器类
- * <p>
- * 用于处理与用户相关的 HTTP 请求, 包括获取用户信息, 创建用户, 更新用户, 删除用户以及获取所有用户等操作. 该类主要负责接收外部请求并调用对应的业务逻辑处理类 (UserService) 进行数据操作.
+ * <p> 用于处理与用户相关的 HTTP 请求, 包括获取用户信息, 创建用户, 更新用户, 删除用户以及获取所有用户等操作
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -14,7 +13,7 @@ import java.util.List;
  * @since 1.0.0
  */
 public class UserController {
-    /** 用户服务, 用于处理用户相关业务逻辑 */
+    /** 用户服务接口, 用于处理用户相关的业务逻辑 */
     private UserService userService;
 
     /**
@@ -29,12 +28,12 @@ public class UserController {
     }
 
     /**
-     * 根据用户 ID 获取用户信息
+     * 根据用户 ID 获取用户对象
      * <p>
-     * 通过用户 ID 查找并返回对应的用户对象
+     * 通过用户 ID 查找用户并返回用户对象
      *
      * @param id 用户 ID
-     * @return 用户对象
+     * @return 用户对象, 如果用户不存在则返回 null
      */
     public User getUser(int id) {
         return userService.findUserById(id);
@@ -66,35 +65,35 @@ public class UserController {
     }
 
     /**
-     * 更新指定用户的信息
+     * 更新用户信息
      * <p>
-     * 调用用户服务层更新用户数据, 返回操作是否成功
+     * 将传入的 {@code User} 对象更新到数据存储中, 并返回更新是否成功的标志.
      *
      * @param user 要更新的用户对象
-     * @return 更新操作是否成功
+     * @return {@code true} 表示更新成功,{@code false} 表示更新失败
      */
     public boolean updateUser(User user) {
         return userService.updateUser(user);
     }
 
     /**
-     * 根据用户 ID 删除用户
+     * 删除指定 ID 的用户
      * <p>
-     * 通过用户 ID 查找用户并执行删除操作
+     * 调用 {@code userService} 删除用户, 并返回删除是否成功
      *
      * @param id 用户 ID
-     * @return 删除操作是否成功
+     * @return {@code true} 表示删除成功,{@code false} 表示删除失败
      */
     public boolean deleteUser(int id) {
         return userService.deleteUser(id);
     }
 
     /**
-     * 获取所有用户
+     * 获取所有用户列表
      * <p>
-     * 调用 {@code userService.findAll()} 返回所有用户列表
+     * 调用 {@code userService.findAll()} 获取系统中所有用户的集合
      *
-     * @return 所有用户的列表
+     * @return 所有用户的 {@link java.util.List}, 若无用户则返回空列表
      */
     public List<User> getAllUsers() {
         return userService.findAll();
@@ -111,7 +110,13 @@ public class UserController {
 /** 用户姓名 */
 /** 用户姓名 */
 /** 用户姓名 */
+/** 用户姓名 */
+/** 用户姓名 */
+/** 用户姓名 */
          * @param name  用户姓名
+/** 用户邮箱 */
+/** 用户邮箱 */
+/** 用户邮箱 */
 /** 用户邮箱 */
 /** 用户邮箱 */
 /** 用户邮箱 */
@@ -135,12 +140,12 @@ public User createUser(String name, String email) {
     }
 
 /**
- * 更新指定用户的信息
+ * 更新用户信息
  * <p>
- * 调用用户服务层更新用户数据, 返回操作是否成功
+ * 调用 {@code userService.updateUser} 方法将传入的 {@code User} 对象持久化到数据库.
  *
  * @param user 要更新的用户对象
- * @return 更新操作是否成功
+ * @return {@code true} 表示更新成功,{@code false} 表示更新失败
  */
 public boolean updateUser(User user) {
         return userService.updateUser(user);
@@ -161,9 +166,9 @@ public boolean deleteUser(int id) {
 /**
  * 获取所有用户列表
  * <p>
- * 调用 {@code userService.findAll()} 返回系统中所有 {@link User} 对象的列表.
+ * 从用户服务中获取所有用户信息并返回列表
  *
- * @return 所有用户的 {@link List}, 若无用户则返回空列表
+ * @return 用户列表
  */
 public List<User> getAllUsers() {
         return userService.findAll();

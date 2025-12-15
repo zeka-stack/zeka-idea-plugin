@@ -5,8 +5,7 @@ import java.util.List;
 
 /**
  * 用户仓库类
- * <p>
- * 提供对用户数据的增删改查操作, 用于管理用户集合. 支持根据 ID 查找用户, 保存用户, 更新用户, 删除用户, 获取所有用户, 统计用户数量以及清空用户列表等功能.
+ * <p> 提供对用户数据的增删改查操作, 用于管理用户集合. 支持根据 ID 查找用户, 保存用户, 更新用户, 删除用户, 获取所有用户, 统计用户数量以及清空用户列表等功能.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -19,12 +18,12 @@ public class UserRepository {
     private List<User> users = new ArrayList<>();
 
     /**
-     * 根据指定的用户 ID 查找对应的用户对象
+     * 根据用户 ID 查找用户
      * <p>
-     * 遍历用户列表, 找到与传入 ID 匹配的用户并返回. 如果未找到匹配的用户, 返回 null.
+     * 遍历用户列表, 根据指定的用户 ID 查找对应的用户对象, 若找到则返回, 否则返回 null
      *
      * @param id 用户 ID
-     * @return 匹配的用户对象, 如果未找到则返回 null
+     * @return 匹配 ID 的用户对象, 若未找到则返回 null
      */
     public User findById(int id) {
         for (User user : users) {
@@ -36,7 +35,7 @@ public class UserRepository {
     }
 
     /**
-     * 将指定的用户保存到用户列表中
+     * 将用户保存到用户列表中
      * <p>
      * 将传入的用户对象添加到内部维护的用户列表中
      *
@@ -65,12 +64,12 @@ public class UserRepository {
     }
 
     /**
-     * 根据指定的用户 ID 删除用户
+     * 根据指定 ID 删除用户
      * <p>
-     * 从 {@code users} 集合中移除所有 ID 与给定 {@code id} 相等的用户
+     * 通过用户 ID 从用户列表中移除对应用户, 若用户存在则返回 true, 否则返回 false
      *
-     * @param id 要删除的用户 ID
-     * @return 如果至少删除了一条记录返回 {@code true}, 否则返回 {@code false}
+     * @param id 用户 ID
+     * @return 若用户被成功删除则返回 true, 否则返回 false
      */
     public boolean delete(int id) {
         return users.removeIf(user -> user.getId() == id);
@@ -79,20 +78,20 @@ public class UserRepository {
     /**
      * 获取所有用户列表
      * <p>
-     * 返回当前用户集合的一个拷贝, 避免外部修改内部数据结构.
+     * 返回系统中存储的所有用户数据
      *
-     * @return 所有用户的列表
+     * @return 用户列表
      */
     public List<User> findAll() {
         return new ArrayList<>(users);
     }
 
     /**
-     * 获取用户数量
+     * 返回用户列表的大小
      * <p>
-     * 返回当前用户集合的大小
+     * 获取当前用户集合中的元素数量
      *
-     * @return 用户数量
+     * @return 用户列表的大小
      */
     public int count() {
         return users.size();

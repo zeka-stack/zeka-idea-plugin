@@ -71,7 +71,7 @@ public class DocumentationGenerationService {
                     TaskExecutor executor = new TaskExecutor(project, indicator);
 
                     // 执行任务
-                    boolean success = executor.processTasks(tasks);
+                    boolean success = executor.processTasks(project, tasks);
 
                     if (success) {
                         TaskStatistics stats = executor.getStatistics();

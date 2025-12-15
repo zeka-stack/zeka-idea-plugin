@@ -21,6 +21,8 @@ import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.kotlin.psi.KtProperty;
 
+import java.util.Objects;
+
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -92,17 +94,26 @@ public class DocumentationInserterHelper {
                 return;
             }
 
-            PsiDocumentManager.getInstance(project)
-                .doPostponedOperationsAndUnblockDocument(document);
+            PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document);
 
             CommandProcessor.getInstance().executeCommand(
                 project,
                 () -> ApplicationManager.getApplication().runWriteAction(() -> {
                     try {
-                        // 1. 先删除旧注释（如果存在）
+                        // 1. 清理 javadoc（去掉多余代码/Markdown 包裹，并做合法性校验）
+                        String javadoc = cleanJavadoc(documentation.trim());
+                        if (javadoc.isEmpty()) {
+                            log.info("清理后的 Javadoc 为空，插入文档失败");
+                            return;
+                        }
+
+                        // 1.1 按方法签名清理多余的 @param/@throws 标签
+                        javadoc = cleanParamAndThrowsTags(javadoc, element);
+
+                        // 2. 先删除旧注释（如果存在）
                         deleteOldDocComment(element, verboseLogging);
 
-                        // 2. 提交删除操作
+                        // 3. 提交删除操作
                         PsiDocumentManager.getInstance(project).commitDocument(document);
 
                         // 3. 获取插入位置（删除后需要重新获取）
@@ -110,19 +121,10 @@ public class DocumentationInserterHelper {
                         int lineNumber = document.getLineNumber(startPosition);
                         int lineStartPosition = document.getLineStartOffset(lineNumber);
 
-                        // 4. 确保文档以 /** 开头
-                        String javadoc = documentation.trim();
-                        if (!javadoc.startsWith("/**")) {
-                            javadoc = "/**\n" + javadoc;
-                        }
-                        if (!javadoc.endsWith("*/")) {
-                            javadoc = javadoc + "\n */";
-                        }
-
-                        // 5. 格式化 Javadoc 内容（根据配置进行格式化）
+                        // 4. 格式化 Javadoc 内容（根据配置进行格式化）
                         javadoc = formatJavaDocContent(javadoc);
 
-                        // 6. 插入新 Javadoc
+                        // 5. 插入新 Javadoc
                         document.insertString(lineStartPosition, javadoc + "\n");
                         PsiDocumentManager.getInstance(project).commitDocument(document);
 
@@ -170,6 +172,26 @@ public class DocumentationInserterHelper {
                 PluginContents.PLUGIN_NAME
                                                          );
         });
+    }
+
+    /**
+     * 清理 Javadoc 内容
+     * <p>
+     * 该方法用于过滤 Javadoc 中的 Markdown 代码块内容, 并进一步清理代码注释后的多余内容.
+     *
+     * @param javadoc 需要清理的原始 Javadoc 字符串
+     * @return 清理后的 Javadoc 字符串
+     */
+    private String cleanJavadoc(String javadoc) {
+        // 过滤注释后的代码部分
+        final String filterMarkdownCodeBlocksContent = filterMarkdownCodeBlocks(javadoc);
+        javadoc = filterCodeAfterComment(filterMarkdownCodeBlocksContent);
+
+        // 确保文档是合法的 javadoc
+        if (!javadoc.startsWith("/**") || !javadoc.endsWith("*/")) {
+            return "";
+        }
+        return javadoc;
     }
 
     /**
@@ -269,12 +291,12 @@ public class DocumentationInserterHelper {
      * @return 文档插入位置的偏移量
      */
     private int getInsertPosition(@NotNull PsiElement element) {
-        if (element instanceof PsiMethod) {
-            return ((PsiMethod) element).getModifierList().getTextRange().getStartOffset();
-        } else if (element instanceof PsiClass) {
-            return ((PsiClass) element).getModifierList().getTextRange().getStartOffset();
-        } else if (element instanceof PsiField) {
-            return ((PsiField) element).getModifierList().getTextRange().getStartOffset();
+        if (element instanceof PsiMethod method) {
+            return method.getModifierList().getTextRange().getStartOffset();
+        } else if (element instanceof PsiClass clazz) {
+            return Objects.requireNonNull(clazz.getModifierList()).getTextRange().getStartOffset();
+        } else if (element instanceof PsiField field) {
+            return Objects.requireNonNull(field.getModifierList()).getTextRange().getStartOffset();
         }
         return element.getTextRange().getStartOffset();
     }
@@ -302,6 +324,153 @@ public class DocumentationInserterHelper {
             settings.addSpaceBetweenChineseAndEnglish,
             settings.replaceChinesePunctuation
                                       );
+    }
+
+    /**
+     * 过滤 Markdown 代码块标签
+     * <p>
+     * 去除内容中可能存在的 Markdown 代码块标记，如开头的 ```java、```javascript 等
+     * 以及结尾的 ```。即使提示词要求不返回代码块标签，LLM 有时仍会返回。
+     *
+     * @param content 需要过滤的原始内容
+     * @return 过滤后的内容，已去除 Markdown 代码块标签
+     */
+    private String filterMarkdownCodeBlocks(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+
+        String result = content.trim();
+
+        // 去除开头的代码块标记（如 ```java、```javascript、``` 等）
+        // 匹配模式：``` 后面可能跟语言标识符，然后是换行符
+        if (result.startsWith("```")) {
+            int firstNewlineIndex = result.indexOf('\n');
+            if (firstNewlineIndex != -1) {
+                // 找到第一个换行符，去除从开头到换行符的部分（包括换行符）
+                result = result.substring(firstNewlineIndex + 1);
+            } else {
+                // 如果没有换行符，说明只有 ```，直接去除开头的 ```
+                result = result.replaceFirst("^```+\\s*", "");
+            }
+        }
+
+        // 去除结尾的代码块标记 ```
+        result = result.trim();
+        if (result.endsWith("```")) {
+            // 去除结尾的 ```，可能包含多个反引号，并去除前面的空白字符
+            result = result.replaceAll("\\s*```+$", "").trim();
+        }
+
+        return result;
+    }
+
+    /**
+     * 过滤注释后的代码部分
+     * <p>
+     * 即使提示词要求只返回注释，部分模型仍会返回原始代码。
+     * 该方法从 {@code /**} 开始，到第一个 {@code /} 结束，直接截取注释部分。
+     * <p>
+     * 处理示例：
+     * <ul>
+     * <li>输入：/** comment /\nSerializable getId(); → 输出：/** comment /</li>
+     * <li>输入：/** comment /\npublic void method() {} → 输出：/** comment /</li>
+     * </ul>
+     *
+     * @param content 需要过滤的内容
+     * @return 过滤后的内容，只包含从 /** 到第一个 / 之间的注释部分
+     */
+    private String filterCodeAfterComment(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+
+        // 查找 Javadoc 注释块的开始位置
+        int commentStartIndex = content.indexOf("/**");
+        if (commentStartIndex == -1) {
+            // 如果没有找到注释块开始标记，直接返回原内容
+            return content;
+        }
+
+        // 从注释块开始位置查找结束位置
+        String fromCommentStart = content.substring(commentStartIndex);
+        int commentEndIndex = fromCommentStart.indexOf("*/");
+        if (commentEndIndex == -1) {
+            // 如果没有找到注释块结束标记，直接返回原内容
+            return content;
+        }
+
+        // 截取从 /** 到第一个 */ 之间的内容（包括 */）
+        int endPos = commentStartIndex + commentEndIndex + 2;
+        return content.substring(commentStartIndex, endPos).trim();
+    }
+
+    /**
+     * 根据目标元素的签名清理多余的 @param/@throws/@exception 标签
+     * <p>
+     * 即便在提示词中已经声明"没有参数/异常时不要添加标签"，部分模型仍然会错误地添加这些标签，
+     * 因此需要在插入前做一次基于 PSI 的安全过滤。
+     *
+     * @param javadoc 原始 Javadoc 文本（已通过 {@link #cleanJavadoc(String)} 处理）
+     * @param element 目标 PSI 元素（方法/函数/其他）
+     * @return 清理后的 Javadoc 文本
+     */
+    @NotNull
+    private String cleanParamAndThrowsTags(@NotNull String javadoc, @NotNull PsiElement element) {
+        // 目前只对"可有参数/异常"的场景做处理，类/字段等原样返回
+        boolean hasParams;
+        boolean hasThrows = false;
+
+        if (element instanceof PsiMethod method) {
+            hasParams = method.getParameterList().getParametersCount() > 0;
+            hasThrows = method.getThrowsList().getReferencedTypes().length > 0;
+        } else if (element instanceof KtNamedFunction function) {
+            // Kotlin 函数：根据参数列表判断是否保留 @param
+            hasParams = !function.getValueParameters().isEmpty();
+            // Kotlin 中异常声明较少使用，这里暂不根据签名处理 @throws，只在 Java 方法中严格校验
+        } else {
+            // 其他元素（类 / 字段等）不做额外处理
+            return javadoc;
+        }
+
+        // 没有参数且没有声明异常，直接返回原文以避免不必要拆分
+        if (hasParams || hasThrows) {
+            String[] lines = javadoc.split("\n");
+            StringBuilder sb = new StringBuilder(javadoc.length());
+
+            for (String line : lines) {
+                String trim = line.trim();
+
+                // 如果方法没有参数，则移除所有 @param 行
+                if (!hasParams && (trim.contains("@param") || trim.contains("@param "))) {
+                    continue;
+                }
+                // 如果方法没有 throws，则移除 @throws/@exception 行（仅针对 Java 方法）
+                if (!hasThrows && element instanceof PsiMethod &&
+                    (trim.contains("@throws") || trim.contains("@exception"))) {
+                    continue;
+                }
+
+                sb.append(line).append("\n");
+            }
+
+            String cleaned = sb.toString().trim();
+            // 保底：如果全部被删空，就返回原始 javadoc，避免插入空注释
+            return cleaned.isEmpty() ? javadoc : cleaned;
+        }
+
+        // 没有参数也没有异常，直接移除所有 @param/@throws/@exception 行
+        String[] lines = javadoc.split("\n");
+        StringBuilder sb = new StringBuilder(javadoc.length());
+        for (String line : lines) {
+            String trim = line.trim();
+            if (trim.contains("@param") || trim.contains("@throws") || trim.contains("@exception")) {
+                continue;
+            }
+            sb.append(line).append("\n");
+        }
+        String cleaned = sb.toString().trim();
+        return cleaned.isEmpty() ? javadoc : cleaned;
     }
 }
 

@@ -80,9 +80,10 @@ public class TaskExecutor {
      *   <li>用户可以通过进度对话框取消操作</li>
      * </ul>
      *
-     * @param tasks 任务列表
+     * @param project 项目对象
+     * @param tasks   任务列表
      */
-    public boolean processTasks(@NotNull List<DocumentationTask> tasks) {
+    public boolean processTasks(@NotNull Project project, @NotNull List<DocumentationTask> tasks) {
         if (tasks.isEmpty()) {
             return false;
         }
@@ -97,14 +98,14 @@ public class TaskExecutor {
             final Map<String, ProviderStatistics> providerStats = new ConcurrentHashMap<>();
             progressManager = new ProgressManager(indicator, totalTasks, providerStats);
             ParallelTaskProcessor processor = new ParallelTaskProcessor(
-                project, indicator, settings, aiService, inserterHelper, progressManager
+                this.project, indicator, settings, aiService, inserterHelper, progressManager
             );
-            return processor.processTasks(tasks);
+            return processor.processTasks(project, tasks);
         } else {
             // 初始化单线程模式的进度管理器
             progressManager = new ProgressManager(indicator, totalTasks);
             SequentialTaskProcessor processor = new SequentialTaskProcessor(
-                project, indicator, settings, aiService, inserterHelper, progressManager
+                this.project, indicator, settings, aiService, inserterHelper, progressManager
             );
             return processor.processTasks(tasks);
         }

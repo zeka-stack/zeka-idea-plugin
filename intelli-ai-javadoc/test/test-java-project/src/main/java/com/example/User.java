@@ -1,17 +1,8 @@
 package com.example;
 
 /**
- * 用户实体类
- * <p>
- * 该类封装了用户的基本信息, 包括姓名, 邮箱, 编号, 年龄和地址等属性, 并提供相应的构造方法, 访问器和业务方法.
- * <p>
- * 主要功能:
- * <ul>
- *   <li> 构造用户对象, 支持默认编号和自定义编号的两种构造方式.</li>
- *   <li> 获取和设置用户的姓名, 邮箱, 编号, 年龄和地址.</li>
- *   <li> 返回用户的显示名称 (姓名 + 邮箱).</li>
- *   <li> 判断用户是否已成年 (年龄≥18).</li>
- * </ul>
+ * 用户数据类
+ * <p> 用于表示系统中的用户实体, 包含用户的基本信息如姓名, 邮箱,ID, 年龄和地址等属性, 并提供相关访问方法和业务逻辑判断
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -22,9 +13,9 @@ package com.example;
 public class User {
     /** 名称 */
     private String name;
-    /** 用于存储用户的电子邮件地址 */
+    /** 用户的电子邮件地址 */
     private String email;
-    /** 主键 ID */
+    /** ID */
     private int id;
     /** 年龄 */
     private int age;
@@ -32,11 +23,11 @@ public class User {
     private String address;
 
     /**
-     * 构造一个新的 {@link User} 实例.
+     * 构造一个 User 对象
      * <p>
-     * 使用指定的姓名和邮箱创建用户, 并将用户 ID 初始化为 0.
+     * 初始化用户名称和邮箱, 用户 ID 默认设置为 0
      *
-     * @param name  用户姓名
+     * @param name  用户名称
      * @param email 用户邮箱
      */
     public User(String name, String email) {
@@ -46,13 +37,13 @@ public class User {
     }
 
     /**
-     * 构造一个 {@code User} 实例.
+     * 用户构造函数
      * <p>
-     * 使用指定的姓名, 邮箱和编号初始化用户对象.
+     * 初始化一个 User 对象, 设置用户名称, 电子邮件和用户 ID
      *
-     * @param name  用户姓名
-     * @param email 用户邮箱
-     * @param id    用户编号
+     * @param name  用户名称
+     * @param email 电子邮件地址
+     * @param id    用户 ID
      */
     public User(String name, String email, int id) {
         this.name = name;
@@ -61,11 +52,13 @@ public class User {
     }
 
     /**
-     * 获取显示名称
+     * 获取用户的显示名称
      * <p>
-     * 通过将姓名和邮箱拼接成格式 {@code name(email)} 返回显示名称
+     * 返回用户名称和邮箱的组合字符串, 格式为 "名称 (邮箱)"
      *
-     * @return 显示名称
+     * @param name  用户名称
+     * @param email 用户邮箱
+     * @return 用户的显示名称, 格式为 "名称 (邮箱)"
      */
     public String getDisplayName() {
         return name + " (" + email + ")";
@@ -83,11 +76,11 @@ public class User {
     }
 
     /**
-     * 获取当前对象的名称
+     * 获取名称
      * <p>
-     * 返回该对象的名称属性值
+     * 返回当前对象的名称字符串
      *
-     * @return 当前对象的名称
+     * @return 名称字符串
      */
     public String getName() {
         return name;
@@ -105,9 +98,9 @@ public class User {
     }
 
     /**
-     * 获取用户的电子邮件地址
+     * 获取当前用户的电子邮件地址
      * <p>
-     * 返回当前用户的电子邮件地址
+     * 返回当前用户绑定的电子邮件地址
      *
      * @return 用户的电子邮件地址
      */
@@ -118,7 +111,7 @@ public class User {
     /**
      * 设置用户的邮箱地址
      * <p>
-     * 将传入的邮箱地址赋值给当前用户对象
+     * 将传入的邮箱地址赋值给当前用户的邮箱字段
      *
      * @param email 邮箱地址
      */
@@ -129,7 +122,7 @@ public class User {
     /**
      * 获取当前对象的唯一标识符
      * <p>
-     * 返回该对象内部存储的唯一 ID 值
+     * 返回该对象的内部唯一标识符值
      *
      * @return 当前对象的唯一标识符
      */
@@ -151,7 +144,7 @@ public class User {
     /**
      * 获取用户的年龄
      * <p>
-     * 返回当前用户的年龄值
+     * 返回当前用户对象的年龄属性值
      *
      * @return 用户的年龄
      */
@@ -160,11 +153,11 @@ public class User {
     }
 
     /**
-     * 设置用户的年龄
+     * 设置用户年龄
      * <p>
-     * 将传入的年龄值赋给当前用户对象的 age 属性
+     * 将指定的年龄值赋给当前用户对象
      *
-     * @param age 用户的年龄
+     * @param age 用户年龄
      */
     public void setAge(int age) {
         this.age = age;
@@ -173,7 +166,7 @@ public class User {
     /**
      * 获取地址信息
      * <p>
-     * 返回当前对象存储的地址信息
+     * 返回当前对象存储的地址值
      *
      * @return 地址信息
      */
@@ -182,9 +175,9 @@ public class User {
     }
 
     /**
-     * 设置用户的地址信息
+     * 设置用户地址
      * <p>
-     * 将传入的地址字符串赋值给当前对象的地址属性
+     * 将指定的地址赋值给当前对象的地址属性
      *
      * @param address 地址信息
      */
