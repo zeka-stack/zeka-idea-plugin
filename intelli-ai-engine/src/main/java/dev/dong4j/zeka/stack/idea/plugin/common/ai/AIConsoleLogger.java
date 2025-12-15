@@ -22,35 +22,35 @@ public interface AIConsoleLogger {
      *
      * @param message 消息内容
      */
-    void print(@NotNull String message);
+    void print(String message);
 
     /**
      * 输出带时间戳的日志
      *
      * @param message 消息内容
      */
-    void printWithTimestamp(@NotNull String message);
+    void printWithTimestamp(String message);
 
     /**
      * 输出成功日志
      *
      * @param message 消息内容
      */
-    void printSuccess(@NotNull String message);
+    void printSuccess(String message);
 
     /**
      * 输出警告日志
      *
      * @param message 消息内容
      */
-    void printWarning(@NotNull String message);
+    void printWarning(String message);
 
     /**
      * 输出错误日志
      *
      * @param message 消息内容
      */
-    void printError(@NotNull String message);
+    void printError(String message);
 
     /**
      * 输出可点击的超链接（跳转到代码位置）
@@ -59,7 +59,7 @@ public interface AIConsoleLogger {
      * @param virtualFile 目标文件
      * @param line        目标行号（从 0 开始）
      */
-    void printHyperlink(@NotNull String message, @NotNull VirtualFile virtualFile, int line);
+    void printHyperlink(String message, @NotNull VirtualFile virtualFile, int line);
 
     /**
      * 输出带时间戳的可点击超链接
@@ -68,6 +68,6 @@ public interface AIConsoleLogger {
      * @param virtualFile 目标文件
      * @param line        目标行号（从 0 开始）
      */
-    void printHyperlinkWithTimestamp(@NotNull String message, @NotNull VirtualFile virtualFile, int line);
+    void printHyperlinkWithTimestamp(String message, @NotNull VirtualFile virtualFile, int line);
 }
 

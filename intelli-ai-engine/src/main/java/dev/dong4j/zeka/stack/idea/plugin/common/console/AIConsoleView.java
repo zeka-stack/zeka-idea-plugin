@@ -55,7 +55,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      *
      * @param project 项目实例
      */
-    public AIConsoleView(@NotNull Project project) {
+    public AIConsoleView(Project project) {
         this.project = project;
     }
 
@@ -117,7 +117,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param message 消息内容
      */
     @Override
-    public void printWithTimestamp(@NotNull String message) {
+    public void printWithTimestamp(String message) {
         String timestamp = "[" + TIME_FORMAT.format(new Date()) + "] ";
         printInternal(timestamp + message + "\n", ConsoleViewContentType.NORMAL_OUTPUT);
     }
@@ -130,7 +130,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param message 消息内容
      */
     @Override
-    public void print(@NotNull String message) {
+    public void print(String message) {
         printInternal(message + "\n", ConsoleViewContentType.NORMAL_OUTPUT);
     }
 
@@ -142,7 +142,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param message 消息内容
      */
     @Override
-    public void printSuccess(@NotNull String message) {
+    public void printSuccess(String message) {
         printInternal(message + "\n", ConsoleViewContentType.LOG_INFO_OUTPUT);
     }
 
@@ -154,7 +154,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param message 消息内容
      */
     @Override
-    public void printWarning(@NotNull String message) {
+    public void printWarning(String message) {
         printInternal(message + "\n", ConsoleViewContentType.LOG_WARNING_OUTPUT);
     }
 
@@ -166,7 +166,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param message 消息内容
      */
     @Override
-    public void printError(@NotNull String message) {
+    public void printError(String message) {
         printInternal(message + "\n", ConsoleViewContentType.ERROR_OUTPUT);
     }
 
@@ -176,7 +176,10 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param message     消息内容
      * @param contentType 内容类型
      */
-    private void printInternal(@NotNull String message, @NotNull ConsoleViewContentType contentType) {
+    private void printInternal(String message, @NotNull ConsoleViewContentType contentType) {
+        if (message == null || message.trim().isEmpty()) {
+            return;
+        }
         ApplicationManager.getApplication().invokeLater(() -> {
             ConsoleView console = getConsoleView();
             if (console != null) {
@@ -193,7 +196,10 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      *
      * @param message 消息内容
      */
-    private void printWelcome(@NotNull String message) {
+    private void printWelcome(String message) {
+        if (message == null || message.trim().isEmpty()) {
+            return;
+        }
         ApplicationManager.getApplication().invokeLater(() -> {
             ConsoleView console = getConsoleView();
             if (console != null) {
@@ -232,7 +238,10 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param line        目标行号（从 0 开始）
      */
     @Override
-    public void printHyperlink(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
+    public void printHyperlink(String message, @NotNull VirtualFile virtualFile, int line) {
+        if (message == null || message.trim().isEmpty()) {
+            return;
+        }
         ApplicationManager.getApplication().invokeLater(() -> {
             ConsoleView console = getConsoleView();
             if (console != null) {
@@ -260,7 +269,10 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * @param line        目标行号（从 0 开始）
      */
     @Override
-    public void printHyperlinkWithTimestamp(@NotNull String message, @NotNull VirtualFile virtualFile, int line) {
+    public void printHyperlinkWithTimestamp(String message, @NotNull VirtualFile virtualFile, int line) {
+        if (message == null || message.trim().isEmpty()) {
+            return;
+        }
         ApplicationManager.getApplication().invokeLater(() -> {
             ConsoleView console = getConsoleView();
             if (console != null) {

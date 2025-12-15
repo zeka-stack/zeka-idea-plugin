@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.util;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -34,7 +35,7 @@ public final class AIConsoleLoggerUtil {
      * @param project 项目实例
      * @param message 消息内容
      */
-    public static void printWithTimestamp(@NotNull Project project, @NotNull String message) {
+    public static void printWithTimestamp(Project project, String message) {
         safeLog(project, console -> console.printWithTimestamp(message));
     }
 
@@ -46,7 +47,7 @@ public final class AIConsoleLoggerUtil {
      * @param project 项目实例
      * @param message 消息内容
      */
-    public static void print(@NotNull Project project, @NotNull String message) {
+    public static void print(Project project, String message) {
         safeLog(project, console -> console.print(message));
     }
 
@@ -58,7 +59,7 @@ public final class AIConsoleLoggerUtil {
      * @param project 项目实例
      * @param message 消息内容
      */
-    public static void printSuccess(@NotNull Project project, @NotNull String message) {
+    public static void printSuccess(Project project, String message) {
         safeLog(project, console -> console.printSuccess(message));
     }
 
@@ -70,7 +71,7 @@ public final class AIConsoleLoggerUtil {
      * @param project 项目实例
      * @param message 消息内容
      */
-    public static void printWarning(@NotNull Project project, @NotNull String message) {
+    public static void printWarning(Project project, String message) {
         safeLog(project, console -> console.printWarning(message));
     }
 
@@ -82,7 +83,7 @@ public final class AIConsoleLoggerUtil {
      * @param project 项目实例
      * @param message 消息内容
      */
-    public static void printError(@NotNull Project project, @NotNull String message) {
+    public static void printError(Project project, String message) {
         safeLog(project, console -> console.printError(message));
     }
 
@@ -97,8 +98,8 @@ public final class AIConsoleLoggerUtil {
      * @param virtualFile 目标文件
      * @param line        目标行号（从 0 开始）
      */
-    public static void printHyperlink(@NotNull Project project, @NotNull String message,
-                                      @NotNull com.intellij.openapi.vfs.VirtualFile virtualFile, int line) {
+    public static void printHyperlink(Project project, String message,
+                                      @NotNull VirtualFile virtualFile, int line) {
         safeLog(project, console -> console.printHyperlink(message, virtualFile, line));
     }
 
@@ -113,8 +114,8 @@ public final class AIConsoleLoggerUtil {
      * @param virtualFile 目标文件
      * @param line        目标行号（从 0 开始）
      */
-    public static void printHyperlinkWithTimestamp(@NotNull Project project, @NotNull String message,
-                                                   @NotNull com.intellij.openapi.vfs.VirtualFile virtualFile, int line) {
+    public static void printHyperlinkWithTimestamp(Project project, String message,
+                                                   @NotNull VirtualFile virtualFile, int line) {
         safeLog(project, console -> console.printHyperlinkWithTimestamp(message, virtualFile, line));
     }
 
