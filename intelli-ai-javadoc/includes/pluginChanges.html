@@ -1,8 +1,7 @@
 <h3>2.6.0</h3>
 <p><b>围绕提升 Javadoc 生成质量所做的改进：</b></p>
 <ul>
-    <li><b>✨ 新增</b>：新增“添加上下文”开关，可在方法/字段注释时将所属类前 500 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力；支持按需一键开启/关闭以控制
-        Token 消耗
+    <li><b>✨ 新增</b>：新增“添加上下文”开关，可在方法/字段注释时将所属类前 N 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力
     </li>
     <li><b>🔧 优化</b>：优化性能模式处理逻辑，提高并发度，修复单文件多服务商时只有一个服务商在处理的问题</li>
     <li><b>🔧 优化</b>：优化性能模式统计弹窗样式，使用 IDE 当前主题颜色构建表格，修复暗色主题下文字不可见问题，并统一服务商名称列为居中显示</li>
@@ -12,7 +11,7 @@
 </ul>
 <h3>2.6.0</h3>
 <ul>
-    <li><b>✨ Added</b>: Introduced a new "Add context" toggle that, when enabled, injects up to the first 500 lines of the enclosing
+    <li><b>✨ Added</b>: Introduced a new "Add context" toggle that, when enabled, injects up to the first N lines of the enclosing
         class (after compression) into the user prompt as contextual code, improving the accuracy of generated comments for methods
         and fields while allowing you to disable it to control token usage
     </li>

@@ -118,7 +118,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         if (editor == null) {
             String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
             log.info("为文件生成文档: {} ({})", psiFile.getName(), fileType);
-            tasks = collector.collectFromElement(psiFile.getOriginalElement());
+            tasks = collector.collectFromFile(psiFile);
         } else {
             String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
             log.info("为正在编辑的 {} 文件生成文档: {}", fileType, psiFile.getName());

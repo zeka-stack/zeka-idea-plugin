@@ -68,7 +68,7 @@ public class TaskCollector {
     }
 
     /**
-     * 从单个 PSI 元素收集任务
+     * 从单个 PSI 元素收集任务(不处理 PsiFile)
      * <p>用于智能定位后只为特定元素生成文档
      *
      * <p>根据元素类型采取不同的处理策略：
@@ -76,7 +76,6 @@ public class TaskCollector {
      *   <li>PsiMethod：为方法创建任务（区分普通方法和测试方法）</li>
      *   <li>PsiField：为字段创建任务</li>
      *   <li>PsiClass：为类及其所有成员创建任务</li>
-     *   <li>PsiFile：为整个文件创建任务</li>
      * </ul>
      *
      * <p>处理流程：
@@ -89,17 +88,30 @@ public class TaskCollector {
      * @param element PSI 元素（可以是 PsiMethod、PsiField、PsiClass）
      * @return 任务列表（单个元素或该元素包含的所有子元素）
      * @see #collectFromClass(PsiClass, List)
-     * @see #collectFromFile(PsiFile)
      */
     @SuppressWarnings("D")
     @NotNull
     public List<DocumentationTask> collectFromElement(@NotNull PsiElement element) {
+        return collectFromElement(element, this::shouldGenerateForElement);
+    }
+
+    /**
+     * 从给定的 PSI 元素中收集文档生成任务
+     * <p>
+     * 根据元素类型 (方法, 字段, 类等) 和提供的谓词条件, 创建对应的文档生成任务并添加到任务列表中.
+     *
+     * @param element          要处理的 PSI 元素
+     * @param elementPredicate 用于判断是否处理该元素的谓词条件
+     * @return 包含文档生成任务的列表
+     */
+    private List<DocumentationTask> collectFromElement(@NotNull PsiElement element,
+                                                       @NotNull Predicate<PsiElement> elementPredicate) {
         List<DocumentationTask> tasks = new ArrayList<>();
 
         // Java 元素处理
         if (element instanceof PsiMethod method) {
             // 为单个方法生成
-            if (settings.generateForMethod && shouldGenerateForElement(method)) {
+            if (elementPredicate.test(method)) {
                 DocumentationTask.TaskType type = isTestMethod(method)
                                                   ? DocumentationTask.TaskType.TEST_METHOD
                                                   : DocumentationTask.TaskType.METHOD;
@@ -107,21 +119,21 @@ public class TaskCollector {
             }
         } else if (element instanceof PsiField field) {
             // 为单个字段生成
-            if (settings.generateForField && shouldGenerateForElement(field)) {
+            if (elementPredicate.test(field)) {
                 tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
             }
         } else if (element instanceof PsiClass psiClass) {
             // 为类及其所有成员生成
             // collectFromClass(psiClass, tasks);
             // 2025.11.08 只为类本身生成
-            if (settings.generateForClass && shouldGenerateForElement(psiClass)) {
+            if (elementPredicate.test(psiClass)) {
                 tasks.add(createTask(psiClass, DocumentationTask.TaskType.CLASS));
             }
         }
         // Kotlin 元素处理
         else if (element instanceof KtNamedFunction function) {
             // 为单个 Kotlin 函数生成
-            if (settings.generateForMethod && shouldGenerateForElement(function)) {
+            if (elementPredicate.test(function)) {
                 DocumentationTask.TaskType type = isKotlinTestMethod(function)
                                                   ? DocumentationTask.TaskType.TEST_METHOD
                                                   : DocumentationTask.TaskType.METHOD;
@@ -129,17 +141,17 @@ public class TaskCollector {
             }
         } else if (element instanceof KtProperty property) {
             // 为单个 Kotlin 属性生成
-            if (settings.generateForField && shouldGenerateForElement(property)) {
+            if (elementPredicate.test(property)) {
                 tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
             }
         } else if (element instanceof KtClassOrObject ktClass) {
             // 为 Kotlin 类/对象生成
-            if (settings.generateForClass && shouldGenerateForElement(ktClass)) {
+            if (elementPredicate.test(ktClass)) {
                 tasks.add(createTask(ktClass, DocumentationTask.TaskType.CLASS));
             }
         } else if (element instanceof PsiFile) {
-            // 为整个文件生成
-            return collectFromFile((PsiFile) element);
+            // 不处理 PsiFile
+            return new ArrayList<>();
         }
 
         return tasks;
@@ -171,6 +183,7 @@ public class TaskCollector {
      * @param tasks    任务列表，用于收集创建的任务
      */
     @SuppressWarnings("D")
+    @Deprecated
     private void collectFromClass(@NotNull PsiClass psiClass, @NotNull List<DocumentationTask> tasks) {
         // 为类本身生成
         if (settings.generateForClass && shouldGenerateForElement(psiClass)) {
@@ -202,129 +215,6 @@ public class TaskCollector {
         for (PsiClass innerClass : psiClass.getInnerClasses()) {
             collectFromClass(innerClass, tasks);
         }
-    }
-
-    /**
-     * 从 PSI 文件收集任务（通用方法）
-     *
-     * <p>使用 JavaRecursiveElementVisitor 递归遍历文件中的所有元素，
-     * 为符合条件的类、方法、字段创建文档生成任务。
-     *
-     * <p>遍历流程：
-     * <ol>
-     *   <li>检查文件是否为 Java 文件</li>
-     *   <li>使用 visitor 模式遍历所有元素</li>
-     *   <li>使用提供的判断条件决定是否为元素创建任务</li>
-     * </ol>
-     *
-     * <p>Visitor 处理：
-     * <ul>
-     *   <li>visitClass：处理类元素</li>
-     *   <li>visitMethod：处理方法元素（区分普通方法和测试方法）</li>
-     *   <li>visitField：处理字段元素</li>
-     * </ul>
-     *
-     * @param psiFile          PSI 文件对象
-     * @param elementPredicate 元素判断条件，用于决定是否为元素生成文档任务
-     * @return 文档生成任务列表
-     * @see JavaRecursiveElementVisitor
-     */
-    @SuppressWarnings("D")
-    @NotNull
-    private List<DocumentationTask> collectFromFileInternal(@NotNull PsiFile psiFile,
-                                                            @NotNull Predicate<PsiElement> elementPredicate) {
-        List<DocumentationTask> tasks = new ArrayList<>();
-
-        // 处理 Java 文件
-        if (psiFile instanceof PsiJavaFile) {
-            psiFile.accept(new JavaRecursiveElementVisitor() {
-                /**
-                 * 访问类元素并根据配置和判断条件决定是否生成文档任务
-                 *
-                 * @param aClass 被访问的类元素
-                 */
-                @Override
-                public void visitClass(@NotNull PsiClass aClass) {
-                    super.visitClass(aClass);
-
-                    if (settings.generateForClass && elementPredicate.test(aClass)) {
-                        tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
-                    }
-                }
-
-                /**
-                 * 处理方法节点，根据配置和判断条件决定是否生成文档任务
-                 *
-                 * @param method 被访问的方法节点
-                 */
-                @Override
-                public void visitMethod(@NotNull PsiMethod method) {
-                    super.visitMethod(method);
-
-                    if (settings.generateForMethod && elementPredicate.test(method)) {
-                        DocumentationTask.TaskType type = isTestMethod(method)
-                                                          ? DocumentationTask.TaskType.TEST_METHOD
-                                                          : DocumentationTask.TaskType.METHOD;
-                        tasks.add(createTask(method, type));
-                    }
-                }
-
-                /**
-                 * 处理字段元素，根据配置和判断条件决定是否生成文档任务
-                 *
-                 * @param field 被访问的字段元素
-                 */
-                @Override
-                public void visitField(@NotNull PsiField field) {
-                    super.visitField(field);
-
-                    if (settings.generateForField && elementPredicate.test(field)) {
-                        tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
-                    }
-                }
-            });
-        }
-        // 处理 Kotlin 文件
-        else if (psiFile instanceof KtFile ktFile) {
-            // 检查是否支持 Kotlin
-            if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
-                return tasks;
-            }
-
-            ktFile.accept(new KtTreeVisitorVoid() {
-                @Override
-                public void visitClassOrObject(@NotNull KtClassOrObject classOrObject) {
-                    super.visitClassOrObject(classOrObject);
-
-                    if (settings.generateForClass && elementPredicate.test(classOrObject)) {
-                        tasks.add(createTask(classOrObject, DocumentationTask.TaskType.CLASS));
-                    }
-                }
-
-                @Override
-                public void visitNamedFunction(@NotNull KtNamedFunction function) {
-                    super.visitNamedFunction(function);
-
-                    if (settings.generateForMethod && elementPredicate.test(function)) {
-                        DocumentationTask.TaskType type = isKotlinTestMethod(function)
-                                                          ? DocumentationTask.TaskType.TEST_METHOD
-                                                          : DocumentationTask.TaskType.METHOD;
-                        tasks.add(createTask(function, type));
-                    }
-                }
-
-                @Override
-                public void visitProperty(@NotNull KtProperty property) {
-                    super.visitProperty(property);
-
-                    if (settings.generateForField && elementPredicate.test(property)) {
-                        tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
-                    }
-                }
-            });
-        }
-
-        return tasks;
     }
 
     /**
@@ -391,61 +281,75 @@ public class TaskCollector {
      * @see #collectFromFile(PsiFile)
      * @see JavaRecursiveElementVisitor
      */
-    @SuppressWarnings("D")
     @NotNull
     public List<DocumentationTask> collectMissingJavaDocFromFile(@NotNull PsiFile psiFile) {
+        return collectFromFileInternal(psiFile, this::hasNoJavaDoc);
+    }
+
+    /**
+     * 从 PSI 文件收集任务（通用方法）
+     *
+     * <p>使用 JavaRecursiveElementVisitor 递归遍历文件中的所有元素，
+     * 为符合条件的类、方法、字段创建文档生成任务。
+     *
+     * <p>遍历流程：
+     * <ol>
+     *   <li>检查文件是否为 Java 文件</li>
+     *   <li>使用 visitor 模式遍历所有元素</li>
+     *   <li>为符合条件的元素创建任务</li>
+     * </ol>
+     *
+     * <p>Visitor 处理：
+     * <ul>
+     *   <li>visitClass：处理类元素</li>
+     *   <li>visitMethod：处理方法元素（区分普通方法和测试方法）</li>
+     *   <li>visitField：处理字段元素</li>
+     * </ul>
+     *
+     * @param psiFile PSI 文件对象
+     * @return 文档生成任务列表
+     * @see JavaRecursiveElementVisitor
+     */
+    @SuppressWarnings("D")
+    @NotNull
+    private List<DocumentationTask> collectFromFileInternal(@NotNull PsiFile psiFile,
+                                                            @NotNull Predicate<PsiElement> elementPredicate) {
         List<DocumentationTask> tasks = new ArrayList<>();
 
         // 处理 Java 文件
         if (psiFile instanceof PsiJavaFile) {
-            // 专门用于 Git 提交场景，强制检查所有类型的元素，不受配置影响
             psiFile.accept(new JavaRecursiveElementVisitor() {
                 /**
-                 * 访问类元素，强制检查所有类（不受 generateForClass 配置影响）
+                 * 访问类元素并根据配置和判断条件决定是否生成文档任务
                  *
                  * @param aClass 被访问的类元素
                  */
                 @Override
                 public void visitClass(@NotNull PsiClass aClass) {
                     super.visitClass(aClass);
-
-                    // 强制检查类，不受 generateForClass 配置影响
-                    if (hasNoJavaDoc(aClass)) {
-                        tasks.add(createTask(aClass, DocumentationTask.TaskType.CLASS));
-                    }
+                    tasks.addAll(collectFromElement(aClass, elementPredicate));
                 }
 
                 /**
-                 * 处理方法节点，强制检查所有方法（不受 generateForMethod 配置影响）
+                 * 处理方法节点，根据配置和判断条件决定是否生成文档任务
                  *
                  * @param method 被访问的方法节点
                  */
                 @Override
                 public void visitMethod(@NotNull PsiMethod method) {
                     super.visitMethod(method);
-
-                    // 强制检查方法，不受 generateForMethod 配置影响
-                    if (hasNoJavaDoc(method)) {
-                        DocumentationTask.TaskType type = isTestMethod(method)
-                                                          ? DocumentationTask.TaskType.TEST_METHOD
-                                                          : DocumentationTask.TaskType.METHOD;
-                        tasks.add(createTask(method, type));
-                    }
+                    tasks.addAll(collectFromElement(method, elementPredicate));
                 }
 
                 /**
-                 * 处理字段元素，强制检查所有字段（不受 generateForField 配置影响）
+                 * 处理字段元素，根据配置和判断条件决定是否生成文档任务
                  *
                  * @param field 被访问的字段元素
                  */
                 @Override
                 public void visitField(@NotNull PsiField field) {
                     super.visitField(field);
-
-                    // 强制检查字段，不受 generateForField 配置影响
-                    if (hasNoJavaDoc(field)) {
-                        tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
-                    }
+                    tasks.addAll(collectFromElement(field, elementPredicate));
                 }
             });
         }
@@ -456,45 +360,30 @@ public class TaskCollector {
                 return tasks;
             }
 
-            // 专门用于 Git 提交场景，强制检查所有类型的元素，不受配置影响
             ktFile.accept(new KtTreeVisitorVoid() {
                 @Override
                 public void visitClassOrObject(@NotNull KtClassOrObject classOrObject) {
                     super.visitClassOrObject(classOrObject);
-
-                    // 强制检查类，不受 generateForClass 配置影响
-                    if (hasNoJavaDoc(classOrObject)) {
-                        tasks.add(createTask(classOrObject, DocumentationTask.TaskType.CLASS));
-                    }
+                    tasks.addAll(collectFromElement(classOrObject, elementPredicate));
                 }
 
                 @Override
                 public void visitNamedFunction(@NotNull KtNamedFunction function) {
                     super.visitNamedFunction(function);
-
-                    // 强制检查方法，不受 generateForMethod 配置影响
-                    if (hasNoJavaDoc(function)) {
-                        DocumentationTask.TaskType type = isKotlinTestMethod(function)
-                                                          ? DocumentationTask.TaskType.TEST_METHOD
-                                                          : DocumentationTask.TaskType.METHOD;
-                        tasks.add(createTask(function, type));
-                    }
+                    tasks.addAll(collectFromElement(function, elementPredicate));
                 }
 
                 @Override
                 public void visitProperty(@NotNull KtProperty property) {
                     super.visitProperty(property);
-
-                    // 强制检查字段，不受 generateForField 配置影响
-                    if (hasNoJavaDoc(property)) {
-                        tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
-                    }
+                    tasks.addAll(collectFromElement(property, elementPredicate));
                 }
             });
         }
 
         return tasks;
     }
+
 
     /**
      * 从虚拟文件收集任务
@@ -865,34 +754,37 @@ public class TaskCollector {
     }
 
     /**
-     * 判断是否应该为元素生成文档
+     * 判断是否需要为指定的代码元素生成文档注释
+     * <p>
+     * 根据元素类型 (方法, 字段, 类) 和配置设置, 决定是否需要生成文档注释.
+     * 如果配置中未启用对应类型的注释生成, 则返回 false.
+     * 如果配置中启用了覆盖已有注释, 则直接返回 true.
+     * 否则, 检查该元素是否已存在 JavaDoc 注释, 若不存在则返回 true.
      *
-     * <p>根据用户配置决定是否为指定元素生成文档。
-     * 主要检查 overrideExisting 配置项，如果为 false（默认）则跳过已有文档的元素。
-     *
-     * <p>检查逻辑：
-     * <ol>
-     *   <li>如果 overrideExisting 为 true，总是返回 true（覆盖已有注释）</li>
-     *   <li>如果 overrideExisting 为 false（默认）且元素支持文档：
-     *     <ul>
-     *       <li>检查元素是否已有 Javadoc 注释</li>
-     *       <li>如果已有注释返回 false（跳过），否则返回 true（生成）</li>
-     *     </ul>
-     *   </li>
-     * </ol>
-     *
-     * @param element PSI 元素
-     * @return 如果应该生成文档返回 true，否则返回 false
-     * @see SettingsState#overrideExisting
-     * @see #hasNoJavaDoc(PsiElement)
+     * @param element 要检查的代码元素
+     * @return 是否需要为该元素生成文档注释
      */
     private boolean shouldGenerateForElement(@NotNull PsiElement element) {
-        // 如果配置为覆盖已有注释，总是生成
+        boolean needGenerate = false;
+        if (element instanceof PsiMethod || element instanceof KtNamedFunction) {
+            needGenerate = settings.generateForMethod;
+        } else if (element instanceof PsiField || element instanceof KtProperty) {
+            needGenerate = settings.generateForField;
+        } else if (element instanceof PsiClass || element instanceof KtClassOrObject) {
+            needGenerate = settings.generateForClass;
+        }
+
+        // 1. 对当前类型根本不需要生成，直接不生成
+        if (!needGenerate) {
+            return false;
+        }
+
+        // 2. 允许覆盖已有注释，直接生成
         if (settings.overrideExisting) {
             return true;
         }
 
-        // 如果不允许覆盖已有注释，检查是否存在文档
+        // 3. 不允许覆盖时，仅在没有 Javadoc/KDoc 时生成
         return hasNoJavaDoc(element);
     }
 
