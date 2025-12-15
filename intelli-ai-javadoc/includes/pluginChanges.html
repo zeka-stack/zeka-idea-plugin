@@ -8,6 +8,7 @@
     <li><b>🐛 修复</b>：因模型不稳定性,在插入 Javadoc 前增加清洗逻辑，自动移除 LLM 返回的多余 Markdown 代码块与原始代码行；并根据方法签名移除不存在的
         <code>@param</code> / <code>@throws</code> / <code>@exception</code> 标签，避免生成错误注释
     </li>
+    <li><b>🐛 修复</b>：修复自定义标签在每次插件更新后被重置的问题</li>
 </ul>
 <h3>2.6.0</h3>
 <ul>
@@ -26,6 +27,7 @@
         the
         actual method signature, preventing incorrect documentation
     </li>
+    <li><b>✨ Added</b>: Fix the issue where custom tags were reset after each plugin update</li>
 </ul>
 <p><b>⚠️ 特别注意事项：</b></p>
 <ol>

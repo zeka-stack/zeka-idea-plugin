@@ -93,25 +93,12 @@ public class CustomJavadocTag {
         this.defaultValue = defaultValue;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        CustomJavadocTag that = (CustomJavadocTag) o;
-
-        return tagName.equalsIgnoreCase(that.tagName);
-    }
-
-    @Override
-    public int hashCode() {
-        return tagName.toLowerCase().hashCode();
-    }
-
+    /**
+     * 返回当前对象的字符串表示形式
+     * <p> 该方法重写自 Object 类的 toString 方法, 用于生成包含 tagName 和 defaultValue 属性值的字符串表示.
+     *
+     * @return 包含 tagName 和 defaultValue 属性值的字符串表示形式
+     */
     @Override
     public String toString() {
         return "CustomJavaDocTag{" +
