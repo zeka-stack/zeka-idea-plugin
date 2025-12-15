@@ -135,16 +135,12 @@ public class WorkflowExplainerService {
                 }
 
                 // 2. 根据类型生成不同的工作流
-                switch (elementContext.type()) {
-                    case METHOD_CALL:
-                        return analyzeMethodCallWorkflow(psiFile, caretOffset, (PsiMethodCallExpression) elementContext.element());
-                    case METHOD_DEFINITION:
-                        return analyzeMethodCallerChain(psiFile, caretOffset, (PsiMethod) elementContext.element());
-                    case CLASS_DEFINITION:
-                        return analyzeClassRelationship(psiFile, caretOffset, (PsiClass) elementContext.element());
-                    default:
-                        throw new RuntimeException(WorkflowBundle.message("error.unsupported.element"));
-                }
+                return switch (elementContext.type()) {
+                    case METHOD_CALL -> analyzeMethodCallWorkflow(psiFile, caretOffset, (PsiMethodCallExpression) elementContext.element());
+                    case METHOD_DEFINITION -> analyzeMethodCallerChain(psiFile, caretOffset, (PsiMethod) elementContext.element());
+                    case CLASS_DEFINITION -> analyzeClassRelationship(psiFile, caretOffset, (PsiClass) elementContext.element());
+                    default -> throw new RuntimeException(WorkflowBundle.message("error.unsupported.element"));
+                };
             } catch (RuntimeException e) {
                 throw e;
             } catch (Exception e) {

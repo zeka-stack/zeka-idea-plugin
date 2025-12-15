@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.task;
 import com.intellij.psi.PsiElement;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +31,15 @@ public class DocumentationTask {
     private final TaskType type;
     /** 文件路径 */
     private final String filePath;
+    /**
+     * 任务上下文信息
+     * <p>
+     * 包含与当前元素相关的额外上下文, 如所属类的代码片段等, 用于帮助 AI 生成更精准的注释。
+     * 该字段为可选，某些场景下可能不存在上下文信息。
+     */
+    @Nullable
+    @Getter
+    private final GenerationContext context;
     /** 任务当前状态 */
     private TaskStatus status;
     /** 结果数据 */
@@ -101,16 +111,34 @@ public class DocumentationTask {
      * @param code     代码内容字符串
      * @param type     任务类型，表示任务的类别
      * @param filePath 文件路径，表示代码所在的文件路径
+     * @param context  任务上下文信息（可为 null）
+     */
+    public DocumentationTask(@NotNull PsiElement element,
+                             @NotNull String code,
+                             @NotNull TaskType type,
+                             @NotNull String filePath,
+                             @NotNull GenerationContext context) {
+        this.element = element;
+        this.code = code;
+        this.type = type;
+        this.filePath = filePath;
+        this.context = context;
+        this.status = TaskStatus.PENDING;
+    }
+
+    /**
+     * 构造一个不携带上下文信息的 DocumentationTask 对象
+     *
+     * @param element  元素对象，表示代码中的某个元素
+     * @param code     代码内容字符串
+     * @param type     任务类型，表示任务的类别
+     * @param filePath 文件路径，表示代码所在的文件路径
      */
     public DocumentationTask(@NotNull PsiElement element,
                              @NotNull String code,
                              @NotNull TaskType type,
                              @NotNull String filePath) {
-        this.element = element;
-        this.code = code;
-        this.type = type;
-        this.filePath = filePath;
-        this.status = TaskStatus.PENDING;
+        this(element, code, type, filePath, GenerationContext.ofClassCode(""));
     }
 
     /**

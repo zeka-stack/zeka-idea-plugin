@@ -17,6 +17,7 @@ import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 import com.intellij.psi.javadoc.PsiDocComment;
+import com.intellij.psi.util.PsiTreeUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.kdoc.psi.api.KDoc;
@@ -613,6 +614,9 @@ public class TaskCollector {
         // 获取代码，包含已有的 Javadoc 注释
         String code = getCodeWithComment(element);
 
+        // 构建上下文信息（当前仅提供类级别代码片段，后续可扩展）
+        GenerationContext context = buildGenerationContext(element);
+
         // 获取文件路径，处理 VirtualFile 为 null 的情况（例如 Scratch 文件）
         PsiFile containingFile = element.getContainingFile();
         String filePath;
@@ -624,7 +628,73 @@ public class TaskCollector {
             filePath = containingFile.getName();
         }
 
-        return new DocumentationTask(element, code, type, filePath);
+        return new DocumentationTask(element, code, type, filePath, context);
+    }
+
+    /**
+     * 基于 PSI 元素构建文档生成上下文。
+     * <p>
+     * 当前实现：
+     * <ul>
+     *   <li>如果元素本身是 Java {@link PsiClass} 或 Kotlin {@link KtClassOrObject}，则使用其自身代码作为上下文</li>
+     *   <li>否则查找最近的 Java {@link PsiClass} 或 Kotlin {@link KtClassOrObject} 作为所属类</li>
+     *   <li>截取该类/对象代码的前 500 行作为类级别上下文片段</li>
+     *   <li>如果找不到所属类，则返回 null</li>
+     * </ul>
+     *
+     * @param element 当前任务对应的 PSI 元素
+     * @return 上下文对象，如果无法构建则返回 null
+     */
+    @NotNull
+    private GenerationContext buildGenerationContext(@NotNull PsiElement element) {
+        // 元素本身就是 Java 类
+        if (element instanceof PsiClass) {
+            return GenerationContext.ofClassCode("");
+        }
+        // 元素本身就是 Kotlin 类/对象
+        if (element instanceof KtClassOrObject) {
+            return GenerationContext.ofClassCode("");
+        }
+
+        // 优先查找最近的 Java 类
+        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
+        if (psiClass != null) {
+            String snippet = limitLines(psiClass.getText(), 500);
+            return GenerationContext.ofClassCode(snippet);
+        }
+
+        // 再查找最近的 Kotlin 类/对象
+        KtClassOrObject ktClass = PsiTreeUtil.getParentOfType(element, KtClassOrObject.class);
+        if (ktClass != null) {
+            String snippet = limitLines(ktClass.getText(), 500);
+            return GenerationContext.ofClassCode(snippet);
+        }
+
+        // 没有找到合适的类级上下文
+        return GenerationContext.ofClassCode("");
+    }
+
+    /**
+     * 将多行字符串限制在指定的最大行数内。
+     *
+     * @param text     原始文本
+     * @param maxLines 最大行数
+     * @return 截断后的文本，如果原始文本行数不足则返回原文
+     */
+    @NotNull
+    private String limitLines(@NotNull String text, int maxLines) {
+        if (text.isEmpty() || maxLines <= 0) {
+            return text;
+        }
+        String[] lines = text.split("\n", -1);
+        if (lines.length <= maxLines) {
+            return text;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < maxLines; i++) {
+            sb.append(lines[i]).append("\n");
+        }
+        return sb.toString();
     }
 
     /**
@@ -713,12 +783,12 @@ public class TaskCollector {
         StringBuilder optimized = new StringBuilder();
         String[] lines = originalCode.split("\n");
         int lineCount = 0;
-        final int MAX_LINES = settings.maxClassCodeLines;
+        final int maxLines = settings.maxClassCodeLines;
 
         for (String line : lines) {
             // 如果已经达到最大行数，停止处理
-            if (lineCount >= MAX_LINES) {
-                optimized.append("\n// ... (代码已截取，超过 ").append(MAX_LINES).append(" 行)");
+            if (lineCount >= maxLines) {
+                optimized.append("\n// ... (代码已截取，超过 ").append(maxLines).append(" 行)");
                 break;
             }
 
