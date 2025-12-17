@@ -106,6 +106,7 @@ public final class AIRequestComposer {
      * 根据任务类型和设置构建用户提示模板
      * <p>
      * 使用指定的设置和任务类型, 选择对应的模板并填充任务代码内容, 生成最终的用户提示字符串.
+     * 如果覆写模式是"fix"（仅修复错误注释），则使用修复错误 Javadoc 的提示词模板。
      *
      * @param settings 配置设置对象, 用于获取模板配置
      * @param task     文档生成任务对象, 包含任务类型和代码内容
@@ -113,6 +114,15 @@ public final class AIRequestComposer {
      * @throws NullPointerException 如果 settings 或 task 为 null
      */
     private static String buildUserPrompt(@NotNull SettingsState settings, @NotNull DocumentationTask task) {
+        // 如果覆写模式是"fix"（仅修复错误注释），使用修复错误 Javadoc 的提示词
+        if (settings.overrideExisting && "fix".equals(settings.overrideMode)) {
+            String template = resolveTemplate(settings.fixJavadocPromptTemplate,
+                                              SettingsState.getDefaultFixJavadocPromptTemplate());
+            String codeWithContext = mergeContextAndCode(task.getContext(), task.getCode());
+            return String.format(template, codeWithContext);
+        }
+
+        // 否则使用正常的提示词模板
         String template = switch (task.getType()) {
             case CLASS, INTERFACE, ENUM -> resolveClassTemplate(task, settings.classPromptTemplate,
                                                                 SettingsState.getDefaultClassPromptTemplate());

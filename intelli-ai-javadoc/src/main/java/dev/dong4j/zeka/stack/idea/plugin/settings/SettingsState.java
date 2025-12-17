@@ -125,6 +125,32 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean overrideExisting = false;
 
     /**
+     * 覆写模式
+     *
+     * <p>控制当覆盖已有注释时使用的模式。
+     * - "fix"：仅修复错误注释（保留原有注释，只修复其中的错误）
+     * - "replace"：删除原注释并重新生成（完全替换原有注释）
+     *
+     * <p>默认值: "replace"（删除原注释并重新生成）
+     *
+     * @since 2.7.0
+     */
+    public String overrideMode = "replace";
+
+    /**
+     * 修复错误 Javadoc 的提示词模板
+     *
+     * <p>当覆写模式为 "fix" 时，使用此提示词模板来修复已有注释中的错误。
+     * 该提示词会指导 AI 分析现有注释，识别并修复其中的错误，同时保留正确的部分。
+     *
+     * <p>默认值: getDefaultFixJavadocPromptTemplate()
+     *
+     * @see #getDefaultFixJavadocPromptTemplate()
+     * @since 2.7.0
+     */
+    public String fixJavadocPromptTemplate = getDefaultFixJavadocPromptTemplate();
+
+    /**
      * 是否为文档生成提供类级别上下文信息
      *
      * <p>控制是否在生成注释时, 额外携带当前元素所属类(或 Kotlin 类/对象)的前若干行代码作为上下文。
@@ -838,6 +864,93 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - Javadoc 和 KDoc 都使用相同的注释格式（/** */）和标签格式（@param, @return, @throws 等）
             - 注释内容要准确描述代码的功能和用途
             - 请始终使用${commentLanguage}编写注释，确保注释内容准确、简洁、易懂
+            """;
+    }
+
+    /**
+     * 获取默认的修复错误 Javadoc 提示词模板
+     *
+     * <p>返回用于修复已有 Javadoc 注释中错误的默认提示词模板。
+     * 该提示词会指导 AI 分析现有注释，识别并修复其中的错误，同时保留正确的部分。
+     *
+     * <p>模板特点:
+     * <ul>
+     *   <li>要求分析现有注释中的错误</li>
+     *   <li>保留正确的注释内容</li>
+     *   <li>修复错误的描述、参数、返回值等信息</li>
+     *   <li>使用 %s 作为代码占位符</li>
+     * </ul>
+     *
+     * @return 默认的修复错误 Javadoc 提示词模板
+     * @since 2.7.0
+     */
+    @NotNull
+    public static String getDefaultFixJavadocPromptTemplate() {
+        return """
+            请分析以下代码元素的现有 Javadoc/KDoc 注释，识别并修复其中的错误，同时保留正确的部分。
+            请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+
+            # 重要说明
+            - 下面的代码已经包含现有的文档注释，请仔细分析这些注释
+            - 只返回修复后的文档注释，不要返回代码本身
+            - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
+            - 保留原有注释中正确的部分，只修复错误的部分
+
+            # 修复要求
+            1. 检查注释描述是否准确反映代码的功能
+            2. 检查 @param 标签是否与方法的实际参数匹配, 如果参数不存在, 需要删除存在的 @param 标签
+            3. 检查 @return 标签是否与方法的实际返回值匹配, 如果返回 void, 需要删除存在的 @return 标签
+            4. 检查 @throws 标签是否与方法的实际异常匹配, 如果方法签名没有异常申明, 需要删除存在的 @throws 标签
+            5. 检查注释格式是否符合 Javadoc/KDoc 规范
+            6. 检查注释语言是否一致（${commentLanguage}）
+            7. 保留原有注释中正确的标签和描述
+            8. 如果原有注释完全正确，只需返回原注释（不做修改）
+
+            # 格式要求
+            1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
+            2. 使用${commentLanguage}编写注释内容
+            3. 注释要准确描述代码的功能、参数、返回值、异常
+            4. 如果有参数, 必须包含 @param 标签
+            5. 如果有返回值（Java 方法或 Kotlin 非 Unit 函数），必须包含 @return 标签
+            6. 如果有异常抛出，使用 @throws 标签
+            7. 不要添加不存在的参数、返回值和异常的注释标签
+
+            # 示例
+            示例1 - 修复错误的参数描述：
+            输入代码：
+            /**
+             * 根据用户ID获取用户名称
+             * @param userId 用户名（错误：应该是用户ID）
+             * @return 用户名称
+             */
+            public String getUserName(int userId) { ... }
+
+            输出注释：
+            /**
+             * 根据用户ID获取用户名称
+             * @param userId 用户ID
+             * @return 用户名称
+             */
+
+            示例2 - 修复缺失的返回值描述：
+            输入代码：
+            /**
+             * 保存用户信息
+             * @param user 用户对象
+             */
+            public boolean saveUser(User user) { ... }
+
+            输出注释：
+            /**
+             * 保存用户信息
+             * @param user 用户对象
+             * @return 保存是否成功
+             */
+
+            待处理的代码片段:
+
+            %s
+
             """;
     }
 

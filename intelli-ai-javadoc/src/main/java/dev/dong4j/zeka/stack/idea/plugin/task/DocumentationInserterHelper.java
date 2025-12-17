@@ -13,6 +13,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiType;
 import com.intellij.psi.codeStyle.CodeStyleManager;
 
 import org.jetbrains.annotations.NotNull;
@@ -406,51 +407,36 @@ public class DocumentationInserterHelper {
     }
 
     /**
-     * 根据目标元素的签名清理多余的 @param/@throws/@exception 标签
+     * 根据目标元素的签名清理多余的 @param/@throws/@exception/@return 标签
      * <p>
-     * 即便在提示词中已经声明"没有参数/异常时不要添加标签"，部分模型仍然会错误地添加这些标签，
+     * 即便在提示词中已经声明"没有参数/异常/返回值时不要添加标签"，部分模型仍然会错误地添加这些标签，
      * 因此需要在插入前做一次基于 PSI 的安全过滤。
+     * <p>
+     * 处理规则：
+     * <ul>
+     *   <li>方法：根据实际签名清理多余的标签</li>
+     *   <li>字段：移除所有 @param、@throws、@exception、@return 标签（字段不应该有这些标签）</li>
+     *   <li>类：不做处理</li>
+     * </ul>
      *
      * @param javadoc 原始 Javadoc 文本（已通过 {@link #cleanJavadoc(String)} 处理）
-     * @param element 目标 PSI 元素（方法/函数/其他）
+     * @param element 目标 PSI 元素（方法/函数/字段/其他）
      * @return 清理后的 Javadoc 文本
      */
     @NotNull
     private String cleanParamAndThrowsTags(@NotNull String javadoc, @NotNull PsiElement element) {
-        // 目前只对"可有参数/异常"的场景做处理，类/字段等原样返回
-        boolean hasParams;
-        boolean hasThrows = false;
-
-        if (element instanceof PsiMethod method) {
-            hasParams = method.getParameterList().getParametersCount() > 0;
-            hasThrows = method.getThrowsList().getReferencedTypes().length > 0;
-        } else if (element instanceof KtNamedFunction function) {
-            // Kotlin 函数：根据参数列表判断是否保留 @param
-            hasParams = !function.getValueParameters().isEmpty();
-            // Kotlin 中异常声明较少使用，这里暂不根据签名处理 @throws，只在 Java 方法中严格校验
-        } else {
-            // 其他元素（类 / 字段等）不做额外处理
-            return javadoc;
-        }
-
-        // 没有参数且没有声明异常，直接返回原文以避免不必要拆分
-        if (hasParams || hasThrows) {
+        // 字段不应该有任何参数/异常/返回值标签，全部移除
+        if (element instanceof PsiField || element instanceof KtProperty) {
             String[] lines = javadoc.split("\n");
             StringBuilder sb = new StringBuilder(javadoc.length());
 
             for (String line : lines) {
                 String trim = line.trim();
-
-                // 如果方法没有参数，则移除所有 @param 行
-                if (!hasParams && (trim.contains("@param") || trim.contains("@param "))) {
+                // 移除字段上不应该存在的标签
+                if (trim.contains("@param") || trim.contains("@throws") ||
+                    trim.contains("@exception") || trim.contains("@return")) {
                     continue;
                 }
-                // 如果方法没有 throws，则移除 @throws/@exception 行（仅针对 Java 方法）
-                if (!hasThrows && element instanceof PsiMethod &&
-                    (trim.contains("@throws") || trim.contains("@exception"))) {
-                    continue;
-                }
-
                 sb.append(line).append("\n");
             }
 
@@ -459,17 +445,56 @@ public class DocumentationInserterHelper {
             return cleaned.isEmpty() ? javadoc : cleaned;
         }
 
-        // 没有参数也没有异常，直接移除所有 @param/@throws/@exception 行
+        // 方法处理：根据实际签名清理多余的标签
+        boolean hasParams;
+        boolean hasThrows = false;
+        boolean hasReturnValue; // 默认有返回值
+
+        if (element instanceof PsiMethod method) {
+            hasParams = method.getParameterList().getParametersCount() > 0;
+            hasThrows = method.getThrowsList().getReferencedTypes().length > 0;
+            // 检查返回类型是否为 void
+            PsiType returnType = method.getReturnType();
+            hasReturnValue = returnType != null && !returnType.getCanonicalText().equals("void");
+        } else if (element instanceof KtNamedFunction function) {
+            // Kotlin 函数：根据参数列表判断是否保留 @param
+            hasParams = !function.getValueParameters().isEmpty();
+            // Kotlin 中异常声明较少使用，这里暂不根据签名处理 @throws，只在 Java 方法中严格校验
+            // 对于 Kotlin 函数，暂时不处理 @return 标签（因为判断 Unit 比较复杂）
+            // 默认认为有返回值，避免误删
+            hasReturnValue = true;
+        } else {
+            // 其他元素（类等）不做额外处理
+            return javadoc;
+        }
+
+        // 拆分 Javadoc 为行
         String[] lines = javadoc.split("\n");
         StringBuilder sb = new StringBuilder(javadoc.length());
+
         for (String line : lines) {
             String trim = line.trim();
-            if (trim.contains("@param") || trim.contains("@throws") || trim.contains("@exception")) {
+
+            // 如果方法没有参数，则移除所有 @param 行
+            if (!hasParams && (trim.contains("@param") || trim.contains("@param "))) {
                 continue;
             }
+            // 如果方法没有 throws，则移除 @throws/@exception 行（仅针对 Java 方法）
+            if (!hasThrows && element instanceof PsiMethod &&
+                (trim.contains("@throws") || trim.contains("@exception"))) {
+                continue;
+            }
+            // 如果方法没有返回值（void），则移除 @return 行（仅针对 Java 方法）
+            if (!hasReturnValue && element instanceof PsiMethod &&
+                (trim.contains("@return") || trim.contains("@return "))) {
+                continue;
+            }
+
             sb.append(line).append("\n");
         }
+
         String cleaned = sb.toString().trim();
+        // 保底：如果全部被删空，就返回原始 javadoc，避免插入空注释
         return cleaned.isEmpty() ? javadoc : cleaned;
     }
 }

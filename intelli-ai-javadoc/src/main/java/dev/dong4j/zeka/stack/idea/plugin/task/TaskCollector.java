@@ -758,7 +758,9 @@ public class TaskCollector {
      * <p>
      * 根据元素类型 (方法, 字段, 类) 和配置设置, 决定是否需要生成文档注释.
      * 如果配置中未启用对应类型的注释生成, 则返回 false.
-     * 如果配置中启用了覆盖已有注释, 则直接返回 true.
+     * 如果配置中启用了覆盖已有注释, 则根据覆写模式决定：
+     * - "fix"：仅修复错误注释，只在有注释时处理
+     * - "replace"：删除原注释并重新生成，无论是否有注释都处理
      * 否则, 检查该元素是否已存在 JavaDoc 注释, 若不存在则返回 true.
      *
      * @param element 要检查的代码元素
@@ -779,8 +781,13 @@ public class TaskCollector {
             return false;
         }
 
-        // 2. 允许覆盖已有注释，直接生成
+        // 2. 允许覆盖已有注释，根据覆写模式决定
         if (settings.overrideExisting) {
+            // 如果覆写模式是"fix"（仅修复错误注释），则只在有注释时处理
+            if ("fix".equals(settings.overrideMode)) {
+                return !hasNoJavaDoc(element); // 有注释时才处理
+            }
+            // 如果覆写模式是"replace"（删除原注释并重新生成），则总是生成
             return true;
         }
 

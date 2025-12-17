@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBScrollPane;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
@@ -11,9 +12,15 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
+import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -43,6 +50,24 @@ public class GenerationRulesPanel {
 
     /** 覆盖已有注释复选框 */
     private JBCheckBox overrideExistingCheckBox;
+
+    /** 覆写模式子配置面板容器 */
+    private JPanel overrideModeSubConfigPanel;
+
+    /** 仅修复错误注释单选框 */
+    private JRadioButton fixModeRadioButton;
+
+    /** 删除原注释并重新生成单选框 */
+    private JRadioButton replaceModeRadioButton;
+
+    /** 覆写模式按钮组 */
+    private ButtonGroup overrideModeButtonGroup;
+
+    /** 修复错误 Javadoc 提示词文本区域 */
+    private JTextArea fixJavadocPromptTextArea;
+
+    /** 修复错误 Javadoc 提示词面板容器 */
+    private JPanel fixJavadocPromptPanel;
 
     /** 启用类级上下文的复选框 */
     private JBCheckBox enableGenerationContextCheckBox;
@@ -106,6 +131,7 @@ public class GenerationRulesPanel {
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(createGenerationOptionsPanel())
             .addComponent(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"))
+            .addComponent(createOverrideModeSubConfigPanel())
             .addComponent(createCheckBoxWithHint(enableGenerationContextCheckBox, "settings.enable.generation.context.hint"))
             .addComponent(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"))
             .addComponent(createCodeCompressionSubConfigPanel())
@@ -131,6 +157,9 @@ public class GenerationRulesPanel {
     private void setupListeners() {
         enableCodeCompressionCheckBox.addActionListener(e -> updateMaxClassCodeLinesEnabled());
         performanceModeCheckBox.addActionListener(e -> updatePerformanceModeSubConfigEnabled());
+        overrideExistingCheckBox.addActionListener(e -> updateOverrideModeSubConfigVisibility());
+        fixModeRadioButton.addActionListener(e -> updateFixJavadocPromptVisibility());
+        replaceModeRadioButton.addActionListener(e -> updateFixJavadocPromptVisibility());
     }
 
     /**
@@ -153,6 +182,12 @@ public class GenerationRulesPanel {
         settings.generateForMethod = generateForMethodCheckBox.isSelected();
         settings.generateForField = generateForFieldCheckBox.isSelected();
         settings.overrideExisting = overrideExistingCheckBox.isSelected();
+        if (fixModeRadioButton.isSelected()) {
+            settings.overrideMode = "fix";
+        } else if (replaceModeRadioButton.isSelected()) {
+            settings.overrideMode = "replace";
+        }
+        settings.fixJavadocPromptTemplate = fixJavadocPromptTextArea.getText().trim();
         settings.enableGenerationContext = enableGenerationContextCheckBox.isSelected();
         settings.enableCodeCompression = enableCodeCompressionCheckBox.isSelected();
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
@@ -174,6 +209,12 @@ public class GenerationRulesPanel {
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
         generateForFieldCheckBox.setSelected(settings.generateForField);
         overrideExistingCheckBox.setSelected(settings.overrideExisting);
+        if ("fix".equals(settings.overrideMode)) {
+            fixModeRadioButton.setSelected(true);
+        } else {
+            replaceModeRadioButton.setSelected(true);
+        }
+        fixJavadocPromptTextArea.setText(settings.fixJavadocPromptTemplate);
         enableGenerationContextCheckBox.setSelected(settings.enableGenerationContext);
         enableCodeCompressionCheckBox.setSelected(settings.enableCodeCompression);
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
@@ -186,6 +227,8 @@ public class GenerationRulesPanel {
 
         updateMaxClassCodeLinesEnabled();
         updatePerformanceModeSubConfigEnabled();
+        updateOverrideModeSubConfigVisibility();
+        updateFixJavadocPromptVisibility();
     }
 
     /**
@@ -376,6 +419,203 @@ public class GenerationRulesPanel {
             showProviderStatisticsCheckBox.setSelected(false);
         }
         // 提示文本保持灰色，不再根据可用性更新颜色
+    }
+
+    /**
+     * 创建覆写模式子配置面板
+     * <p>
+     * 该方法构建一个用于配置覆写模式相关选项的面板，包含两个单选框：
+     * - 仅修复错误注释
+     * - 删除原注释并重新生成
+     * 需要向右缩进2个空格（约22像素）。
+     * 当选择"仅修复错误注释"时，显示修复错误 Javadoc 提示词输入框。
+     *
+     * @return 返回配置好的覆写模式子配置面板
+     */
+    private JPanel createOverrideModeSubConfigPanel() {
+        // 覆写模式的子配置面板，包含两个单选框
+        // 需要向右缩进2个空格（约22像素）
+        JPanel indentPanel = new JPanel(new BorderLayout());
+        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
+
+        // 创建单选框
+        fixModeRadioButton = new JRadioButton(JavadocBundle.message("settings.override.mode.fix"));
+        replaceModeRadioButton = new JRadioButton(JavadocBundle.message("settings.override.mode.replace"));
+
+        // 创建按钮组
+        overrideModeButtonGroup = new ButtonGroup();
+        overrideModeButtonGroup.add(fixModeRadioButton);
+        overrideModeButtonGroup.add(replaceModeRadioButton);
+
+        // 默认选择"删除原注释并重新生成"
+        replaceModeRadioButton.setSelected(true);
+
+        // 创建单选框面板
+        JPanel radioPanel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(fixModeRadioButton, "settings.override.mode.fix.hint"))
+            .addComponent(createCheckBoxWithHint(replaceModeRadioButton, "settings.override.mode.replace.hint"))
+            .getPanel();
+
+        // 创建修复错误 Javadoc 提示词面板
+        fixJavadocPromptPanel = createFixJavadocPromptPanel();
+
+        // 创建内容面板，包含单选框和提示词面板
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(radioPanel)
+            .addComponent(fixJavadocPromptPanel)
+            .getPanel();
+
+        indentPanel.add(contentPanel, BorderLayout.CENTER);
+
+        // 创建容器面板
+        overrideModeSubConfigPanel = new JPanel(new BorderLayout());
+        overrideModeSubConfigPanel.add(indentPanel, BorderLayout.CENTER);
+        overrideModeSubConfigPanel.setVisible(false); // 默认隐藏
+
+        return overrideModeSubConfigPanel;
+    }
+
+    /**
+     * 创建修复错误 Javadoc 提示词面板
+     * <p>
+     * 该方法创建一个包含文本区域和重置按钮的面板，用于编辑修复错误 Javadoc 的提示词。
+     * 参考系统提示词的实现方式。
+     *
+     * @return 返回配置好的修复错误 Javadoc 提示词面板
+     */
+    private JPanel createFixJavadocPromptPanel() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+
+        // 创建文本区域
+        fixJavadocPromptTextArea = new JTextArea(15, 15);
+        fixJavadocPromptTextArea.setLineWrap(true);
+        fixJavadocPromptTextArea.setWrapStyleWord(true);
+        fixJavadocPromptTextArea.setToolTipText(JavadocBundle.message("settings.fix.javadoc.prompt.hint"));
+
+        // 添加文档监听器，根据内容自动调整大小
+        fixJavadocPromptTextArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                adjustTextAreaSize(fixJavadocPromptTextArea);
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                adjustTextAreaSize(fixJavadocPromptTextArea);
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                adjustTextAreaSize(fixJavadocPromptTextArea);
+            }
+        });
+
+        // 创建滚动面板
+        JBScrollPane scrollPane = new JBScrollPane(fixJavadocPromptTextArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(JBUI.Borders.empty(10));
+
+        // 创建标签
+        JBLabel label = new JBLabel(JavadocBundle.message("settings.fix.javadoc.prompt"));
+        label.setBorder(JBUI.Borders.empty(5, 0));
+
+        // 创建重置按钮
+        JButton resetButton = new JButton(JavadocBundle.message("settings.fix.javadoc.prompt.reset"));
+        resetButton.addActionListener(e -> resetFixJavadocPromptToDefault());
+
+        // 创建内容面板
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.add(label, BorderLayout.NORTH);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.add(resetButton, BorderLayout.SOUTH);
+
+        // 添加左侧缩进（再缩进2个空格，约22像素）
+        JPanel indentPanel = new JPanel(new BorderLayout());
+        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
+        indentPanel.add(contentPanel, BorderLayout.CENTER);
+
+        mainPanel.add(indentPanel, BorderLayout.CENTER);
+        mainPanel.setVisible(false); // 默认隐藏
+
+        // 初始化时根据内容调整大小
+        SwingUtilities.invokeLater(() -> adjustTextAreaSize(fixJavadocPromptTextArea));
+
+        return mainPanel;
+    }
+
+    /**
+     * 根据文本内容自动调整文本区域的大小
+     * <p>
+     * 该方法会根据文本内容的行数自动调整文本区域的行数，但会设置最小和最大行数限制。
+     * 最小行数：15行（初始大小）
+     * 最大行数：50行（避免占用过多空间）
+     *
+     * @param textArea 要调整大小的文本区域
+     */
+    private void adjustTextAreaSize(JTextArea textArea) {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                // 计算文本的行数
+                int lineCount = textArea.getLineCount();
+
+                // 设置最小和最大行数限制
+                int minRows = 15;  // 最小行数
+                int maxRows = 50;   // 最大行数
+
+                // 计算实际需要的行数（至少显示所有内容，但不超过最大值）
+                int rows = Math.max(minRows, Math.min(lineCount, maxRows));
+
+                // 如果行数发生变化，更新文本区域的行数
+                if (rows != textArea.getRows()) {
+                    textArea.setRows(rows);
+                    // 触发父容器重新布局
+                    if (textArea.getParent() != null) {
+                        textArea.getParent().revalidate();
+                    }
+                }
+            } catch (Exception e) {
+                // 静默处理异常，避免影响功能
+            }
+        });
+    }
+
+    /**
+     * 将修复错误 Javadoc 提示词重置为默认模板
+     */
+    private void resetFixJavadocPromptToDefault() {
+        fixJavadocPromptTextArea.setText(SettingsState.getDefaultFixJavadocPromptTemplate());
+    }
+
+    /**
+     * 更新覆写模式子配置的显示/隐藏状态
+     * <p>
+     * 根据覆写注释复选框的状态，显示或隐藏覆写模式子配置面板。
+     */
+    private void updateOverrideModeSubConfigVisibility() {
+        boolean visible = overrideExistingCheckBox.isSelected();
+        overrideModeSubConfigPanel.setVisible(visible);
+        if (panel.getParent() != null) {
+            panel.getParent().revalidate();
+            panel.getParent().repaint();
+        }
+        // 同时更新提示词面板的显示状态
+        updateFixJavadocPromptVisibility();
+    }
+
+    /**
+     * 更新修复错误 Javadoc 提示词面板的显示/隐藏状态
+     * <p>
+     * 根据覆写注释复选框和覆写模式单选框的状态，显示或隐藏修复错误 Javadoc 提示词面板。
+     * 只有当覆写注释复选框被勾选且选择了"仅修复错误注释"时才显示。
+     */
+    private void updateFixJavadocPromptVisibility() {
+        boolean visible = overrideExistingCheckBox.isSelected() && fixModeRadioButton.isSelected();
+        fixJavadocPromptPanel.setVisible(visible);
+        if (panel.getParent() != null) {
+            panel.getParent().revalidate();
+            panel.getParent().repaint();
+        }
     }
 }
 
