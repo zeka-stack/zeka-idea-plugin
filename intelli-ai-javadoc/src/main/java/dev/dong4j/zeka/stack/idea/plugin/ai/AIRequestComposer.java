@@ -12,10 +12,12 @@ import java.util.stream.Collectors;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
+import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.plugin.task.GenerationContext;
 import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
+import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 import dev.dong4j.zeka.stack.idea.plugin.util.TokenCounter;
 
 /**
@@ -106,7 +108,8 @@ public final class AIRequestComposer {
      * 根据任务类型和设置构建用户提示模板
      * <p>
      * 使用指定的设置和任务类型, 选择对应的模板并填充任务代码内容, 生成最终的用户提示字符串.
-     * 如果覆写模式是"fix"（仅修复错误注释），则使用修复错误 Javadoc 的提示词模板。
+     * 如果覆写模式是 FIX（仅修复错误注释），且元素已有注释，则使用修复错误 Javadoc 的提示词模板。
+     * 如果元素没有注释，则使用正常的生成提示词模板。
      *
      * @param settings 配置设置对象, 用于获取模板配置
      * @param task     文档生成任务对象, 包含任务类型和代码内容
@@ -114,12 +117,18 @@ public final class AIRequestComposer {
      * @throws NullPointerException 如果 settings 或 task 为 null
      */
     private static String buildUserPrompt(@NotNull SettingsState settings, @NotNull DocumentationTask task) {
-        // 如果覆写模式是"fix"（仅修复错误注释），使用修复错误 Javadoc 的提示词
-        if (settings.overrideExisting && "fix".equals(settings.overrideMode)) {
-            String template = resolveTemplate(settings.fixJavadocPromptTemplate,
-                                              SettingsState.getDefaultFixJavadocPromptTemplate());
-            String codeWithContext = mergeContextAndCode(task.getContext(), task.getCode());
-            return String.format(template, codeWithContext);
+        // 如果覆写模式是 FIX（仅修复错误注释），且元素已有注释，使用修复错误 Javadoc 的提示词
+        if (settings.overrideExisting && settings.overrideMode == OverrideMode.FIX) {
+            // 检查元素是否已有注释
+            PsiElement element = task.getElement();
+            if (PsiElementLocator.hasJavaDoc(element)) {
+                // 有注释，使用修复提示词
+                String template = resolveTemplate(settings.fixJavadocPromptTemplate,
+                                                  SettingsState.getDefaultFixJavadocPromptTemplate());
+                String codeWithContext = mergeContextAndCode(task.getContext(), task.getCode());
+                return String.format(template, codeWithContext);
+            }
+            // 没有注释，继续使用正常的生成提示词（见下面的逻辑）
         }
 
         // 否则使用正常的提示词模板

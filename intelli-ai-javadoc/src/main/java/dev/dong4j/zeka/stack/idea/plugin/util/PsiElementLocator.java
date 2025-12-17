@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.util;
 
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDocCommentOwner;
@@ -14,6 +15,7 @@ import com.intellij.psi.util.PsiTreeUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.kdoc.psi.api.KDoc;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
@@ -410,31 +412,41 @@ public class PsiElementLocator {
      *   <li>Kotlin 元素：检查是否有 KDoc 注释</li>
      * </ul>
      *
+     * <p>线程安全：
+     * <ul>
+     *   <li>PSI 访问必须在 ReadAction 中执行</li>
+     *   <li>该方法内部使用 ReadAction 保护，确保线程安全</li>
+     *   <li>可以从任何线程安全调用</li>
+     * </ul>
+     *
      * @param element PSI 元素
      * @return 如果已有文档注释返回 true
      * @see PsiDocCommentOwner#getDocComment()
      */
     public static boolean hasJavaDoc(@NotNull PsiElement element) {
-        // Java 元素检查
-        if (element instanceof PsiDocCommentOwner docOwner) {
-            return docOwner.getDocComment() != null;
-        }
+        // 使用 ReadAction 保护 PSI 访问，确保线程安全
+        return ReadAction.compute(() -> {
+            // Java 元素检查
+            if (element instanceof PsiDocCommentOwner docOwner) {
+                return docOwner.getDocComment() != null;
+            }
 
-        // Kotlin 元素检查
-        if (element instanceof KtClassOrObject) {
-            org.jetbrains.kotlin.kdoc.psi.api.KDoc docComment = ((KtClassOrObject) element).getDocComment();
-            return docComment != null;
-        }
-        if (element instanceof KtNamedFunction) {
-            org.jetbrains.kotlin.kdoc.psi.api.KDoc docComment = ((KtNamedFunction) element).getDocComment();
-            return docComment != null;
-        }
-        if (element instanceof KtProperty) {
-            org.jetbrains.kotlin.kdoc.psi.api.KDoc docComment = ((KtProperty) element).getDocComment();
-            return docComment != null;
-        }
+            // Kotlin 元素检查
+            if (element instanceof KtClassOrObject) {
+                KDoc docComment = ((KtClassOrObject) element).getDocComment();
+                return docComment != null;
+            }
+            if (element instanceof KtNamedFunction) {
+                KDoc docComment = ((KtNamedFunction) element).getDocComment();
+                return docComment != null;
+            }
+            if (element instanceof KtProperty) {
+                KDoc docComment = ((KtProperty) element).getDocComment();
+                return docComment != null;
+            }
 
-        return false;
+            return false;
+        });
     }
 
     /**

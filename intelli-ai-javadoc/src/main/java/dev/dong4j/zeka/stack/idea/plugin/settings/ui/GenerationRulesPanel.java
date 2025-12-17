@@ -23,6 +23,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
@@ -183,9 +184,9 @@ public class GenerationRulesPanel {
         settings.generateForField = generateForFieldCheckBox.isSelected();
         settings.overrideExisting = overrideExistingCheckBox.isSelected();
         if (fixModeRadioButton.isSelected()) {
-            settings.overrideMode = "fix";
+            settings.overrideMode = OverrideMode.FIX;
         } else if (replaceModeRadioButton.isSelected()) {
-            settings.overrideMode = "replace";
+            settings.overrideMode = OverrideMode.REPLACE;
         }
         settings.fixJavadocPromptTemplate = fixJavadocPromptTextArea.getText().trim();
         settings.enableGenerationContext = enableGenerationContextCheckBox.isSelected();
@@ -209,7 +210,7 @@ public class GenerationRulesPanel {
         generateForMethodCheckBox.setSelected(settings.generateForMethod);
         generateForFieldCheckBox.setSelected(settings.generateForField);
         overrideExistingCheckBox.setSelected(settings.overrideExisting);
-        if ("fix".equals(settings.overrideMode)) {
+        if (settings.overrideMode == OverrideMode.FIX) {
             fixModeRadioButton.setSelected(true);
         } else {
             replaceModeRadioButton.setSelected(true);

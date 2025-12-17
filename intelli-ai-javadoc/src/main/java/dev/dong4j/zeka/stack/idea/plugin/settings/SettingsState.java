@@ -128,14 +128,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 覆写模式
      *
      * <p>控制当覆盖已有注释时使用的模式。
-     * - "fix"：仅修复错误注释（保留原有注释，只修复其中的错误）
-     * - "replace"：删除原注释并重新生成（完全替换原有注释）
+     * - FIX：仅修复错误注释（保留原有注释，只修复其中的错误）
+     * - REPLACE：删除原注释并重新生成（完全替换原有注释）
      *
-     * <p>默认值: "replace"（删除原注释并重新生成）
+     * <p>默认值: REPLACE（删除原注释并重新生成）
      *
      * @since 2.7.0
      */
-    public String overrideMode = "replace";
+    public OverrideMode overrideMode = OverrideMode.REPLACE;
 
     /**
      * 修复错误 Javadoc 的提示词模板
@@ -1004,6 +1004,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         // 确保 commentLanguage 不为 null（兼容旧版本字符串类型配置）
         if (this.commentLanguage == null) {
             this.commentLanguage = CommentLanguage.ZH;
+        }
+
+        // 确保 overrideMode 不为 null（兼容旧版本字符串类型配置）
+        if (this.overrideMode == null) {
+            this.overrideMode = OverrideMode.REPLACE;
         }
     }
 

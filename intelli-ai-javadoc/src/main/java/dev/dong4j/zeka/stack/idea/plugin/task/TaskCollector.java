@@ -8,7 +8,6 @@ import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.JavaRecursiveElementVisitor;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiFile;
@@ -16,13 +15,10 @@ import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.codeStyle.CodeStyleManager;
-import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.util.PsiTreeUtil;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.kotlin.kdoc.psi.api.KDoc;
 import org.jetbrains.kotlin.psi.KtClassOrObject;
-import org.jetbrains.kotlin.psi.KtDeclaration;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.kotlin.psi.KtProperty;
@@ -33,8 +29,10 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.AiCodePreprocessor;
+import dev.dong4j.zeka.stack.idea.plugin.util.PsiElementLocator;
 
 /**
  * 任务收集器类
@@ -283,7 +281,7 @@ public class TaskCollector {
      */
     @NotNull
     public List<DocumentationTask> collectMissingJavaDocFromFile(@NotNull PsiFile psiFile) {
-        return collectFromFileInternal(psiFile, this::hasNoJavaDoc);
+        return collectFromFileInternal(psiFile, element -> !PsiElementLocator.hasJavaDoc(element));
     }
 
     /**
@@ -607,7 +605,8 @@ public class TaskCollector {
      *
      * <p>对于方法和字段级别的代码，如果启用了代码压缩，会进行压缩处理：
      * <ul>
-     *   <li>删除所有注释（Javadoc、块注释、单行注释）</li>
+     *   <li>如果覆写模式是 FIX（仅修复错误注释），保留所有注释，只压缩代码</li>
+     *   <li>如果覆写模式是 REPLACE（删除原注释并重新生成），删除所有注释并压缩代码</li>
      *   <li>删除多余空格和空行</li>
      *   <li>缩进压缩到最小层级（每层 1 个空格）</li>
      * </ul>
@@ -618,6 +617,7 @@ public class TaskCollector {
      *   <li>提供现有注释作为参考</li>
      *   <li>避免重复添加注释</li>
      *   <li>优化 token 使用效率</li>
+     *   <li>根据覆写模式决定是否保留注释</li>
      * </ul>
      *
      * @param element PSI 元素
@@ -632,6 +632,10 @@ public class TaskCollector {
             return originalCode;
         }
 
+        // 判断是否需要删除注释（仅修复模式需要保留注释）
+        boolean removeComments = !(settings.overrideExisting &&
+                                   settings.overrideMode == OverrideMode.FIX);
+
         String reformatCode = "";
         // 不同的 IDEA 版本可能会出现格式化异常
         try {
@@ -640,12 +644,12 @@ public class TaskCollector {
 
             // 类级别的代码使用 optimizeClassCode 方法
             if (element instanceof PsiClass || element instanceof KtClassOrObject) {
-                reformatCode = AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()));
+                reformatCode = AiCodePreprocessor.preprocess(optimizeClassCode(reformat.getText()), removeComments);
             }
             // 方法或字段级别的代码使用 AiCodePreprocessor 进行压缩
             if (element instanceof PsiMethod || element instanceof PsiField ||
                 element instanceof KtNamedFunction || element instanceof KtProperty) {
-                reformatCode = AiCodePreprocessor.preprocess(reformat.getText());
+                reformatCode = AiCodePreprocessor.preprocess(reformat.getText(), removeComments);
             }
         } catch (Exception e) {
             return originalCode;
@@ -714,53 +718,13 @@ public class TaskCollector {
     }
 
     /**
-     * 判断元素是否没有 Javadoc/KDoc 注释
-     *
-     * <p>专门用于检查元素是否缺失文档注释（Javadoc 或 KDoc），
-     * 忽略 overrideExisting 配置，只检查元素是否已有文档。
-     *
-     * <p>检查逻辑：
-     * <ul>
-     *   <li>Java 元素：如果元素支持文档注释（PsiDocCommentOwner），检查是否有 Javadoc</li>
-     *   <li>Kotlin 元素：检查是否有 KDoc 注释</li>
-     *   <li>如果没有文档注释返回 true，否则返回 false</li>
-     *   <li>如果元素不支持文档注释，返回 true（允许处理）</li>
-     * </ul>
-     *
-     * @param element PSI 元素
-     * @return 如果元素没有文档注释返回 true，否则返回 false
-     * @see #shouldGenerateForElement(PsiElement)
-     */
-    private boolean hasNoJavaDoc(@NotNull PsiElement element) {
-        // Java 元素检查
-        if (element instanceof PsiDocCommentOwner) {
-            PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();
-            return docComment == null;
-        }
-        // Kotlin 元素检查 - 直接检查具体的 Kotlin 元素类型
-        if (element instanceof KtClassOrObject) {
-            KDoc docComment = ((KtDeclaration) element).getDocComment();
-            return docComment == null;
-        }
-        if (element instanceof KtNamedFunction) {
-            KDoc docComment = ((KtNamedFunction) element).getDocComment();
-            return docComment == null;
-        }
-        if (element instanceof KtProperty) {
-            KDoc docComment = ((KtProperty) element).getDocComment();
-            return docComment == null;
-        }
-        return true;
-    }
-
-    /**
      * 判断是否需要为指定的代码元素生成文档注释
      * <p>
      * 根据元素类型 (方法, 字段, 类) 和配置设置, 决定是否需要生成文档注释.
      * 如果配置中未启用对应类型的注释生成, 则返回 false.
      * 如果配置中启用了覆盖已有注释, 则根据覆写模式决定：
-     * - "fix"：仅修复错误注释，只在有注释时处理
-     * - "replace"：删除原注释并重新生成，无论是否有注释都处理
+     * - FIX：仅修复错误注释（在 AIRequestComposer 中根据是否有注释选择不同的提示词）
+     * - REPLACE：删除原注释并重新生成，无论是否有注释都处理
      * 否则, 检查该元素是否已存在 JavaDoc 注释, 若不存在则返回 true.
      *
      * @param element 要检查的代码元素
@@ -781,18 +745,14 @@ public class TaskCollector {
             return false;
         }
 
-        // 2. 允许覆盖已有注释，根据覆写模式决定
+        // 2. 允许覆盖已有注释，则总是生成
+        // 覆写模式（fix/replace）的区别在 AIRequestComposer 中根据是否有注释来选择不同的提示词
         if (settings.overrideExisting) {
-            // 如果覆写模式是"fix"（仅修复错误注释），则只在有注释时处理
-            if ("fix".equals(settings.overrideMode)) {
-                return !hasNoJavaDoc(element); // 有注释时才处理
-            }
-            // 如果覆写模式是"replace"（删除原注释并重新生成），则总是生成
             return true;
         }
 
         // 3. 不允许覆盖时，仅在没有 Javadoc/KDoc 时生成
-        return hasNoJavaDoc(element);
+        return !PsiElementLocator.hasJavaDoc(element);
     }
 
     /**
