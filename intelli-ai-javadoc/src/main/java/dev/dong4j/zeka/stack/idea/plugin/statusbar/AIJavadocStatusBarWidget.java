@@ -208,6 +208,9 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 2.9 显示生成 Javadoc 提示
         group.add(new ShowGenerateJavadocHintToggleAction());
 
+        // 2.10 允许删除 Javadoc
+        group.add(new AllowDeleteJavadocToggleAction());
+
         group.add(Separator.create());
 
         // 3. 添加打开设置按钮
@@ -785,6 +788,37 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().showGenerateJavadocHint = state;
+        }
+    }
+
+    /**
+     * 允许删除 Javadoc 切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否允许删除已存在的 Javadoc 注释.
+     * 通过该动作可以切换允许删除 Javadoc 的开关状态, 状态信息保存在 SettingsState 中.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.7.0
+     */
+    private static class AllowDeleteJavadocToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        AllowDeleteJavadocToggleAction() {
+            super(JavadocBundle.message("settings.allow.delete.javadoc"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().allowDeleteJavadoc;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().allowDeleteJavadoc = state;
         }
     }
 
