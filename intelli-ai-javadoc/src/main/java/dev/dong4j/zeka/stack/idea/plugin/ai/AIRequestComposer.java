@@ -63,7 +63,8 @@ public final class AIRequestComposer {
         // 必须在所有其他占位符（如 ${author}、${date} 等）替换完成后进行
         CommentLanguage commentLanguage = settings.commentLanguage != null
                                           ? settings.commentLanguage : CommentLanguage.ZH;
-        String languageText = commentLanguage.getDesc();
+        // 提示词模板使用中文，因此使用 getDescForPrompt() 获取中文文本
+        String languageText = commentLanguage.getDescForPrompt();
 
         // 替换系统提示词和用户提示词中的所有 ${commentLanguage} 占位符
         systemPrompt = replaceCommentLanguagePlaceholder(systemPrompt, languageText);

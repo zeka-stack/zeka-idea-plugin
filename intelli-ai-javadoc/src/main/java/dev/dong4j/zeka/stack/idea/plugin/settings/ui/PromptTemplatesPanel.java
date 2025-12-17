@@ -18,6 +18,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.event.DocumentListener;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
@@ -204,7 +205,7 @@ public class PromptTemplatesPanel {
         textArea.setToolTipText(JavadocBundle.message("settings.prompt." + promptType + ".tooltip"));
 
         // 添加文档监听器，根据内容自动调整大小
-        textArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        textArea.getDocument().addDocumentListener(new DocumentListener() {
             /**
              * 处理文档事件, 调整文本区域大小
              * <p>

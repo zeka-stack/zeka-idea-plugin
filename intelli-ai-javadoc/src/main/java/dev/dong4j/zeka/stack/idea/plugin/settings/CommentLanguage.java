@@ -3,6 +3,8 @@ package dev.dong4j.zeka.stack.idea.plugin.settings;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
+
 /**
  * 注释生成语言枚举
  * <p>
@@ -56,12 +58,30 @@ public enum CommentLanguage {
     }
 
     /**
-     * 获取语言显示描述
+     * 获取语言显示描述（国际化）
      *
-     * @return 语言显示描述（如 "中文" 或 "英文"）
+     * <p>返回国际化后的语言显示描述，用于UI显示。
+     * 根据当前语言环境返回对应的文本。
+     *
+     * @return 语言显示描述（如 "中文" 或 "English"）
      */
     @NotNull
     public String getDesc() {
+        return this == ZH
+               ? JavadocBundle.message("statusbar.quick.settings.comment.language.chinese")
+               : JavadocBundle.message("statusbar.quick.settings.comment.language.english");
+    }
+
+    /**
+     * 获取语言显示描述（原始值，用于提示词）
+     *
+     * <p>返回原始的语言显示描述，用于提示词模板中的占位符替换。
+     * 提示词模板使用中文，因此返回中文文本。
+     *
+     * @return 语言显示描述（"中文" 或 "英文"）
+     */
+    @NotNull
+    public String getDescForPrompt() {
         return desc;
     }
 

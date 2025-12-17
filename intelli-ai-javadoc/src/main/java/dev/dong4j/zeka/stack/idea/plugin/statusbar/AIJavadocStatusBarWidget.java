@@ -33,6 +33,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable;
+import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import icons.AICommonIcons;
@@ -177,17 +178,35 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 1. 添加 AI Provider 选择子菜单（放在最上面，作为模型选择）
         group.add(new ProviderSelectionActionGroup(providers));
 
-        // 2. 添加快捷配置 ToggleAction（用分隔符包裹，形成边框效果）
+        // 2. 添加快捷配置（用分隔符包裹，形成边框效果）
         group.add(Separator.create(JavadocBundle.message("statusbar.quick.settings.title")));
-        group.add(new OverrideExistingToggleAction());
-        group.add(new GenerateForClassToggleAction());
-        group.add(new GenerateForMethodToggleAction());
-        group.add(new GenerateForFieldToggleAction());
-        group.add(new PerformanceModeToggleAction());
-        group.add(new ShowGenerateJavadocHintToggleAction());
 
-        // 添加 Comment Language 子菜单
-        group.add(new CommentLanguageActionGroup());
+        // 2.1 生成配置（二级菜单，多选）
+        group.add(new GenerationConfigActionGroup());
+
+        // 2.2 覆写配置（二级菜单，单选，显示当前选择）
+        group.add(createOverrideConfigActionGroup());
+
+        // 2.3 添加上下文
+        group.add(new EnableGenerationContextToggleAction());
+
+        // 2.4 允许代码压缩
+        group.add(new EnableCodeCompressionToggleAction());
+
+        // 2.5 压缩成一行
+        group.add(new CompressSingleLineJavaDocToggleAction());
+
+        // 2.6 中英文标点符号替换
+        group.add(new ReplaceChinesePunctuationToggleAction());
+
+        // 2.7 性能模式
+        group.add(new PerformanceModeToggleAction());
+
+        // 2.8 注释语言（单选，显示当前选择）
+        group.add(createCommentLanguageActionGroup());
+
+        // 2.9 显示生成 Javadoc 提示
+        group.add(new ShowGenerateJavadocHintToggleAction());
 
         group.add(Separator.create());
 
@@ -370,35 +389,21 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 覆盖已有注释切换动作类
+     * 生成配置动作组
      * <p>
-     * 该类继承自 ToggleAction, 用于控制是否覆盖已有 Javadoc 注释的开关动作.
-     * 通过该动作可以切换覆盖已有注释的开关状态, 状态信息保存在 SettingsState 中.
+     * 该类继承自 DefaultActionGroup, 用于在状态栏弹出菜单中提供生成配置的子菜单.
+     * 包含类、方法、字段三个选项，支持多选（复选框）。
      *
      * @author zeka.stack.team
      * @version 1.0.0
-     * @email "mailto:zeka.stack@gmail.com"
-     * @date 2025.11.30
-     * @since 1.0.0
+     * @since 2.8.0
      */
-    private static class OverrideExistingToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
-        OverrideExistingToggleAction() {
-            super(JavadocBundle.message("settings.override.existing"));
-        }
-
-        @Override
-        public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.BGT;
-        }
-
-        @Override
-        public boolean isSelected(@NotNull AnActionEvent e) {
-            return SettingsState.getInstance().overrideExisting;
-        }
-
-        @Override
-        public void setSelected(@NotNull AnActionEvent e, boolean state) {
-            SettingsState.getInstance().overrideExisting = state;
+    private static class GenerationConfigActionGroup extends DefaultActionGroup {
+        GenerationConfigActionGroup() {
+            super(JavadocBundle.message("statusbar.quick.settings.generate.config"), true);
+            add(new GenerateForClassToggleAction());
+            add(new GenerateForMethodToggleAction());
+            add(new GenerateForFieldToggleAction());
         }
     }
 
@@ -503,6 +508,222 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
+     * 创建覆写配置动作组
+     * <p>
+     * 动态创建动作组，在标题中显示当前选择的覆写模式.
+     *
+     * @return 覆写配置动作组
+     * @since 2.8.0
+     */
+    @NotNull
+    private static DefaultActionGroup createOverrideConfigActionGroup() {
+        // 获取当前选择的覆写模式，显示在菜单标题中
+        SettingsState settings = SettingsState.getInstance();
+        String currentMode;
+        if (!settings.overrideExisting) {
+            // 如果覆写功能未启用，显示默认模式
+            currentMode = JavadocBundle.message("statusbar.quick.settings.override.mode.replace");
+        } else {
+            currentMode = settings.overrideMode == OverrideMode.FIX
+                          ? JavadocBundle.message("statusbar.quick.settings.override.mode.fix")
+                          : JavadocBundle.message("statusbar.quick.settings.override.mode.replace");
+        }
+        String title = JavadocBundle.message("statusbar.quick.settings.override.config") + " (" + currentMode + ")";
+        DefaultActionGroup group = new DefaultActionGroup(title, true);
+        group.add(new OverrideModeFixAction());
+        group.add(new OverrideModeReplaceAction());
+        return group;
+    }
+
+    /**
+     * 覆写模式：仅修复动作类
+     * <p>
+     * 该类继承自 AnAction, 用于选择"仅修复错误注释"的覆写模式.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class OverrideModeFixAction extends AnAction {
+        OverrideModeFixAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.override.mode.fix"));
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.overrideExisting = true;
+            settings.overrideMode = OverrideMode.FIX;
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            boolean isSelected = settings.overrideExisting && settings.overrideMode == OverrideMode.FIX;
+            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+    }
+
+    /**
+     * 覆写模式：删除并替换动作类
+     * <p>
+     * 该类继承自 AnAction, 用于选择"删除原注释并重新生成"的覆写模式.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class OverrideModeReplaceAction extends AnAction {
+        OverrideModeReplaceAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.override.mode.replace"));
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.overrideExisting = true;
+            settings.overrideMode = OverrideMode.REPLACE;
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            boolean isSelected = settings.overrideExisting && settings.overrideMode == OverrideMode.REPLACE;
+            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+    }
+
+    /**
+     * 启用生成上下文切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否为文档生成提供类级别上下文信息.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class EnableGenerationContextToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        EnableGenerationContextToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.enable.generation.context"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableGenerationContext;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableGenerationContext = state;
+        }
+    }
+
+    /**
+     * 允许代码压缩切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否启用代码压缩以减少 token 使用量.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class EnableCodeCompressionToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        EnableCodeCompressionToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.enable.code.compression"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableCodeCompression;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableCodeCompression = state;
+        }
+    }
+
+    /**
+     * 压缩成一行切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否将 Javadoc 压缩成一行.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class CompressSingleLineJavaDocToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        CompressSingleLineJavaDocToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.compress.single.line.javadoc"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().compressSingleLineJavaDoc;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().compressSingleLineJavaDoc = state;
+        }
+    }
+
+    /**
+     * 中英文标点符号替换切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否将中文标点符号转换为英文标点符号.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class ReplaceChinesePunctuationToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        ReplaceChinesePunctuationToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.replace.chinese.punctuation"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().replaceChinesePunctuation;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().replaceChinesePunctuation = state;
+        }
+    }
+
+    /**
      * 性能模式切换动作类
      * <p>
      * 继承自 IntelliJ IDEA 的 ToggleAction, 用于控制性能模式的开启和关闭状态.
@@ -568,21 +789,25 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     }
 
     /**
-     * 注释语言选择动作组
+     * 创建注释语言选择动作组
      * <p>
-     * 该类继承自 DefaultActionGroup, 用于在状态栏弹出菜单中提供注释语言选择的子菜单.
-     * 包含中文和英文两个选项.
+     * 动态创建动作组，在标题中显示当前选择的语言.
      *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @since 2.6.0
+     * @return 注释语言选择动作组
+     * @since 2.8.0
      */
-    private static class CommentLanguageActionGroup extends DefaultActionGroup {
-        CommentLanguageActionGroup() {
-            super(JavadocBundle.message("statusbar.quick.settings.comment.language"), true);
-            add(new CommentLanguageAction(CommentLanguage.ZH));
-            add(new CommentLanguageAction(CommentLanguage.EN));
-        }
+    @NotNull
+    private static DefaultActionGroup createCommentLanguageActionGroup() {
+        // 获取当前选择的语言，显示在菜单标题中
+        SettingsState settings = SettingsState.getInstance();
+        String currentLanguage = settings.commentLanguage == CommentLanguage.ZH
+                                 ? JavadocBundle.message("statusbar.quick.settings.comment.language.chinese")
+                                 : JavadocBundle.message("statusbar.quick.settings.comment.language.english");
+        String title = JavadocBundle.message("statusbar.quick.settings.comment.language") + " (" + currentLanguage + ")";
+        DefaultActionGroup group = new DefaultActionGroup(title, true);
+        group.add(new CommentLanguageAction(CommentLanguage.ZH));
+        group.add(new CommentLanguageAction(CommentLanguage.EN));
+        return group;
     }
 
     /**
