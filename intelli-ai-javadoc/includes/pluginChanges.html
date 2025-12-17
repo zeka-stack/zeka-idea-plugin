@@ -1,7 +1,36 @@
+<h3>2.7.0</h3>
+<p><b>围绕提升 Javadoc 生成质量和用户体验所做的改进：</b></p>
+<ul>
+    <li><b>✨ 新增</b>：新增允许删除 Javadoc 功能，可在设置页面开启/关闭，支持通过 Code Vision、意图动作和菜单动作快速删除已存在的 Javadoc 注释
+    </li>
+    <li><b>✨ 新增</b>：新增修复错误注释功能，当覆写模式为"仅修复"时，使用专门的修复提示词模板，智能修复已有注释中的错误并保留正确部分</li>
+    <li><b>✨ 新增</b>：重构状态栏快捷设置菜单，新增"生成配置"分组（类、方法、字段多选）和"覆写配置"分组（仅修复、删除替换单选），优化配置项组织</li>
+    <li><b>✨ 新增</b>：状态栏快捷设置新增多项配置项，包括启用生成上下文、允许代码压缩、压缩成一行、中英文标点符号替换等，提升配置便捷性</li>
+    <li><b>🔧 优化</b>：优化文档插入助手，自动清理多余的 <code>@param</code> / <code>@throws</code> / <code>@return</code> 标签，特别优化字段和方法的标签清理
+    </li>
+</ul>
+<h3>2.7.0</h3>
+<ul>
+    <li><b>✨ Added</b>: Added allow delete Javadoc feature, can be enabled/disabled in settings page, supports quick deletion of existing
+        Javadoc comments via Code Vision, intention action, and menu action
+    </li>
+    <li><b>✨ Added</b>: Added fix error comments feature, when override mode is "Fix", uses specialized fix prompt template to intelligently
+        fix errors in existing comments while preserving correct parts
+    </li>
+    <li><b>✨ Added</b>: Refactored status bar quick settings menu, added "Generation Config" group (class, method, field multi-select) and
+        "Override Config" group (fix only, delete and replace single-select), optimized configuration organization
+    </li>
+    <li><b>✨ Added</b>: Status bar quick settings added multiple configuration items, including enable generation context, allow code
+        compression, compress to single line, replace Chinese punctuation, etc., improving configuration convenience
+    </li>
+    <li><b>🔧 Optimized</b>: Optimized documentation insertion helper, automatically cleaning up redundant <code>@param</code> / <code>@throws</code>
+        / <code>@return</code> tags, especially optimized tag cleanup for fields and methods
+    </li>
+</ul>
 <h3>2.6.0</h3>
 <p><b>围绕提升 Javadoc 生成质量所做的改进：</b></p>
 <ul>
-    <li><b>✨ 新增</b>：新增“添加上下文”开关，可在方法/字段注释时将所属类前 N 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力
+    <li><b>✨ 新增</b>：新增"添加上下文"开关，可在方法/字段注释时将所属类前 N 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力
     </li>
     <li><b>🔧 优化</b>：优化性能模式处理逻辑，提高并发度，修复单文件多服务商时只有一个服务商在处理的问题</li>
     <li><b>🔧 优化</b>：优化性能模式统计弹窗样式，使用 IDE 当前主题颜色构建表格，修复暗色主题下文字不可见问题，并统一服务商名称列为居中显示</li>

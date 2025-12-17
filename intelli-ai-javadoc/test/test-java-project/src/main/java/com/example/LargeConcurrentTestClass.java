@@ -17,6 +17,7 @@ public class LargeConcurrentTestClass {
     private boolean active;
     private List<String> items;
     private Map<String, Object> metadata;
+    /** 用于存储整数集合, 通常用于需要唯一整数标识的场景 */
     private Set<Integer> numbers;
     private Optional<String> optionalValue;
     private Future<String> futureResult;
