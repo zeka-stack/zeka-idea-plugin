@@ -42,14 +42,14 @@ public class AiCodePreprocessor {
             return "";
         }
 
-        // 1. 删除所有注释
-        String noComments = code
-            .replaceAll("(?s)/\\*\\*.*?\\*/", "")   // Javadoc
-            .replaceAll("(?s)/\\*.*?\\*/", "")      // 块注释
-            .replaceAll("//.*", "");                // 单行注释
+        // // 1. 删除所有注释
+        // String noComments = code
+        //     .replaceAll("(?s)/\\*\\*.*?\\*/", "")   // Javadoc
+        //     .replaceAll("(?s)/\\*.*?\\*/", "")      // 块注释
+        //     .replaceAll("//.*", "");                // 单行注释
 
         // 2. 删除多余空格
-        String noExtraSpaces = noComments
+        String noExtraSpaces = code
             .replaceAll("[ \\t]+", " ")            // 多空格合并为单空格
             .replaceAll(" ?([{}();,=<>+*/-]) ?", "$1"); // 删除符号两侧空格
 

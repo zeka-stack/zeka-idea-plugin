@@ -69,6 +69,17 @@
         <!--suppress PluginXmlValidity -->
         <codeInsight.codeVisionProvider implementation="dev.dong4j.zeka.stack.idea.plugin.codevision.GenerateJavadocCodeVisionProvider"/>
 
+        <!-- Code Vision Provider (代码上方显示"Delete Javadoc"链接) -->
+        <!--suppress PluginXmlValidity -->
+        <codeInsight.codeVisionProvider implementation="dev.dong4j.zeka.stack.idea.plugin.codevision.DeleteJavadocCodeVisionProvider"/>
+
+        <!-- Intention Action (Option+Enter / Alt+Enter 快捷菜单 - 删除 Javadoc) -->
+        <intentionAction>
+            <language/>
+            <className>dev.dong4j.zeka.stack.idea.plugin.action.DeleteJavadocIntentionAction</className>
+            <descriptionDirectoryName>DeleteJavaDocIntention</descriptionDirectoryName>
+        </intentionAction>
+
     </extensions>
 
     <!-- 插件定义的动作 -->
@@ -93,9 +104,23 @@
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
+        <!-- 编辑器右键菜单 - 删除 Javadoc -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.DeleteJavadocForEditorAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.DeleteJavadocForEditorAction"
+                icon="/icons/aij_16.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+
         <!-- 项目视图右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavadocForFilesAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.action.GenerateJavadocForFilesAction"
+                icon="/icons/aij_16.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+
+        <!-- 项目视图右键菜单 - 删除 Javadoc -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.action.DeleteJavadocForFilesAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.action.DeleteJavadocForFilesAction"
                 icon="/icons/aij_16.svg">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>

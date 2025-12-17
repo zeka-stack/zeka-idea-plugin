@@ -198,6 +198,10 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
             return true;
         }
 
+        // 比较允许删除 Javadoc 设置
+        if (currentSettings.allowDeleteJavadoc != panelSettings.allowDeleteJavadoc) {
+            return true;
+        }
         // 比较自定义 Javadoc 标签
         List<String> currentTags = currentSettings.getNormalizedCustomJavaDocTags();
         List<String> panelTags = panelSettings.getNormalizedCustomJavaDocTags();
@@ -301,6 +305,8 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
 
         currentSettings.supportedLanguages = panelSettings.supportedLanguages;
 
+        // 保存允许删除 Javadoc 配置
+        currentSettings.allowDeleteJavadoc = panelSettings.allowDeleteJavadoc;
         // 保存自定义 Javadoc 标签配置
         currentSettings.customJavadocTags = panelSettings.customJavadocTags;
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;

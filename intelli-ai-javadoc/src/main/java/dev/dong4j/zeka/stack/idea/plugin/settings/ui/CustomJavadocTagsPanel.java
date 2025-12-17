@@ -38,6 +38,9 @@ import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
  */
 public class CustomJavadocTagsPanel {
 
+    /** 允许删除 Javadoc 的复选框 */
+    private JBCheckBox allowDeleteJavadocCheckBox;
+
     /** 显示自定义 Javadoc 标签的复选框 */
     private JBCheckBox showCustomJavaDocTagsCheckBox;
 
@@ -68,6 +71,9 @@ public class CustomJavadocTagsPanel {
      * 创建 UI
      */
     private void createUI() {
+        // 创建允许删除 Javadoc 复选框
+        allowDeleteJavadocCheckBox = new JBCheckBox(JavadocBundle.message("settings.allow.delete.javadoc"));
+        
         // 创建自定义 Javadoc 标签组件
         showCustomJavaDocTagsCheckBox = new JBCheckBox(JavadocBundle.message("settings.custom.javadoc.tags"));
         customJavaDocTagsTableModel = new CustomJavaDocTagsTableModel();
@@ -137,9 +143,14 @@ public class CustomJavadocTagsPanel {
         // 构建主面板
         panel = new JPanel(new BorderLayout());
         JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(showCustomJavaDocTagsCheckBox, BorderLayout.NORTH);
-        contentPanel.add(customTagsHintLabel, BorderLayout.CENTER);
-        contentPanel.add(customJavaDocTagsPanel, BorderLayout.SOUTH);
+        // 允许删除 Javadoc 复选框放在最上面
+        contentPanel.add(allowDeleteJavadocCheckBox, BorderLayout.NORTH);
+        // 显示自定义标签复选框放在第二个位置
+        JPanel customTagsSection = new JPanel(new BorderLayout());
+        customTagsSection.add(showCustomJavaDocTagsCheckBox, BorderLayout.NORTH);
+        customTagsSection.add(customTagsHintLabel, BorderLayout.CENTER);
+        customTagsSection.add(customJavaDocTagsPanel, BorderLayout.SOUTH);
+        contentPanel.add(customTagsSection, BorderLayout.CENTER);
         panel.add(contentPanel, BorderLayout.CENTER);
 
         // 初始可见性
@@ -176,6 +187,8 @@ public class CustomJavadocTagsPanel {
      * @param settings 设置对象，将读取的值填充到此对象中
      */
     public void getSettings(@NotNull SettingsState settings) {
+        // 获取允许删除 Javadoc 设置
+        settings.allowDeleteJavadoc = allowDeleteJavadocCheckBox.isSelected();
         // 获取标签列表（已经是 List<CustomJavaDocTag>）
         settings.customJavadocTags = new ArrayList<>(customJavaDocTagsTableModel.getData());
         settings.showCustomJavaDocTags = showCustomJavaDocTagsCheckBox.isSelected();
@@ -187,6 +200,8 @@ public class CustomJavadocTagsPanel {
      * @param settings 设置对象
      */
     public void loadSettings(@NotNull SettingsState settings) {
+        // 加载允许删除 Javadoc 设置
+        allowDeleteJavadocCheckBox.setSelected(settings.allowDeleteJavadoc);
         // 设置标签列表（已经是 List<CustomJavaDocTag>）
         if (settings.customJavadocTags != null) {
             customJavaDocTagsTableModel.setData(new ArrayList<>(settings.customJavadocTags));

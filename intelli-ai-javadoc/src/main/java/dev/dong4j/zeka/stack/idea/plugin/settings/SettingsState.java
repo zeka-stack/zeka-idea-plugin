@@ -221,6 +221,18 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     };
 
     /**
+     * 是否允许删除 Javadoc
+     *
+     * <p>控制是否允许删除已存在的 Javadoc 注释。
+     * 启用后，在生成或更新 Javadoc 时可以删除现有的注释。
+     *
+     * <p>默认值: false（默认不允许删除）
+     *
+     * @since 2.6.0
+     */
+    public boolean allowDeleteJavadoc = false;
+
+    /**
      * 是否显示自定义 Javadoc 标签配置面板
      *
      * <p>控制设置页面中自定义 Javadoc 标签配置表格的显示/隐藏。
