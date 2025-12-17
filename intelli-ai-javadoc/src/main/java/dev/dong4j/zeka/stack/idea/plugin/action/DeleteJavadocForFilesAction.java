@@ -4,12 +4,16 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.util.concurrency.AppExecutorUtil;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -67,48 +71,54 @@ public class DeleteJavadocForFilesAction extends AnAction {
 
         log.info("为 {} 个文件/目录删除 Javadoc", files.length);
 
-        // 收集所有需要处理的文件
-        List<PsiFile> psiFiles = new ArrayList<>();
-        PsiManager psiManager = PsiManager.getInstance(project);
+        // 在后台线程中收集文件（使用 ReadAction 保护 PSI 访问）
+        ReadAction.nonBlocking(() -> {
+            List<PsiFile> psiFiles = new ArrayList<>();
+            PsiManager psiManager = PsiManager.getInstance(project);
 
-        for (VirtualFile file : files) {
-            if (file.isDirectory()) {
-                collectFilesFromDirectory(file, psiManager, psiFiles);
-            } else if (isSupportedFile(file)) {
-                PsiFile psiFile = psiManager.findFile(file);
-                if (psiFile != null) {
-                    psiFiles.add(psiFile);
+            for (VirtualFile file : files) {
+                if (file.isDirectory()) {
+                    collectFilesFromDirectory(file, psiManager, psiFiles);
+                } else if (isSupportedFile(file)) {
+                    PsiFile psiFile = psiManager.findFile(file);
+                    if (psiFile != null) {
+                        psiFiles.add(psiFile);
+                    }
                 }
             }
-        }
 
-        if (psiFiles.isEmpty()) {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.files.to.delete"));
-            return;
-        }
+            return psiFiles;
+        }).finishOnUiThread(ModalityState.current(), psiFiles -> {
+            // 在 EDT 上检查结果和显示确认对话框
+            if (psiFiles == null || psiFiles.isEmpty()) {
+                NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.files.to.delete"));
+                return;
+            }
 
-        // 确认是否继续
-        int result = Messages.showYesNoDialog(
-            project,
-            JavadocBundle.message("confirmation.delete.javadoc.message", psiFiles.size()),
-            JavadocBundle.message("confirmation.delete.javadoc.title"),
-            Messages.getQuestionIcon()
-                                             );
+            // 确认是否继续
+            int result = Messages.showYesNoDialog(
+                project,
+                JavadocBundle.message("confirmation.delete.javadoc.message", psiFiles.size()),
+                JavadocBundle.message("confirmation.delete.javadoc.title"),
+                Messages.getQuestionIcon()
+                                                 );
 
-        if (result != Messages.YES) {
-            return;
-        }
+            if (result != Messages.YES) {
+                return;
+            }
 
-        // 批量删除
-        int totalDeleted = 0;
-        for (PsiFile psiFile : psiFiles) {
-            int deleted = deletionService.deleteJavadocFromFile(project, psiFile);
-            totalDeleted += deleted;
-        }
+            // 在后台线程执行批量删除
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                int totalDeleted = psiFiles.stream().mapToInt(psiFile -> deletionService.deleteJavadocFromFile(project, psiFile)).sum();
 
-        // 显示完成信息
-        NotificationUtil.notifyInfo(project, "删除 Javadoc",
-                                    JavadocBundle.message("notification.delete.javadoc.completed", totalDeleted, psiFiles.size()));
+                // 切回 EDT 显示完成信息
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    NotificationUtil.notifyInfo(project, "删除 Javadoc",
+                                                JavadocBundle.message("notification.delete.javadoc.completed", totalDeleted,
+                                                                      psiFiles.size()));
+                });
+            });
+        }).inSmartMode(project).submit(AppExecutorUtil.getAppExecutorService());
     }
 
     /**
