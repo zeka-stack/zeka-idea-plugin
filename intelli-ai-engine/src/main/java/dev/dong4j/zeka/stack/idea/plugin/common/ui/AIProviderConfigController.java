@@ -2,9 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.ProgressManager;
-import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.Gray;
 import com.intellij.ui.JBColor;
@@ -15,8 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.Color;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -36,7 +31,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -70,8 +64,6 @@ public final class AIProviderConfigController {
     private final AIResponseListener responseListener;
     /** UI 界面组件, 用于展示和操作 AI 提供商配置信息 */
     private final AIProviderConfigUI ui;
-    /** Codefree 代理管理器 */
-    private final CodefreeAgentManager codefreeAgentManager = CodefreeAgentManager.getInstance();
     /** 配置是否已验证的标志, 用于标识当前配置是否通过验证 */
     private Boolean configurationVerified = Boolean.FALSE;
     /** 刷新模型操作是否成功 */
@@ -102,10 +94,13 @@ public final class AIProviderConfigController {
      * 需要在 UI 创建完成后调用，确保 codefreePanel 已初始化。
      */
     public void initCodefreePanel() {
+        CodefreePanel codefreePanel = ui.getCodefreePanel();
+        // 设置父面板，用于显示对话框
+        codefreePanel.setParentPanel(ui.getMainPanel());
         // 设置 Codefree 面板的状态更新回调
-        ui.getCodefreePanel().setStatusUpdateCallback(() -> {
-            CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
-            updateCodefreeStatus(snapshot);
+        codefreePanel.setStatusUpdateCallback(() -> {
+            CodefreeAgentSettings snapshot = codefreePanel.snapshotCodefreeSettings();
+            codefreePanel.updateCodefreeStatus(snapshot);
         });
     }
 
@@ -168,8 +163,8 @@ public final class AIProviderConfigController {
         codefreePanel.getAutoStartCheckBox().setSelected(codefreeSettings.autoStart);
         codefreePanel.getDownloadUrlField().setText(codefreeSettings.downloadUrl != null ? codefreeSettings.downloadUrl : "");
         codefreePanel.setLocalJarName(codefreeSettings.jarFileName, -1);
-        updateCodefreeStatus(codefreeSettings);
-        refreshCodefreeVersionInfo(codefreeSettings);
+        codefreePanel.updateCodefreeStatus(codefreeSettings);
+        codefreePanel.refreshCodefreeVersionInfo(codefreeSettings);
 
         // 加载可用服务商
         ui.getAvailableProvidersTableModel().setData(workingSettings.availableProviders);
@@ -215,7 +210,7 @@ public final class AIProviderConfigController {
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();
-        workingSettings.codefreeSettings = snapshotCodefreeSettings().copy();
+        workingSettings.codefreeSettings = ui.getCodefreePanel().snapshotCodefreeSettings().copy();
 
         workingSettings.aiProviderType = providerType;
 
@@ -699,182 +694,12 @@ public final class AIProviderConfigController {
     }
 
     /**
-     * 更新 Codefree 代理状态
-     * <p>
-     * 检查 Codefree 代理服务是否正在运行，并更新按钮状态和状态标签。
-     */
-    private void updateCodefreeStatus(@NotNull CodefreeAgentSettings settings) {
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
-        CodefreeAgentManager.JarInfo jarInfo = codefreeAgentManager.resolveLocalJarInfo(settings);
-        boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
-        boolean running = codefreeAgentManager.isRunning();
-
-        String status;
-        String buttonText;
-        boolean buttonEnabled = running || jarReady;
-        JBColor startColor;
-
-        if (running) {
-            // 服务正在运行
-            status = AICommonBundle.message("settings.codefree.status.running.endpoint", codefreeAgentManager.getLocalOpenAiEndpoint());
-            buttonText = AICommonBundle.message("settings.codefree.stop");
-            startColor = CODEFREE_GREEN;
-        } else if (jarReady) {
-            // Jar 文件存在，可以启动
-            status = AICommonBundle.message("settings.codefree.status.ready");
-            buttonText = AICommonBundle.message("settings.codefree.start");
-            startColor = CODEFREE_YELLOW;
-        } else {
-            // Jar 文件不存在，需要先下载
-            status = AICommonBundle.message("settings.codefree.status.not.ready");
-            buttonText = AICommonBundle.message("settings.codefree.start");
-            startColor = CODEFREE_RED;
-        }
-
-        codefreePanel.setStatusText(status);
-        codefreePanel.getStatusLabel().setToolTipText(jarInfo != null ? jarInfo.path().toString() : null);
-        codefreePanel.getStartButton().setText(buttonText);
-        codefreePanel.getStartButton().setEnabled(buttonEnabled);
-        codefreePanel.setStartStatusColor(startColor);
-        codefreePanel.setLocalJarName(jarInfo != null ? jarInfo.fileName() : null, jarInfo != null ? jarInfo.size() : -1);
-        if (jarInfo != null) {
-            settings.jarFileName = jarInfo.fileName();
-        }
-        updateDownloadIndicator(codefreePanel, jarReady, codefreePanel.getLatestJarName(), jarInfo != null ? jarInfo.fileName() : null);
-    }
-
-    private void refreshCodefreeVersionInfo(@NotNull CodefreeAgentSettings settings) {
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
-        ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            String latestName = null;
-            long remoteSize = -1;
-            try {
-                latestName = codefreeAgentManager.fetchLatestJarName();
-                if (latestName != null && !latestName.isBlank()) {
-                    remoteSize = codefreeAgentManager.fetchRemoteJarSize(latestName);
-                }
-            } catch (Exception e) {
-                LOG.warn("获取 Codefree 最新版本失败", e);
-            }
-            CodefreeAgentManager.JarInfo jarInfo = codefreeAgentManager.resolveLocalJarInfo(settings);
-            boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
-            String localName = jarInfo != null ? jarInfo.fileName() : null;
-            long localSize = jarInfo != null ? jarInfo.size() : -1;
-            String url = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
-            if ((url.isBlank() || url.contains("download.dong4j.site/codefree-agent")) && latestName != null && !latestName.isBlank()) {
-                url = codefreeAgentManager.buildDownloadUrl(latestName);
-            }
-            String finalLatestName = latestName;
-            long finalRemoteSize = remoteSize;
-            String finalUrl = url;
-            ApplicationManager.getApplication().invokeLater(() -> {
-                if (!finalUrl.isBlank()) {
-                    codefreePanel.getDownloadUrlField().setText(finalUrl);
-                }
-                codefreePanel.setLatestJarName(finalLatestName);
-                codefreePanel.setDownloadSize(finalRemoteSize);
-                codefreePanel.setLocalJarName(localName, localSize);
-                updateDownloadIndicator(codefreePanel, jarReady, finalLatestName, localName);
-            });
-        });
-    }
-
-    private void updateDownloadIndicator(@NotNull CodefreePanel codefreePanel,
-                                         boolean jarReady,
-                                         @Nullable String latestJarName,
-                                         @Nullable String localJarName) {
-        if (!jarReady) {
-            codefreePanel.setDownloadStatusColor(CODEFREE_RED);
-            codefreePanel.setDownloadButtonText(AICommonBundle.message("settings.codefree.download"));
-            return;
-        }
-        if (latestJarName != null && !latestJarName.isBlank() && !latestJarName.equals(localJarName)) {
-            codefreePanel.setDownloadStatusColor(CODEFREE_YELLOW);
-            codefreePanel.setDownloadButtonText(AICommonBundle.message("settings.codefree.update"));
-        } else {
-            codefreePanel.setDownloadStatusColor(CODEFREE_GREEN);
-            codefreePanel.setDownloadButtonText(AICommonBundle.message("settings.codefree.download"));
-        }
-    }
-
-    /**
      * 下载 Codefree jar
      */
     public void downloadCodefreeJar() {
         CodefreePanel codefreePanel = ui.getCodefreePanel();
-        CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
-        String downloadUrl = snapshot.downloadUrl != null ? snapshot.downloadUrl.trim() : "";
-        if (downloadUrl.isBlank() || !(downloadUrl.startsWith("http://") || downloadUrl.startsWith("https://"))) {
-            JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                          AICommonBundle.message("settings.codefree.error.no.url"),
-                                          AICommonBundle.message("settings.error.title"),
-                                          JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        String jarFileName = codefreePanel.getLatestJarName();
-        if (jarFileName.isBlank()) {
-            String derived = codefreeAgentManager.deriveJarNameFromUrl(downloadUrl);
-            jarFileName = derived != null && !derived.isBlank() ? derived : CodefreeAgentManager.DEFAULT_JAR_NAME;
-        }
-        JButton downloadButton = codefreePanel.getDownloadButton();
-        downloadButton.setEnabled(false);
-        downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
-        codefreePanel.resetDownloadProgress();
-        codefreePanel.setDownloadStatusColor(CODEFREE_YELLOW);
-
-        String finalJarFileName = jarFileName;
-        ProgressManager.getInstance().run(new Task.Backgroundable(null, AICommonBundle.message("settings.codefree.download"), true) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                try {
-                    long remoteSize = -1;
-                    try {
-                        remoteSize = codefreeAgentManager.fetchRemoteJarSize(finalJarFileName);
-                    } catch (Exception sizeException) {
-                        LOG.warn("获取 Codefree jar 大小失败: " + finalJarFileName, sizeException);
-                    }
-                    long finalRemoteSize = remoteSize;
-                    ApplicationManager.getApplication().invokeLater(() -> codefreePanel.setDownloadSize(finalRemoteSize));
-                    Path savedPath = codefreeAgentManager.downloadJar(snapshot, finalJarFileName, indicator,
-                                                                      (downloaded, total) -> ApplicationManager.getApplication().invokeLater(() -> codefreePanel.updateDownloadProgress(downloaded, total)));
-                    snapshot.jarFileName = finalJarFileName;
-                    long localSize = finalRemoteSize;
-                    try {
-                        if (Files.exists(savedPath)) {
-                            localSize = Files.size(savedPath);
-                        }
-                    } catch (Exception sizeException) {
-                        LOG.warn("读取 Codefree jar 大小失败: " + savedPath, sizeException);
-                    }
-                    long finalLocalSize = localSize;
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        downloadButton.setEnabled(true);
-                        downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
-                        codefreePanel.resetDownloadProgress();
-                        codefreePanel.setLocalJarName(finalJarFileName, finalLocalSize);
-                        codefreePanel.setDownloadStatusColor(CODEFREE_GREEN);
-                        updateCodefreeStatus(snapshot);
-                        refreshCodefreeVersionInfo(snapshot);
-                        JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                                      AICommonBundle.message("settings.codefree.download.success"),
-                                                      AICommonBundle.message("settings.codefree.title"),
-                                                      JOptionPane.INFORMATION_MESSAGE);
-                    });
-                } catch (Exception e) {
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        downloadButton.setEnabled(true);
-                        downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
-                        codefreePanel.resetDownloadProgress();
-                        codefreePanel.setDownloadStatusColor(CODEFREE_RED);
-                        JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                                      e.getMessage(),
-                                                      AICommonBundle.message("settings.error.title"),
-                                                      JOptionPane.ERROR_MESSAGE);
-                        updateCodefreeStatus(snapshot);
-                    });
-                }
-            }
-        });
+        CodefreeAgentSettings snapshot = codefreePanel.snapshotCodefreeSettings();
+        codefreePanel.downloadCodefreeJar(snapshot);
     }
 
     /**
@@ -882,50 +707,8 @@ public final class AIProviderConfigController {
      */
     public void toggleCodefreeAgent() {
         CodefreePanel codefreePanel = ui.getCodefreePanel();
-        CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
-        if (codefreeAgentManager.isRunning()) {
-            codefreeAgentManager.stopAgent();
-            updateCodefreeStatus(snapshot);
-            return;
-        }
-        Path jarPath = codefreeAgentManager.resolveJarPath(snapshot);
-        if (Files.notExists(jarPath)) {
-            JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                          AICommonBundle.message("settings.codefree.error.no.jar"),
-                                          AICommonBundle.message("settings.error.title"),
-                                          JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        JButton startButton = codefreePanel.getStartButton();
-        startButton.setEnabled(false);
-        startButton.setText(AICommonBundle.message("settings.codefree.starting"));
-        codefreePanel.setStartStatusColor(CODEFREE_YELLOW);
-
-        ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            try {
-                long pid = codefreeAgentManager.startAgent(snapshot);
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    startButton.setEnabled(true);
-                    startButton.setText(AICommonBundle.message("settings.codefree.stop"));
-                    String tooltip = codefreeAgentManager.getLocalOpenAiEndpoint();
-                    if (pid > 0) {
-                        tooltip = tooltip + " (PID: " + pid + ")";
-                    }
-                    codefreePanel.getStatusLabel().setToolTipText(tooltip);
-                    updateCodefreeStatus(snapshot);
-                });
-            } catch (Exception e) {
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    startButton.setEnabled(true);
-                    startButton.setText(AICommonBundle.message("settings.codefree.start"));
-                    JOptionPane.showMessageDialog(ui.getMainPanel(),
-                                                  e.getMessage(),
-                                                  AICommonBundle.message("settings.error.title"),
-                                                  JOptionPane.ERROR_MESSAGE);
-                    updateCodefreeStatus(snapshot);
-                });
-            }
-        });
+        CodefreeAgentSettings snapshot = codefreePanel.snapshotCodefreeSettings();
+        codefreePanel.toggleCodefreeAgent(snapshot);
     }
 
     /**
@@ -981,18 +764,6 @@ public final class AIProviderConfigController {
         return snapshot;
     }
 
-    /**
-     * 创建 Codefree 代理配置快照
-     */
-    @NotNull
-    private CodefreeAgentSettings snapshotCodefreeSettings() {
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
-        CodefreeAgentSettings snapshot = new CodefreeAgentSettings();
-        snapshot.autoStart = codefreePanel.getAutoStartCheckBox().isSelected();
-        snapshot.downloadUrl = codefreePanel.getDownloadUrlField().getText().trim();
-        snapshot.jarFileName = codefreePanel.getCurrentJarName();
-        return snapshot;
-    }
 
     /**
      * 将模型参数和运行时设置应用到目标配置对象中

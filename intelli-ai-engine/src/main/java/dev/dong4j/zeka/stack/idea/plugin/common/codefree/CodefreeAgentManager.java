@@ -37,25 +37,21 @@ public final class CodefreeAgentManager {
     public static final String DEFAULT_JAR_NAME = "codefree-agent.jar";
     public static final String DEFAULT_JAR_PREFIX = "codefree-agent";
     public static final String DEFAULT_OPENAI_ENDPOINT = System.getProperty("codefree.agent.api", "http://127.0.0.1:10011/v1");
-    private static final String VERSION_ENDPOINT = "https://download.dong4j.site/codefree/version";
-    private static final String DOWNLOAD_BASE = "https://download.dong4j.site/";
 
     private final Object processLock = new Object();
     @Nullable
     private OSProcessHandler processHandler;
-    @Nullable
-    private Path runningJarPath;
 
     /**
-         * 已解析的本地 jar 信息
-         */
-        public record JarInfo(String fileName, Path path, long size) {
-            public JarInfo(@NotNull String fileName, @NotNull Path path, long size) {
-                this.fileName = fileName;
-                this.path = path;
-                this.size = size;
-            }
+     * 已解析的本地 jar 信息
+     */
+    public record JarInfo(String fileName, Path path, long size) {
+        public JarInfo(@NotNull String fileName, @NotNull Path path, long size) {
+            this.fileName = fileName;
+            this.path = path;
+            this.size = size;
         }
+    }
 
     @FunctionalInterface
     public interface DownloadProgressListener {
@@ -70,33 +66,41 @@ public final class CodefreeAgentManager {
     /**
      * 获取最新可用的 jar 名称
      */
-    @Nullable
-    public String fetchLatestJarName() throws IOException {
-        String version = HttpRequests.request(VERSION_ENDPOINT).productNameAsUserAgent().readString();
-        if (version != null) {
-            version = version.trim();
+    @NotNull
+    public String fetchLatestJarName(@NotNull String baseUrl) {
+        String versionEndpoint = normalizeBase(baseUrl) + "/codefree/version";
+        try {
+            String version = HttpRequests.request(versionEndpoint).productNameAsUserAgent().readString();
+            return version.trim();
+        } catch (Exception e) {
+            LOG.warn("获取 Codefree 最新版本失败", e);
         }
-        return version != null && !version.isEmpty() ? version : null;
+        return "";
     }
 
     /**
      * 获取远端 jar 大小
      */
-    public long fetchRemoteJarSize(@NotNull String jarFileName) throws IOException {
-        String url = buildDownloadUrl(jarFileName);
-        return HttpRequests.request(url).productNameAsUserAgent().connect(request -> {
-            URLConnection connection = request.getConnection();
-            long length = connection.getContentLengthLong();
-            return length > 0 ? length : -1;
-        });
+    public long fetchRemoteJarSize(@NotNull String baseUrl, @NotNull String jarFileName) throws IOException {
+        String url = buildDownloadUrl(baseUrl, jarFileName);
+        try {
+            return HttpRequests.request(url).productNameAsUserAgent().connect(request -> {
+                URLConnection connection = request.getConnection();
+                long length = connection.getContentLengthLong();
+                return length > 0 ? length : -1;
+            });
+        } catch (Exception e) {
+            LOG.warn("获取远端 jar 大小失败: " + url, e);
+            return 0;
+        }
     }
 
     /**
      * 拼接远端下载地址
      */
     @NotNull
-    public String buildDownloadUrl(@NotNull String jarFileName) {
-        return DOWNLOAD_BASE + jarFileName;
+    public String buildDownloadUrl(@NotNull String baseUrl, @NotNull String jarFileName) {
+        return normalizeBase(baseUrl) + "/" + jarFileName;
     }
 
     /**
@@ -167,17 +171,6 @@ public final class CodefreeAgentManager {
         return jarPath;
     }
 
-    /**
-     * 兼容旧调用，自动根据 URL 推导 jar 名称
-     */
-    public void downloadJar(@NotNull CodefreeAgentSettings settings, @NotNull ProgressIndicator indicator) throws IOException {
-        String url = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
-        String jarName = settings.jarFileName != null && !settings.jarFileName.isBlank()
-                         ? settings.jarFileName
-                         : Optional.ofNullable(deriveJarNameFromUrl(url)).orElse(DEFAULT_JAR_NAME);
-        downloadJar(settings, jarName, indicator, null);
-    }
-
     @NotNull
     private Path resolveDownloadTarget(@NotNull String jarFileName) {
         String targetName = jarFileName.isBlank() ? DEFAULT_JAR_NAME : jarFileName;
@@ -213,14 +206,12 @@ public final class CodefreeAgentManager {
             public void processTerminated(@NotNull ProcessEvent event) {
                 synchronized (processLock) {
                     processHandler = null;
-                    runningJarPath = null;
                 }
             }
         });
         handler.startNotify();
         synchronized (processLock) {
             processHandler = handler;
-            runningJarPath = jarPath;
         }
         Process process = handler.getProcess();
         return process.pid();
@@ -238,7 +229,6 @@ public final class CodefreeAgentManager {
                     LOG.warn("停止 Codefree 代理失败", e);
                 }
                 processHandler = null;
-                runningJarPath = null;
             }
         }
     }
@@ -249,16 +239,6 @@ public final class CodefreeAgentManager {
     public boolean isRunning() {
         synchronized (processLock) {
             return processHandler != null && !processHandler.isProcessTerminated();
-        }
-    }
-
-    /**
-     * 当前运行的 jar 路径
-     */
-    @Nullable
-    public Path getRunningJarPath() {
-        synchronized (processLock) {
-            return runningJarPath;
         }
     }
 
@@ -394,6 +374,15 @@ public final class CodefreeAgentManager {
             return true;
         }
         return false;
+    }
+
+    @NotNull
+    private String normalizeBase(@NotNull String baseUrl) {
+        String url = baseUrl.trim();
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url;
     }
 
     @NotNull

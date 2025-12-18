@@ -1,5 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.ui.DocumentAdapter;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBCheckBox;
@@ -21,11 +25,14 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
@@ -34,6 +41,8 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
@@ -47,9 +56,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
  * @since 1.0.0
  */
 public final class CodefreePanel {
+    private static final Logger LOG = Logger.getInstance(CodefreePanel.class);
     private static final JBColor DOT_GREEN = new JBColor(new Color(52, 199, 89), new Color(48, 209, 88));
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
     private static final JBColor DOT_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 214, 10));
+    private static final JBColor CODEFREE_GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
+    private static final JBColor CODEFREE_RED = new JBColor(new Color(244, 67, 54), new Color(244, 67, 54));
+    private static final JBColor CODEFREE_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 193, 7));
     private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#,##0.00");
     /** 主面板 */
     @NotNull
@@ -69,9 +82,6 @@ public final class CodefreePanel {
     /** 本地 jar 标签 */
     @NotNull
     private final JBLabel localJarLabel;
-    /** 进度/大小标签 */
-    @NotNull
-    private final JBLabel downloadSizeLabel;
     /** 下载进度条 */
     @NotNull
     private final JProgressBar downloadProgressBar;
@@ -102,6 +112,12 @@ public final class CodefreePanel {
     /** 当前本地 jar 名称 */
     @Nullable
     private String currentJarName;
+    /** Codefree 代理管理器 */
+    @NotNull
+    private final CodefreeAgentManager codefreeAgentManager = CodefreeAgentManager.getInstance();
+    /** 父面板，用于显示对话框 */
+    @Nullable
+    private JPanel parentPanel;
 
     /**
      * 构造函数
@@ -119,13 +135,10 @@ public final class CodefreePanel {
         statusLabel = new JBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
         latestVersionLabel = new JBLabel(AICommonBundle.message("settings.codefree.version.checking"));
         localJarLabel = new JBLabel(AICommonBundle.message("settings.codefree.version.local.empty"));
-        downloadSizeLabel = new JBLabel("");
-        downloadSizeLabel.setForeground(UIUtil.getLabelDisabledForeground());
-
         downloadProgressBar = new JProgressBar(0, 100);
-        downloadProgressBar.setStringPainted(true);
+        downloadProgressBar.setStringPainted(false);
         downloadProgressBar.setVisible(false);
-        downloadProgressBar.setPreferredSize(new Dimension(320, downloadProgressBar.getPreferredSize().height));
+        downloadProgressBar.setPreferredSize(new Dimension(420, JBUI.scale(3)));
 
         downloadButton = new JButton(AICommonBundle.message("settings.codefree.download"));
         downloadButton.setHorizontalTextPosition(SwingConstants.RIGHT);
@@ -153,9 +166,8 @@ public final class CodefreePanel {
         buttonsPanel.add(downloadButton);
         buttonsPanel.add(startButton);
 
-        JPanel progressPanel = new JPanel(new BorderLayout(8, 0));
+        JPanel progressPanel = new JPanel(new BorderLayout(0, 0));
         progressPanel.add(downloadProgressBar, BorderLayout.CENTER);
-        progressPanel.add(downloadSizeLabel, BorderLayout.EAST);
 
         // 创建主内容面板
         mainPanel = FormBuilder.createFormBuilder()
@@ -212,6 +224,15 @@ public final class CodefreePanel {
      */
     public void setStatusUpdateCallback(@Nullable Runnable callback) {
         this.statusUpdateCallback = callback;
+    }
+
+    /**
+     * 设置父面板，用于显示对话框
+     *
+     * @param parentPanel 父面板
+     */
+    public void setParentPanel(@Nullable JPanel parentPanel) {
+        this.parentPanel = parentPanel;
     }
 
     /**
@@ -374,10 +395,10 @@ public final class CodefreePanel {
      */
     private void updateDownloadButtonState() {
         String url = downloadUrlField.getText().trim().toLowerCase();
-        boolean valid = url.startsWith("http://") || url.startsWith("https://");
-        downloadButton.setEnabled(valid);
-        if (!valid) {
-            downloadStatusIcon.setColor(DOT_RED);
+        boolean remote = url.startsWith("http://") || url.startsWith("https://");
+        downloadButton.setEnabled(remote);
+        if (!remote) {
+            setDownloadStatusColor(CODEFREE_GREEN);
         }
     }
 
@@ -401,11 +422,7 @@ public final class CodefreePanel {
     }
 
     public void setDownloadSize(long totalBytes) {
-        if (totalBytes > 0) {
-            downloadSizeLabel.setText(AICommonBundle.message("settings.codefree.download.size", formatSize(totalBytes)));
-        } else {
-            downloadSizeLabel.setText(AICommonBundle.message("settings.codefree.download.size.unknown"));
-        }
+        // 仅用于保留调用点，不在 UI 上显示大小
     }
 
     public void updateDownloadProgress(long downloaded, long totalBytes) {
@@ -417,17 +434,14 @@ public final class CodefreePanel {
         } else {
             downloadProgressBar.setIndeterminate(true);
         }
-        String totalText = totalBytes > 0
-                           ? formatSize(totalBytes)
-                           : AICommonBundle.message("settings.codefree.download.size.unknown.short");
-        downloadProgressBar.setString(AICommonBundle.message("settings.codefree.download.progress", formatSize(downloaded), totalText));
+        downloadProgressBar.repaint();
     }
 
     public void resetDownloadProgress() {
         downloadProgressBar.setVisible(false);
         downloadProgressBar.setIndeterminate(false);
         downloadProgressBar.setValue(0);
-        downloadProgressBar.setString("");
+        downloadProgressBar.repaint();
     }
 
     public void setStartStatusColor(@NotNull Color color) {
@@ -527,6 +541,291 @@ public final class CodefreePanel {
         return startButton;
     }
 
+    // ==================== Codefree 业务逻辑方法 ====================
+
+    /**
+     * 更新 Codefree 代理状态
+     * <p>
+     * 检查 Codefree 代理服务是否正在运行，并更新按钮状态和状态标签。
+     *
+     * @param settings Codefree 代理设置
+     */
+    public void updateCodefreeStatus(@NotNull CodefreeAgentSettings settings) {
+        CodefreeAgentManager.JarInfo jarInfo = codefreeAgentManager.resolveLocalJarInfo(settings);
+        boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
+        boolean running = codefreeAgentManager.isRunning();
+
+        String status;
+        String buttonText;
+        boolean buttonEnabled = running || jarReady;
+        JBColor startColor;
+
+        if (running) {
+            // 服务正在运行
+            status = AICommonBundle.message("settings.codefree.status.running.endpoint", codefreeAgentManager.getLocalOpenAiEndpoint());
+            buttonText = AICommonBundle.message("settings.codefree.stop");
+            startColor = CODEFREE_GREEN;
+        } else if (jarReady) {
+            // Jar 文件存在，可以启动
+            status = AICommonBundle.message("settings.codefree.status.ready");
+            buttonText = AICommonBundle.message("settings.codefree.start");
+            startColor = CODEFREE_YELLOW;
+        } else {
+            // Jar 文件不存在，需要先下载
+            status = AICommonBundle.message("settings.codefree.status.not.ready");
+            buttonText = AICommonBundle.message("settings.codefree.start");
+            startColor = CODEFREE_RED;
+        }
+
+        setStatusText(status);
+        getStatusLabel().setToolTipText(jarInfo != null ? jarInfo.path().toString() : null);
+        getStartButton().setText(buttonText);
+        getStartButton().setEnabled(buttonEnabled);
+        setStartStatusColor(startColor);
+        setLocalJarName(jarInfo != null ? jarInfo.fileName() : null, jarInfo != null ? jarInfo.size() : -1);
+        if (jarInfo != null) {
+            settings.jarFileName = jarInfo.fileName();
+        }
+        updateDownloadIndicator(jarReady, getLatestJarName(), jarInfo != null ? jarInfo.fileName() : null);
+    }
+
+    /**
+     * 刷新 Codefree 版本信息
+     *
+     * @param settings Codefree 代理设置
+     */
+    public void refreshCodefreeVersionInfo(@NotNull CodefreeAgentSettings settings) {
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            String latestName = null;
+            long remoteSize = -1;
+            String baseUrl = downloadUrlField.getText().trim();
+            boolean remote = baseUrl.startsWith("http://") || baseUrl.startsWith("https://");
+            try {
+                if (remote) {
+                    latestName = codefreeAgentManager.fetchLatestJarName(baseUrl);
+                    if (!latestName.isBlank()) {
+                        remoteSize = codefreeAgentManager.fetchRemoteJarSize(baseUrl, latestName);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("获取 Codefree 最新版本失败", e);
+            }
+            CodefreeAgentManager.JarInfo jarInfo = codefreeAgentManager.resolveLocalJarInfo(settings);
+            boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
+            String localName = jarInfo != null ? jarInfo.fileName() : null;
+            long localSize = jarInfo != null ? jarInfo.size() : -1;
+            String finalLatestName = latestName;
+            long finalRemoteSize = remoteSize;
+            ApplicationManager.getApplication().invokeLater(() -> {
+                setLatestJarName(finalLatestName);
+                setDownloadSize(remote ? finalRemoteSize : -1);
+                setLocalJarName(localName, localSize);
+                updateDownloadIndicator(jarReady, finalLatestName, localName);
+            });
+        });
+    }
+
+    /**
+     * 更新下载指示器
+     *
+     * @param jarReady      jar 文件是否就绪
+     * @param latestJarName 最新 jar 文件名
+     * @param localJarName  本地 jar 文件名
+     */
+    private void updateDownloadIndicator(boolean jarReady,
+                                         @Nullable String latestJarName,
+                                         @Nullable String localJarName) {
+        if (!jarReady) {
+            setDownloadStatusColor(CODEFREE_RED);
+            setDownloadButtonText(AICommonBundle.message("settings.codefree.download"));
+            return;
+        }
+        if (latestJarName != null && !latestJarName.isBlank() && !latestJarName.equals(localJarName)) {
+            setDownloadStatusColor(CODEFREE_YELLOW);
+            setDownloadButtonText(AICommonBundle.message("settings.codefree.update"));
+        } else {
+            setDownloadStatusColor(CODEFREE_GREEN);
+            setDownloadButtonText(AICommonBundle.message("settings.codefree.download"));
+        }
+    }
+
+    /**
+     * 下载 Codefree jar
+     *
+     * @param settings Codefree 代理设置
+     */
+    public void downloadCodefreeJar(@NotNull CodefreeAgentSettings settings) {
+        String downloadUrl = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
+        if (downloadUrl.isBlank()) {
+            JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
+                                          AICommonBundle.message("settings.codefree.error.no.url"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        boolean remote = downloadUrl.startsWith("http://") || downloadUrl.startsWith("https://");
+        if (!remote) {
+            JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
+                                          AICommonBundle.message("settings.codefree.download.local.path"),
+                                          AICommonBundle.message("settings.codefree.title"),
+                                          JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        String jarFileName = getLatestJarName();
+        if (jarFileName.isBlank()) {
+            jarFileName = codefreeAgentManager.fetchLatestJarName(downloadUrl);
+        }
+
+        if (jarFileName.isBlank()) {
+            JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
+                                          AICommonBundle.message("settings.codefree.error.no.jar"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        downloadButton.setEnabled(false);
+        downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
+        resetDownloadProgress();
+        downloadProgressBar.setVisible(true);
+        downloadProgressBar.setIndeterminate(true);
+        downloadProgressBar.setValue(0);
+        setDownloadStatusColor(CODEFREE_YELLOW);
+        startButton.setEnabled(false);
+
+        String finalJarFileName = jarFileName;
+        String jarDownloadUrl = codefreeAgentManager.buildDownloadUrl(downloadUrl, finalJarFileName);
+        CodefreeAgentSettings downloadSettings = settings.copy();
+        downloadSettings.downloadUrl = jarDownloadUrl;
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            ProgressIndicator indicator = new EmptyProgressIndicator();
+            try {
+                long remoteSize = -1;
+                try {
+                    remoteSize = codefreeAgentManager.fetchRemoteJarSize(downloadUrl, finalJarFileName);
+                } catch (Exception sizeException) {
+                    LOG.warn("获取 Codefree jar 大小失败: " + finalJarFileName, sizeException);
+                }
+                long finalRemoteSize = remoteSize;
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    downloadProgressBar.setIndeterminate(finalRemoteSize <= 0);
+                    downloadProgressBar.setValue(0);
+                });
+                Path savedPath = codefreeAgentManager.downloadJar(
+                    downloadSettings,
+                    finalJarFileName,
+                    indicator,
+                    (downloaded, total) -> ApplicationManager.getApplication().invokeLater(() -> {
+                        long progressTotal = total > 0 ? total : finalRemoteSize;
+                        updateDownloadProgress(downloaded, progressTotal);
+                    }));
+
+                settings.jarFileName = finalJarFileName;
+                long localSize = -1;
+                try {
+                    if (Files.exists(savedPath)) {
+                        localSize = Files.size(savedPath);
+                    }
+                } catch (Exception sizeException) {
+                    LOG.warn("读取 Codefree jar 大小失败: " + savedPath, sizeException);
+                }
+                long finalLocalSize = localSize;
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    finishDownloadUi(true, finalJarFileName, finalLocalSize, settings);
+                    refreshCodefreeVersionInfo(settings);
+                });
+            } catch (Exception e) {
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    finishDownloadUi(false, null, -1, settings);
+                    JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
+                                                  e.getMessage(),
+                                                  AICommonBundle.message("settings.error.title"),
+                                                  JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        });
+    }
+
+    private void finishDownloadUi(boolean success,
+                                  @Nullable String jarName,
+                                  long localSize,
+                                  @NotNull CodefreeAgentSettings settings) {
+        downloadButton.setEnabled(true);
+        downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
+        resetDownloadProgress();
+        if (success && jarName != null) {
+            setLocalJarName(jarName, localSize);
+            setDownloadStatusColor(CODEFREE_GREEN);
+        } else {
+            setDownloadStatusColor(CODEFREE_RED);
+        }
+        updateCodefreeStatus(settings);
+    }
+
+    /**
+     * 启动或停止 Codefree 本地代理
+     *
+     * @param settings Codefree 代理设置
+     */
+    public void toggleCodefreeAgent(@NotNull CodefreeAgentSettings settings) {
+        if (codefreeAgentManager.isRunning()) {
+            codefreeAgentManager.stopAgent();
+            updateCodefreeStatus(settings);
+            return;
+        }
+        Path jarPath = codefreeAgentManager.resolveJarPath(settings);
+        if (Files.notExists(jarPath)) {
+            JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
+                                          AICommonBundle.message("settings.codefree.error.no.jar"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        startButton.setEnabled(false);
+        startButton.setText(AICommonBundle.message("settings.codefree.starting"));
+        setStartStatusColor(CODEFREE_YELLOW);
+
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                long pid = codefreeAgentManager.startAgent(settings);
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    startButton.setEnabled(true);
+                    startButton.setText(AICommonBundle.message("settings.codefree.stop"));
+                    String tooltip = codefreeAgentManager.getLocalOpenAiEndpoint();
+                    if (pid > 0) {
+                        tooltip = tooltip + " (PID: " + pid + ")";
+                    }
+                    getStatusLabel().setToolTipText(tooltip);
+                    updateCodefreeStatus(settings);
+                });
+            } catch (Exception e) {
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    startButton.setEnabled(true);
+                    startButton.setText(AICommonBundle.message("settings.codefree.start"));
+                    JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
+                                                  e.getMessage(),
+                                                  AICommonBundle.message("settings.error.title"),
+                                                  JOptionPane.ERROR_MESSAGE);
+                    updateCodefreeStatus(settings);
+                });
+            }
+        });
+    }
+
+    /**
+     * 创建 Codefree 代理配置快照
+     *
+     * @return Codefree 代理设置快照
+     */
+    @NotNull
+    public CodefreeAgentSettings snapshotCodefreeSettings() {
+        CodefreeAgentSettings snapshot = new CodefreeAgentSettings();
+        snapshot.autoStart = getAutoStartCheckBox().isSelected();
+        snapshot.downloadUrl = getDownloadUrlField().getText().trim();
+        snapshot.jarFileName = getCurrentJarName();
+        return snapshot;
+    }
+
     /**
      * 带呼吸效果的圆点图标
      */
@@ -544,7 +843,7 @@ public final class CodefreePanel {
             this.timer = new Timer(TIMER_DELAY, e -> {
                 phase += 0.08f;
                 if (phase > Math.PI * 2) {
-                    phase -= Math.PI * 2;
+                    phase -= (float) (Math.PI * 2);
                 }
                 owner.repaint();
             });
