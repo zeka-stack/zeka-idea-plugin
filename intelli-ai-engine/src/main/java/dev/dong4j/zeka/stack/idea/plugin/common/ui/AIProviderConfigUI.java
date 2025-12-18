@@ -25,6 +25,8 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
@@ -170,6 +172,10 @@ public final class AIProviderConfigUI {
         // Codefree 相关配置
         codefreeDownloadUrlField = new JBTextField();
         codefreeDownloadUrlField.setToolTipText(AICommonBundle.message("settings.codefree.download.url.hint"));
+        // 限制输入框宽度，防止超长 URL 拉长界面
+        Dimension urlFieldSize = new Dimension(500, codefreeDownloadUrlField.getPreferredSize().height);
+        codefreeDownloadUrlField.setPreferredSize(urlFieldSize);
+        codefreeDownloadUrlField.setMaximumSize(new Dimension(600, codefreeDownloadUrlField.getPreferredSize().height));
         codefreePortSpinner = new JSpinner(new SpinnerNumberModel(8765, 1024, 65535, 1));
         codefreeAutoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.start"));
         codefreeDownloadButton = new JButton(AICommonBundle.message("settings.codefree.download"));
@@ -250,10 +256,9 @@ public final class AIProviderConfigUI {
             .addSeparator(10)
             .addComponent(basicPanel)
             .addSeparator(10)
-            .addComponent(codefreePanel)
-            .addSeparator(10)
             .addComponent(advancedPanel)
             .addComponentFillVertically(new JPanel(), 0)
+            .addComponent(codefreePanel)
             .addComponent(personalInfoPanel.getContent())
             .getPanel();
         mainPanel.setBorder(JBUI.Borders.empty(8));
@@ -473,14 +478,22 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 创建 Codefree 代理面板
+     * 创建 Codefree 代理面板（可折叠）
      */
     private JPanel createCodefreePanel() {
-        JPanel buttonsPanel = new JPanel(new BorderLayout(5, 0));
-        buttonsPanel.add(codefreeDownloadButton, BorderLayout.WEST);
-        buttonsPanel.add(codefreeStartButton, BorderLayout.EAST);
+        JPanel content = new JPanel();
+        content.setLayout(new BorderLayout());
 
-        JPanel panel = FormBuilder.createFormBuilder()
+        // 创建可折叠的标题栏
+        String titleText = AICommonBundle.message("settings.codefree.title");
+        JPanel titlePanel = createCollapsibleTitle("▶ " + titleText);
+
+        // 主内容面板
+        JPanel buttonsPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 5, 0));
+        buttonsPanel.add(codefreeDownloadButton);
+        buttonsPanel.add(codefreeStartButton);
+
+        JPanel mainPanel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(codefreeAutoStartCheckBox, "settings.codefree.auto.start.hint"))
             .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.download.url")), codefreeDownloadUrlField)
             .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.port")),
@@ -489,7 +502,31 @@ public final class AIProviderConfigUI {
             .addComponent(buttonsPanel)
             .getPanel();
 
-        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.codefree.title"));
+        // 默认折叠：隐藏内容面板
+        mainPanel.setVisible(false);
+
+        // 使用包装面板确保内容居中
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.add(mainPanel, BorderLayout.NORTH);
+        contentWrapper.setOpaque(false);
+
+        // 将标题栏和内容面板添加到主面板
+        content.add(titlePanel, BorderLayout.NORTH);
+        content.add(contentWrapper, BorderLayout.CENTER);
+
+        // 为标题栏添加点击事件
+        titlePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                boolean isVisible = mainPanel.isVisible();
+                mainPanel.setVisible(!isVisible);
+                updateCollapsibleTitle(titlePanel, titleText, !isVisible);
+                content.revalidate();
+                content.repaint();
+            }
+        });
+
+        return content;
     }
 
     /**
@@ -647,6 +684,58 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 创建可折叠的标题栏
+     *
+     * @param title 标题文本（包含箭头）
+     * @return 标题栏面板
+     */
+    private JPanel createCollapsibleTitle(@NotNull String title) {
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        // 默认折叠状态，使用右箭头
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(title);
+        configureTitledBorder(titledBorder);
+        titlePanel.setBorder(BorderFactory.createCompoundBorder(
+            titledBorder,
+            JBUI.Borders.empty(5)
+                                                               ));
+        titlePanel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        titlePanel.setOpaque(true);
+        titlePanel.setBackground(UIUtil.getPanelBackground());
+        return titlePanel;
+    }
+
+    /**
+     * 更新可折叠标题栏的箭头图标
+     *
+     * @param titlePanel 标题栏面板
+     * @param title      标题文本（不包含箭头）
+     * @param expanded   是否展开
+     */
+    private void updateCollapsibleTitle(@NotNull JPanel titlePanel, @NotNull String title, boolean expanded) {
+        String arrow = expanded ? "▼ " : "▶ ";
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(arrow + title);
+        configureTitledBorder(titledBorder);
+        titlePanel.setBorder(BorderFactory.createCompoundBorder(
+            titledBorder,
+            JBUI.Borders.empty(5)
+                                                               ));
+    }
+
+    /**
+     * 配置 TitledBorder 的字体和颜色
+     * <p>
+     * 显式设置字体和颜色，确保在 2025 版本中正常显示。
+     * 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题。
+     *
+     * @param titledBorder 要配置的 TitledBorder
+     */
+    private void configureTitledBorder(@NotNull TitledBorder titledBorder) {
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
+    }
+
+    /**
      * 创建带标题边框的面板
      * <p>
      * 创建一个带标题边框的面板，显式设置字体和颜色以确保在不同 IntelliJ 版本中都能正常显示。
@@ -667,9 +756,7 @@ public final class AIProviderConfigUI {
 
         // 显式设置字体和颜色，确保在 2025 版本中正常显示
         // 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题
-        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
-        Color titleColor = UIUtil.getLabelForeground();
-        titledBorder.setTitleColor(titleColor);
+        configureTitledBorder(titledBorder);
 
         wrapper.setBorder(titledBorder);
         return wrapper;

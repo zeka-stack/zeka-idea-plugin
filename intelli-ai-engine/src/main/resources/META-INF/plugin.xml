@@ -36,7 +36,8 @@
         <toolWindow id="IntelliAI Engine Console"
                     factoryClass="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleToolWindowFactory"
                     anchor="bottom"
-                    icon="icons.AICommonIcons.TOOL_ICON"/>
+                    icon="icons.AICommonIcons.TOOL_ICON"
+                    doNotActivateOnStart="true"/>
     </extensions>
 </idea-plugin>
 

@@ -50,6 +50,9 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     /** 项目实例 */
     private final Project project;
 
+    /** 是否已显示欢迎信息 */
+    private boolean welcomeMessageShown = false;
+
     /**
      * 构造函数
      *
@@ -183,6 +186,11 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         ApplicationManager.getApplication().invokeLater(() -> {
             ConsoleView console = getConsoleView();
             if (console != null) {
+                // 首次输出日志时，先显示欢迎信息
+                if (!welcomeMessageShown) {
+                    printWelcomeMessage();
+                    welcomeMessageShown = true;
+                }
                 console.print(message, contentType);
                 showToolWindow();
             }
@@ -204,7 +212,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
             ConsoleView console = getConsoleView();
             if (console != null) {
                 console.print(message, ConsoleViewContentType.NORMAL_OUTPUT);
-                showToolWindow();
+                // 注意：printWelcome 不调用 showToolWindow()，由调用者控制
             }
         });
     }
@@ -212,10 +220,11 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     /**
      * 输出欢迎信息和使用说明（不受 verboseLogging 控制）
      * <p>
-     * 在控制台初始化时显示 IntelliAI Engine 的欢迎信息、使用方式和提示。
+     * 在首次有日志输出时自动显示 IntelliAI Engine 的欢迎信息、使用方式和提示。
+     * 该方法会在首次调用时显示欢迎信息，后续调用不会重复显示。
      */
     @SuppressWarnings("DuplicatedCode")
-    public void printWelcomeMessage() {
+    private void printWelcomeMessage() {
         printWelcome("╔════════════════════════════════════════════════════════════════╗\n");
         printWelcome("║          " + AICommonBundle.message("console.welcome.title") + "             ║\n");
         printWelcome("╚════════════════════════════════════════════════════════════════╝\n");

@@ -29,7 +29,7 @@ import lombok.SneakyThrows;
 @Service(Service.Level.APP)
 public final class CodefreeAgentManager {
     private static final Logger LOG = Logger.getInstance(CodefreeAgentManager.class);
-    public static final String DEFAULT_JAR_NAME = "codefree-chat-mvp-1.0.0-SNAPSHOT.jar";
+    public static final String DEFAULT_JAR_NAME = "codefree-agent.jar";
 
     private final Object processLock = new Object();
     @Nullable
@@ -80,6 +80,10 @@ public final class CodefreeAgentManager {
         Path javaPath = resolveJavaExecutable();
         GeneralCommandLine commandLine = new GeneralCommandLine();
         commandLine.setExePath(javaPath.toString());
+        // macOS 隐藏 Dock 图标
+        if (SystemInfo.isMac) {
+            commandLine.addParameter("-Dapple.awt.UIElement=true");
+        }
         commandLine.addParameters("-jar", jarPath.toString());
         if (jarPath.getParent() != null) {
             commandLine.setWorkDirectory(jarPath.getParent().toFile());
@@ -180,6 +184,12 @@ public final class CodefreeAgentManager {
         String javaHome = System.getProperty("java.home");
         if (javaHome == null || javaHome.isBlank()) {
             throw new IOException("无法定位 java.home");
+        }
+        if (SystemInfo.isWindows) {
+            Path javaw = Paths.get(javaHome, "bin", "javaw.exe");
+            if (Files.exists(javaw)) {
+                return javaw;
+            }
         }
         Path javaPath = Paths.get(javaHome, "bin", SystemInfo.isWindows ? "java.exe" : "java");
         if (Files.exists(javaPath)) {

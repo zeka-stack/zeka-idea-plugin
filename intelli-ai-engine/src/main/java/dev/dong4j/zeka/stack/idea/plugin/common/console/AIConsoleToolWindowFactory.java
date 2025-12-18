@@ -38,18 +38,6 @@ public class AIConsoleToolWindowFactory implements ToolWindowFactory, DumbAware 
         ContentFactory contentFactory = ContentFactory.getInstance();
         Content content = contentFactory.createContent(console.getComponent(), "", false);
         toolWindow.getContentManager().addContent(content);
-
-        // 输出欢迎信息
-        printWelcomeMessage(consoleView);
-    }
-
-    /**
-     * 输出欢迎信息和使用说明
-     *
-     * @param consoleView 控制台视图实例
-     */
-    private void printWelcomeMessage(@NotNull AIConsoleView consoleView) {
-        consoleView.printWelcomeMessage();
     }
 }
 
