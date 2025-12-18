@@ -12,6 +12,8 @@ public class CodefreeAgentSettings {
     public boolean autoStart = false;
     /** jar 下载地址 */
     public String downloadUrl = "";
+    /** 本地已下载的 jar 文件名 */
+    public String jarFileName = "";
 
     /**
      * 创建配置副本
@@ -21,6 +23,7 @@ public class CodefreeAgentSettings {
         CodefreeAgentSettings settings = new CodefreeAgentSettings();
         settings.autoStart = this.autoStart;
         settings.downloadUrl = this.downloadUrl;
+        settings.jarFileName = this.jarFileName;
         return settings;
     }
 
@@ -29,6 +32,7 @@ public class CodefreeAgentSettings {
      */
     public boolean contentEquals(@NotNull CodefreeAgentSettings other) {
         return autoStart == other.autoStart
-               && Objects.equals(downloadUrl, other.downloadUrl);
+               && Objects.equals(downloadUrl, other.downloadUrl)
+               && Objects.equals(jarFileName, other.jarFileName);
     }
 }
