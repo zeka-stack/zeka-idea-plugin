@@ -25,8 +25,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
@@ -112,19 +110,8 @@ public final class AIProviderConfigUI {
     private JSpinner topKSpinner;
     /** 偏差惩罚值调节器, 用于设置生成文本时的偏差惩罚参数 */
     private JSpinner presencePenaltySpinner;
-    /** Codefree jar 下载地址 */
-    private JBTextField codefreeDownloadUrlField;
-    /** Codefree jar 路径 */
-    /** Codefree 端口配置 */
-    private JSpinner codefreePortSpinner;
-    /** 自动启动 Codefree 的开关 */
-    private JBCheckBox codefreeAutoStartCheckBox;
-    /** 下载 Codefree jar */
-    private JButton codefreeDownloadButton;
-    /** 启动/停止 Codefree */
-    private JButton codefreeStartButton;
-    /** Codefree 状态展示 */
-    private JBLabel codefreeStatusLabel;
+    /** Codefree 代理面板 */
+    private CodefreePanel codefreePanel;
     /** checkBoxHintLabelMap 用于映射复选框与对应的提示标签 */
     private final Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new HashMap<>();
 
@@ -170,17 +157,7 @@ public final class AIProviderConfigUI {
         presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.0, -2.0, 2.0, 0.1));
 
         // Codefree 相关配置
-        codefreeDownloadUrlField = new JBTextField();
-        codefreeDownloadUrlField.setToolTipText(AICommonBundle.message("settings.codefree.download.url.hint"));
-        // 限制输入框宽度，防止超长 URL 拉长界面
-        Dimension urlFieldSize = new Dimension(500, codefreeDownloadUrlField.getPreferredSize().height);
-        codefreeDownloadUrlField.setPreferredSize(urlFieldSize);
-        codefreeDownloadUrlField.setMaximumSize(new Dimension(600, codefreeDownloadUrlField.getPreferredSize().height));
-        codefreePortSpinner = new JSpinner(new SpinnerNumberModel(8765, 1024, 65535, 1));
-        codefreeAutoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.start"));
-        codefreeDownloadButton = new JButton(AICommonBundle.message("settings.codefree.download"));
-        codefreeStartButton = new JButton(AICommonBundle.message("settings.codefree.start"));
-        codefreeStatusLabel = new JBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
+        codefreePanel = new CodefreePanel();
 
         // 设置所有 JSpinner 的长度一致
         Dimension spinnerSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
@@ -191,7 +168,6 @@ public final class AIProviderConfigUI {
         topPSpinner.setPreferredSize(spinnerSize);
         topKSpinner.setPreferredSize(spinnerSize);
         presencePenaltySpinner.setPreferredSize(spinnerSize);
-        codefreePortSpinner.setPreferredSize(spinnerSize);
 
         // 初始化可用服务商表格
         availableProvidersTableModel = new AvailableProvidersTableModel();
@@ -239,13 +215,12 @@ public final class AIProviderConfigUI {
 
         showAvailableProvidersCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.available.providers"));
 
-        // 创建 4 个子面板
+        // 创建子面板
         JPanel connectionPanel = createConnectionPanel();
         JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
         JPanel basicPanel = createBasicPanel();
-        JPanel codefreePanel = createCodefreePanel();
         JPanel advancedPanel = createAdvancedPanel();
-        // 4. 个人信息面板（作者信息）
+        // 个人信息面板（作者信息）
         PersonalInfoPanel personalInfoPanel = createPersonalInfoPanel();
 
         // 组合成主面板
@@ -258,7 +233,7 @@ public final class AIProviderConfigUI {
             .addSeparator(10)
             .addComponent(advancedPanel)
             .addComponentFillVertically(new JPanel(), 0)
-            .addComponent(codefreePanel)
+            .addComponent(codefreePanel.getContent())
             .addComponent(personalInfoPanel.getContent())
             .getPanel();
         mainPanel.setBorder(JBUI.Borders.empty(8));
@@ -375,33 +350,8 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public JBTextField getCodefreeDownloadUrlField() {
-        return codefreeDownloadUrlField;
-    }
-
-    @NotNull
-    public JSpinner getCodefreePortSpinner() {
-        return codefreePortSpinner;
-    }
-
-    @NotNull
-    public JBCheckBox getCodefreeAutoStartCheckBox() {
-        return codefreeAutoStartCheckBox;
-    }
-
-    @NotNull
-    public JButton getCodefreeDownloadButton() {
-        return codefreeDownloadButton;
-    }
-
-    @NotNull
-    public JButton getCodefreeStartButton() {
-        return codefreeStartButton;
-    }
-
-    @NotNull
-    public JBLabel getCodefreeStatusLabel() {
-        return codefreeStatusLabel;
+    public CodefreePanel getCodefreePanel() {
+        return codefreePanel;
     }
 
     // ==================== UI 创建方法 ====================
@@ -477,57 +427,6 @@ public final class AIProviderConfigUI {
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));
     }
 
-    /**
-     * 创建 Codefree 代理面板（可折叠）
-     */
-    private JPanel createCodefreePanel() {
-        JPanel content = new JPanel();
-        content.setLayout(new BorderLayout());
-
-        // 创建可折叠的标题栏
-        String titleText = AICommonBundle.message("settings.codefree.title");
-        JPanel titlePanel = createCollapsibleTitle("▶ " + titleText);
-
-        // 主内容面板
-        JPanel buttonsPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 5, 0));
-        buttonsPanel.add(codefreeDownloadButton);
-        buttonsPanel.add(codefreeStartButton);
-
-        JPanel mainPanel = FormBuilder.createFormBuilder()
-            .addComponent(createCheckBoxWithHint(codefreeAutoStartCheckBox, "settings.codefree.auto.start.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.download.url")), codefreeDownloadUrlField)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.port")),
-                                 createSpinnerWithHint(codefreePortSpinner, "settings.codefree.port.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.status")), codefreeStatusLabel)
-            .addComponent(buttonsPanel)
-            .getPanel();
-
-        // 默认折叠：隐藏内容面板
-        mainPanel.setVisible(false);
-
-        // 使用包装面板确保内容居中
-        JPanel contentWrapper = new JPanel(new BorderLayout());
-        contentWrapper.add(mainPanel, BorderLayout.NORTH);
-        contentWrapper.setOpaque(false);
-
-        // 将标题栏和内容面板添加到主面板
-        content.add(titlePanel, BorderLayout.NORTH);
-        content.add(contentWrapper, BorderLayout.CENTER);
-
-        // 为标题栏添加点击事件
-        titlePanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                boolean isVisible = mainPanel.isVisible();
-                mainPanel.setVisible(!isVisible);
-                updateCollapsibleTitle(titlePanel, titleText, !isVisible);
-                content.revalidate();
-                content.repaint();
-            }
-        });
-
-        return content;
-    }
 
     /**
      * 创建高级设置面板, 用于显示 AI 模型的高级配置选项
@@ -683,43 +582,6 @@ public final class AIProviderConfigUI {
         }
     }
 
-    /**
-     * 创建可折叠的标题栏
-     *
-     * @param title 标题文本（包含箭头）
-     * @return 标题栏面板
-     */
-    private JPanel createCollapsibleTitle(@NotNull String title) {
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        // 默认折叠状态，使用右箭头
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(title);
-        configureTitledBorder(titledBorder);
-        titlePanel.setBorder(BorderFactory.createCompoundBorder(
-            titledBorder,
-            JBUI.Borders.empty(5)
-                                                               ));
-        titlePanel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        titlePanel.setOpaque(true);
-        titlePanel.setBackground(UIUtil.getPanelBackground());
-        return titlePanel;
-    }
-
-    /**
-     * 更新可折叠标题栏的箭头图标
-     *
-     * @param titlePanel 标题栏面板
-     * @param title      标题文本（不包含箭头）
-     * @param expanded   是否展开
-     */
-    private void updateCollapsibleTitle(@NotNull JPanel titlePanel, @NotNull String title, boolean expanded) {
-        String arrow = expanded ? "▼ " : "▶ ";
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(arrow + title);
-        configureTitledBorder(titledBorder);
-        titlePanel.setBorder(BorderFactory.createCompoundBorder(
-            titledBorder,
-            JBUI.Borders.empty(5)
-                                                               ));
-    }
 
     /**
      * 配置 TitledBorder 的字体和颜色

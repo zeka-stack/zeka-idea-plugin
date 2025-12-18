@@ -38,6 +38,10 @@
                     anchor="bottom"
                     icon="icons.AICommonIcons.TOOL_ICON"
                     doNotActivateOnStart="true"/>
+
+        <!-- Codefree 代理生命周期监听器 -->
+        <applicationService
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentLifecycleListener"/>
     </extensions>
 </idea-plugin>
 

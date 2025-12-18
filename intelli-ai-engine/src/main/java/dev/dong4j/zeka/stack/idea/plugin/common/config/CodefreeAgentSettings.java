@@ -12,8 +12,6 @@ public class CodefreeAgentSettings {
     public boolean autoStart = false;
     /** jar 下载地址 */
     public String downloadUrl = "";
-    /** 代理监听端口 */
-    public int port = 8765;
 
     /**
      * 创建配置副本
@@ -23,7 +21,6 @@ public class CodefreeAgentSettings {
         CodefreeAgentSettings settings = new CodefreeAgentSettings();
         settings.autoStart = this.autoStart;
         settings.downloadUrl = this.downloadUrl;
-        settings.port = this.port;
         return settings;
     }
 
@@ -32,7 +29,6 @@ public class CodefreeAgentSettings {
      */
     public boolean contentEquals(@NotNull CodefreeAgentSettings other) {
         return autoStart == other.autoStart
-               && port == other.port
                && Objects.equals(downloadUrl, other.downloadUrl);
     }
 }

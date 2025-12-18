@@ -93,6 +93,19 @@ public final class AIProviderConfigController {
     }
 
     /**
+     * 初始化 Codefree 面板的状态更新回调
+     * <p>
+     * 需要在 UI 创建完成后调用，确保 codefreePanel 已初始化。
+     */
+    public void initCodefreePanel() {
+        // 设置 Codefree 面板的状态更新回调
+        ui.getCodefreePanel().setStatusUpdateCallback(() -> {
+            CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
+            updateCodefreeStatus(snapshot);
+        });
+    }
+
+    /**
      * 加载并应用设置到用户界面
      * <p>
      * 该方法用于将传入的 AI 提供者设置复制到内部工作设置中, 并根据设置更新用户界面相关组件的状态和显示内容.
@@ -147,9 +160,9 @@ public final class AIProviderConfigController {
         CodefreeAgentSettings codefreeSettings = workingSettings.codefreeSettings != null
                                                  ? workingSettings.codefreeSettings
                                                  : new CodefreeAgentSettings();
-        ui.getCodefreeAutoStartCheckBox().setSelected(codefreeSettings.autoStart);
-        ui.getCodefreeDownloadUrlField().setText(codefreeSettings.downloadUrl);
-        ui.getCodefreePortSpinner().setValue(codefreeSettings.port);
+        CodefreePanel codefreePanel = ui.getCodefreePanel();
+        codefreePanel.getAutoStartCheckBox().setSelected(codefreeSettings.autoStart);
+        codefreePanel.getDownloadUrlField().setText(codefreeSettings.downloadUrl != null ? codefreeSettings.downloadUrl : "");
         updateCodefreeStatus(codefreeSettings);
 
         // 加载可用服务商
@@ -683,29 +696,44 @@ public final class AIProviderConfigController {
 
     /**
      * 更新 Codefree 代理状态
+     * <p>
+     * 检查 Codefree 代理服务是否正在运行，并更新按钮状态和状态标签。
      */
     private void updateCodefreeStatus(@NotNull CodefreeAgentSettings settings) {
+        CodefreePanel codefreePanel = ui.getCodefreePanel();
         Path jarPath = codefreeAgentManager.resolveJarPath(settings);
         boolean jarReady = Files.exists(jarPath);
         boolean running = codefreeAgentManager.isRunning();
+
         String status;
+        String buttonText;
+        boolean buttonEnabled = true;
+
         if (running) {
-            status = AICommonBundle.message("settings.codefree.status.running", settings.port);
-            ui.getCodefreeStartButton().setText(AICommonBundle.message("settings.codefree.stop"));
+            // 服务正在运行
+            status = AICommonBundle.message("settings.codefree.status.running");
+            buttonText = AICommonBundle.message("settings.codefree.stop");
         } else if (jarReady) {
+            // Jar 文件存在，可以启动
             status = AICommonBundle.message("settings.codefree.status.ready");
-            ui.getCodefreeStartButton().setText(AICommonBundle.message("settings.codefree.start"));
+            buttonText = AICommonBundle.message("settings.codefree.start");
         } else {
+            // Jar 文件不存在，需要先下载
             status = AICommonBundle.message("settings.codefree.status.not.ready");
-            ui.getCodefreeStartButton().setText(AICommonBundle.message("settings.codefree.start"));
+            buttonText = AICommonBundle.message("settings.codefree.start");
+            buttonEnabled = false; // 没有 jar 文件时禁用启动按钮
         }
-        ui.getCodefreeStatusLabel().setText(status);
+
+        codefreePanel.getStatusLabel().setText(status);
+        codefreePanel.getStartButton().setText(buttonText);
+        codefreePanel.getStartButton().setEnabled(buttonEnabled);
     }
 
     /**
      * 下载 Codefree jar
      */
     public void downloadCodefreeJar() {
+        CodefreePanel codefreePanel = ui.getCodefreePanel();
         CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
         if (snapshot.downloadUrl == null || snapshot.downloadUrl.isBlank()) {
             JOptionPane.showMessageDialog(ui.getMainPanel(),
@@ -714,7 +742,7 @@ public final class AIProviderConfigController {
                                           JOptionPane.WARNING_MESSAGE);
             return;
         }
-        JButton downloadButton = ui.getCodefreeDownloadButton();
+        JButton downloadButton = codefreePanel.getDownloadButton();
         downloadButton.setEnabled(false);
         downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
 
@@ -751,6 +779,7 @@ public final class AIProviderConfigController {
      * 启动或停止 Codefree 本地代理
      */
     public void toggleCodefreeAgent() {
+        CodefreePanel codefreePanel = ui.getCodefreePanel();
         CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
         if (codefreeAgentManager.isRunning()) {
             codefreeAgentManager.stopAgent();
@@ -765,7 +794,7 @@ public final class AIProviderConfigController {
                                           JOptionPane.WARNING_MESSAGE);
             return;
         }
-        JButton startButton = ui.getCodefreeStartButton();
+        JButton startButton = codefreePanel.getStartButton();
         startButton.setEnabled(false);
         startButton.setText(AICommonBundle.message("settings.codefree.starting"));
 
@@ -775,7 +804,7 @@ public final class AIProviderConfigController {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     startButton.setEnabled(true);
                     startButton.setText(AICommonBundle.message("settings.codefree.stop"));
-                    ui.getCodefreeStatusLabel().setToolTipText(pid > 0 ? "PID: " + pid : null);
+                    codefreePanel.getStatusLabel().setToolTipText(pid > 0 ? "PID: " + pid : null);
                     updateCodefreeStatus(snapshot);
                 });
             } catch (Exception e) {
@@ -850,10 +879,10 @@ public final class AIProviderConfigController {
      */
     @NotNull
     private CodefreeAgentSettings snapshotCodefreeSettings() {
+        CodefreePanel codefreePanel = ui.getCodefreePanel();
         CodefreeAgentSettings snapshot = new CodefreeAgentSettings();
-        snapshot.autoStart = ui.getCodefreeAutoStartCheckBox().isSelected();
-        snapshot.downloadUrl = ui.getCodefreeDownloadUrlField().getText().trim();
-        snapshot.port = ((Number) ui.getCodefreePortSpinner().getValue()).intValue();
+        snapshot.autoStart = codefreePanel.getAutoStartCheckBox().isSelected();
+        snapshot.downloadUrl = codefreePanel.getDownloadUrlField().getText().trim();
         return snapshot;
     }
 

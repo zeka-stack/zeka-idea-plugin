@@ -53,7 +53,10 @@ public final class AIProviderConfigPanel {
             },
             controller::clearAllAvailableProviders
                    );
-        
+
+        // UI 创建完成后，初始化 Codefree 面板
+        controller.initCodefreePanel();
+
         setupListeners();
     }
 
@@ -133,7 +136,7 @@ public final class AIProviderConfigPanel {
 
         ui.getTestConnectionButton().addActionListener(e -> controller.testConnection());
         ui.getRefreshModelsButton().addActionListener(e -> controller.refreshModels());
-        ui.getCodefreeDownloadButton().addActionListener(e -> controller.downloadCodefreeJar());
-        ui.getCodefreeStartButton().addActionListener(e -> controller.toggleCodefreeAgent());
+        ui.getCodefreePanel().getDownloadButton().addActionListener(e -> controller.downloadCodefreeJar());
+        ui.getCodefreePanel().getStartButton().addActionListener(e -> controller.toggleCodefreeAgent());
     }
 }
