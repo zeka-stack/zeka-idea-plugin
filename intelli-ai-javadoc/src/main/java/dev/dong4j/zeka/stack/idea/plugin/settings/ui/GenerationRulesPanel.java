@@ -9,9 +9,13 @@ import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
+import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -22,6 +26,7 @@ import javax.swing.JTextArea;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -69,6 +74,15 @@ public class GenerationRulesPanel {
 
     /** 修复错误 Javadoc 提示词面板容器 */
     private JPanel fixJavadocPromptPanel;
+
+    /** 修复错误 Javadoc 提示词面板的内容面板（用于折叠/展开） */
+    private JPanel fixJavadocPromptContentPanel;
+
+    /** 修复错误 Javadoc 提示词面板的标题面板（用于更新箭头） */
+    private JPanel fixJavadocPromptTitlePanel;
+
+    /** 修复错误 Javadoc 提示词面板的标题文本 */
+    private String fixJavadocPromptTitleText;
 
     /** 启用类级上下文的复选框 */
     private JBCheckBox enableGenerationContextCheckBox;
@@ -451,19 +465,24 @@ public class GenerationRulesPanel {
         // 默认选择"删除原注释并重新生成"
         replaceModeRadioButton.setSelected(true);
 
-        // 创建单选框面板
-        JPanel radioPanel = FormBuilder.createFormBuilder()
+        // 创建单选框面板（第一个单选框）
+        JPanel firstRadioPanel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(fixModeRadioButton, "settings.override.mode.fix.hint"))
+            .getPanel();
+
+        // 创建修复错误 Javadoc 提示词面板（可折叠）
+        fixJavadocPromptPanel = createFixJavadocPromptPanel();
+
+        // 创建单选框面板（第二个单选框）
+        JPanel secondRadioPanel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(replaceModeRadioButton, "settings.override.mode.replace.hint"))
             .getPanel();
 
-        // 创建修复错误 Javadoc 提示词面板
-        fixJavadocPromptPanel = createFixJavadocPromptPanel();
-
-        // 创建内容面板，包含单选框和提示词面板
+        // 创建内容面板，包含单选框和提示词面板（提示词面板在两个单选框中间）
         JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(radioPanel)
+            .addComponent(firstRadioPanel)
             .addComponent(fixJavadocPromptPanel)
+            .addComponent(secondRadioPanel)
             .getPanel();
 
         indentPanel.add(contentPanel, BorderLayout.CENTER);
@@ -477,15 +496,26 @@ public class GenerationRulesPanel {
     }
 
     /**
-     * 创建修复错误 Javadoc 提示词面板
+     * 创建修复错误 Javadoc 提示词面板（可折叠）
      * <p>
-     * 该方法创建一个包含文本区域和重置按钮的面板，用于编辑修复错误 Javadoc 的提示词。
-     * 参考系统提示词的实现方式。
+     * 该方法创建一个可折叠的面板，包含文本区域和重置按钮，用于编辑修复错误 Javadoc 的提示词。
+     * 默认折叠状态，只有在选择"仅修复错误注释"时才能展开（但不会自动展开）。
      *
      * @return 返回配置好的修复错误 Javadoc 提示词面板
      */
     private JPanel createFixJavadocPromptPanel() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
+        // 创建带边框的容器面板（边框会包围整个区域，包括标题和内容）
+        JPanel container = new JPanel();
+        container.setLayout(new BorderLayout());
+
+        // 创建标题文本（用于边框标题）
+        fixJavadocPromptTitleText = JavadocBundle.message("settings.fix.javadoc.prompt");
+
+        // 创建标题面板（不带边框，因为边框在容器上）
+        fixJavadocPromptTitlePanel = new JPanel(new BorderLayout());
+        fixJavadocPromptTitlePanel.setBorder(JBUI.Borders.empty(5));
+        fixJavadocPromptTitlePanel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        fixJavadocPromptTitlePanel.setOpaque(false);
 
         // 创建文本区域
         fixJavadocPromptTextArea = new JTextArea(15, 15);
@@ -517,32 +547,112 @@ public class GenerationRulesPanel {
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setBorder(JBUI.Borders.empty(10));
 
-        // 创建标签
-        JBLabel label = new JBLabel(JavadocBundle.message("settings.fix.javadoc.prompt"));
-        label.setBorder(JBUI.Borders.empty(5, 0));
-
         // 创建重置按钮
         JButton resetButton = new JButton(JavadocBundle.message("settings.fix.javadoc.prompt.reset"));
         resetButton.addActionListener(e -> resetFixJavadocPromptToDefault());
 
-        // 创建内容面板
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(label, BorderLayout.NORTH);
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
-        contentPanel.add(resetButton, BorderLayout.SOUTH);
+        // 创建主内容面板（不包含标签，因为标题已经在可折叠标题栏中显示）
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        mainPanel.add(resetButton, BorderLayout.SOUTH);
+        mainPanel.setBorder(JBUI.Borders.empty(5, 0));
 
         // 添加左侧缩进（再缩进2个空格，约22像素）
-        JPanel indentPanel = new JPanel(new BorderLayout());
-        indentPanel.setBorder(JBUI.Borders.emptyLeft(22));
-        indentPanel.add(contentPanel, BorderLayout.CENTER);
+        fixJavadocPromptContentPanel = new JPanel(new BorderLayout());
+        fixJavadocPromptContentPanel.setBorder(JBUI.Borders.emptyLeft(22));
+        fixJavadocPromptContentPanel.add(mainPanel, BorderLayout.CENTER);
 
-        mainPanel.add(indentPanel, BorderLayout.CENTER);
-        mainPanel.setVisible(false); // 默认隐藏
+        // 默认折叠：隐藏内容面板
+        fixJavadocPromptContentPanel.setVisible(false);
+
+        // 使用包装面板确保内容居中
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.add(fixJavadocPromptContentPanel, BorderLayout.NORTH);
+        contentWrapper.setOpaque(false);
+
+        // 将标题栏和内容面板添加到容器面板
+        container.add(fixJavadocPromptTitlePanel, BorderLayout.NORTH);
+        container.add(contentWrapper, BorderLayout.CENTER);
+
+        // 为容器设置 TitledBorder（边框会包围整个区域）
+        TitledBorder containerBorder = BorderFactory.createTitledBorder("▶ " + fixJavadocPromptTitleText);
+        configureTitledBorder(containerBorder);
+        container.setBorder(BorderFactory.createCompoundBorder(
+            containerBorder,
+            JBUI.Borders.empty(5)
+                                                              ));
+        container.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        container.setOpaque(true);
+        container.setBackground(com.intellij.util.ui.UIUtil.getPanelBackground());
+
+        // 为容器添加点击事件（整个容器都可以点击）
+        container.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                // 只有在选择"仅修复错误注释"时才能展开
+                if (!fixModeRadioButton.isSelected()) {
+                    return;
+                }
+                toggleFixJavadocPromptPanel();
+            }
+        });
 
         // 初始化时根据内容调整大小
         SwingUtilities.invokeLater(() -> adjustTextAreaSize(fixJavadocPromptTextArea));
 
-        return mainPanel;
+        return container;
+    }
+
+    /**
+     * 创建可折叠的标题栏
+     *
+     * @param title 标题文本（包含箭头）
+     * @return 标题栏面板
+     */
+    private JPanel createCollapsibleTitle(@NotNull String title) {
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        // 默认折叠状态，使用右箭头
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(title);
+        configureTitledBorder(titledBorder);
+        titlePanel.setBorder(BorderFactory.createCompoundBorder(
+            titledBorder,
+            JBUI.Borders.empty(5)
+                                                               ));
+        titlePanel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        titlePanel.setOpaque(true);
+        titlePanel.setBackground(com.intellij.util.ui.UIUtil.getPanelBackground());
+        return titlePanel;
+    }
+
+    /**
+     * 更新可折叠标题栏的箭头图标
+     *
+     * @param titlePanel 标题栏面板
+     * @param title      标题文本（不包含箭头）
+     * @param expanded   是否展开
+     */
+    private void updateCollapsibleTitle(@NotNull JPanel titlePanel, @NotNull String title, boolean expanded) {
+        String arrow = expanded ? "▼ " : "▶ ";
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(arrow + title);
+        configureTitledBorder(titledBorder);
+        titlePanel.setBorder(BorderFactory.createCompoundBorder(
+            titledBorder,
+            JBUI.Borders.empty(5)
+                                                               ));
+    }
+
+    /**
+     * 配置 TitledBorder 的字体和颜色
+     * <p>
+     * 显式设置字体和颜色，确保在 2025 版本中正常显示。
+     * 使用 UIUtil 获取主题感知的文本颜色，自动适配浅色和深色主题。
+     *
+     * @param titledBorder 要配置的 TitledBorder
+     */
+    private void configureTitledBorder(@NotNull TitledBorder titledBorder) {
+        titledBorder.setTitleFont(UIManager.getFont("Label.font"));
+        Color titleColor = com.intellij.util.ui.UIUtil.getLabelForeground();
+        titledBorder.setTitleColor(titleColor);
     }
 
     /**
@@ -609,13 +719,55 @@ public class GenerationRulesPanel {
      * <p>
      * 根据覆写注释复选框和覆写模式单选框的状态，显示或隐藏修复错误 Javadoc 提示词面板。
      * 只有当覆写注释复选框被勾选且选择了"仅修复错误注释"时才显示。
+     * 注意：面板显示时仍然是折叠状态，需要用户手动点击展开。
+     * 当切换到"删除原注释并重新生成"时，如果面板已展开，会自动折叠。
      */
     private void updateFixJavadocPromptVisibility() {
         boolean visible = overrideExistingCheckBox.isSelected() && fixModeRadioButton.isSelected();
         fixJavadocPromptPanel.setVisible(visible);
+
+        // 如果切换到"删除原注释并重新生成"，且面板已展开，则自动折叠并更新边框
+        if (!fixModeRadioButton.isSelected() && fixJavadocPromptContentPanel != null && fixJavadocPromptContentPanel.isVisible()) {
+            fixJavadocPromptContentPanel.setVisible(false);
+            // 更新容器的边框（因为边框在容器上）
+            if (fixJavadocPromptPanel != null && fixJavadocPromptTitleText != null) {
+                TitledBorder containerBorder = BorderFactory.createTitledBorder("▶ " + fixJavadocPromptTitleText);
+                configureTitledBorder(containerBorder);
+                fixJavadocPromptPanel.setBorder(BorderFactory.createCompoundBorder(
+                    containerBorder,
+                    JBUI.Borders.empty(5)
+                                                                                  ));
+            }
+        }
+
         if (panel.getParent() != null) {
             panel.getParent().revalidate();
             panel.getParent().repaint();
+        }
+    }
+
+    /**
+     * 切换修复错误 Javadoc 提示词面板的展开/折叠状态
+     */
+    private void toggleFixJavadocPromptPanel() {
+        if (fixJavadocPromptContentPanel == null || fixJavadocPromptPanel == null || fixJavadocPromptTitleText == null) {
+            return;
+        }
+        boolean isVisible = fixJavadocPromptContentPanel.isVisible();
+        fixJavadocPromptContentPanel.setVisible(!isVisible);
+
+        // 更新容器的 TitledBorder（因为边框在容器上）
+        String arrow = !isVisible ? "▼ " : "▶ ";
+        TitledBorder containerBorder = BorderFactory.createTitledBorder(arrow + fixJavadocPromptTitleText);
+        configureTitledBorder(containerBorder);
+        fixJavadocPromptPanel.setBorder(BorderFactory.createCompoundBorder(
+            containerBorder,
+            JBUI.Borders.empty(5)
+                                                                          ));
+
+        if (fixJavadocPromptPanel.getParent() != null) {
+            fixJavadocPromptPanel.revalidate();
+            fixJavadocPromptPanel.repaint();
         }
     }
 }
