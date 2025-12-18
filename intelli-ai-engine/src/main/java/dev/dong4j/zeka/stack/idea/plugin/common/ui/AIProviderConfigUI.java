@@ -110,6 +110,19 @@ public final class AIProviderConfigUI {
     private JSpinner topKSpinner;
     /** 偏差惩罚值调节器, 用于设置生成文本时的偏差惩罚参数 */
     private JSpinner presencePenaltySpinner;
+    /** Codefree jar 下载地址 */
+    private JBTextField codefreeDownloadUrlField;
+    /** Codefree jar 路径 */
+    /** Codefree 端口配置 */
+    private JSpinner codefreePortSpinner;
+    /** 自动启动 Codefree 的开关 */
+    private JBCheckBox codefreeAutoStartCheckBox;
+    /** 下载 Codefree jar */
+    private JButton codefreeDownloadButton;
+    /** 启动/停止 Codefree */
+    private JButton codefreeStartButton;
+    /** Codefree 状态展示 */
+    private JBLabel codefreeStatusLabel;
     /** checkBoxHintLabelMap 用于映射复选框与对应的提示标签 */
     private final Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new HashMap<>();
 
@@ -154,6 +167,15 @@ public final class AIProviderConfigUI {
         topKSpinner = new JSpinner(new SpinnerNumberModel(50, 1, 100, 1));
         presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.0, -2.0, 2.0, 0.1));
 
+        // Codefree 相关配置
+        codefreeDownloadUrlField = new JBTextField();
+        codefreeDownloadUrlField.setToolTipText(AICommonBundle.message("settings.codefree.download.url.hint"));
+        codefreePortSpinner = new JSpinner(new SpinnerNumberModel(8765, 1024, 65535, 1));
+        codefreeAutoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.start"));
+        codefreeDownloadButton = new JButton(AICommonBundle.message("settings.codefree.download"));
+        codefreeStartButton = new JButton(AICommonBundle.message("settings.codefree.start"));
+        codefreeStatusLabel = new JBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
+
         // 设置所有 JSpinner 的长度一致
         Dimension spinnerSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
         maxRetriesSpinner.setPreferredSize(spinnerSize);
@@ -163,6 +185,7 @@ public final class AIProviderConfigUI {
         topPSpinner.setPreferredSize(spinnerSize);
         topKSpinner.setPreferredSize(spinnerSize);
         presencePenaltySpinner.setPreferredSize(spinnerSize);
+        codefreePortSpinner.setPreferredSize(spinnerSize);
 
         // 初始化可用服务商表格
         availableProvidersTableModel = new AvailableProvidersTableModel();
@@ -214,6 +237,7 @@ public final class AIProviderConfigUI {
         JPanel connectionPanel = createConnectionPanel();
         JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
         JPanel basicPanel = createBasicPanel();
+        JPanel codefreePanel = createCodefreePanel();
         JPanel advancedPanel = createAdvancedPanel();
         // 4. 个人信息面板（作者信息）
         PersonalInfoPanel personalInfoPanel = createPersonalInfoPanel();
@@ -225,6 +249,8 @@ public final class AIProviderConfigUI {
             .addComponent(availableProvidersSectionPanel)
             .addSeparator(10)
             .addComponent(basicPanel)
+            .addSeparator(10)
+            .addComponent(codefreePanel)
             .addSeparator(10)
             .addComponent(advancedPanel)
             .addComponentFillVertically(new JPanel(), 0)
@@ -343,6 +369,36 @@ public final class AIProviderConfigUI {
         return presencePenaltySpinner;
     }
 
+    @NotNull
+    public JBTextField getCodefreeDownloadUrlField() {
+        return codefreeDownloadUrlField;
+    }
+
+    @NotNull
+    public JSpinner getCodefreePortSpinner() {
+        return codefreePortSpinner;
+    }
+
+    @NotNull
+    public JBCheckBox getCodefreeAutoStartCheckBox() {
+        return codefreeAutoStartCheckBox;
+    }
+
+    @NotNull
+    public JButton getCodefreeDownloadButton() {
+        return codefreeDownloadButton;
+    }
+
+    @NotNull
+    public JButton getCodefreeStartButton() {
+        return codefreeStartButton;
+    }
+
+    @NotNull
+    public JBLabel getCodefreeStatusLabel() {
+        return codefreeStatusLabel;
+    }
+
     // ==================== UI 创建方法 ====================
 
     /**
@@ -414,6 +470,26 @@ public final class AIProviderConfigUI {
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));
+    }
+
+    /**
+     * 创建 Codefree 代理面板
+     */
+    private JPanel createCodefreePanel() {
+        JPanel buttonsPanel = new JPanel(new BorderLayout(5, 0));
+        buttonsPanel.add(codefreeDownloadButton, BorderLayout.WEST);
+        buttonsPanel.add(codefreeStartButton, BorderLayout.EAST);
+
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addComponent(createCheckBoxWithHint(codefreeAutoStartCheckBox, "settings.codefree.auto.start.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.download.url")), codefreeDownloadUrlField)
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.port")),
+                                 createSpinnerWithHint(codefreePortSpinner, "settings.codefree.port.hint"))
+            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.status")), codefreeStatusLabel)
+            .addComponent(buttonsPanel)
+            .getPanel();
+
+        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.codefree.title"));
     }
 
     /**
@@ -822,4 +898,3 @@ public final class AIProviderConfigUI {
         }
     }
 }
-

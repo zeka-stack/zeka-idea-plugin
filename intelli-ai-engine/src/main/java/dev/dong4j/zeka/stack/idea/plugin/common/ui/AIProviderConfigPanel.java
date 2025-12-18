@@ -133,5 +133,7 @@ public final class AIProviderConfigPanel {
 
         ui.getTestConnectionButton().addActionListener(e -> controller.testConnection());
         ui.getRefreshModelsButton().addActionListener(e -> controller.refreshModels());
+        ui.getCodefreeDownloadButton().addActionListener(e -> controller.downloadCodefreeJar());
+        ui.getCodefreeStartButton().addActionListener(e -> controller.toggleCodefreeAgent());
     }
 }

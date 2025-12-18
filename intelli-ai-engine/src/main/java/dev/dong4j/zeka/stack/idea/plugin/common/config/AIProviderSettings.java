@@ -49,6 +49,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      * 用于设置和管理 AI 模型的相关参数
      */
     public AIModelParameters modelParameters = new AIModelParameters();
+    /** Codefree 本地代理配置 */
+    public CodefreeAgentSettings codefreeSettings = new CodefreeAgentSettings();
     /** AI 运行时设置 */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
@@ -154,6 +156,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         if (this.modelParameters == null) {
             this.modelParameters = state.modelParameters != null ? state.modelParameters.copy() : new AIModelParameters();
         }
+        if (this.codefreeSettings == null) {
+            this.codefreeSettings = state.codefreeSettings != null ? state.codefreeSettings.copy() : new CodefreeAgentSettings();
+        }
     }
 
     /**
@@ -180,6 +185,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.runtimeSettings.timeout = sourceRuntime.timeout;
         settings.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
         // verboseLogging 已迁移到全局配置
+
+        CodefreeAgentSettings sourceCodefree = this.codefreeSettings != null ? this.codefreeSettings : new CodefreeAgentSettings();
+        settings.codefreeSettings = sourceCodefree.copy();
 
         settings.verboseLogging = this.verboseLogging;
         settings.showAdvancedSettings = this.showAdvancedSettings;
@@ -296,7 +304,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     public void applyFrom(@NotNull AIProviderSettings source) {
         // 检查可用提供商列表是否有变化
         boolean availableProvidersChanged = !this.availableProviders.equals(source.availableProviders);
-        
+
         this.defaultProviders.clear();
         source.defaultProviders.forEach((type, config) -> this.defaultProviders.put(type, config.copy()));
 
@@ -315,6 +323,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.runtimeSettings.timeout = sourceRuntime.timeout;
         this.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
         // verboseLogging 已迁移到全局配置
+
+        CodefreeAgentSettings sourceCodefree = source.codefreeSettings != null ? source.codefreeSettings : new CodefreeAgentSettings();
+        this.codefreeSettings = sourceCodefree.copy();
 
         this.verboseLogging = source.verboseLogging;
         this.showAdvancedSettings = source.showAdvancedSettings;
@@ -368,6 +379,12 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
             return false;
         }
         if (runtimeSettings.waitDuration != other.runtimeSettings.waitDuration) {
+            return false;
+        }
+
+        CodefreeAgentSettings thisCodefree = codefreeSettings != null ? codefreeSettings : new CodefreeAgentSettings();
+        CodefreeAgentSettings otherCodefree = other.codefreeSettings != null ? other.codefreeSettings : new CodefreeAgentSettings();
+        if (!thisCodefree.contentEquals(otherCodefree)) {
             return false;
         }
         // verboseLogging 已迁移到全局配置

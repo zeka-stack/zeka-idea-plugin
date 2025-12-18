@@ -1,6 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.Gray;
 import com.intellij.ui.JBColor;
@@ -11,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.Color;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -30,11 +35,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
 
@@ -59,6 +66,8 @@ public final class AIProviderConfigController {
     private final AIResponseListener responseListener;
     /** UI 界面组件, 用于展示和操作 AI 提供商配置信息 */
     private final AIProviderConfigUI ui;
+    /** Codefree 代理管理器 */
+    private final CodefreeAgentManager codefreeAgentManager = CodefreeAgentManager.getInstance();
     /** 配置是否已验证的标志, 用于标识当前配置是否通过验证 */
     private Boolean configurationVerified = Boolean.FALSE;
     /** 刷新模型操作是否成功 */
@@ -135,6 +144,14 @@ public final class AIProviderConfigController {
         ui.getTopKSpinner().setValue(modelParameters.topK);
         ui.getPresencePenaltySpinner().setValue(modelParameters.presencePenalty);
 
+        CodefreeAgentSettings codefreeSettings = workingSettings.codefreeSettings != null
+                                                 ? workingSettings.codefreeSettings
+                                                 : new CodefreeAgentSettings();
+        ui.getCodefreeAutoStartCheckBox().setSelected(codefreeSettings.autoStart);
+        ui.getCodefreeDownloadUrlField().setText(codefreeSettings.downloadUrl);
+        ui.getCodefreePortSpinner().setValue(codefreeSettings.port);
+        updateCodefreeStatus(codefreeSettings);
+
         // 加载可用服务商
         ui.getAvailableProvidersTableModel().setData(workingSettings.availableProviders);
         ui.getShowAvailableProvidersCheckBox().setSelected(workingSettings.showAvailableProviders);
@@ -179,6 +196,7 @@ public final class AIProviderConfigController {
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();
+        workingSettings.codefreeSettings = snapshotCodefreeSettings().copy();
 
         workingSettings.aiProviderType = providerType;
 
@@ -664,6 +682,117 @@ public final class AIProviderConfigController {
     }
 
     /**
+     * 更新 Codefree 代理状态
+     */
+    private void updateCodefreeStatus(@NotNull CodefreeAgentSettings settings) {
+        Path jarPath = codefreeAgentManager.resolveJarPath(settings);
+        boolean jarReady = Files.exists(jarPath);
+        boolean running = codefreeAgentManager.isRunning();
+        String status;
+        if (running) {
+            status = AICommonBundle.message("settings.codefree.status.running", settings.port);
+            ui.getCodefreeStartButton().setText(AICommonBundle.message("settings.codefree.stop"));
+        } else if (jarReady) {
+            status = AICommonBundle.message("settings.codefree.status.ready");
+            ui.getCodefreeStartButton().setText(AICommonBundle.message("settings.codefree.start"));
+        } else {
+            status = AICommonBundle.message("settings.codefree.status.not.ready");
+            ui.getCodefreeStartButton().setText(AICommonBundle.message("settings.codefree.start"));
+        }
+        ui.getCodefreeStatusLabel().setText(status);
+    }
+
+    /**
+     * 下载 Codefree jar
+     */
+    public void downloadCodefreeJar() {
+        CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
+        if (snapshot.downloadUrl == null || snapshot.downloadUrl.isBlank()) {
+            JOptionPane.showMessageDialog(ui.getMainPanel(),
+                                          AICommonBundle.message("settings.codefree.error.no.url"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        JButton downloadButton = ui.getCodefreeDownloadButton();
+        downloadButton.setEnabled(false);
+        downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
+
+        ProgressManager.getInstance().run(new Task.Backgroundable(null, AICommonBundle.message("settings.codefree.download"), true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    codefreeAgentManager.downloadJar(snapshot, indicator);
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        downloadButton.setEnabled(true);
+                        downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
+                        updateCodefreeStatus(snapshot);
+                        JOptionPane.showMessageDialog(ui.getMainPanel(),
+                                                      AICommonBundle.message("settings.codefree.download.success"),
+                                                      AICommonBundle.message("settings.codefree.title"),
+                                                      JOptionPane.INFORMATION_MESSAGE);
+                    });
+                } catch (Exception e) {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        downloadButton.setEnabled(true);
+                        downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
+                        JOptionPane.showMessageDialog(ui.getMainPanel(),
+                                                      e.getMessage(),
+                                                      AICommonBundle.message("settings.error.title"),
+                                                      JOptionPane.ERROR_MESSAGE);
+                        updateCodefreeStatus(snapshot);
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 启动或停止 Codefree 本地代理
+     */
+    public void toggleCodefreeAgent() {
+        CodefreeAgentSettings snapshot = snapshotCodefreeSettings();
+        if (codefreeAgentManager.isRunning()) {
+            codefreeAgentManager.stopAgent();
+            updateCodefreeStatus(snapshot);
+            return;
+        }
+        Path jarPath = codefreeAgentManager.resolveJarPath(snapshot);
+        if (Files.notExists(jarPath)) {
+            JOptionPane.showMessageDialog(ui.getMainPanel(),
+                                          AICommonBundle.message("settings.codefree.error.no.jar"),
+                                          AICommonBundle.message("settings.error.title"),
+                                          JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        JButton startButton = ui.getCodefreeStartButton();
+        startButton.setEnabled(false);
+        startButton.setText(AICommonBundle.message("settings.codefree.starting"));
+
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                long pid = codefreeAgentManager.startAgent(snapshot);
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    startButton.setEnabled(true);
+                    startButton.setText(AICommonBundle.message("settings.codefree.stop"));
+                    ui.getCodefreeStatusLabel().setToolTipText(pid > 0 ? "PID: " + pid : null);
+                    updateCodefreeStatus(snapshot);
+                });
+            } catch (Exception e) {
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    startButton.setEnabled(true);
+                    startButton.setText(AICommonBundle.message("settings.codefree.start"));
+                    JOptionPane.showMessageDialog(ui.getMainPanel(),
+                                                  e.getMessage(),
+                                                  AICommonBundle.message("settings.error.title"),
+                                                  JOptionPane.ERROR_MESSAGE);
+                    updateCodefreeStatus(snapshot);
+                });
+            }
+        });
+    }
+
+    /**
      * 根据指定的 AI 服务提供商类型更新基础 URL 字段的可编辑状态
      * <p>
      * 该方法会根据传入的 AI 服务提供商类型设置基础 URL 字段的可编辑性, 并在不可编辑时设置默认的基础 URL 值.
@@ -713,6 +842,18 @@ public final class AIProviderConfigController {
         // verboseLogging 已迁移到全局配置，不在这里设置
         snapshot.maxRetries = ((Number) ui.getMaxRetriesSpinner().getValue()).intValue();
         snapshot.timeout = ((Number) ui.getTimeoutSpinner().getValue()).intValue();
+        return snapshot;
+    }
+
+    /**
+     * 创建 Codefree 代理配置快照
+     */
+    @NotNull
+    private CodefreeAgentSettings snapshotCodefreeSettings() {
+        CodefreeAgentSettings snapshot = new CodefreeAgentSettings();
+        snapshot.autoStart = ui.getCodefreeAutoStartCheckBox().isSelected();
+        snapshot.downloadUrl = ui.getCodefreeDownloadUrlField().getText().trim();
+        snapshot.port = ((Number) ui.getCodefreePortSpinner().getValue()).intValue();
         return snapshot;
     }
 
@@ -839,4 +980,3 @@ public final class AIProviderConfigController {
         return message;
     }
 }
-
