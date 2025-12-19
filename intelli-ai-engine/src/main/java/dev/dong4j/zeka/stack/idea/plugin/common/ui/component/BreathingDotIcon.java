@@ -24,7 +24,6 @@ import javax.swing.Timer;
 public class BreathingDotIcon implements Icon {
     private static final int SIZE = JBUI.scale(8);
     private static final int TIMER_DELAY = 50;
-    private final Timer timer;
     private float phase;
     private Color color;
 
@@ -36,14 +35,15 @@ public class BreathingDotIcon implements Icon {
      */
     public BreathingDotIcon(@NotNull Component owner, @NotNull Color initialColor) {
         this.color = initialColor;
-        this.timer = new Timer(TIMER_DELAY, e -> {
+        // todo-dong4j: 共享定时器
+        Timer timer = new Timer(TIMER_DELAY, e -> {
             phase += 0.08f;
             if (phase > Math.PI * 2) {
                 phase -= (float) (Math.PI * 2);
             }
             owner.repaint();
         });
-        this.timer.start();
+        timer.start();
     }
 
     /**
