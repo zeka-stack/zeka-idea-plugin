@@ -5,7 +5,6 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.util.ShutDownTracker;
 
 import java.nio.file.Files;
 
@@ -51,17 +50,6 @@ public final class CodefreeAgentLifecycleListener implements Disposable {
                     LOG.info("已注册 JVM 关闭钩子");
                 }
             }
-        }
-
-        // 使用 ShutDownTracker 注册关闭钩子（IntelliJ 平台级别）
-        try {
-            ShutDownTracker.getInstance().registerShutdownTask(() -> {
-                LOG.info("ShutDownTracker 执行：停止 Codefree 代理");
-                dispose();
-            });
-            LOG.info("已注册 ShutDownTracker 关闭任务");
-        } catch (Exception e) {
-            LOG.warn("注册 ShutDownTracker 失败", e);
         }
 
         // 同时注册 AppLifecycleListener 作为备用方案
