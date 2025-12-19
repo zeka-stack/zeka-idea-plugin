@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.Gray;
 import com.intellij.ui.JBColor;
@@ -54,10 +53,6 @@ import icons.AICommonIcons;
  * @since 1.0.0
  */
 public final class AIProviderConfigController {
-    private static final Logger LOG = Logger.getInstance(AIProviderConfigController.class);
-    private static final JBColor CODEFREE_GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
-    private static final JBColor CODEFREE_RED = new JBColor(new Color(244, 67, 54), new Color(244, 67, 54));
-    private static final JBColor CODEFREE_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 193, 7));
 
     /** 负责管理 AI 身份凭证的工具类实例 */
     private final AICredentialManager credentialManager;

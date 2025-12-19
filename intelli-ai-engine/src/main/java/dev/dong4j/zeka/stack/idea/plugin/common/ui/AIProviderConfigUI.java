@@ -68,9 +68,9 @@ import icons.AICommonIcons;
 public final class AIProviderConfigUI {
     /** 主界面主面板, 用于承载主要功能组件和布局 */
     private JPanel mainPanel;
-    /** 提供商下拉选择框 */
+    /** 服务提供商下拉选择框 */
     private ComboBox<String> providerComboBox;
-    /** 下拉框组件, 用于选择模型 */
+    /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
     /** 基础 URL 输入框 */
     private JBTextField baseUrlField;
@@ -78,21 +78,21 @@ public final class AIProviderConfigUI {
     private JBPasswordField apiKeyField;
     /** 测试连接按钮 */
     private JButton testConnectionButton;
-    /** 刷新模型按钮 */
+    /** 刷新模型列表的按钮 */
     private JButton refreshModelsButton;
     /** 显示可用提供者的复选框 */
     private JBCheckBox showAvailableProvidersCheckBox;
-    /** 可用提供者面板, 用于展示和选择可用的提供者组件 */
+    /** 可用提供者面板, 用于展示和管理可用 AI 服务提供商的列表及其操作 */
     private JPanel availableProvidersPanel;
     /** 可用提供者的描述标签 */
     private JBLabel availableProvidersDescriptionLabel;
-    /** 可用提供者的表格组件, 用于展示和选择可用的提供者列表 */
+    /** 可用提供者表格组件, 用于展示和选择可用的提供者列表 */
     private JBTable availableProvidersTable;
-    /** 可用提供者模型表 */
+    /** 可用提供者表格模型 */
     private AvailableProvidersTableModel availableProvidersTableModel;
-    /** 日志详细输出选项复选框 */
+    /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
-    /** 显示高级设置的复选框 */
+    /** 控制是否显示高级设置内容的复选框 */
     private JBCheckBox showAdvancedSettingsCheckBox;
     /** 高级设置内容面板, 用于展示和管理高级配置选项 */
     private JPanel advancedSettingsContentPanel;
@@ -106,7 +106,7 @@ public final class AIProviderConfigUI {
     private JSpinner maxTokensSpinner;
     /** 顶部参数的下拉选择器控件 */
     private JSpinner topPSpinner;
-    /** 用于设置和获取 topK 值的下拉选择框 */
+    /** 用于设置 AI 模型的 Top-k 参数的 JSpinner 控件 */
     private JSpinner topKSpinner;
     /** 偏差惩罚值调节器, 用于设置生成文本时的偏差惩罚参数 */
     private JSpinner presencePenaltySpinner;
@@ -122,8 +122,8 @@ public final class AIProviderConfigUI {
      * 旋钮控件以及表格等, 并设置它们的属性和布局. 同时, 为表格添加工具栏装饰器,
      * 用于提供删除和清除所有可用提供者的操作.
      *
-     * @param removeAvailableProviderCallback    删除可用提供者时的回调
-     * @param clearAllAvailableProvidersCallback 清除所有可用提供者时的回调
+     * @param removeAvailableProviderCallback    删除可用提供者时的回调, 可为 null
+     * @param clearAllAvailableProvidersCallback 清除所有可用提供者时的回调, 可为 null
      */
     public void createUI(@Nullable Runnable removeAvailableProviderCallback,
                          @Nullable Runnable clearAllAvailableProvidersCallback) {
@@ -142,6 +142,17 @@ public final class AIProviderConfigUI {
 
         testConnectionButton = new JButton(AICommonBundle.message("settings.test.connection"));
         refreshModelsButton = new JButton(AICommonBundle.message("settings.refresh.models"));
+
+        // 设置按钮宽度一致，取两个按钮文本中较长的宽度
+        int buttonWidth = Math.max(
+            testConnectionButton.getPreferredSize().width,
+            refreshModelsButton.getPreferredSize().width
+                                  );
+        Dimension buttonSize = new Dimension(buttonWidth, testConnectionButton.getPreferredSize().height);
+        testConnectionButton.setPreferredSize(buttonSize);
+        testConnectionButton.setMaximumSize(buttonSize);
+        refreshModelsButton.setPreferredSize(buttonSize);
+        refreshModelsButton.setMaximumSize(buttonSize);
 
         // 初始化基础配置组件
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
@@ -240,7 +251,10 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 获取主面板
+     * 获取主面板组件
+     * <p> 返回 AI 提供商配置界面的主面板, 该面板包含了所有配置相关的 UI 组件 </p>
+     *
+     * @return 主面板组件, 不会返回 null
      */
     @NotNull
     public JPanel getMainPanel() {
@@ -249,16 +263,34 @@ public final class AIProviderConfigUI {
 
     // ==================== Getter 方法 ====================
 
+    /**
+     * 获取提供商下拉选择框组件
+     * <p> 返回用于选择 AI 服务提供商的组合框组件, 包含所有可用的提供商选项 </p>
+     *
+     * @return 提供商下拉选择框组件, 保证不为 null
+     */
     @NotNull
     public ComboBox<String> getProviderComboBox() {
         return providerComboBox;
     }
 
+    /**
+     * 获取模型选择下拉框组件
+     * <p> 返回用于选择 AI 模型的组合框控件, 该控件支持编辑功能, 允许用户输入自定义模型名称 </p>
+     *
+     * @return 模型选择下拉框组件, 保证不为 null
+     */
     @NotNull
     public ComboBox<String> getModelComboBox() {
         return modelComboBox;
     }
 
+    /**
+     * 获取基础 URL 输入框组件
+     * <p> 返回用于输入 AI 服务基础 URL 的文本字段组件
+     *
+     * @return 基础 URL 输入框组件, 保证不为 null
+     */
     @NotNull
     public JBTextField getBaseUrlField() {
         return baseUrlField;
@@ -377,10 +409,10 @@ public final class AIProviderConfigUI {
         modelPanel.add(testConnectionButton, BorderLayout.EAST);
 
         JPanel panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.provider.label")), providerComboBox)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerComboBox)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
@@ -394,7 +426,7 @@ public final class AIProviderConfigUI {
      * @return 包含可用提供者信息的面板
      */
     private JPanel createAvailableProvidersPanel() {
-        availableProvidersDescriptionLabel = new JBLabel();
+        availableProvidersDescriptionLabel = new SpacedJBLabel();
         String descriptionText = AICommonBundle.message("settings.available.providers.description");
         descriptionText = "<html>" + descriptionText.replace("\n", "<br>") + "</html>";
         availableProvidersDescriptionLabel.setText(descriptionText);
@@ -438,19 +470,19 @@ public final class AIProviderConfigUI {
      */
     private JPanel createAdvancedPanel() {
         advancedSettingsContentPanel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.max.retries")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.max.retries")),
                                  createSpinnerWithHint(maxRetriesSpinner, "settings.max.retries.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.timeout")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.timeout")),
                                  createSpinnerWithHint(timeoutSpinner, "settings.timeout.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.max.tokens")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.max.tokens")),
                                  createSpinnerWithHint(maxTokensSpinner, "settings.max.tokens.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.temperature")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.temperature")),
                                  createSpinnerWithHint(temperatureSpinner, "settings.temperature.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.top.p")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.p")),
                                  createSpinnerWithHint(topPSpinner, "settings.top.p.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.top.k")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.k")),
                                  createSpinnerWithHint(topKSpinner, "settings.top.k.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.presence.penalty")),
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.presence.penalty")),
                                  createSpinnerWithHint(presencePenaltySpinner, "settings.presence.penalty.hint"))
             .getPanel();
         advancedSettingsContentPanel.setVisible(false);
@@ -531,7 +563,7 @@ public final class AIProviderConfigUI {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.add(spinner, BorderLayout.WEST);
 
-        JBLabel hintLabel = new JBLabel(AICommonBundle.message(hintKey));
+        JBLabel hintLabel = new SpacedJBLabel(AICommonBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
         hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         hintLabel.setPreferredSize(new Dimension(300, hintLabel.getPreferredSize().height));
@@ -553,7 +585,7 @@ public final class AIProviderConfigUI {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.add(checkBox, BorderLayout.WEST);
 
-        JBLabel hintLabel = new JBLabel(AICommonBundle.message(hintKey));
+        JBLabel hintLabel = new SpacedJBLabel(AICommonBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
         hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));

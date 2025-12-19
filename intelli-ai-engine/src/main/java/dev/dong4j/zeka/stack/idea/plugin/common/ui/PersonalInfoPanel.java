@@ -49,6 +49,7 @@ import lombok.Getter;
  * @date 2025.12.07
  * @since 2.2.0
  */
+@SuppressWarnings("all")
 public class PersonalInfoPanel {
     /** 面板内容 */
     @Getter

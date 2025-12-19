@@ -36,6 +36,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
@@ -56,18 +57,19 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
  * @since 1.0.0
  */
 public final class CodefreePanel {
+    /** 日志记录器 */
     private static final Logger LOG = Logger.getInstance(CodefreePanel.class);
-    private static final JBColor DOT_GREEN = new JBColor(new Color(52, 199, 89), new Color(48, 209, 88));
+    /** 红色指示灯的颜色, 用于显示错误或警告状态 */
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
-    private static final JBColor DOT_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 214, 10));
+    /** Codefree 代理配置面板使用的绿色 */
     private static final JBColor CODEFREE_GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
     private static final JBColor CODEFREE_RED = new JBColor(new Color(244, 67, 54), new Color(244, 67, 54));
     private static final JBColor CODEFREE_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 193, 7));
     private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#,##0.00");
-    /** 主面板 */
+    /** 主面板, 承载整个代理配置面板的 UI 组件 */
     @NotNull
     private final JPanel content;
-    /** 自动启动复选框 */
+    /** 控制是否自动启动 Codefree 代理服务的复选框 */
     @NotNull
     private final JBCheckBox autoStartCheckBox;
     /** 下载地址输入框 */
@@ -82,13 +84,16 @@ public final class CodefreePanel {
     /** 本地 jar 标签 */
     @NotNull
     private final JBLabel localJarLabel;
-    /** 下载进度条 */
+    /**
+     * 下载进度条
+     * <p> 用于显示 Codefree jar 文件的下载进度
+     */
     @NotNull
     private final JProgressBar downloadProgressBar;
     /** 下载按钮 */
     @NotNull
     private final JButton downloadButton;
-    /** 启动/停止按钮 */
+    /** 启动 / 停止按钮 */
     @NotNull
     private final JButton startButton;
     /** 启动状态指示灯 */
@@ -106,7 +111,7 @@ public final class CodefreePanel {
     /** 状态更新回调 */
     @Nullable
     private Runnable statusUpdateCallback;
-    /** 远端版本名称 */
+    /** 远端 jar 名称 */
     @Nullable
     private String latestJarName;
     /** 当前本地 jar 名称 */
@@ -115,9 +120,22 @@ public final class CodefreePanel {
     /** Codefree 代理管理器 */
     @NotNull
     private final CodefreeAgentManager codefreeAgentManager = CodefreeAgentManager.getInstance();
-    /** 父面板，用于显示对话框 */
+    /** 用于显示对话框的父面板 */
     @Nullable
     private JPanel parentPanel;
+    /** 上次进度更新时间（用于节流） */
+    private long lastProgressUpdateTime = 0;
+    /** 上次进度百分比（用于节流） */
+    private int lastProgressPercent = -1;
+    /** 进度更新最小间隔（毫秒） */
+    private static final long PROGRESS_UPDATE_INTERVAL_MS = 100;
+    /**
+     * 进度更新最小百分比间隔
+     * <p> 用于控制进度更新的频率, 避免过于频繁的 UI 更新 </p>
+     */
+    private static final int PROGRESS_UPDATE_PERCENT_INTERVAL = 1;
+    /** 是否正在下载 */
+    private volatile boolean isDownloading = false;
 
     /**
      * 构造函数
@@ -132,9 +150,9 @@ public final class CodefreePanel {
         downloadUrlField.setPreferredSize(urlFieldSize);
         downloadUrlField.setMaximumSize(new Dimension(600, downloadUrlField.getPreferredSize().height));
 
-        statusLabel = new JBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
-        latestVersionLabel = new JBLabel(AICommonBundle.message("settings.codefree.version.checking"));
-        localJarLabel = new JBLabel(AICommonBundle.message("settings.codefree.version.local.empty"));
+        statusLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
+        latestVersionLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.checking"));
+        localJarLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.local.empty"));
         downloadProgressBar = new JProgressBar(0, 100);
         downloadProgressBar.setStringPainted(false);
         downloadProgressBar.setVisible(false);
@@ -155,6 +173,12 @@ public final class CodefreePanel {
         startButton.setDisabledIcon(startStatusIcon);
 
         downloadUrlField.getDocument().addDocumentListener(new DocumentAdapter() {
+            /**
+             * 当文档内容发生变化时调用
+             * <p> 重写父类方法, 在文档内容改变时更新下载按钮的状态
+             *
+             * @param e 文档变化事件对象, 包含文档变化的详细信息
+             */
             @Override
             protected void textChanged(@NotNull DocumentEvent e) {
                 updateDownloadButtonState();
@@ -172,10 +196,10 @@ public final class CodefreePanel {
         // 创建主内容面板
         mainPanel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(autoStartCheckBox, "settings.codefree.auto.start.hint"))
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.download.url")), downloadUrlField)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.version.latest")), latestVersionLabel)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.version.local")), localJarLabel)
-            .addLabeledComponent(new JBLabel(AICommonBundle.message("settings.codefree.status")), statusLabel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.download.url")), downloadUrlField)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.latest")), latestVersionLabel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.local")), localJarLabel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.status")), statusLabel)
             .addComponent(progressPanel)
             .addComponent(buttonsPanel)
             .getPanel();
@@ -185,36 +209,26 @@ public final class CodefreePanel {
 
         updateDownloadButtonState();
 
-        // 启动状态更新定时器（每 2 秒检查一次服务状态）
+        // 启动状态更新定时器（每 1 秒检查一次服务状态）
         startStatusUpdateTimer();
     }
 
     /**
      * 启动状态更新定时器
-     * <p>
-     * 定期检查 Codefree 代理服务状态，并更新 UI。
+     * <p> 创建并启动一个定时器, 每隔 1 秒执行状态更新回调函数, 用于定期检查 Codefree 代理服务状态并更新 UI.
+     * 如果定时器已存在, 会先停止之前的定时器再重新创建.
      */
     private void startStatusUpdateTimer() {
         if (statusUpdateTimer != null) {
             statusUpdateTimer.stop();
         }
-        statusUpdateTimer = new Timer(2000, e -> {
+        statusUpdateTimer = new Timer(1000, e -> {
             if (statusUpdateCallback != null) {
                 statusUpdateCallback.run();
             }
         });
         statusUpdateTimer.setRepeats(true);
         statusUpdateTimer.start();
-    }
-
-    /**
-     * 停止状态更新定时器
-     */
-    public void stopStatusUpdateTimer() {
-        if (statusUpdateTimer != null) {
-            statusUpdateTimer.stop();
-            statusUpdateTimer = null;
-        }
     }
 
     /**
@@ -302,45 +316,6 @@ public final class CodefreePanel {
     }
 
     /**
-     * 创建可折叠的标题栏
-     *
-     * @param title 标题文本（包含箭头）
-     * @return 标题栏面板
-     */
-    @NotNull
-    private JPanel createCollapsibleTitle(@NotNull String title) {
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        // 默认折叠状态，使用右箭头
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(title);
-        configureTitledBorder(titledBorder);
-        titlePanel.setBorder(BorderFactory.createCompoundBorder(
-            titledBorder,
-            JBUI.Borders.empty(5)
-                                                               ));
-        titlePanel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        titlePanel.setOpaque(true);
-        titlePanel.setBackground(UIUtil.getPanelBackground());
-        return titlePanel;
-    }
-
-    /**
-     * 更新可折叠标题栏的箭头图标
-     *
-     * @param titlePanel 标题栏面板
-     * @param title      标题文本（不包含箭头）
-     * @param expanded   是否展开
-     */
-    private void updateCollapsibleTitle(@NotNull JPanel titlePanel, @NotNull String title, boolean expanded) {
-        String arrow = expanded ? "▼ " : "▶ ";
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(arrow + title);
-        configureTitledBorder(titledBorder);
-        titlePanel.setBorder(BorderFactory.createCompoundBorder(
-            titledBorder,
-            JBUI.Borders.empty(5)
-                                                               ));
-    }
-
-    /**
      * 配置 TitledBorder 的字体和颜色
      *
      * @param titledBorder 要配置的 TitledBorder
@@ -363,7 +338,7 @@ public final class CodefreePanel {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.add(checkBox, BorderLayout.WEST);
 
-        JBLabel hintLabel = new JBLabel(AICommonBundle.message(hintKey));
+        JBLabel hintLabel = new SpacedJBLabel(AICommonBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
         hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         hintLabel.setPreferredSize(new Dimension(400, hintLabel.getPreferredSize().height));
@@ -425,14 +400,25 @@ public final class CodefreePanel {
         // 仅用于保留调用点，不在 UI 上显示大小
     }
 
+    /**
+     * 更新下载进度
+     * <p>
+     * 根据已下载字节数和总字节数更新下载进度条和进度文本.
+     *
+     * @param downloaded 已下载的字节数
+     * @param totalBytes 总字节数
+     */
     public void updateDownloadProgress(long downloaded, long totalBytes) {
-        downloadProgressBar.setVisible(true);
         if (totalBytes > 0) {
+            downloadProgressBar.setVisible(true);
             int percent = (int) Math.min(100, Math.round(downloaded * 100.0 / totalBytes));
             downloadProgressBar.setIndeterminate(false);
             downloadProgressBar.setValue(percent);
+            downloadProgressBar.setStringPainted(false);
         } else {
+            downloadProgressBar.setVisible(true);
             downloadProgressBar.setIndeterminate(true);
+            downloadProgressBar.setStringPainted(false);
         }
         downloadProgressBar.repaint();
     }
@@ -441,6 +427,8 @@ public final class CodefreePanel {
         downloadProgressBar.setVisible(false);
         downloadProgressBar.setIndeterminate(false);
         downloadProgressBar.setValue(0);
+        downloadProgressBar.setStringPainted(false);
+        downloadProgressBar.setString("");
         downloadProgressBar.repaint();
     }
 
@@ -557,7 +545,8 @@ public final class CodefreePanel {
 
         String status;
         String buttonText;
-        boolean buttonEnabled = running || jarReady;
+        // 如果正在下载，强制禁用启动按钮
+        boolean buttonEnabled = !isDownloading && (running || jarReady);
         JBColor startColor;
 
         if (running) {
@@ -650,9 +639,11 @@ public final class CodefreePanel {
     }
 
     /**
-     * 下载 Codefree jar
+     * 下载 Codefree jar 文件
+     * <p>
+     * 根据提供的设置下载 Codefree 代理的 jar 文件, 并更新 UI 状态和进度.
      *
-     * @param settings Codefree 代理设置
+     * @param settings Codefree 代理设置, 包含下载地址等信息
      */
     public void downloadCodefreeJar(@NotNull CodefreeAgentSettings settings) {
         String downloadUrl = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
@@ -684,14 +675,7 @@ public final class CodefreePanel {
             return;
         }
 
-        downloadButton.setEnabled(false);
-        downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
-        resetDownloadProgress();
-        downloadProgressBar.setVisible(true);
-        downloadProgressBar.setIndeterminate(true);
-        downloadProgressBar.setValue(0);
-        setDownloadStatusColor(CODEFREE_YELLOW);
-        startButton.setEnabled(false);
+        setStartedDownloadState();
 
         String finalJarFileName = jarFileName;
         String jarDownloadUrl = codefreeAgentManager.buildDownloadUrl(downloadUrl, finalJarFileName);
@@ -700,25 +684,57 @@ public final class CodefreePanel {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             ProgressIndicator indicator = new EmptyProgressIndicator();
             try {
-                long remoteSize = -1;
-                try {
-                    remoteSize = codefreeAgentManager.fetchRemoteJarSize(downloadUrl, finalJarFileName);
-                } catch (Exception sizeException) {
-                    LOG.warn("获取 Codefree jar 大小失败: " + finalJarFileName, sizeException);
-                }
-                long finalRemoteSize = remoteSize;
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    downloadProgressBar.setIndeterminate(finalRemoteSize <= 0);
-                    downloadProgressBar.setValue(0);
+                long remoteSize = codefreeAgentManager.fetchRemoteJarSize(downloadUrl, finalJarFileName);
+                SwingUtilities.invokeLater(() -> {
+                    if (remoteSize > 0) {
+                        downloadProgressBar.setIndeterminate(false);
+                        downloadProgressBar.setValue(0);
+                        downloadProgressBar.setStringPainted(false);
+                    } else {
+                        downloadProgressBar.setIndeterminate(true);
+                        downloadProgressBar.setStringPainted(false);
+                    }
                 });
+                // 重置进度更新节流状态
+                lastProgressUpdateTime = System.currentTimeMillis();
+                lastProgressPercent = -1;
+
                 Path savedPath = codefreeAgentManager.downloadJar(
                     downloadSettings,
                     finalJarFileName,
                     indicator,
-                    (downloaded, total) -> ApplicationManager.getApplication().invokeLater(() -> {
-                        long progressTotal = total > 0 ? total : finalRemoteSize;
-                        updateDownloadProgress(downloaded, progressTotal);
-                    }));
+                    (downloaded, total) -> {
+                        // 优先使用回调中的 total，如果没有则使用远程大小
+                        long progressTotal = total > 0 ? total : remoteSize;
+
+                        // 节流：限制更新频率，避免 EDT 阻塞
+                        if (progressTotal > 0) {
+                            int currentPercent = (int) Math.min(100, Math.round(downloaded * 100.0 / progressTotal));
+                            long currentTime = System.currentTimeMillis();
+
+                            // 首次更新或百分比变化超过阈值或时间间隔超过阈值时才更新
+                            boolean shouldUpdate = lastProgressPercent == -1 || // 首次更新
+                                                   (currentPercent != lastProgressPercent &&
+                                                    Math.abs(currentPercent - lastProgressPercent) >= PROGRESS_UPDATE_PERCENT_INTERVAL) ||
+                                                   (currentTime - lastProgressUpdateTime >= PROGRESS_UPDATE_INTERVAL_MS);
+
+                            if (shouldUpdate) {
+                                lastProgressPercent = currentPercent;
+                                lastProgressUpdateTime = currentTime;
+
+                                // 使用 SwingUtilities.invokeLater 确保在 EDT 中执行，避免被阻塞
+                                SwingUtilities.invokeLater(() -> updateDownloadProgress(downloaded, progressTotal));
+                            }
+                        } else {
+                            // 不确定模式：按时间节流，但首次更新立即执行
+                            long currentTime = System.currentTimeMillis();
+                            if (lastProgressUpdateTime == 0 ||
+                                currentTime - lastProgressUpdateTime >= PROGRESS_UPDATE_INTERVAL_MS) {
+                                lastProgressUpdateTime = currentTime;
+                                SwingUtilities.invokeLater(() -> updateDownloadProgress(downloaded, progressTotal));
+                            }
+                        }
+                    });
 
                 settings.jarFileName = finalJarFileName;
                 long localSize = -1;
@@ -730,12 +746,21 @@ public final class CodefreePanel {
                     LOG.warn("读取 Codefree jar 大小失败: " + savedPath, sizeException);
                 }
                 long finalLocalSize = localSize;
-                ApplicationManager.getApplication().invokeLater(() -> {
+                // 下载完成，强制更新进度条到 100%
+                // 使用 SwingUtilities.invokeLater 确保立即执行，不被阻塞
+                SwingUtilities.invokeLater(() -> {
+                    // 确保进度条显示 100%
+                    if (remoteSize > 0) {
+                        updateDownloadProgress(remoteSize, remoteSize);
+                    }
                     finishDownloadUi(true, finalJarFileName, finalLocalSize, settings);
                     refreshCodefreeVersionInfo(settings);
                 });
             } catch (Exception e) {
-                ApplicationManager.getApplication().invokeLater(() -> {
+                // 使用 SwingUtilities.invokeLater 确保立即执行，不被阻塞
+                SwingUtilities.invokeLater(() -> {
+                    // 确保在异常情况下也清除下载标志
+                    isDownloading = false;
                     finishDownloadUi(false, null, -1, settings);
                     JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
                                                   e.getMessage(),
@@ -746,12 +771,46 @@ public final class CodefreePanel {
         });
     }
 
+    /**
+     * 开始下载 Codefree jar 文件时, 设置相关状态
+     * <p>
+     * 禁用下载按钮并显示下载中状态, 同时初始化下载进度条并禁用启动按钮.
+     */
+    private void setStartedDownloadState() {
+        isDownloading = true;
+        downloadButton.setEnabled(false);
+        downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
+        // 初始化进度条状态
+        downloadProgressBar.setVisible(true);
+        downloadProgressBar.setIndeterminate(true);
+        downloadProgressBar.setValue(0);
+        downloadProgressBar.setStringPainted(false);
+        setDownloadStatusColor(CODEFREE_YELLOW);
+        startButton.setEnabled(false);
+        // 重置进度更新节流状态
+        lastProgressUpdateTime = 0;
+        lastProgressPercent = -1;
+    }
+
+    /**
+     * 完成下载操作的 UI 更新
+     * <p>
+     * 根据下载是否成功更新下载按钮, 进度条, 状态指示灯和 Codefree 代理状态.
+     *
+     * @param success   下载是否成功
+     * @param jarName   下载的 jar 文件名, 若下载失败则为 null
+     * @param localSize 本地 jar 文件大小, 若下载失败则为 -1
+     * @param settings  Codefree 代理设置
+     */
     private void finishDownloadUi(boolean success,
                                   @Nullable String jarName,
                                   long localSize,
                                   @NotNull CodefreeAgentSettings settings) {
+        // 标记下载完成
+        isDownloading = false;
         downloadButton.setEnabled(true);
         downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
+        // 确保进度条在下载完成后被隐藏
         resetDownloadProgress();
         if (success && jarName != null) {
             setLocalJarName(jarName, localSize);
@@ -759,6 +818,7 @@ public final class CodefreePanel {
         } else {
             setDownloadStatusColor(CODEFREE_RED);
         }
+        // 更新状态（包括启动按钮状态）
         updateCodefreeStatus(settings);
     }
 

@@ -110,7 +110,7 @@ public class AIProviderSelectionPanel {
         // 如果没有可用服务商，显示提示信息和跳转链接
         if (aiProviderTypes.isEmpty()) {
             // 创建提示信息面板
-            JBLabel warningLabel = new JBLabel(messageProvider.message("settings.ai.provider.no.available.warning"));
+            JBLabel warningLabel = new SpacedJBLabel(messageProvider.message("settings.ai.provider.no.available.warning"));
             // 使用警告颜色（如果系统不支持，则使用默认的警告颜色）
             Color warningColor = UIManager.getColor("Label.warningForeground");
             if (warningColor == null) {
@@ -134,7 +134,7 @@ public class AIProviderSelectionPanel {
                 .addComponent(warningLabel)
                 .addComponent(linkLabel)
                 .addComponent(new JBLabel()) // 空行
-                .addLabeledComponent(new JBLabel(messageProvider.message("settings.ai.provider") + ":"), providerComboBox)
+                .addLabeledComponent(new SpacedJBLabel(messageProvider.message("settings.ai.provider") + ":"), providerComboBox)
                 .getPanel();
         } else {
             // 创建供应商下拉框
@@ -157,8 +157,8 @@ public class AIProviderSelectionPanel {
                 return label;
             });
 
-            JBLabel providerLabel = new JBLabel(messageProvider.message("settings.ai.provider") + ":");
-            JBLabel hintLabel = new JBLabel(messageProvider.message("settings.ai.provider.hint"));
+            JBLabel providerLabel = new SpacedJBLabel(messageProvider.message("settings.ai.provider") + ":");
+            JBLabel hintLabel = new SpacedJBLabel(messageProvider.message("settings.ai.provider.hint"));
             hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
             hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 1f));
 

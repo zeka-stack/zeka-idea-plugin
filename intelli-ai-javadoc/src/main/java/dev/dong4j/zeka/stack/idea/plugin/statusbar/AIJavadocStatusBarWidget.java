@@ -184,7 +184,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 2.1 生成配置（二级菜单，多选）
         group.add(new GenerationConfigActionGroup());
 
-        // 2.2 覆写配置（二级菜单，单选，显示当前选择）
+        // 2.2 覆写配置（包含启用开关和模式选择）
         group.add(createOverrideConfigActionGroup());
 
         // 2.3 添加上下文
@@ -513,35 +513,79 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     /**
      * 创建覆写配置动作组
      * <p>
-     * 动态创建动作组，在标题中显示当前选择的覆写模式.
+     * 动态创建动作组，包含启用覆写的开关和覆写模式选择。
+     * 无论覆写是否启用，都显示模式选择选项。
      *
      * @return 覆写配置动作组
      * @since 2.8.0
      */
     @NotNull
     private static DefaultActionGroup createOverrideConfigActionGroup() {
-        // 获取当前选择的覆写模式，显示在菜单标题中
         SettingsState settings = SettingsState.getInstance();
-        String currentMode;
-        if (!settings.overrideExisting) {
-            // 如果覆写功能未启用，显示默认模式
-            currentMode = JavadocBundle.message("statusbar.quick.settings.override.mode.replace");
-        } else {
-            currentMode = settings.overrideMode == OverrideMode.FIX
-                          ? JavadocBundle.message("statusbar.quick.settings.override.mode.fix")
-                          : JavadocBundle.message("statusbar.quick.settings.override.mode.replace");
+        String title = JavadocBundle.message("statusbar.quick.settings.override.config");
+
+        // 如果覆写已启用，在标题中显示当前模式
+        if (settings.overrideExisting) {
+            String currentMode = settings.overrideMode == OverrideMode.FIX
+                                 ? JavadocBundle.message("statusbar.quick.settings.override.mode.fix")
+                                 : JavadocBundle.message("statusbar.quick.settings.override.mode.replace");
+            title = title + " (" + currentMode + ")";
         }
-        String title = JavadocBundle.message("statusbar.quick.settings.override.config") + " (" + currentMode + ")";
+
         DefaultActionGroup group = new DefaultActionGroup(title, true);
+
+        // 1. 添加启用覆写的开关
+        group.add(new EnableOverrideToggleAction());
+
+        // 2. 添加模式选择选项（无论覆写是否启用都显示）
+        group.add(Separator.create());
         group.add(new OverrideModeFixAction());
         group.add(new OverrideModeReplaceAction());
+
         return group;
+    }
+
+    /**
+     * 启用覆写切换动作类
+     * <p>
+     * 该类继承自 ToggleAction，用于控制是否启用覆写已有注释的功能。
+     * 对应设置页面中的"覆写配置"复选框。
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class EnableOverrideToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        EnableOverrideToggleAction() {
+            super(JavadocBundle.message("settings.override.existing"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().overrideExisting;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.overrideExisting = state;
+            // 如果禁用覆写，重置为默认模式（可选）
+            // if (!state) {
+            //     settings.overrideMode = OverrideMode.REPLACE;
+            // }
+        }
     }
 
     /**
      * 覆写模式：仅修复动作类
      * <p>
      * 该类继承自 AnAction, 用于选择"仅修复错误注释"的覆写模式.
+     * 选择此模式时会自动启用覆写功能。
      *
      * @author zeka.stack.team
      * @version 1.0.0
@@ -555,7 +599,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             SettingsState settings = SettingsState.getInstance();
-            settings.overrideExisting = true;
+            settings.overrideExisting = true; // 选择模式时自动启用覆写
             settings.overrideMode = OverrideMode.FIX;
         }
 
@@ -576,6 +620,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * 覆写模式：删除并替换动作类
      * <p>
      * 该类继承自 AnAction, 用于选择"删除原注释并重新生成"的覆写模式.
+     * 选择此模式时会自动启用覆写功能。
      *
      * @author zeka.stack.team
      * @version 1.0.0
@@ -589,7 +634,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             SettingsState settings = SettingsState.getInstance();
-            settings.overrideExisting = true;
+            settings.overrideExisting = true; // 选择模式时自动启用覆写
             settings.overrideMode = OverrideMode.REPLACE;
         }
 
