@@ -18,11 +18,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Files;
@@ -151,6 +154,7 @@ public final class CodefreePanel {
         downloadUrlField.setMaximumSize(new Dimension(600, downloadUrlField.getPreferredSize().height));
 
         statusLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
+        statusLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
         latestVersionLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.checking"));
         localJarLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.local.empty"));
         downloadProgressBar = new JProgressBar(0, 100);
@@ -215,14 +219,14 @@ public final class CodefreePanel {
 
     /**
      * 启动状态更新定时器
-     * <p> 创建并启动一个定时器, 每隔 1 秒执行状态更新回调函数, 用于定期检查 Codefree 代理服务状态并更新 UI.
+     * <p> 创建并启动一个定时器, 每隔 3 秒执行状态更新回调函数, 用于定期检查 Codefree 代理服务状态并更新 UI.
      * 如果定时器已存在, 会先停止之前的定时器再重新创建.
      */
     private void startStatusUpdateTimer() {
         if (statusUpdateTimer != null) {
             statusUpdateTimer.stop();
         }
-        statusUpdateTimer = new Timer(1000, e -> {
+        statusUpdateTimer = new Timer(3000, e -> {
             if (statusUpdateCallback != null) {
                 statusUpdateCallback.run();
             }
@@ -448,6 +452,77 @@ public final class CodefreePanel {
         statusLabel.setText(text);
     }
 
+    /**
+     * 设置状态文本，支持可点击的链接
+     * <p> 如果文本包含端点地址，将其格式化为可点击的链接样式
+     *
+     * @param text     状态文本
+     * @param endpoint 端点地址（可选），如果提供则会被格式化为可点击链接
+     */
+    public void setStatusTextWithLink(@NotNull String text, @Nullable String endpoint) {
+        if (endpoint != null && !endpoint.isEmpty()) {
+            // 从文本中提取端点地址前后的部分
+            String prefix = text.substring(0, text.indexOf(endpoint));
+            String suffix = text.substring(text.indexOf(endpoint) + endpoint.length());
+
+            // 使用 HTML 格式化链接样式，使用主题感知的颜色
+            Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
+            String linkText = String.format(
+                "<html>%s<a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;'>%s</a>%s</html>",
+                prefix,
+                endpoint,
+                linkColor.getRed(),
+                linkColor.getGreen(),
+                linkColor.getBlue(),
+                endpoint,
+                suffix
+                                           );
+            statusLabel.setText(linkText);
+
+            // 移除旧的鼠标监听器
+            for (java.awt.event.MouseListener listener : statusLabel.getMouseListeners()) {
+                if (listener instanceof MouseAdapter) {
+                    statusLabel.removeMouseListener(listener);
+                }
+            }
+
+            // 添加点击事件来复制到剪贴板
+            statusLabel.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    copyToClipboard(endpoint);
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    statusLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    statusLabel.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                }
+            });
+        } else {
+            statusLabel.setText(text);
+        }
+    }
+
+    /**
+     * 复制文本到剪贴板（跨平台支持）
+     *
+     * @param text 要复制的文本
+     */
+    private void copyToClipboard(@NotNull String text) {
+        try {
+            StringSelection selection = new StringSelection(text);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+            // 可以显示一个提示，但这里暂时不显示，避免干扰
+        } catch (Exception e) {
+            LOG.warn("复制到剪贴板失败: " + text, e);
+        }
+    }
+
     @NotNull
     public String getLatestJarName() {
         return latestJarName != null ? latestJarName : "";
@@ -549,9 +624,11 @@ public final class CodefreePanel {
         boolean buttonEnabled = !isDownloading && (running || jarReady);
         JBColor startColor;
 
+        String endpoint = null;
         if (running) {
             // 服务正在运行
-            status = AICommonBundle.message("settings.codefree.status.running.endpoint", codefreeAgentManager.getLocalOpenAiEndpoint());
+            endpoint = codefreeAgentManager.getLocalOpenAiEndpoint();
+            status = AICommonBundle.message("settings.codefree.status.running.endpoint", endpoint);
             buttonText = AICommonBundle.message("settings.codefree.stop");
             startColor = CODEFREE_GREEN;
         } else if (jarReady) {
@@ -566,7 +643,12 @@ public final class CodefreePanel {
             startColor = CODEFREE_RED;
         }
 
-        setStatusText(status);
+        // 如果服务正在运行，使用带链接的状态文本
+        if (running && endpoint != null) {
+            setStatusTextWithLink(status, endpoint);
+        } else {
+            setStatusText(status);
+        }
         getStatusLabel().setToolTipText(jarInfo != null ? jarInfo.path().toString() : null);
         getStartButton().setText(buttonText);
         getStartButton().setEnabled(buttonEnabled);

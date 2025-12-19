@@ -14,11 +14,16 @@ import com.intellij.util.io.HttpRequests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,8 +49,12 @@ public final class CodefreeAgentManager {
     public static final String DEFAULT_JAR_NAME = "codefree-agent.jar";
     /** 默认 jar 前缀 */
     public static final String DEFAULT_JAR_PREFIX = "codefree-agent";
+    /** 默认端口号 */
+    public static final int DEFAULT_PORT = 8765;
     /** 默认的本地 OpenAI API 地址 */
-    public static final String DEFAULT_OPENAI_ENDPOINT = System.getProperty("codefree.agent.api", "http://127.0.0.1:10011/v1");
+    public static final String DEFAULT_OPENAI_ENDPOINT = System.getProperty("codefree.agent.api", "http://127.0.0.1:8765/v1");
+    /** PID 文件名 */
+    private static final String PID_FILE_NAME = "codefree-agent.pid";
 
     /** 用于同步对 processHandler 的访问, 防止多线程冲突 */
     private final Object processLock = new Object();
@@ -121,7 +130,7 @@ public final class CodefreeAgentManager {
      */
     @NotNull
     public String fetchLatestJarName(@NotNull String baseUrl) {
-        String versionEndpoint = normalizeBase(baseUrl) + "/codefree/version";
+        String versionEndpoint = normalizeBase(baseUrl) + "/version";
         try {
             String version = HttpRequests.request(versionEndpoint).productNameAsUserAgent().readString();
             return version.trim();
@@ -139,7 +148,7 @@ public final class CodefreeAgentManager {
      * @param jarFileName jar 文件名, 用于拼接完整的下载路径
      * @return 远端 jar 文件的大小 (字节), 如果获取失败则返回 0
      */
-    public long fetchRemoteJarSize(@NotNull String baseUrl, @NotNull String jarFileName) throws IOException {
+    public long fetchRemoteJarSize(@NotNull String baseUrl, @NotNull String jarFileName) {
         String url = buildDownloadUrl(baseUrl, jarFileName);
         try {
             return HttpRequests.request(url).productNameAsUserAgent().connect(request -> {
@@ -164,30 +173,6 @@ public final class CodefreeAgentManager {
     @NotNull
     public String buildDownloadUrl(@NotNull String baseUrl, @NotNull String jarFileName) {
         return normalizeBase(baseUrl) + "/" + jarFileName;
-    }
-
-    /**
-     * 从给定的 URL 中推导出 JAR 文件名
-     * <p>该方法会解析 URL 的路径部分, 并提取最后一个斜杠 (/) 之后的内容作为文件名.
-     * 如果 URL 路径为空或不包含斜杠, 则直接返回路径部分.
-     * 如果解析过程中发生异常, 则返回 null.
-     *
-     * @param url 要解析的 URL 字符串, 不能为 null
-     * @return 从 URL 中提取的 JAR 文件名, 如果解析失败则返回 null
-     */
-    @Nullable
-    public String deriveJarNameFromUrl(@NotNull String url) {
-        try {
-            URI uri = URI.create(url);
-            String path = uri.getPath();
-            if (path != null && path.contains("/")) {
-                return path.substring(path.lastIndexOf('/') + 1);
-            }
-            return path;
-        } catch (Exception e) {
-            LOG.debug("无法从 url 解析 jar 名称: " + url, e);
-            return null;
-        }
     }
 
     /**
@@ -267,17 +252,27 @@ public final class CodefreeAgentManager {
      * 启动 Codefree 代理进程
      * <p>
      * 该方法会执行以下操作:
-     * 1. 检查指定的 JAR 文件是否存在
-     * 2. 解析 Java 可执行文件路径
-     * 3. 构建并配置启动命令
-     * 4. 启动进程并返回其 PID
+     * 1. 检查默认端口 8765 是否被占用且是否为 codefree agent 服务
+     * 2. 如果是 codefree agent 服务, 则直接使用该服务
+     * 3. 否则检查指定的 JAR 文件是否存在
+     * 4. 解析 Java 可执行文件路径
+     * 5. 构建并配置启动命令
+     * 6. 启动进程并返回其 PID
      *
      * @param settings Codefree 代理配置, 包含 JAR 文件路径等信息
-     * @return 启动的进程 PID, 如果无法获取 PID 则返回 -1
+     * @return 启动的进程 PID, 如果无法获取 PID 则返回 -1, 如果使用已有服务则返回 0
      * @throws IOException 如果 JAR 文件不存在或启动过程中发生 I/O 错误
      */
     @SneakyThrows
     public long startAgent(@NotNull CodefreeAgentSettings settings) throws IOException {
+        // 先检查默认端口是否已有 codefree agent 服务运行
+        if (isCodefreeAgentRunningOnPort()) {
+            LOG.info("检测到端口 " + DEFAULT_PORT + " 上已有 Codefree Agent 服务运行, 直接使用该服务");
+            return 0; // 返回 0 表示使用已有服务
+        }
+
+        // 端口未被占用或不是 codefree agent 服务, 启动新服务
+        LOG.info("端口 " + DEFAULT_PORT + " 上未检测到 Codefree Agent 服务, 启动新服务");
         Path jarPath = resolveJarPath(settings);
         if (Files.notExists(jarPath)) {
             throw new IOException("Jar 不存在: " + jarPath);
@@ -290,6 +285,8 @@ public final class CodefreeAgentManager {
             commandLine.addParameter("-Dapple.awt.UIElement=true");
         }
         commandLine.addParameters("-jar", jarPath.toString());
+        // 指定端口参数
+        commandLine.addParameter("--port=" + DEFAULT_PORT);
         if (jarPath.getParent() != null) {
             commandLine.setWorkDirectory(jarPath.getParent().toFile());
         }
@@ -301,6 +298,8 @@ public final class CodefreeAgentManager {
                 synchronized (processLock) {
                     processHandler = null;
                 }
+                // 进程终止时清理 PID 文件
+                deletePidFile();
             }
         });
         handler.startNotify();
@@ -308,7 +307,10 @@ public final class CodefreeAgentManager {
             processHandler = handler;
         }
         Process process = handler.getProcess();
-        return process.pid();
+        long pid = process.pid();
+        // 创建 PID 文件
+        createPidFile(pid);
+        return pid;
     }
 
     /**
@@ -317,6 +319,8 @@ public final class CodefreeAgentManager {
      * <p> 该方法会安全地停止当前正在运行的代理进程. 如果进程处理器存在且进程尚未终止,
      * 则会尝试销毁进程, 并在成功停止后将处理器置为 null. 如果停止过程中发生异常,
      * 会记录警告日志但不会抛出异常.
+     *
+     * <p> 该方法还会检查 PID 文件, 如果存在外部进程, 也会尝试停止它.
      *
      * <p> 该方法使用同步锁确保多线程环境下的线程安全.
      */
@@ -331,17 +335,32 @@ public final class CodefreeAgentManager {
                 processHandler = null;
             }
         }
+        // 尝试停止外部进程（通过 PID 文件）
+        stopExternalProcess();
+        // 删除 PID 文件
+        deletePidFile();
     }
 
     /**
      * 检查 Codefree 代理是否正在运行
+     * <p>
+     * 该方法会检查以下情况:
+     * 1. 当前插件实例管理的进程 (processHandler)
+     * 2. PID 文件中记录的进程
+     * 3. 实际进程是否真的存在
+     * 4. 端口上是否有 Codefree Agent 服务运行
      *
      * @return 如果代理进程存在且未终止则返回 true, 否则返回 false
      */
     public boolean isRunning() {
         synchronized (processLock) {
-            return processHandler != null && !processHandler.isProcessTerminated();
+            // 首先检查当前插件实例管理的进程
+            if (processHandler != null && !processHandler.isProcessTerminated()) {
+                return true;
+            }
         }
+        // 检查 PID 文件和实际进程
+        return checkExternalProcess();
     }
 
     /**
@@ -515,5 +534,214 @@ public final class CodefreeAgentManager {
             return Paths.get(System.getProperty("user.home"), url.substring(2));
         }
         return Paths.get(url);
+    }
+
+    /**
+     * 检查指定端口上的服务是否是 Codefree Agent 服务
+     * <p> 通过访问 /health 端点并检查返回的健康检查信息来判断
+     * 如果端口未被占用或服务不是 Codefree Agent, 则返回 false
+     *
+     * @return 如果是 Codefree Agent 服务则返回 true, 否则返回 false
+     */
+    private boolean isCodefreeAgentRunningOnPort() {
+        // 尝试访问 /health 端点
+        String url = "http://127.0.0.1:" + CodefreeAgentManager.DEFAULT_PORT + "/health";
+        try {
+            String response = HttpRequests.request(url)
+                .productNameAsUserAgent()
+                .readString();
+            // 检查响应中是否包含健康检查标识
+            // 响应格式: {"status":"ok"}
+            boolean isCodefreeAgent = response.contains("\"status\"") && response.contains("\"ok\"");
+            if (isCodefreeAgent) {
+                LOG.info("检测到端口 " + CodefreeAgentManager.DEFAULT_PORT + " 上运行的是 Codefree Agent 服务");
+            }
+            return isCodefreeAgent;
+        } catch (Exception e) {
+            LOG.debug("检查端口 " + CodefreeAgentManager.DEFAULT_PORT + " 上的服务失败: " + url, e);
+            return false;
+        }
+    }
+
+    /**
+     * 获取 PID 文件路径
+     *
+     * @return PID 文件路径
+     */
+    @NotNull
+    private Path getPidFilePath() {
+        return getWorkDir().resolve(PID_FILE_NAME);
+    }
+
+    /**
+     * 创建 PID 文件
+     * <p> 在启动进程时创建 PID 文件, 写入进程的 PID
+     *
+     * @param pid 进程 ID
+     */
+    private void createPidFile(long pid) {
+        Path pidFile = getPidFilePath();
+        try {
+            try (Writer writer = new OutputStreamWriter(Files.newOutputStream(pidFile), StandardCharsets.UTF_8)) {
+                writer.write(String.valueOf(pid));
+            }
+            LOG.info("创建 PID 文件: " + pidFile + ", PID: " + pid);
+        } catch (IOException e) {
+            LOG.warn("创建 PID 文件失败: " + pidFile, e);
+        }
+    }
+
+    /**
+     * 删除 PID 文件
+     * <p> 在停止进程时删除 PID 文件
+     */
+    private void deletePidFile() {
+        Path pidFile = getPidFilePath();
+        try {
+            if (Files.exists(pidFile)) {
+                Files.delete(pidFile);
+                LOG.info("删除 PID 文件: " + pidFile);
+            }
+        } catch (IOException e) {
+            LOG.warn("删除 PID 文件失败: " + pidFile, e);
+        }
+    }
+
+    /**
+     * 读取 PID 文件中的进程 ID
+     *
+     * @return 进程 ID, 如果文件不存在或读取失败则返回 null
+     */
+    @Nullable
+    private Long readPidFromFile() {
+        Path pidFile = getPidFilePath();
+        if (!Files.exists(pidFile)) {
+            return null;
+        }
+        try {
+            String content = Files.readString(pidFile, StandardCharsets.UTF_8).trim();
+            return Long.parseLong(content);
+        } catch (Exception e) {
+            LOG.debug("读取 PID 文件失败: " + pidFile, e);
+            return null;
+        }
+    }
+
+    /**
+     * 检查进程是否真的存在
+     * <p> 通过系统命令检查指定 PID 的进程是否正在运行
+     *
+     * @param pid 进程 ID
+     * @return 如果进程存在则返回 true, 否则返回 false
+     */
+    private boolean isProcessAlive(long pid) {
+        try {
+            ProcessBuilder pb;
+            if (SystemInfo.isWindows) {
+                // Windows: tasklist 命令即使进程不存在也可能返回退出码 0
+                // 需要检查输出内容来判断进程是否存在
+                pb = new ProcessBuilder("tasklist", "/FI", "PID eq " + pid, "/FO", "CSV", "/NH");
+            } else {
+                // Unix/Linux/Mac: ps 命令如果进程不存在会返回非 0 退出码
+                pb = new ProcessBuilder("/bin/sh", "-c", "ps -p " + pid);
+            }
+            Process process = pb.start();
+
+            if (SystemInfo.isWindows) {
+                // Windows: 需要检查输出内容
+                try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line = reader.readLine();
+                    // 如果输出不为空且包含 PID，说明进程存在
+                    boolean exists = line != null && !line.trim().isEmpty() && !line.contains("INFO:");
+                    int exitCode = process.waitFor();
+                    return exists && exitCode == 0;
+                }
+            } else {
+                // Unix/Linux/Mac: 直接检查退出码
+                int exitCode = process.waitFor();
+                return exitCode == 0;
+            }
+        } catch (Exception e) {
+            LOG.debug("检查进程是否存在失败, PID: " + pid, e);
+            return false;
+        }
+    }
+
+    /**
+     * 检查外部进程（通过 PID 文件和端口）
+     * <p>
+     * 该方法会:
+     * 1. 检查 PID 文件是否存在
+     * 2. 如果存在, 读取 PID 并验证进程是否真的存在
+     * 3. 如果进程不存在, 清理 PID 文件
+     * 4. 检查端口上是否有 Codefree Agent 服务运行
+     *
+     * @return 如果检测到外部进程运行则返回 true, 否则返回 false
+     */
+    private boolean checkExternalProcess() {
+        // 首先检查端口上是否有服务运行
+        if (isCodefreeAgentRunningOnPort()) {
+            // 如果端口上有服务, 尝试读取 PID 文件
+            Long pid = readPidFromFile();
+            if (pid != null) {
+                // 验证进程是否真的存在
+                if (isProcessAlive(pid)) {
+                    LOG.info("检测到外部 Codefree Agent 进程运行, PID: " + pid);
+                    return true;
+                } else {
+                    // PID 文件存在但进程不存在, 清理 PID 文件
+                    LOG.warn("PID 文件存在但进程不存在, 清理 PID 文件, PID: " + pid);
+                    deletePidFile();
+                }
+            } else {
+                // 端口上有服务但没有 PID 文件, 可能是外部启动的, 仍然返回 true
+                LOG.info("检测到端口 " + DEFAULT_PORT + " 上有 Codefree Agent 服务运行, 但没有 PID 文件");
+                return true;
+            }
+        }
+
+        // 检查 PID 文件是否存在
+        Long pid = readPidFromFile();
+        if (pid != null) {
+            // 验证进程是否真的存在
+            if (isProcessAlive(pid)) {
+                LOG.info("检测到外部 Codefree Agent 进程运行, PID: " + pid);
+                return true;
+            } else {
+                // PID 文件存在但进程不存在, 清理 PID 文件
+                LOG.warn("PID 文件存在但进程不存在, 清理 PID 文件, PID: " + pid);
+                deletePidFile();
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 停止外部进程（通过 PID 文件找到的进程）
+     * <p> 读取 PID 文件, 如果进程存在则尝试停止它
+     */
+    private void stopExternalProcess() {
+        Long pid = readPidFromFile();
+        if (pid != null && isProcessAlive(pid)) {
+            try {
+                ProcessBuilder pb;
+                if (SystemInfo.isWindows) {
+                    pb = new ProcessBuilder("taskkill", "/F", "/PID", String.valueOf(pid));
+                } else {
+                    pb = new ProcessBuilder("kill", String.valueOf(pid));
+                }
+                Process process = pb.start();
+                int exitCode = process.waitFor();
+                if (exitCode == 0) {
+                    LOG.info("成功停止外部 Codefree Agent 进程, PID: " + pid);
+                } else {
+                    LOG.warn("停止外部 Codefree Agent 进程失败, PID: " + pid + ", 退出码: " + exitCode);
+                }
+            } catch (Exception e) {
+                LOG.warn("停止外部 Codefree Agent 进程时发生异常, PID: " + pid, e);
+            }
+        }
     }
 }

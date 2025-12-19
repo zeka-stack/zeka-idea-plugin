@@ -166,7 +166,7 @@ public class LocalRegistryManager {
         }
 
         final long finalFileSize = remoteFileSize[0];
-        
+
         Thread t = new Thread(new Runnable() {
             public void run() {
                 try {
@@ -329,7 +329,7 @@ public class LocalRegistryManager {
                         final String sizeText = fileSize > 0
                                                 ? " (" + RegistryUtils.formatFileSize(fileSize) + ")"
                                                 : "";
-                        
+
                         ProgressManager.getInstance().runProcessWithProgressSynchronously(new Runnable() {
                             public void run() {
                                 try {
@@ -623,6 +623,7 @@ public class LocalRegistryManager {
      * @return SDK 主目录路径
      */
     public static String getSdkHome(Project project) {
+        // todo-dong4j : (2025.12.19 12:11) [如果没有打开项目, 这里将返回 null]
         Sdk sdk = ProjectRootManager.getInstance(project).getProjectSdk();
         if (sdk == null) {
             return null;

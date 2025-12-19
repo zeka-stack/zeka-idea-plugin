@@ -42,6 +42,9 @@
         <!-- Codefree 代理生命周期监听器 -->
         <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentLifecycleListener"/>
+
+        <!-- 启动活动：注册本地代理生命周期监听器 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.codefree.LocalAgentAppLifecycleListener"/>
     </extensions>
 </idea-plugin>
 

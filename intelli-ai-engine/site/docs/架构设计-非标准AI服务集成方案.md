@@ -132,7 +132,7 @@ public class CodefreeProvider extends AICompatibleProvider {
                            AIRuntimeSettings runtimeSettings) {
         super(project, config, modelParameters, runtimeSettings);
         // 关键：将 baseUrl 指向本地 Agent
-        this.config.baseUrl = "http://127.0.0.1:10011/v1";
+        this.config.baseUrl = "http://127.0.0.1:8765/v1";
     }
 
     // 无需重写任何方法！
@@ -157,7 +157,7 @@ public class OpenAiApiServer {
     private HttpServer server;
 
     public void start() {
-        server = HttpServer.create(new InetSocketAddress(10011), 0);
+        server = HttpServer.create(new InetSocketAddress(8765), 0);
 
         // 提供 OpenAI 兼容接口
         server.createContext("/v1/chat/completions", this::handleChatCompletions);
@@ -198,7 +198,7 @@ public class OpenAiApiServer {
 CODEFREE(
     "codefree",
     "Codefree",
-    "http://127.0.0.1:10011/v1",  // 指向本地 Agent
+    "http://127.0.0.1:8765/v1",  // 指向本地 Agent
     "codefree-chat",
     false,  // Agent 内部处理认证
     false,  // URL 不可编辑（固定为本地）
@@ -274,7 +274,7 @@ codefree-agent.jar
 ```java
 // 使用 JDK HttpServer（零依赖）
 HttpServer server = HttpServer.create(
-    new InetSocketAddress("127.0.0.1", 10011), 0
+    new InetSocketAddress("127.0.0.1", 8765), 0
 );
 
 server.createContext("/v1/chat/completions", exchange -> {
