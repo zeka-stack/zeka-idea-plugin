@@ -26,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import icons.AICommonIcons;
 
 /**

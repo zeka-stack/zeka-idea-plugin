@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ui;
+package dev.dong4j.zeka.stack.idea.plugin.common.ui.component;
 
 import com.intellij.ui.components.JBLabel;
 

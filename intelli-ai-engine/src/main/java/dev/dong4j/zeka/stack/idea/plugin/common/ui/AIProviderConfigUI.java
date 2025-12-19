@@ -34,7 +34,6 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -49,6 +48,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
 
@@ -77,9 +78,9 @@ public final class AIProviderConfigUI {
     /** API 密钥输入框 */
     private JBPasswordField apiKeyField;
     /** 测试连接按钮 */
-    private JButton testConnectionButton;
+    private StatusIndicatorButton testConnectionButton;
     /** 刷新模型列表的按钮 */
-    private JButton refreshModelsButton;
+    private StatusIndicatorButton refreshModelsButton;
     /** 显示可用提供者的复选框 */
     private JBCheckBox showAvailableProvidersCheckBox;
     /** 可用提供者面板, 用于展示和管理可用 AI 服务提供商的列表及其操作 */
@@ -140,8 +141,8 @@ public final class AIProviderConfigUI {
         apiKeyField = new JBPasswordField();
         apiKeyField.setToolTipText(AICommonBundle.message("settings.api.key.tooltip"));
 
-        testConnectionButton = new JButton(AICommonBundle.message("settings.test.connection"));
-        refreshModelsButton = new JButton(AICommonBundle.message("settings.refresh.models"));
+        testConnectionButton = new StatusIndicatorButton(AICommonBundle.message("settings.test.connection"));
+        refreshModelsButton = new StatusIndicatorButton(AICommonBundle.message("settings.refresh.models"));
 
         // 设置按钮宽度一致，取两个按钮文本中较长的宽度
         int buttonWidth = Math.max(
@@ -302,12 +303,12 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public JButton getTestConnectionButton() {
+    public StatusIndicatorButton getTestConnectionButton() {
         return testConnectionButton;
     }
 
     @NotNull
-    public JButton getRefreshModelsButton() {
+    public StatusIndicatorButton getRefreshModelsButton() {
         return refreshModelsButton;
     }
 

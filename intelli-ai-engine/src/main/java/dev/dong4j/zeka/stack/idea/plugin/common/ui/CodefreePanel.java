@@ -21,9 +21,6 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
@@ -33,7 +30,6 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 
 import javax.swing.BorderFactory;
-import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -47,6 +43,8 @@ import javax.swing.event.DocumentEvent;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.BreathingDotIcon;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
@@ -968,56 +966,4 @@ public final class CodefreePanel {
         return snapshot;
     }
 
-    /**
-     * 带呼吸效果的圆点图标
-     */
-    private static class BreathingDotIcon implements Icon {
-        private static final int SIZE = JBUI.scale(8);
-        private static final int TIMER_DELAY = 50;
-        private final Timer timer;
-        private final java.awt.Component owner;
-        private float phase;
-        private Color color;
-
-        BreathingDotIcon(@NotNull java.awt.Component owner, @NotNull Color initialColor) {
-            this.owner = owner;
-            this.color = initialColor;
-            this.timer = new Timer(TIMER_DELAY, e -> {
-                phase += 0.08f;
-                if (phase > Math.PI * 2) {
-                    phase -= (float) (Math.PI * 2);
-                }
-                owner.repaint();
-            });
-            this.timer.start();
-        }
-
-        void setColor(@NotNull Color color) {
-            this.color = color;
-        }
-
-        @Override
-        public void paintIcon(java.awt.Component c, Graphics g, int x, int y) {
-            float alpha = 0.5f + 0.5f * (float) Math.sin(phase);
-            int a = (int) (alpha * 255);
-            @SuppressWarnings("UseJBColor")
-            Color drawColor = new Color(color.getRed(), color.getGreen(), color.getBlue(), Math.max(60, Math.min(255, a)));
-
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(drawColor);
-            g2.fillOval(x, y, SIZE, SIZE);
-            g2.dispose();
-        }
-
-        @Override
-        public int getIconWidth() {
-            return SIZE;
-        }
-
-        @Override
-        public int getIconHeight() {
-            return SIZE;
-        }
-    }
 }

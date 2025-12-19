@@ -2,15 +2,12 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.ComboBox;
-import com.intellij.ui.Gray;
-import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.Color;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -20,7 +17,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -36,6 +32,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
 
@@ -373,10 +370,10 @@ public final class AIProviderConfigController {
             return;
         }
 
-        JButton testButton = ui.getTestConnectionButton();
+        StatusIndicatorButton testButton = ui.getTestConnectionButton();
         testButton.setEnabled(false);
         testButton.setText(AICommonBundle.message("settings.test.connection.testing"));
-        testButton.setIcon(ui.createStatusDotIcon(Gray._158));
+        testButton.setWarningStatus();
 
         new Thread(() -> {
             try {
@@ -470,10 +467,10 @@ public final class AIProviderConfigController {
             return;
         }
 
-        JButton refreshButton = ui.getRefreshModelsButton();
+        StatusIndicatorButton refreshButton = ui.getRefreshModelsButton();
         refreshButton.setEnabled(false);
         refreshButton.setText(AICommonBundle.message("settings.refresh.models.testing"));
-        refreshButton.setIcon(ui.createStatusDotIcon(Gray._158));
+        refreshButton.setWarningStatus();
 
         new Thread(() -> {
             try {
@@ -664,11 +661,11 @@ public final class AIProviderConfigController {
      * 该方法通过获取测试连接按钮, 并根据配置验证是否通过的状态, 设置相应的状态指示图标.
      */
     public void updateTestButtonState() {
-        JButton testButton = ui.getTestConnectionButton();
+        StatusIndicatorButton testButton = ui.getTestConnectionButton();
         if (configurationVerified != null && configurationVerified) {
-            testButton.setIcon(ui.createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80))));
+            testButton.setSuccessStatus();
         } else {
-            testButton.setIcon(ui.createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54))));
+            testButton.setErrorStatus();
         }
     }
 
@@ -678,13 +675,13 @@ public final class AIProviderConfigController {
      * 该方法通过获取刷新按钮组件, 并根据刷新模型操作是否成功, 设置对应状态的图标.
      */
     public void updateRefreshButtonState() {
-        JButton refreshButton = ui.getRefreshModelsButton();
+        StatusIndicatorButton refreshButton = ui.getRefreshModelsButton();
         if (refreshModelsSuccess == null) {
-            refreshButton.setIcon(ui.createStatusDotIcon(new JBColor(new Color(255, 193, 7), new Color(255, 193, 7))));
+            refreshButton.setWarningStatus();
         } else if (refreshModelsSuccess) {
-            refreshButton.setIcon(ui.createStatusDotIcon(new JBColor(new Color(76, 175, 80), new Color(76, 175, 80))));
+            refreshButton.setSuccessStatus();
         } else {
-            refreshButton.setIcon(ui.createStatusDotIcon(new JBColor(new Color(244, 67, 54), new Color(244, 67, 54))));
+            refreshButton.setErrorStatus();
         }
     }
 
