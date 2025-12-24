@@ -361,4 +361,37 @@ public enum AIProviderType {
     public static List<String> getAllDisplayNames() {
         return Arrays.stream(values()).map(AIProviderType::getDisplayName).toList();
     }
+
+    /**
+     * 获取 API Key 的获取地址
+     * <p>
+     * 返回当前提供商获取 API Key 的 URL 地址。如果不需要 API Key 或没有专门的获取页面，返回 null。
+     *
+     * @return API Key 获取地址，如果不需要或不存在则返回 null
+     */
+    @Nullable
+    public String getApiKeyUrl() {
+        switch (this) {
+            case CUSTOM:
+                return "https://platform.openai.com/api-keys";
+            case QIANWEN:
+                return "https://dashscope.console.aliyun.com/apiKey";
+            case SILICONFLOW:
+                return "https://cloud.siliconflow.cn/settings/api-keys";
+            case OLLAMA:
+                // Ollama 不需要 API Key
+                return null;
+            case LM_STUDIO:
+                // LM Studio 不需要 API Key
+                return null;
+            case MODELSCOPE:
+                return "https://modelscope.cn/usercenter/personal/settings/api-token";
+            case IFLOW:
+                return "https://console.iflow.cn/api-key";
+            case ZHIPU:
+                return "https://open.bigmodel.cn/usercenter/apikeys";
+            default:
+                return null;
+        }
+    }
 }

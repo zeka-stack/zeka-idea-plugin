@@ -1,10 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.ui.DocumentAdapter;
+import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -60,6 +62,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 public final class IntelliAgentPanel {
     /** 日志记录器 */
     private static final Logger LOG = Logger.getInstance(IntelliAgentPanel.class);
+    private static final String DEV_BOOK = "https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-engine/site/docs/%E9%9D" +
+                                           "%9E%E6%A0%87%E5%87%86AI%E6%9C%8D%E5%8A%A1%E9%9B%86%E6%88%90jar%E5%BC%80%E5%8F%91%E6%8C%87%E5" +
+                                           "%8D%97.md";
     /** 红色指示灯的颜色, 用于显示错误或警告状态 */
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
     /** Codefree 代理配置面板使用的绿色 */
@@ -73,6 +78,9 @@ public final class IntelliAgentPanel {
     /** 控制是否自动启动 Codefree 代理服务的复选框 */
     @NotNull
     private final JBCheckBox autoStartCheckBox;
+    /** 控制是否自动检查并提示更新 Agent JAR 的复选框 */
+    @NotNull
+    private final JBCheckBox autoUpdateCheckBox;
     /** 下载地址输入框 */
     @NotNull
     private final JBTextField downloadUrlField;
@@ -144,6 +152,7 @@ public final class IntelliAgentPanel {
     public IntelliAgentPanel() {
         // 初始化组件
         autoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.start"));
+        autoUpdateCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.update"));
         downloadUrlField = new JBTextField();
         downloadUrlField.setToolTipText(AICommonBundle.message("settings.codefree.download.url.hint"));
         // 限制输入框宽度，防止超长 URL 拉长界面
@@ -187,10 +196,16 @@ public final class IntelliAgentPanel {
             }
         });
 
-        // 创建按钮面板
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        buttonsPanel.add(downloadButton);
-        buttonsPanel.add(startButton);
+        // 创建按钮面板，使用 BorderLayout 实现按钮在左边、链接在右边的布局
+        JPanel buttonsPanel = new JPanel(new BorderLayout(5, 0));
+        JPanel leftButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        leftButtonsPanel.add(downloadButton);
+        leftButtonsPanel.add(startButton);
+        buttonsPanel.add(leftButtonsPanel, BorderLayout.WEST);
+
+        // 创建开发手册链接，添加到按钮面板的右侧
+        HyperlinkLabel developerManualLink = createDeveloperManualLink();
+        buttonsPanel.add(developerManualLink, BorderLayout.EAST);
 
         JPanel progressPanel = new JPanel(new BorderLayout(0, 0));
         progressPanel.add(downloadProgressBar, BorderLayout.CENTER);
@@ -198,6 +213,7 @@ public final class IntelliAgentPanel {
         // 创建主内容面板
         mainPanel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(autoStartCheckBox, "settings.codefree.auto.start.hint"))
+            .addComponent(createCheckBoxWithHint(autoUpdateCheckBox, "settings.codefree.auto.update.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.download.url")), downloadUrlField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.latest")), latestVersionLabel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.local")), localJarLabel)
@@ -560,6 +576,16 @@ public final class IntelliAgentPanel {
     @NotNull
     public JBCheckBox getAutoStartCheckBox() {
         return autoStartCheckBox;
+    }
+
+    /**
+     * 获取自动更新复选框
+     *
+     * @return 自动更新复选框
+     */
+    @NotNull
+    public JBCheckBox getAutoUpdateCheckBox() {
+        return autoUpdateCheckBox;
     }
 
     /**
@@ -961,9 +987,28 @@ public final class IntelliAgentPanel {
     public IntelliAgentSettings snapshotCodefreeSettings() {
         IntelliAgentSettings snapshot = new IntelliAgentSettings();
         snapshot.autoStart = getAutoStartCheckBox().isSelected();
+        snapshot.autoUpdate = getAutoUpdateCheckBox().isSelected();
         snapshot.downloadUrl = getDownloadUrlField().getText().trim();
         snapshot.jarFileName = getCurrentJarName();
         return snapshot;
+    }
+
+    /**
+     * 创建开发手册超链接
+     * <p>
+     * 创建一个带图标的超链接，点击后打开浏览器访问开发手册 URL
+     *
+     * @return 超链接标签
+     */
+    @NotNull
+    private HyperlinkLabel createDeveloperManualLink() {
+        String linkText = AICommonBundle.message("settings.codefree.developer.manual");
+        HyperlinkLabel linkLabel = new HyperlinkLabel(linkText);
+        linkLabel.setHyperlinkTarget(DEV_BOOK);
+        linkLabel.addHyperlinkListener(e -> {
+            BrowserUtil.browse(DEV_BOOK);
+        });
+        return linkLabel;
     }
 
 }

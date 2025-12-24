@@ -12,6 +12,11 @@
     <!-- 依赖的平台模块 -->
     <depends>com.intellij.modules.platform</depends>
 
+    <applicationListeners>
+        <listener class="dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentLifecycleListener"
+                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+    </applicationListeners>
+
     <!-- 插件定义的扩展点 -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- 应用级服务：全局 AI 配置（可用供应商列表） -->

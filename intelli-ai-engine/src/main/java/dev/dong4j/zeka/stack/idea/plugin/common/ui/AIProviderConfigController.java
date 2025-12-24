@@ -153,6 +153,7 @@ public final class AIProviderConfigController {
                                                     : new IntelliAgentSettings();
         IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
         intelliAgentPanel.getAutoStartCheckBox().setSelected(intelliAgentSettings.autoStart);
+        intelliAgentPanel.getAutoUpdateCheckBox().setSelected(intelliAgentSettings.autoUpdate);
         intelliAgentPanel.getDownloadUrlField().setText(intelliAgentSettings.downloadUrl != null ? intelliAgentSettings.downloadUrl : "");
         intelliAgentPanel.setLocalJarName(intelliAgentSettings.jarFileName, -1);
         intelliAgentPanel.updateCodefreeStatus(intelliAgentSettings);

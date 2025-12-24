@@ -73,6 +73,8 @@ public class FeedbackPanel {
      */
     private static final String FEEDBACK_API_URL = "https://api.dong4j.site/idea-plugin-feedback";
     // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
+    /** GitHub Discussions 链接 */
+    private static final String GITHUB_DISCUSSIONS_URL = "https://github.com/zeka-stack/zeka-idea-plugin/discussions";
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
 
     /** 面板内容 */
@@ -163,6 +165,8 @@ public class FeedbackPanel {
         statusLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
         // 设置标签不换行，确保链接文本在一行显示
         statusLabel.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, statusLabel.getPreferredSize().height));
+        // 初始状态显示 Discussions 超链接
+        showDiscussionsLink();
 
         // 按钮面板（右对齐）
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -653,12 +657,51 @@ public class FeedbackPanel {
         contentArea.setText("");
         typeComboBox.setSelectedIndex(0);
         githubUsernameField.setText("");
-        statusLabel.setText("");
+        // 恢复显示 Discussions 链接
+        showDiscussionsLink();
+    }
+
+    /**
+     * 显示 Discussions 超链接
+     * <p>
+     * 在状态标签中显示 Discussions 超链接，作为初始状态或清空表单后的状态
+     */
+    private void showDiscussionsLink() {
+        // 使用 HTML 格式化链接样式，使用主题感知的蓝色
+        Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
+        String linkText = String.format(
+            "<html><div style='white-space: nowrap;'><a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;" +
+            "'>\uD83D\uDCACDiscussions</a></div></html>",
+            GITHUB_DISCUSSIONS_URL,
+            linkColor.getRed(),
+            linkColor.getGreen(),
+            linkColor.getBlue()
+                                       );
+        statusLabel.setText(linkText);
+
         // 移除所有鼠标监听器
         for (java.awt.event.MouseListener listener : statusLabel.getMouseListeners()) {
             statusLabel.removeMouseListener(listener);
         }
-        statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());
+
+        // 添加点击事件来打开浏览器
+        statusLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                BrowserUtil.browse(GITHUB_DISCUSSIONS_URL);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                statusLabel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());
+            }
+        });
+        statusLabel.setForeground(linkColor);
     }
 
     /**

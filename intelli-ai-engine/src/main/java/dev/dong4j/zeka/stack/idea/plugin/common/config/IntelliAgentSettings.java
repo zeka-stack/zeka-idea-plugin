@@ -15,6 +15,8 @@ import java.util.Objects;
 public class IntelliAgentSettings {
     /** 是否在保存后自动尝试启动本地代理 */
     public boolean autoStart = false;
+    /** 是否自动检查并提示更新 Agent JAR */
+    public boolean autoUpdate = false;
     /** jar 下载地址 */
     public String downloadUrl = "";
     /** 本地已下载的 jar 文件名 */
@@ -27,6 +29,7 @@ public class IntelliAgentSettings {
     public IntelliAgentSettings copy() {
         IntelliAgentSettings settings = new IntelliAgentSettings();
         settings.autoStart = this.autoStart;
+        settings.autoUpdate = this.autoUpdate;
         settings.downloadUrl = this.downloadUrl;
         settings.jarFileName = this.jarFileName;
         return settings;
@@ -37,6 +40,7 @@ public class IntelliAgentSettings {
      */
     public boolean contentEquals(@NotNull IntelliAgentSettings other) {
         return autoStart == other.autoStart
+               && autoUpdate == other.autoUpdate
                && Objects.equals(downloadUrl, other.downloadUrl)
                && Objects.equals(jarFileName, other.jarFileName);
     }
