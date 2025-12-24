@@ -1,10 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.HyperlinkLabel;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -72,6 +74,8 @@ public final class AIProviderConfigUI {
     private JPanel mainPanel;
     /** 服务提供商下拉选择框 */
     private ComboBox<String> providerComboBox;
+    /** 获取 API Key 的超链接 */
+    private HyperlinkLabel getApiKeyLink;
     /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
     /** 基础 URL 输入框 */
@@ -132,6 +136,13 @@ public final class AIProviderConfigUI {
         // 初始化连接配置组件
         providerComboBox = new ComboBox<>(AIProviderType.getAllDisplayNames().toArray(new String[0]));
         providerComboBox.setRenderer(new ProviderListCellRenderer());
+
+        // 创建获取 API Key 的超链接
+        getApiKeyLink = new HyperlinkLabel(AICommonBundle.message("settings.get.api.key"));
+        updateApiKeyLinkUrl();
+
+        // 添加下拉框选择监听器，当选择改变时更新链接 URL
+        providerComboBox.addItemListener(e -> updateApiKeyLinkUrl());
 
         modelComboBox = new ComboBox<>();
         modelComboBox.setEditable(true);
@@ -405,6 +416,12 @@ public final class AIProviderConfigUI {
         providerComboBox.setPreferredSize(providerComboBoxSize);
         providerComboBox.setMaximumSize(providerComboBoxSize);
 
+        // 创建包含下拉框和超链接的面板（同一行）
+        // 下拉框在左边，超链接在右边对齐
+        JPanel providerPanel = new JPanel(new BorderLayout(5, 0));
+        providerPanel.add(providerComboBox, BorderLayout.WEST);
+        providerPanel.add(getApiKeyLink, BorderLayout.EAST);
+
         JPanel apiKeyPanel = new JPanel(new BorderLayout(5, 0));
         apiKeyPanel.add(apiKeyField, BorderLayout.CENTER);
         apiKeyPanel.add(refreshModelsButton, BorderLayout.EAST);
@@ -414,13 +431,44 @@ public final class AIProviderConfigUI {
         modelPanel.add(testConnectionButton, BorderLayout.EAST);
 
         JPanel panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerComboBox)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
+    }
+
+    /**
+     * 更新 API Key 链接的 URL
+     * <p>
+     * 根据当前选择的服务提供商更新获取 API Key 链接的 URL
+     */
+    private void updateApiKeyLinkUrl() {
+        String selectedDisplayName = (String) providerComboBox.getSelectedItem();
+        if (selectedDisplayName == null) {
+            getApiKeyLink.setVisible(false);
+            return;
+        }
+
+        AIProviderType providerType = AIProviderType.fromDisplayName(selectedDisplayName);
+        if (providerType == null) {
+            getApiKeyLink.setVisible(false);
+            return;
+        }
+
+        String apiKeyUrl = providerType.getApiKeyUrl();
+        if (apiKeyUrl != null && !apiKeyUrl.isEmpty()) {
+            final String url = apiKeyUrl; // 需要在 lambda 中使用 final 变量
+            getApiKeyLink.setHyperlinkTarget(url);
+            // 每次更新时添加新的监听器（HyperlinkLabel 会管理监听器，多次添加不会导致问题）
+            getApiKeyLink.addHyperlinkListener(e -> BrowserUtil.browse(url));
+            getApiKeyLink.setVisible(true);
+        } else {
+            // 如果该提供商不需要 API Key，隐藏链接
+            getApiKeyLink.setVisible(false);
+        }
     }
 
     /**

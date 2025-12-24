@@ -31,7 +31,7 @@ public class NotificationUtil {
      * @return 通知组实例
      */
     @NotNull
-    private static NotificationGroup getNotificationGroup() {
+    public static NotificationGroup getNotificationGroup() {
         return NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP_ID);
     }
 
