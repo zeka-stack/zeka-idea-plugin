@@ -39,6 +39,14 @@
                     icon="icons.AICommonIcons.TOOL_ICON"
                     doNotActivateOnStart="true"/>
 
+        <!-- Chat 工具窗口 -->
+        <!--suppress PluginXmlI18n -->
+        <toolWindow id="IntelliAI Chat"
+                    factoryClass="dev.dong4j.zeka.stack.idea.plugin.common.chat.AIChatToolWindowFactory"
+                    anchor="right"
+                    icon="icons.AICommonIcons.TOOL_ICON"
+                    doNotActivateOnStart="true"/>
+
         <!-- Codefree 代理生命周期监听器 -->
         <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentLifecycleListener"/>
@@ -47,4 +55,3 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.codefree.LocalAgentAppLifecycleListener"/>
     </extensions>
 </idea-plugin>
-

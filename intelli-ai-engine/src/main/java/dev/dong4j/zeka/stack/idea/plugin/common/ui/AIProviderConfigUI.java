@@ -234,6 +234,8 @@ public final class AIProviderConfigUI {
         JPanel advancedPanel = createAdvancedPanel();
         // 个人信息面板（作者信息）
         PersonalInfoPanel personalInfoPanel = createPersonalInfoPanel();
+        // 反馈面板
+        FeedbackPanel feedbackPanel = createFeedbackPanel();
 
         // 组合成主面板
         mainPanel = FormBuilder.createFormBuilder()
@@ -247,6 +249,7 @@ public final class AIProviderConfigUI {
             .addComponentFillVertically(new JPanel(), 0)
             .addComponent(codefreePanel.getContent())
             .addComponent(personalInfoPanel.getContent())
+            .addComponent(feedbackPanel.getContent())
             .getPanel();
         mainPanel.setBorder(JBUI.Borders.empty(8));
     }
@@ -549,6 +552,22 @@ public final class AIProviderConfigUI {
             .build();
 
         return new PersonalInfoPanel(info);
+    }
+
+    /**
+     * 创建反馈面板
+     * <p>
+     * 构建包含反馈表单的面板，用于收集用户反馈并提交到反馈服务器
+     *
+     * @return 反馈面板
+     */
+    @NotNull
+    private FeedbackPanel createFeedbackPanel() {
+        return new FeedbackPanel(
+            null, // 应用级设置，project 为 null
+            "dev.dong4j.zeka.stack.idea.plugin.common.ai", // 插件 ID
+            "IntelliAI Engine" // 插件名称
+        );
     }
 
     /**

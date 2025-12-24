@@ -1,0 +1,28 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: feedback-server
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+github:
+  token: ${ZEKA_STACK_PLUGIN_GITHUB_TOKEN:}
+  repository-id: ${GITHUB_REPOSITORY_ID:R_kgDOO3uf9g}
+  category:
+    general: ${GITHUB_CATEGORY_ID_GENERAL:DIC_kwDOO3uf9s4C0Jcg}
+    ideas: ${GITHUB_CATEGORY_ID_IDEAS:DIC_kwDOO3uf9s4C0Jci}
+    qa: ${GITHUB_CATEGORY_ID_QA:DIC_kwDOO3uf9s4C0Jch}
+    announcements: ${GITHUB_CATEGORY_ID_ANNOUNCEMENTS:DIC_kwDOO3uf9s4C0Jcf}
+
+logging:
+  level:
+    root: INFO
+    dev.dong4j.zeka.stack.feedback: DEBUG
+

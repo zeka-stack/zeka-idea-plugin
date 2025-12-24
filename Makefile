@@ -113,7 +113,7 @@ deploy-sub: deploy-javadoc deploy-changelog deploy-tracer deploy-nacos
 
 # 插件版本信息
 version:
-	@echo "插件版本："
+	@echo "插件版本:"
 	@for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(TRACER_DIR) $(NACOS_DIR); do \
 		version=$$(cd $$dir && ./gradlew properties -q | grep "^version:" | awk -F: '{print $$2}' | xargs); \
 		printf "  %-25s %s\n" "$$dir:" "$$version"; \

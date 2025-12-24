@@ -149,7 +149,7 @@ public final class CodefreePanel {
         // 限制输入框宽度，防止超长 URL 拉长界面
         Dimension urlFieldSize = new Dimension(500, downloadUrlField.getPreferredSize().height);
         downloadUrlField.setPreferredSize(urlFieldSize);
-        downloadUrlField.setMaximumSize(new Dimension(600, downloadUrlField.getPreferredSize().height));
+        downloadUrlField.setMaximumSize(new Dimension(400, downloadUrlField.getPreferredSize().height));
 
         statusLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
         statusLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -642,7 +642,7 @@ public final class CodefreePanel {
         }
 
         // 如果服务正在运行，使用带链接的状态文本
-        if (running && endpoint != null) {
+        if (running) {
             setStatusTextWithLink(status, endpoint);
         } else {
             setStatusText(status);
