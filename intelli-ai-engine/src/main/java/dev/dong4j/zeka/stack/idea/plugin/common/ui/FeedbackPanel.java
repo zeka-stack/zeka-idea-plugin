@@ -65,8 +65,14 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("all")
 public class FeedbackPanel {
     private static final Logger LOG = Logger.getInstance(FeedbackPanel.class);
-    // private static final String FEEDBACK_API_URL = "https://api.dong4j.site/idea-plugin-feedback";
-    private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
+    /**
+     * 反馈 API 的 URL 地址
+     * <p> todo-dong4j 需要让插件传过来
+     *
+     * @see #sendHttpRequest(Map)
+     */
+    private static final String FEEDBACK_API_URL = "https://api.dong4j.site/idea-plugin-feedback";
+    // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
 
     /** 面板内容 */
