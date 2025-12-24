@@ -433,9 +433,8 @@ public class FeedbackPanel {
         // 将 JSON 字符串转换为字节数组（用于签名）
         byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
 
-        // 解析 URL 获取路径和查询参数
+        String pathWithQuery = "/api/feedback";
         URI uri = URI.create(FEEDBACK_API_URL);
-        String pathWithQuery = uri.getPath();
         if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
             pathWithQuery += "?" + uri.getQuery();
         }
