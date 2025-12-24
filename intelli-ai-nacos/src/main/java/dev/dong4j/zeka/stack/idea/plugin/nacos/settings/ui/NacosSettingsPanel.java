@@ -56,6 +56,8 @@ import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.table.AbstractTableModel;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.local.LocalNacosService;
@@ -245,10 +247,19 @@ public class NacosSettingsPanel {
             .getPanel();
         customRegistryPanel.setBorder(sectionBorder());
 
+        // 初始化反馈面板
+        FeedbackPanel feedbackPanel = new FeedbackPanel(
+            null, // 应用级设置，project 为 null
+            "dev.dong4j.zeka.stack.idea.plugin.nacos", // 插件 ID
+            PluginContents.PLUGIN_NAME // 插件名称
+        );
+
         FormBuilder builder = FormBuilder.createFormBuilder()
             .addComponent(localRegistryPanel)
             .addSeparator(12)
             .addComponent(customRegistryPanel)
+            .addSeparator(12)
+            .addComponent(feedbackPanel.getContent())
             .addComponentFillVertically(new JPanel(), 0);
 
         // 构建主面板
@@ -517,7 +528,7 @@ public class NacosSettingsPanel {
                               ? settings.localNacosVersion : "2.4.3";
         }
         final String version = selectedVersion;
-        
+
         CompletableFuture
             .supplyAsync(() -> LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS),
                          AppExecutorUtil.getAppExecutorService())

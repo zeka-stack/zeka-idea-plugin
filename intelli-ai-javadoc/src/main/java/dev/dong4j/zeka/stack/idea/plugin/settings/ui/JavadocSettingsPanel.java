@@ -11,9 +11,11 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.util.PanelUtil;
@@ -55,6 +57,9 @@ public class JavadocSettingsPanel {
 
     /** 提示词模板面板 */
     private PromptTemplatesPanel promptTemplatesPanel;
+
+    /** 反馈面板 */
+    private FeedbackPanel feedbackPanel;
 
 
     /**
@@ -103,6 +108,12 @@ public class JavadocSettingsPanel {
         customJavaDocTagsPanel = new CustomJavadocTagsPanel();
         // 初始化类 Javadoc 模板面板
         classJavaDocTemplatePanel = new ClassJavadocTemplatePanel();
+        // 初始化反馈面板
+        feedbackPanel = new FeedbackPanel(
+            null, // 应用级设置，project 为 null
+            "dev.dong4j.zeka.stack.idea.plugin", // 插件 ID
+            PluginContents.PLUGIN_NAME // 插件名称
+        );
 
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()
@@ -124,6 +135,10 @@ public class JavadocSettingsPanel {
 
             // 第五组：其他设置
             .addComponent(createOtherSettingsPanel())
+            .addSeparator(10)
+
+            // 第六组：反馈面板
+            .addComponent(feedbackPanel.getContent())
 
             .addComponentFillVertically(new JPanel(), 0)
             .getPanel();

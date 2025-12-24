@@ -17,20 +17,25 @@ public class CacheUtils {
     private static final ConcurrentHashMap<String, CacheEntry<?>> CACHE = new ConcurrentHashMap<>();
 
     /**
-         * 缓存条目
-         *
-         * @param <T> 数据类型
-         */
-        private record CacheEntry<T>(T data, long expireTime) {
-            private CacheEntry(T data, long expireTime) {
-                this.data = data;
-                this.expireTime = System.currentTimeMillis() + expireTime;
-            }
-
-            public boolean isExpired() {
-                return System.currentTimeMillis() > expireTime;
-            }
+     * 缓存条目记录类
+     * <p> 用于存储缓存数据及其过期时间, 提供判断缓存是否过期的功能, 适用于需要临时存储数据并设置有效期的场景
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2025.12.24
+     * @since 1.0.0
+     */
+    private record CacheEntry<T>(T data, long expireTime) {
+        private CacheEntry(T data, long expireTime) {
+            this.data = data;
+            this.expireTime = System.currentTimeMillis() + expireTime;
         }
+
+        public boolean isExpired() {
+            return System.currentTimeMillis() > expireTime;
+        }
+    }
 
     /**
      * 存储数据到缓存

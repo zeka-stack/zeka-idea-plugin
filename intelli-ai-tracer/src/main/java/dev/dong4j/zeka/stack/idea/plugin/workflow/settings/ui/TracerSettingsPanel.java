@@ -25,6 +25,8 @@ import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
 import lombok.Getter;
@@ -69,11 +71,20 @@ public class TracerSettingsPanel {
             }
         );
 
+        // 初始化反馈面板
+        FeedbackPanel feedbackPanel = new FeedbackPanel(
+            null, // 应用级设置，project 为 null
+            "dev.dong4j.zeka.stack.idea.plugin.workflow", // 插件 ID
+            PluginContents.PLUGIN_NAME // 插件名称
+        );
+
         mainPanel = FormBuilder.createFormBuilder()
             .addComponent(aiProviderSelectionPanel.getPanel())
             .addSeparator(10)
             .addComponent(showPromptSettingsCheckBox)
             .addComponent(promptSettingsPanel)
+            .addSeparator(10)
+            .addComponent(feedbackPanel.getContent())
             .addComponentFillVertically(new JPanel(), 0)
             .getPanel();
 

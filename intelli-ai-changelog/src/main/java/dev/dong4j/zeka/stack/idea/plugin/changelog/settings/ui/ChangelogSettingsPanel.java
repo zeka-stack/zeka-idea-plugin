@@ -28,6 +28,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
 import lombok.Getter;
 
 /**
@@ -106,6 +107,13 @@ public class ChangelogSettingsPanel {
             }
         );
 
+        // 初始化反馈面板
+        FeedbackPanel feedbackPanel = new FeedbackPanel(
+            null, // 应用级设置，project 为 null
+            "dev.dong4j.zeka.stack.idea.plugin.changelog", // 插件 ID
+            "IntelliAI Changelog" // 插件名称
+        );
+
         // 构建主面板
         mainPanel = FormBuilder.createFormBuilder()
             // 第一组：AI 提供商选择
@@ -115,6 +123,10 @@ public class ChangelogSettingsPanel {
             // 第二组：高级设置（可折叠）
             .addComponent(showAdvancedSettingsCheckBox)
             .addComponent(advancedSettingsPanel)
+            .addSeparator(10)
+
+            // 第三组：反馈面板
+            .addComponent(feedbackPanel.getContent())
 
             .addComponentFillVertically(new JPanel(), 0)
             .getPanel();
