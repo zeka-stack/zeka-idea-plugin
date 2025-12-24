@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,7 @@ import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,8 +65,8 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("all")
 public class FeedbackPanel {
     private static final Logger LOG = Logger.getInstance(FeedbackPanel.class);
-    private static final String FEEDBACK_API_URL = "https://api.dong4j.site/idea-plugin-feedback";
-    // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
+    // private static final String FEEDBACK_API_URL = "https://api.dong4j.site/idea-plugin-feedback";
+    private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
 
     /** 面板内容 */
@@ -80,6 +82,9 @@ public class FeedbackPanel {
 
     /** 插件名称 */
     private final String pluginName;
+
+    /** 签名密钥 */
+    private final String secret;
 
     /** 表单组件 */
     private JBTextField titleField;
@@ -98,11 +103,13 @@ public class FeedbackPanel {
      * @param project    项目对象，可以为 null（应用级设置时）
      * @param pluginId   插件 ID
      * @param pluginName 插件名称
+     * @param secret     签名密钥
      */
-    public FeedbackPanel(@Nullable Project project, @NotNull String pluginId, @NotNull String pluginName) {
+    public FeedbackPanel(@Nullable Project project, @NotNull String pluginId, @NotNull String pluginName, @NotNull String secret) {
         this.project = project;
         this.pluginId = pluginId;
         this.pluginName = pluginName;
+        this.secret = secret;
         createFeedbackPanel();
     }
 
@@ -145,6 +152,12 @@ public class FeedbackPanel {
             contentScrollPane.setBorder(JBUI.Borders.empty(10));
         }
 
+        // 状态标签（使用 JBLabel 配合 HTML 支持可点击链接）
+        statusLabel = new JBLabel("", javax.swing.SwingConstants.LEFT);
+        statusLabel.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+        // 设置标签不换行，确保链接文本在一行显示
+        statusLabel.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, statusLabel.getPreferredSize().height));
+
         // 按钮面板（右对齐）
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
@@ -157,20 +170,18 @@ public class FeedbackPanel {
         clearButton.addActionListener(e -> clearForm());
         buttonPanel.add(clearButton);
 
-        // 状态标签（使用 JBLabel 配合 HTML 支持可点击链接）
-        statusLabel = new JBLabel("", javax.swing.SwingConstants.CENTER);
-        // 使用 FlowLayout 包装以实现居中显示
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        statusPanel.setOpaque(false);
-        statusPanel.add(statusLabel);
+        // 按钮和状态面板（使用 BorderLayout：左侧显示状态，右侧显示按钮）
+        JPanel buttonAndStatusPanel = new JPanel(new BorderLayout(10, 0));
+        buttonAndStatusPanel.setOpaque(false);
+        buttonAndStatusPanel.add(statusLabel, BorderLayout.WEST);
+        buttonAndStatusPanel.add(buttonPanel, BorderLayout.EAST);
 
         // 使用 FormBuilder 构建表单
         mainPanel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.feedback.type")), firstRowPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.feedback.title.label")), titleField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.feedback.content")), contentScrollPane)
-            .addComponent(buttonPanel)
-            .addComponent(statusPanel)
+            .addLabeledComponent(new SpacedJBLabel(""), buttonAndStatusPanel)  // 状态标签和按钮在同一行，状态标签在第二列
             .getPanel();
     }
 
@@ -381,6 +392,8 @@ public class FeedbackPanel {
         }
 
         // 自动收集的信息
+        // 插件名称和版本（使用构造函数传入的值，确保每个插件使用各自的名称和版本）
+        userInfo.put("pluginName", pluginName);
         String pluginVersion = getPluginVersion();
         if (pluginVersion != null) {
             userInfo.put("pluginVersion", pluginVersion);
@@ -411,16 +424,41 @@ public class FeedbackPanel {
         ObjectMapper mapper = new ObjectMapper();
         String jsonBody = mapper.writeValueAsString(requestBody);
 
+        // 将 JSON 字符串转换为字节数组（用于签名）
+        byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
+
+        // 解析 URL 获取路径和查询参数
+        URI uri = URI.create(FEEDBACK_API_URL);
+        String pathWithQuery = uri.getPath();
+        if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
+            pathWithQuery += "?" + uri.getQuery();
+        }
+
+        // 生成签名头（使用插件 ID 作为客户端 ID）
+        RequestSigner.SignedHeaders signedHeaders;
+        try {
+            signedHeaders = RequestSigner.sign(pluginId, secret, "POST", pathWithQuery, bodyBytes);
+        } catch (Exception e) {
+            log.error("生成请求签名失败", e);
+            throw new IOException("生成请求签名失败: " + e.getMessage(), e);
+        }
+
         HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
             .build();
 
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(FEEDBACK_API_URL))
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+            .uri(uri)
             .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-            .timeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
-            .build();
+            .header("X-Client-Id", signedHeaders.clientId())
+            .header("X-Timestamp", signedHeaders.timestamp())
+            .header("X-Nonce", signedHeaders.nonce())
+            .header("X-Body-SHA256", signedHeaders.bodySha256())
+            .header("X-Signature", signedHeaders.signature())
+            .POST(HttpRequest.BodyPublishers.ofByteArray(bodyBytes))
+            .timeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS));
+
+        HttpRequest request = requestBuilder.build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         return response.body();
@@ -560,15 +598,20 @@ public class FeedbackPanel {
      * @param url 链接地址
      */
     private void showStatusWithLink(@NotNull String url) {
+        // 使用国际化文本作为链接显示文本
+        String linkDisplayText = AICommonBundle.message("settings.feedback.view.discussion");
+
         // 使用 HTML 格式化链接样式，使用主题感知的蓝色
+        // 添加 white-space: nowrap 防止换行
         Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
         String linkText = String.format(
-            "<html><a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;'>%s</a></html>",
+            "<html><div style='white-space: nowrap;'><a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;" +
+            "'>%s</a></div></html>",
             url,
             linkColor.getRed(),
             linkColor.getGreen(),
             linkColor.getBlue(),
-            url
+            linkDisplayText
                                        );
         statusLabel.setText(linkText);
 

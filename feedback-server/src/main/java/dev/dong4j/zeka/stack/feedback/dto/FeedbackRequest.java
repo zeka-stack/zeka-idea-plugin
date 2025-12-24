@@ -122,6 +122,12 @@ public class FeedbackRequest {
         private String githubUsername;
 
         /**
+         * 插件名称
+         */
+        @Size(max = 100, message = "插件名称长度不能超过100个字符")
+        private String pluginName;
+
+        /**
          * 插件版本
          */
         @Size(max = 50, message = "插件版本长度不能超过50个字符")

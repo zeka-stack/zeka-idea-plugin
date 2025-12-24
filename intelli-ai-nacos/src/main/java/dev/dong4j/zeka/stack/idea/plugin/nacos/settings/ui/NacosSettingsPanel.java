@@ -251,7 +251,8 @@ public class NacosSettingsPanel {
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
             "dev.dong4j.zeka.stack.idea.plugin.nacos", // 插件 ID
-            PluginContents.PLUGIN_NAME // 插件名称
+            PluginContents.PLUGIN_NAME, // 插件名称
+            "zeka-stack-nacos-plugin" // 签名密钥
         );
 
         FormBuilder builder = FormBuilder.createFormBuilder()

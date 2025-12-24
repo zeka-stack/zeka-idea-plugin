@@ -72,7 +72,11 @@ public class FeedbackService {
      */
     private String buildTitle(FeedbackRequest request) {
         String typeLabel = request.getType().getDescription();
-        return String.format("[插件反馈] %s: %s", typeLabel, request.getTitle());
+        FeedbackRequest.UserInfo userInfo = request.getUserInfo();
+        String pluginName = userInfo != null && StringUtils.hasText(userInfo.getPluginName())
+                            ? userInfo.getPluginName()
+                            : "插件";
+        return String.format("[%s 反馈] %s: %s", pluginName, typeLabel, request.getTitle());
     }
 
     /**
@@ -105,6 +109,9 @@ public class FeedbackService {
         }
         if (StringUtils.hasText(userInfo.getGithubUsername())) {
             body.append("- **GitHub**: @").append(userInfo.getGithubUsername()).append("\n");
+        }
+        if (StringUtils.hasText(userInfo.getPluginName())) {
+            body.append("- **插件名称**: ").append(escapeMarkdown(userInfo.getPluginName())).append("\n");
         }
         if (StringUtils.hasText(userInfo.getPluginVersion())) {
             body.append("- **插件版本**: ").append(escapeMarkdown(userInfo.getPluginVersion())).append("\n");

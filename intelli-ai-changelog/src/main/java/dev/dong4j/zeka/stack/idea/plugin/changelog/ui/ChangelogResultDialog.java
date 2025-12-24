@@ -40,7 +40,7 @@ public class ChangelogResultDialog extends DialogWrapper {
      * @param changelog 要显示的内容
      */
     public ChangelogResultDialog(@Nullable Project project, @NotNull String changelog) {
-        this(project, changelog, "Generated Changelog");
+        this(project, changelog, "Generated Changelog", false);
     }
 
     /**
@@ -51,10 +51,22 @@ public class ChangelogResultDialog extends DialogWrapper {
      * @param title     对话框标题
      */
     public ChangelogResultDialog(@Nullable Project project, @NotNull String changelog, @NotNull String title) {
+        this(project, changelog, title, false);
+    }
+
+    /**
+     * 创建 Changelog 结果对话框（带自定义标题和模态设置）
+     *
+     * @param project   项目对象
+     * @param changelog 要显示的内容
+     * @param title     对话框标题
+     * @param modal     是否为模态对话框
+     */
+    public ChangelogResultDialog(@Nullable Project project, @NotNull String changelog, @NotNull String title, boolean modal) {
         super(project);
         this.changelog = changelog;
         setTitle(title);
-        setModal(false);
+        setModal(modal);
         init();
     }
 

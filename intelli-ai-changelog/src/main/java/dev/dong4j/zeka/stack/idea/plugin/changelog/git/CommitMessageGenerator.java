@@ -108,10 +108,12 @@ public class CommitMessageGenerator {
      */
     private void showCommitMessageDialog(@NotNull String commitMessage) {
         // 使用 ChangelogResultDialog 显示提交记录对话框
+        // 设置为模态对话框，以便使用 showAndGet() 方法等待用户确认
         ChangelogResultDialog dialog = new ChangelogResultDialog(
             project,
             commitMessage,
-            ChangelogBundle.message("commit.message.title")
+            ChangelogBundle.message("commit.message.title"),
+            true  // 模态对话框
         );
 
         if (dialog.showAndGet()) {

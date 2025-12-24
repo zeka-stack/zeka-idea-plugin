@@ -24,6 +24,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -111,7 +112,8 @@ public class ChangelogSettingsPanel {
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
             "dev.dong4j.zeka.stack.idea.plugin.changelog", // 插件 ID
-            "IntelliAI Changelog" // 插件名称
+            PluginContents.PLUGIN_NAME, // 插件名称
+            "zeka-stack-changelog-plugin" // 签名密钥
         );
 
         // 构建主面板

@@ -44,6 +44,7 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -566,7 +567,8 @@ public final class AIProviderConfigUI {
         return new FeedbackPanel(
             null, // 应用级设置，project 为 null
             "dev.dong4j.zeka.stack.idea.plugin.common.ai", // 插件 ID
-            "IntelliAI Engine" // 插件名称
+            EngineContents.PLUGIN_NAME, // 插件名称
+            "zeka-stack-engine-plugin" // 签名密钥
         );
     }
 

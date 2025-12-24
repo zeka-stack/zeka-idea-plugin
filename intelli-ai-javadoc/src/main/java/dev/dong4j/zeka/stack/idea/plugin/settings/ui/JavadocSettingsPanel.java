@@ -112,7 +112,8 @@ public class JavadocSettingsPanel {
         feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
             "dev.dong4j.zeka.stack.idea.plugin", // 插件 ID
-            PluginContents.PLUGIN_NAME // 插件名称
+            PluginContents.PLUGIN_NAME, // 插件名称
+            "zeka-stack-javadoc-plugin" // 签名密钥
         );
 
         // 构建主面板
