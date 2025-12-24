@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.codefree;
+package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
@@ -76,7 +76,7 @@ public class LocalAgentAppLifecycleListener implements ProjectActivity, ProjectM
         AppExecutorUtil.getAppExecutorService().execute(() -> {
             try {
                 // todo-dong4j : (2025.12.19 12:20) [在项目关闭时执行, 而不是应用关闭]
-                // CodefreeAgentManager manager = CodefreeAgentManager.getInstance();
+                // IntelliAgentManager manager = IntelliAgentManager.getInstance();
                 // if (manager.isRunning()) {
                 //     manager.stopAgent();
                 // }

@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.codefree;
+package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.OSProcessHandler;
@@ -30,35 +30,38 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Optional;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import lombok.SneakyThrows;
 
 /**
- * 管理 Codefree 本地代理的下载与启动
+ * 智能代理管理器类
+ * <p> 用于管理和控制 IntelliAI Agent 的生命周期, 包括启动, 停止, 检查状态, 下载和配置等操作.
+ * 提供了获取最新版本信息, 远程 jar 文件大小, 构建下载 URL 等功能.
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2025.12.24
+ * @since 1.0.0
  */
 @Service(Service.Level.APP)
-public final class CodefreeAgentManager {
-    /**
-     * 日志记录器
-     * <p> 用于记录 CodefreeAgentManager 类的日志信息.
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(CodefreeAgentManager.class);
-    /** 默认的 Codefree 代理 JAR 文件名称. */
-    public static final String DEFAULT_JAR_NAME = "codefree-agent.jar";
+public final class IntelliAgentManager {
+
+    private static final Logger LOG = Logger.getInstance(IntelliAgentManager.class);
+    /** 默认的 IntelliAI Agent JAR 文件名称. */
+    public static final String DEFAULT_JAR_NAME = "intelli-ai-agent.jar";
     /** 默认 jar 前缀 */
-    public static final String DEFAULT_JAR_PREFIX = "codefree-agent";
+    public static final String DEFAULT_JAR_PREFIX = "intelli-ai-agent";
     /** 默认端口号 */
     public static final int DEFAULT_PORT = 8765;
     /** 默认的本地 OpenAI API 地址 */
-    public static final String DEFAULT_OPENAI_ENDPOINT = System.getProperty("codefree.agent.api", "http://127.0.0.1:8765/v1");
+    public static final String DEFAULT_OPENAI_ENDPOINT = System.getProperty("intelli.agent.api", "http://127.0.0.1:8765/v1");
     /** PID 文件名 */
-    private static final String PID_FILE_NAME = "codefree-agent.pid";
+    private static final String PID_FILE_NAME = "intelli-ai-agent.pid";
 
     /** 用于同步对 processHandler 的访问, 防止多线程冲突 */
     private final Object processLock = new Object();
-    /** 当前运行的 Codefree 代理进程处理器, 如果代理未运行则为 null */
+    /** 当前运行的 IntelliAI Agent 代理进程处理器, 如果代理未运行则为 null */
     @Nullable
     private OSProcessHandler processHandler;
 
@@ -110,20 +113,20 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 获取 {@code CodefreeAgentManager} 的单例实例.
+     * 获取 {@code IntelliAgentManager} 的单例实例.
      * <p>
-     * 通过 IntelliJ 平台的 {@code ApplicationManager} 获取已注册的 {@code CodefreeAgentManager} 服务对象.
+     * 通过 IntelliJ 平台的 {@code ApplicationManager} 获取已注册的 {@code IntelliAgentManager} 服务对象.
      *
-     * @return {@code CodefreeAgentManager} 单例实例
+     * @return {@code IntelliAgentManager} 单例实例
      */
     @NotNull
-    public static CodefreeAgentManager getInstance() {
-        return ApplicationManager.getApplication().getService(CodefreeAgentManager.class);
+    public static IntelliAgentManager getInstance() {
+        return ApplicationManager.getApplication().getService(IntelliAgentManager.class);
     }
 
     /**
      * 获取最新可用的 jar 名称
-     * <p> 通过提供的基础 URL 拼接版本端点, 发送 HTTP 请求获取 Codefree 的最新版本信息.
+     * <p> 通过提供的基础 URL 拼接版本端点, 发送 HTTP 请求获取 IntelliAI Agent 的最新版本信息.
      *
      * @param baseUrl 基础 URL, 用于构建完整的版本检查地址
      * @return 最新可用的 jar 名称, 如果获取失败则返回空字符串
@@ -135,7 +138,7 @@ public final class CodefreeAgentManager {
             String version = HttpRequests.request(versionEndpoint).productNameAsUserAgent().readString();
             return version.trim();
         } catch (Exception e) {
-            LOG.warn("获取 Codefree 最新版本失败", e);
+            LOG.warn("获取 IntelliAI Agent 最新版本失败", e);
         }
         return "";
     }
@@ -176,19 +179,19 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 下载 Codefree 代理的 jar 文件.
+     * 下载 IntelliAI Agent 的 jar 文件.
      * <p>
      * 根据配置的下载地址下载 jar 文件到本地工作目录. 如果下载地址指向本地文件, 则直接返回本地路径.
      * 下载过程中会显示进度指示, 并支持进度监听.
      *
-     * @param settings         Codefree 代理配置, 包含下载地址等信息
+     * @param settings         IntelliAI Agent 配置, 包含下载地址等信息
      * @param jarFileName      要下载的 jar 文件名
      * @param indicator        进度指示器, 用于显示下载进度和取消检查
      * @param progressListener 下载进度监听器, 可选参数, 用于接收下载进度回调
      * @return 下载的 jar 文件路径
      * @throws IOException 当下载地址未配置, 本地文件不存在或下载过程中发生 I/O 错误时抛出
      */
-    public Path downloadJar(@NotNull CodefreeAgentSettings settings,
+    public Path downloadJar(@NotNull IntelliAgentSettings settings,
                             @NotNull String jarFileName,
                             @NotNull ProgressIndicator indicator,
                             @Nullable DownloadProgressListener progressListener) throws IOException {
@@ -208,7 +211,7 @@ public final class CodefreeAgentManager {
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        indicator.setText("正在下载 Codefree 代理...");
+        indicator.setText("正在下载 IntelliAI Agent...");
         HttpRequests.request(url).productNameAsUserAgent().connect(request -> {
             URLConnection connection = request.getConnection();
             long total = connection.getContentLengthLong();
@@ -249,30 +252,30 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 启动 Codefree 代理进程
+     * 启动 IntelliAI Agent 进程
      * <p>
      * 该方法会执行以下操作:
-     * 1. 检查默认端口 8765 是否被占用且是否为 codefree agent 服务
-     * 2. 如果是 codefree agent 服务, 则直接使用该服务
+     * 1. 检查默认端口 8765 是否被占用且是否为 IntelliAI Agent 服务
+     * 2. 如果是 IntelliAI Agent 服务, 则直接使用该服务
      * 3. 否则检查指定的 JAR 文件是否存在
      * 4. 解析 Java 可执行文件路径
      * 5. 构建并配置启动命令
      * 6. 启动进程并返回其 PID
      *
-     * @param settings Codefree 代理配置, 包含 JAR 文件路径等信息
+     * @param settings IntelliAI Agent 配置, 包含 JAR 文件路径等信息
      * @return 启动的进程 PID, 如果无法获取 PID 则返回 -1, 如果使用已有服务则返回 0
      * @throws IOException 如果 JAR 文件不存在或启动过程中发生 I/O 错误
      */
     @SneakyThrows
-    public long startAgent(@NotNull CodefreeAgentSettings settings) throws IOException {
-        // 先检查默认端口是否已有 codefree agent 服务运行
-        if (isCodefreeAgentRunningOnPort()) {
-            LOG.info("检测到端口 " + DEFAULT_PORT + " 上已有 Codefree Agent 服务运行, 直接使用该服务");
+    public long startAgent(@NotNull IntelliAgentSettings settings) throws IOException {
+        // 先检查默认端口是否已有 IntelliAI Agent 服务运行
+        if (isIntelliAgentRunningOnPort()) {
+            LOG.info("检测到端口 " + DEFAULT_PORT + " 上已有 IntelliAI Agent 服务运行, 直接使用该服务");
             return 0; // 返回 0 表示使用已有服务
         }
 
-        // 端口未被占用或不是 codefree agent 服务, 启动新服务
-        LOG.info("端口 " + DEFAULT_PORT + " 上未检测到 Codefree Agent 服务, 启动新服务");
+        // 端口未被占用或不是 IntelliAI Agent 服务, 启动新服务
+        LOG.info("端口 " + DEFAULT_PORT + " 上未检测到 IntelliAI Agent 服务, 启动新服务");
         Path jarPath = resolveJarPath(settings);
         if (Files.notExists(jarPath)) {
             throw new IOException("Jar 不存在: " + jarPath);
@@ -314,7 +317,7 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 停止运行中的 Codefree 代理进程
+     * 停止运行中的 IntelliAI Agent 进程
      *
      * <p> 该方法会安全地停止当前正在运行的代理进程. 如果进程处理器存在且进程尚未终止,
      * 则会尝试销毁进程, 并在成功停止后将处理器置为 null. 如果停止过程中发生异常,
@@ -330,7 +333,7 @@ public final class CodefreeAgentManager {
                 try {
                     processHandler.destroyProcess();
                 } catch (Exception e) {
-                    LOG.warn("停止 Codefree 代理失败", e);
+                    LOG.warn("停止 IntelliAI Agent 失败", e);
                 }
                 processHandler = null;
             }
@@ -342,13 +345,13 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 检查 Codefree 代理是否正在运行
+     * 检查 IntelliAI Agent 是否正在运行
      * <p>
      * 该方法会检查以下情况:
      * 1. 当前插件实例管理的进程 (processHandler)
      * 2. PID 文件中记录的进程
      * 3. 实际进程是否真的存在
-     * 4. 端口上是否有 Codefree Agent 服务运行
+     * 4. 端口上是否有 IntelliAI Agent 服务运行
      *
      * @return 如果代理进程存在且未终止则返回 true, 否则返回 false
      */
@@ -380,10 +383,10 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 查找本地已经存在的 Codefree jar 文件
+     * 查找本地已经存在的 IntelliAI Agent jar 文件
      * <p> 在指定的工作目录中查找符合条件的 jar 文件, 按修改时间排序, 返回最新的 jar 文件路径
      *
-     * @return 本地已存在的最新 Codefree jar 文件路径, 如果未找到则返回 null
+     * @return 本地已存在的最新 IntelliAI Agent jar 文件路径, 如果未找到则返回 null
      */
     @Nullable
     public Path findExistingJar() {
@@ -401,7 +404,7 @@ public final class CodefreeAgentManager {
                 .max(Comparator.comparingLong(path -> path.toFile().lastModified()));
             return candidate.orElse(null);
         } catch (IOException e) {
-            LOG.debug("扫描本地 Codefree jar 失败: " + dir, e);
+            LOG.debug("扫描本地 IntelliAI Agent jar 失败: " + dir, e);
             return null;
         }
     }
@@ -410,7 +413,7 @@ public final class CodefreeAgentManager {
      * 解析用户配置的 jar 路径, 支持文件名或绝对路径
      */
     @NotNull
-    public Path resolveJarPath(@NotNull CodefreeAgentSettings settings) {
+    public Path resolveJarPath(@NotNull IntelliAgentSettings settings) {
         String rawPath = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
         if (isLocalPath(rawPath)) {
             Path localPath = toLocalPath(rawPath);
@@ -435,11 +438,11 @@ public final class CodefreeAgentManager {
      * <p>根据提供的设置尝试获取本地 jar 文件的详细信息. 如果配置的路径存在 jar 文件, 则返回其信息;
      * 否则, 查找工作目录中现有的 jar 文件 (按修改时间排序) 并返回信息; 如果都找不到, 则返回 null.
      *
-     * @param settings CodefreeAgentSettings 对象, 包含 jar 文件的配置信息
+     * @param settings IntelliAgentSettings 对象, 包含 jar 文件的配置信息
      * @return JarInfo 对象, 包含 jar 文件的名称, 路径和大小; 如果找不到, 则返回 null
      */
     @Nullable
-    public JarInfo resolveLocalJarInfo(@NotNull CodefreeAgentSettings settings) {
+    public JarInfo resolveLocalJarInfo(@NotNull IntelliAgentSettings settings) {
         Path jarPath = resolveJarPath(settings);
         if (Files.exists(jarPath)) {
             return new JarInfo(jarPath.getFileName().toString(), jarPath, safeSize(jarPath));
@@ -473,7 +476,7 @@ public final class CodefreeAgentManager {
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
-            LOG.warn("创建 Codefree 目录失败: " + dir, e);
+            LOG.warn("创建 IntelliAI Agent 目录失败: " + dir, e);
         }
         return dir;
     }
@@ -537,28 +540,28 @@ public final class CodefreeAgentManager {
     }
 
     /**
-     * 检查指定端口上的服务是否是 Codefree Agent 服务
+     * 检查指定端口上的服务是否是 IntelliAI Agent 服务
      * <p> 通过访问 /health 端点并检查返回的健康检查信息来判断
-     * 如果端口未被占用或服务不是 Codefree Agent, 则返回 false
+     * 如果端口未被占用或服务不是 IntelliAI Agent, 则返回 false
      *
-     * @return 如果是 Codefree Agent 服务则返回 true, 否则返回 false
+     * @return 如果是 IntelliAI Agent 服务则返回 true, 否则返回 false
      */
-    private boolean isCodefreeAgentRunningOnPort() {
+    private boolean isIntelliAgentRunningOnPort() {
         // 尝试访问 /health 端点
-        String url = "http://127.0.0.1:" + CodefreeAgentManager.DEFAULT_PORT + "/health";
+        String url = "http://127.0.0.1:" + IntelliAgentManager.DEFAULT_PORT + "/health";
         try {
             String response = HttpRequests.request(url)
                 .productNameAsUserAgent()
                 .readString();
             // 检查响应中是否包含健康检查标识
             // 响应格式: {"status":"ok"}
-            boolean isCodefreeAgent = response.contains("\"status\"") && response.contains("\"ok\"");
-            if (isCodefreeAgent) {
-                LOG.info("检测到端口 " + CodefreeAgentManager.DEFAULT_PORT + " 上运行的是 Codefree Agent 服务");
+            boolean isIntelliAgent = response.contains("\"status\"") && response.contains("\"ok\"");
+            if (isIntelliAgent) {
+                LOG.info("检测到端口 " + IntelliAgentManager.DEFAULT_PORT + " 上运行的是 IntelliAI Agent 服务");
             }
-            return isCodefreeAgent;
+            return isIntelliAgent;
         } catch (Exception e) {
-            LOG.debug("检查端口 " + CodefreeAgentManager.DEFAULT_PORT + " 上的服务失败: " + url, e);
+            LOG.debug("检查端口 " + IntelliAgentManager.DEFAULT_PORT + " 上的服务失败: " + url, e);
             return false;
         }
     }
@@ -675,19 +678,19 @@ public final class CodefreeAgentManager {
      * 1. 检查 PID 文件是否存在
      * 2. 如果存在, 读取 PID 并验证进程是否真的存在
      * 3. 如果进程不存在, 清理 PID 文件
-     * 4. 检查端口上是否有 Codefree Agent 服务运行
+     * 4. 检查端口上是否有 IntelliAI Agent 服务运行
      *
      * @return 如果检测到外部进程运行则返回 true, 否则返回 false
      */
     private boolean checkExternalProcess() {
         // 首先检查端口上是否有服务运行
-        if (isCodefreeAgentRunningOnPort()) {
+        if (isIntelliAgentRunningOnPort()) {
             // 如果端口上有服务, 尝试读取 PID 文件
             Long pid = readPidFromFile();
             if (pid != null) {
                 // 验证进程是否真的存在
                 if (isProcessAlive(pid)) {
-                    LOG.info("检测到外部 Codefree Agent 进程运行, PID: " + pid);
+                    LOG.info("检测到外部 IntelliAI Agent 进程运行, PID: " + pid);
                     return true;
                 } else {
                     // PID 文件存在但进程不存在, 清理 PID 文件
@@ -696,7 +699,7 @@ public final class CodefreeAgentManager {
                 }
             } else {
                 // 端口上有服务但没有 PID 文件, 可能是外部启动的, 仍然返回 true
-                LOG.info("检测到端口 " + DEFAULT_PORT + " 上有 Codefree Agent 服务运行, 但没有 PID 文件");
+                LOG.info("检测到端口 " + DEFAULT_PORT + " 上有 IntelliAI Agent 服务运行, 但没有 PID 文件");
                 return true;
             }
         }
@@ -706,7 +709,7 @@ public final class CodefreeAgentManager {
         if (pid != null) {
             // 验证进程是否真的存在
             if (isProcessAlive(pid)) {
-                LOG.info("检测到外部 Codefree Agent 进程运行, PID: " + pid);
+                LOG.info("检测到外部 IntelliAI Agent 进程运行, PID: " + pid);
                 return true;
             } else {
                 // PID 文件存在但进程不存在, 清理 PID 文件
@@ -735,12 +738,12 @@ public final class CodefreeAgentManager {
                 Process process = pb.start();
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
-                    LOG.info("成功停止外部 Codefree Agent 进程, PID: " + pid);
+                    LOG.info("成功停止外部 IntelliAI Agent 进程, PID: " + pid);
                 } else {
-                    LOG.warn("停止外部 Codefree Agent 进程失败, PID: " + pid + ", 退出码: " + exitCode);
+                    LOG.warn("停止外部 IntelliAI Agent 进程失败, PID: " + pid + ", 退出码: " + exitCode);
                 }
             } catch (Exception e) {
-                LOG.warn("停止外部 Codefree Agent 进程时发生异常, PID: " + pid, e);
+                LOG.warn("停止外部 IntelliAI Agent 进程时发生异常, PID: " + pid, e);
             }
         }
     }

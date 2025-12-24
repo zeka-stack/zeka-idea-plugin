@@ -31,7 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
@@ -86,13 +86,13 @@ public final class AIProviderConfigController {
      * 需要在 UI 创建完成后调用，确保 codefreePanel 已初始化。
      */
     public void initCodefreePanel() {
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
+        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
         // 设置父面板，用于显示对话框
-        codefreePanel.setParentPanel(ui.getMainPanel());
+        intelliAgentPanel.setParentPanel(ui.getMainPanel());
         // 设置 Codefree 面板的状态更新回调
-        codefreePanel.setStatusUpdateCallback(() -> {
-            CodefreeAgentSettings snapshot = codefreePanel.snapshotCodefreeSettings();
-            codefreePanel.updateCodefreeStatus(snapshot);
+        intelliAgentPanel.setStatusUpdateCallback(() -> {
+            IntelliAgentSettings snapshot = intelliAgentPanel.snapshotCodefreeSettings();
+            intelliAgentPanel.updateCodefreeStatus(snapshot);
         });
     }
 
@@ -148,15 +148,15 @@ public final class AIProviderConfigController {
         ui.getTopKSpinner().setValue(modelParameters.topK);
         ui.getPresencePenaltySpinner().setValue(modelParameters.presencePenalty);
 
-        CodefreeAgentSettings codefreeSettings = workingSettings.codefreeSettings != null
-                                                 ? workingSettings.codefreeSettings
-                                                 : new CodefreeAgentSettings();
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
-        codefreePanel.getAutoStartCheckBox().setSelected(codefreeSettings.autoStart);
-        codefreePanel.getDownloadUrlField().setText(codefreeSettings.downloadUrl != null ? codefreeSettings.downloadUrl : "");
-        codefreePanel.setLocalJarName(codefreeSettings.jarFileName, -1);
-        codefreePanel.updateCodefreeStatus(codefreeSettings);
-        codefreePanel.refreshCodefreeVersionInfo(codefreeSettings);
+        IntelliAgentSettings intelliAgentSettings = workingSettings.intelliAgentSettings != null
+                                                    ? workingSettings.intelliAgentSettings
+                                                    : new IntelliAgentSettings();
+        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
+        intelliAgentPanel.getAutoStartCheckBox().setSelected(intelliAgentSettings.autoStart);
+        intelliAgentPanel.getDownloadUrlField().setText(intelliAgentSettings.downloadUrl != null ? intelliAgentSettings.downloadUrl : "");
+        intelliAgentPanel.setLocalJarName(intelliAgentSettings.jarFileName, -1);
+        intelliAgentPanel.updateCodefreeStatus(intelliAgentSettings);
+        intelliAgentPanel.refreshCodefreeVersionInfo(intelliAgentSettings);
 
         // 加载可用服务商
         ui.getAvailableProvidersTableModel().setData(workingSettings.availableProviders);
@@ -202,7 +202,7 @@ public final class AIProviderConfigController {
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();
-        workingSettings.codefreeSettings = ui.getCodefreePanel().snapshotCodefreeSettings().copy();
+        workingSettings.intelliAgentSettings = ui.getCodefreePanel().snapshotCodefreeSettings().copy();
 
         workingSettings.aiProviderType = providerType;
 
@@ -689,18 +689,18 @@ public final class AIProviderConfigController {
      * 下载 Codefree jar
      */
     public void downloadCodefreeJar() {
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
-        CodefreeAgentSettings snapshot = codefreePanel.snapshotCodefreeSettings();
-        codefreePanel.downloadCodefreeJar(snapshot);
+        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
+        IntelliAgentSettings snapshot = intelliAgentPanel.snapshotCodefreeSettings();
+        intelliAgentPanel.downloadCodefreeJar(snapshot);
     }
 
     /**
      * 启动或停止 Codefree 本地代理
      */
     public void toggleCodefreeAgent() {
-        CodefreePanel codefreePanel = ui.getCodefreePanel();
-        CodefreeAgentSettings snapshot = codefreePanel.snapshotCodefreeSettings();
-        codefreePanel.toggleCodefreeAgent(snapshot);
+        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
+        IntelliAgentSettings snapshot = intelliAgentPanel.snapshotCodefreeSettings();
+        intelliAgentPanel.toggleCodefreeAgent(snapshot);
     }
 
     /**

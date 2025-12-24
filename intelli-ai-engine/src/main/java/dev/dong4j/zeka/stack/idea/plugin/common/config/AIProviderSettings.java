@@ -49,8 +49,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
      * 用于设置和管理 AI 模型的相关参数
      */
     public AIModelParameters modelParameters = new AIModelParameters();
-    /** Codefree 本地代理配置 */
-    public CodefreeAgentSettings codefreeSettings = new CodefreeAgentSettings();
+    /** IntelliAI Agent 本地代理配置 */
+    public IntelliAgentSettings intelliAgentSettings = new IntelliAgentSettings();
     /** AI 运行时设置 */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
@@ -156,8 +156,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         if (this.modelParameters == null) {
             this.modelParameters = state.modelParameters != null ? state.modelParameters.copy() : new AIModelParameters();
         }
-        if (this.codefreeSettings == null) {
-            this.codefreeSettings = state.codefreeSettings != null ? state.codefreeSettings.copy() : new CodefreeAgentSettings();
+        if (this.intelliAgentSettings == null) {
+            this.intelliAgentSettings = state.intelliAgentSettings != null ? state.intelliAgentSettings.copy() : new IntelliAgentSettings();
         }
     }
 
@@ -186,8 +186,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
         // verboseLogging 已迁移到全局配置
 
-        CodefreeAgentSettings sourceCodefree = this.codefreeSettings != null ? this.codefreeSettings : new CodefreeAgentSettings();
-        settings.codefreeSettings = sourceCodefree.copy();
+        IntelliAgentSettings sourceIntelliAgent = this.intelliAgentSettings != null ? this.intelliAgentSettings :
+                                                  new IntelliAgentSettings();
+        settings.intelliAgentSettings = sourceIntelliAgent.copy();
 
         settings.verboseLogging = this.verboseLogging;
         settings.showAdvancedSettings = this.showAdvancedSettings;
@@ -324,8 +325,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.runtimeSettings.waitDuration = sourceRuntime.waitDuration;
         // verboseLogging 已迁移到全局配置
 
-        CodefreeAgentSettings sourceCodefree = source.codefreeSettings != null ? source.codefreeSettings : new CodefreeAgentSettings();
-        this.codefreeSettings = sourceCodefree.copy();
+        IntelliAgentSettings sourceIntelliAgent = source.intelliAgentSettings != null ? source.intelliAgentSettings :
+                                                  new IntelliAgentSettings();
+        this.intelliAgentSettings = sourceIntelliAgent.copy();
 
         this.verboseLogging = source.verboseLogging;
         this.showAdvancedSettings = source.showAdvancedSettings;
@@ -382,9 +384,10 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
             return false;
         }
 
-        CodefreeAgentSettings thisCodefree = codefreeSettings != null ? codefreeSettings : new CodefreeAgentSettings();
-        CodefreeAgentSettings otherCodefree = other.codefreeSettings != null ? other.codefreeSettings : new CodefreeAgentSettings();
-        if (!thisCodefree.contentEquals(otherCodefree)) {
+        IntelliAgentSettings thisIntelliAgent = intelliAgentSettings != null ? intelliAgentSettings : new IntelliAgentSettings();
+        IntelliAgentSettings otherIntelliAgent = other.intelliAgentSettings != null ? other.intelliAgentSettings :
+                                                 new IntelliAgentSettings();
+        if (!thisIntelliAgent.contentEquals(otherIntelliAgent)) {
             return false;
         }
         // verboseLogging 已迁移到全局配置

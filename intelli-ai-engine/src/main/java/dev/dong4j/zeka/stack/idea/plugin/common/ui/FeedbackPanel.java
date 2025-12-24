@@ -598,7 +598,7 @@ public class FeedbackPanel {
     /**
      * 显示带链接的状态信息
      * <p>
-     * 使用 HTML 格式创建蓝色可点击链接，参考 CodefreePanel 和 PersonalInfoPanel 的实现
+     * 使用 HTML 格式创建蓝色可点击链接，参考 IntelliAgentPanel 和 PersonalInfoPanel 的实现
      *
      * @param url 链接地址
      */

@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.codefree;
+package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.openapi.Disposable;
@@ -9,20 +9,19 @@ import com.intellij.openapi.diagnostic.Logger;
 import java.nio.file.Files;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 
 /**
- * Codefree 代理生命周期监听器
- * <p>
- * 负责在应用启动和关闭时管理 Codefree 代理的自动启动和停止。
+ * Intelli Agent Lifecycle Listener
  *
- * @author zeka.stack.team
- * @version 1.0.0
- * @since 1.0.0
+ * @author dong4j
+ * @version hello.world
+ * @date 2025-12-24 23:26:28
+ * @since hello.world
  */
 @Service(Service.Level.APP)
-public final class CodefreeAgentLifecycleListener implements Disposable {
-    private static final Logger LOG = Logger.getInstance(CodefreeAgentLifecycleListener.class);
+public final class IntelliAgentLifecycleListener implements Disposable {
+    private static final Logger LOG = Logger.getInstance(IntelliAgentLifecycleListener.class);
     private static volatile boolean shutdownHookRegistered = false;
 
     /**
@@ -30,22 +29,22 @@ public final class CodefreeAgentLifecycleListener implements Disposable {
      * <p>
      * 在服务创建时注册应用关闭监听器，并在应用启动时检查是否需要自动启动代理。
      */
-    public CodefreeAgentLifecycleListener() {
+    public IntelliAgentLifecycleListener() {
         // 使用 Runtime.addShutdownHook 作为最可靠的关闭钩子（JVM 级别）
         if (!shutdownHookRegistered) {
-            synchronized (CodefreeAgentLifecycleListener.class) {
+            synchronized (IntelliAgentLifecycleListener.class) {
                 if (!shutdownHookRegistered) {
                     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                         try {
-                            LOG.info("JVM 关闭钩子执行：停止 Codefree 代理");
-                            CodefreeAgentManager manager = CodefreeAgentManager.getInstance();
+                            LOG.info("JVM 关闭钩子执行：停止 IntelliAI Agent");
+                            IntelliAgentManager manager = IntelliAgentManager.getInstance();
                             if (manager.isRunning()) {
                                 manager.stopAgent();
                             }
                         } catch (Exception e) {
-                            LOG.warn("JVM 关闭钩子中停止 Codefree 代理失败", e);
+                            LOG.warn("JVM 关闭钩子中停止 IntelliAI Agent 失败", e);
                         }
-                    }, "CodefreeAgentShutdownHook"));
+                    }, "IntelliAgentShutdownHook"));
                     shutdownHookRegistered = true;
                     LOG.info("已注册 JVM 关闭钩子");
                 }
@@ -59,7 +58,7 @@ public final class CodefreeAgentLifecycleListener implements Disposable {
                 new AppLifecycleListener() {
                     @Override
                     public void appClosing() {
-                        LOG.info("AppLifecycleListener.appClosing 执行：停止 Codefree 代理");
+                        LOG.info("AppLifecycleListener.appClosing 执行：停止 IntelliAI Agent");
                         dispose();
                     }
                 });
@@ -75,21 +74,21 @@ public final class CodefreeAgentLifecycleListener implements Disposable {
                     // 等待一小段时间，确保配置已完全加载
                     Thread.sleep(1000);
                     AIProviderSettings settings = AIProviderSettings.getInstance();
-                    CodefreeAgentSettings codefreeSettings = settings.codefreeSettings;
-                    if (codefreeSettings != null && codefreeSettings.autoStart) {
-                        CodefreeAgentManager manager = CodefreeAgentManager.getInstance();
+                    IntelliAgentSettings intelliAgentSettings = settings.intelliAgentSettings;
+                    if (intelliAgentSettings != null && intelliAgentSettings.autoStart) {
+                        IntelliAgentManager manager = IntelliAgentManager.getInstance();
                         // 检查 jar 文件是否存在
-                        if (Files.exists(manager.resolveJarPath(codefreeSettings))) {
-                            LOG.info("自动启动 Codefree 代理（应用启动时）");
-                            manager.startAgent(codefreeSettings);
+                        if (Files.exists(manager.resolveJarPath(intelliAgentSettings))) {
+                            LOG.info("自动启动 IntelliAI Agent（应用启动时）");
+                            manager.startAgent(intelliAgentSettings);
                         } else {
-                            LOG.warn("Codefree 代理 jar 文件不存在，跳过自动启动");
+                            LOG.warn("IntelliAI Agent jar 文件不存在，跳过自动启动");
                         }
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } catch (Exception e) {
-                    LOG.warn("自动启动 Codefree 代理失败", e);
+                    LOG.warn("自动启动 IntelliAI Agent 失败", e);
                 }
             });
         });
@@ -103,17 +102,17 @@ public final class CodefreeAgentLifecycleListener implements Disposable {
     @Override
     public void dispose() {
         try {
-            LOG.info("dispose() 方法被调用：停止 Codefree 代理");
-            CodefreeAgentManager manager = CodefreeAgentManager.getInstance();
+            LOG.info("dispose() 方法被调用：停止 IntelliAI Agent");
+            IntelliAgentManager manager = IntelliAgentManager.getInstance();
             if (manager.isRunning()) {
-                LOG.info("检测到 Codefree 代理正在运行，执行停止操作");
+                LOG.info("检测到 IntelliAI Agent 正在运行，执行停止操作");
                 manager.stopAgent();
-                LOG.info("Codefree 代理已停止");
+                LOG.info("IntelliAI Agent 已停止");
             } else {
-                LOG.info("Codefree 代理未运行，无需停止");
+                LOG.info("IntelliAI Agent 未运行，无需停止");
             }
         } catch (Exception e) {
-            LOG.warn("停止 Codefree 代理失败", e);
+            LOG.warn("停止 IntelliAI Agent 失败", e);
         }
     }
 }

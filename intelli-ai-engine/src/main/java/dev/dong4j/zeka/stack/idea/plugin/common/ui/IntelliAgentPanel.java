@@ -41,8 +41,8 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.codefree.CodefreeAgentManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.CodefreeAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.BreathingDotIcon;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
@@ -57,9 +57,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
  * @version 1.0.0
  * @since 1.0.0
  */
-public final class CodefreePanel {
+public final class IntelliAgentPanel {
     /** 日志记录器 */
-    private static final Logger LOG = Logger.getInstance(CodefreePanel.class);
+    private static final Logger LOG = Logger.getInstance(IntelliAgentPanel.class);
     /** 红色指示灯的颜色, 用于显示错误或警告状态 */
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
     /** Codefree 代理配置面板使用的绿色 */
@@ -118,9 +118,9 @@ public final class CodefreePanel {
     /** 当前本地 jar 名称 */
     @Nullable
     private String currentJarName;
-    /** Codefree 代理管理器 */
+    /** IntelliAI Agent 代理管理器 */
     @NotNull
-    private final CodefreeAgentManager codefreeAgentManager = CodefreeAgentManager.getInstance();
+    private final IntelliAgentManager intelliAgentManager = IntelliAgentManager.getInstance();
     /** 用于显示对话框的父面板 */
     @Nullable
     private JPanel parentPanel;
@@ -141,7 +141,7 @@ public final class CodefreePanel {
     /**
      * 构造函数
      */
-    public CodefreePanel() {
+    public IntelliAgentPanel() {
         // 初始化组件
         autoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.start"));
         downloadUrlField = new JBTextField();
@@ -611,10 +611,10 @@ public final class CodefreePanel {
      *
      * @param settings Codefree 代理设置
      */
-    public void updateCodefreeStatus(@NotNull CodefreeAgentSettings settings) {
-        CodefreeAgentManager.JarInfo jarInfo = codefreeAgentManager.resolveLocalJarInfo(settings);
+    public void updateCodefreeStatus(@NotNull IntelliAgentSettings settings) {
+        IntelliAgentManager.JarInfo jarInfo = intelliAgentManager.resolveLocalJarInfo(settings);
         boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
-        boolean running = codefreeAgentManager.isRunning();
+        boolean running = intelliAgentManager.isRunning();
 
         String status;
         String buttonText;
@@ -625,7 +625,7 @@ public final class CodefreePanel {
         String endpoint = null;
         if (running) {
             // 服务正在运行
-            endpoint = codefreeAgentManager.getLocalOpenAiEndpoint();
+            endpoint = intelliAgentManager.getLocalOpenAiEndpoint();
             status = AICommonBundle.message("settings.codefree.status.running.endpoint", endpoint);
             buttonText = AICommonBundle.message("settings.codefree.stop");
             startColor = CODEFREE_GREEN;
@@ -663,7 +663,7 @@ public final class CodefreePanel {
      *
      * @param settings Codefree 代理设置
      */
-    public void refreshCodefreeVersionInfo(@NotNull CodefreeAgentSettings settings) {
+    public void refreshCodefreeVersionInfo(@NotNull IntelliAgentSettings settings) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             String latestName = null;
             long remoteSize = -1;
@@ -671,15 +671,15 @@ public final class CodefreePanel {
             boolean remote = baseUrl.startsWith("http://") || baseUrl.startsWith("https://");
             try {
                 if (remote) {
-                    latestName = codefreeAgentManager.fetchLatestJarName(baseUrl);
+                    latestName = intelliAgentManager.fetchLatestJarName(baseUrl);
                     if (!latestName.isBlank()) {
-                        remoteSize = codefreeAgentManager.fetchRemoteJarSize(baseUrl, latestName);
+                        remoteSize = intelliAgentManager.fetchRemoteJarSize(baseUrl, latestName);
                     }
                 }
             } catch (Exception e) {
-                LOG.warn("获取 Codefree 最新版本失败", e);
+                LOG.warn("获取 IntelliAI Agent 最新版本失败", e);
             }
-            CodefreeAgentManager.JarInfo jarInfo = codefreeAgentManager.resolveLocalJarInfo(settings);
+            IntelliAgentManager.JarInfo jarInfo = intelliAgentManager.resolveLocalJarInfo(settings);
             boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
             String localName = jarInfo != null ? jarInfo.fileName() : null;
             long localSize = jarInfo != null ? jarInfo.size() : -1;
@@ -725,7 +725,7 @@ public final class CodefreePanel {
      *
      * @param settings Codefree 代理设置, 包含下载地址等信息
      */
-    public void downloadCodefreeJar(@NotNull CodefreeAgentSettings settings) {
+    public void downloadCodefreeJar(@NotNull IntelliAgentSettings settings) {
         String downloadUrl = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
         if (downloadUrl.isBlank()) {
             JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
@@ -744,7 +744,7 @@ public final class CodefreePanel {
         }
         String jarFileName = getLatestJarName();
         if (jarFileName.isBlank()) {
-            jarFileName = codefreeAgentManager.fetchLatestJarName(downloadUrl);
+            jarFileName = intelliAgentManager.fetchLatestJarName(downloadUrl);
         }
 
         if (jarFileName.isBlank()) {
@@ -758,13 +758,13 @@ public final class CodefreePanel {
         setStartedDownloadState();
 
         String finalJarFileName = jarFileName;
-        String jarDownloadUrl = codefreeAgentManager.buildDownloadUrl(downloadUrl, finalJarFileName);
-        CodefreeAgentSettings downloadSettings = settings.copy();
+        String jarDownloadUrl = intelliAgentManager.buildDownloadUrl(downloadUrl, finalJarFileName);
+        IntelliAgentSettings downloadSettings = settings.copy();
         downloadSettings.downloadUrl = jarDownloadUrl;
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             ProgressIndicator indicator = new EmptyProgressIndicator();
             try {
-                long remoteSize = codefreeAgentManager.fetchRemoteJarSize(downloadUrl, finalJarFileName);
+                long remoteSize = intelliAgentManager.fetchRemoteJarSize(downloadUrl, finalJarFileName);
                 SwingUtilities.invokeLater(() -> {
                     if (remoteSize > 0) {
                         downloadProgressBar.setIndeterminate(false);
@@ -779,7 +779,7 @@ public final class CodefreePanel {
                 lastProgressUpdateTime = System.currentTimeMillis();
                 lastProgressPercent = -1;
 
-                Path savedPath = codefreeAgentManager.downloadJar(
+                Path savedPath = intelliAgentManager.downloadJar(
                     downloadSettings,
                     finalJarFileName,
                     indicator,
@@ -823,7 +823,7 @@ public final class CodefreePanel {
                         localSize = Files.size(savedPath);
                     }
                 } catch (Exception sizeException) {
-                    LOG.warn("读取 Codefree jar 大小失败: " + savedPath, sizeException);
+                    LOG.warn("读取 IntelliAI Agent jar 大小失败: " + savedPath, sizeException);
                 }
                 long finalLocalSize = localSize;
                 // 下载完成，强制更新进度条到 100%
@@ -885,7 +885,7 @@ public final class CodefreePanel {
     private void finishDownloadUi(boolean success,
                                   @Nullable String jarName,
                                   long localSize,
-                                  @NotNull CodefreeAgentSettings settings) {
+                                  @NotNull IntelliAgentSettings settings) {
         // 标记下载完成
         isDownloading = false;
         downloadButton.setEnabled(true);
@@ -907,13 +907,13 @@ public final class CodefreePanel {
      *
      * @param settings Codefree 代理设置
      */
-    public void toggleCodefreeAgent(@NotNull CodefreeAgentSettings settings) {
-        if (codefreeAgentManager.isRunning()) {
-            codefreeAgentManager.stopAgent();
+    public void toggleCodefreeAgent(@NotNull IntelliAgentSettings settings) {
+        if (intelliAgentManager.isRunning()) {
+            intelliAgentManager.stopAgent();
             updateCodefreeStatus(settings);
             return;
         }
-        Path jarPath = codefreeAgentManager.resolveJarPath(settings);
+        Path jarPath = intelliAgentManager.resolveJarPath(settings);
         if (Files.notExists(jarPath)) {
             JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
                                           AICommonBundle.message("settings.codefree.error.no.jar"),
@@ -927,11 +927,11 @@ public final class CodefreePanel {
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                long pid = codefreeAgentManager.startAgent(settings);
+                long pid = intelliAgentManager.startAgent(settings);
                 ApplicationManager.getApplication().invokeLater(() -> {
                     startButton.setEnabled(true);
                     startButton.setText(AICommonBundle.message("settings.codefree.stop"));
-                    String tooltip = codefreeAgentManager.getLocalOpenAiEndpoint();
+                    String tooltip = intelliAgentManager.getLocalOpenAiEndpoint();
                     if (pid > 0) {
                         tooltip = tooltip + " (PID: " + pid + ")";
                     }
@@ -958,8 +958,8 @@ public final class CodefreePanel {
      * @return Codefree 代理设置快照
      */
     @NotNull
-    public CodefreeAgentSettings snapshotCodefreeSettings() {
-        CodefreeAgentSettings snapshot = new CodefreeAgentSettings();
+    public IntelliAgentSettings snapshotCodefreeSettings() {
+        IntelliAgentSettings snapshot = new IntelliAgentSettings();
         snapshot.autoStart = getAutoStartCheckBox().isSelected();
         snapshot.downloadUrl = getDownloadUrlField().getText().trim();
         snapshot.jarFileName = getCurrentJarName();
