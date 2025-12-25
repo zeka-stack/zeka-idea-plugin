@@ -63,9 +63,7 @@ public class JavadocDeletionService {
         }
 
         try {
-            WriteCommandAction.runWriteCommandAction(project, () -> {
-                comment.delete();
-            });
+            WriteCommandAction.runWriteCommandAction(project, comment::delete);
             log.info("成功删除元素的文档注释");
             return true;
         } catch (Exception e) {
