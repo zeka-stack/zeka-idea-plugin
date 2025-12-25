@@ -50,9 +50,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
- * Codefree 代理配置面板
+ * Agent 代理配置面板
  * <p>
- * 独立的 Codefree 代理配置面板，提供高内聚低耦合的设计。
+ * 独立的 Agent 代理配置面板，提供高内聚低耦合的设计。
  * 包含下载地址、自动启动选项、状态显示和操作按钮等功能。
  *
  * @author zeka.stack.team
@@ -65,22 +65,22 @@ public final class IntelliAgentPanel {
 
     /**
      * 开发者手册的链接地址
-     * <p> 指向 Codefree 代理开发相关的非标准化 AI 服务集成 jar 文件开发指南的 Markdown 文档.
+     * <p> 指向 Agent 代理开发相关的非标准化 AI 服务集成 jar 文件开发指南的 Markdown 文档.
      * formatter:off
      */
     private static final String DEV_BOOK =
         "https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-engine/site/docs/%E9%9D%9E%E6%A0%87%E5%87%86AI%E6%9C%8D%E5%8A%A1%E9%9B%86%E6%88%90jar%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.md";
     /** formatter:on 红色指示灯的颜色, 用于显示错误或警告状态 */
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
-    /** Codefree 代理配置面板使用的绿色 */
-    private static final JBColor CODEFREE_GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
-    private static final JBColor CODEFREE_RED = new JBColor(new Color(244, 67, 54), new Color(244, 67, 54));
-    private static final JBColor CODEFREE_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 193, 7));
+    /** Agent 代理配置面板使用的绿色 */
+    private static final JBColor GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
+    private static final JBColor RED = new JBColor(new Color(244, 67, 54), new Color(244, 67, 54));
+    private static final JBColor YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 193, 7));
     private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#,##0.00");
     /** 主面板, 承载整个代理配置面板的 UI 组件 */
     @NotNull
     private final JPanel content;
-    /** 控制是否自动启动 Codefree 代理服务的复选框 */
+    /** 控制是否自动启动 Agent 代理服务的复选框 */
     @NotNull
     private final JBCheckBox autoStartCheckBox;
     /** 控制是否自动检查并提示更新 Agent JAR 的复选框 */
@@ -100,7 +100,7 @@ public final class IntelliAgentPanel {
     private final JBLabel localJarLabel;
     /**
      * 下载进度条
-     * <p> 用于显示 Codefree jar 文件的下载进度
+     * <p> 用于显示 Agent jar 文件的下载进度
      */
     @NotNull
     private final JProgressBar downloadProgressBar;
@@ -156,32 +156,32 @@ public final class IntelliAgentPanel {
      */
     public IntelliAgentPanel() {
         // 初始化组件
-        autoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.start"));
-        autoUpdateCheckBox = new JBCheckBox(AICommonBundle.message("settings.codefree.auto.update"));
+        autoStartCheckBox = new JBCheckBox(AICommonBundle.message("settings.agent.auto.start"));
+        autoUpdateCheckBox = new JBCheckBox(AICommonBundle.message("settings.agent.auto.update"));
         downloadUrlField = new JBTextField();
-        downloadUrlField.setToolTipText(AICommonBundle.message("settings.codefree.download.url.hint"));
+        downloadUrlField.setToolTipText(AICommonBundle.message("settings.agent.download.url.hint"));
         // 限制输入框宽度，防止超长 URL 拉长界面
         Dimension urlFieldSize = new Dimension(500, downloadUrlField.getPreferredSize().height);
         downloadUrlField.setPreferredSize(urlFieldSize);
         downloadUrlField.setMaximumSize(new Dimension(400, downloadUrlField.getPreferredSize().height));
 
-        statusLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.status.not.ready"));
+        statusLabel = new SpacedJBLabel(AICommonBundle.message("settings.agent.status.not.ready"));
         statusLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        latestVersionLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.checking"));
-        localJarLabel = new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.local.empty"));
+        latestVersionLabel = new SpacedJBLabel(AICommonBundle.message("settings.agent.version.checking"));
+        localJarLabel = new SpacedJBLabel(AICommonBundle.message("settings.agent.version.local.empty"));
         downloadProgressBar = new JProgressBar(0, 100);
         downloadProgressBar.setStringPainted(false);
         downloadProgressBar.setVisible(false);
         downloadProgressBar.setPreferredSize(new Dimension(420, JBUI.scale(3)));
 
-        downloadButton = new JButton(AICommonBundle.message("settings.codefree.download"));
+        downloadButton = new JButton(AICommonBundle.message("settings.agent.download"));
         downloadButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         downloadButton.setIconTextGap(JBUI.scale(6));
         downloadStatusIcon = new BreathingDotIcon(downloadButton, DOT_RED);
         downloadButton.setIcon(downloadStatusIcon);
         downloadButton.setDisabledIcon(downloadStatusIcon);
 
-        startButton = new JButton(AICommonBundle.message("settings.codefree.start"));
+        startButton = new JButton(AICommonBundle.message("settings.agent.start"));
         startButton.setHorizontalTextPosition(SwingConstants.RIGHT);
         startButton.setIconTextGap(JBUI.scale(6));
         startStatusIcon = new BreathingDotIcon(startButton, DOT_RED);
@@ -217,12 +217,12 @@ public final class IntelliAgentPanel {
 
         // 创建主内容面板
         mainPanel = FormBuilder.createFormBuilder()
-            .addComponent(createCheckBoxWithHint(autoStartCheckBox, "settings.codefree.auto.start.hint"))
-            .addComponent(createCheckBoxWithHint(autoUpdateCheckBox, "settings.codefree.auto.update.hint"))
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.download.url")), downloadUrlField)
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.latest")), latestVersionLabel)
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.version.local")), localJarLabel)
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.codefree.status")), statusLabel)
+            .addComponent(createCheckBoxWithHint(autoStartCheckBox, "settings.agent.auto.start.hint"))
+            .addComponent(createCheckBoxWithHint(autoUpdateCheckBox, "settings.agent.auto.update.hint"))
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.agent.download.url")), downloadUrlField)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.agent.version.latest")), latestVersionLabel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.agent.version.local")), localJarLabel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.agent.status")), statusLabel)
             .addComponent(progressPanel)
             .addComponent(buttonsPanel)
             .getPanel();
@@ -238,7 +238,7 @@ public final class IntelliAgentPanel {
 
     /**
      * 启动状态更新定时器
-     * <p> 创建并启动一个定时器, 每隔 3 秒执行状态更新回调函数, 用于定期检查 Codefree 代理服务状态并更新 UI.
+     * <p> 创建并启动一个定时器, 每隔 3 秒执行状态更新回调函数, 用于定期检查 Agent 代理服务状态并更新 UI.
      * 如果定时器已存在, 会先停止之前的定时器再重新创建.
      */
     private void startStatusUpdateTimer() {
@@ -283,7 +283,7 @@ public final class IntelliAgentPanel {
         content.setLayout(new BorderLayout());
 
         // 创建标题文本
-        String titleText = AICommonBundle.message("settings.codefree.title");
+        String titleText = AICommonBundle.message("settings.agent.title");
 
         // 创建标题面板（不带边框，因为边框在容器上）
         JPanel titlePanel = new JPanel(new BorderLayout());
@@ -396,14 +396,14 @@ public final class IntelliAgentPanel {
         boolean remote = url.startsWith("http://") || url.startsWith("https://");
         downloadButton.setEnabled(remote);
         if (!remote) {
-            setDownloadStatusColor(CODEFREE_GREEN);
+            setDownloadStatusColor(GREEN);
         }
     }
 
     public void setLatestJarName(@Nullable String jarName) {
         this.latestJarName = jarName;
         if (jarName == null || jarName.isBlank()) {
-            latestVersionLabel.setText(AICommonBundle.message("settings.codefree.version.unknown"));
+            latestVersionLabel.setText(AICommonBundle.message("settings.agent.version.unknown"));
         } else {
             latestVersionLabel.setText(jarName);
         }
@@ -412,10 +412,10 @@ public final class IntelliAgentPanel {
     public void setLocalJarName(@Nullable String jarName, long size) {
         this.currentJarName = jarName;
         if (jarName == null || jarName.isBlank()) {
-            localJarLabel.setText(AICommonBundle.message("settings.codefree.version.local.empty"));
+            localJarLabel.setText(AICommonBundle.message("settings.agent.version.local.empty"));
         } else {
-            String sizeText = size > 0 ? formatSize(size) : AICommonBundle.message("settings.codefree.download.size.unknown.short");
-            localJarLabel.setText(AICommonBundle.message("settings.codefree.version.local.value", jarName, sizeText));
+            String sizeText = size > 0 ? formatSize(size) : AICommonBundle.message("settings.agent.download.size.unknown.short");
+            localJarLabel.setText(AICommonBundle.message("settings.agent.version.local.value", jarName, sizeText));
         }
     }
 
@@ -567,7 +567,7 @@ public final class IntelliAgentPanel {
     @NotNull
     private String formatSize(long sizeInBytes) {
         if (sizeInBytes <= 0) {
-            return AICommonBundle.message("settings.codefree.download.size.unknown.short");
+            return AICommonBundle.message("settings.agent.download.size.unknown.short");
         }
         double mb = sizeInBytes / 1024.0 / 1024.0;
         return SIZE_FORMAT.format(mb) + " MB";
@@ -645,16 +645,16 @@ public final class IntelliAgentPanel {
         return startButton;
     }
 
-    // ==================== Codefree 业务逻辑方法 ====================
+    // ==================== Agent 业务逻辑方法 ====================
 
     /**
-     * 更新 Codefree 代理状态
+     * 更新 Agent 代理状态
      * <p>
-     * 检查 Codefree 代理服务是否正在运行，并更新按钮状态和状态标签。
+     * 检查 Agent 代理服务是否正在运行，并更新按钮状态和状态标签。
      *
-     * @param settings Codefree 代理设置
+     * @param settings Agent 代理设置
      */
-    public void updateCodefreeStatus(@NotNull IntelliAgentSettings settings) {
+    public void updateAgentStatus(@NotNull IntelliAgentSettings settings) {
         IntelliAgentManager.JarInfo jarInfo = intelliAgentManager.resolveLocalJarInfo(settings);
         boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
         boolean running = intelliAgentManager.isRunning();
@@ -669,19 +669,19 @@ public final class IntelliAgentPanel {
         if (running) {
             // 服务正在运行
             endpoint = intelliAgentManager.getLocalOpenAiEndpoint();
-            status = AICommonBundle.message("settings.codefree.status.running.endpoint", endpoint);
-            buttonText = AICommonBundle.message("settings.codefree.stop");
-            startColor = CODEFREE_GREEN;
+            status = AICommonBundle.message("settings.agent.status.running.endpoint", endpoint);
+            buttonText = AICommonBundle.message("settings.agent.stop");
+            startColor = GREEN;
         } else if (jarReady) {
             // Jar 文件存在，可以启动
-            status = AICommonBundle.message("settings.codefree.status.ready");
-            buttonText = AICommonBundle.message("settings.codefree.start");
-            startColor = CODEFREE_YELLOW;
+            status = AICommonBundle.message("settings.agent.status.ready");
+            buttonText = AICommonBundle.message("settings.agent.start");
+            startColor = YELLOW;
         } else {
             // Jar 文件不存在，需要先下载
-            status = AICommonBundle.message("settings.codefree.status.not.ready");
-            buttonText = AICommonBundle.message("settings.codefree.start");
-            startColor = CODEFREE_RED;
+            status = AICommonBundle.message("settings.agent.status.not.ready");
+            buttonText = AICommonBundle.message("settings.agent.start");
+            startColor = RED;
         }
 
         // 如果服务正在运行，使用带链接的状态文本
@@ -702,11 +702,11 @@ public final class IntelliAgentPanel {
     }
 
     /**
-     * 刷新 Codefree 版本信息
+     * 刷新 Agent 版本信息
      *
-     * @param settings Codefree 代理设置
+     * @param settings Agent 代理设置
      */
-    public void refreshCodefreeVersionInfo(@NotNull IntelliAgentSettings settings) {
+    public void refreshAgentVersionInfo(@NotNull IntelliAgentSettings settings) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             String latestName = null;
             long remoteSize = -1;
@@ -748,31 +748,31 @@ public final class IntelliAgentPanel {
                                          @Nullable String latestJarName,
                                          @Nullable String localJarName) {
         if (!jarReady) {
-            setDownloadStatusColor(CODEFREE_RED);
-            setDownloadButtonText(AICommonBundle.message("settings.codefree.download"));
+            setDownloadStatusColor(RED);
+            setDownloadButtonText(AICommonBundle.message("settings.agent.download"));
             return;
         }
         if (latestJarName != null && !latestJarName.isBlank() && !latestJarName.equals(localJarName)) {
-            setDownloadStatusColor(CODEFREE_YELLOW);
-            setDownloadButtonText(AICommonBundle.message("settings.codefree.update"));
+            setDownloadStatusColor(YELLOW);
+            setDownloadButtonText(AICommonBundle.message("settings.agent.update"));
         } else {
-            setDownloadStatusColor(CODEFREE_GREEN);
-            setDownloadButtonText(AICommonBundle.message("settings.codefree.download"));
+            setDownloadStatusColor(GREEN);
+            setDownloadButtonText(AICommonBundle.message("settings.agent.download"));
         }
     }
 
     /**
-     * 下载 Codefree jar 文件
+     * 下载 Agent jar 文件
      * <p>
-     * 根据提供的设置下载 Codefree 代理的 jar 文件, 并更新 UI 状态和进度.
+     * 根据提供的设置下载 Agent 代理的 jar 文件, 并更新 UI 状态和进度.
      *
-     * @param settings Codefree 代理设置, 包含下载地址等信息
+     * @param settings Agent 代理设置, 包含下载地址等信息
      */
-    public void downloadCodefreeJar(@NotNull IntelliAgentSettings settings) {
+    public void downloadAgentJar(@NotNull IntelliAgentSettings settings) {
         String downloadUrl = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
         if (downloadUrl.isBlank()) {
             JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
-                                          AICommonBundle.message("settings.codefree.error.no.url"),
+                                          AICommonBundle.message("settings.agent.error.no.url"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.WARNING_MESSAGE);
             return;
@@ -780,8 +780,8 @@ public final class IntelliAgentPanel {
         boolean remote = downloadUrl.startsWith("http://") || downloadUrl.startsWith("https://");
         if (!remote) {
             JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
-                                          AICommonBundle.message("settings.codefree.download.local.path"),
-                                          AICommonBundle.message("settings.codefree.title"),
+                                          AICommonBundle.message("settings.agent.download.local.path"),
+                                          AICommonBundle.message("settings.agent.title"),
                                           JOptionPane.INFORMATION_MESSAGE);
             return;
         }
@@ -792,7 +792,7 @@ public final class IntelliAgentPanel {
 
         if (jarFileName.isBlank()) {
             JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
-                                          AICommonBundle.message("settings.codefree.error.no.jar"),
+                                          AICommonBundle.message("settings.agent.error.no.jar"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.WARNING_MESSAGE);
             return;
@@ -877,7 +877,7 @@ public final class IntelliAgentPanel {
                         updateDownloadProgress(remoteSize, remoteSize);
                     }
                     finishDownloadUi(true, finalJarFileName, finalLocalSize, settings);
-                    refreshCodefreeVersionInfo(settings);
+                    refreshAgentVersionInfo(settings);
                 });
             } catch (Exception e) {
                 // 使用 SwingUtilities.invokeLater 确保立即执行，不被阻塞
@@ -895,20 +895,20 @@ public final class IntelliAgentPanel {
     }
 
     /**
-     * 开始下载 Codefree jar 文件时, 设置相关状态
+     * 开始下载 Agent jar 文件时, 设置相关状态
      * <p>
      * 禁用下载按钮并显示下载中状态, 同时初始化下载进度条并禁用启动按钮.
      */
     private void setStartedDownloadState() {
         isDownloading = true;
         downloadButton.setEnabled(false);
-        downloadButton.setText(AICommonBundle.message("settings.codefree.download.doing"));
+        downloadButton.setText(AICommonBundle.message("settings.agent.download.doing"));
         // 初始化进度条状态
         downloadProgressBar.setVisible(true);
         downloadProgressBar.setIndeterminate(true);
         downloadProgressBar.setValue(0);
         downloadProgressBar.setStringPainted(false);
-        setDownloadStatusColor(CODEFREE_YELLOW);
+        setDownloadStatusColor(YELLOW);
         startButton.setEnabled(false);
         // 重置进度更新节流状态
         lastProgressUpdateTime = 0;
@@ -918,12 +918,12 @@ public final class IntelliAgentPanel {
     /**
      * 完成下载操作的 UI 更新
      * <p>
-     * 根据下载是否成功更新下载按钮, 进度条, 状态指示灯和 Codefree 代理状态.
+     * 根据下载是否成功更新下载按钮, 进度条, 状态指示灯和 Agent 代理状态.
      *
      * @param success   下载是否成功
      * @param jarName   下载的 jar 文件名, 若下载失败则为 null
      * @param localSize 本地 jar 文件大小, 若下载失败则为 -1
-     * @param settings  Codefree 代理设置
+     * @param settings  Agent 代理设置
      */
     private void finishDownloadUi(boolean success,
                                   @Nullable String jarName,
@@ -932,76 +932,76 @@ public final class IntelliAgentPanel {
         // 标记下载完成
         isDownloading = false;
         downloadButton.setEnabled(true);
-        downloadButton.setText(AICommonBundle.message("settings.codefree.download"));
+        downloadButton.setText(AICommonBundle.message("settings.agent.download"));
         // 确保进度条在下载完成后被隐藏
         resetDownloadProgress();
         if (success && jarName != null) {
             setLocalJarName(jarName, localSize);
-            setDownloadStatusColor(CODEFREE_GREEN);
+            setDownloadStatusColor(GREEN);
         } else {
-            setDownloadStatusColor(CODEFREE_RED);
+            setDownloadStatusColor(RED);
         }
         // 更新状态（包括启动按钮状态）
-        updateCodefreeStatus(settings);
+        updateAgentStatus(settings);
     }
 
     /**
-     * 启动或停止 Codefree 本地代理
+     * 启动或停止 Agent 本地代理
      *
-     * @param settings Codefree 代理设置
+     * @param settings Agent 代理设置
      */
-    public void toggleCodefreeAgent(@NotNull IntelliAgentSettings settings) {
+    public void toggleAgentAgent(@NotNull IntelliAgentSettings settings) {
         if (intelliAgentManager.isRunning()) {
             intelliAgentManager.stopAgent();
-            updateCodefreeStatus(settings);
+            updateAgentStatus(settings);
             return;
         }
         Path jarPath = intelliAgentManager.resolveJarPath(settings);
         if (Files.notExists(jarPath)) {
             JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
-                                          AICommonBundle.message("settings.codefree.error.no.jar"),
+                                          AICommonBundle.message("settings.agent.error.no.jar"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.WARNING_MESSAGE);
             return;
         }
         startButton.setEnabled(false);
-        startButton.setText(AICommonBundle.message("settings.codefree.starting"));
-        setStartStatusColor(CODEFREE_YELLOW);
+        startButton.setText(AICommonBundle.message("settings.agent.starting"));
+        setStartStatusColor(YELLOW);
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 long pid = intelliAgentManager.startAgent(settings);
                 ApplicationManager.getApplication().invokeLater(() -> {
                     startButton.setEnabled(true);
-                    startButton.setText(AICommonBundle.message("settings.codefree.stop"));
+                    startButton.setText(AICommonBundle.message("settings.agent.stop"));
                     String tooltip = intelliAgentManager.getLocalOpenAiEndpoint();
                     if (pid > 0) {
                         tooltip = tooltip + " (PID: " + pid + ")";
                     }
                     getStatusLabel().setToolTipText(tooltip);
-                    updateCodefreeStatus(settings);
+                    updateAgentStatus(settings);
                 });
             } catch (Exception e) {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     startButton.setEnabled(true);
-                    startButton.setText(AICommonBundle.message("settings.codefree.start"));
+                    startButton.setText(AICommonBundle.message("settings.agent.start"));
                     JOptionPane.showMessageDialog(parentPanel != null ? parentPanel : getContent(),
                                                   e.getMessage(),
                                                   AICommonBundle.message("settings.error.title"),
                                                   JOptionPane.ERROR_MESSAGE);
-                    updateCodefreeStatus(settings);
+                    updateAgentStatus(settings);
                 });
             }
         });
     }
 
     /**
-     * 创建 Codefree 代理配置快照
+     * 创建 Agent 代理配置快照
      *
-     * @return Codefree 代理设置快照
+     * @return Agent 代理设置快照
      */
     @NotNull
-    public IntelliAgentSettings snapshotCodefreeSettings() {
+    public IntelliAgentSettings snapshotAgentSettings() {
         IntelliAgentSettings snapshot = new IntelliAgentSettings();
         snapshot.autoStart = getAutoStartCheckBox().isSelected();
         snapshot.autoUpdate = getAutoUpdateCheckBox().isSelected();
@@ -1019,7 +1019,7 @@ public final class IntelliAgentPanel {
      */
     @NotNull
     private HyperlinkLabel createDeveloperManualLink() {
-        String linkText = AICommonBundle.message("settings.codefree.developer.manual");
+        String linkText = AICommonBundle.message("settings.agent.developer.manual");
         HyperlinkLabel linkLabel = new HyperlinkLabel(linkText);
         linkLabel.setHyperlinkTarget(DEV_BOOK);
         linkLabel.addHyperlinkListener(e -> {

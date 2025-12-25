@@ -81,18 +81,18 @@ public final class AIProviderConfigController {
     }
 
     /**
-     * 初始化 Codefree 面板的状态更新回调
+     * 初始化 Agent 面板的状态更新回调
      * <p>
-     * 需要在 UI 创建完成后调用，确保 codefreePanel 已初始化。
+     * 需要在 UI 创建完成后调用，确保 agentPanel 已初始化。
      */
-    public void initCodefreePanel() {
-        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
+    public void initAgentPanel() {
+        IntelliAgentPanel intelliAgentPanel = ui.getAgentPanel();
         // 设置父面板，用于显示对话框
         intelliAgentPanel.setParentPanel(ui.getMainPanel());
-        // 设置 Codefree 面板的状态更新回调
+        // 设置 Agent 面板的状态更新回调
         intelliAgentPanel.setStatusUpdateCallback(() -> {
-            IntelliAgentSettings snapshot = intelliAgentPanel.snapshotCodefreeSettings();
-            intelliAgentPanel.updateCodefreeStatus(snapshot);
+            IntelliAgentSettings snapshot = intelliAgentPanel.snapshotAgentSettings();
+            intelliAgentPanel.updateAgentStatus(snapshot);
         });
     }
 
@@ -151,13 +151,13 @@ public final class AIProviderConfigController {
         IntelliAgentSettings intelliAgentSettings = workingSettings.intelliAgentSettings != null
                                                     ? workingSettings.intelliAgentSettings
                                                     : new IntelliAgentSettings();
-        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
+        IntelliAgentPanel intelliAgentPanel = ui.getAgentPanel();
         intelliAgentPanel.getAutoStartCheckBox().setSelected(intelliAgentSettings.autoStart);
         intelliAgentPanel.getAutoUpdateCheckBox().setSelected(intelliAgentSettings.autoUpdate);
         intelliAgentPanel.getDownloadUrlField().setText(intelliAgentSettings.downloadUrl != null ? intelliAgentSettings.downloadUrl : "");
         intelliAgentPanel.setLocalJarName(intelliAgentSettings.jarFileName, -1);
-        intelliAgentPanel.updateCodefreeStatus(intelliAgentSettings);
-        intelliAgentPanel.refreshCodefreeVersionInfo(intelliAgentSettings);
+        intelliAgentPanel.updateAgentStatus(intelliAgentSettings);
+        intelliAgentPanel.refreshAgentVersionInfo(intelliAgentSettings);
 
         // 加载可用服务商
         ui.getAvailableProvidersTableModel().setData(workingSettings.availableProviders);
@@ -203,7 +203,7 @@ public final class AIProviderConfigController {
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();
-        workingSettings.intelliAgentSettings = ui.getCodefreePanel().snapshotCodefreeSettings().copy();
+        workingSettings.intelliAgentSettings = ui.getAgentPanel().snapshotAgentSettings().copy();
 
         workingSettings.aiProviderType = providerType;
 
@@ -687,21 +687,21 @@ public final class AIProviderConfigController {
     }
 
     /**
-     * 下载 Codefree jar
+     * 下载 Agent jar
      */
-    public void downloadCodefreeJar() {
-        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
-        IntelliAgentSettings snapshot = intelliAgentPanel.snapshotCodefreeSettings();
-        intelliAgentPanel.downloadCodefreeJar(snapshot);
+    public void downloadAgentJar() {
+        IntelliAgentPanel intelliAgentPanel = ui.getAgentPanel();
+        IntelliAgentSettings snapshot = intelliAgentPanel.snapshotAgentSettings();
+        intelliAgentPanel.downloadAgentJar(snapshot);
     }
 
     /**
-     * 启动或停止 Codefree 本地代理
+     * 启动或停止 Agent 本地代理
      */
-    public void toggleCodefreeAgent() {
-        IntelliAgentPanel intelliAgentPanel = ui.getCodefreePanel();
-        IntelliAgentSettings snapshot = intelliAgentPanel.snapshotCodefreeSettings();
-        intelliAgentPanel.toggleCodefreeAgent(snapshot);
+    public void toggleAgent() {
+        IntelliAgentPanel intelliAgentPanel = ui.getAgentPanel();
+        IntelliAgentSettings snapshot = intelliAgentPanel.snapshotAgentSettings();
+        intelliAgentPanel.toggleAgentAgent(snapshot);
     }
 
     /**

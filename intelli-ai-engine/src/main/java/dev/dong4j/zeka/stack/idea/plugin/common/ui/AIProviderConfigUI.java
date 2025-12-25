@@ -116,7 +116,7 @@ public final class AIProviderConfigUI {
     private JSpinner topKSpinner;
     /** 偏差惩罚值调节器, 用于设置生成文本时的偏差惩罚参数 */
     private JSpinner presencePenaltySpinner;
-    /** Codefree 代理面板 */
+    /** Agent 代理面板 */
     private IntelliAgentPanel intelliAgentPanel;
     /** checkBoxHintLabelMap 用于映射复选框与对应的提示标签 */
     private final Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new HashMap<>();
@@ -180,7 +180,7 @@ public final class AIProviderConfigUI {
         topKSpinner = new JSpinner(new SpinnerNumberModel(50, 1, 100, 1));
         presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.0, -2.0, 2.0, 0.1));
 
-        // Codefree 相关配置
+        // Agent 相关配置
         intelliAgentPanel = new IntelliAgentPanel();
 
         // 设置所有 JSpinner 的长度一致
@@ -398,7 +398,7 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public IntelliAgentPanel getCodefreePanel() {
+    public IntelliAgentPanel getAgentPanel() {
         return intelliAgentPanel;
     }
 
