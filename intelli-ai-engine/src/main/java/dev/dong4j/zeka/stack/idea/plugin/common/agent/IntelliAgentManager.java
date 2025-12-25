@@ -213,7 +213,7 @@ public final class IntelliAgentManager {
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        indicator.setText(AICommonBundle.message("settings.codefree.download.progress.text"));
+        indicator.setText(AICommonBundle.message("settings.agent.download.progress.text"));
         HttpRequests.request(url).productNameAsUserAgent().connect(request -> {
             URLConnection connection = request.getConnection();
             long total = connection.getContentLengthLong();

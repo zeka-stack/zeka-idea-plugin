@@ -168,19 +168,19 @@ public final class IntelliAgentUpdateChecker {
                                         @Nullable String localJarName,
                                         @NotNull IntelliAgentSettings settings) {
         String message = localJarName != null
-                         ? AICommonBundle.message("settings.codefree.update.available.with.current", latestJarName, localJarName)
-                         : AICommonBundle.message("settings.codefree.update.available", latestJarName);
+                         ? AICommonBundle.message("settings.agent.update.available.with.current", latestJarName, localJarName)
+                         : AICommonBundle.message("settings.agent.update.available", latestJarName);
 
         Notification notification = NotificationUtil.getNotificationGroup()
             .createNotification(
-                AICommonBundle.message("settings.codefree.update.title"),
+                AICommonBundle.message("settings.agent.update.title"),
                 message,
                 NotificationType.INFORMATION
                                );
 
         // 添加更新操作
         notification.addAction(new NotificationAction(
-            AICommonBundle.message("settings.codefree.update.now")) {
+            AICommonBundle.message("settings.agent.update.now")) {
             @Override
             public void actionPerformed(@NotNull AnActionEvent e,
                                         @NotNull Notification notification) {
@@ -215,14 +215,14 @@ public final class IntelliAgentUpdateChecker {
         String downloadUrl = settings.downloadUrl != null ? settings.downloadUrl.trim() : "";
         if (downloadUrl.isEmpty()) {
             if (project != null) {
-                NotificationUtil.showError(project, AICommonBundle.message("settings.codefree.error.no.url"));
+                NotificationUtil.showError(project, AICommonBundle.message("settings.agent.error.no.url"));
             }
             return;
         }
 
         if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://")) {
             if (project != null) {
-                NotificationUtil.showInfo(project, AICommonBundle.message("settings.codefree.download.local.path"));
+                NotificationUtil.showInfo(project, AICommonBundle.message("settings.agent.download.local.path"));
             }
             return;
         }
@@ -248,7 +248,7 @@ public final class IntelliAgentUpdateChecker {
                 if (project != null) {
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showInfo(project,
-                                                  AICommonBundle.message("settings.codefree.update.success", latestJarName));
+                                                  AICommonBundle.message("settings.agent.update.success", latestJarName));
                     });
                 }
 
@@ -258,7 +258,7 @@ public final class IntelliAgentUpdateChecker {
                 if (project != null) {
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showError(project,
-                                                   AICommonBundle.message("settings.codefree.update.failed", e.getMessage()));
+                                                   AICommonBundle.message("settings.agent.update.failed", e.getMessage()));
                     });
                 }
             }
