@@ -41,7 +41,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Stream;
 
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.action.AbstractGenerateJavaDocAction;
@@ -244,12 +243,15 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      * 的配置分别收集方法和字段级别的提示信息. 所有生成的 {@link CodeVisionEntry} 都会与对应的文本范围一起
      * 添加到 {@code entries} 队列中.
      * <p>
-     * <b>性能优化：</b>
+     * <b>性能优化说明：</b>
      * <ul>
-     *   <li>使用并行流处理多个类，加快收集速度</li>
-     *   <li>使用并行流处理类内的方法和字段</li>
-     *   <li>使用线程安全的队列收集结果</li>
+     *   <li>使用串行循环处理，避免 parallelStream 导致的死锁问题</li>
+     *   <li>限制最大处理数量，防止处理过多元素导致卡顿</li>
+     *   <li>已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction</li>
      * </ul>
+     * <p>
+     * <b>⚠️ 重要：</b> 修复了使用 parallelStream 导致的 IDEA 卡死问题。
+     * 在 CodeVision 计算中不能使用并行流，因为会与 IDEA 的写锁机制冲突。
      *
      * @param javaFile 当前要分析的 Java 文件
      * @param entries  用于收集生成的 {@link CodeVisionEntry} 与其文本范围的线程安全队列
@@ -275,92 +277,100 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
         }
         PsiClass[] allClasses = allClassesCollection.toArray(new PsiClass[0]);
 
-        // 并行处理类级别的 Code Vision 条目
-        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        // 限制最大处理数量，防止处理过多元素导致卡顿
+        final int MAX_CLASSES = 50;
+        final int MAX_METHODS_PER_CLASS = 100;
+        final int MAX_FIELDS_PER_CLASS = 100;
+
+        // 串行处理类级别的 Code Vision 条目
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForClass) {
-            Stream.of(allClasses)
-                .parallel()
-                .forEach(psiClass -> {
-                    ReadAction.run(() -> {
-                        // 检查元素有效性
-                        if (psiClass != null && psiClass.isValid() && !project.isDisposed()) {
-                            try {
-                                if (shouldShowHintElement(psiClass, settings)) {
-                                    entries.add(createCodeVisionEntry(psiClass, project, settings));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理类时发生异常", e);
-                            }
-                        }
-                    });
-                });
-        }
-
-        // 并行处理类内的方法和字段
-        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
-        Stream.of(allClasses)
-            .parallel()
-            .forEach(psiClass -> {
-                ReadAction.run(() -> {
-                    // 检查元素有效性
-                    if (psiClass == null || !psiClass.isValid() || project.isDisposed()) {
-                        return;
-                    }
-
+            int classCount = 0;
+            for (PsiClass psiClass : allClasses) {
+                if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                    break;
+                }
+                // 检查元素有效性
+                if (psiClass != null && psiClass.isValid()) {
                     try {
-                        // 收集方法
-                        if (settings.generateForMethod) {
-                            PsiMethod[] methods = psiClass.getMethods();
-                            if (methods.length > 0) {
-                                Stream.of(methods)
-                                    .forEach(method -> {
-                                        ReadAction.run(() -> {
-                                            if (method != null && method.isValid() && !project.isDisposed()) {
-                                                try {
-                                                    if (shouldShowHintElement(method, settings)) {
-                                                        entries.add(createCodeVisionEntry(method, project, settings));
-                                                    }
-                                                } catch (Exception e) {
-                                                    log.debug("处理方法时发生异常", e);
-                                                }
-                                            }
-                                        });
-                                    });
-                            }
-                        }
-
-                        // 收集字段
-                        if (settings.generateForField) {
-                            PsiField[] fields = psiClass.getFields();
-                            if (fields.length > 0) {
-                                Stream.of(fields)
-                                    .forEach(field -> {
-                                        ReadAction.run(() -> {
-                                            if (field != null && field.isValid() && !project.isDisposed()) {
-                                                try {
-                                                    if (shouldShowHintElement(field, settings)) {
-                                                        entries.add(createCodeVisionEntry(field, project, settings));
-                                                    }
-                                                } catch (Exception e) {
-                                                    log.debug("处理字段时发生异常", e);
-                                                }
-                                            }
-                                        });
-                                    });
-                            }
+                        if (shouldShowHintElement(psiClass, settings)) {
+                            entries.add(createCodeVisionEntry(psiClass, project, settings));
                         }
                     } catch (Exception e) {
-                        log.debug("处理类的方法和字段时发生异常", e);
+                        log.debug("处理类时发生异常", e);
                     }
-                });
-            });
+                }
+                classCount++;
+            }
+        }
+
+        // 串行处理类内的方法和字段
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
+        int classCount = 0;
+        for (PsiClass psiClass : allClasses) {
+            if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                break;
+            }
+            // 检查元素有效性
+            if (psiClass == null || !psiClass.isValid()) {
+                classCount++;
+                continue;
+            }
+
+            try {
+                // 收集方法
+                if (settings.generateForMethod) {
+                    PsiMethod[] methods = psiClass.getMethods();
+                    int methodCount = 0;
+                    for (PsiMethod method : methods) {
+                        if (methodCount >= MAX_METHODS_PER_CLASS) {
+                            break;
+                        }
+                        if (method != null && method.isValid()) {
+                            try {
+                                if (shouldShowHintElement(method, settings)) {
+                                    entries.add(createCodeVisionEntry(method, project, settings));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理方法时发生异常", e);
+                            }
+                        }
+                        methodCount++;
+                    }
+                }
+
+                // 收集字段
+                if (settings.generateForField) {
+                    PsiField[] fields = psiClass.getFields();
+                    int fieldCount = 0;
+                    for (PsiField field : fields) {
+                        if (fieldCount >= MAX_FIELDS_PER_CLASS) {
+                            break;
+                        }
+                        if (field != null && field.isValid()) {
+                            try {
+                                if (shouldShowHintElement(field, settings)) {
+                                    entries.add(createCodeVisionEntry(field, project, settings));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理字段时发生异常", e);
+                            }
+                        }
+                        fieldCount++;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("处理类的方法和字段时发生异常", e);
+            }
+            classCount++;
+        }
     }
 
     /**
      * 根据当前项目设置收集 Kotlin 文件中的 CodeVision 条目.
      * <p>
      * 该方法首先检查 Kotlin 语言是否被启用; 若未启用则直接返回. 随后使用 {@link KtTreeVisitorVoid}
-     * 递归遍历整个 Kotlin 文件, 收集所有类、函数和属性, 然后使用并行流处理这些元素,
+     * 递归遍历整个 Kotlin 文件, 收集所有类、函数和属性, 然后串行处理这些元素,
      * 根据 {@link SettingsState} 的配置决定是否为各种类型的元素生成 CodeVision 条目.
      * <p>
      * <b>遍历范围：</b>
@@ -371,13 +381,16 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
      *   <li>所有层级的类和对象声明</li>
      * </ul>
      * <p>
-     * <b>性能优化：</b>
+     * <b>性能优化说明：</b>
      * <ul>
      *   <li>先收集所有元素到列表（单次遍历）</li>
-     *   <li>使用并行流处理收集到的元素，加快处理速度</li>
-     *   <li>使用线程安全的队列收集结果</li>
-     *   <li>与 Java 版本的并行处理方式保持一致</li>
+     *   <li>使用串行循环处理，避免 parallelStream 导致的死锁问题</li>
+     *   <li>限制最大处理数量，防止处理过多元素导致卡顿</li>
+     *   <li>已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction</li>
      * </ul>
+     * <p>
+     * <b>⚠️ 重要：</b> 修复了使用 parallelStream 导致的 IDEA 卡死问题。
+     * 在 CodeVision 计算中不能使用并行流，因为会与 IDEA 的写锁机制冲突。
      *
      * @param ktFile   需要分析的 Kotlin 文件
      * @param entries  用于收集生成的 CodeVision 条目的线程安全队列, 方法会向其中追加条目
@@ -420,64 +433,75 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             }
         });
 
-        // 并行处理类级别的 Code Vision 条目
-        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        // 限制最大处理数量，防止处理过多元素导致卡顿
+        final int MAX_CLASSES = 50;
+        final int MAX_FUNCTIONS = 200;
+        final int MAX_PROPERTIES = 200;
+
+        // 串行处理类级别的 Code Vision 条目
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForClass && !allClasses.isEmpty()) {
-            allClasses.parallelStream()
-                .forEach(ktClass -> {
-                    ReadAction.run(() -> {
-                        // 检查元素有效性
-                        if (ktClass != null && ktClass.isValid() && !project.isDisposed()) {
-                            try {
-                                if (shouldShowHintElement(ktClass, settings)) {
-                                    entries.add(createCodeVisionEntry(ktClass, project, settings));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理 Kotlin 类时发生异常", e);
-                            }
+            int classCount = 0;
+            for (KtClassOrObject ktClass : allClasses) {
+                if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                    break;
+                }
+                // 检查元素有效性
+                if (ktClass != null && ktClass.isValid()) {
+                    try {
+                        if (shouldShowHintElement(ktClass, settings)) {
+                            entries.add(createCodeVisionEntry(ktClass, project, settings));
                         }
-                    });
-                });
+                    } catch (Exception e) {
+                        log.debug("处理 Kotlin 类时发生异常", e);
+                    }
+                }
+                classCount++;
+            }
         }
 
-        // 并行处理函数级别的 Code Vision 条目（包括顶层函数和类内函数）
-        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        // 串行处理函数级别的 Code Vision 条目（包括顶层函数和类内函数）
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForMethod && !allFunctions.isEmpty()) {
-            allFunctions.parallelStream()
-                .forEach(function -> {
-                    ReadAction.run(() -> {
-                        // 检查元素有效性
-                        if (function != null && function.isValid() && !project.isDisposed()) {
-                            try {
-                                if (shouldShowHintElement(function, settings)) {
-                                    entries.add(createCodeVisionEntry(function, project, settings));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理 Kotlin 函数时发生异常", e);
-                            }
+            int functionCount = 0;
+            for (KtNamedFunction function : allFunctions) {
+                if (functionCount >= MAX_FUNCTIONS || project.isDisposed()) {
+                    break;
+                }
+                // 检查元素有效性
+                if (function != null && function.isValid()) {
+                    try {
+                        if (shouldShowHintElement(function, settings)) {
+                            entries.add(createCodeVisionEntry(function, project, settings));
                         }
-                    });
-                });
+                    } catch (Exception e) {
+                        log.debug("处理 Kotlin 函数时发生异常", e);
+                    }
+                }
+                functionCount++;
+            }
         }
 
-        // 并行处理属性级别的 Code Vision 条目（包括顶层属性和类内属性）
-        // 注意：并行流在后台线程执行，需要 ReadAction 保护 PSI 访问
+        // 串行处理属性级别的 Code Vision 条目（包括顶层属性和类内属性）
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForField && !allProperties.isEmpty()) {
-            allProperties.parallelStream()
-                .forEach(property -> {
-                    ReadAction.run(() -> {
-                        // 检查元素有效性
-                        if (property != null && property.isValid() && !project.isDisposed()) {
-                            try {
-                                if (shouldShowHintElement(property, settings)) {
-                                    entries.add(createCodeVisionEntry(property, project, settings));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理 Kotlin 属性时发生异常", e);
-                            }
+            int propertyCount = 0;
+            for (KtProperty property : allProperties) {
+                if (propertyCount >= MAX_PROPERTIES || project.isDisposed()) {
+                    break;
+                }
+                // 检查元素有效性
+                if (property != null && property.isValid()) {
+                    try {
+                        if (shouldShowHintElement(property, settings)) {
+                            entries.add(createCodeVisionEntry(property, project, settings));
                         }
-                    });
-                });
+                    } catch (Exception e) {
+                        log.debug("处理 Kotlin 属性时发生异常", e);
+                    }
+                }
+                propertyCount++;
+            }
         }
     }
 

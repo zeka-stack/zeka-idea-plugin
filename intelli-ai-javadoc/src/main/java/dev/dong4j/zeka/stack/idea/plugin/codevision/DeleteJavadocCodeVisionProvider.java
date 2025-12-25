@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Stream;
 
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.service.JavadocDeletionService;
@@ -143,9 +142,6 @@ public class DeleteJavadocCodeVisionProvider implements CodeVisionProvider<Unit>
             try {
                 ReadAction.nonBlocking(() -> {
                     PsiFile psiFile = PsiUtil.getPsiFile(project, virtualFile);
-                    if (psiFile == null) {
-                        return null;
-                    }
 
                     // 处理 Java 文件
                     if (psiFile instanceof PsiJavaFile) {
@@ -183,6 +179,9 @@ public class DeleteJavadocCodeVisionProvider implements CodeVisionProvider<Unit>
 
     /**
      * 收集 Java 文件中有 Javadoc 的元素
+     * <p>
+     * <b>⚠️ 重要：</b> 修复了使用 parallelStream 导致的 IDEA 卡死问题。
+     * 在 CodeVision 计算中不能使用并行流，因为会与 IDEA 的写锁机制冲突。
      *
      * @param javaFile Java 文件
      * @param entries  条目队列
@@ -205,98 +204,114 @@ public class DeleteJavadocCodeVisionProvider implements CodeVisionProvider<Unit>
         }
         PsiClass[] allClasses = allClassesCollection.toArray(new PsiClass[0]);
 
-        // 并行处理类
+        // 限制最大处理数量，防止处理过多元素导致卡顿
+        final int MAX_CLASSES = 50;
+        final int MAX_METHODS_PER_CLASS = 100;
+        final int MAX_FIELDS_PER_CLASS = 100;
+
+        // 串行处理类
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForClass) {
-            Stream.of(allClasses)
-                .parallel()
-                .forEach(psiClass -> {
-                    ReadAction.run(() -> {
-                        if (psiClass != null && psiClass.isValid() && !project.isDisposed()) {
+            int classCount = 0;
+            for (PsiClass psiClass : allClasses) {
+                if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                    break;
+                }
+                if (psiClass != null && psiClass.isValid()) {
+                    try {
+                        if (JavadocDeletionService.hasDocComment(psiClass)) {
+                            entries.add(createCodeVisionEntry(psiClass, project));
+                        }
+                    } catch (Exception e) {
+                        log.debug("处理类时发生异常", e);
+                    }
+                }
+                classCount++;
+            }
+        }
+
+        // 串行处理方法
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
+        if (settings.generateForMethod) {
+            int classCount = 0;
+            for (PsiClass psiClass : allClasses) {
+                if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                    break;
+                }
+                if (psiClass == null || !psiClass.isValid()) {
+                    classCount++;
+                    continue;
+                }
+
+                try {
+                    PsiMethod[] methods = psiClass.getMethods();
+                    int methodCount = 0;
+                    for (PsiMethod method : methods) {
+                        if (methodCount >= MAX_METHODS_PER_CLASS) {
+                            break;
+                        }
+                        if (method != null && method.isValid()) {
                             try {
-                                if (JavadocDeletionService.hasDocComment(psiClass)) {
-                                    entries.add(createCodeVisionEntry(psiClass, project));
+                                if (JavadocDeletionService.hasDocComment(method)) {
+                                    entries.add(createCodeVisionEntry(method, project));
                                 }
                             } catch (Exception e) {
-                                log.debug("处理类时发生异常", e);
+                                log.debug("处理方法时发生异常", e);
                             }
                         }
-                    });
-                });
+                        methodCount++;
+                    }
+                } catch (Exception e) {
+                    log.debug("处理类方法时发生异常", e);
+                }
+                classCount++;
+            }
         }
 
-        // 并行处理方法
-        if (settings.generateForMethod) {
-            Stream.of(allClasses)
-                .parallel()
-                .forEach(psiClass -> {
-                    ReadAction.run(() -> {
-                        if (psiClass == null || !psiClass.isValid() || project.isDisposed()) {
-                            return;
-                        }
-
-                        try {
-                            PsiMethod[] methods = psiClass.getMethods();
-                            if (methods.length > 0) {
-                                Stream.of(methods)
-                                    .forEach(method -> {
-                                        ReadAction.run(() -> {
-                                            if (method != null && method.isValid() && !project.isDisposed()) {
-                                                try {
-                                                    if (JavadocDeletionService.hasDocComment(method)) {
-                                                        entries.add(createCodeVisionEntry(method, project));
-                                                    }
-                                                } catch (Exception e) {
-                                                    log.debug("处理方法时发生异常", e);
-                                                }
-                                            }
-                                        });
-                                    });
-                            }
-                        } catch (Exception e) {
-                            log.debug("处理类方法时发生异常", e);
-                        }
-                    });
-                });
-        }
-
-        // 并行处理字段
+        // 串行处理字段
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForField) {
-            Stream.of(allClasses)
-                .parallel()
-                .forEach(psiClass -> {
-                    ReadAction.run(() -> {
-                        if (psiClass == null || !psiClass.isValid() || project.isDisposed()) {
-                            return;
-                        }
+            int classCount = 0;
+            for (PsiClass psiClass : allClasses) {
+                if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                    break;
+                }
+                if (psiClass == null || !psiClass.isValid()) {
+                    classCount++;
+                    continue;
+                }
 
-                        try {
-                            PsiField[] fields = psiClass.getFields();
-                            if (fields.length > 0) {
-                                Stream.of(fields)
-                                    .forEach(field -> {
-                                        ReadAction.run(() -> {
-                                            if (field != null && field.isValid() && !project.isDisposed()) {
-                                                try {
-                                                    if (JavadocDeletionService.hasDocComment(field)) {
-                                                        entries.add(createCodeVisionEntry(field, project));
-                                                    }
-                                                } catch (Exception e) {
-                                                    log.debug("处理字段时发生异常", e);
-                                                }
-                                            }
-                                        });
-                                    });
-                            }
-                        } catch (Exception e) {
-                            log.debug("处理类字段时发生异常", e);
+                try {
+                    PsiField[] fields = psiClass.getFields();
+                    int fieldCount = 0;
+                    for (PsiField field : fields) {
+                        if (fieldCount >= MAX_FIELDS_PER_CLASS) {
+                            break;
                         }
-                    });
-                });
+                        if (field != null && field.isValid()) {
+                            try {
+                                if (JavadocDeletionService.hasDocComment(field)) {
+                                    entries.add(createCodeVisionEntry(field, project));
+                                }
+                            } catch (Exception e) {
+                                log.debug("处理字段时发生异常", e);
+                            }
+                        }
+                        fieldCount++;
+                    }
+                } catch (Exception e) {
+                    log.debug("处理类字段时发生异常", e);
+                }
+                classCount++;
+            }
         }
     }
 
     /**
      * 收集 Kotlin 文件中有 KDoc 的元素
+     * <p>
+     * <b>⚠️ 重要：</b> 修复了使用 parallelStream 导致的 IDEA 卡死问题。
+     * 在 CodeVision 计算中不能使用并行流，因为会与 IDEA 的写锁机制冲突。
      *
      * @param ktFile   Kotlin 文件
      * @param entries  条目队列
@@ -337,58 +352,72 @@ public class DeleteJavadocCodeVisionProvider implements CodeVisionProvider<Unit>
             }
         });
 
-        // 并行处理类
+        // 限制最大处理数量，防止处理过多元素导致卡顿
+        final int MAX_CLASSES = 50;
+        final int MAX_FUNCTIONS = 200;
+        final int MAX_PROPERTIES = 200;
+
+        // 串行处理类
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForClass && !allClasses.isEmpty()) {
-            allClasses.parallelStream()
-                .forEach(ktClass -> {
-                    ReadAction.run(() -> {
-                        if (ktClass != null && ktClass.isValid() && !project.isDisposed()) {
-                            try {
-                                if (JavadocDeletionService.hasDocComment(ktClass)) {
-                                    entries.add(createCodeVisionEntry(ktClass, project));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理 Kotlin 类时发生异常", e);
-                            }
+            int classCount = 0;
+            for (KtClassOrObject ktClass : allClasses) {
+                if (classCount >= MAX_CLASSES || project.isDisposed()) {
+                    break;
+                }
+                if (ktClass != null && ktClass.isValid()) {
+                    try {
+                        if (JavadocDeletionService.hasDocComment(ktClass)) {
+                            entries.add(createCodeVisionEntry(ktClass, project));
                         }
-                    });
-                });
+                    } catch (Exception e) {
+                        log.debug("处理 Kotlin 类时发生异常", e);
+                    }
+                }
+                classCount++;
+            }
         }
 
-        // 并行处理函数
+        // 串行处理函数
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForMethod && !allFunctions.isEmpty()) {
-            allFunctions.parallelStream()
-                .forEach(function -> {
-                    ReadAction.run(() -> {
-                        if (function != null && function.isValid() && !project.isDisposed()) {
-                            try {
-                                if (JavadocDeletionService.hasDocComment(function)) {
-                                    entries.add(createCodeVisionEntry(function, project));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理 Kotlin 函数时发生异常", e);
-                            }
+            int functionCount = 0;
+            for (KtNamedFunction function : allFunctions) {
+                if (functionCount >= MAX_FUNCTIONS || project.isDisposed()) {
+                    break;
+                }
+                if (function != null && function.isValid()) {
+                    try {
+                        if (JavadocDeletionService.hasDocComment(function)) {
+                            entries.add(createCodeVisionEntry(function, project));
                         }
-                    });
-                });
+                    } catch (Exception e) {
+                        log.debug("处理 Kotlin 函数时发生异常", e);
+                    }
+                }
+                functionCount++;
+            }
         }
 
-        // 并行处理属性
+        // 串行处理属性
+        // 注意：已在 ReadAction.nonBlocking() 中执行，无需嵌套 ReadAction.run()
         if (settings.generateForField && !allProperties.isEmpty()) {
-            allProperties.parallelStream()
-                .forEach(property -> {
-                    ReadAction.run(() -> {
-                        if (property != null && property.isValid() && !project.isDisposed()) {
-                            try {
-                                if (JavadocDeletionService.hasDocComment(property)) {
-                                    entries.add(createCodeVisionEntry(property, project));
-                                }
-                            } catch (Exception e) {
-                                log.debug("处理 Kotlin 属性时发生异常", e);
-                            }
+            int propertyCount = 0;
+            for (KtProperty property : allProperties) {
+                if (propertyCount >= MAX_PROPERTIES || project.isDisposed()) {
+                    break;
+                }
+                if (property != null && property.isValid()) {
+                    try {
+                        if (JavadocDeletionService.hasDocComment(property)) {
+                            entries.add(createCodeVisionEntry(property, project));
                         }
-                    });
-                });
+                    } catch (Exception e) {
+                        log.debug("处理 Kotlin 属性时发生异常", e);
+                    }
+                }
+                propertyCount++;
+            }
         }
     }
 

@@ -62,10 +62,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 public final class IntelliAgentPanel {
     /** 日志记录器 */
     private static final Logger LOG = Logger.getInstance(IntelliAgentPanel.class);
-    private static final String DEV_BOOK = "https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-engine/site/docs/%E9%9D" +
-                                           "%9E%E6%A0%87%E5%87%86AI%E6%9C%8D%E5%8A%A1%E9%9B%86%E6%88%90jar%E5%BC%80%E5%8F%91%E6%8C%87%E5" +
-                                           "%8D%97.md";
-    /** 红色指示灯的颜色, 用于显示错误或警告状态 */
+
+    /**
+     * 开发者手册的链接地址
+     * <p> 指向 Codefree 代理开发相关的非标准化 AI 服务集成 jar 文件开发指南的 Markdown 文档.
+     * formatter:off
+     */
+    private static final String DEV_BOOK =
+        "https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-engine/site/docs/%E9%9D%9E%E6%A0%87%E5%87%86AI%E6%9C%8D%E5%8A%A1%E9%9B%86%E6%88%90jar%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97.md";
+    /** formatter:on 红色指示灯的颜色, 用于显示错误或警告状态 */
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
     /** Codefree 代理配置面板使用的绿色 */
     private static final JBColor CODEFREE_GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
@@ -476,21 +481,7 @@ public final class IntelliAgentPanel {
     public void setStatusTextWithLink(@NotNull String text, @Nullable String endpoint) {
         if (endpoint != null && !endpoint.isEmpty()) {
             // 从文本中提取端点地址前后的部分
-            String prefix = text.substring(0, text.indexOf(endpoint));
-            String suffix = text.substring(text.indexOf(endpoint) + endpoint.length());
-
-            // 使用 HTML 格式化链接样式，使用主题感知的颜色
-            Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
-            String linkText = String.format(
-                "<html>%s<a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;'>%s</a>%s</html>",
-                prefix,
-                endpoint,
-                linkColor.getRed(),
-                linkColor.getGreen(),
-                linkColor.getBlue(),
-                endpoint,
-                suffix
-                                           );
+            final String linkText = getLinkText(text, endpoint);
             statusLabel.setText(linkText);
 
             // 移除旧的鼠标监听器
@@ -520,6 +511,32 @@ public final class IntelliAgentPanel {
         } else {
             statusLabel.setText(text);
         }
+    }
+
+    /**
+     * 获取带有可点击链接的 HTML 格式的字符串
+     * <p> 将给定的文本和端点地址组合成一个带有可点击链接的 HTML 字符串. 链接部分会被格式化为指定的颜色, 并带有下划线.
+     *
+     * @param text     包含端点地址的原始文本
+     * @param endpoint 要被格式化为可点击链接的端点地址
+     * @return 包含可点击链接的 HTML 格式的字符串
+     */
+    private static @NotNull String getLinkText(@NotNull String text, @NotNull String endpoint) {
+        String prefix = text.substring(0, text.indexOf(endpoint));
+        String suffix = text.substring(text.indexOf(endpoint) + endpoint.length());
+
+        // 使用 HTML 格式化链接样式，使用主题感知的颜色
+        Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
+        return String.format(
+            "<html>%s<a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;'>%s</a>%s</html>",
+            prefix,
+            endpoint,
+            linkColor.getRed(),
+            linkColor.getGreen(),
+            linkColor.getBlue(),
+            endpoint,
+            suffix
+                            );
     }
 
     /**

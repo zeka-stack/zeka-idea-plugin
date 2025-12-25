@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
+import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.OSProcessHandler;
 import com.intellij.execution.process.ProcessEvent;
@@ -31,6 +32,7 @@ import java.util.Comparator;
 import java.util.Optional;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import lombok.SneakyThrows;
 
 /**
@@ -211,7 +213,7 @@ public final class IntelliAgentManager {
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        indicator.setText("正在下载 IntelliAI Agent...");
+        indicator.setText(AICommonBundle.message("settings.codefree.download.progress.text"));
         HttpRequests.request(url).productNameAsUserAgent().connect(request -> {
             URLConnection connection = request.getConnection();
             long total = connection.getContentLengthLong();
@@ -281,6 +283,59 @@ public final class IntelliAgentManager {
             throw new IOException("Jar 不存在: " + jarPath);
         }
         Path javaPath = resolveJavaExecutable();
+        final OSProcessHandler handler = getOsProcessHandler(javaPath, jarPath);
+        synchronized (processLock) {
+            processHandler = handler;
+        }
+        Process process = handler.getProcess();
+        long pid = process.pid();
+        // 创建 PID 文件
+        createPidFile(pid);
+        return pid;
+    }
+
+    /**
+     * 获取操作系统进程处理器
+     * <p> 根据给定的 Java 可执行文件路径和 JAR 文件路径, 创建并配置 OSProcessHandler.
+     * 在进程中添加一个监听器, 以便在进程终止时清理资源.
+     *
+     * @param javaPath Java 可执行文件路径
+     * @param jarPath  JAR 文件路径
+     * @return 配置好的 OSProcessHandler 实例
+     * @throws ExecutionException 如果进程配置或启动失败
+     */
+    private @NotNull OSProcessHandler getOsProcessHandler(Path javaPath, Path jarPath) throws ExecutionException {
+        final OSProcessHandler handler = getProcessHandler(javaPath, jarPath);
+        handler.addProcessListener(new ProcessListener() {
+            @Override
+            public void processTerminated(@NotNull ProcessEvent event) {
+                // 进程终止时清理 processHandler 引用
+                // 注意: 需要同步检查, 因为 stopAgent() 可能已经清空了引用
+                synchronized (processLock) {
+                    // 只有当 handler 是当前 processHandler 时才清空, 避免重复处理
+                    if (processHandler == handler) {
+                        processHandler = null;
+                    }
+                }
+                // 进程终止时清理 PID 文件
+                deletePidFile();
+            }
+        });
+        handler.startNotify();
+        return handler;
+    }
+
+    /**
+     * 获取操作系统进程处理器
+     * <p> 根据给定的 Java 可执行文件路径和 JAR 文件路径, 构建并返回一个 OSProcessHandler 实例.
+     *
+     * @param javaPath Java 可执行文件的路径
+     * @param jarPath  JAR 文件的路径
+     * @return OSProcessHandler 实例, 用于处理进程
+     * @throws ExecutionException 当构建命令行或创建进程处理器失败时抛出
+     * @since 1.0.0
+     */
+    private static @NotNull OSProcessHandler getProcessHandler(Path javaPath, Path jarPath) throws ExecutionException {
         GeneralCommandLine commandLine = new GeneralCommandLine();
         commandLine.setExePath(javaPath.toString());
         // macOS 隐藏 Dock 图标
@@ -295,25 +350,7 @@ public final class IntelliAgentManager {
         }
 
         OSProcessHandler handler = new OSProcessHandler(commandLine);
-        handler.addProcessListener(new ProcessListener() {
-            @Override
-            public void processTerminated(@NotNull ProcessEvent event) {
-                synchronized (processLock) {
-                    processHandler = null;
-                }
-                // 进程终止时清理 PID 文件
-                deletePidFile();
-            }
-        });
-        handler.startNotify();
-        synchronized (processLock) {
-            processHandler = handler;
-        }
-        Process process = handler.getProcess();
-        long pid = process.pid();
-        // 创建 PID 文件
-        createPidFile(pid);
-        return pid;
+        return handler;
     }
 
     /**
@@ -326,16 +363,22 @@ public final class IntelliAgentManager {
      * <p> 该方法还会检查 PID 文件, 如果存在外部进程, 也会尝试停止它.
      *
      * <p> 该方法使用同步锁确保多线程环境下的线程安全.
+     * <p>
+     * 修复死锁问题: 不在持有锁的情况下调用 destroyProcess(), 因为这会触发 ProcessListener
+     * 回调, 而回调中也会尝试获取同一个锁, 导致死锁.
      */
     public void stopAgent() {
+        OSProcessHandler handlerToDestroy;
         synchronized (processLock) {
-            if (processHandler != null) {
-                try {
-                    processHandler.destroyProcess();
-                } catch (Exception e) {
-                    LOG.warn("停止 IntelliAI Agent 失败", e);
-                }
-                processHandler = null;
+            handlerToDestroy = processHandler;
+            processHandler = null; // 先清空引用, 避免回调中重复处理
+        }
+        // 在锁外调用 destroyProcess(), 避免死锁
+        if (handlerToDestroy != null) {
+            try {
+                handlerToDestroy.destroyProcess();
+            } catch (Exception e) {
+                LOG.warn("停止 IntelliAI Agent 失败", e);
             }
         }
         // 尝试停止外部进程（通过 PID 文件）
