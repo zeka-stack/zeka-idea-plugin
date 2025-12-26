@@ -181,7 +181,7 @@ npx http-server
 
 ```html
 <a href="https://github.com/dong4j" ...>GitHub</a>
-<a href="https://dong4j.site" ...>主页</a>
+<a href="https://home.dong4j.site" ...>主页</a>
 <a href="https://blog.dong4j.site" ...>博客</a>
 ```
 
