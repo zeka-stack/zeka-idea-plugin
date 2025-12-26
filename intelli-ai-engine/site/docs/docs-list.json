@@ -16,6 +16,10 @@
     "path": "./docs/AI服务商集成流程.md"
   },
   {
+    "name": "IntelliJ平台超链接实现方式总结",
+    "path": "./docs/IntelliJ平台超链接实现方式总结.md"
+  },
+  {
     "name": "ModelScope服务商接入方案",
     "path": "./docs/ModelScope服务商接入方案.md"
   },
@@ -54,5 +58,9 @@
   {
     "name": "超时时间与Token单位调整方案",
     "path": "./docs/超时时间与Token单位调整方案.md"
+  },
+  {
+    "name": "非标准AI服务集成jar开发指南",
+    "path": "./docs/非标准AI服务集成jar开发指南.md"
   }
 ]
