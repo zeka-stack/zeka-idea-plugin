@@ -68,6 +68,7 @@ if [ $# -lt 1 ]; then
     echo "  -v <version>  指定版本号，会先调用 update_version.sh 更新版本号 (例如: -v 1.5.0)"
     echo "  -z           仅上传 zip 到阿里云"
     echo "  -d           仅部署 site 整个目录 (包含 landing.html, docs.html, docs/ 等)"
+    echo "  -p           仅打包并发布到插件市场 (publishPlugin)"
     echo "  -n           部署 Nginx 配置并在远程服务器上重载"
     exit 1
 fi
@@ -133,16 +134,10 @@ if [ "$USE_SITE_DIR" = true ]; then
 else
     REMOTE_DIR="$REMOTE_BASE_DIR"
 fi
-REMOTE_LANDING_PATH="$REMOTE_DIR/landing.html"
-# docs.html 放在基础目录下，例如: /var/www/intelli-ai-engine/docs.html
-REMOTE_DOCS_HTML_DIR="$REMOTE_BASE_DIR"
-# docs 目录放在 site/docs，例如: /var/www/intelli-ai-engine/site/docs
-REMOTE_DOCS_DIR="$REMOTE_DIR/docs"
 DEST_ZIP_NAME="$PLUGIN_DIR_NAME.zip"
 
 ZIP_DIR="$PLUGIN_DIR/build/distributions"
-LANDING_FILE="$SITE_DIR/landing.html"
-DOCS_HTML_FILE="$SITE_DIR/docs.html"
+LANDING_FILE="$SITE_DIR/landing-v2.html"
 DOCS_DIR="$SITE_DIR/docs"
 
 echo "================================"
@@ -157,9 +152,10 @@ echo "================================"
 VERSION=""
 only_site=false
 only_zip=false
+only_publish=false
 deploy_nginx=false
 explicit_plugin_action=false  # 是否显式要求执行插件相关操作（publish/zip/site）
-while getopts ":v:zdn" opt; do
+while getopts ":v:zdnp" opt; do
     case $opt in
         v)
             VERSION="$OPTARG"
@@ -173,20 +169,25 @@ while getopts ":v:zdn" opt; do
             only_site=true
             explicit_plugin_action=true
             ;;
+        p)
+            only_publish=true
+            explicit_plugin_action=true
+            ;;
         n)
             deploy_nginx=true
             ;;
         \?)
-            echo "用法: $0 $PLUGIN_NAME [-v <version>] [-z] [-d] [-n]"
+            echo "用法: $0 $PLUGIN_NAME [-v <version>] [-z] [-d] [-p] [-n]"
             echo "  -v <version>  指定版本号，会先调用 update_version.sh 更新版本号 (例如: -v 1.5.0)"
             echo "  -z           仅上传 zip 到阿里云"
             echo "  -d           仅部署 site 整个目录 (包含 landing.html, docs.html, docs/ 等)"
+            echo "  -p           仅打包并发布到插件市场 (publishPlugin)"
             echo "  -n           部署 Nginx 配置并在远程服务器上重载"
             exit 1
             ;;
         :)
             echo "错误: 选项 -$OPTARG 需要参数"
-            echo "用法: $0 $PLUGIN_NAME [-v <version>] [-z] [-d] [-n]"
+            echo "用法: $0 $PLUGIN_NAME [-v <version>] [-z] [-d] [-p] [-n]"
             exit 1
             ;;
     esac
@@ -212,14 +213,14 @@ do_zip=true
 do_site=true
 
 # 如果只想部署 Nginx（例如: ./deploy.sh engine -n），且没有显式插件操作，则跳过插件相关步骤
-if $deploy_nginx && ! $explicit_plugin_action && ! $only_site && ! $only_zip; then
+if $deploy_nginx && ! $explicit_plugin_action && ! $only_site && ! $only_zip && ! $only_publish; then
     do_publish=false
     do_zip=false
     do_site=false
 fi
 
 # 如果指定了 only_* 参数，则只执行指定的步骤
-if $only_site || $only_zip; then
+if $only_site || $only_zip || $only_publish; then
     do_publish=false
     do_zip=false
     do_site=false
@@ -229,6 +230,9 @@ if $only_site || $only_zip; then
     fi
     if $only_site; then
         do_site=true
+    fi
+    if $only_publish; then
+        do_publish=true
     fi
 fi
 
@@ -291,6 +295,10 @@ if $do_site; then
         echo "错误: 找不到 site 目录: $SITE_DIR"
         exit 1
     fi
+    if [ ! -f "$LANDING_FILE" ]; then
+        echo "错误: 找不到 $LANDING_FILE (请先生成新的落地页)"
+        exit 1
+    fi
 
     # 如果存在生成文档清单脚本，先生成 docs-list.json
     GENERATE_DOCS_LIST_SCRIPT="$SCRIPT_DIR/generate-docs-list.sh"
@@ -322,6 +330,11 @@ if $do_site; then
         --exclude '*.log' \
         "$SITE_DIR/" \
         "$REMOTE_HOST:$REMOTE_DIR/"
+
+    echo "正在上传新版 landing 页面并覆盖为 landing.html ..."
+    rsync -avz --progress \
+        "$LANDING_FILE" \
+        "$REMOTE_HOST:$REMOTE_DIR/landing.html"
 
     echo "✓ site 目录部署完成"
 else
@@ -379,4 +392,3 @@ if $deploy_nginx; then
     echo "  - Nginx: 配置已部署到 /etc/nginx/conf.d 并完成重载"
 fi
 echo "================================"
-

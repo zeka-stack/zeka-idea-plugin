@@ -98,6 +98,8 @@ public final class AIProviderConfigUI {
     private AvailableProvidersTableModel availableProvidersTableModel;
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
+    /** 控制是否启用自动更新检查的复选框 */
+    private JBCheckBox lastUpdateCheckCheckBox;
     /** 控制是否显示高级设置内容的复选框 */
     private JBCheckBox showAdvancedSettingsCheckBox;
     /** 高级设置内容面板, 用于展示和管理高级配置选项 */
@@ -169,6 +171,7 @@ public final class AIProviderConfigUI {
 
         // 初始化基础配置组件
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
+        lastUpdateCheckCheckBox = new JBCheckBox(AICommonBundle.message("settings.auto.update"));
 
         // 初始化高级配置组件
         showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
@@ -353,6 +356,11 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
+    public JBCheckBox getLastUpdateCheckCheckBox() {
+        return lastUpdateCheckCheckBox;
+    }
+
+    @NotNull
     public JBCheckBox getShowAdvancedSettingsCheckBox() {
         return showAdvancedSettingsCheckBox;
     }
@@ -507,6 +515,7 @@ public final class AIProviderConfigUI {
     private JPanel createBasicPanel() {
         JPanel panel = FormBuilder.createFormBuilder()
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
+            .addComponent(createCheckBoxWithHint(lastUpdateCheckCheckBox, "settings.auto.update.hint"))
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));

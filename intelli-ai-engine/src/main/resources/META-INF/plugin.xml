@@ -56,7 +56,8 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.agent.AgentServerLifecycleListener"/>
         <!-- 项目启动时添加 agent 版本检查任务 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.agent.AgentVersionCheckListener"/>
-
+        <!-- 项目启动时检查插件更新 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.update.UpdateStartupActivity"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup id="IntelliAI Engine Notifications"

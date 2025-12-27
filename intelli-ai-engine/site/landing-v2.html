@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntelliAI Engine - 面向插件生态的 AI 服务核心引擎">
+    <title>IntelliAI Engine - AI 服务核心引擎</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.svg">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+        :root {
+            --midnight: #05060c;
+            --deep: #0c1226;
+            --glow: #7dd3fc;
+            --aqua: #22d3ee;
+            --gold: #f8c24e;
+            --text: #f4f7ff;
+            --muted: rgba(244, 247, 255, 0.7);
+            --panel: rgba(6, 12, 24, 0.75);
+            --stroke: rgba(125, 211, 252, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top, #0b1636 0%, #05060c 45%, #02030a 100%);
+            overflow-x: hidden;
+        }
+
+        .sky {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: linear-gradient(120deg, rgba(12, 18, 38, 0.8), rgba(6, 12, 24, 0.9));
+        }
+
+        .sky::before,
+        .sky::after {
+            content: '';
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.55;
+            animation: drift 14s ease-in-out infinite;
+        }
+
+        .sky::before {
+            background: radial-gradient(circle at 30% 30%, rgba(125, 211, 252, 0.45), transparent 60%);
+            top: -180px;
+            right: -140px;
+        }
+
+        .sky::after {
+            background: radial-gradient(circle at 70% 40%, rgba(248, 194, 78, 0.35), transparent 60%);
+            bottom: -200px;
+            left: -140px;
+            animation-delay: 4s;
+        }
+
+        @keyframes drift {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(26px, -32px);
+            }
+        }
+
+        .gridline {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: linear-gradient(rgba(125, 211, 252, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(125, 211, 252, 0.08) 1px, transparent 1px);
+            background-size: 80px 80px;
+            opacity: 0.2;
+        }
+
+        .container {
+            width: min(1200px, 92vw);
+            margin: 0 auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(12px);
+            background: rgba(5, 8, 18, 0.8);
+            border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .brand img {
+            width: 200px;
+            height: auto;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            color: var(--glow);
+        }
+
+        .hero {
+            padding: 110px 0 80px;
+            display: grid;
+            gap: 40px;
+            grid-template-columns: 1.1fr 0.9fr;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(44px, 5vw, 70px);
+            line-height: 1.05;
+        }
+
+        .hero h1 span {
+            color: var(--glow);
+        }
+
+        .hero p {
+            margin: 20px 0 30px;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(120deg, var(--glow), var(--aqua));
+            color: #02111a;
+            box-shadow: 0 16px 36px rgba(34, 211, 238, 0.35);
+        }
+
+        .btn-ghost {
+            border: 1px solid var(--stroke);
+            color: var(--text);
+            background: rgba(5, 10, 20, 0.65);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-orbit {
+            position: relative;
+            background: var(--panel);
+            border-radius: 26px;
+            padding: 26px;
+            box-shadow: 0 30px 60px rgba(2, 7, 18, 0.6);
+        }
+
+        .engine-shot {
+            width: 100%;
+            border-radius: 18px;
+            box-shadow: 0 18px 40px rgba(2, 7, 18, 0.45);
+            margin-bottom: 16px;
+            display: block;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .engine-shot-link:hover .engine-shot {
+            transform: translateY(-2px);
+            box-shadow: 0 26px 60px rgba(2, 7, 18, 0.6);
+        }
+
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 7, 14, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 999;
+        }
+
+        .lightbox:target {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-content {
+            max-width: min(1100px, 92vw);
+            max-height: 85vh;
+            border-radius: 20px;
+            box-shadow: 0 30px 80px rgba(2, 7, 18, 0.7);
+            position: relative;
+            z-index: 1;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 18px;
+            border: 1px solid rgba(244, 247, 255, 0.25);
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: rgba(5, 12, 24, 0.6);
+            z-index: 2;
+        }
+
+        .lightbox-backdrop {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .hero-orbit ul {
+            list-style: none;
+            display: grid;
+            gap: 14px;
+            color: var(--muted);
+        }
+
+        .section {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(28px, 4vw, 46px);
+        }
+
+        .section-title span {
+            color: var(--muted);
+            letter-spacing: 2px;
+            font-size: 14px;
+        }
+
+        .pillars {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .pillar {
+            background: var(--panel);
+            border-radius: 18px;
+            padding: 22px;
+            border: 1px solid rgba(125, 211, 252, 0.18);
+        }
+
+        .architect {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 26px;
+            align-items: center;
+        }
+
+        .architect-panel {
+            background: rgba(5, 12, 24, 0.75);
+            border-radius: 20px;
+            border: 1px solid rgba(125, 211, 252, 0.18);
+            padding: 24px;
+        }
+
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .badge {
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(125, 211, 252, 0.22);
+            color: var(--muted);
+            text-align: center;
+            background: rgba(5, 12, 24, 0.6);
+        }
+
+        .cta-panel {
+            background: linear-gradient(135deg, rgba(125, 211, 252, 0.2), rgba(248, 194, 78, 0.2));
+            border: 1px solid rgba(125, 211, 252, 0.2);
+            border-radius: 28px;
+            padding: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        footer {
+            padding: 50px 0 70px;
+            border-top: 1px solid rgba(125, 211, 252, 0.15);
+            color: var(--muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .footer-grid a {
+            display: block;
+            margin: 8px 0;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-grid a:hover {
+            color: var(--glow);
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(125, 211, 252, 0.12);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(244, 247, 255, 0.4);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            color: var(--glow);
+        }
+
+        .footer-link-icon {
+            font-size: 14px;
+        }
+
+        @media (max-width: 980px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .architect {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nav-links {
+                display: none;
+            }
+
+            .cta {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="sky"></div>
+<div class="gridline"></div>
+<header>
+    <div class="container nav">
+        <div class="brand">
+            <img src="logo.svg" alt="IntelliAI Engine Logo">
+        </div>
+        <nav class="nav-links">
+            <a href="#features">特性</a>
+            <a href="#providers">服务商</a>
+            <a href="#architecture">架构</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div>
+            <p style="letter-spacing: 2px; color: var(--gold); font-weight: 600;">AI CORE ENGINE</p>
+            <h1>插件生态的 <span>AI 引擎基座</span></h1>
+            <p>IntelliAI Engine 统一 AI 服务配置、调用协议与安全策略，
+                为所有 AI 子插件提供稳定、高可扩展的核心能力。</p>
+            <div class="cta">
+                <a class="btn btn-primary" href="https://ideaplugin.dong4j.site/engine/docs.html" target="_blank" rel="noreferrer">阅读文档</a>
+                <a class="btn btn-ghost" href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">查看源码</a>
+                <a class="btn btn-ghost" href="https://ideaplugin.dong4j.site/engine/intelli-ai-engine.zip" target="_blank" rel="noreferrer">离线安装</a>
+                <a class="btn btn-ghost" href="https://plugins.jetbrains.com/plugin/29152" target="_blank" rel="noreferrer">插件市场</a>
+            </div>
+        </div>
+        <div class="hero-orbit">
+            <a class="engine-shot-link" href="#engine-preview">
+                <img class="engine-shot" src="intelli-ai-engine.webp" alt="IntelliAI Engine">
+            </a>
+            <h3 style="margin-bottom: 14px;">核心价值</h3>
+            <ul>
+                <li>⚡ 统一 API 与调用协议，插件快速集成</li>
+                <li>🔐 凭证集中存储，安全与合规默认开启</li>
+                <li>🧩 新 Provider 自动覆盖全部插件</li>
+                <li>🛰️ 为第三方插件开放生态接口</li>
+            </ul>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="section-title">
+            <h2>引擎级能力矩阵</h2>
+            <span>CAPABILITIES</span>
+        </div>
+        <div class="pillars">
+            <div class="pillar">
+                <h3>统一配置中心</h3>
+                <p>模型参数、API Key、速率限制集中管理。</p>
+            </div>
+            <div class="pillar">
+                <h3>调用协议标准化</h3>
+                <p>对外仅需 call 接口，接入成本极低。</p>
+            </div>
+            <div class="pillar">
+                <h3>服务商扩展体系</h3>
+                <p>新增服务商无需改业务插件，能力秒级覆盖。</p>
+            </div>
+            <div class="pillar">
+                <h3>稳定与安全</h3>
+                <p>基于 IntelliJ Password Safe 存储敏感信息。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="providers" class="section">
+        <div class="section-title">
+            <h2>可接入的服务商</h2>
+            <span>PROVIDERS</span>
+        </div>
+        <div class="badge-grid">
+            <div class="badge">QianWen</div>
+            <div class="badge">OpenAI</div>
+            <div class="badge">Ollama</div>
+            <div class="badge">SiliconFlow</div>
+            <div class="badge">自定义 Provider</div>
+        </div>
+    </section>
+
+    <section id="architecture" class="section">
+        <div class="section-title">
+            <h2>面向生态的架构设计</h2>
+            <span>ARCHITECTURE</span>
+        </div>
+        <div class="architect">
+            <div>
+                <p style="color: var(--muted); margin-bottom: 18px;">Engine 把 AI 能力拆成可复用服务层，业务插件只需关注自己的生成逻辑。</p>
+                <div class="pillars">
+                    <div class="pillar">
+                        <h3>配置层</h3>
+                        <p>统一管理模型参数、密钥与速率策略。</p>
+                    </div>
+                    <div class="pillar">
+                        <h3>服务层</h3>
+                        <p>集中处理鉴权、编排、重试与缓存。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="architect-panel">
+                <h3 style="margin-bottom: 12px;">插件联动</h3>
+                <p style="color: var(--muted); margin-bottom: 16px;">Javadoc、Changelog、Tracer 等插件均依赖 Engine，实现一致的 AI 体验。</p>
+                <div class="badge-grid">
+                    <div class="badge">IntelliAI Javadoc</div>
+                    <div class="badge">IntelliAI Changelog</div>
+                    <div class="badge">IntelliAI Tracer</div>
+                    <div class="badge">第三方插件</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="cta-panel">
+            <div>
+                <h2>让你的插件站上 AI 中枢</h2>
+                <p style="color: var(--muted);">安装 Engine，所有 AI 子插件自动解锁核心能力。</p>
+            </div>
+            <a class="btn btn-primary" href="https://plugins.jetbrains.com/plugin/29152" target="_blank" rel="noreferrer">立即获取</a>
+        </div>
+    </section>
+</main>
+
+<div id="engine-preview" class="lightbox">
+    <a class="lightbox-close" href="#">关闭</a>
+    <a class="lightbox-backdrop" href="#"></a>
+    <img class="lightbox-content" src="intelli-ai-engine.webp" alt="IntelliAI Engine Preview">
+</div>
+
+<script>
+    window.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && window.location.hash === '#engine-preview') {
+            window.location.hash = '';
+        }
+    });
+</script>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <strong>导航</strong>
+            <a href="#features">Features</a>
+            <a href="#providers">Providers</a>
+            <a href="#architecture">Architecture</a>
+        </div>
+        <div>
+            <strong>文档</strong>
+            <a href="https://ideaplugin.dong4j.site/engine/docs.html" target="_blank" rel="noreferrer">Documentation</a>
+            <a href="https://ideaplugin.dong4j.site/engine/docs.html" target="_blank" rel="noreferrer">Quick Start</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">Support</a>
+        </div>
+        <div>
+            <strong>社区</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">Issues</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/discussions" target="_blank" rel="noreferrer">Discussions</a>
+        </div>
+        <div>
+            <strong>更多插件</strong>
+            <a href="https://ideaplugin.dong4j.site/changelog/landing.html">IntelliAI Changelog</a>
+            <a href="https://ideaplugin.dong4j.site/javadoc/landing.html">IntelliAI Javadoc</a>
+            <a href="https://ideaplugin.dong4j.site/tracer/landing.html">IntelliAI Tracer</a>
+        </div>
+    </div>
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 IntelliAI Engine</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Engine powers every AI plugin · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

@@ -128,9 +128,10 @@ public class GenerateJavadocForCommitAction extends AnAction {
 
     /**
      * 检查是否有 Java 文件变更
+     * <p> 获取项目的提交变更列表, 并从中筛选出 Java 文件变更. 如果存在 Java 文件变更, 则返回 true; 否则返回 false.
      *
      * @param project 项目对象
-     * @return 如果有 Java 文件变更返回 true
+     * @return 如果有 Java 文件变更返回 true, 否则返回 false
      */
     private boolean hasJavaFileChanges(@NotNull Project project) {
         Collection<Change> changes = getCommittedChanges(project);
@@ -151,9 +152,10 @@ public class GenerateJavadocForCommitAction extends AnAction {
 
     /**
      * 过滤 Java 文件
+     * <p> 从文件变更列表中筛选出扩展名为 ".java" 的虚拟文件, 并返回这些文件的列表.
      *
      * @param changes 文件变更列表
-     * @return Java 文件列表
+     * @return 包含所有 Java 文件的虚拟文件列表
      */
     @NotNull
     private List<VirtualFile> filterJavaFiles(@NotNull Collection<Change> changes) {
