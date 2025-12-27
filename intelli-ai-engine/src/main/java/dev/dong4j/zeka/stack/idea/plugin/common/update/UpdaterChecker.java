@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * 更新检查器类
@@ -74,11 +75,7 @@ final class UpdaterChecker {
             return Collections.emptyList();
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
-            if (cause != null) {
-                LOG.warn("调用更新检查方法时发生异常", cause);
-            } else {
-                LOG.warn("调用更新检查方法时发生异常", e);
-            }
+            LOG.warn("调用更新检查方法时发生异常", Objects.requireNonNullElse(cause, e));
             return Collections.emptyList();
         } catch (ClassCastException e) {
             LOG.warn("返回类型转换失败，可能是不支持的 IntelliJ 版本", e);
