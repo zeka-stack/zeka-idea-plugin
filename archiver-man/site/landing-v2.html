@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Archiver Man - ZIP/JAR 内联编辑与浏览插件">
+    <title>Archiver Man - ZIP/JAR 内联编辑</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+
+        :root {
+            --coal: #0b0f14;
+            --ember: #f97316;
+            --gold: #fbbf24;
+            --slate: #1f2937;
+            --text: #fef3c7;
+            --muted: rgba(254, 243, 199, 0.7);
+            --panel: rgba(12, 16, 22, 0.8);
+            --stroke: rgba(249, 115, 22, 0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans 3', 'Noto Sans SC', sans-serif;
+            color: var(--text);
+            background: linear-gradient(120deg, #0b0f14, #2a1208, #0c1020, #3b0f06);
+            background-size: 320% 320%;
+            animation: forge 16s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes forge {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .embers {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .embers::before,
+        .embers::after {
+            content: '';
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.5;
+            animation: drift 12s ease-in-out infinite;
+        }
+
+        .embers::before {
+            background: radial-gradient(circle at 30% 40%, rgba(249, 115, 22, 0.45), transparent 60%);
+            top: -180px;
+            right: -160px;
+        }
+
+        .embers::after {
+            background: radial-gradient(circle at 70% 40%, rgba(251, 191, 36, 0.4), transparent 60%);
+            bottom: -220px;
+            left: -120px;
+            animation-delay: 3s;
+        }
+
+        @keyframes drift {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(22px, -30px);
+            }
+        }
+
+        .container {
+            width: min(1200px, 92vw);
+            margin: 0 auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            background: rgba(11, 15, 20, 0.85);
+            border-bottom: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+        }
+
+        .brand {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            color: var(--gold);
+        }
+
+        .hero {
+            padding: 90px 0 70px;
+            display: grid;
+            gap: 28px;
+        }
+
+        .hero-top {
+            display: grid;
+            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(40px, 6vw, 72px);
+            line-height: 1.05;
+        }
+
+        .hero h1 span {
+            color: var(--gold);
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 18px;
+            margin: 16px 0 26px;
+        }
+
+        .cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(120deg, var(--ember), var(--gold));
+            color: #241202;
+            box-shadow: 0 16px 30px rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--stroke);
+            color: var(--text);
+            background: rgba(10, 14, 18, 0.7);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .hero-strip .panel {
+            background: var(--panel);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            border-radius: 16px;
+            padding: 18px 20px;
+        }
+
+        .section {
+            padding: 70px 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(28px, 4vw, 44px);
+        }
+
+        .section-title span {
+            color: var(--muted);
+            font-size: 15px;
+            letter-spacing: 1px;
+        }
+
+        .split {
+            display: grid;
+            gap: 24px;
+            grid-template-columns: 1.2fr 0.8fr;
+        }
+
+        .list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .list-item {
+            background: var(--panel);
+            border: 1px solid rgba(249, 115, 22, 0.18);
+            border-radius: 14px;
+            padding: 18px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .list-item strong {
+            font-size: 18px;
+        }
+
+        .side-card {
+            background: linear-gradient(140deg, rgba(249, 115, 22, 0.18), rgba(251, 191, 36, 0.12));
+            border: 1px solid rgba(249, 115, 22, 0.25);
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .side-card ul {
+            list-style: none;
+            display: grid;
+            gap: 12px;
+            color: var(--muted);
+        }
+
+        .cases {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .case {
+            background: var(--panel);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        footer {
+            padding: 50px 0 70px;
+            border-top: 1px solid rgba(249, 115, 22, 0.2);
+            color: var(--muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .footer-grid a {
+            display: block;
+            margin: 8px 0;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-grid a:hover {
+            color: var(--gold);
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(254, 243, 199, 0.4);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            color: var(--gold);
+        }
+
+        .footer-link-icon {
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nav-links {
+                display: none;
+            }
+
+            .cta {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="embers"></div>
+<header>
+    <div class="container nav">
+        <div class="brand">Archiver Man</div>
+        <nav class="nav-links">
+            <a href="#features">功能特性</a>
+            <a href="#how-it-works">使用指南</a>
+            <a href="#use-cases">应用场景</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div class="hero-top">
+            <div>
+                <p style="letter-spacing: 2px; color: var(--ember); font-weight: 600;">ZIP INSIDE THE IDE</p>
+                <h1>压缩包内联编辑，<span>不必解压</span></h1>
+                <p>面向部署包与第三方资源，直接在 IntelliJ IDEA 内打开 ZIP/JAR，编辑后安全回写。</p>
+                <div class="cta">
+                    <a class="btn btn-primary" href="https://plugins.jetbrains.com/plugin/changelog" target="_blank" rel="noreferrer">立即安装</a>
+                    <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/archiver/archiver-man.zip" target="_blank" rel="noreferrer">离线安装</a>
+                    <a class="btn btn-outline" href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">查看源码</a>
+                    <a class="btn btn-outline" href="https://plugins.jetbrains.com/plugin/changelog" target="_blank" rel="noreferrer">查看文档</a>
+                </div>
+            </div>
+            <div class="hero-strip">
+                <div class="panel">
+                    <strong>即时展开</strong>
+                    <p style="color: var(--muted);">Project View 直接展开 ZIP/JAR 内容树。</p>
+                </div>
+                <div class="panel">
+                    <strong>内联编辑</strong>
+                    <p style="color: var(--muted);">保留语法高亮、补全与 Diff 体验。</p>
+                </div>
+                <div class="panel">
+                    <strong>安全回写</strong>
+                    <p style="color: var(--muted);">自动备份 + 冲突检测，避免包体损坏。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="section-title">
+            <h2>功能特性</h2>
+            <span>CORE CAPABILITIES</span>
+        </div>
+        <div class="split">
+            <div class="list">
+                <div class="list-item">
+                    <strong>📂 即时展开</strong>
+                    <span>在 Project View 中直接浏览压缩包并搜索。</span>
+                </div>
+                <div class="list-item">
+                    <strong>✏️ 原生编辑</strong>
+                    <span>内联编辑文本条目，享受语法高亮与代码提示。</span>
+                </div>
+                <div class="list-item">
+                    <strong>💾 安全保存</strong>
+                    <span>保存时自动备份原文件并检测冲突。</span>
+                </div>
+                <div class="list-item">
+                    <strong>⚙️ 可调策略</strong>
+                    <span>支持最大文件大小与批量写入间隔配置。</span>
+                </div>
+            </div>
+            <div class="side-card">
+                <h3>适合谁使用</h3>
+                <ul>
+                    <li>需要快速修补部署包的开发者</li>
+                    <li>频繁查看第三方 SDK 内容的团队</li>
+                    <li>希望 IDE 内完成全部资源操作的人</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <div class="section-title">
+            <h2>使用指南</h2>
+            <span>WORKFLOW</span>
+        </div>
+        <div class="cases">
+            <div class="case">
+                <strong>1. 选择压缩包</strong>
+                <p style="color: var(--muted);">在 Project View 中选中 ZIP/JAR。</p>
+            </div>
+            <div class="case">
+                <strong>2. Inspect Entry</strong>
+                <p style="color: var(--muted);">右键打开条目，进入内联编辑模式。</p>
+            </div>
+            <div class="case">
+                <strong>3. 保存回写</strong>
+                <p style="color: var(--muted);">保存时自动备份并写回原包体。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="use-cases" class="section">
+        <div class="section-title">
+            <h2>应用场景</h2>
+            <span>SCENARIOS</span>
+        </div>
+        <div class="cases">
+            <div class="case">
+                <strong>快速修补配置</strong>
+                <p style="color: var(--muted);">热修正部署包中的配置与脚本。</p>
+            </div>
+            <div class="case">
+                <strong>验证 SDK 内容</strong>
+                <p style="color: var(--muted);">无需解压即可查看示例资源。</p>
+            </div>
+            <div class="case">
+                <strong>批量更新资源</strong>
+                <p style="color: var(--muted);">发布/回滚时批量修改压缩包。</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <strong>资源</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub 仓库</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">问题反馈</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/LICENSE" target="_blank" rel="noreferrer">开源协议</a>
+        </div>
+        <div>
+            <strong>文档</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/README.md" target="_blank" rel="noreferrer">使用指南</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/QUICK_START.md" target="_blank" rel="noreferrer">快速开始</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/DEVELOPMENT_GUIDE.md" target="_blank" rel="noreferrer">开发指南</a>
+        </div>
+        <div>
+            <strong>联系</strong>
+            <a href="mailto:dong4j@gmail.com">Email</a>
+            <a href="https://github.com/dong4j" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://plugins.jetbrains.com/plugin/changelog" target="_blank" rel="noreferrer">插件主页</a>
+        </div>
+        <div>
+            <strong>更多插件</strong>
+            <a href="https://ideaplugin.dong4j.site/engine/landing.html">IntelliAI Engine</a>
+            <a href="https://ideaplugin.dong4j.site/javadoc/landing.html">IntelliAI Javadoc</a>
+            <a href="https://ideaplugin.dong4j.site/tracer/landing.html">IntelliAI Tracer</a>
+        </div>
+    </div>
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 Archiver Man</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Edit archives in place · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

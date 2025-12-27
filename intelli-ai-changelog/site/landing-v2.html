@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntelliAI Changelog - AI 驱动的变更日志与日报生成器">
+    <title>IntelliAI Changelog - AI 智能变更日志</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.svg">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600&display=swap');
+
+        :root {
+            --ink: #101828;
+            --muted: rgba(16, 24, 40, 0.7);
+            --teal: #14b8a6;
+            --amber: #f59e0b;
+            --rose: #fb7185;
+            --paper: rgba(255, 255, 255, 0.8);
+            --stroke: rgba(20, 184, 166, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter Tight', 'Noto Sans SC', sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, #e0f2fe, #fef3c7, #fff7ed, #dbeafe);
+            background-size: 320% 320%;
+            animation: drift 18s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes drift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .aura {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .aura::before,
+        .aura::after {
+            content: '';
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            filter: blur(70px);
+            opacity: 0.55;
+            animation: float 12s ease-in-out infinite;
+        }
+
+        .aura::before {
+            background: radial-gradient(circle at 30% 40%, rgba(20, 184, 166, 0.45), transparent 60%);
+            top: -160px;
+            left: -140px;
+        }
+
+        .aura::after {
+            background: radial-gradient(circle at 70% 40%, rgba(251, 113, 133, 0.35), transparent 60%);
+            bottom: -200px;
+            right: -140px;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(20px, -26px);
+            }
+        }
+
+        .container {
+            width: min(1200px, 92vw);
+            margin: 0 auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 247, 237, 0.8);
+            border-bottom: 1px solid rgba(20, 184, 166, 0.15);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+
+        .brand img {
+            width: 200px;
+            height: 38px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            color: var(--teal);
+        }
+
+        .hero {
+            padding: 100px 0 70px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-family: 'Unbounded', sans-serif;
+            font-size: clamp(40px, 5vw, 66px);
+            line-height: 1.05;
+        }
+
+        .hero h1 span {
+            color: var(--teal);
+        }
+
+        .hero p {
+            margin: 18px 0 28px;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(120deg, var(--teal), var(--amber));
+            color: #0f172a;
+            box-shadow: 0 14px 30px rgba(20, 184, 166, 0.35);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--stroke);
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-panel {
+            background: var(--paper);
+            border-radius: 24px;
+            padding: 28px;
+            border: 1px solid rgba(251, 113, 133, 0.2);
+            display: grid;
+            gap: 16px;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 14px;
+            padding: 12px 16px;
+            border: 1px solid rgba(20, 184, 166, 0.12);
+        }
+
+        .metric strong {
+            font-size: 18px;
+        }
+
+        .section {
+            padding: 70px 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+
+        .section-title h2 {
+            font-family: 'Unbounded', sans-serif;
+            font-size: clamp(28px, 4vw, 44px);
+        }
+
+        .section-title span {
+            color: var(--muted);
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .masonry {
+            columns: 3 240px;
+            column-gap: 18px;
+        }
+
+        .tile {
+            background: var(--paper);
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid rgba(20, 184, 166, 0.15);
+            margin-bottom: 18px;
+            break-inside: avoid;
+        }
+
+        .tile h3 {
+            margin-bottom: 8px;
+        }
+
+        .timeline {
+            display: grid;
+            gap: 16px;
+        }
+
+        .timeline-item {
+            display: grid;
+            grid-template-columns: 80px 1fr;
+            gap: 16px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            padding: 16px 20px;
+            border: 1px solid rgba(20, 184, 166, 0.12);
+        }
+
+        .badge {
+            height: 42px;
+            width: 42px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(120deg, var(--teal), var(--rose));
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        .cta-banner {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(245, 158, 11, 0.18));
+            border: 1px solid rgba(20, 184, 166, 0.2);
+            border-radius: 26px;
+            padding: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        footer {
+            padding: 50px 0 70px;
+            border-top: 1px solid rgba(20, 184, 166, 0.18);
+            color: var(--muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .footer-grid a {
+            display: block;
+            margin: 8px 0;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-grid a:hover {
+            color: var(--teal);
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(20, 184, 166, 0.15);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(16, 24, 40, 0.35);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            color: var(--teal);
+        }
+
+        .footer-link-icon {
+            font-size: 14px;
+        }
+
+        @media (max-width: 960px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nav-links {
+                display: none;
+            }
+
+            .cta {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .timeline-item {
+                grid-template-columns: 1fr;
+            }
+
+            .masonry {
+                columns: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="aura"></div>
+<header>
+    <div class="container nav">
+        <div class="brand">
+            <img src="logo.svg" alt="IntelliAI Changelog Logo">
+        </div>
+        <nav class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://plugins.jetbrains.com/plugin/29154" target="_blank" rel="noreferrer">Install</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div>
+            <p style="letter-spacing: 2px; color: var(--amber); font-weight: 600;">CHANGELOG INTELLIGENCE</p>
+            <h1>把提交记录变成 <span>结构化文档</span></h1>
+            <p>从 Git 提交到版本变更、日报、周报与提交信息，自动整理、分类与生成。</p>
+            <div class="cta">
+                <a class="btn btn-primary" href="https://plugins.jetbrains.com/plugin/29154" target="_blank" rel="noreferrer">免费安装</a>
+                <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/changelog/docs.html" target="_blank" rel="noreferrer">查看文档</a>
+                <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/changelog/intelli-ai-changelog.zip" target="_blank" rel="noreferrer">离线安装</a>
+                <a class="btn btn-outline" href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">查看源码</a>
+            </div>
+        </div>
+        <div class="hero-panel">
+            <h3>输出形态</h3>
+            <div class="metric">
+                <strong>📝 版本变更日志</strong>
+                <span style="color: var(--muted);">Release Notes</span>
+            </div>
+            <div class="metric">
+                <strong>📅 日报 / 周报</strong>
+                <span style="color: var(--muted);">Daily / Weekly</span>
+            </div>
+            <div class="metric">
+                <strong>🔖 规范提交信息</strong>
+                <span style="color: var(--muted);">Commit Message</span>
+            </div>
+            <div class="metric">
+                <strong>🌍 双语输出</strong>
+                <span style="color: var(--muted);">CN / EN</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="section-title">
+            <h2>功能矩阵</h2>
+            <span>FEATURE MATRIX</span>
+        </div>
+        <div class="masonry">
+            <div class="tile">
+                <h3>智能分类</h3>
+                <p>识别功能开发、修复、重构与文档变更。</p>
+            </div>
+            <div class="tile">
+                <h3>多模板策略</h3>
+                <p>内置专业模板，支持自定义提示词。</p>
+            </div>
+            <div class="tile">
+                <h3>多 AI 服务商</h3>
+                <p>支持通义千问、OpenAI、硅基流动等。</p>
+            </div>
+            <div class="tile">
+                <h3>实时预览</h3>
+                <p>生成后可编辑与迭代，所见即所得。</p>
+            </div>
+            <div class="tile">
+                <h3>批量处理</h3>
+                <p>同时处理多条提交记录与多语言输出。</p>
+            </div>
+            <div class="tile">
+                <h3>上下文理解</h3>
+                <p>基于变更内容生成更贴近业务的描述。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <div class="section-title">
+            <h2>三步生成流程</h2>
+            <span>FLOW</span>
+        </div>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="badge">1</div>
+                <div>
+                    <h3>选择 Git 记录</h3>
+                    <p style="color: var(--muted);">在 Git Log 或提交窗口选中记录。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="badge">2</div>
+                <div>
+                    <h3>AI 结构化理解</h3>
+                    <p style="color: var(--muted);">解析变更并映射到文档结构。</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="badge">3</div>
+                <div>
+                    <h3>生成并调整</h3>
+                    <p style="color: var(--muted);">输出后可实时编辑优化。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="cta-banner">
+            <div>
+                <h2>让每次提交都有价值输出</h2>
+                <p style="color: var(--muted);">安装插件，开始自动生成团队级文档。</p>
+            </div>
+            <a class="btn btn-primary" href="https://plugins.jetbrains.com/plugin/29154" target="_blank" rel="noreferrer">立即安装</a>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <strong>导航</strong>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="https://plugins.jetbrains.com/plugin/29154" target="_blank" rel="noreferrer">Download</a>
+        </div>
+        <div>
+            <strong>文档</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/README.md" target="_blank" rel="noreferrer">Documentation</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/QUICK_START.md" target="_blank" rel="noreferrer">Quick
+                Start</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">Support</a>
+        </div>
+        <div>
+            <strong>社区</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">Issues</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/discussions" target="_blank" rel="noreferrer">Discussions</a>
+        </div>
+        <div>
+            <strong>更多插件</strong>
+            <a href="https://ideaplugin.dong4j.site/engine/landing.html">IntelliAI Engine</a>
+            <a href="https://ideaplugin.dong4j.site/javadoc/landing.html">IntelliAI Javadoc</a>
+            <a href="https://ideaplugin.dong4j.site/tracer/landing.html">IntelliAI Tracer</a>
+        </div>
+    </div>
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 IntelliAI Changelog</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Changelog that tells the story · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

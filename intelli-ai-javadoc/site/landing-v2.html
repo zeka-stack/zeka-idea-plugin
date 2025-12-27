@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntelliAI Javadoc - AI 驱动的 Java 文档生成器">
+    <title>IntelliAI Javadoc - AI 驱动的 Java 文档生成器</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.svg">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Rubik:wght@400;500;600&display=swap');
+
+        :root {
+            --ink: #1f2937;
+            --muted: rgba(31, 41, 55, 0.7);
+            --peach: #fb923c;
+            --rose: #f472b6;
+            --vanilla: #fff7ed;
+            --card: rgba(255, 255, 255, 0.8);
+            --stroke: rgba(251, 146, 60, 0.22);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rubik', 'Noto Sans SC', sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, #fff7ed, #ffe4e6, #fef9c3, #fde68a);
+            background-size: 320% 320%;
+            animation: glaze 16s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes glaze {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .ribbons {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .ribbons::before,
+        .ribbons::after {
+            content: '';
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 40% 60% 55% 45%;
+            filter: blur(60px);
+            opacity: 0.6;
+            animation: drift 10s ease-in-out infinite;
+        }
+
+        .ribbons::before {
+            background: radial-gradient(circle at 30% 40%, rgba(251, 146, 60, 0.5), transparent 60%);
+            top: -180px;
+            left: -120px;
+        }
+
+        .ribbons::after {
+            background: radial-gradient(circle at 70% 30%, rgba(244, 114, 182, 0.45), transparent 60%);
+            bottom: -200px;
+            right: -140px;
+            animation-delay: 3s;
+        }
+
+        @keyframes drift {
+            0%, 100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            50% {
+                transform: translate(20px, -30px) rotate(6deg);
+            }
+        }
+
+        .container {
+            width: min(1180px, 92vw);
+            margin: 0 auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 247, 237, 0.8);
+            border-bottom: 1px solid rgba(251, 146, 60, 0.18);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+        }
+
+        .brand img {
+            width: 200px;
+            height: 38px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            color: var(--peach);
+        }
+
+        .hero {
+            padding: 90px 0 70px;
+            display: grid;
+            gap: 28px;
+        }
+
+        .hero-header {
+            display: grid;
+            gap: 28px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(40px, 5vw, 64px);
+            line-height: 1.1;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(120deg, var(--peach), var(--rose));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero p {
+            margin: 16px 0 26px;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(120deg, var(--peach), #fbbf24);
+            color: #2b211f;
+            box-shadow: 0 14px 30px rgba(251, 146, 60, 0.35);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--stroke);
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .hero-grid .card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid rgba(251, 146, 60, 0.18);
+        }
+
+        .feature-gallery {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: 1.4fr 0.9fr;
+            align-items: stretch;
+            margin-bottom: 24px;
+        }
+
+        .gallery-column {
+            display: grid;
+            gap: 14px;
+            height: 100%;
+        }
+
+        .gallery-left {
+            grid-template-rows: 2.1fr 1fr;
+        }
+
+        .gallery-right {
+            grid-template-rows: 1fr 1.6fr;
+        }
+
+        .gallery-card {
+            background: rgba(255, 255, 255, 0.68);
+            border-radius: 16px;
+            padding: 6px;
+            border: 1px solid rgba(251, 146, 60, 0.16);
+            height: 100%;
+        }
+
+        .gallery-card img {
+            width: 100%;
+            border-radius: 14px;
+            display: block;
+            height: 100%;
+            object-fit: cover;
+            box-shadow: 0 16px 32px rgba(77, 29, 9, 0.18);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .gallery-card:hover img {
+            transform: translateY(-2px);
+            box-shadow: 0 24px 44px rgba(77, 29, 9, 0.26);
+        }
+
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 8, 6, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            z-index: 999;
+        }
+
+        .lightbox:target {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-content {
+            max-width: min(1100px, 92vw);
+            max-height: 85vh;
+            border-radius: 20px;
+            box-shadow: 0 30px 80px rgba(20, 12, 4, 0.6);
+            position: relative;
+            z-index: 1;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 16px;
+            border: 1px solid rgba(251, 146, 60, 0.25);
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: rgba(255, 247, 237, 0.8);
+            z-index: 2;
+        }
+
+        .lightbox-backdrop {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .section {
+            padding: 70px 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .section-title h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(28px, 4vw, 44px);
+        }
+
+        .section-title span {
+            color: var(--muted);
+            letter-spacing: 2px;
+            font-size: 14px;
+        }
+
+        .split {
+            display: grid;
+            gap: 22px;
+            grid-template-columns: 1.1fr 0.9fr;
+        }
+
+        .list {
+            display: grid;
+            gap: 16px;
+        }
+
+        .list-item {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 18px 20px;
+            border: 1px solid rgba(244, 114, 182, 0.18);
+        }
+
+        .steps {
+            display: grid;
+            gap: 14px;
+        }
+
+        .step {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            background: rgba(255, 255, 255, 0.75);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(251, 146, 60, 0.16);
+        }
+
+        .step span {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(120deg, var(--peach), var(--rose));
+            color: #2b211f;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        footer {
+            padding: 50px 0 70px;
+            border-top: 1px solid rgba(251, 146, 60, 0.18);
+            color: var(--muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .footer-grid a {
+            display: block;
+            margin: 8px 0;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-grid a:hover {
+            color: var(--peach);
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(251, 146, 60, 0.15);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(31, 41, 55, 0.35);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            color: var(--peach);
+        }
+
+        .footer-link-icon {
+            font-size: 14px;
+        }
+
+        @media (max-width: 960px) {
+            .split {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .feature-gallery {
+                grid-template-columns: 1fr;
+            }
+
+            .gallery-column {
+                grid-template-rows: none;
+            }
+
+            .gallery-card img {
+                height: auto;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .nav-links {
+                display: none;
+            }
+
+            .cta {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="ribbons"></div>
+<header>
+    <div class="container nav">
+        <div class="brand">
+            <img src="logo.svg" alt="IntelliAI Javadoc Logo">
+        </div>
+        <nav class="nav-links">
+            <a href="#features">功能</a>
+            <a href="#providers">服务商</a>
+            <a href="#how-it-works">使用方式</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div class="hero-header">
+            <div>
+                <p style="letter-spacing: 2px; color: var(--rose); font-weight: 600;">JAVADOC MADE BEAUTIFUL</p>
+                <h1>让 Javadoc <span>自动生长</span></h1>
+                <p>AI 理解方法、类与上下文，自动生成准确、可读、风格统一的 Javadoc。</p>
+                <div class="cta">
+                    <a class="btn btn-primary" href="https://plugins.jetbrains.com/plugin/28835" target="_blank" rel="noreferrer">获取插件</a>
+                    <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/javadoc/docs.html" target="_blank" rel="noreferrer">阅读文档</a>
+                    <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/javadoc/intelli-ai-javadoc.zip" target="_blank" rel="noreferrer">离线安装</a>
+                    <a class="btn btn-outline" href="https://aij.dong4j.site/aij.zip" target="_blank" rel="noreferrer">直接下载</a>
+                </div>
+            </div>
+            <div class="hero-grid">
+                <div class="card">
+                    <strong>智能识别</strong>
+                    <p style="color: var(--muted);">光标定位即知范围。</p>
+                </div>
+                <div class="card">
+                    <strong>批量生成</strong>
+                    <p style="color: var(--muted);">文件/多文件一键处理。</p>
+                </div>
+                <div class="card">
+                    <strong>增量更新</strong>
+                    <p style="color: var(--muted);">只补缺失，不改已有。</p>
+                </div>
+                <div class="card">
+                    <strong>测试识别</strong>
+                    <p style="color: var(--muted);">JUnit 4/5 专属模板。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="section-title">
+            <h2>功能特性</h2>
+            <span>FEATURES</span>
+        </div>
+        <div class="feature-gallery">
+            <div class="gallery-column gallery-left">
+                <div class="gallery-card">
+                    <a href="#javadoc-preview-1">
+                        <img src="intelli-ai-javadoc.webp" alt="IntelliAI Javadoc Preview 1">
+                    </a>
+                </div>
+                <div class="gallery-card">
+                    <a href="#javadoc-preview-4">
+                        <img src="intelli-ai-javadoc.4.png" alt="IntelliAI Javadoc Preview 4">
+                    </a>
+                </div>
+            </div>
+            <div class="gallery-column gallery-right">
+                <div class="gallery-card">
+                    <a href="#javadoc-preview-2">
+                        <img src="intelli-ai-javadoc.2.png" alt="IntelliAI Javadoc Preview 2">
+                    </a>
+                </div>
+                <div class="gallery-card">
+                    <a href="#javadoc-preview-3">
+                        <img src="intelli-ai-javadoc.3.png" alt="IntelliAI Javadoc Preview 3">
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="split">
+            <div class="list">
+                <div class="list-item">
+                    <h3>多触发方式</h3>
+                    <p>快捷键、右键菜单、Generate、意图操作随时可用。</p>
+                </div>
+                <div class="list-item">
+                    <h3>上下文建议</h3>
+                    <p>分析代码上下文，生成更贴近语义的描述。</p>
+                </div>
+                <div class="list-item">
+                    <h3>批量处理</h3>
+                    <p>支持文件级与多文件批量生成。</p>
+                </div>
+            </div>
+            <div class="list">
+                <div class="list-item">
+                    <h3>测试方法识别</h3>
+                    <p>自动识别 JUnit 测试并套用模板。</p>
+                </div>
+                <div class="list-item">
+                    <h3>配置验证</h3>
+                    <p>内置连接测试，确保服务可用。</p>
+                </div>
+                <div class="list-item">
+                    <h3>多语言输出</h3>
+                    <p>支持中英文混合与专业术语输出。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="providers" class="section">
+        <div class="section-title">
+            <h2>AI 服务商支持</h2>
+            <span>PROVIDERS</span>
+        </div>
+        <div class="hero-grid">
+            <div class="card">
+                <h3>QianWen</h3>
+                <p style="color: var(--muted);">中文表现稳定、适合企业场景。</p>
+            </div>
+            <div class="card">
+                <h3>Ollama</h3>
+                <p style="color: var(--muted);">本地模型部署，兼顾隐私与速度。</p>
+            </div>
+            <div class="card">
+                <h3>自定义 Provider</h3>
+                <p style="color: var(--muted);">可接入任何私有模型服务。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <div class="section-title">
+            <h2>三步生成</h2>
+            <span>FLOW</span>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <span>1</span>
+                <div>
+                    <h3>配置 AI 服务</h3>
+                    <p>在 IntelliAI Engine 中添加服务商。</p>
+                </div>
+            </div>
+            <div class="step">
+                <span>2</span>
+                <div>
+                    <h3>定位目标代码</h3>
+                    <p>光标放在方法、类或字段上。</p>
+                </div>
+            </div>
+            <div class="step">
+                <span>3</span>
+                <div>
+                    <h3>一键生成</h3>
+                    <p>触发生成并可快速编辑。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="javadoc-preview-1" class="lightbox">
+    <a class="lightbox-close" href="#">关闭</a>
+    <a class="lightbox-backdrop" href="#"></a>
+    <img class="lightbox-content" src="intelli-ai-javadoc.webp" alt="IntelliAI Javadoc Preview 1">
+</div>
+
+<div id="javadoc-preview-2" class="lightbox">
+    <a class="lightbox-close" href="#">关闭</a>
+    <a class="lightbox-backdrop" href="#"></a>
+    <img class="lightbox-content" src="intelli-ai-javadoc.2.png" alt="IntelliAI Javadoc Preview 2">
+</div>
+
+<div id="javadoc-preview-3" class="lightbox">
+    <a class="lightbox-close" href="#">关闭</a>
+    <a class="lightbox-backdrop" href="#"></a>
+    <img class="lightbox-content" src="intelli-ai-javadoc.3.png" alt="IntelliAI Javadoc Preview 3">
+</div>
+
+<div id="javadoc-preview-4" class="lightbox">
+    <a class="lightbox-close" href="#">关闭</a>
+    <a class="lightbox-backdrop" href="#"></a>
+    <img class="lightbox-content" src="intelli-ai-javadoc.4.png" alt="IntelliAI Javadoc Preview 4">
+</div>
+
+<script>
+    window.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        if (window.location.hash.indexOf('#javadoc-preview-') === 0) {
+            window.location.hash = '';
+        }
+    });
+</script>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <strong>导航</strong>
+            <a href="#features">功能特性</a>
+            <a href="#providers">支持平台</a>
+            <a href="#how-it-works">使用指南</a>
+        </div>
+        <div>
+            <strong>资源</strong>
+            <a href="https://plugins.jetbrains.com/plugin/28835" target="_blank" rel="noreferrer">插件市场</a>
+            <a href="https://ideaplugin.dong4j.site/javadoc/docs.html" target="_blank" rel="noreferrer">Documentation</a>
+            <a href="https://aij.dong4j.site/aij.zip" target="_blank" rel="noreferrer">下载</a>
+        </div>
+        <div>
+            <strong>社区</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">问题反馈</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/pulls" target="_blank" rel="noreferrer">贡献代码</a>
+        </div>
+        <div>
+            <strong>许可</strong>
+            <a href="#">MIT License</a>
+        </div>
+    </div>
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 IntelliAI Javadoc</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Javadoc that stays consistent · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

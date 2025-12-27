@@ -129,6 +129,7 @@ public final class AIProviderConfigController {
                                             ? workingSettings.runtimeSettings
                                             : new AIRuntimeSettings();
         ui.getVerboseLoggingCheckBox().setSelected(workingSettings.verboseLogging);
+        ui.getLastUpdateCheckCheckBox().setSelected(workingSettings.lastUpdateCheck);
         ui.updateCheckBoxHintColors();
 
         // 加载高级配置
@@ -200,6 +201,7 @@ public final class AIProviderConfigController {
 
         // verboseLogging 已迁移到全局配置
         workingSettings.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
+        workingSettings.lastUpdateCheck = ui.getLastUpdateCheckCheckBox().isSelected();
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();
@@ -376,7 +378,7 @@ public final class AIProviderConfigController {
         testButton.setText(AICommonBundle.message("settings.test.connection.testing"));
         testButton.setWarningStatus();
 
-        new Thread(() -> {
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 ValidationResult result = provider.validateConfiguration(getCurrentApiKey());
                 SwingUtilities.invokeLater(() -> {
@@ -417,7 +419,7 @@ public final class AIProviderConfigController {
                     testButton.setEnabled(true);
                 });
             }
-        }).start();
+        });
     }
 
     /**
@@ -473,7 +475,7 @@ public final class AIProviderConfigController {
         refreshButton.setText(AICommonBundle.message("settings.refresh.models.testing"));
         refreshButton.setWarningStatus();
 
-        new Thread(() -> {
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 String currentModelName = getSelectedModelName();
                 List<String> models = provider.getAvailableModels(apiKey);
@@ -528,7 +530,7 @@ public final class AIProviderConfigController {
                     refreshButton.setEnabled(true);
                 });
             }
-        }).start();
+        });
     }
 
     /**

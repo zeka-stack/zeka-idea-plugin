@@ -57,6 +57,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     /** 是否启用详细日志记录(全局),true 表示启用,false 表示禁用 */
     public boolean verboseLogging = false;
 
+    /** 是否启用自动更新检查,true 表示启用,false 表示禁用 */
+    public boolean lastUpdateCheck = true;
+
     /** 是否显示高级设置 */
     public boolean showAdvancedSettings = false;
     /** 是否显示可用的服务提供商 */
@@ -191,6 +194,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.intelliAgentSettings = sourceIntelliAgent.copy();
 
         settings.verboseLogging = this.verboseLogging;
+        settings.lastUpdateCheck = this.lastUpdateCheck;
         settings.showAdvancedSettings = this.showAdvancedSettings;
         settings.showAvailableProviders = this.showAvailableProviders;
         settings.aiProviderType = this.aiProviderType;
@@ -330,6 +334,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.intelliAgentSettings = sourceIntelliAgent.copy();
 
         this.verboseLogging = source.verboseLogging;
+        this.lastUpdateCheck = source.lastUpdateCheck;
         this.showAdvancedSettings = source.showAdvancedSettings;
         this.showAvailableProviders = source.showAvailableProviders;
         this.aiProviderType = source.aiProviderType;
@@ -392,6 +397,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         }
         // verboseLogging 已迁移到全局配置
         if (verboseLogging != other.verboseLogging) {
+            return false;
+        }
+        if (lastUpdateCheck != other.lastUpdateCheck) {
             return false;
         }
 

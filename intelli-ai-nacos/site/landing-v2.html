@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IntelliAI Nacos - Nacos 配置管理增强插件">
+    <title>IntelliAI Nacos - Nacos 配置管理增强</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Manrope:wght@400;500;600;700&display=swap');
+
+        :root {
+            --ocean: #0ea5e9;
+            --mint: #34d399;
+            --deep: #0f172a;
+            --muted: rgba(15, 23, 42, 0.7);
+            --card: rgba(255, 255, 255, 0.82);
+            --stroke: rgba(14, 165, 233, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', 'Noto Sans SC', sans-serif;
+            color: var(--deep);
+            background: linear-gradient(135deg, #e0f2fe, #ecfeff, #dcfce7, #dbeafe);
+            background-size: 320% 320%;
+            animation: tide 16s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes tide {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .mist {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .mist::before,
+        .mist::after {
+            content: '';
+            position: absolute;
+            width: 520px;
+            height: 520px;
+            border-radius: 50%;
+            filter: blur(70px);
+            opacity: 0.6;
+            animation: drift 12s ease-in-out infinite;
+        }
+
+        .mist::before {
+            background: radial-gradient(circle at 30% 40%, rgba(14, 165, 233, 0.35), transparent 60%);
+            top: -160px;
+            right: -140px;
+        }
+
+        .mist::after {
+            background: radial-gradient(circle at 70% 30%, rgba(52, 211, 153, 0.35), transparent 60%);
+            bottom: -180px;
+            left: -140px;
+            animation-delay: 4s;
+        }
+
+        @keyframes drift {
+            0%, 100% {
+                transform: translate(0, 0);
+            }
+            50% {
+                transform: translate(18px, -26px);
+            }
+        }
+
+        .container {
+            width: min(1200px, 92vw);
+            margin: 0 auto;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            background: rgba(224, 242, 254, 0.8);
+            border-bottom: 1px solid rgba(14, 165, 233, 0.15);
+        }
+
+        .nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0;
+        }
+
+        .brand {
+            font-family: 'Alfa Slab One', serif;
+            font-size: 22px;
+            letter-spacing: 0.6px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            color: var(--ocean);
+        }
+
+        .hero {
+            padding: 90px 0 70px;
+            display: grid;
+            gap: 30px;
+        }
+
+        .hero-top {
+            display: grid;
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(38px, 5vw, 62px);
+            line-height: 1.1;
+        }
+
+        .hero h1 span {
+            color: var(--ocean);
+        }
+
+        .hero p {
+            margin: 16px 0 26px;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .cta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 22px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(120deg, var(--ocean), var(--mint));
+            color: #0b1220;
+            box-shadow: 0 14px 30px rgba(14, 165, 233, 0.3);
+        }
+
+        .btn-outline {
+            border: 1px solid var(--stroke);
+            color: var(--deep);
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hero-band {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .hero-band .card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid rgba(14, 165, 233, 0.15);
+        }
+
+        .section {
+            padding: 70px 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(28px, 4vw, 44px);
+        }
+
+        .section-title span {
+            color: var(--muted);
+            letter-spacing: 2px;
+            font-size: 14px;
+        }
+
+        .lane {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .lane .card {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid rgba(52, 211, 153, 0.16);
+        }
+
+        .route {
+            display: grid;
+            gap: 14px;
+        }
+
+        .route-step {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 14px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.75);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px dashed rgba(14, 165, 233, 0.2);
+        }
+
+        .route-step span {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(120deg, var(--ocean), var(--mint));
+            color: #0b1220;
+            font-weight: 700;
+        }
+
+        footer {
+            padding: 50px 0 70px;
+            border-top: 1px solid rgba(14, 165, 233, 0.2);
+            color: var(--muted);
+        }
+
+        .footer-grid {
+            display: grid;
+            gap: 26px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .footer-grid a {
+            display: block;
+            margin: 8px 0;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-grid a:hover {
+            color: var(--ocean);
+        }
+
+        .page-footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(14, 165, 233, 0.15);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.35);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-link:hover {
+            color: var(--ocean);
+        }
+
+        .footer-link-icon {
+            font-size: 14px;
+        }
+
+        @media (max-width: 720px) {
+            .nav-links {
+                display: none;
+            }
+
+            .cta {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .route-step {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="mist"></div>
+<header>
+    <div class="container nav">
+        <div class="brand">IntelliAI Nacos</div>
+        <nav class="nav-links">
+            <a href="#features">功能特性</a>
+            <a href="#how-it-works">使用指南</a>
+            <a href="#use-cases">应用场景</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div class="hero-top">
+            <div>
+                <p style="letter-spacing: 2px; color: var(--ocean); font-weight: 600;">NACOS CONTROL CENTER</p>
+                <h1>Nacos 配置管理，<span>在 IDE 内完成</span></h1>
+                <p>一站式连接、浏览、编辑与发布配置，支持本地 Nacos 与 AI 智能建议。</p>
+                <div class="cta">
+                    <a class="btn btn-primary" href="https://plugins.jetbrains.com/plugin/29156" target="_blank" rel="noreferrer">立即安装</a>
+                    <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/nacos/docs.html" target="_blank" rel="noreferrer">查看文档</a>
+                    <a class="btn btn-outline" href="https://ideaplugin.dong4j.site/nacos/intelli-ai-nacos.zip" target="_blank" rel="noreferrer">离线安装</a>
+                    <a class="btn btn-outline" href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">查看源码</a>
+                </div>
+            </div>
+            <div class="hero-band">
+                <div class="card">
+                    <strong>多服务器管理</strong>
+                    <p style="color: var(--muted);">权限自动识别，连接一键检测。</p>
+                </div>
+                <div class="card">
+                    <strong>三层树视图</strong>
+                    <p style="color: var(--muted);">Namespace / Group / DataId。</p>
+                </div>
+                <div class="card">
+                    <strong>内置本地 Nacos</strong>
+                    <p style="color: var(--muted);">一键启动/停止。</p>
+                </div>
+                <div class="card">
+                    <strong>AI 配置建议</strong>
+                    <p style="color: var(--muted);">生成与优化配置模板。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="section-title">
+            <h2>功能特性</h2>
+            <span>FEATURES</span>
+        </div>
+        <div class="lane">
+            <div class="card">
+                <h3>可视化配置管理</h3>
+                <p>配置拉取、发布、对比、删除一体化。</p>
+            </div>
+            <div class="card">
+                <h3>多标签编辑</h3>
+                <p>同时编辑多个配置文件，支持语法高亮。</p>
+            </div>
+            <div class="card">
+                <h3>批量操作</h3>
+                <p>Namespace / Group 批量清理。</p>
+            </div>
+            <div class="card">
+                <h3>智能搜索</h3>
+                <p>Namespace、Group、DataId 快速定位。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="how-it-works" class="section">
+        <div class="section-title">
+            <h2>使用流程</h2>
+            <span>FLOW</span>
+        </div>
+        <div class="route">
+            <div class="route-step">
+                <span>1</span>
+                <div>
+                    <h3>配置连接</h3>
+                    <p style="color: var(--muted);">在 Settings → Tools → IntelliAI Nacos 添加服务器。</p>
+                </div>
+            </div>
+            <div class="route-step">
+                <span>2</span>
+                <div>
+                    <h3>浏览与编辑</h3>
+                    <p style="color: var(--muted);">工具窗口中打开配置并编辑。</p>
+                </div>
+            </div>
+            <div class="route-step">
+                <span>3</span>
+                <div>
+                    <h3>发布与同步</h3>
+                    <p style="color: var(--muted);">一键发布、拉取、对比与删除。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="use-cases" class="section">
+        <div class="section-title">
+            <h2>应用场景</h2>
+            <span>SCENARIOS</span>
+        </div>
+        <div class="lane">
+            <div class="card">
+                <h3>多环境协作</h3>
+                <p>快速切换测试、预发、生产配置。</p>
+            </div>
+            <div class="card">
+                <h3>紧急修复</h3>
+                <p>无需离开 IDE 即可调整配置。</p>
+            </div>
+            <div class="card">
+                <h3>AI 配置生成</h3>
+                <p>自动生成标准化配置模板。</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="container footer-grid">
+        <div>
+            <strong>资源</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub 仓库</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">问题反馈</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/LICENSE" target="_blank" rel="noreferrer">开源协议</a>
+        </div>
+        <div>
+            <strong>文档</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/README.md" target="_blank" rel="noreferrer">使用指南</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/QUICK_START.md" target="_blank" rel="noreferrer">快速开始</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/blob/main/intelli-ai-changelog/DEVELOPMENT_GUIDE.md" target="_blank" rel="noreferrer">开发指南</a>
+        </div>
+        <div>
+            <strong>联系</strong>
+            <a href="mailto:dong4j@gmail.com">Email</a>
+            <a href="https://github.com/dong4j" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://plugins.jetbrains.com/plugin/29156" target="_blank" rel="noreferrer">插件主页</a>
+        </div>
+        <div>
+            <strong>更多插件</strong>
+            <a href="https://ideaplugin.dong4j.site/engine/landing.html">IntelliAI Engine</a>
+            <a href="https://ideaplugin.dong4j.site/javadoc/landing.html">IntelliAI Javadoc</a>
+            <a href="https://ideaplugin.dong4j.site/tracer/landing.html">IntelliAI Tracer</a>
+        </div>
+    </div>
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 IntelliAI Nacos</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Config flows in sync · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>
