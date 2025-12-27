@@ -153,8 +153,7 @@ public class PluginUpdater {
                 // 禁用自动更新检查
                 AIProviderSettings settings = AIProviderSettings.getInstance();
                 settings.lastUpdateCheck = false;
-            }
-                                                              ));
+            }));
 
         notification.notify(project);
     }
