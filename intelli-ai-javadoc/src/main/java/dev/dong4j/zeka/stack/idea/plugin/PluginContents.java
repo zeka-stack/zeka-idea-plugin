@@ -15,6 +15,11 @@ public class PluginContents {
 
     /** 插件名称 */
     public static final String PLUGIN_NAME = "IntelliAI Javadoc";
+    /**
+     * 插件的唯一标识符
+     * <p> 用于标识和区分不同的插件实例
+     */
+    public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin";
     /** Kotlin 语言标识 */
     public static final String KOTLIN = "kotlin";
     /** Kotlin 语言的文件扩展名 */

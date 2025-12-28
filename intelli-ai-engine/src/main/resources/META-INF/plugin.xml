@@ -17,6 +17,12 @@
                   topic="com.intellij.openapi.application.ApplicationActivationListener"/>
     </applicationListeners>
 
+    <!-- 定义扩展点 -->
+    <extensionPoints>
+        <extensionPoint name="pluginUpdateInfoProvider"
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.update.PluginUpdateInfoProvider"/>
+    </extensionPoints>
+
     <!-- 插件定义的扩展点 -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- 应用级服务：全局 AI 配置（可用供应商列表） -->

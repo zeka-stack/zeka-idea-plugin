@@ -54,7 +54,7 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
         return JavadocBundle.message("intention.delete.javadoc");
     }
 
-    /**
+    /**意图在 'description.html' 旁必须有 'before.*.template' 和 'after.*.template'
      * 获取插件的家族名称
      *
      * @return 插件家族名称

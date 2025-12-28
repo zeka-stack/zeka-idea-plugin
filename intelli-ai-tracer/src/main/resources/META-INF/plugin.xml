@@ -54,6 +54,11 @@
         </intentionAction>
     </extensions>
 
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.workflow.update.TracerPluginUpdateInfoProvider"/>
+    </extensions>
+
+
     <!-- Markdown 扩展（可选，兼容不同版本） -->
     <extensions defaultExtensionNs="org.intellij.markdown">
         <!-- Markdown 预览链接处理器 -->

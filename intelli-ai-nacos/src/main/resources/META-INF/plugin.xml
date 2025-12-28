@@ -62,6 +62,10 @@
         </intentionAction>
     </extensions>
 
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.nacos.update.NacosPluginUpdateInfoProvider"/>
+    </extensions>
+
     <!-- 插件定义的动作 -->
     <actions>
         <action id="dev.dong4j.zeka.stack.idea.plugin.nacos.PublishConfigByMenuAction"
