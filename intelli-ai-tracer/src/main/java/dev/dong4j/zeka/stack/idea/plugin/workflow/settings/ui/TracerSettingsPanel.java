@@ -74,7 +74,7 @@ public class TracerSettingsPanel {
         // 初始化反馈面板
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
-            "dev.dong4j.zeka.stack.idea.plugin.workflow", // 插件 ID
+            PluginContents.PLUGIN_ID, // 插件 ID
             PluginContents.PLUGIN_NAME, // 插件名称
             "zeka-stack-tracer-plugin" // 签名密钥
         );

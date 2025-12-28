@@ -15,4 +15,5 @@ public class EngineContents {
 
     /** 插件名称 */
     public static final String PLUGIN_NAME = "IntelliAI Engine";
+    public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin.common.ai";
 }

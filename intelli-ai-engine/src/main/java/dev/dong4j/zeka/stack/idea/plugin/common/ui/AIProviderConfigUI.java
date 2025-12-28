@@ -623,7 +623,7 @@ public final class AIProviderConfigUI {
     private FeedbackPanel createFeedbackPanel() {
         return new FeedbackPanel(
             null, // 应用级设置，project 为 null
-            "dev.dong4j.zeka.stack.idea.plugin.common.ai", // 插件 ID
+            EngineContents.PLUGIN_ID, // 插件 ID
             EngineContents.PLUGIN_NAME, // 插件名称
             "zeka-stack-engine-plugin" // 签名密钥
         );

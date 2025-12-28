@@ -6,6 +6,7 @@ import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -18,10 +19,13 @@ import com.intellij.util.concurrency.annotations.RequiresBackgroundThread;
 import com.intellij.util.concurrency.annotations.RequiresEdt;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
@@ -58,7 +62,15 @@ public class PluginUpdater {
      *
      * @see PluginId
      */
-    private static final PluginId PLUGIN_ID = PluginId.getId("dev.dong4j.zeka.stack.idea.plugin.common.ai");
+    private static final PluginId PLUGIN_ID = PluginId.getId(EngineContents.PLUGIN_ID);
+
+    /**
+     * 扩展点名称：插件更新信息提供者
+     * <p>
+     * 用于获取所有注册的子插件信息，以便检查这些插件的更新
+     */
+    private static final ExtensionPointName<PluginUpdateInfoProvider> EP_NAME =
+        ExtensionPointName.create("dev.dong4j.zeka.stack.idea.plugin.common.ai.pluginUpdateInfoProvider");
 
     /**
      * 检查插件更新
@@ -66,7 +78,8 @@ public class PluginUpdater {
      *
      * @param project 项目对象
      * @see #findAvailableUpdates(ProgressIndicator)
-     * @see #findPluginUpdate(Collection)
+     * @see #findPluginUpdates(Collection)
+     * @see #getPluginIdsToCheck()
      * @see #notifyUpdateAvailable(Project, PluginDownloader)
      * @see #installUpdate(Project, PluginDownloader)
      * @since 1.0.0
@@ -83,11 +96,13 @@ public class PluginUpdater {
         try {
             ProgressIndicator indicator = new EmptyProgressIndicator();
             Collection<PluginDownloader> availableUpdates = findAvailableUpdates(indicator);
-            PluginDownloader pluginUpdate = findPluginUpdate(availableUpdates);
+            Collection<PluginDownloader> pluginUpdates = findPluginUpdates(availableUpdates);
 
-            if (pluginUpdate != null) {
+            if (!pluginUpdates.isEmpty()) {
                 ApplicationManager.getApplication().invokeLater(() -> {
-                    notifyUpdateAvailable(project, pluginUpdate);
+                    for (PluginDownloader pluginUpdate : pluginUpdates) {
+                        notifyUpdateAvailable(project, pluginUpdate);
+                    }
                 });
             }
         } catch (Exception e) {
@@ -110,18 +125,50 @@ public class PluginUpdater {
     }
 
     /**
-     * 查找当前插件的更新
-     * <p> 从可用的更新列表中过滤出与当前插件 ID 匹配的更新对象. 如果找到匹配的更新, 则返回该更新对象; 否则返回 null.
+     * 获取所有需要检查更新的插件 ID
+     * <p>
+     * 包括 engine 插件本身和所有通过扩展点注册的子插件
+     *
+     * @return 插件 ID 集合
+     */
+    @NotNull
+    private static Set<PluginId> getPluginIdsToCheck() {
+        Set<PluginId> pluginIds = new HashSet<>();
+        // 添加 engine 插件本身
+        pluginIds.add(PLUGIN_ID);
+        // 从扩展点获取所有注册的子插件 ID
+        try {
+            for (PluginUpdateInfoProvider provider : EP_NAME.getExtensionList()) {
+                try {
+                    PluginId pluginId = provider.getPluginId();
+                    pluginIds.add(pluginId);
+                    LOG.debug("注册插件更新检查: " + pluginId.getIdString());
+                } catch (Exception e) {
+                    LOG.warn("获取插件更新信息失败", e);
+                }
+            }
+        } catch (Exception e) {
+            // 如果扩展点不可用（例如在插件加载早期），只记录警告，不影响基本功能
+            LOG.debug("扩展点不可用，仅检查 engine 插件更新: " + e.getMessage());
+        }
+        return pluginIds;
+    }
+
+    /**
+     * 查找所有需要检查的插件的更新
+     * <p>
+     * 从可用的更新列表中过滤出与需要检查的插件 ID 匹配的更新对象.
+     * 包括 engine 插件本身和所有通过扩展点注册的子插件.
      *
      * @param availableUpdates 可用的更新列表
-     * @return 匹配的插件更新对象, 如果没有找到则返回 null
+     * @return 匹配的插件更新对象列表
      */
-    @Nullable
-    private static PluginDownloader findPluginUpdate(@NotNull Collection<PluginDownloader> availableUpdates) {
+    @NotNull
+    private static Collection<PluginDownloader> findPluginUpdates(@NotNull Collection<PluginDownloader> availableUpdates) {
+        Set<PluginId> pluginIdsToCheck = getPluginIdsToCheck();
         return availableUpdates.stream()
-            .filter(p -> PLUGIN_ID.equals(p.getId()))
-            .findFirst()
-            .orElse(null);
+            .filter(p -> pluginIdsToCheck.contains(p.getId()))
+            .collect(Collectors.toList());
     }
 
     /**

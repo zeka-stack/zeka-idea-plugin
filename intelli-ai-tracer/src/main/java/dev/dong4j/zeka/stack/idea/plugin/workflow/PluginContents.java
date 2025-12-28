@@ -15,4 +15,6 @@ public class PluginContents {
 
     /** 插件名称, 值为 "IntelliAI Tracer" */
     public static final String PLUGIN_NAME = "IntelliAI Tracer";
+    /** 插件的唯一标识符 */
+    public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin.workflow";
 }

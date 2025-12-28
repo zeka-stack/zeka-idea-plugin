@@ -111,7 +111,7 @@ public class ChangelogSettingsPanel {
         // 初始化反馈面板
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
-            "dev.dong4j.zeka.stack.idea.plugin.changelog", // 插件 ID
+            PluginContents.PLUGIN_ID, // 插件 ID
             PluginContents.PLUGIN_NAME, // 插件名称
             "zeka-stack-changelog-plugin" // 签名密钥
         );

@@ -40,6 +40,10 @@
                            isLogByDefault="true"/>
     </extensions>
 
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.update.JavadocPluginUpdateInfoProvider"/>
+    </extensions>
+
     <!-- 插件定义的动作 -->
     <actions>
         <!-- Git Log 工具窗口右键菜单 -->

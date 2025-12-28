@@ -1,0 +1,6 @@
+public class Example {
+    <spot>public void calculateSum(int a, int b) {
+        return a + b;
+    }</spot>
+}
+
