@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.codestyle;
 
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.SchemeImportException;
 import com.intellij.openapi.options.SchemeImportUtil;
 import com.intellij.openapi.project.Project;
@@ -41,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class UniformCodeStyleSchemeProvider {
     /** 代码风格的配置名称，用于标识启用代码风格的配置项 */
-    public static final String CODE_STYLE_NAME = "zeka-stack-code-style";
+    public static final String CODE_STYLE_NAME = "zeka-stack-codestyle";
     /** 代码风格配置文件路径，由代码风格名称加上 ".xml" 后缀组成 */
     private static final String CODE_STYLE_FILE = CODE_STYLE_NAME + ".xml";
 
@@ -50,45 +49,46 @@ public class UniformCodeStyleSchemeProvider {
      * <p>
      * 该方法会检查是否存在名为 CODE_STYLE_NAME 的代码风格方案，若已存在则设置为当前方案；
      * 若不存在，则从资源文件中加载代码风格配置文件，并导入到项目中，最后设置为默认方案。
+     * <p>
+     * 注意：该方法会确保在 EDT 中执行 WriteAction，符合 IntelliJ 平台线程模型要求。
      *
      * @param project 要设置代码风格的项目对象
      */
     public static void provideUniformCodeStyleScheme(Project project) {
-        ApplicationManager.getApplication().runWriteAction(() -> {
-            try {
-                CodeStyleSchemes codeStyleSchemes = CodeStyleSchemes.getInstance();
+        // WriteAction 必须在 EDT 中执行，如果当前不在 EDT，先切换到 EDT
+        try {
+            CodeStyleSchemes codeStyleSchemes = CodeStyleSchemes.getInstance();
 
-                // 检查是否已经存在该方案
-                CodeStyleScheme existingScheme = codeStyleSchemes.findSchemeByName(CODE_STYLE_NAME);
-                if (existingScheme != null) {
-                    log.info("Code style '{}' already exists, setting as current", CODE_STYLE_NAME);
-                    codeStyleSchemes.setCurrentScheme(existingScheme);
-                    return;
-                }
-
-                // 从资源文件获取 VirtualFile
-                URL resource = UniformCodeStyleSchemeProvider.class.getClassLoader().getResource(CODE_STYLE_FILE);
-                if (resource == null) {
-                    log.error("Code style file not found: {}", CODE_STYLE_FILE);
-                    return;
-                }
-
-                VirtualFile vFile = VfsUtil.findFileByURL(resource);
-                if (vFile == null) {
-                    log.error("Failed to find virtual file for: {}", CODE_STYLE_FILE);
-                    return;
-                }
-
-                // 导入代码样式方案
-                importScheme(project, vFile);
-
-                log.info("Code style '{}' imported and set as default for project: {}",
-                         CODE_STYLE_NAME, project.getName());
-
-            } catch (Exception e) {
-                log.error("Failed to provide uniform code style scheme", e);
+            // 检查是否已经存在该方案
+            CodeStyleScheme existingScheme = codeStyleSchemes.findSchemeByName(CODE_STYLE_NAME);
+            if (existingScheme != null) {
+                log.info("Code style '{}' already exists, setting as current", CODE_STYLE_NAME);
+                codeStyleSchemes.setCurrentScheme(existingScheme);
+                return;
             }
-        });
+
+            // 从资源文件获取 VirtualFile
+            URL resource = UniformCodeStyleSchemeProvider.class.getClassLoader().getResource(CODE_STYLE_FILE);
+            if (resource == null) {
+                log.error("Code style file not found: {}", CODE_STYLE_FILE);
+                return;
+            }
+
+            VirtualFile vFile = VfsUtil.findFileByURL(resource);
+            if (vFile == null) {
+                log.error("Failed to find virtual file for: {}", CODE_STYLE_FILE);
+                return;
+            }
+
+            // 导入代码样式方案
+            importScheme(project, vFile);
+
+            log.info("Code style '{}' imported and set as default for project: {}",
+                     CODE_STYLE_NAME, project.getName());
+
+        } catch (Exception e) {
+            log.error("Failed to provide uniform code style scheme", e);
+        }
     }
 
     /**

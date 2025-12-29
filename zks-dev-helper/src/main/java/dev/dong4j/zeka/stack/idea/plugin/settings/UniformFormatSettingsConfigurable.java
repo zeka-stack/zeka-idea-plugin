@@ -3,45 +3,50 @@ package dev.dong4j.zeka.stack.idea.plugin.settings;
 import com.intellij.openapi.options.Configurable;
 
 import org.jetbrains.annotations.Nls;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.JComponent;
 
+import dev.dong4j.zeka.stack.idea.plugin.util.ZKSDevHelperBundle;
+
 /**
- * ZKS Dev Helper 插件设置配置类
- * <p>
- * 该类用于实现 ZKS Dev Helper 插件的设置功能，提供配置界面、状态同步、修改检测和应用重置等操作。
- * 主要用于插件配置界面的构建和配置状态的管理。
+ * 统一格式设置配置类
+ * <p> 实现了 Configurable 接口, 用于配置和管理统一格式设置. 该类通过设置面板提供用户界面组件, 并处理设置的修改, 应用和重置.
  *
  * @author dong4j
  * @version 1.0.0
- * @date 2025.10.25
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2025.12.29
  * @since 1.0.0
  */
 public class UniformFormatSettingsConfigurable implements Configurable {
 
-    /** 设置面板，用于展示和配置统一格式设置 */
+    /**
+     * 设置面板, 用于展示和配置统一格式设置
+     *
+     * @see UniformFormatSettingsPanel
+     */
     private UniformFormatSettingsPanel settingsPanel;
 
     /**
      * 获取显示名称
-     * <p>
-     * 返回 ZKS Dev Helper 的显示名称
+     * <p> 返回 ZKS Dev Helper 插件的显示名称（使用国际化）
      *
      * @return 显示名称
      */
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
+    @NotNull
     public String getDisplayName() {
-        return "ZKS Dev Helper";
+        return ZKSDevHelperBundle.message("settings.display.name");
     }
 
     /**
      * 创建组件
-     * <p>
-     * 用于创建并返回配置面板的主面板组件。
+     * <p> 用于创建并返回配置面板的主面板组件. 初始化设置面板并调用其获取主面板的方法.
      *
-     * @return 配置面板的主面板组件，可能为 null
+     * @return 配置面板的主面板组件, 可能为 null
      */
     @Nullable
     @Override
@@ -52,10 +57,9 @@ public class UniformFormatSettingsConfigurable implements Configurable {
 
     /**
      * 判断当前设置是否被修改过
-     * <p>
-     * 通过获取统一格式设置状态实例，检查设置面板是否被修改
+     * <p> 通过获取统一格式设置状态实例, 检查设置面板是否被修改
      *
-     * @return 如果设置被修改返回 true，否则返回 false
+     * @return 如果设置被修改返回 true, 否则返回 false
      */
     @Override
     public boolean isModified() {
@@ -65,11 +69,9 @@ public class UniformFormatSettingsConfigurable implements Configurable {
 
     /**
      * 应用设置面板中的配置
-     * <p>
-     * 如果设置面板不为空，则获取统一格式设置状态实例，并将设置应用到设置面板上。
+     * <p> 如果设置面板不为空, 则获取统一格式设置状态实例, 并将设置应用到设置面板上.
      *
-     * @param 无 参数
-     * @return 无 返回值
+     * @since 1.0
      */
     @Override
     public void apply() {
@@ -81,8 +83,9 @@ public class UniformFormatSettingsConfigurable implements Configurable {
 
     /**
      * 重置设置面板的状态
-     * <p>
-     * 如果设置面板不为空，则获取统一格式设置状态实例，并调用设置面板的重置方法，将其状态恢复为初始值。
+     * <p> 如果设置面板不为空, 则获取统一格式设置状态实例, 并调用设置面板的重置方法, 将其状态恢复为初始值.
+     *
+     * @since 1.0
      */
     @Override
     public void reset() {
@@ -93,12 +96,8 @@ public class UniformFormatSettingsConfigurable implements Configurable {
     }
 
     /**
-     * 释放UI资源
-     * <p>
-     * 将设置面板引用置为null，以释放相关UI资源。
-     *
-     * @author Java开发工程师
-     * @since 1.0
+     * 释放 UI 资源
+     * <p> 将设置面板引用置为 null, 以释放相关 UI 资源.
      */
     @Override
     public void disposeUIResources() {
