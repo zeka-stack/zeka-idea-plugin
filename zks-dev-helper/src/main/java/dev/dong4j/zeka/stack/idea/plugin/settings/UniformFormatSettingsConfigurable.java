@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.JComponent;
 
-import dev.dong4j.zeka.stack.idea.plugin.util.ZKSDevHelperBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.HelperBundle;
 
 /**
  * 统一格式设置配置类
@@ -39,7 +39,7 @@ public class UniformFormatSettingsConfigurable implements Configurable {
     @Override
     @NotNull
     public String getDisplayName() {
-        return ZKSDevHelperBundle.message("settings.display.name");
+        return HelperBundle.message("settings.display.name");
     }
 
     /**
