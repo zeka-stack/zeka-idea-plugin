@@ -6,12 +6,13 @@ import com.intellij.util.ui.FormBuilder;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.util.ZKSDevHelperBundle;
 import lombok.Data;
 
 /**
  * ZKS Dev Helper 插件设置面板
  * <p>
- * 该类用于展示和管理 ZKS Dev Helper 插件的设置界面，提供代码样式模块（文件模板、Live Template、代码风格和使用统计）等功能的开关配置。
+ * 该类用于展示和管理 ZKS Dev Helper 插件的设置界面，提供代码样式模块（文件模板、Live Template、代码风格）等功能的开关配置。
  * 用户可以通过该面板对插件的各项功能进行启用或禁用设置，并将配置保存或恢复到指定的设置对象中。
  * 后续会扩展支持 MyBatis、Proxyer 等其他功能模块的配置界面。
  *
@@ -38,8 +39,6 @@ public class UniformFormatSettingsPanel {
     private JBCheckBox enableLiveTemplatesCheckBox;
     /** 启用代码样式检查的复选框 */
     private JBCheckBox enableCodeStyleCheckBox;
-    /** 启用统计信息的复选框 */
-    private JBCheckBox enableStatisticsCheckBox;
     /** 描述标签，用于显示相关信息 */
     private JBLabel descriptionLabel;
 
@@ -62,34 +61,36 @@ public class UniformFormatSettingsPanel {
      * @since 1.0
      */
     private void initializeComponents() {
-        // 创建组件
-        enableFileTemplatesCheckBox = new JBCheckBox("启用文件模板");
-        enableLiveTemplatesCheckBox = new JBCheckBox("启用 Live Template");
-        enableCodeStyleCheckBox = new JBCheckBox("启用代码风格配置");
-        enableStatisticsCheckBox = new JBCheckBox("启用使用统计");
+        // 创建组件（使用国际化）
+        enableFileTemplatesCheckBox = new JBCheckBox(
+            ZKSDevHelperBundle.message("settings.codestyle.enable.file.templates.label"));
+        enableLiveTemplatesCheckBox = new JBCheckBox(
+            ZKSDevHelperBundle.message("settings.codestyle.enable.live.templates.label"));
+        enableCodeStyleCheckBox = new JBCheckBox(
+            ZKSDevHelperBundle.message("settings.codestyle.enable.code.style.label"));
 
-        descriptionLabel = new JBLabel("<html>" +
-                                       "<p>ZKS Dev Helper 是 Zeka Stack 框架开发助手，提供统一的代码样式配置功能。</p>" +
-                                       "<p><b>当前功能：</b></p>" +
-                                       "<ul>" +
-                                       "<li><b>文件模板</b>：自动添加统一的文件头部注释</li>" +
-                                       "<li><b>Live Template</b>：快速生成常用代码片段</li>" +
-                                       "<li><b>代码风格</b>：自动配置统一的代码格式化规则</li>" +
-                                       "<li><b>使用统计</b>：统计模板使用情况</li>" +
-                                       "</ul>" +
-                                       "<p><b>计划中的功能：</b></p>" +
-                                       "<ul>" +
-                                       "<li>MyBatis 自动提示</li>" +
-                                       "<li>Proxyer 组件接口自动识别</li>" +
-                                       "<li>更多开发辅助功能</li>" +
-                                       "</ul>" +
-                                       "</html>");
+        // 构建描述文本（使用国际化）
+        String descriptionHtml = "<html>" +
+                                 "<p>" + ZKSDevHelperBundle.message("settings.description.title") + "</p>" +
+                                 "<p><b>" + ZKSDevHelperBundle.message("settings.description.current.features") + "</b></p>" +
+                                 "<ul>" +
+                                 "<li><b>" + ZKSDevHelperBundle.message("settings.description.file.templates") + "</b></li>" +
+                                 "<li><b>" + ZKSDevHelperBundle.message("settings.description.live.templates") + "</b></li>" +
+                                 "<li><b>" + ZKSDevHelperBundle.message("settings.description.code.style") + "</b></li>" +
+                                 "</ul>" +
+                                 "<p><b>" + ZKSDevHelperBundle.message("settings.description.planned.features") + "</b></p>" +
+                                 "<ul>" +
+                                 "<li>" + ZKSDevHelperBundle.message("settings.description.planned.mybatis") + "</li>" +
+                                 "<li>" + ZKSDevHelperBundle.message("settings.description.planned.proxyer") + "</li>" +
+                                 "<li>" + ZKSDevHelperBundle.message("settings.description.planned.more") + "</li>" +
+                                 "</ul>" +
+                                 "</html>";
+        descriptionLabel = new JBLabel(descriptionHtml);
 
         // 设置默认值
         enableFileTemplatesCheckBox.setSelected(true);
         enableLiveTemplatesCheckBox.setSelected(true);
         enableCodeStyleCheckBox.setSelected(true);
-        enableStatisticsCheckBox.setSelected(true);
 
         // 使用 FormBuilder 创建布局
         mainPanel = FormBuilder.createFormBuilder()
@@ -98,7 +99,6 @@ public class UniformFormatSettingsPanel {
             .addComponent(enableFileTemplatesCheckBox)
             .addComponent(enableLiveTemplatesCheckBox)
             .addComponent(enableCodeStyleCheckBox)
-            .addComponent(enableStatisticsCheckBox)
             .addComponentFillVertically(new JPanel(), 0)
             .getPanel();
     }
@@ -114,14 +114,13 @@ public class UniformFormatSettingsPanel {
     public boolean isModified(UniformFormatSettingsState settings) {
         return enableFileTemplatesCheckBox.isSelected() != settings.isEnableFileTemplates() ||
                enableLiveTemplatesCheckBox.isSelected() != settings.isEnableLiveTemplates() ||
-               enableCodeStyleCheckBox.isSelected() != settings.isEnableCodeStyle() ||
-               enableStatisticsCheckBox.isSelected() != settings.isEnableStatistics();
+               enableCodeStyleCheckBox.isSelected() != settings.isEnableCodeStyle();
     }
 
     /**
      * 应用格式设置状态到指定的设置对象
      * <p>
-     * 将复选框的状态应用到统一格式设置状态对象中，用于配置文件模板、实时模板、代码样式和统计功能的启用状态。
+     * 将复选框的状态应用到统一格式设置状态对象中，用于配置文件模板、实时模板、代码样式功能的启用状态。
      *
      * @param settings 格式设置状态对象，用于存储配置信息
      */
@@ -129,7 +128,6 @@ public class UniformFormatSettingsPanel {
         settings.setEnableFileTemplates(enableFileTemplatesCheckBox.isSelected());
         settings.setEnableLiveTemplates(enableLiveTemplatesCheckBox.isSelected());
         settings.setEnableCodeStyle(enableCodeStyleCheckBox.isSelected());
-        settings.setEnableStatistics(enableStatisticsCheckBox.isSelected());
     }
 
     /**
@@ -143,7 +141,6 @@ public class UniformFormatSettingsPanel {
         enableFileTemplatesCheckBox.setSelected(settings.isEnableFileTemplates());
         enableLiveTemplatesCheckBox.setSelected(settings.isEnableLiveTemplates());
         enableCodeStyleCheckBox.setSelected(settings.isEnableCodeStyle());
-        enableStatisticsCheckBox.setSelected(settings.isEnableStatistics());
     }
 
 }

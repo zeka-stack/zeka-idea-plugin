@@ -22,11 +22,11 @@
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState"/>
 
         <!-- 设置面板 -->
-        <!--<projectConfigurable-->
-        <!--        parentId="tools"-->
-        <!--        instance="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"-->
-        <!--        id="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"-->
-        <!--        displayName="ZKS Dev Helper"/>-->
+        <projectConfigurable
+            parentId="tools"
+            instance="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"
+            displayName="ZKS Dev Helper"/>
 
         <!-- 通知组 -->
         <notificationGroup id="ZKS Dev Helper Notifications"

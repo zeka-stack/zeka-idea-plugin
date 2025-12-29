@@ -6,13 +6,19 @@ import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.ide.fileTemplates.impl.FileTemplateConfigurable;
 import com.intellij.ide.fileTemplates.impl.FileTemplateManagerImpl;
 import com.intellij.ide.highlighter.JavaFileType;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.StartupActivity;
+import com.intellij.openapi.startup.ProjectActivity;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -29,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class UniformFileTemplatesHandler implements StartupActivity {
+public class UniformFileTemplatesHandler implements ProjectActivity {
     /** 请求头模板，用于生成包含描述、作者、版本、邮箱、日期和版本信息的注释 */
     public static final String HEADER = """
         /**
@@ -43,35 +49,57 @@ public class UniformFileTemplatesHandler implements StartupActivity {
          */""";
 
     /**
+     * 表示插件更新检查是否已经运行过的标志
+     * <p>
+     * 使用 AtomicBoolean 来确保线程安全, 避免在多线程环境中出现竞态条件.
+     */
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
+
+    /**
      * 执行活动操作，用于处理项目中的文件模板配置
      * <p>
-     * 该方法检查默认文件头模板是否包含指定公司名称，若不包含则移除原模板并创建新的模板，设置到项目配置中。
+     * 该方法首先检查是否启用了文件模板功能，如果未启用则直接返回。
+     * 如果启用，则检查默认文件头模板是否包含指定公司名称，若不包含则移除原模板并创建新的模板，设置到项目配置中。
      *
      * @param project 项目对象，用于获取模板管理器和配置信息
      */
     @Override
-    public void runActivity(@NotNull Project project) {
-        FileTemplateManager templateManager = FileTemplateManager.getInstance(project);
+    public @Nullable Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
+        try {
+            // 只在第一次运行时检查更新
+            if (hasRun.compareAndSet(false, true) && !ApplicationManager.getApplication().isUnitTestMode()) {
+                // 检查是否启用文件模板功能
+                UniformFormatSettingsState settings = UniformFormatSettingsState.getInstance();
+                if (!settings.isEnableFileTemplates()) {
+                    log.info("File templates disabled, skipping configuration");
+                    return Unit.INSTANCE;
+                }
 
-        FileTemplate defaultTemplate =
-            FileTemplateManager.getInstance(project).getDefaultTemplate(FileTemplateManager.FILE_HEADER_TEMPLATE_NAME);
+                FileTemplateManager templateManager = FileTemplateManager.getInstance(project);
 
-        if (!defaultTemplate.getText().trim().contains("Zeka.Stack")) {
-            templateManager.removeTemplate(defaultTemplate);
+                FileTemplate defaultTemplate =
+                    FileTemplateManager.getInstance(project).getDefaultTemplate(FileTemplateManager.FILE_HEADER_TEMPLATE_NAME);
 
-            String author = getCurrentUserName();
-            String version = "1.0.0";
+                if (!defaultTemplate.getText().trim().contains("Zeka stack")) {
+                    templateManager.removeTemplate(defaultTemplate);
 
-            FileTemplate template = FileTemplateUtil.createTemplate(FileTemplateManager.FILE_HEADER_TEMPLATE_NAME,
-                                                                    JavaFileType.DEFAULT_EXTENSION,
-                                                                    String.format(HEADER, author, version, author, version),
-                                                                    new FileTemplate[0]);
+                    String author = getCurrentUserName();
+                    String version = "1.0.0";
 
-            FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
-            configurable.setTemplate(template, FileTemplateManagerImpl.getInstanceImpl(project).getDefaultTemplateDescription());
-            templateManager.setTemplates(FileTemplateManager.INCLUDES_TEMPLATES_CATEGORY, Collections.singletonList(template));
+                    FileTemplate template = FileTemplateUtil.createTemplate(FileTemplateManager.FILE_HEADER_TEMPLATE_NAME,
+                                                                            JavaFileType.DEFAULT_EXTENSION,
+                                                                            String.format(HEADER, author, version, author, version),
+                                                                            new FileTemplate[0]);
+
+                    FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
+                    configurable.setTemplate(template, FileTemplateManagerImpl.getInstanceImpl(project).getDefaultTemplateDescription());
+                    templateManager.setTemplates(FileTemplateManager.INCLUDES_TEMPLATES_CATEGORY, Collections.singletonList(template));
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to configure uniform code style for project: {}", project.getName(), e);
         }
-
+        return Unit.INSTANCE;
     }
 
     /**

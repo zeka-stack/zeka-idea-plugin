@@ -14,7 +14,7 @@ import lombok.Data;
 /**
  * ZKS Dev Helper 插件设置状态类
  * <p>
- * 用于保存和管理 ZKS Dev Helper 插件的配置状态，包括代码样式模块（文件模板、Live Template、代码风格配置以及使用统计）等选项的启用状态。
+ * 用于保存和管理 ZKS Dev Helper 插件的配置状态，包括代码样式模块（文件模板、Live Template、代码风格配置）等选项的启用状态。
  * 该类实现了持久化状态接口，支持将配置状态存储到 XML 文件中，并在需要时加载配置。
  * 后续会扩展支持 MyBatis、Proxyer 等其他功能模块的配置。
  *
@@ -36,8 +36,6 @@ public class UniformFormatSettingsState implements PersistentStateComponent<Unif
     private boolean enableLiveTemplates = true;
     /** 是否启用代码风格配置，默认启用 */
     private boolean enableCodeStyle = true;
-    /** 是否启用使用统计功能，默认启用 */
-    private boolean enableStatistics = true;
 
     // ========== 后续功能模块配置将在此添加 ==========
     // MyBatis 模块配置

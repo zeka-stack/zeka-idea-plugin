@@ -61,7 +61,6 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
         return Unit.INSTANCE;
     }
 
-
     /**
      * 应用关闭时执行的操作
      * <p> 在应用关闭时, 停止 IntelliAI Agent 和更新检查器. 如果 IntelliAI Agent 正在运行, 则执行停止操作.

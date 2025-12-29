@@ -1,12 +1,17 @@
 package dev.dong4j.zeka.stack.idea.plugin.codestyle;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.startup.StartupActivity;
+import com.intellij.openapi.startup.ProjectActivity;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.StatisticsUtil;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,32 +26,34 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class UniformCodeStyleHandler implements StartupActivity {
+public class UniformCodeStyleHandler implements ProjectActivity {
     /**
-     * 执行项目级别的代码样式配置任务
+     * 表示插件更新检查是否已经运行过的标志
      * <p>
-     * 该方法用于根据项目配置，执行代码样式的设置操作。如果代码样式功能被禁用，则直接返回。否则，提供统一代码风格方案，并记录使用统计信息。
-     *
-     * @param project 项目对象，用于获取项目相关信息和执行配置操作
+     * 使用 AtomicBoolean 来确保线程安全, 避免在多线程环境中出现竞态条件.
      */
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
+
     @Override
-    public void runActivity(@NotNull Project project) {
+    public @Nullable Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         try {
-            UniformFormatSettingsState settings = UniformFormatSettingsState.getInstance();
-            if (!settings.isEnableCodeStyle()) {
-                log.info("Code style disabled, skipping configuration");
-                return;
+            // 只在第一次运行时检查更新
+            if (hasRun.compareAndSet(false, true) && !ApplicationManager.getApplication().isUnitTestMode()) {
+                UniformFormatSettingsState settings = UniformFormatSettingsState.getInstance();
+                if (!settings.isEnableCodeStyle()) {
+                    log.info("Code style disabled, skipping configuration");
+                    return Unit.INSTANCE;
+                }
+
+                // 提供统一代码风格方案
+                UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);
+
+                // 报告使用统计
+                // StatisticsUtil.reportCodeStyleUsage();
             }
-
-            // 提供统一代码风格方案
-            UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);
-
-            // 报告使用统计
-            StatisticsUtil.reportCodeStyleUsage();
-
         } catch (Exception e) {
             log.error("Failed to configure uniform code style for project: {}", project.getName(), e);
         }
+        return Unit.INSTANCE;
     }
-
 }

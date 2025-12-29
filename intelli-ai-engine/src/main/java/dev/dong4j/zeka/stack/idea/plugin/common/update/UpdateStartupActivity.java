@@ -4,7 +4,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
-import com.intellij.openapi.startup.StartupActivity;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.concurrency.annotations.RequiresBackgroundThread;
 
@@ -21,7 +20,6 @@ import kotlin.coroutines.Continuation;
 
 /**
  * 更新启动活动类
- * <p> 实现 {@link StartupActivity.Background} 接口, 在项目启动时执行自动更新检查.
  * 该类负责在项目启动时进行一次性的更新检查, 并定期重复检查以确保插件的最新性.
  *
  * @author dong4j
