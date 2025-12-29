@@ -12,10 +12,11 @@ import org.jetbrains.annotations.Nullable;
 import lombok.Data;
 
 /**
- * 统一格式插件设置状态类
+ * ZKS Dev Helper 插件设置状态类
  * <p>
- * 用于保存和管理统一格式插件的配置状态，包括文件模板、Live Template、代码风格配置以及使用统计等选项的启用状态。
+ * 用于保存和管理 ZKS Dev Helper 插件的配置状态，包括代码样式模块（文件模板、Live Template、代码风格配置以及使用统计）等选项的启用状态。
  * 该类实现了持久化状态接口，支持将配置状态存储到 XML 文件中，并在需要时加载配置。
+ * 后续会扩展支持 MyBatis、Proxyer 等其他功能模块的配置。
  *
  * @author dong4j
  * @version 1.0.0
@@ -24,10 +25,11 @@ import lombok.Data;
  */
 @Data
 @State(
-    name = "UniformFormatSettingsState",
-    storages = @Storage("zeka.stack.uniform.format.xml")
+    name = "ZKSDevHelperSettingsState",
+    storages = @Storage("zeka.stack.dev.helper.xml")
 )
 public class UniformFormatSettingsState implements PersistentStateComponent<UniformFormatSettingsState> {
+    // ========== 代码样式模块配置 ==========
     /** 是否启用文件模板功能，默认启用 */
     private boolean enableFileTemplates = true;
     /** 是否启用 Live Template 功能，默认启用 */
@@ -36,6 +38,11 @@ public class UniformFormatSettingsState implements PersistentStateComponent<Unif
     private boolean enableCodeStyle = true;
     /** 是否启用使用统计功能，默认启用 */
     private boolean enableStatistics = true;
+
+    // ========== 后续功能模块配置将在此添加 ==========
+    // MyBatis 模块配置
+    // Proxyer 模块配置
+    // ...
 
     /**
      * 获取当前对象的统一格式设置状态

@@ -9,10 +9,11 @@ import javax.swing.JPanel;
 import lombok.Data;
 
 /**
- * 统一格式插件设置面板
+ * ZKS Dev Helper 插件设置面板
  * <p>
- * 该类用于展示和管理统一格式化插件的设置界面，提供文件模板、Live Template、代码风格和使用统计等功能的开关配置。
+ * 该类用于展示和管理 ZKS Dev Helper 插件的设置界面，提供代码样式模块（文件模板、Live Template、代码风格和使用统计）等功能的开关配置。
  * 用户可以通过该面板对插件的各项功能进行启用或禁用设置，并将配置保存或恢复到指定的设置对象中。
+ * 后续会扩展支持 MyBatis、Proxyer 等其他功能模块的配置界面。
  *
  * @author dong4j
  * @version 1.0.0
@@ -68,12 +69,19 @@ public class UniformFormatSettingsPanel {
         enableStatisticsCheckBox = new JBCheckBox("启用使用统计");
 
         descriptionLabel = new JBLabel("<html>" +
-                                       "<p>Uniform Format 插件提供统一的代码格式化和模板管理功能。</p>" +
+                                       "<p>ZKS Dev Helper 是 Zeka Stack 框架开发助手，提供统一的代码样式配置功能。</p>" +
+                                       "<p><b>当前功能：</b></p>" +
                                        "<ul>" +
                                        "<li><b>文件模板</b>：自动添加统一的文件头部注释</li>" +
                                        "<li><b>Live Template</b>：快速生成常用代码片段</li>" +
                                        "<li><b>代码风格</b>：自动配置统一的代码格式化规则</li>" +
                                        "<li><b>使用统计</b>：统计模板使用情况</li>" +
+                                       "</ul>" +
+                                       "<p><b>计划中的功能：</b></p>" +
+                                       "<ul>" +
+                                       "<li>MyBatis 自动提示</li>" +
+                                       "<li>Proxyer 组件接口自动识别</li>" +
+                                       "<li>更多开发辅助功能</li>" +
                                        "</ul>" +
                                        "</html>");
 

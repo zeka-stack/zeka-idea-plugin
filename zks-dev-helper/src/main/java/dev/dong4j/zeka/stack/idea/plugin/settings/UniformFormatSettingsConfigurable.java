@@ -8,9 +8,9 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.JComponent;
 
 /**
- * 统一格式插件设置配置类
+ * ZKS Dev Helper 插件设置配置类
  * <p>
- * 该类用于实现插件的统一格式设置功能，提供配置界面、状态同步、修改检测和应用重置等操作。
+ * 该类用于实现 ZKS Dev Helper 插件的设置功能，提供配置界面、状态同步、修改检测和应用重置等操作。
  * 主要用于插件配置界面的构建和配置状态的管理。
  *
  * @author dong4j
@@ -26,14 +26,14 @@ public class UniformFormatSettingsConfigurable implements Configurable {
     /**
      * 获取显示名称
      * <p>
-     * 返回统一格式的显示名称
+     * 返回 ZKS Dev Helper 的显示名称
      *
      * @return 显示名称
      */
     @Nls(capitalization = Nls.Capitalization.Title)
     @Override
     public String getDisplayName() {
-        return "Uniform Format";
+        return "ZKS Dev Helper";
     }
 
     /**

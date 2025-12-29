@@ -1,4 +1,4 @@
-<templateSet group="Uniform">
+<templateSet group="Zeka Stack">
     <template name="todo" value="todo-$author$ : ($date$) [$SELECTION$]" description="标记待处理的地方" toReformat="true"
               toShortenFQNames="true">
         <variable name="author" expression="user()" defaultValue="" alwaysStopAt="true"/>

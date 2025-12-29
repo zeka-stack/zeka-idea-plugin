@@ -24,17 +24,17 @@
         <!-- 设置面板 -->
         <!--<projectConfigurable-->
         <!--        parentId="tools"-->
-        <!--        instance="settings.dev.dong4j.zeka.stack.idea.plugin.codestyle.UniformFormatSettingsConfigurable"-->
-        <!--        id="settings.dev.dong4j.zeka.stack.idea.plugin.codestyle.UniformFormatSettingsConfigurable"-->
-        <!--        displayName="Uniform Format"/>-->
+        <!--        instance="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"-->
+        <!--        id="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"-->
+        <!--        displayName="ZKS Dev Helper"/>-->
 
         <!-- 通知组 -->
-        <notificationGroup id="Uniform Format Notifications"
+        <notificationGroup id="ZKS Dev Helper Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
 
         <!-- Live Template 支持 -->
-        <defaultLiveTemplates file="liveTemplates/uniform-live-template.xml"/>
+        <defaultLiveTemplates file="liveTemplates/zeka-stack-live-template.xml"/>
         <liveTemplateContext implementation="dev.dong4j.zeka.stack.idea.plugin.template.live.UniformLiveTemplateContext"
                              contextId="zeka.stack"/>
 

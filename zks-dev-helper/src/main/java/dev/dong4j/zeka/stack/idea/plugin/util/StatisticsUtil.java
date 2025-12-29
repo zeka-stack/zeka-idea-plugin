@@ -10,10 +10,12 @@ import dev.dong4j.zeka.stack.idea.plugin.statistics.TemplateUsageStatisticsRepor
  * 提供模板使用情况的统计功能，用于记录不同类型的模板（如文件模板、Live Template、代码风格等）的使用情况。
  * 该类通过统一的统计接口，将模板使用数据上报至指定的统计报告器。
  * <p>
- * 支持以下统计类型：
+ * 当前支持代码样式模块的统计类型：
  * - 文件模板使用情况
  * - Live Template 使用情况
  * - 代码风格应用情况
+ * <p>
+ * 后续会扩展支持 MyBatis、Proxyer 等其他功能模块的统计。
  *
  * @author dong4j
  * @version 1.0.0
