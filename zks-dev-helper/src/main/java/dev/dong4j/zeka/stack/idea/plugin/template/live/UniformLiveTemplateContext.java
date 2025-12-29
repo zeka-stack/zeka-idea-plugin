@@ -6,10 +6,11 @@ import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 统一 Live Template 上下文
+ * Live Template 上下文
  * <p>
- * 该类用于定义一个统一的 Live Template 上下文，适用于所有文件类型。它继承自 TemplateContextType，
+ * 该类用于定义一个 Live Template 上下文，适用于所有文件类型。它继承自 TemplateContextType，
  * 并覆盖了 isInContext 方法，使其在所有上下文中都可用。
+ * 这是 ZKS Dev Helper 插件中代码样式模块的组件。
  *
  * @author dong4j
  * @version 1.0.0
@@ -20,12 +21,12 @@ import org.jetbrains.annotations.NotNull;
 public class UniformLiveTemplateContext extends TemplateContextType {
 
     /**
-     * 构造函数，用于初始化 UniformLiveTemplateContext 对象
+     * 构造函数，用于初始化 Live Template 上下文对象
      * <p>
      * 通过指定的名称、显示名称和模板上下文类型来创建模板上下文对象
      */
     protected UniformLiveTemplateContext() {
-        super("UNIFORM", "Uniform", TemplateContextType.class);
+        super("ZEKA_STACK", "Zeka Stack", TemplateContextType.class);
     }
 
     /**

@@ -22,9 +22,10 @@ import java.net.URL;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 统一代码风格方案提供者
+ * 代码风格方案提供者
  * <p>
  * 该类用于为项目提供统一的代码风格方案，包括方案的导入、设置以及状态检查等功能。它通过读取预定义的配置文件，创建并应用统一的代码风格设置，确保项目中代码风格的一致性。
+ * 这是 ZKS Dev Helper 插件中代码样式模块的核心组件。
  * <p>
  * 主要功能包括：
  * - 导入统一代码风格配置文件并应用到当前项目
@@ -39,18 +40,18 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("D")
 @Slf4j
 public class UniformCodeStyleSchemeProvider {
-    /** 统一代码风格的配置名称，用于标识启用统一代码风格的配置项 */
-    public static final String UNIFORM_CODE_STYLE_NAME = "zeka-stack-code-style";
-    /** 统一代码风格配置文件路径，由统一代码风格名称加上 ".xml" 后缀组成 */
-    private static final String UNIFORM_CODE_STYLE_FILE = UNIFORM_CODE_STYLE_NAME + ".xml";
+    /** 代码风格的配置名称，用于标识启用代码风格的配置项 */
+    public static final String CODE_STYLE_NAME = "zeka-stack-code-style";
+    /** 代码风格配置文件路径，由代码风格名称加上 ".xml" 后缀组成 */
+    private static final String CODE_STYLE_FILE = CODE_STYLE_NAME + ".xml";
 
     /**
-     * 为指定项目设置统一的代码风格方案
+     * 为指定项目设置代码风格方案
      * <p>
-     * 该方法会检查是否存在名为 UNIFORM_CODE_STYLE_NAME 的代码风格方案，若已存在则设置为当前方案；
+     * 该方法会检查是否存在名为 CODE_STYLE_NAME 的代码风格方案，若已存在则设置为当前方案；
      * 若不存在，则从资源文件中加载代码风格配置文件，并导入到项目中，最后设置为默认方案。
      *
-     * @param project 要设置统一代码风格的项目对象
+     * @param project 要设置代码风格的项目对象
      */
     public static void provideUniformCodeStyleScheme(Project project) {
         ApplicationManager.getApplication().runWriteAction(() -> {
@@ -58,31 +59,31 @@ public class UniformCodeStyleSchemeProvider {
                 CodeStyleSchemes codeStyleSchemes = CodeStyleSchemes.getInstance();
 
                 // 检查是否已经存在该方案
-                CodeStyleScheme existingScheme = codeStyleSchemes.findSchemeByName(UNIFORM_CODE_STYLE_NAME);
+                CodeStyleScheme existingScheme = codeStyleSchemes.findSchemeByName(CODE_STYLE_NAME);
                 if (existingScheme != null) {
-                    log.info("Uniform code style '{}' already exists, setting as current", UNIFORM_CODE_STYLE_NAME);
+                    log.info("Code style '{}' already exists, setting as current", CODE_STYLE_NAME);
                     codeStyleSchemes.setCurrentScheme(existingScheme);
                     return;
                 }
 
                 // 从资源文件获取 VirtualFile
-                URL resource = UniformCodeStyleSchemeProvider.class.getClassLoader().getResource(UNIFORM_CODE_STYLE_FILE);
+                URL resource = UniformCodeStyleSchemeProvider.class.getClassLoader().getResource(CODE_STYLE_FILE);
                 if (resource == null) {
-                    log.error("Code style file not found: {}", UNIFORM_CODE_STYLE_FILE);
+                    log.error("Code style file not found: {}", CODE_STYLE_FILE);
                     return;
                 }
 
                 VirtualFile vFile = VfsUtil.findFileByURL(resource);
                 if (vFile == null) {
-                    log.error("Failed to find virtual file for: {}", UNIFORM_CODE_STYLE_FILE);
+                    log.error("Failed to find virtual file for: {}", CODE_STYLE_FILE);
                     return;
                 }
 
                 // 导入代码样式方案
                 importScheme(project, vFile);
 
-                log.info("Uniform code style '{}' imported and set as default for project: {}",
-                         UNIFORM_CODE_STYLE_NAME, project.getName());
+                log.info("Code style '{}' imported and set as default for project: {}",
+                         CODE_STYLE_NAME, project.getName());
 
             } catch (Exception e) {
                 log.error("Failed to provide uniform code style scheme", e);
@@ -105,7 +106,7 @@ public class UniformCodeStyleSchemeProvider {
 
         CodeStyleScheme derivedScheme = CodeStyleSchemes
             .getInstance()
-            .createNewScheme(UNIFORM_CODE_STYLE_NAME, null);
+            .createNewScheme(CODE_STYLE_NAME, null);
 
         readSchemeFromDom(schemeRoot, derivedScheme);
 
@@ -189,9 +190,9 @@ public class UniformCodeStyleSchemeProvider {
     }
 
     /**
-     * 检查是否已提供统一的代码风格方案
+     * 检查是否已提供代码风格方案
      * <p>
-     * 该方法用于判断当前项目中是否已经配置了名为 UNIFORM_CODE_STYLE_NAME 的统一代码风格方案，并且该方案是否为当前默认方案。
+     * 该方法用于判断当前项目中是否已经配置了名为 CODE_STYLE_NAME 的代码风格方案，并且该方案是否为当前默认方案。
      *
      * @param project 项目对象，用于获取代码风格方案信息
      * @return 如果存在且为当前默认方案，返回 true；否则返回 false
@@ -199,18 +200,18 @@ public class UniformCodeStyleSchemeProvider {
     public static boolean isUniformCodeStyleSchemeProvided(Project project) {
         try {
             CodeStyleSchemes codeStyleSchemes = CodeStyleSchemes.getInstance();
-            CodeStyleScheme scheme = codeStyleSchemes.findSchemeByName(UNIFORM_CODE_STYLE_NAME);
+            CodeStyleScheme scheme = codeStyleSchemes.findSchemeByName(CODE_STYLE_NAME);
 
             if (scheme != null) {
                 // 检查是否为当前默认方案
                 CodeStyleScheme currentScheme = codeStyleSchemes.getCurrentScheme();
-                return currentScheme != null && UNIFORM_CODE_STYLE_NAME.equals(currentScheme.getName());
+                return currentScheme != null && CODE_STYLE_NAME.equals(currentScheme.getName());
             }
 
             return false;
 
         } catch (Exception e) {
-            log.warn("Failed to check uniform code style scheme status", e);
+            log.warn("Failed to check code style scheme status", e);
             return false;
         }
     }

@@ -5,10 +5,11 @@ import com.intellij.codeInsight.template.impl.DefaultLiveTemplatesProvider;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * 统一 Live Template 提供者
+ * Live Template 提供者
  * <p>
- * 该类用于提供统一的 Live Template 文件路径配置，主要负责定义默认的 Live Template 文件位置。
+ * 该类用于提供 Live Template 文件路径配置，主要负责定义默认的 Live Template 文件位置。
  * 适用于 IDE 中的代码补全和模板功能，支持统一管理模板文件的加载路径。
+ * 这是 ZKS Dev Helper 插件中代码样式模块的组件。
  *
  * @author dong4j
  * @version 1.0.0
