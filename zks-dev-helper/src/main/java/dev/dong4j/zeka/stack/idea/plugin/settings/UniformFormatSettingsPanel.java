@@ -6,7 +6,7 @@ import com.intellij.util.ui.FormBuilder;
 
 import javax.swing.JPanel;
 
-import dev.dong4j.zeka.stack.idea.plugin.util.ZKSDevHelperBundle;
+import dev.dong4j.zeka.stack.idea.plugin.util.HelperBundle;
 import lombok.Data;
 
 /**
@@ -63,26 +63,26 @@ public class UniformFormatSettingsPanel {
     private void initializeComponents() {
         // 创建组件（使用国际化）
         enableFileTemplatesCheckBox = new JBCheckBox(
-            ZKSDevHelperBundle.message("settings.codestyle.enable.file.templates.label"));
+            HelperBundle.message("settings.codestyle.enable.file.templates.label"));
         enableLiveTemplatesCheckBox = new JBCheckBox(
-            ZKSDevHelperBundle.message("settings.codestyle.enable.live.templates.label"));
+            HelperBundle.message("settings.codestyle.enable.live.templates.label"));
         enableCodeStyleCheckBox = new JBCheckBox(
-            ZKSDevHelperBundle.message("settings.codestyle.enable.code.style.label"));
+            HelperBundle.message("settings.codestyle.enable.code.style.label"));
 
         // 构建描述文本（使用国际化）
         String descriptionHtml = "<html>" +
-                                 "<p>" + ZKSDevHelperBundle.message("settings.description.title") + "</p>" +
-                                 "<p><b>" + ZKSDevHelperBundle.message("settings.description.current.features") + "</b></p>" +
+                                 "<p>" + HelperBundle.message("settings.description.title") + "</p>" +
+                                 "<p><b>" + HelperBundle.message("settings.description.current.features") + "</b></p>" +
                                  "<ul>" +
-                                 "<li><b>" + ZKSDevHelperBundle.message("settings.description.file.templates") + "</b></li>" +
-                                 "<li><b>" + ZKSDevHelperBundle.message("settings.description.live.templates") + "</b></li>" +
-                                 "<li><b>" + ZKSDevHelperBundle.message("settings.description.code.style") + "</b></li>" +
+                                 "<li><b>" + HelperBundle.message("settings.description.file.templates") + "</b></li>" +
+                                 "<li><b>" + HelperBundle.message("settings.description.live.templates") + "</b></li>" +
+                                 "<li><b>" + HelperBundle.message("settings.description.code.style") + "</b></li>" +
                                  "</ul>" +
-                                 "<p><b>" + ZKSDevHelperBundle.message("settings.description.planned.features") + "</b></p>" +
+                                 "<p><b>" + HelperBundle.message("settings.description.planned.features") + "</b></p>" +
                                  "<ul>" +
-                                 "<li>" + ZKSDevHelperBundle.message("settings.description.planned.mybatis") + "</li>" +
-                                 "<li>" + ZKSDevHelperBundle.message("settings.description.planned.proxyer") + "</li>" +
-                                 "<li>" + ZKSDevHelperBundle.message("settings.description.planned.more") + "</li>" +
+                                 "<li>" + HelperBundle.message("settings.description.planned.mybatis") + "</li>" +
+                                 "<li>" + HelperBundle.message("settings.description.planned.proxyer") + "</li>" +
+                                 "<li>" + HelperBundle.message("settings.description.planned.more") + "</li>" +
                                  "</ul>" +
                                  "</html>";
         descriptionLabel = new JBLabel(descriptionHtml);
