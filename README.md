@@ -212,24 +212,19 @@ Zeka Stack 框架开发助手,专为 Zeka Stack 框架开发提供辅助功能�
 
 #### 选择插件模板
 
-项目提供两种插件模板，根据是否需要 AI 能力选择：
+项目提供两种插件模板，根据是否需要 AI 能力选择。模板位于 `idea-plugin-template` 目录。
 
-##### 1. 带 AI 能力的插件模板 - `template-with-ai`
+**📖 详细说明：** 请查看 [idea-plugin-template/README.md](./idea-plugin-template/README.md)
+
+##### 1. 带 AI 能力的插件模板
 
 **适用场景:** 需要集成 OpenAI、通义千问等 AI 服务的插件
 
-**特性:**
-
-- 🤖 已集成 IntelliAI Engine 依赖
-- 🔧 自动构建和安装 Engine 插件的任务
-- 📦 预配置 AI 服务调用接口
-- 🎨 AI 相关 UI 组件支持
-
-**使用方法:**
+**快速开始:**
 
 ```bash
 # 复制模板
-cp -r template-with-ai my-new-ai-plugin
+cp -r idea-plugin-template/template-with-ai my-new-ai-plugin
 cd my-new-ai-plugin
 
 # 修改 gradle.properties 中的插件信息
@@ -239,22 +234,17 @@ vim gradle.properties
 ./gradlew runIde
 ```
 
-##### 2. 不带 AI 能力的插件模板 - `template-without-ai`
+**详细说明：** 请查看 [template-with-ai/README.md](./idea-plugin-template/template-with-ai/README.md)
+
+##### 2. 不带 AI 能力的插件模板
 
 **适用场景:** 纯工具类插件，无需 AI 集成
 
-**特性:**
-
-- ⚡ 轻量级，无额外依赖
-- 🛠️ 完整的插件开发环境
-- 📦 预配置常用依赖和工具
-- 🎯 专注于业务逻辑开发
-
-**使用方法:**
+**快速开始:**
 
 ```bash
 # 复制模板
-cp -r template-without-ai my-new-plugin
+cp -r idea-plugin-template/template-without-ai my-new-plugin
 cd my-new-plugin
 
 # 修改 gradle.properties 中的插件信息
@@ -263,6 +253,8 @@ vim gradle.properties
 # 开始开发
 ./gradlew runIde
 ```
+
+**详细说明：** 请查看 [template-without-ai/README.md](./idea-plugin-template/template-without-ai/README.md)
 
 ### 🔌 AI 插件 Engine 依赖集成详解
 
@@ -405,15 +397,16 @@ cd zeka-idea-plugin
 
 ```
 zeka-idea-plugin/
-├── intelli-ai-engine/      # AI 引擎(其他 AI 插件的依赖)
-├── intelli-ai-javadoc/     # Javadoc 生成插件
-├── intelli-ai-changelog/   # Changelog 生成插件
-├── intelli-ai-tracer/      # 调用链追踪插件
-├── intelli-ai-nacos/       # Nacos 配置管理插件
-├── archiver-man/           # 压缩包编辑插件
-├── zks-dev-helper/         # Zeka 开发助手插件
-├── template-with-ai/       # 带 AI 能力的插件模板
-└── template-without-ai/    # 不带 AI 能力的插件模板
+├── intelli-ai-engine/         # AI 引擎(其他 AI 插件的依赖)
+├── intelli-ai-javadoc/        # Javadoc 生成插件
+├── intelli-ai-changelog/      # Changelog 生成插件
+├── intelli-ai-tracer/         # 调用链追踪插件
+├── intelli-ai-nacos/          # Nacos 配置管理插件
+├── archiver-man/              # 压缩包编辑插件
+├── zks-dev-helper/            # Zeka 开发助手插件
+└── idea-plugin-template/      # 插件开发模板集合
+    ├── template-with-ai/      # 带 AI 能力的插件模板
+    └── template-without-ai/   # 不带 AI 能力的插件模板
 ```
 
 每个子目录都是一个独立的 Gradle 项目,包含:
