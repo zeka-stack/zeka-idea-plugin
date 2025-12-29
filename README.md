@@ -141,9 +141,10 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 
 **[使用指南](./archiver-man/docs/用户手册.md)**
 
-#### [Uniform Format](./uniform-format)
+#### [ZKS Dev Helper](./zks-dev-helper)
 
-统一的代码格式化和模板管理插件,帮助团队保持代码风格一致性。
+Zeka Stack 框架开发助手,专为 Zeka Stack 框架开发提供辅助功能。目前提供统一的代码样式配置功能,后续将持续添加更多开发辅助特性,如 MyBatis
+自动提示、Proxyer 组件接口自动识别等。
 
 **核心功能:**
 
@@ -152,6 +153,12 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - 🎨 自动配置代码格式化规则
 - 📊 使用统计分析
 
+**计划中的功能:**
+
+- 🔜 MyBatis 自动提示功能
+- 🔜 Proxyer 组件接口自动识别
+- 🔜 更多 Zeka Stack 框架开发辅助功能
+
 **核心优势:**
 
 - 🚀 零配置,安装即用
@@ -159,9 +166,9 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 - ⚡ 提升开发效率
 - 🔧 支持自定义
 
-**JetBrains Marketplace:** [Uniform Format]()
+**JetBrains Marketplace:** [ZKS Dev Helper]()
 
-**[使用指南](./uniform-format/插件操作手册.md)**
+**[使用指南](./zks-dev-helper/插件操作手册.md)**
 
 ---
 
@@ -404,7 +411,7 @@ zeka-idea-plugin/
 ├── intelli-ai-tracer/      # 调用链追踪插件
 ├── intelli-ai-nacos/       # Nacos 配置管理插件
 ├── archiver-man/           # 压缩包编辑插件
-├── uniform-format/         # 代码格式化插件
+├── zks-dev-helper/         # Zeka 开发助手插件
 ├── template-with-ai/       # 带 AI 能力的插件模板
 └── template-without-ai/    # 不带 AI 能力的插件模板
 ```
@@ -578,7 +585,7 @@ IntelliAI Engine (基础引擎)
     └── IntelliAI Nacos
 
 Archiver Man (独立)
-Uniform Format (独立)
+ZKS Dev Helper (独立)
 ```
 
 ### 5. 国际化支持
@@ -635,7 +642,7 @@ includes/
 - [IntelliAI Changelog - 方案设计](./intelli-ai-changelog/docs/方案设计.md)
 - [IntelliAI Tracer - 功能设计](./intelli-ai-tracer/docs/)
 - [Archiver Man - 功能规划](./archiver-man/docs/ArchiverMan功能规划清单.md)
-- [Uniform Format - 重构总结](./uniform-format/重构总结.md)
+- [ZKS Dev Helper - 重构总结](./zks-dev-helper/重构总结.md)
 
 ### 官方文档
 

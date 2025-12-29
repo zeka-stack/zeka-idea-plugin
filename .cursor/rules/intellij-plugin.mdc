@@ -629,7 +629,7 @@ public void apply() throws ConfigurationException {
 
 - 更新记录文件位置：`{插件项目根目录}/includes/pluginChanges.html`
     - 插件项目根目录是指包含 `build.gradle.kts` 和 `src/` 目录的目录
-  - 例如：`intelli-ai-javadoc/includes/pluginChanges.html`、`uniform-format/includes/pluginChanges.html`
+  - 例如：`intelli-ai-javadoc/includes/pluginChanges.html`、`zks-dev-helper/includes/pluginChanges.html`
 - 在文件顶部添加新版本号（格式：`<h3>版本号</h3>`）
 - 先添加中文版本，再添加英文版本
 - 中文版本在前，英文版本在后（两个相同版本号的 `<h3>` 标签）
@@ -673,7 +673,7 @@ public void apply() throws ConfigurationException {
 1. **方案设计阶段**：
     - 在 `{插件项目根目录}/docs/` 目录下创建功能方案文档
         - 插件项目根目录是指包含 `build.gradle.kts` 和 `src/` 目录的目录
-      - 例如：`intelli-ai-javadoc/docs/`、`uniform-format/docs/`
+      - 例如：`intelli-ai-javadoc/docs/`、`zks-dev-helper/docs/`
     - 文档命名格式：`功能名称实现方案.md` 或 `功能名称说明.md`
     - 文档应包含：
         - 功能概述
@@ -727,7 +727,7 @@ public void apply() throws ConfigurationException {
 - 用户手册文件位置：`{插件项目根目录}/用户手册.md` 或 `{插件项目根目录}/插件操作手册.md`
     - 插件项目根目录是指包含 `build.gradle.kts` 和 `src/` 目录的目录
     - 常见文件名：`用户手册.md`、`插件操作手册.md`、`操作手册.md`
-  - 例如：`intelli-ai-javadoc/用户手册.md`、`uniform-format/插件操作手册.md`
+  - 例如：`intelli-ai-javadoc/用户手册.md`、`zks-dev-helper/插件操作手册.md`
 - 根据功能类型更新相应章节：
     - 设置相关功能 → 更新"设置"章节
     - 操作相关功能 → 更新"使用"章节

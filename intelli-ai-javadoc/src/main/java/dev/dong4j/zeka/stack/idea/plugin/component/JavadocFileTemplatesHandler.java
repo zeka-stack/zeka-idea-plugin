@@ -230,7 +230,7 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
             templateContent,
             new FileTemplate[0]);
 
-        // 使用 FileTemplateConfigurable 设置模板（参考 uniform-format 的实现）
+        // 使用 FileTemplateConfigurable 设置模板（参考 zks-dev-helper 的实现）
         FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
         FileTemplateManagerImpl templateManagerImpl = FileTemplateManagerImpl.getInstanceImpl(project);
         configurable.setTemplate(newTemplate, templateManagerImpl.getDefaultTemplateDescription());
