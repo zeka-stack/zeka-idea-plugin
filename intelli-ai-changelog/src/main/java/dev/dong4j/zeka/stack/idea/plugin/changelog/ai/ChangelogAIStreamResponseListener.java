@@ -67,17 +67,6 @@ public class ChangelogAIStreamResponseListener implements AIStreamResponseListen
     }
 
     /**
-     * 调用父类的 onStart 方法
-     * <p> 此方法在 AI 流响应监听器启动时被调用, 主要用于初始化或执行一些启动前的操作.
-     * <p>
-     * 该方法没有具体的业务逻辑实现, 仅调用了父类的 onStart 方法.
-     */
-    @Override
-    public void onStart() {
-        AIStreamResponseListener.super.onStart();
-    }
-
-    /**
      * 处理接收到的流式响应数据块
      * <p> 将非空的数据块追加到缓冲区中
      *
@@ -98,7 +87,7 @@ public class ChangelogAIStreamResponseListener implements AIStreamResponseListen
      * 该方法没有参数, 也没有返回值, 且不会抛出异常.
      */
     @Override
-    public void onComplete() {
+    public void onComplete(@NotNull String fullText) {
         latch.countDown();
     }
 

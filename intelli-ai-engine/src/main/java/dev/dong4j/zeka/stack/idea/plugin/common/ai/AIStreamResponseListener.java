@@ -27,8 +27,11 @@ public interface AIStreamResponseListener {
 
     /**
      * 流式响应完成
+     * <p> 当流式响应完成后调用此方法, 提供完整的文本内容
+     *
+     * @param fullText 完整的文本内容
      */
-    default void onComplete() {}
+    default void onComplete(@NotNull String fullText) {}
 
     /**
      * 流式响应错误

@@ -41,7 +41,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
-        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.update.JavadocPluginUpdateInfoProvider"/>
+        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.update.ChengelogPluginUpdateInfoProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->
