@@ -57,10 +57,12 @@ SingleCriterion":[{"category":"inference_type","DateType":"int","predicate":"equ
 
 https://api-inference.modelscope.cn/v1/chat/completions
 
-## 2025.12.18
+- [ ] ~~对接 Dify~~
+- [ ] ~~多模态支持~~
 
-- [ ] 对接 Dify
-- [ ] 多模态支持
+## 2025.12.30
+
+- [ ] 支持 SSE
 
 ## 功能增强建议
 

@@ -69,5 +69,28 @@ public interface AIConsoleLogger {
      * @param line        目标行号（从 0 开始）
      */
     void printHyperlinkWithTimestamp(String message, @NotNull VirtualFile virtualFile, int line);
-}
 
+    /**
+     * 流式输出内容（追加，不换行）
+     *
+     * @param chunk 增量内容块
+     */
+    void printStream(@NotNull String chunk);
+
+    /**
+     * 完成流式输出（收口与换行）
+     */
+    void completeStream();
+
+    /**
+     * 流式输出内容（不触发欢迎信息，不自动追加换行）
+     *
+     * @param chunk 增量内容块
+     */
+    void printStreamPlain(@NotNull String chunk);
+
+    /**
+     * 完成流式输出（不追加换行）
+     */
+    void completeStreamPlain();
+}

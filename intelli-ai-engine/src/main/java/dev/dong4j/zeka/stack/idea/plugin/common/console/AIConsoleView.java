@@ -53,6 +53,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     /** 是否已显示欢迎信息 */
     private boolean welcomeMessageShown = false;
 
+    private final StringBuilder streamBuffer = new StringBuilder();
+
     /**
      * 构造函数
      *
@@ -303,6 +305,67 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         });
     }
 
+    @Override
+    public void printStream(@NotNull String chunk) {
+        if (chunk.isEmpty()) {
+            return;
+        }
+        streamBuffer.append(chunk);
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ConsoleView console = getConsoleView();
+            if (console != null) {
+                if (!welcomeMessageShown) {
+                    printWelcomeMessage();
+                    welcomeMessageShown = true;
+                }
+                console.print(chunk, ConsoleViewContentType.NORMAL_OUTPUT);
+                showToolWindow();
+            }
+        });
+    }
+
+    @Override
+    public void completeStream() {
+        streamBuffer.setLength(0);
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ConsoleView console = getConsoleView();
+            if (console != null) {
+                if (!welcomeMessageShown) {
+                    printWelcomeMessage();
+                    welcomeMessageShown = true;
+                }
+                console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
+                showToolWindow();
+            }
+        });
+    }
+
+    @Override
+    public void printStreamPlain(@NotNull String chunk) {
+        if (chunk.isEmpty()) {
+            return;
+        }
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ConsoleView console = getConsoleView();
+            if (console != null) {
+                console.print(chunk, ConsoleViewContentType.NORMAL_OUTPUT);
+                showToolWindow();
+            }
+        });
+    }
+
+    @Override
+    public void completeStreamPlain() {
+        streamBuffer.setLength(0);
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ConsoleView console = getConsoleView();
+            if (console != null) {
+                console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
+                showToolWindow();
+            }
+        });
+    }
+
     /**
      * 释放资源
      * <p>
@@ -319,4 +382,3 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         }
     }
 }
-
