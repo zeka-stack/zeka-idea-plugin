@@ -12,8 +12,11 @@ import com.intellij.util.io.HttpRequests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -175,7 +179,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         int attempts = 0;
         while (attempts < Math.max(1, runtime.maxRetries)) {
             try {
-                String result = sendRequest(buildRequestBody(request), apiKey, listener, request.promptTokenEstimate(), false);
+                String result = sendRequest(buildRequestBody(request), apiKey, listener,
+                                            request.promptTokenEstimate(), false);
                 AIConsoleLoggerUtil.printSuccess(project, "=== 内容生成成功 ===");
                 AIConsoleLoggerUtil.print(project, "响应长度: " + result.length() + " 字符");
                 return result;
@@ -337,6 +342,36 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @since 1.0.0
      */
     protected JsonObject buildRequestBody(AIChatRequest request) {
+        return buildRequestBody(request, false, false);
+    }
+
+    /**
+     * 构建发送给 AI 聊天服务的请求体
+     * <p>
+     * 根据传入的 AI 聊天请求对象, 构建包含系统消息和用户消息的 JSON 请求体, 并设置模型参数.
+     * 默认实现构建标准的 OpenAI 兼容格式请求体.
+     * <p>
+     * 如果服务商的 API 格式与 OpenAI 不兼容, 子类可以重写此方法以构建自定义格式的请求体.
+     * <p>
+     * 示例 - 标准 OpenAI 兼容格式:
+     * <pre>{@code
+     * {
+     *  "model": "gpt-3.5-turbo",
+     *  "messages": [*   {"role": "system", "content": "..."},
+     *   {"role": "user", "content": "..."}
+     *  ],
+     *  "temperature": 0.7,
+     *  "max_tokens": 2048
+     * }
+     * }</pre>
+     *
+     * @param request        AI 聊天请求对象, 包含系统提示和用户提示信息
+     * @param stream         是否启用流式传输
+     * @param enableThinking 是否启用思考模式
+     * @return 构建完成的 JSON 对象, 包含消息内容和模型参数
+     * @since 1.0.0
+     */
+    protected JsonObject buildRequestBody(AIChatRequest request, boolean stream, boolean enableThinking) {
         JsonObject systemMessage = new JsonObject();
         systemMessage.addProperty("role", "system");
         systemMessage.addProperty("content", request.systemPrompt());
@@ -351,9 +386,10 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
         JsonObject body = new JsonObject();
         body.addProperty("model", config.modelName);
-        body.addProperty("think", false);
-        body.addProperty("enable_thinking", false);
-        body.addProperty("stream", false);
+
+        // body.addProperty("think", enableThinking);
+        // body.addProperty("enable_thinking", enableThinking);
+        body.addProperty("stream", stream);
         body.add("messages", messagesArray);
 
         AIModelParameters params = modelParameters;
@@ -364,6 +400,229 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         body.addProperty("presence_penalty", params.presencePenalty);
 
         return body;
+    }
+
+    /**
+     * 生成 AI 聊天内容的流式响应
+     * <p> 根据提供的请求参数和配置, 调用 AI 服务生成内容, 并通过流式响应的方式逐步返回结果.
+     * 在生成过程中, 会将每次接收到的内容传递给响应监听器. 如果请求失败, 则抛出异常.
+     *
+     * @param request  AI 聊天请求对象, 包含生成内容所需的信息
+     * @param apiKey   用于认证的 API 密钥, 可为 null
+     * @param listener 响应监听器, 用于接收生成过程中的事件通知, 不可为 null
+     * @throws AIServiceException 当 AI 服务调用失败时抛出
+     */
+    @Override
+    public void generateContentStream(@NotNull AIChatRequest request,
+                                      @Nullable String apiKey,
+                                      @NotNull AIStreamResponseListener listener) throws AIServiceException {
+        sendStreamRequest(buildRequestBody(request, true, true), apiKey, listener);
+    }
+
+    /**
+     * 发送流式请求到 AI 服务并处理响应
+     * <p> 构造请求体并发送 POST 请求到指定的 AI 服务端点, 处理响应内容并触发流式响应监听器.
+     * 如果未配置 API 密钥且需要, 则抛出配置错误异常.
+     *
+     * @param body     请求体, 以 JsonObject 格式提供
+     * @param apiKey   可选的 API 密钥, 用于认证
+     * @param listener 必须的响应监听器, 用于记录请求和响应日志, 并处理流式响应
+     * @throws AIServiceException 当请求失败, 响应无效, 网络错误或 API 密钥配置错误时抛出
+     */
+    private void sendStreamRequest(JsonObject body,
+                                   @Nullable String apiKey,
+                                   @NotNull AIStreamResponseListener listener) throws AIServiceException {
+        if (requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
+            throw new AIServiceException("需要 API 密钥但未进行配置",
+                                         AIServiceException.ErrorCode.CONFIGURATION_ERROR);
+        }
+
+        String url = config.baseUrl + "/chat/completions";
+        String requestBody = body.toString();
+
+        try {
+            listener.onStart();
+            byte[] requestBodyBytes = requestBody.getBytes(StandardCharsets.UTF_8);
+            final int contentLength = requestBodyBytes.length;
+
+            HttpRequests.post(url, "application/json")
+                .tuner(connection -> {
+                    HttpURLConnection conn = (HttpURLConnection) connection;
+                    tuneConnection(conn, apiKey);
+                    conn.setFixedLengthStreamingMode(contentLength);
+                    conn.setRequestProperty("Content-Length", String.valueOf(contentLength));
+                })
+                .connect(request -> {
+                    request.write(requestBody);
+                    HttpURLConnection connection = (HttpURLConnection) request.getConnection();
+                    readStreamResponse(connection, listener);
+                    return null;
+                });
+        } catch (HttpRequests.HttpStatusException e) {
+            AIServiceException.ErrorCode code = switch (e.getStatusCode()) {
+                case 401 -> AIServiceException.ErrorCode.INVALID_API_KEY;
+                case 429 -> AIServiceException.ErrorCode.RATE_LIMIT;
+                case 500, 502, 503, 504 -> AIServiceException.ErrorCode.SERVICE_UNAVAILABLE;
+                default -> AIServiceException.ErrorCode.INVALID_RESPONSE;
+            };
+            listener.onError("HTTP error: " + e.getMessage(), e);
+            throw new AIServiceException("HTTP error: " + e.getMessage(), code, e);
+        } catch (IOException e) {
+            listener.onError("网络错误: " + e.getMessage(), e);
+            throw new AIServiceException("网络错误: " + e.getMessage(),
+                                         AIServiceException.ErrorCode.NETWORK_ERROR, e);
+        }
+    }
+
+    /**
+     * 读取 HTTP 连接的响应流并处理分块数据
+     * <p>
+     * 从 HTTP 连接的输入流中逐行读取数据, 解析每个数据块, 并调用监听器处理每个数据块的内容.
+     * 如果数据块包含思考内容, 则打印思考内容. 当遇到 "[DONE]" 表示数据流结束.
+     *
+     * @param connection HTTP 连接对象
+     * @param listener   数据流响应监听器, 用于处理每个数据块
+     * @throws IOException 当读取或处理数据流时发生 I/O 错误
+     */
+    private void readStreamResponse(HttpURLConnection connection,
+                                    @NotNull AIStreamResponseListener listener) throws IOException {
+        StringBuilder fullText = new StringBuilder();
+        boolean[] inThinking = {false};
+        boolean[] thinkPrefixPrinted = {false};
+        try (BufferedReader reader = new BufferedReader(
+            new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) {
+                    continue;
+                }
+                if (line.startsWith("data: ")) {
+                    String data = line.substring(6).trim();
+                    if ("[DONE]".equals(data)) {
+                        break;
+                    }
+                    if (!data.startsWith("{")) {
+                        continue;
+                    }
+                    StreamChunk chunk = parseStreamChunk(data);
+                    if (chunk == null) {
+                        continue;
+                    }
+                    if (chunk.thinking != null && !chunk.thinking.isEmpty()) {
+                        printThinking(chunk.thinking, inThinking, thinkPrefixPrinted);
+                    }
+                    if (chunk.content != null && !chunk.content.isEmpty()) {
+                        if (inThinking[0]) {
+                            // 思考结束后补空行，保持输出分段
+                            AIConsoleLoggerUtil.printStreamPlain(
+                                project,
+                                "\n══════════════════════════════ 正文内容 ══════════════════════════════\n");
+                            inThinking[0] = false;
+                            thinkPrefixPrinted[0] = false;
+                        }
+                        fullText.append(chunk.content);
+                        AIConsoleLoggerUtil.printStreamPlain(project, chunk.content);
+                        listener.onChunk(chunk.content);
+                    }
+                }
+            }
+        }
+        AIConsoleLoggerUtil.completeStreamPlain(project);
+        listener.onComplete();
+    }
+
+    /**
+     * 解析流块 JSON 数据
+     * <p> 从传入的 JSON 数据中提取内容和思考信息, 并返回一个包含这些信息的 StreamChunk 对象.
+     * 如果 JSON 数据无效或没有有效的内容, 则返回 null.
+     *
+     * @param jsonData 包含流块信息的 JSON 字符串
+     * @return 包含内容和思考信息的 StreamChunk 对象, 如果解析失败则返回 null
+     */
+    @Nullable
+    private StreamChunk parseStreamChunk(String jsonData) {
+        try {
+            JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
+            JsonArray choices = json.getAsJsonArray("choices");
+            if (choices == null || choices.isEmpty()) {
+                return null;
+            }
+            JsonObject choice = choices.get(0).getAsJsonObject();
+            JsonObject delta = choice.getAsJsonObject("delta");
+            if (delta == null) {
+                return null;
+            }
+            String content = readStringValue(delta, "content");
+            String thinking = readStringValue(delta, "reasoning_content");
+            if (thinking == null || thinking.isEmpty()) {
+                thinking = readStringValue(delta, "reasoning");
+            }
+            if ((content == null || content.isEmpty()) && (thinking == null || thinking.isEmpty())) {
+                return null;
+            }
+            return new StreamChunk(content, thinking);
+        } catch (Exception e) {
+            LOG.warn("Failed to parse stream chunk JSON", e);
+            return null;
+        }
+    }
+
+    /**
+     * 打印思考内容
+     * <p>
+     * 根据传入的思考内容和标志位数组, 决定是否在控制台上打印 "[think]" 前缀.
+     * 如果是第一次打印思考内容, 则会加上 "[think]" 前缀, 并将相应的标志位置为已打印.
+     *
+     * @param thinking           思考内容字符串
+     * @param inThinking         标志位数组, 用于标识是否已经开始打印思考内容
+     * @param thinkPrefixPrinted 标志位数组, 用于标识是否已经打印过 "[think]" 前缀
+     */
+    private void printThinking(@NotNull String thinking,
+                               @NotNull boolean[] inThinking,
+                               @NotNull boolean[] thinkPrefixPrinted) {
+        if (!inThinking[0]) {
+            inThinking[0] = true;
+        }
+        if (!thinkPrefixPrinted[0]) {
+            AIConsoleLoggerUtil.printStreamPlain(project, "[think] " + thinking);
+            thinkPrefixPrinted[0] = true;
+            return;
+        }
+        AIConsoleLoggerUtil.printStreamPlain(project, thinking);
+    }
+
+    /**
+     * 从给定的 JsonObject 中读取指定键的字符串值
+     * <p> 检查 JsonObject 是否包含指定的键, 并返回对应的字符串值. 如果键不存在或值为 null, 则返回 null.
+     *
+     * @param delta 包含要读取的键的 JsonObject
+     * @param key   要读取的键名
+     * @return 对应键的字符串值, 如果键不存在或值为 null, 则返回 null
+     * @since 1.0.0
+     */
+    @Nullable
+    private static String readStringValue(@NotNull JsonObject delta, @NotNull String key) {
+        if (!delta.has(key)) {
+            return null;
+        }
+        JsonElement element = delta.get(key);
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        return element.getAsString();
+    }
+
+    /**
+     * 流块记录类
+     * <p> 用于表示流中的一个块, 包含内容和思考两个字段. 该记录类不可变, 并提供了对这两个字段的安全访问.
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2025.12.31
+     * @since 1.0.0
+     */
+    private record StreamChunk(@Nullable String content, @Nullable String thinking) {
     }
 
     /**

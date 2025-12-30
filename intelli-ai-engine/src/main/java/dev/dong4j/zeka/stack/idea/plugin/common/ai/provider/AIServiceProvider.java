@@ -9,6 +9,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 
 /**
@@ -70,6 +71,20 @@ public interface AIServiceProvider {
     String generateContent(@NotNull AIChatRequest request,
                            @Nullable String apiKey,
                            @Nullable AIResponseListener listener) throws AIServiceException;
+
+    /**
+     * 根据 AI 聊天请求流式生成内容
+     * <p>
+     * 根据传入的 AI 聊天请求对象流式生成相应的内容, 支持传入 API 密钥和监听器进行增量回调.
+     *
+     * @param request  AI 聊天请求对象, 用于指定生成内容的参数和上下文
+     * @param apiKey   API 密钥, 可选参数, 用于身份验证或权限控制
+     * @param listener AI 流式响应监听器, 用于接收增量内容
+     * @throws AIServiceException 当生成内容过程中发生错误时抛出
+     */
+    void generateContentStream(@NotNull AIChatRequest request,
+                               @Nullable String apiKey,
+                               @NotNull AIStreamResponseListener listener) throws AIServiceException;
 
     /**
      * 验证配置信息

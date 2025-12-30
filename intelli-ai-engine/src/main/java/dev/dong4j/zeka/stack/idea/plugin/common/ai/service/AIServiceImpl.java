@@ -11,6 +11,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -65,6 +66,31 @@ public final class AIServiceImpl implements AIService {
     }
 
     /**
+     * 流式生成内容
+     *
+     * @param project  项目对象
+     * @param request  AI 聊天请求
+     * @param config   AI 提供者配置
+     * @param listener AI 流式响应监听器
+     * @throws AIServiceException 当 AI 服务调用过程中发生错误时抛出
+     */
+    @Override
+    public void generateContentStream(@NotNull Project project,
+                                      @NotNull AIChatRequest request,
+                                      @NotNull AIProviderConfig config,
+                                      @NotNull AIStreamResponseListener listener) throws AIServiceException {
+        AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
+        String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            try {
+                provider.generateContentStream(request, apiKey, listener);
+            } catch (AIServiceException e) {
+                listener.onError("AI 服务调用失败: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
      * 使用指定配置生成 AI 内容
      * <p>
      * 根据提供的项目, 请求,AI 服务配置和可选的监听器, 创建 AI 服务提供者并生成内容.
@@ -114,4 +140,3 @@ public final class AIServiceImpl implements AIService {
     }
 
 }
-

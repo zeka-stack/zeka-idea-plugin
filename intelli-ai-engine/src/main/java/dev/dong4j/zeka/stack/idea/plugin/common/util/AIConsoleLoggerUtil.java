@@ -120,6 +120,44 @@ public final class AIConsoleLoggerUtil {
     }
 
     /**
+     * 流式输出内容（追加，不换行）
+     *
+     * @param project 项目实例
+     * @param chunk   增量内容块
+     */
+    public static void printStream(Project project, String chunk) {
+        safeLog(project, console -> console.printStream(chunk));
+    }
+
+    /**
+     * 完成流式输出（收口与换行）
+     *
+     * @param project 项目实例
+     */
+    public static void completeStream(Project project) {
+        safeLog(project, AIConsoleView::completeStream);
+    }
+
+    /**
+     * 流式输出内容（不触发欢迎信息，不自动追加换行）
+     *
+     * @param project 项目实例
+     * @param chunk   增量内容块
+     */
+    public static void printStreamPlain(Project project, String chunk) {
+        safeLog(project, console -> console.printStreamPlain(chunk));
+    }
+
+    /**
+     * 完成流式输出（不追加换行）
+     *
+     * @param project 项目实例
+     */
+    public static void completeStreamPlain(Project project) {
+        safeLog(project, AIConsoleView::completeStreamPlain);
+    }
+
+    /**
      * 安全地输出日志（带空值检查）
      * <p>
      * 如果控制台不可用, 则静默忽略, 避免影响主功能.
@@ -158,4 +196,3 @@ public final class AIConsoleLoggerUtil {
         void execute(@NotNull AIConsoleView consoleView);
     }
 }
-

@@ -21,8 +21,11 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ai.ChangelogAIResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.ai.ChangelogAIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
@@ -30,6 +33,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -317,16 +321,17 @@ public final class ChangelogService {
         // 创建 AI 聊天请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
 
-        // 检查是否启用详细日志
         boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
-        AIResponseListener listener = verboseLogging ? new ChangelogAIResponseListener(project) : null;
-
-        // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
-            // 使用 AIService API 生成内容
-            String result = aiService.generateContent(project, request, config, listener);
+            String result;
+            if (verboseLogging) {
+                result = callAIServiceStream(aiService, request, config);
+            } else {
+                AIResponseListener listener = new ChangelogAIResponseListener(project);
+                result = aiService.generateContent(project, request, config, listener);
+            }
 
             // 检查结果是否为空
             if (result.trim().isEmpty()) {
@@ -429,15 +434,19 @@ public final class ChangelogService {
 
         // 检查是否启用详细日志
         boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
-        AIResponseListener listener = verboseLogging ? new ChangelogAIResponseListener(project) : null;
 
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
             AIProviderConfig config = SettingsState.getInstance().providerConfig;
-            // 使用 AIService API 生成内容
-            String result = aiService.generateContent(project, request, config, listener);
+            String result;
+            if (verboseLogging) {
+                result = callAIServiceStream(aiService, request, config);
+            } else {
+                AIResponseListener listener = new ChangelogAIResponseListener(project);
+                result = aiService.generateContent(project, request, config, listener);
+            }
 
             // 检查结果是否为空
             if (result.trim().isEmpty()) {
@@ -455,6 +464,36 @@ public final class ChangelogService {
                                                             ChangelogBundle.message("error.ai.service.unknown")));
             }
         }
+    }
+
+    @NotNull
+    private String callAIServiceStream(@NotNull AIService aiService,
+                                       @NotNull AIChatRequest request,
+                                       @NotNull AIProviderConfig config) throws Exception {
+        StringBuilder buffer = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Exception> errorRef = new AtomicReference<>();
+        AIStreamResponseListener listener =
+            new ChangelogAIStreamResponseListener(project, buffer, latch, errorRef);
+
+        aiService.generateContentStream(project, request, config, listener);
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new Exception("流式生成被中断", e);
+        }
+
+        Exception error = errorRef.get();
+        if (error != null) {
+            throw error;
+        }
+
+        String result = buffer.toString();
+        if (result.trim().isEmpty()) {
+            throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
+        }
+        return result;
     }
 
     /**
