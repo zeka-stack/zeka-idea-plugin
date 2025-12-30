@@ -109,7 +109,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 提交记录模板
      *
      * <p>用于生成提交记录的提示词模板。
-     * 使用 {codeDiffs} 作为占位符，会被替换为格式化的代码变更信息。
+     * 使用 {diff} 或 {codeDiffs} 作为占位符，会被替换为格式化的代码变更信息。
      *
      * <p>默认值: getDefaultCommitMessageTemplate()
      *
@@ -302,18 +302,18 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultCommitMessageTemplate() {
         return """
-            请根据以下代码变更生成简洁、准确的提交记录（commit message）：
+            使用 Conventional Commits，输出格式：
+            <type>(<scope>): <subject>
             
-            代码变更：
-            {codeDiffs}
+            <body(可选，说明动机、影响、兼容性)>
             
-            要求：
-            1. 根据代码变更的实际内容生成描述，准确反映变更的本质
-            2. 识别变更类型（新功能、Bug 修复、重构、文档更新等）
-            3. 提交记录要简洁、清晰，符合常见的提交记录规范
-            4. 忽略无意义的变更（如格式化、空白字符等）
-            5. 如果变更涉及多个文件，请总结主要变更点
-            6. 输出格式：第一行是简短摘要（50字以内），空一行后是详细描述（可选）
+            规则：
+            1. 优先表达设计意图 / 约束变化 / 行为变化
+            2. 如果是重构，请说明“为什么现在要重构”
+            3. 避免描述实现细节
+            
+            变更内容：
+            {diff}
             """;
     }
 

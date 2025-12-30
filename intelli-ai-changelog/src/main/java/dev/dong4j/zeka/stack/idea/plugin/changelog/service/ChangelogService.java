@@ -220,7 +220,7 @@ public final class ChangelogService {
             // 日期分组之间添加空行
             commitsText.append("\n");
         }
-        
+
         return commitsText.toString().trim();
     }
 
@@ -376,6 +376,26 @@ public final class ChangelogService {
     }
 
     /**
+     * 基于代码变更（diff）生成提交记录（流式回调）
+     *
+     * @param changes  代码变更集合
+     * @param listener 流式响应监听器
+     * @return 生成的提交记录内容
+     * @throws Exception 当 AI 服务调用失败时抛出
+     */
+    @NotNull
+    public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
+                                                      @NotNull AIStreamResponseListener listener) throws Exception {
+        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
+        if (codeDiffs.isEmpty()) {
+            throw new Exception(ChangelogBundle.message("commit.no.changes"));
+        }
+
+        String prompt = buildPromptFromCodeDiff(codeDiffs);
+        return callAIServiceForCommitMessageStream(prompt, listener);
+    }
+
+    /**
      * 基于代码变更构建 prompt
      *
      * @param codeDiffs 代码变更列表
@@ -400,8 +420,9 @@ public final class ChangelogService {
             codeDiffsText.append("\n");
         }
 
-        // 替换模板变量
-        return template.replace("{codeDiffs}", codeDiffsText.toString().trim());
+        // 替换模板变量，兼容 {diff} 与 {codeDiffs}
+        String diffText = codeDiffsText.toString().trim();
+        return template.replace("{diff}", diffText).replace("{codeDiffs}", diffText);
     }
 
     /**
@@ -416,37 +437,37 @@ public final class ChangelogService {
         // 获取系统提示词（使用专门的提交记录生成提示词）
         String systemPrompt = """
             你是一位经验丰富的代码审查专家和技术文档编写者。
-            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message）。
-            
+            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
+            输出格式为 Conventional Commits：
+            <type>(<scope>): <subject>
+
+            <body(可选，说明动机、影响、兼容性)>
+
             你需要：
             1. 分析代码变更的实际内容，而不是依赖提交记录
             2. 识别代码变更的类型（新功能、Bug 修复、重构等）
-            3. 生成准确、简洁的提交记录，符合常见的提交记录规范
-            4. 忽略无意义的变更（如格式化、空白字符等）
-            
+            3. 优先表达设计意图 / 约束变化 / 行为变化
+            4. 如果是重构，请说明“为什么现在要重构”
+            5. 避免描述实现细节
+            6. 忽略无意义的变更（如格式化、空白字符等）
+
             重要要求：
-            - 输出的内容不要使用 markdown 代码块包裹（如 ```markdown）
-            - 直接输出提交记录内容，不要添加任何代码块标记
+            - 只输出提交记录正文，不要解释过程或附加说明
+            - 第一行是简短摘要，使用祈使语气，不要句号
+            - 如需详细说明，空一行后给出正文描述
+            - 避免无意义的空白行或多余的格式符号
             """;
 
         // 创建 AI 聊天请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
-
-        // 检查是否启用详细日志
-        boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
 
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
             AIProviderConfig config = SettingsState.getInstance().providerConfig;
-            String result;
-            if (verboseLogging) {
-                result = callAIServiceStream(aiService, request, config);
-            } else {
-                AIResponseListener listener = new ChangelogAIResponseListener(project);
-                result = aiService.generateContent(project, request, config, listener);
-            }
+            // 提交记录采用流式调用，保证结果来源一致
+            String result = callAIServiceStream(aiService, request, config);
 
             // 检查结果是否为空
             if (result.trim().isEmpty()) {
@@ -470,11 +491,73 @@ public final class ChangelogService {
     private String callAIServiceStream(@NotNull AIService aiService,
                                        @NotNull AIChatRequest request,
                                        @NotNull AIProviderConfig config) throws Exception {
+        AIStreamResponseListener streamListener =
+            new ChangelogAIStreamResponseListener(project, new StringBuilder(),
+                                                  new CountDownLatch(1), new AtomicReference<>());
+        return callAIServiceStreamWithListener(aiService, request, config, streamListener);
+    }
+
+    @NotNull
+    private String callAIServiceForCommitMessageStream(@NotNull String userPrompt,
+                                                       @NotNull AIStreamResponseListener listener) throws Exception {
+        String systemPrompt = """
+            你是一位经验丰富的代码审查专家和技术文档编写者。
+            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
+            输出格式为 Conventional Commits：
+            <type>(<scope>): <subject>
+
+            <body(可选，说明动机、影响、兼容性)>
+
+            你需要：
+            1. 分析代码变更的实际内容，而不是依赖提交记录
+            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
+            3. 优先表达设计意图 / 约束变化 / 行为变化
+            4. 如果是重构，请说明“为什么现在要重构”
+            5. 避免描述实现细节
+            6. 忽略无意义的变更（如格式化、空白字符等）
+
+            重要要求：
+            - 只输出提交记录正文，不要解释过程或附加说明
+            - 第一行是简短摘要，使用祈使语气，不要句号
+            - 如需详细说明，空一行后给出正文描述
+            - 避免无意义的空白行或多余的格式符号
+            """;
+
+        AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
+        AIService aiService = AIServiceImpl.getInstance();
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        return callAIServiceStreamWithListener(aiService, request, config, listener);
+    }
+
+    @NotNull
+    private String callAIServiceStreamWithListener(@NotNull AIService aiService,
+                                                   @NotNull AIChatRequest request,
+                                                   @NotNull AIProviderConfig config,
+                                                   @NotNull AIStreamResponseListener externalListener) throws Exception {
         StringBuilder buffer = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
-        AIStreamResponseListener listener =
-            new ChangelogAIStreamResponseListener(project, buffer, latch, errorRef);
+        AtomicReference<String> resultRef = new AtomicReference<>();
+
+        AIStreamResponseListener listener = new AIStreamResponseListener() {
+
+            @Override
+            public void onChunk(@NotNull String chunk) {
+                buffer.append(chunk);
+            }
+
+            public void onComplete(@NotNull String fullText) {
+                resultRef.set(fullText);
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(@NotNull String error, @Nullable Throwable exception) {
+                errorRef.set(new Exception(error, exception));
+                externalListener.onError(error, exception);
+                latch.countDown();
+            }
+        };
 
         aiService.generateContentStream(project, request, config, listener);
         try {
@@ -489,7 +572,10 @@ public final class ChangelogService {
             throw error;
         }
 
-        String result = buffer.toString();
+        String result = resultRef.get();
+        if (result == null || result.trim().isEmpty()) {
+            result = buffer.toString();
+        }
         if (result.trim().isEmpty()) {
             throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
         }

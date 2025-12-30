@@ -516,7 +516,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                             // 思考结束后补空行，保持输出分段
                             AIConsoleLoggerUtil.printStreamPlain(
                                 project,
-                                "\n══════════════════════════════ 正文内容 ══════════════════════════════\n");
+                                "\n\n══════════════════════════════ 正文内容 ══════════════════════════════\n\n");
                             inThinking[0] = false;
                             thinkPrefixPrinted[0] = false;
                         }
@@ -528,7 +528,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             }
         }
         AIConsoleLoggerUtil.completeStreamPlain(project);
-        listener.onComplete();
+        listener.onComplete(fullText.toString());
     }
 
     /**

@@ -131,3 +131,8 @@ https://github.com/Blarc/ai-commits-intellij-plugin
     - 分析报告质量和完整性
     - 提供报告改进建议
     - 支持报告模板推荐
+
+## 2025.12.31
+
+- [ ] 生成项目变更文件
+- [ ] 生成美化项目的 html 变更记录
