@@ -118,6 +118,80 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public String commitMessageTemplate = getDefaultCommitMessageTemplate();
 
     /**
+     * git-cliff 配置
+     * <p>用于生成项目级别变更日志的最小配置，后续可在设置中调整。
+     *
+     * <p>默认值: getDefaultGitCliffConfig()
+     *
+     * @see #getDefaultGitCliffConfig()
+     */
+    public String gitCliffConfig = getDefaultGitCliffConfig();
+
+    /**
+     * Release Log 生成方式
+     * <p>控制 Release Log 的生成方式。
+     * 使用枚举类型，支持 AI 和 git-cliff 两种方式，后续可以扩展更多生成器。
+     *
+     * <p>默认值: AI（默认使用 AI 生成）
+     *
+     * @see ReleaseLogProvider
+     */
+    public ReleaseLogProvider releaseLog = ReleaseLogProvider.AI;
+
+    /**
+     * 是否使用 tag 作为起点
+     * <p>true 表示使用 tag 作为起点，false 表示使用 hash 作为起点。
+     *
+     * <p>默认值: true（默认使用 tag）
+     */
+    public boolean useTagAsStart = true;
+
+    /**
+     * 最近使用的 tag
+     * <p>保存最近使用的 tag 值，用于回显到设置页面。
+     *
+     * <p>默认值: 空字符串
+     */
+    public String lastUsedTag = "";
+
+    /**
+     * 最近使用的 hash
+     * <p>保存最近使用的 hash 值，用于回显到设置页面。
+     *
+     * <p>默认值: 空字符串
+     */
+    public String lastUsedHash = "";
+
+    /**
+     * 是否显示 Git-cliff 配置
+     * <p>控制设置页面中 Git-cliff 配置区域的显示/隐藏。
+     * 用户可以通过复选框控制是否显示配置，减少设置页面长度。
+     *
+     * <p>默认值: false（默认隐藏，减少页面长度）
+     */
+    public boolean showGitCliffConfig = false;
+
+    /**
+     * 是否显示 AI Release Log 提示词
+     * <p>控制设置页面中 AI Release Log 提示词区域的显示/隐藏。
+     * 用户可以通过复选框控制是否显示提示词，减少设置页面长度。
+     *
+     * <p>默认值: false（默认隐藏，减少页面长度）
+     */
+    public boolean showAiReleaseLogPrompt = false;
+
+    /**
+     * AI Release Log 提示词
+     * <p>用于生成 Release Log 的 AI 提示词模板。
+     * 使用 {version}、{date}、{commits} 等作为占位符。
+     *
+     * <p>默认值: getDefaultAiReleaseLogPrompt()
+     *
+     * @see #getDefaultAiReleaseLogPrompt()
+     */
+    public String aiReleaseLogPrompt = getDefaultAiReleaseLogPrompt();
+
+    /**
      * 获取 SettingsState 的单例实例
      * <p>
      * 通过 ApplicationManager 获取当前应用的 SettingsState 服务实例
@@ -318,6 +392,76 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
             历史提交(最近3条):
             {recentCommits}
+            """;
+    }
+
+    /**
+     * 获取默认的 git-cliff 配置
+     *
+     * @return git-cliff 配置内容
+     */
+    @NotNull
+    public static String getDefaultGitCliffConfig() {
+        return """
+            [changelog]
+            header = ""
+            body = "{% for group, commits in commits | group_by(attribute=\\"group\\") %}\
+            ## {{ group }}\\n\
+            {% for commit in commits %}- {{ commit.message | trim }}\\n{% endfor %}\\n\
+            {% endfor %}"
+            footer = ""
+
+            [git]
+            conventional_commits = true
+            filter_unconventional = false
+            split_commits = false
+            commit_parsers = [
+              { message = "^feat", group = "Features" },
+              { message = "^fix", group = "Bug Fixes" },
+              { message = "^refactor", group = "Refactor" },
+              { message = "^docs", group = "Docs" },
+              { message = "^perf", group = "Performance" },
+              { message = "^test", group = "Tests" },
+              { message = "^build", group = "Build" },
+              { message = "^chore", group = "Chore" },
+              { message = "^ci", group = "CI" }
+            ]
+            """;
+    }
+
+    /**
+     * 获取默认的 AI Release Log 提示词
+     *
+     * <p>返回用于生成 Release Log 的默认 AI 提示词模板。
+     *
+     * @return 默认的 AI Release Log 提示词
+     */
+    @NotNull
+    public static String getDefaultAiReleaseLogPrompt() {
+        return """
+            请根据以下 Git 提交记录生成项目 Release Log。
+
+            要求：
+            1. 提交记录已经按照提交日期进行了分组，每个日期分组使用三级标题（### 日期）标识。
+            2. 将每个日期分组内的提交记录分类到以下类别：
+               - ⭐ 新功能
+               - 🪲 问题修复
+               - ♻️ 代码重构
+               - 📓 文档更新
+               - 🔧 其他改进
+            3. 每个条目应重写为简洁、易读的描述。
+            4. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"）。
+            5. 严格按照 Markdown 格式输出：
+               - 使用二级标题表示版本号（格式：## 版本 {version}）
+               - 保持原有的日期分组结构（三级标题：### 日期）
+               - 在每个日期分组下，使用四级标题表示每个类别（格式：#### ⭐ 新功能）
+            6. 保持句子简短、客观和技术性。
+            7. 不要在 Markdown 之外包含解释或注释。
+
+            版本: {version}
+            提交记录（已按日期分组）:
+
+            {commits}
             """;
     }
 

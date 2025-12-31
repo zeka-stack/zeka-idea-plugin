@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -183,6 +184,24 @@ public final class ChangelogService {
     }
 
     /**
+     * 基于 Git 范围生成 Release Log（AI）
+     *
+     * @param gitRoot  Git 仓库根目录
+     * @param range    提交范围（例如 tag..HEAD），可为空
+     * @param listener 流式监听器
+     * @return 生成的 Release Log 内容
+     * @throws Exception 当读取提交记录或调用 AI 服务失败时抛出
+     */
+    @NotNull
+    public String generateReleaseLogByAiStream(@NotNull Path gitRoot,
+                                               @Nullable String range,
+                                               @NotNull AIStreamResponseListener listener) throws Exception {
+        List<CommitInfo> commits = readCommitsFromRange(gitRoot, range);
+        String prompt = buildReleaseLogPrompt(commits);
+        return callAIServiceStreamForChangelog(prompt, listener);
+    }
+
+    /**
      * 基于 Git diff 生成变更日志
      *
      * @param commitHashes 提交哈希列表
@@ -280,6 +299,61 @@ public final class ChangelogService {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    @Nullable
+    private Repository getRepository(@NotNull Path gitRoot) {
+        File gitDir = gitRoot.resolve(".git").toFile();
+        if (!gitDir.exists()) {
+            return null;
+        }
+        try {
+            return new FileRepositoryBuilder()
+                .setGitDir(gitDir)
+                .build();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    @NotNull
+    private List<CommitInfo> readCommitsFromRange(@NotNull Path gitRoot, @Nullable String range) {
+        List<CommitInfo> commits = new ArrayList<>();
+        Repository repository = getRepository(gitRoot);
+
+        try (repository) {
+            if (repository == null) {
+                return commits;
+            }
+            try (Git git = new Git(repository)) {
+                Iterable<RevCommit> logIterator;
+                if (range != null && !range.isBlank() && range.contains("..")) {
+                    String[] parts = range.split("\\.\\.", 2);
+                    ObjectId from = repository.resolve(parts[0]);
+                    ObjectId to = repository.resolve(parts[1]);
+                    if (from != null && to != null) {
+                        logIterator = git.log().addRange(from, to).call();
+                    } else {
+                        logIterator = git.log().call();
+                    }
+                } else {
+                    logIterator = git.log().call();
+                }
+                for (RevCommit commit : logIterator) {
+                    commits.add(new CommitInfo(
+                        commit.getName(),
+                        commit.getShortMessage(),
+                        commit.getFullMessage(),
+                        new Date(commit.getCommitTime() * 1000L),
+                        commit.getAuthorIdent().getName()
+                    ));
+                }
+            }
+        } catch (Exception ignored) {
+            // 忽略无法解析的提交
+        }
+
+        return commits;
     }
 
     /**
@@ -408,6 +482,25 @@ public final class ChangelogService {
 
         return template
             .replace("{version}", "v1.0.0")
+            .replace("{commits}", commitsText);
+    }
+
+    /**
+     * 组装 Release Log prompt（AI）
+     *
+     * @param commits 提交记录列表
+     * @return 组装好的 Release Log prompt
+     */
+    @NotNull
+    private String buildReleaseLogPrompt(@NotNull List<CommitInfo> commits) {
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.aiReleaseLogPrompt;
+        String commitsText = buildCommitsText(commits);
+        String date = formatCurrentDate();
+
+        return template
+            .replace("{version}", "Unreleased")
+            .replace("{date}", date)
             .replace("{commits}", commitsText);
     }
 
