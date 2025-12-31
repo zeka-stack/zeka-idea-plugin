@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
@@ -64,7 +65,7 @@ public class CommitMessageGenerator {
      * @since 1.0.0
      */
     public void generateForChanges(@NotNull Collection<Change> changes) {
-        generateForChanges(changes, null);
+        generateForChanges(changes, null, null);
     }
 
     /**
@@ -78,6 +79,21 @@ public class CommitMessageGenerator {
      */
     public void generateForChanges(@NotNull Collection<Change> changes,
                                    @Nullable Object commitMessageControl) {
+        generateForChanges(changes, commitMessageControl, null);
+    }
+
+    /**
+     * 处理代码变更, 生成提交记录
+     * <p> 支持在提交面板与变更日志工具窗口同步输出最终结果, 便于复制.
+     *
+     * @param changes              变更集合
+     * @param commitMessageControl 提交面板的提交信息控件, 可以为 null
+     * @param outputSession        工具窗口输出会话, 可以为 null
+     * @since 1.0.0
+     */
+    public void generateForChanges(@NotNull Collection<Change> changes,
+                                   @Nullable Object commitMessageControl,
+                                   @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
         if (changes.isEmpty()) {
             log.warn("Git 提交页面：没有代码变更需要处理");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.changes"));
@@ -124,6 +140,9 @@ public class CommitMessageGenerator {
                                 ApplicationManager.getApplication().invokeLater(() -> {
                                     setCommitMessageText("", commitMessageControl);
                                 });
+                                if (outputSession != null) {
+                                    outputSession.setText("");
+                                }
                             }
 
                             /**
@@ -143,6 +162,9 @@ public class CommitMessageGenerator {
                                         updated.set(true);
                                     }
                                 });
+                                if (outputSession != null) {
+                                    outputSession.append(chunk);
+                                }
                             }
 
                             /**
@@ -161,6 +183,9 @@ public class CommitMessageGenerator {
                                         updated.set(true);
                                     }
                                 });
+                                if (outputSession != null) {
+                                    outputSession.setText(fullText);
+                                }
                             }
                         };
 
@@ -175,6 +200,9 @@ public class CommitMessageGenerator {
                                               && setCommitMessageText(formattedCommitMessage, commitMessageControl);
                             if (!applied && !updated.get()) {
                                 log.warn("Git 提交页面：提交面板不可用，无法写入提交记录");
+                            }
+                            if (outputSession != null) {
+                                outputSession.setText(formattedCommitMessage);
                             }
                         });
 

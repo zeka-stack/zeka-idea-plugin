@@ -7,6 +7,7 @@ import java.util.List;
 import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import icons.ChangelogIcons;
 
 /**
@@ -101,6 +102,13 @@ public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
     protected @NotNull String generateContent(@NotNull ChangelogService service,
                                               @NotNull List<String> commitHashes) throws Exception {
         return service.generateChangelogFromDiff(commitHashes);
+    }
+
+    @Override
+    protected @NotNull String generateContentStream(@NotNull ChangelogService service,
+                                                    @NotNull List<String> commitHashes,
+                                                    @NotNull AIStreamResponseListener listener) throws Exception {
+        return service.generateChangelogFromDiffStream(commitHashes, listener);
     }
 
 }

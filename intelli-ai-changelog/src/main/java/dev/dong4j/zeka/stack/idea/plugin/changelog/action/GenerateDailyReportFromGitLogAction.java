@@ -7,6 +7,7 @@ import java.util.List;
 import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import icons.ChangelogIcons;
 
 /**
@@ -111,5 +112,11 @@ public class GenerateDailyReportFromGitLogAction extends AbstractGitLogAction {
                                               @NotNull List<String> commitHashes) throws Exception {
         return service.generateDailyReport(commitHashes);
     }
-}
 
+    @Override
+    protected @NotNull String generateContentStream(@NotNull ChangelogService service,
+                                                    @NotNull List<String> commitHashes,
+                                                    @NotNull AIStreamResponseListener listener) throws Exception {
+        return service.generateDailyReportStream(commitHashes, listener);
+    }
+}
