@@ -44,6 +44,7 @@
                     anchor="right"
                     icon="/icons/changelog_16.svg"
                     factoryClass="dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowFactory"
+                    canCloseContents="true"
                     doNotActivateOnStart="true"/>
     </extensions>
 

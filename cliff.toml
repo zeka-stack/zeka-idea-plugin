@@ -1,0 +1,94 @@
+# git-cliff 配置文件
+# https://git-cliff.org/docs/configuration
+
+
+[changelog]
+# 用于在变更日志中为每个版本渲染的 Tera 模板
+# 参见 https://keats.github.io/tera/docs/#introduction
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+            {% if commit.breaking %}[**breaking**] {% endif %}\
+            {{ commit.message | upper_first }}\
+    {% endfor %}
+{% endfor %}
+"""
+# 移除变更日志正文中的前导和尾随空白字符
+trim = true
+# 即使没有要处理的版本也渲染正文
+render_always = true
+# 用于修改变更日志的基于正则表达式的后处理器数组
+postprocessors = [
+    # 将占位符 <REPO> 替换为 URL
+    #{ pattern = '<REPO>', replace = "https://github.com/orhun/git-cliff" },
+]
+# 即使没有要处理的版本也渲染正文
+# render_always = true
+# 输出文件路径
+output = "release.md"
+
+[git]
+# 根据约定式提交规范解析提交
+# 参见 https://www.conventionalcommits.org
+conventional_commits = true
+# 排除不符合约定式提交规范的提交
+filter_unconventional = false
+# 要求所有提交都符合约定式规范
+# 优先于 filter_unconventional
+require_conventional = false
+# 在换行符处拆分提交，将每一行视为单独的提交
+split_commits = false
+# 用于在进一步处理之前修改提交消息的基于正则表达式的解析器数组
+commit_preprocessors = [
+    # 将问题编号替换为链接模板，在 `changelog.postprocessors` 中更新
+    #{ pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
+    # 使用 https://github.com/crate-ci/typos 检查提交消息的拼写
+    # 如果拼写不正确，将自动修复
+    #{ pattern = '.*', replace_command = 'typos --write-changes -' },
+]
+# 防止破坏性提交被提交解析器排除
+protect_breaking_commits = false
+# 用于从提交消息中提取数据的基于正则表达式的解析器数组
+# 将提交分配到组
+# 可选地设置提交的作用域，并可以决定是否从进一步处理中排除提交
+commit_parsers = [
+    { message = "^feat", group = "<!-- 0 -->🚀 Features" },
+    { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
+    { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
+    { message = "^perf", group = "<!-- 4 -->⚡ Performance" },
+    { message = "^refactor", group = "<!-- 2 -->🚜 Refactor" },
+    { message = "^style", group = "<!-- 5 -->🎨 Styling" },
+    { message = "^test", group = "<!-- 6 -->🧪 Testing" },
+    { message = "^chore\\(release\\): prepare for", skip = true },
+    { message = "^chore\\(deps.*\\)", skip = true },
+    { message = "^chore\\(pr\\)", skip = true },
+    { message = "^chore\\(pull\\)", skip = true },
+    { message = "^chore|^ci", group = "<!-- 7 -->⚙️ Miscellaneous Tasks" },
+    { body = ".*security", group = "<!-- 8 -->🛡️ Security" },
+    { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
+    { message = ".*", group = "<!-- 10 -->💼 Other" },
+]
+# 排除未被任何提交解析器匹配的提交
+filter_commits = false
+# 当提交未被任何提交解析器匹配时失败
+fail_on_unmatched_commit = false
+# 用于提取外部引用并将其转换为 URL 的基于正则表达式的链接解析器数组
+link_parsers = []
+# 仅包含属于当前分支的标签
+use_branch_tags = false
+# 按拓扑顺序而不是按时间顺序排列版本
+topo_order = false
+# 按拓扑顺序而不是按时间顺序排列提交
+topo_order_commits = true
+# 变更日志中每个组/版本内提交的顺序
+# 允许的值: newest, oldest
+sort_commits = "oldest"
+# 处理子模块提交
+recurse_submodules = false
