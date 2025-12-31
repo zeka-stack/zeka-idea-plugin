@@ -387,8 +387,14 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         JsonObject body = new JsonObject();
         body.addProperty("model", config.modelName);
 
-        // body.addProperty("think", enableThinking);
-        // body.addProperty("enable_thinking", enableThinking);
+        if (!enableThinking) {
+            // 如果设置为关闭思考, 有些思考模型会报错, 所以需要强制设置为开启思考模式
+            if (config.modelName.contains("think")) {
+                enableThinking = true;
+            }
+            body.addProperty("think", enableThinking);
+            body.addProperty("enable_thinking", enableThinking);
+        }
         body.addProperty("stream", stream);
         body.add("messages", messagesArray);
 
