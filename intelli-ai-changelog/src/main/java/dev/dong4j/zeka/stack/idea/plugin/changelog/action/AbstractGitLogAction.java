@@ -23,8 +23,10 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import icons.ChangelogIcons;
@@ -115,6 +117,28 @@ public abstract class AbstractGitLogAction extends AnAction {
     }
 
     /**
+     * 流式生成内容
+     * <p>
+     * 子类可重写此方法以启用 AI 流式输出. 默认实现会退化为一次性生成.
+     *
+     * @param service      ChangelogService 实例
+     * @param commitHashes 提交记录 hash 列表
+     * @param listener     流式监听器
+     * @return 生成的内容
+     * @throws Exception 生成过程中可能发生的异常
+     */
+    @NotNull
+    protected String generateContentStream(@NotNull ChangelogService service,
+                                           @NotNull List<String> commitHashes,
+                                           @NotNull AIStreamResponseListener listener) throws Exception {
+        String content = generateContent(service, commitHashes);
+        listener.onStart();
+        listener.onChunk(content);
+        listener.onComplete(content);
+        return content;
+    }
+
+    /**
      * 更新动作状态
      * <p>
      * 检查是否有选中的提交记录，如果有则启用按钮，否则禁用。
@@ -178,6 +202,18 @@ public abstract class AbstractGitLogAction extends AnAction {
             selectedHashes.add(commit.getId().asString());
         }
 
+        // 创建工具窗口输出会话，便于流式输出与复制
+        // 标题包含动作名称与提交数，便于区分多次生成
+        String toolWindowTitle = ChangelogBundle.message(
+            "toolwindow.title.short",
+            ChangelogBundle.message(getTextKey()),
+            selectedHashes.size(),
+            java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+                                                        );
+        ChangelogToolWindowService.ChangelogOutputSession outputSession =
+            ChangelogToolWindowService.getInstance(project)
+                .openSession(toolWindowTitle);
+
         // 在后台任务中生成内容
         String progressTitle = ChangelogBundle.message(getProgressTitleKey());
         ProgressManager.getInstance().run(new Task.Backgroundable(project, progressTitle, true) {
@@ -203,13 +239,24 @@ public abstract class AbstractGitLogAction extends AnAction {
 
                 try {
                     ChangelogService service = ChangelogService.getInstance(project);
-                    String content = generateContent(service, selectedHashes);
+                    AIStreamResponseListener listener = new AIStreamResponseListener() {
+                        @Override
+                        public void onStart() {
+                            outputSession.setText("");
+                        }
 
-                    // 在 EDT 中显示结果对话框
-                    ApplicationManager.getApplication().invokeLater(() -> {
-                        ChangelogResultDialog dialog = new ChangelogResultDialog(project, content);
-                        dialog.show();
-                    });
+                        @Override
+                        public void onChunk(@NotNull String chunk) {
+                            outputSession.append(chunk);
+                        }
+
+                        @Override
+                        public void onComplete(@NotNull String fullText) {
+                            outputSession.setText(fullText);
+                        }
+                    };
+
+                    generateContentStream(service, selectedHashes, listener);
                 } catch (Exception e) {
                     // 在 EDT 中显示错误提示
                     ApplicationManager.getApplication().invokeLater(() -> {
@@ -236,4 +283,3 @@ public abstract class AbstractGitLogAction extends AnAction {
         return ActionUpdateThread.BGT;
     }
 }
-

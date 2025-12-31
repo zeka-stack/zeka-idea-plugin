@@ -128,10 +128,9 @@ public class GenerateCommitMessageAction extends AnAction {
 
         // 读取提交面板的提交信息控件，用于直接写入提交记录
         Object commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);
-
         // 使用生成器生成提交记录
         CommitMessageGenerator generator = new CommitMessageGenerator(project);
-        generator.generateForChanges(changes, commitMessageControl);
+        generator.generateForChanges(changes, commitMessageControl, null);
     }
 
     /**

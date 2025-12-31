@@ -107,6 +107,22 @@ public final class ChangelogService {
     }
 
     /**
+     * 从选中的提交记录生成 Changelog（流式）
+     *
+     * @param commitHashes 提交记录的 hash 列表
+     * @param listener     流式监听器
+     * @return 生成的 Changelog 内容
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
+     */
+    @NotNull
+    public String generateChangelogStream(@NotNull List<String> commitHashes,
+                                          @NotNull AIStreamResponseListener listener) throws Exception {
+        List<CommitInfo> commits = readCommits(commitHashes);
+        String prompt = buildPrompt(commits);
+        return callAIServiceStreamForChangelog(prompt, listener);
+    }
+
+    /**
      * 从选中的提交记录生成工作日报
      *
      * @param commitHashes 提交记录的哈希列表
@@ -118,6 +134,22 @@ public final class ChangelogService {
         List<CommitInfo> commits = readCommits(commitHashes);
         String prompt = buildDailyReportPrompt(commits);
         return callAIService(prompt);
+    }
+
+    /**
+     * 从选中的提交记录生成工作日报（流式）
+     *
+     * @param commitHashes 提交记录的哈希列表
+     * @param listener     流式监听器
+     * @return 生成的工作日报内容
+     * @throws Exception 当生成日报内容失败时抛出
+     */
+    @NotNull
+    public String generateDailyReportStream(@NotNull List<String> commitHashes,
+                                            @NotNull AIStreamResponseListener listener) throws Exception {
+        List<CommitInfo> commits = readCommits(commitHashes);
+        String prompt = buildDailyReportPrompt(commits);
+        return callAIServiceStreamForChangelog(prompt, listener);
     }
 
     /**
@@ -135,6 +167,22 @@ public final class ChangelogService {
     }
 
     /**
+     * 从选中的提交记录生成工作周报（流式）
+     *
+     * @param commitHashes 提交记录的 hash 列表
+     * @param listener     流式监听器
+     * @return 生成的工作周报内容
+     * @throws Exception 当读取提交记录或调用 AI 服务失败时抛出
+     */
+    @NotNull
+    public String generateWeeklyReportStream(@NotNull List<String> commitHashes,
+                                             @NotNull AIStreamResponseListener listener) throws Exception {
+        List<CommitInfo> commits = readCommits(commitHashes);
+        String prompt = buildWeeklyReportPrompt(commits);
+        return callAIServiceStreamForChangelog(prompt, listener);
+    }
+
+    /**
      * 基于 Git diff 生成变更日志
      *
      * @param commitHashes 提交哈希列表
@@ -146,6 +194,22 @@ public final class ChangelogService {
         List<DiffCommitInfo> diffCommits = readCommitDiffs(commitHashes);
         String prompt = buildDiffChangelogPrompt(diffCommits);
         return callAIService(prompt);
+    }
+
+    /**
+     * 基于 Git diff 生成变更日志（流式）
+     *
+     * @param commitHashes 提交哈希列表
+     * @param listener     流式监听器
+     * @return 生成的变更日志内容
+     * @throws Exception 当生成过程中发生错误
+     */
+    @NotNull
+    public String generateChangelogFromDiffStream(@NotNull List<String> commitHashes,
+                                                  @NotNull AIStreamResponseListener listener) throws Exception {
+        List<DiffCommitInfo> diffCommits = readCommitDiffs(commitHashes);
+        String prompt = buildDiffChangelogPrompt(diffCommits);
+        return callAIServiceStreamForChangelog(prompt, listener);
     }
 
     /**
@@ -438,6 +502,41 @@ public final class ChangelogService {
                 throw new Exception("未知错误");
             }
         }
+    }
+
+    /**
+     * 使用变更日志系统提示词进行流式生成
+     *
+     * @param userPrompt 用户提示词
+     * @param listener   流式监听器
+     * @return 生成的内容
+     * @throws Exception 当 AI 服务调用失败时抛出
+     */
+    @NotNull
+    private String callAIServiceStreamForChangelog(@NotNull String userPrompt,
+                                                   @NotNull AIStreamResponseListener listener) throws Exception {
+        SettingsState settings = SettingsState.getInstance();
+        AIProviderConfig config = settings.providerConfig;
+        AIChatRequest request = buildChangelogRequest(userPrompt);
+        AIService aiService = AIServiceImpl.getInstance();
+        return callAIServiceStreamWithListener(aiService, request, config, listener);
+    }
+
+    /**
+     * 构建变更日志类请求
+     * <p> 使用设置中的系统提示词，若为空则回退到默认提示词。
+     *
+     * @param userPrompt 用户提示词
+     * @return AIChatRequest
+     */
+    @NotNull
+    private AIChatRequest buildChangelogRequest(@NotNull String userPrompt) {
+        SettingsState settings = SettingsState.getInstance();
+        String systemPrompt = settings.systemPrompt;
+        if (systemPrompt == null || systemPrompt.trim().isEmpty()) {
+            systemPrompt = SettingsState.getDefaultSystemPrompt();
+        }
+        return new AIChatRequest(systemPrompt, userPrompt);
     }
 
     /**
