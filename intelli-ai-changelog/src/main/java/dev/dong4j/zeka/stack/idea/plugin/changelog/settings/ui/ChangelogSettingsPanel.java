@@ -1,5 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ui;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
@@ -15,11 +18,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.nio.file.Path;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -28,6 +34,7 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
@@ -90,6 +97,14 @@ public class ChangelogSettingsPanel {
     private final JBTextArea aiReleaseLogPromptTextArea;
     /** 重置 AI Release Log 提示词按钮 */
     private JButton resetAiReleaseLogPromptButton;
+    /** Git-cliff 下载进度条 */
+    private final JProgressBar gitCliffDownloadProgressBar;
+    /** Git-cliff 下载状态标签 */
+    private final JBLabel gitCliffDownloadStatusLabel;
+    /** Git-cliff 下载进度面板 */
+    private final JPanel gitCliffDownloadProgressPanel;
+    /** 是否正在下载 git-cliff */
+    private volatile boolean isDownloadingGitCliff = false;
 
     // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
     /** 系统提示文本区域, 用于显示或编辑系统提示信息 */
@@ -193,6 +208,21 @@ public class ChangelogSettingsPanel {
         aiReleaseLogPromptPanel.add(aiReleaseLogPromptContent, BorderLayout.NORTH);
         aiReleaseLogPromptPanel.setVisible(false); // 默认隐藏
 
+        // 创建 Git-cliff 下载进度条和状态标签
+        gitCliffDownloadProgressBar = new JProgressBar(0, 100);
+        gitCliffDownloadProgressBar.setStringPainted(false);
+        gitCliffDownloadProgressBar.setVisible(true); // 默认可见，由面板控制
+        gitCliffDownloadProgressBar.setPreferredSize(new Dimension(420, JBUI.scale(3)));
+
+        gitCliffDownloadStatusLabel = new JBLabel("");
+        gitCliffDownloadStatusLabel.setVisible(true); // 默认可见，由面板控制
+
+        // 创建下载进度面板
+        gitCliffDownloadProgressPanel = new JPanel(new BorderLayout(0, 5));
+        gitCliffDownloadProgressPanel.add(gitCliffDownloadProgressBar, BorderLayout.CENTER);
+        gitCliffDownloadProgressPanel.add(gitCliffDownloadStatusLabel, BorderLayout.SOUTH);
+        gitCliffDownloadProgressPanel.setVisible(false); // 默认隐藏，下载时显示
+
         // 初始化子配置的可用状态
         // use tag 和 use hash 始终可用，不受 provider 选择影响
         useTagAsStartRadioButton.setEnabled(true);
@@ -203,6 +233,9 @@ public class ChangelogSettingsPanel {
 
         // 默认选择 AI
         releaseLogByAiRadioButton.setSelected(true);
+
+        // 更新 git-cliff 单选框文本，如果已安装则显示版本号
+        updateGitCliffRadioButtonText();
 
         // 初始化反馈面板
         FeedbackPanel feedbackPanel = new FeedbackPanel(
@@ -359,6 +392,9 @@ public class ChangelogSettingsPanel {
         // 动态更新单选框文本，将最近使用的 tag/hash 拼接到描述中
         updateRadioButtonTexts(settings);
 
+        // 更新 git-cliff 单选框文本，添加版本号
+        updateGitCliffRadioButtonText();
+
         // 重置 Git-cliff 配置文本
         gitCliffConfigTextArea.setText(settings.gitCliffConfig);
 
@@ -392,6 +428,10 @@ public class ChangelogSettingsPanel {
             gitCliffConfigPanel.setVisible(false);
             showGitCliffConfigCheckBox.setSelected(false);
             aiReleaseLogPromptPanel.setVisible(showAiReleaseLogPromptCheckBox.isSelected());
+            // 隐藏下载进度面板
+            gitCliffDownloadProgressBar.setVisible(false);
+            gitCliffDownloadStatusLabel.setVisible(false);
+            gitCliffDownloadProgressPanel.setVisible(false);
         });
         releaseLogByGitCliffRadioButton.addActionListener(e -> {
             updateGitCliffConfigAvailability(true);
@@ -400,6 +440,8 @@ public class ChangelogSettingsPanel {
             gitCliffConfigPanel.setVisible(showGitCliffConfigCheckBox.isSelected());
             aiReleaseLogPromptPanel.setVisible(false);
             showAiReleaseLogPromptCheckBox.setSelected(false);
+            // 检查是否需要下载 git-cliff
+            checkAndDownloadGitCliff();
         });
 
         // 显示 Git-cliff 配置复选框控制配置面板的显示/隐藏
@@ -513,6 +555,8 @@ public class ChangelogSettingsPanel {
             // 显示 git-cliff 配置复选框（移到 provider 面板中，带缩进）
             .addComponent(gitCliffConfigCheckBoxPanel)
             .addComponent(gitCliffConfigPanelWrapper)
+            // 添加下载进度面板
+            .addComponent(gitCliffDownloadProgressPanel)
             .getPanel();
 
         JPanel panel = new JPanel(new BorderLayout());
@@ -525,6 +569,43 @@ public class ChangelogSettingsPanel {
         panel.setBorder(titledBorder);
 
         return panel;
+    }
+
+    /**
+     * 更新 git-cliff 单选框文本，添加版本号
+     * <p>
+     * 如果 git-cliff 已安装，则在单选框文本后添加版本号。
+     */
+    private void updateGitCliffRadioButtonText() {
+        String baseText = ChangelogBundle.message("settings.release.log.generator.gitcliff");
+        String version = GitCliffDownloadManager.getInstalledVersion();
+        if (version != null && !version.isEmpty()) {
+            releaseLogByGitCliffRadioButton.setText(baseText + " (" + version + ")");
+        } else {
+            releaseLogByGitCliffRadioButton.setText(baseText);
+        }
+    }
+
+    /**
+     * 处理 git-cliff 安装成功后的 UI 更新
+     * <p>
+     * 隐藏进度条，更新单选框文本显示版本号。
+     */
+    private void handleGitCliffInstallSuccess() {
+        String finalVersion = GitCliffDownloadManager.getInstalledVersion();
+        SwingUtilities.invokeLater(() -> {
+            gitCliffDownloadProgressBar.setVisible(false);
+            gitCliffDownloadStatusLabel.setVisible(false);
+            gitCliffDownloadProgressPanel.setVisible(false);
+            isDownloadingGitCliff = false;
+            // 更新单选框文本，添加版本号
+            if (finalVersion != null && !finalVersion.isEmpty()) {
+                String baseText = ChangelogBundle.message("settings.release.log.generator.gitcliff");
+                releaseLogByGitCliffRadioButton.setText(baseText + " (" + finalVersion + ")");
+            } else {
+                updateGitCliffRadioButtonText();
+            }
+        });
     }
 
     /**
@@ -674,6 +755,112 @@ public class ChangelogSettingsPanel {
      */
     private void resetAiReleaseLogPrompt() {
         aiReleaseLogPromptTextArea.setText(SettingsState.getDefaultAiReleaseLogPrompt());
+    }
+
+    /**
+     * 检查并下载 git-cliff
+     * <p>
+     * 如果 git-cliff 未安装，则先检查本地压缩包，如果存在则解压安装，
+     * 如果解压安装失败或不存在压缩包才从网络下载。
+     */
+    private void checkAndDownloadGitCliff() {
+        // 如果已安装，直接返回
+        if (GitCliffDownloadManager.isInstalled()) {
+            return;
+        }
+
+        // 如果正在下载，不重复触发
+        if (isDownloadingGitCliff) {
+            return;
+        }
+
+        // 显示下载进度面板
+        gitCliffDownloadProgressBar.setVisible(true);
+        gitCliffDownloadProgressBar.setIndeterminate(true);
+        gitCliffDownloadProgressBar.setValue(0);
+        gitCliffDownloadStatusLabel.setVisible(true);
+        gitCliffDownloadStatusLabel.setText(ChangelogBundle.message("settings.gitcliff.download.starting"));
+        gitCliffDownloadProgressPanel.setVisible(true);
+        // 强制刷新 UI
+        gitCliffDownloadProgressPanel.revalidate();
+        gitCliffDownloadProgressPanel.repaint();
+
+        isDownloadingGitCliff = true;
+
+        // 在后台线程执行安装
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            ProgressIndicator indicator = new EmptyProgressIndicator();
+            try {
+                // 1. 先检查本地压缩包
+                Path localPackage = GitCliffDownloadManager.findLocalPackage();
+                if (localPackage != null) {
+                    // 尝试从本地压缩包安装
+                    SwingUtilities.invokeLater(() -> {
+                        gitCliffDownloadStatusLabel.setText(ChangelogBundle.message("settings.gitcliff.download.installing.local"));
+                    });
+                    try {
+                        GitCliffDownloadManager.installFromLocalPackage(localPackage, indicator);
+                        // 本地安装成功
+                        handleGitCliffInstallSuccess();
+                        return; // 成功安装，直接返回
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                // 2. 本地压缩包不存在或安装失败，从网络下载
+                SwingUtilities.invokeLater(() -> {
+                    gitCliffDownloadStatusLabel.setText(ChangelogBundle.message("settings.gitcliff.download.downloading"));
+                });
+                GitCliffDownloadManager.downloadAndInstall(
+                    indicator,
+                    (downloaded, total) -> {
+                        // 更新进度条
+                        SwingUtilities.invokeLater(() -> {
+                            // 确保进度条和状态标签可见
+                            if (!gitCliffDownloadProgressBar.isVisible()) {
+                                gitCliffDownloadProgressBar.setVisible(true);
+                            }
+                            if (!gitCliffDownloadStatusLabel.isVisible()) {
+                                gitCliffDownloadStatusLabel.setVisible(true);
+                            }
+                            if (!gitCliffDownloadProgressPanel.isVisible()) {
+                                gitCliffDownloadProgressPanel.setVisible(true);
+                            }
+
+                            if (total > 0) {
+                                int percent = (int) Math.min(100, Math.round(downloaded * 100.0 / total));
+                                gitCliffDownloadProgressBar.setIndeterminate(false);
+                                gitCliffDownloadProgressBar.setValue(percent);
+                                gitCliffDownloadStatusLabel.setText(
+                                    ChangelogBundle.message("settings.gitcliff.download.progress", percent));
+                            } else {
+                                gitCliffDownloadStatusLabel.setText(
+                                    ChangelogBundle.message("settings.gitcliff.download.downloading"));
+                            }
+                            // 强制刷新
+                            gitCliffDownloadProgressPanel.revalidate();
+                            gitCliffDownloadProgressPanel.repaint();
+                        });
+                    }
+                                                          );
+
+                // 下载成功
+                handleGitCliffInstallSuccess();
+            } catch (Exception e) {
+                // 下载失败
+                SwingUtilities.invokeLater(() -> {
+                    gitCliffDownloadProgressBar.setVisible(false);
+                    gitCliffDownloadStatusLabel.setVisible(false);
+                    gitCliffDownloadProgressPanel.setVisible(false);
+                    isDownloadingGitCliff = false;
+                    JOptionPane.showMessageDialog(
+                        mainPanel,
+                        ChangelogBundle.message("settings.gitcliff.download.failed", e.getMessage()),
+                        ChangelogBundle.message("settings.gitcliff.download.title"),
+                        JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        });
     }
 
     /**

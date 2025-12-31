@@ -52,9 +52,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 提示词设置包括系统提示词和模板配置。
      * 用户可以通过复选框控制是否显示提示词设置，减少设置页面长度。
      *
-     * <p>默认值: true（默认显示，方便用户配置）
+     * <p>默认值: false（默认隐藏，减少页面长度）
      */
-    public boolean showPromptSettings = true;
+    public boolean showPromptSettings = false;
 
     /**
      * 系统提示词模板
@@ -142,9 +142,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 是否使用 tag 作为起点
      * <p>true 表示使用 tag 作为起点，false 表示使用 hash 作为起点。
      *
-     * <p>默认值: true（默认使用 tag）
+     * <p>默认值: false（默认使用 hash）
      */
-    public boolean useTagAsStart = true;
+    public boolean useTagAsStart = false;
 
     /**
      * 最近使用的 tag
@@ -397,6 +397,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     /**
      * 获取默认的 git-cliff 配置
+     * <p>
+     * 配置包含表情符号和优化的模板格式，使生成的 release log 更加美观和易读。
      *
      * @return git-cliff 配置内容
      */
@@ -406,7 +408,29 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             [changelog]
             header = ""
             body = "{% for group, commits in commits | group_by(attribute=\\"group\\") %}\
+            {% if group == \\"Features\\" %}\
+            ## ✨ Features\\n\
+            {% elif group == \\"Bug Fixes\\" %}\
+            ## 🐛 Bug Fixes\\n\
+            {% elif group == \\"Refactor\\" %}\
+            ## ♻️ Refactor\\n\
+            {% elif group == \\"Docs\\" %}\
+            ## 📚 Documentation\\n\
+            {% elif group == \\"Performance\\" %}\
+            ## ⚡ Performance\\n\
+            {% elif group == \\"Tests\\" %}\
+            ## ✅ Tests\\n\
+            {% elif group == \\"Build\\" %}\
+            ## 📦 Build\\n\
+            {% elif group == \\"Chore\\" %}\
+            ## 🔧 Chore\\n\
+            {% elif group == \\"CI\\" %}\
+            ## 🔄 CI\\n\
+            {% elif group == \\"Miscellaneous Tasks\\" %}\
+            ## ⚙️ Miscellaneous Tasks\\n\
+            {% else %}\
             ## {{ group }}\\n\
+            {% endif %}\
             {% for commit in commits %}- {{ commit.message | trim }}\\n{% endfor %}\\n\
             {% endfor %}"
             footer = ""
@@ -424,15 +448,17 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
               { message = "^test", group = "Tests" },
               { message = "^build", group = "Build" },
               { message = "^chore", group = "Chore" },
-              { message = "^ci", group = "CI" }
+              { message = "^ci", group = "CI" },
+              { message = ".*", group = "Miscellaneous Tasks" }
             ]
             """;
     }
 
     /**
      * 获取默认的 AI Release Log 提示词
-     *
-     * <p>返回用于生成 Release Log 的默认 AI 提示词模板。
+     * <p>
+     * 返回用于生成 Release Log 的默认 AI 提示词模板。
+     * 输出格式与 git-cliff 保持一致，按照类别分组，不包含日期分组。
      *
      * @return 默认的 AI Release Log 提示词
      */
@@ -442,24 +468,28 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             请根据以下 Git 提交记录生成项目 Release Log。
 
             要求：
-            1. 提交记录已经按照提交日期进行了分组，每个日期分组使用三级标题（### 日期）标识。
-            2. 将每个日期分组内的提交记录分类到以下类别：
-               - ⭐ 新功能
-               - 🪲 问题修复
-               - ♻️ 代码重构
-               - 📓 文档更新
-               - 🔧 其他改进
-            3. 每个条目应重写为简洁、易读的描述。
-            4. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"）。
-            5. 严格按照 Markdown 格式输出：
-               - 使用二级标题表示版本号（格式：## 版本 {version}）
-               - 保持原有的日期分组结构（三级标题：### 日期）
-               - 在每个日期分组下，使用四级标题表示每个类别（格式：#### ⭐ 新功能）
-            6. 保持句子简短、客观和技术性。
-            7. 不要在 Markdown 之外包含解释或注释。
+            1. 将提交记录分类到以下类别（使用二级标题，格式与 git-cliff 保持一致）：
+               - ## ✨ Features（新功能）
+               - ## 🐛 Bug Fixes（问题修复）
+               - ## ♻️ Refactor（代码重构）
+               - ## 📚 Documentation（文档更新）
+               - ## ⚡ Performance（性能优化）
+               - ## ✅ Tests（测试相关）
+               - ## 📦 Build（构建相关）
+               - ## 🔧 Chore（其他改进）
+               - ## 🔄 CI（CI/CD 相关）
+               - ## ⚙️ Miscellaneous Tasks（其他任务）
+            2. 每个条目应重写为简洁、易读的描述，删除提交信息中的类型前缀（如 feat:、fix: 等）。
+            3. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"、"chore: update"等）。
+            4. 严格按照 Markdown 格式输出：
+               - 使用二级标题（##）表示类别，格式：## [表情符号] [类别名称]
+               - 每个提交使用列表项（-）表示
+               - 只输出分类后的内容，不要添加版本号标题或其他额外信息
+            5. 保持句子简短、客观和技术性。
+            6. 不要在 Markdown 之外包含解释或注释。
+            7. 如果某个类别没有提交记录，则不要输出该类别。无法明确分类到上述类别的提交，应归类到 ## ⚙️ Miscellaneous Tasks 类别中。
 
-            版本: {version}
-            提交记录（已按日期分组）:
+            提交记录:
 
             {commits}
             """;

@@ -25,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -252,7 +253,8 @@ public abstract class AbstractGitLogAction extends AnAction {
 
                         @Override
                         public void onComplete(@NotNull String fullText) {
-                            outputSession.setText(fullText);
+                            String formattedText = CommitMessageFormatter.format(fullText);
+                            outputSession.setText(formattedText);
                         }
                     };
 
