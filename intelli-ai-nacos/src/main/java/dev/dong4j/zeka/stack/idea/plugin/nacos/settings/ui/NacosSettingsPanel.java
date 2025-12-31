@@ -260,8 +260,10 @@ public class NacosSettingsPanel {
             .addSeparator(12)
             .addComponent(customRegistryPanel)
             .addSeparator(12)
-            .addComponent(feedbackPanel.getContent())
-            .addComponentFillVertically(new JPanel(), 0);
+            // 填充垂直空间，使反馈面板固定在底部
+            .addComponentFillVertically(new JPanel(), 0)
+            // 反馈面板（固定在底部）
+            .addComponent(feedbackPanel.getContent());
 
         // 构建主面板
         mainPanel = builder.getPanel();

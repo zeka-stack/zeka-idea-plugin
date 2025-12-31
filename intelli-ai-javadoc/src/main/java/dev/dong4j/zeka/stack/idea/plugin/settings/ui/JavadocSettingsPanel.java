@@ -138,10 +138,11 @@ public class JavadocSettingsPanel {
             .addComponent(createOtherSettingsPanel())
             .addSeparator(10)
 
-            // 第六组：反馈面板
-            .addComponent(feedbackPanel.getContent())
-
+            // 填充垂直空间，使反馈面板固定在底部
             .addComponentFillVertically(new JPanel(), 0)
+
+            // 第六组：反馈面板（固定在底部）
+            .addComponent(feedbackPanel.getContent())
             .getPanel();
 
         mainPanel.setBorder(JBUI.Borders.empty(10));
