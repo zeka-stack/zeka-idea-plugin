@@ -108,16 +108,16 @@ public final class AIProviderConfigUI {
     private JSpinner maxRetriesSpinner;
     /** 超时时间选择器, 用于设置请求超时时间 */
     private JSpinner timeoutSpinner;
-    /** 温度设置控件, 用于用户输入和调整温度值 */
-    private JSpinner temperatureSpinner;
-    /** 最大令牌数输入控件 */
-    private JSpinner maxTokensSpinner;
-    /** 顶部参数的下拉选择器控件 */
-    private JSpinner topPSpinner;
-    /** 用于设置 AI 模型的 Top-k 参数的 JSpinner 控件 */
-    private JSpinner topKSpinner;
-    /** 偏差惩罚值调节器, 用于设置生成文本时的偏差惩罚参数 */
-    private JSpinner presencePenaltySpinner;
+    /** 温度设置控件, 用于用户输入和调整温度值, 支持输入 "auto" 或数字 */
+    private JBTextField temperatureField;
+    /** 最大令牌数输入控件, 支持输入 "auto" 或数字 */
+    private JBTextField maxTokensField;
+    /** 顶部参数输入控件, 支持输入 "auto" 或数字 */
+    private JBTextField topPField;
+    /** 用于设置 AI 模型的 Top-k 参数的输入控件, 支持输入 "auto" 或数字 */
+    private JBTextField topKField;
+    /** 偏差惩罚值输入控件, 用于设置生成文本时的偏差惩罚参数, 支持输入 "auto" 或数字 */
+    private JBTextField presencePenaltyField;
     /** Agent 代理面板 */
     private IntelliAgentPanel intelliAgentPanel;
     /** checkBoxHintLabelMap 用于映射复选框与对应的提示标签 */
@@ -177,11 +177,16 @@ public final class AIProviderConfigUI {
         showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
         maxRetriesSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 10, 1));
         timeoutSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 600, 1));
-        temperatureSpinner = new JSpinner(new SpinnerNumberModel(0.1, 0.0, 2.0, 0.1));
-        maxTokensSpinner = new JSpinner(new SpinnerNumberModel(4.0, 0.1, 256.0, 0.1));
-        topPSpinner = new JSpinner(new SpinnerNumberModel(0.9, 0.0, 1.0, 0.1));
-        topKSpinner = new JSpinner(new SpinnerNumberModel(50, 1, 100, 1));
-        presencePenaltySpinner = new JSpinner(new SpinnerNumberModel(0.0, -2.0, 2.0, 0.1));
+        temperatureField = new JBTextField("auto");
+        temperatureField.setHorizontalAlignment(JBTextField.RIGHT);
+        maxTokensField = new JBTextField("auto");
+        maxTokensField.setHorizontalAlignment(JBTextField.RIGHT);
+        topPField = new JBTextField("auto");
+        topPField.setHorizontalAlignment(JBTextField.RIGHT);
+        topKField = new JBTextField("auto");
+        topKField.setHorizontalAlignment(JBTextField.RIGHT);
+        presencePenaltyField = new JBTextField("auto");
+        presencePenaltyField.setHorizontalAlignment(JBTextField.RIGHT);
 
         // Agent 相关配置
         intelliAgentPanel = new IntelliAgentPanel();
@@ -190,11 +195,13 @@ public final class AIProviderConfigUI {
         Dimension spinnerSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
         maxRetriesSpinner.setPreferredSize(spinnerSize);
         timeoutSpinner.setPreferredSize(spinnerSize);
-        temperatureSpinner.setPreferredSize(spinnerSize);
-        maxTokensSpinner.setPreferredSize(spinnerSize);
-        topPSpinner.setPreferredSize(spinnerSize);
-        topKSpinner.setPreferredSize(spinnerSize);
-        presencePenaltySpinner.setPreferredSize(spinnerSize);
+        // 设置文本输入框的长度一致
+        Dimension fieldSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
+        temperatureField.setPreferredSize(fieldSize);
+        maxTokensField.setPreferredSize(fieldSize);
+        topPField.setPreferredSize(fieldSize);
+        topKField.setPreferredSize(fieldSize);
+        presencePenaltyField.setPreferredSize(fieldSize);
 
         // 初始化可用服务商表格
         availableProvidersTableModel = new AvailableProvidersTableModel();
@@ -381,28 +388,28 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public JSpinner getTemperatureSpinner() {
-        return temperatureSpinner;
+    public JBTextField getTemperatureField() {
+        return temperatureField;
     }
 
     @NotNull
-    public JSpinner getMaxTokensSpinner() {
-        return maxTokensSpinner;
+    public JBTextField getMaxTokensField() {
+        return maxTokensField;
     }
 
     @NotNull
-    public JSpinner getTopPSpinner() {
-        return topPSpinner;
+    public JBTextField getTopPField() {
+        return topPField;
     }
 
     @NotNull
-    public JSpinner getTopKSpinner() {
-        return topKSpinner;
+    public JBTextField getTopKField() {
+        return topKField;
     }
 
     @NotNull
-    public JSpinner getPresencePenaltySpinner() {
-        return presencePenaltySpinner;
+    public JBTextField getPresencePenaltyField() {
+        return presencePenaltyField;
     }
 
     @NotNull
@@ -537,15 +544,15 @@ public final class AIProviderConfigUI {
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.timeout")),
                                  createSpinnerWithHint(timeoutSpinner, "settings.timeout.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.max.tokens")),
-                                 createSpinnerWithHint(maxTokensSpinner, "settings.max.tokens.hint"))
+                                 createTextFieldWithHint(maxTokensField, "settings.max.tokens.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.temperature")),
-                                 createSpinnerWithHint(temperatureSpinner, "settings.temperature.hint"))
+                                 createTextFieldWithHint(temperatureField, "settings.temperature.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.p")),
-                                 createSpinnerWithHint(topPSpinner, "settings.top.p.hint"))
+                                 createTextFieldWithHint(topPField, "settings.top.p.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.k")),
-                                 createSpinnerWithHint(topKSpinner, "settings.top.k.hint"))
+                                 createTextFieldWithHint(topKField, "settings.top.k.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.presence.penalty")),
-                                 createSpinnerWithHint(presencePenaltySpinner, "settings.presence.penalty.hint"))
+                                 createTextFieldWithHint(presencePenaltyField, "settings.presence.penalty.hint"))
             .getPanel();
         advancedSettingsContentPanel.setVisible(false);
 
@@ -641,6 +648,28 @@ public final class AIProviderConfigUI {
     private JPanel createSpinnerWithHint(JSpinner spinner, String hintKey) {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
         panel.add(spinner, BorderLayout.WEST);
+
+        JBLabel hintLabel = new SpacedJBLabel(AICommonBundle.message(hintKey));
+        hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
+        hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        hintLabel.setPreferredSize(new Dimension(300, hintLabel.getPreferredSize().height));
+        panel.add(hintLabel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /**
+     * 创建包含提示标签的面板, 用于与 JBTextField 组件结合使用
+     * <p>
+     * 该方法创建一个 JPanel, 其中包含一个 JBTextField 组件和一个提示标签. 提示标签使用指定的提示键获取国际化消息, 并设置为较暗的字体颜色和较小的字体大小, 以实现提示效果.
+     *
+     * @param textField 要添加到面板中的 JBTextField 组件
+     * @param hintKey 国际化提示消息的键, 用于获取提示文本
+     * @return 包含 JBTextField 和提示标签的 JPanel
+     */
+    private JPanel createTextFieldWithHint(JBTextField textField, String hintKey) {
+        JPanel panel = new JPanel(new BorderLayout(5, 0));
+        panel.add(textField, BorderLayout.WEST);
 
         JBLabel hintLabel = new SpacedJBLabel(AICommonBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
@@ -941,13 +970,9 @@ public final class AIProviderConfigUI {
                     if (config.modelParameters == null) {
                         config.modelParameters = new AIModelParameters();
                     }
-                    try {
-                        int maxTokens = Integer.parseInt(aValue != null ? aValue.toString() : "4000");
-                        config.modelParameters.maxTokens = Math.max(100, Math.min(1000000, maxTokens));
-                        fireTableCellUpdated(rowIndex, columnIndex);
-                    } catch (NumberFormatException ignored) {
-                        // 忽略无效输入
-                    }
+                    String maxTokensStr = aValue != null ? aValue.toString().trim() : "auto";
+                    config.modelParameters.maxTokens = maxTokensStr.isEmpty() ? "auto" : maxTokensStr;
+                    fireTableCellUpdated(rowIndex, columnIndex);
                 }
                 case 4 -> {
                     // 备注

@@ -157,11 +157,21 @@ public class AIProviderConfig {
     private boolean compareModelParameters(@NotNull AIProviderConfig other) {
         AIModelParameters left = modelParameters != null ? modelParameters : new AIModelParameters();
         AIModelParameters right = other.modelParameters != null ? other.modelParameters : new AIModelParameters();
-        return Double.compare(left.temperature, right.temperature) == 0
-               && left.maxTokens == right.maxTokens
-               && Double.compare(left.topP, right.topP) == 0
-               && left.topK == right.topK
-               && Double.compare(left.presencePenalty, right.presencePenalty) == 0;
+        String temp1 = left.temperature != null ? left.temperature : "auto";
+        String temp2 = right.temperature != null ? right.temperature : "auto";
+        String maxTokens1 = left.maxTokens != null ? left.maxTokens : "auto";
+        String maxTokens2 = right.maxTokens != null ? right.maxTokens : "auto";
+        String topP1 = left.topP != null ? left.topP : "auto";
+        String topP2 = right.topP != null ? right.topP : "auto";
+        String topK1 = left.topK != null ? left.topK : "auto";
+        String topK2 = right.topK != null ? right.topK : "auto";
+        String presencePenalty1 = left.presencePenalty != null ? left.presencePenalty : "auto";
+        String presencePenalty2 = right.presencePenalty != null ? right.presencePenalty : "auto";
+        return temp1.equals(temp2)
+               && maxTokens1.equals(maxTokens2)
+               && topP1.equals(topP2)
+               && topK1.equals(topK2)
+               && presencePenalty1.equals(presencePenalty2);
     }
 
     private boolean compareRuntimeSettings(@NotNull AIProviderConfig other) {

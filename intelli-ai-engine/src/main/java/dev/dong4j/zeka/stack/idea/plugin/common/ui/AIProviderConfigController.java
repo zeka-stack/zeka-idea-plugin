@@ -143,11 +143,11 @@ public final class AIProviderConfigController {
         AIModelParameters modelParameters = workingSettings.modelParameters != null
                                             ? workingSettings.modelParameters
                                             : new AIModelParameters();
-        ui.getTemperatureSpinner().setValue(modelParameters.temperature);
-        ui.getMaxTokensSpinner().setValue(Math.max(0.1d, modelParameters.maxTokens / 1000.0d));
-        ui.getTopPSpinner().setValue(modelParameters.topP);
-        ui.getTopKSpinner().setValue(modelParameters.topK);
-        ui.getPresencePenaltySpinner().setValue(modelParameters.presencePenalty);
+        ui.getTemperatureField().setText(modelParameters.temperature != null ? modelParameters.temperature : "auto");
+        ui.getMaxTokensField().setText(modelParameters.maxTokens != null ? modelParameters.maxTokens : "auto");
+        ui.getTopPField().setText(modelParameters.topP != null ? modelParameters.topP : "auto");
+        ui.getTopKField().setText(modelParameters.topK != null ? modelParameters.topK : "auto");
+        ui.getPresencePenaltyField().setText(modelParameters.presencePenalty != null ? modelParameters.presencePenalty : "auto");
 
         IntelliAgentSettings intelliAgentSettings = workingSettings.intelliAgentSettings != null
                                                     ? workingSettings.intelliAgentSettings
@@ -732,12 +732,11 @@ public final class AIProviderConfigController {
     @NotNull
     private AIModelParameters snapshotModelParameters() {
         AIModelParameters params = new AIModelParameters();
-        params.temperature = ((Number) ui.getTemperatureSpinner().getValue()).doubleValue();
-        double maxTokensInK = ((Number) ui.getMaxTokensSpinner().getValue()).doubleValue();
-        params.maxTokens = (int) Math.max(100, Math.round(maxTokensInK * 1000));
-        params.topP = ((Number) ui.getTopPSpinner().getValue()).doubleValue();
-        params.topK = ((Number) ui.getTopKSpinner().getValue()).intValue();
-        params.presencePenalty = ((Number) ui.getPresencePenaltySpinner().getValue()).doubleValue();
+        params.temperature = ui.getTemperatureField().getText().trim();
+        params.maxTokens = ui.getMaxTokensField().getText().trim();
+        params.topP = ui.getTopPField().getText().trim();
+        params.topK = ui.getTopKField().getText().trim();
+        params.presencePenalty = ui.getPresencePenaltyField().getText().trim();
         return params;
     }
 
@@ -870,11 +869,11 @@ public final class AIProviderConfigController {
 
                // 模型参数
                "【模型参数】\n" +
-               String.format("  温度 (Temperature): %.2f\n", modelParams.temperature) +
-               String.format("  最大 Token 数: %d\n", modelParams.maxTokens) +
-               String.format("  Top P: %.2f\n", modelParams.topP) +
-               String.format("  Top K: %d\n", modelParams.topK) +
-               String.format("  存在惩罚 (Presence Penalty): %.2f\n", modelParams.presencePenalty) +
+               String.format("  温度 (Temperature): %s\n", modelParams.temperature != null ? modelParams.temperature : "auto") +
+               String.format("  最大 Token 数: %s\n", modelParams.maxTokens != null ? modelParams.maxTokens : "auto") +
+               String.format("  Top P: %s\n", modelParams.topP != null ? modelParams.topP : "auto") +
+               String.format("  Top K: %s\n", modelParams.topK != null ? modelParams.topK : "auto") +
+               String.format("  存在惩罚 (Presence Penalty): %s\n", modelParams.presencePenalty != null ? modelParams.presencePenalty : "auto") +
                "\n" +
 
                // 说明文字

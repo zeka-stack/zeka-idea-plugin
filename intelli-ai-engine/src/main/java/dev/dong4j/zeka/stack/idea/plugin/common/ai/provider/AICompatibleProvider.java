@@ -399,11 +399,49 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         body.add("messages", messagesArray);
 
         AIModelParameters params = modelParameters;
-        body.addProperty("temperature", params.temperature);
-        body.addProperty("max_tokens", params.maxTokens);
-        body.addProperty("top_p", params.topP);
-        body.addProperty("top_k", params.topK);
-        body.addProperty("presence_penalty", params.presencePenalty);
+        // 只有当值不是 "auto" 时才添加到请求体中
+        if (params.temperature != null && !"auto".equalsIgnoreCase(params.temperature.trim())) {
+            try {
+                body.addProperty("temperature", Double.parseDouble(params.temperature.trim()));
+            } catch (NumberFormatException ignored) {
+                // 忽略无效的数字格式
+            }
+        }
+        if (params.maxTokens != null && !"auto".equalsIgnoreCase(params.maxTokens.trim())) {
+            try {
+                // 如果包含 "K" 或 "k"，则转换为数字
+                String maxTokensStr = params.maxTokens.trim();
+                if (maxTokensStr.endsWith("K") || maxTokensStr.endsWith("k")) {
+                    double maxTokensInK = Double.parseDouble(maxTokensStr.substring(0, maxTokensStr.length() - 1));
+                    body.addProperty("max_tokens", (int) Math.max(100, Math.round(maxTokensInK * 1000)));
+                } else {
+                    body.addProperty("max_tokens", Integer.parseInt(maxTokensStr));
+                }
+            } catch (NumberFormatException ignored) {
+                // 忽略无效的数字格式
+            }
+        }
+        if (params.topP != null && !"auto".equalsIgnoreCase(params.topP.trim())) {
+            try {
+                body.addProperty("top_p", Double.parseDouble(params.topP.trim()));
+            } catch (NumberFormatException ignored) {
+                // 忽略无效的数字格式
+            }
+        }
+        if (params.topK != null && !"auto".equalsIgnoreCase(params.topK.trim())) {
+            try {
+                body.addProperty("top_k", Integer.parseInt(params.topK.trim()));
+            } catch (NumberFormatException ignored) {
+                // 忽略无效的数字格式
+            }
+        }
+        if (params.presencePenalty != null && !"auto".equalsIgnoreCase(params.presencePenalty.trim())) {
+            try {
+                body.addProperty("presence_penalty", Double.parseDouble(params.presencePenalty.trim()));
+            } catch (NumberFormatException ignored) {
+                // 忽略无效的数字格式
+            }
+        }
 
         return body;
     }
