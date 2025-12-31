@@ -9,6 +9,8 @@
     <!-- 供应商信息 -->
     <vendor email="dong4j@gmail.com">dong4j</vendor>
 
+    <resource-bundle>messages.AICommonBundle</resource-bundle>
+
     <!-- 依赖的平台模块 -->
     <depends>com.intellij.modules.platform</depends>
 
@@ -20,7 +22,11 @@
     <!-- 定义扩展点 -->
     <extensionPoints>
         <extensionPoint name="pluginUpdateInfoProvider"
-                        interface="dev.dong4j.zeka.stack.idea.plugin.common.update.PluginUpdateInfoProvider"/>
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.update.PluginUpdateInfoProvider"
+                        dynamic="true"/>
+        <extensionPoint name="whatsNewProvider"
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewProvider"
+                        dynamic="true"/>
     </extensionPoints>
 
     <!-- 插件定义的扩展点 -->
@@ -33,6 +39,12 @@
         <applicationService
                 serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"
                 serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
+
+        <applicationService
+            serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewProviderService"
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.InternalWhatsNewProviderService"/>
+
+        <fileEditorProvider implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewHtmlEditorProvider"/>
 
         <!-- 设置页面：IntelliAI Engine 的全局配置（应用级配置） -->
         <!--suppress PluginXmlI18n -->
@@ -64,10 +76,25 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.agent.AgentVersionCheckListener"/>
         <!-- 项目启动时检查插件更新 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.update.UpdateStartupActivity"/>
+        <!-- 项目启动时显示更新日志 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewStartupActivity"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup id="IntelliAI Engine Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
+
     </extensions>
+
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <whatsNewProvider
+            implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.InternalWhatsNewProvider"/>
+    </extensions>
+
+    <actions>
+        <action id="IntelliAIEngine.WhatsNewAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewAction">
+            <add-to-group group-id="HelpMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>
