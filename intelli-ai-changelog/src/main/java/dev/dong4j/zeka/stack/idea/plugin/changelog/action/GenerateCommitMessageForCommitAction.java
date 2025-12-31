@@ -3,20 +3,17 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DataKey;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
@@ -30,8 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 用于生成 Git 提交消息的动作类
- * <p> 该类继承自 AnAction, 并实现了自定义的更新和执行逻辑. 在更新阶段, 检查项目是否存在未提交的更改, 并根据更改的状态设置动作的可用性和可见性.
- * 在执行阶段, 调用 CommitMessageGenerator 生成提交消息, 适用于在 Git 提交页面中自动生成提交记录.
+ * <p> 该类继承自 AnAction, 并实现了自定义的更新和执行逻辑. 在更新阶段, 检查项目是否存在并且未被销毁, 并设置动作的文本和图标.
+ * 在执行阶段, 获取选中的变更集合, 并调用 CommitMessageGenerator 生成提交消息.
  *
  * @author dong4j
  * @version 1.0.0
@@ -68,7 +65,7 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
 
     /**
      * 获取更新线程
-     * <p> 在后台线程中执行更新操作, 避免阻塞 UI.
+     * <p> 在后台线程中执行更新操作, 避免阻塞 UI. 此方法返回后台线程 BGT.
      *
      * @return ActionUpdateThread.BGT 后台线程
      */
@@ -83,11 +80,18 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
      * 根据变更生成提交信息.
      *
      * @param e 动作事件
+     * @since 1.0.0
      */
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
+        if (commitWorkflowHandler == null) {
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
             return;
         }
 
@@ -99,7 +103,7 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
 
         log.info("Git 提交页面：开始生成提交记录");
         // 获取提交的文件变更
-        Collection<Change> changes = getCommittedChanges(e);
+        Collection<Change> changes = getSelectedChanges(commitWorkflowHandler);
         if (changes.isEmpty()) {
             log.warn("Git 提交页面：未选择任何文件变更");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
@@ -118,66 +122,42 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
 
     /**
      * 获取提交的文件变更
-     * <p> 从给定的 AnActionEvent 中提取已选择的变更, 并返回变更列表. 如果没有选择任何变更, 则返回空列表.
+     * <p> 从给定的 CommitWorkflowHandler 中提取已选择的变更, 并返回变更列表. 如果未选择任何变更, 则返回空列表.
      *
-     * @param e 动作事件, 包含 VCS 数据
+     * @param commitWorkflowHandler 包含 VCS 数据的 CommitWorkflowHandler 对象
      * @return 文件变更列表, 如果未选择任何变更则返回空列表
      */
     @NotNull
-    private Collection<Change> getCommittedChanges(@NotNull AnActionEvent e) {
-        // 只处理提交面板中用户当前选中的变更，按优先级依次尝试
-        for (DataKey<?> key : List.of(VcsDataKeys.SELECTED_CHANGES, VcsDataKeys.CHANGES)) {
-            Collection<Change> changes = normalizeChanges(e.getData(key));
-            if (!changes.isEmpty()) {
-                return changes;
-            }
-        }
-        // 兼容不同版本提交面板的 DataKey 命名
-        Collection<Change> dialogChanges = normalizeChanges(getDataByKeyName(e, "SELECTED_CHANGES_IN_COMMIT_DIALOG"));
-        if (!dialogChanges.isEmpty()) {
-            return dialogChanges;
-        }
-        Collection<Change> toolWindowChanges = normalizeChanges(getDataByKeyName(e, "SELECTED_CHANGES_IN_COMMIT_TOOL_WINDOW"));
-        if (!toolWindowChanges.isEmpty()) {
-            return toolWindowChanges;
+    private Collection<Change> getSelectedChanges(@NotNull CommitWorkflowHandler commitWorkflowHandler) {
+        Object ui = invoke(commitWorkflowHandler, "getUi");
+        Object changes = invoke(ui, "getIncludedChanges");
+        if (changes instanceof Collection<?> items) {
+            return items.stream()
+                .filter(Change.class::isInstance)
+                .map(Change.class::cast)
+                .toList();
         }
         return Collections.emptyList();
     }
 
+    /**
+     * 调用目标对象的指定方法
+     * <p> 通过反射机制获取目标对象的指定方法并调用, 如果目标对象为 null 或者方法调用失败, 则返回 null.
+     *
+     * @param target     目标对象
+     * @param methodName 方法名
+     * @return 方法调用的结果, 如果目标对象为 null 或者方法调用失败, 则返回 null
+     */
     @Nullable
-    private static Object getDataByKeyName(@NotNull AnActionEvent e, @NotNull String fieldName) {
+    private static Object invoke(@Nullable Object target, @NotNull String methodName) {
+        if (target == null) {
+            return null;
+        }
         try {
-            Field field = VcsDataKeys.class.getField(fieldName);
-            Object value = field.get(null);
-            if (value instanceof DataKey<?> dataKey) {
-                return e.getData(dataKey);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
-            // 兼容不同版本 SDK，缺失字段时直接忽略
+            Method method = target.getClass().getMethod(methodName);
+            return method.invoke(target);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
         }
-        return null;
-    }
-
-    @NotNull
-    private static Collection<Change> normalizeChanges(@Nullable Object data) {
-        if (data == null) {
-            return Collections.emptyList();
-        }
-        if (data instanceof Change[] changes) {
-            return Arrays.asList(changes);
-        }
-        if (data instanceof Change change) {
-            return Collections.singletonList(change);
-        }
-        if (data instanceof Collection<?> items) {
-            List<Change> result = new ArrayList<>();
-            for (Object item : items) {
-                if (item instanceof Change change) {
-                    result.add(change);
-                }
-            }
-            return result;
-        }
-        return Collections.emptyList();
     }
 }
