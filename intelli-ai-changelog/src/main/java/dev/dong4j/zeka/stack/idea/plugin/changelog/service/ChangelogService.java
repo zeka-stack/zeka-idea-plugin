@@ -71,6 +71,9 @@ public final class ChangelogService {
 
     /**
      * 获取服务实例
+     *
+     * @param project 项目对象, 不能为空
+     * @return ChangelogService 实例
      */
     public static ChangelogService getInstance(@NotNull Project project) {
         return project.getService(ChangelogService.class);
@@ -80,7 +83,8 @@ public final class ChangelogService {
      * 从选中的提交记录生成 Changelog
      *
      * @param commitHashes 提交记录的 hash 列表
-     * @return 生成的 Changelog 内容（Markdown 格式）
+     * @return 生成的 Changelog 内容 (Markdown 格式)
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
      */
     @NotNull
     public String generateChangelog(@NotNull List<String> commitHashes) throws Exception {
@@ -97,8 +101,9 @@ public final class ChangelogService {
     /**
      * 从选中的提交记录生成工作日报
      *
-     * @param commitHashes 提交记录的 hash 列表
-     * @return 生成的工作日报内容（Markdown 格式）
+     * @param commitHashes 提交记录的哈希列表
+     * @return 生成的工作日报内容 (Markdown 格式)
+     * @throws Exception 当生成日报内容失败时抛出
      */
     @NotNull
     public String generateDailyReport(@NotNull List<String> commitHashes) throws Exception {
@@ -111,7 +116,8 @@ public final class ChangelogService {
      * 从选中的提交记录生成工作周报
      *
      * @param commitHashes 提交记录的 hash 列表
-     * @return 生成的工作周报内容（Markdown 格式）
+     * @return 生成的工作周报内容 (Markdown 格式)
+     * @throws Exception 当读取提交记录或调用 AI 服务失败时抛出
      */
     @NotNull
     public String generateWeeklyReport(@NotNull List<String> commitHashes) throws Exception {
@@ -122,6 +128,11 @@ public final class ChangelogService {
 
     /**
      * 读取提交记录
+     * <p>
+     * 从指定的提交哈希列表中读取提交信息, 并返回包含提交详情的 CommitInfo 列表.
+     *
+     * @param commitHashes 提交记录的哈希列表, 不能为空
+     * @return 包含提交详情的 CommitInfo 列表
      */
     @NotNull
     private List<CommitInfo> readCommits(@NotNull List<String> commitHashes) {
@@ -159,6 +170,10 @@ public final class ChangelogService {
 
     /**
      * 获取 Git 仓库
+     * <p>
+     * 通过项目的基路径查找并返回 Git 仓库对象. 如果基路径为空或 Git 目录不存在, 则返回 null.
+     *
+     * @return Git 仓库对象, 如果找不到则返回 null
      */
     @Nullable
     private Repository getRepository() {
@@ -184,11 +199,11 @@ public final class ChangelogService {
     /**
      * 构建提交记录文本
      * <p>
-     * 按照提交日期对提交记录进行分组，每个日期一个分组。
-     * 分组后的格式便于 AI 理解并按日期生成变更日志。
+     * 按照提交日期对提交记录进行分组, 每个日期一个分组.
+     * 分组后的格式便于 AI 理解并按日期生成变更日志.
      *
      * @param commits 提交记录列表
-     * @return 格式化后的提交记录文本（已按日期分组）
+     * @return 格式化后的提交记录文本 (已按日期分组)
      */
     @NotNull
     private String buildCommitsText(@NotNull List<CommitInfo> commits) {
@@ -229,7 +244,7 @@ public final class ChangelogService {
     /**
      * 格式化当前日期
      *
-     * @return 格式化后的日期字符串（yyyy-MM-dd）
+     * @return 格式化后的日期字符串 (yyyy-MM-dd)
      */
     @NotNull
     private String formatCurrentDate() {
@@ -239,8 +254,10 @@ public final class ChangelogService {
 
     /**
      * 计算并格式化周报日期范围
+     * <p>
+     * 该方法计算当前周的周一和周日的日期, 并返回格式化的日期范围字符串.
      *
-     * @return 格式化后的日期范围字符串（yyyy-MM-dd 至 yyyy-MM-dd）
+     * @return 格式化后的日期范围字符串 (yyyy-MM-dd 至 yyyy-MM-dd)
      */
     @NotNull
     private String formatWeeklyDateRange() {
@@ -255,6 +272,11 @@ public final class ChangelogService {
 
     /**
      * 组装 prompt
+     * <p>
+     * 根据提交记录列表和模板生成用于 AI 服务的 prompt.
+     *
+     * @param commits 提交记录列表
+     * @return 组装好的 prompt 字符串
      */
     @NotNull
     private String buildPrompt(@NotNull List<CommitInfo> commits) {
@@ -269,6 +291,11 @@ public final class ChangelogService {
 
     /**
      * 组装日报 prompt
+     * <p>
+     * 根据给定的提交记录列表和模板生成日报的 prompt.
+     *
+     * @param commits 提交记录列表, 包含每日的提交信息
+     * @return 生成的日报 prompt 字符串
      */
     @NotNull
     private String buildDailyReportPrompt(@NotNull List<CommitInfo> commits) {
@@ -284,6 +311,9 @@ public final class ChangelogService {
 
     /**
      * 组装周报 prompt
+     *
+     * @param commits 提交记录列表
+     * @return 组装好的周报 prompt 字符串
      */
     @NotNull
     private String buildWeeklyReportPrompt(@NotNull List<CommitInfo> commits) {
@@ -300,11 +330,11 @@ public final class ChangelogService {
     /**
      * 调用 AI 服务生成 Changelog
      * <p>
-     * 使用 AIService API 生成内容，参考 TaskExecutor#processTask 的实现。
+     * 使用 AIService API 生成内容, 参考 TaskExecutor#processTask 的实现.
      *
-     * @param userPrompt 用户提示词（已组装好的 prompt）
+     * @param userPrompt 用户提示词 (已组装好的 prompt)
      * @return 生成的 Changelog 内容
-     * @throws Exception 当 AI 服务调用失败时抛出，包含友好的错误消息
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
      */
     @NotNull
     private String callAIService(@NotNull String userPrompt) throws Exception {
@@ -353,13 +383,13 @@ public final class ChangelogService {
     }
 
     /**
-     * 基于代码变更（diff）生成提交记录
+     * 基于代码变更 (diff) 生成提交记录
      * <p>
-     * 根据代码的实际改动生成提交记录，而不是依赖提交信息。
+     * 根据代码的实际改动生成提交记录, 而不是依赖提交信息.
      *
      * @param changes 代码变更集合
      * @return 生成的提交记录内容
-     * @throws Exception 当 AI 服务调用失败时抛出，包含友好的错误消息
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
      */
     @NotNull
     public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes) throws Exception {
@@ -378,12 +408,14 @@ public final class ChangelogService {
     }
 
     /**
-     * 基于代码变更（diff）生成提交记录（流式回调）
+     * 基于代码变更 (diff) 生成提交记录(流式回调)
+     * <p>
+     * 根据代码的实际改动生成提交记录, 而不是依赖提交信息. 使用流式响应监听器来处理生成的过程.
      *
      * @param changes  代码变更集合
-     * @param listener 流式响应监听器
+     * @param listener 流式响应监听器, 用于接收生成过程中的数据流
      * @return 生成的提交记录内容
-     * @throws Exception 当 AI 服务调用失败时抛出
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
      */
     @NotNull
     public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
@@ -424,10 +456,8 @@ public final class ChangelogService {
 
         String recentCommitsText = buildRecentCommitMessagesText(3);
 
-        // 替换模板变量，兼容 {diff}/{codeDiffs}/{recentCommits}
         String diffText = codeDiffsText.toString().trim();
-        String prompt = template.replace("{diff}", diffText)
-            .replace("{codeDiffs}", diffText)
+        String prompt = template.replace("{codeDiffs}", diffText)
             .replace("{recentCommits}", recentCommitsText);
         if (!template.contains("{recentCommits}") && !recentCommitsText.isEmpty()) {
             // 模板未显式包含占位符时，追加最近提交记录
@@ -439,39 +469,14 @@ public final class ChangelogService {
     /**
      * 调用 AI 服务生成提交记录
      *
-     * @param userPrompt 用户提示词
+     * @param userPrompt 用户提示词, 描述代码变更的具体内容
      * @return 生成的提交记录
-     * @throws Exception 当 AI 服务调用失败时抛出，包含友好的错误消息
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
      */
     @NotNull
     private String callAIServiceForCommitMessage(@NotNull String userPrompt) throws Exception {
         // 获取系统提示词（使用专门的提交记录生成提示词）
-        String systemPrompt = """
-            你是一位经验丰富的代码审查专家和技术文档编写者。
-            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
-            输出格式为 Conventional Commits：
-            <type>(<scope>): <subject>
-
-            <body(可选，说明动机、影响、兼容性)>
-
-            你需要：
-            1. 分析代码变更的实际内容，而不是依赖提交记录
-            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
-            3. 优先表达设计意图 / 约束变化 / 行为变化
-            4. 如果是重构，请说明“为什么现在要重构”
-            5. 避免描述实现细节
-            6. 忽略无意义的变更（如格式化、空白字符等）
-
-            重要要求：
-            - 只输出提交记录正文，不要解释过程或附加说明
-            - 第一行是简短摘要，使用祈使语气，不要句号
-            - 如需详细说明，空一行后给出正文描述
-            - 避免无意义的空白行或多余的格式符号
-            - 输出必须为中文（type 和 scope 使用常见英文约定）
-            """;
-
-        // 创建 AI 聊天请求
-        AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
+        final AIChatRequest request = getAiChatRequest(userPrompt);
 
         // 获取 AIService 实例
         AIService aiService = AIServiceImpl.getInstance();
@@ -499,6 +504,16 @@ public final class ChangelogService {
         }
     }
 
+    /**
+     * 调用 AI 服务生成内容 (流式)
+     * <p> 使用流式响应监听器从 AI 服务获取生成的内容.
+     *
+     * @param aiService AI 服务实例
+     * @param request   包含系统提示和用户提示的 AIChatRequest 对象
+     * @param config    AI 服务配置
+     * @return 生成的完整内容
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
+     */
     @NotNull
     private String callAIServiceStream(@NotNull AIService aiService,
                                        @NotNull AIChatRequest request,
@@ -509,39 +524,35 @@ public final class ChangelogService {
         return callAIServiceStreamWithListener(aiService, request, config, streamListener);
     }
 
+    /**
+     * 基于流式响应监听器调用 AI 服务生成提交记录
+     * <p> 此方法用于在流式模式下生成提交记录, 通过监听器接收 AI 服务的逐步响应.
+     *
+     * @param userPrompt 用户提示词, 描述代码变更的具体内容
+     * @param listener   流式响应监听器, 用于处理 AI 服务的逐步响应
+     * @return 生成的提交记录内容
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
+     */
     @NotNull
     private String callAIServiceForCommitMessageStream(@NotNull String userPrompt,
                                                        @NotNull AIStreamResponseListener listener) throws Exception {
-        String systemPrompt = """
-            你是一位经验丰富的代码审查专家和技术文档编写者。
-            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
-            输出格式为 Conventional Commits：
-            <type>(<scope>): <subject>
-
-            <body(可选，说明动机、影响、兼容性)>
-
-            你需要：
-            1. 分析代码变更的实际内容，而不是依赖提交记录
-            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
-            3. 优先表达设计意图 / 约束变化 / 行为变化
-            4. 如果是重构，请说明“为什么现在要重构”
-            5. 避免描述实现细节
-            6. 忽略无意义的变更（如格式化、空白字符等）
-
-            重要要求：
-            - 只输出提交记录正文，不要解释过程或附加说明
-            - 第一行是简短摘要，使用祈使语气，不要句号
-            - 如需详细说明，空一行后给出正文描述
-            - 避免无意义的空白行或多余的格式符号
-            - 输出必须为中文（type 和 scope 使用常见英文约定）
-            """;
-
-        AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
+        final AIChatRequest request = getAiChatRequest(userPrompt);
         AIService aiService = AIServiceImpl.getInstance();
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
         return callAIServiceStreamWithListener(aiService, request, config, listener);
     }
 
+    /**
+     * 带监听器调用 AI 服务进行流式内容生成
+     * <p> 通过指定的 AI 服务, 请求, 配置和外部监听器, 进行流式内容生成, 并处理生成结果或错误.
+     *
+     * @param aiService        AI 服务实例
+     * @param request          包含系统提示和用户提示的 AIChatRequest 对象
+     * @param config           AI 服务提供商的配置
+     * @param externalListener 外部监听器, 用于接收生成过程中的事件通知
+     * @return 生成的内容文本
+     * @throws Exception 当 AI 服务调用失败或流式生成被中断时抛出
+     */
     @NotNull
     private String callAIServiceStreamWithListener(@NotNull AIService aiService,
                                                    @NotNull AIChatRequest request,
@@ -553,23 +564,49 @@ public final class ChangelogService {
         AtomicReference<String> resultRef = new AtomicReference<>();
 
         AIStreamResponseListener listener = new AIStreamResponseListener() {
+            /**
+             * 调用外部监听器的 onStart 方法
+             * <p> 此方法在 AIStreamResponseListener 的生命周期中被调用, 用于通知外部监听器开始事件
+             *
+             * @since 1.0
+             */
             @Override
             public void onStart() {
                 externalListener.onStart();
             }
 
+            /**
+             * 处理数据流中的一个数据块
+             * <p> 将接收到的数据块追加到缓冲区, 并通知外部监听器处理该数据块
+             *
+             * @param chunk 数据块内容
+             */
             @Override
             public void onChunk(@NotNull String chunk) {
                 buffer.append(chunk);
                 externalListener.onChunk(chunk);
             }
 
+            /**
+             * 完成处理操作
+             * <p> 当所有数据处理完成后调用此方法. 设置结果引用, 通知外部监听器, 并减少计数器.
+             *
+             * @param fullText 完整的处理结果文本
+             */
             public void onComplete(@NotNull String fullText) {
                 resultRef.set(fullText);
                 externalListener.onComplete(fullText);
                 latch.countDown();
             }
 
+            /**
+             * 处理错误事件
+             * <p> 当发生错误时调用此方法. 设置错误信息到 errorRef, 并通知外部监听器.
+             * 同时减少计数器 latch 的计数.
+             *
+             * @param error     错误信息
+             * @param exception 可能导致错误的异常对象
+             */
             @Override
             public void onError(@NotNull String error, @Nullable Throwable exception) {
                 errorRef.set(new Exception(error, exception));
@@ -601,6 +638,14 @@ public final class ChangelogService {
         return result;
     }
 
+    /**
+     * 获取最近的提交信息文本
+     * <p> 从项目的 Git 仓库中读取最近的提交记录, 并将其格式化为 Markdown 格式的文本.
+     * 每条提交信息前加上编号, 方便阅读.
+     *
+     * @param limit 获取的提交记录数量限制
+     * @return 格式化后的提交信息文本 (Markdown 格式)
+     */
     @NotNull
     private String buildRecentCommitMessagesText(int limit) {
         List<String> commitMessages = new ArrayList<>();
@@ -647,5 +692,41 @@ public final class ChangelogService {
      * @since 1.0.0
      */
     private record CommitInfo(String hash, String shortMessage, String fullMessage, Date date, String author) {
+    }
+
+    /**
+     * 创建 AIChatRequest 对象
+     * <p> 根据给定的用户提示词和系统提示词创建 AIChatRequest 对象, 用于生成提交记录.
+     *
+     * @param userPrompt 用户提示词, 描述代码变更的具体内容
+     * @return AIChatRequest 对象, 包含系统提示和用户提示
+     */
+    private static @NotNull AIChatRequest getAiChatRequest(@NotNull String userPrompt) {
+        String systemPrompt = """
+            你是一位经验丰富的代码审查专家和技术文档编写者。
+            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
+            输出格式为 Conventional Commits：
+            <type>(<scope>): <subject>
+
+            <body(可选，说明动机、影响、兼容性)>
+
+            你需要：
+            1. 分析代码变更的实际内容，而不是依赖提交记录
+            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
+            3. 优先表达设计意图 / 约束变化 / 行为变化
+            4. 如果是重构，请说明“为什么现在要重构”
+            5. 避免描述实现细节
+            6. 忽略无意义的变更（如格式化、空白字符等）
+
+            重要要求：
+            - 只输出提交记录正文，不要解释过程或附加说明
+            - 第一行是简短摘要，使用祈使语气，不要句号
+            - 如需详细说明，空一行后给出正文描述
+            - 避免无意义的空白行或多余的格式符号
+            - 输出必须为中文（type 和 scope 使用常见英文约定）
+            """;
+
+        // 创建 AI 聊天请求
+        return new AIChatRequest(systemPrompt, userPrompt);
     }
 }

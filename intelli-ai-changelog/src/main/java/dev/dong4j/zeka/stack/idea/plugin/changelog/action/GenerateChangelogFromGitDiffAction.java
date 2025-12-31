@@ -18,9 +18,10 @@ import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 用于从 Git 日志生成提交信息的操作类
+ * 用于从 Git diff 生成变更日志的操作类
  * <p>
- * 该类继承自 AbstractGitLogAction, 负责处理从 Git 日志中生成提交信息的逻辑, 包括获取项目上下文, 验证日志数据, 检查选中的提交记录, 并显示相关信息通知.
+ * 该类继承自 AbstractGitLogAction, 负责处理基于 code diff 生成变更日志的逻辑, 包括获取项目上下文, 验证日志数据, 检查选中的提交记录, 并显示相关信息通知.
+ * 与 {@link GenerateChangelogFromGitLogAction} 类似, 但针对 code diff 而非 Git 提交记录.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -29,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class GenerateCommitMessageForGitLogAction extends AbstractGitLogAction {
+public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
 
     /**
      * 获取提交操作的文本键
@@ -40,7 +41,7 @@ public class GenerateCommitMessageForGitLogAction extends AbstractGitLogAction {
      */
     @Override
     protected @NotNull String getTextKey() {
-        return "commit.action.text";
+        return "action.generate.changelog.diff";
     }
 
     /**
@@ -52,7 +53,7 @@ public class GenerateCommitMessageForGitLogAction extends AbstractGitLogAction {
      */
     @Override
     protected @NotNull String getDescriptionKey() {
-        return "commit.action.description";
+        return "action.generate.changelog.diff.description";
     }
 
     /**

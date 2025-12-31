@@ -20,7 +20,7 @@ import icons.ChangelogIcons;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class GenerateChangelogForGitLogAction extends AbstractGitLogAction {
+public class GenerateChangelogFromGitLogAction extends AbstractGitLogAction {
 
     @NotNull
     protected Icon getIcon() {

@@ -47,26 +47,26 @@
     <!-- 插件定义的动作 -->
     <actions>
         <!-- Git Log 工具窗口右键菜单 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitLogAction"
                 popup="true">
         </action>
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"
                 popup="true">
         </action>
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"
                 popup="true">
         </action>
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"
                 popup="true">
         </action>
 
         <!-- Git 提交工具栏操作 -->
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForCommitAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForCommitAction">
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
         </action>
 

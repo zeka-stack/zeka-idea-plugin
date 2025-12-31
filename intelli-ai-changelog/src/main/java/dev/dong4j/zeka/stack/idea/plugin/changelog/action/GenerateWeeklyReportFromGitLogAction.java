@@ -21,7 +21,7 @@ import icons.ChangelogIcons;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class GenerateWeeklyReportForGitLogAction extends AbstractGitLogAction {
+public class GenerateWeeklyReportFromGitLogAction extends AbstractGitLogAction {
 
     /**
      * 获取图标对象

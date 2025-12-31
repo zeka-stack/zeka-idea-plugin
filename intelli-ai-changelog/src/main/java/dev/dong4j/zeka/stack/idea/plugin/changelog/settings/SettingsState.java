@@ -314,7 +314,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             4. 输出必须为中文（type 和 scope 使用常见英文约定）
 
             变更内容：
-            {diff}
+            {codeDiffs}
 
             历史提交(最近3条):
             {recentCommits}
