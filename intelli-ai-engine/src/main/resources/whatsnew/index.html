@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliAI What's New</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --bg-accent: #1a1f2b;
+            --surface: #141824;
+            --surface-strong: #1c2232;
+            --text: #f6f7fb;
+            --muted: #b0b7c3;
+            --accent: #4dd3ff;
+            --accent-strong: #16a6d1;
+            --glow: rgba(77, 211, 255, 0.35);
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+            --radius: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Manrope", "IBM Plex Sans", "SF Pro Display", "Segoe UI", sans-serif;
+            background: radial-gradient(1200px circle at 10% 10%, rgba(77, 211, 255, 0.12), transparent 40%),
+            radial-gradient(800px circle at 90% 20%, rgba(141, 106, 255, 0.18), transparent 45%),
+            linear-gradient(135deg, var(--bg), var(--bg-accent));
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .hero {
+            padding: 48px 56px 24px 56px;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+        }
+
+        .hero h1 {
+            font-size: 32px;
+            margin: 0 0 10px 0;
+            letter-spacing: 0.5px;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            max-width: 720px;
+        }
+
+        .meta {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--muted);
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        main {
+            padding: 28px 56px 60px 56px;
+            display: grid;
+            gap: 20px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(77, 211, 255, 0.4);
+            box-shadow: 0 24px 60px rgba(77, 211, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: -40px;
+            right: -60px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(77, 211, 255, 0.25), transparent 70%);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+        }
+
+        .card-meta {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .card-body {
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-body::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to bottom, transparent, var(--surface));
+            pointer-events: none;
+        }
+
+        .card-body.expanded {
+            max-height: none;
+        }
+
+        .card-body.expanded::after {
+            display: none;
+        }
+
+        .card-footer {
+            margin-top: 12px;
+            text-align: center;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .card:hover .card-footer {
+            opacity: 1;
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            max-width: 900px;
+            max-height: 85vh;
+            width: 90%;
+            padding: 32px;
+            position: relative;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+        }
+
+        .modal-body {
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .modal-body h2,
+        .modal-body h3,
+        .modal-body h4 {
+            color: var(--text);
+            margin: 18px 0 8px 0;
+        }
+
+        .modal-body ul {
+            padding-left: 18px;
+            margin: 8px 0;
+        }
+
+        .modal-body li {
+            margin: 6px 0;
+        }
+
+        .card-body h2,
+        .card-body h3,
+        .card-body h4 {
+            color: var(--text);
+            margin: 18px 0 8px 0;
+        }
+
+        .card-body ul {
+            padding-left: 18px;
+            margin: 8px 0;
+        }
+
+        .card-body li {
+            margin: 6px 0;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(77, 211, 255, 0.12);
+            color: var(--accent);
+            font-size: 12px;
+            border: 1px solid rgba(77, 211, 255, 0.3);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 18px 0 0 0;
+        }
+
+        @media (max-width: 960px) {
+            .hero, main {
+                padding: 32px 24px 40px 24px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<section class="hero">
+    <h1>IntelliAI Platform Release Notes</h1>
+    <p>The IntelliAI Engine powers all IntelliAI plugins. This page aggregates changes from each module so you can scan updates at a
+        glance.</p>
+    <div class="meta">
+        <span class="tag">Aggregated Changelog</span>
+        <span>Generated at: 2025-12-31 22:51</span>
+    </div>
+</section>
+<main>
+    <section class="card" onclick="openModal(0)">
+        <div class="card-header">
+            <div class="card-title">IntelliJ IDEA Plugin Template (With AI)</div>
+            <div class="card-meta">template-with-ai</div>
+        </div>
+        <div class="card-body" id="preview-0">
+            <h3>v1.0.0</h3>
+            <ul>
+                <li>🎉 初始版本发布</li>
+                <li>✨ 提供完整的项目结构和配置</li>
+                <li>✨ 集成 IntelliAI Engine 插件</li>
+                <li>✨ 集成常用开发工具和依赖</li>
+                <li>✨ 包含简化的 Action 示例（右键菜单）</li>
+                <ul>
+                    <ul>
+                        <ul>
+                        </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-0" style="display:none;">
+        <div>
+            <h3>v1.0.0</h3>
+            <ul>
+                <li>🎉 初始版本发布</li>
+                <li>✨ 提供完整的项目结构和配置</li>
+                <li>✨ 集成 IntelliAI Engine 插件</li>
+                <li>✨ 集成常用开发工具和依赖</li>
+                <li>✨ 包含简化的 Action 示例（右键菜单）</li>
+                <li>✨ 提供设置页面，支持 AI 提供商选择和提示词模板管理</li>
+                <li>✨ 提供图标管理类</li>
+                <li>✨ 提供详细的使用文档</li>
+                <li>🔧 支持多版本 IntelliJ IDEA</li>
+            </ul>
+
+            <h4>包含的功能示例</h4>
+            <ul>
+                <li><b>Action</b>：右键菜单操作示例</li>
+                <li><b>Settings</b>：设置页面，包含 AI 提供商选择和提示词模板管理</li>
+                <li><b>Icons</b>：图标管理类</li>
+                <li><b>Notification</b>：通知工具类</li>
+                <li><b>Bundle</b>：国际化资源管理</li>
+            </ul>
+
+            <h4>开发工具</h4>
+            <ul>
+                <li>Google Java Format 自动格式化</li>
+                <li>JUnit 5 单元测试框架</li>
+                <li>Mockito 模拟测试框架</li>
+                <li>AssertJ 断言库</li>
+                <li>Lombok 简化 Java 代码</li>
+            </ul>
+
+            <h4>系统要求</h4>
+            <ul>
+                <li>IntelliJ IDEA 2022.3 或更高版本</li>
+                <li>Java 17+</li>
+                <li>Gradle 8.0+</li>
+                <li>IntelliAI Engine 插件</li>
+            </ul>
+        </div>
+    </script>
+    <section class="card" onclick="openModal(1)">
+        <div class="card-header">
+            <div class="card-title">IntelliJ IDEA Plugin Template (Without AI)</div>
+            <div class="card-meta">template-without-ai</div>
+        </div>
+        <div class="card-body" id="preview-1">
+            <h3>v1.0.0</h3>
+            <ul>
+                <li>🎉 初始版本发布</li>
+                <li>✨ 提供完整的项目结构和配置</li>
+                <li>✨ 集成常用开发工具和依赖</li>
+                <li>✨ 包含简化的 Action 示例（右键菜单）</li>
+                <li>✨ 提供图标管理类</li>
+                <ul>
+                    <ul>
+                        <ul>
+                        </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-1" style="display:none;">
+        <div>
+            <h3>v1.0.0</h3>
+            <ul>
+                <li>🎉 初始版本发布</li>
+                <li>✨ 提供完整的项目结构和配置</li>
+                <li>✨ 集成常用开发工具和依赖</li>
+                <li>✨ 包含简化的 Action 示例（右键菜单）</li>
+                <li>✨ 提供图标管理类</li>
+                <li>✨ 提供详细的使用文档</li>
+                <li>🔧 支持多版本 IntelliJ IDEA</li>
+            </ul>
+
+            <h4>包含的功能示例</h4>
+            <ul>
+                <li><b>Action</b>：右键菜单操作示例</li>
+                <li><b>Icons</b>：图标管理类</li>
+                <li><b>Notification</b>：通知工具类</li>
+                <li><b>Bundle</b>：国际化资源管理</li>
+            </ul>
+
+            <h4>开发工具</h4>
+            <ul>
+                <li>Google Java Format 自动格式化</li>
+                <li>JUnit 5 单元测试框架</li>
+                <li>Mockito 模拟测试框架</li>
+                <li>AssertJ 断言库</li>
+                <li>Lombok 简化 Java 代码</li>
+            </ul>
+
+            <h4>系统要求</h4>
+            <ul>
+                <li>IntelliJ IDEA 2022.3 或更高版本</li>
+                <li>Java 17+</li>
+                <li>Gradle 8.0+</li>
+            </ul>
+        </div>
+    </script>
+    <section class="card" onclick="openModal(2)">
+        <div class="card-header">
+            <div class="card-title">IntelliAI Changelog</div>
+            <div class="card-meta">intelli-ai-changelog</div>
+        </div>
+        <div class="card-body" id="preview-2">
+            <h3>2025.3.1</h3>
+
+
+            <h3>1.7.0</h3>
+            <ul>
+                <li><b>🐛 修复</b>：修复模态框问题, 感谢 <a href="https://github.com/danny-su">@danny-su</a> 提交的反馈</li>
+                <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+                <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-2" style="display:none;">
+        <h3>2025.3.1</h3>
+
+
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>🐛 修复</b>：修复模态框问题, 感谢 <a href="https://github.com/danny-su">@danny-su</a> 提交的反馈</li>
+            <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+        </ul>
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>🐛 修复</b>：Fix modal box issue, thanks to <a href="https://github.com/danny-su">@danny-su</a> for the feedback</li>
+            <li><b>✨ Added</b>: New feedback panel, can submit feedback directly on the plugin configuration page</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.8.0</li>
+        </ul>
+        <p><b>⚠️ 特别注意事项：</b></p>
+        <ol>
+            <li>支持最低版本 2024.2</li>
+        </ol>
+        <p><b>⚠️ Special Notice:</b></p>
+        <ol>
+            <li>Minimum supported version: 2024.2</li>
+        </ol>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>🔧 优化</b>：AI 服务商面板统一由 Engine 管理, 简化子插件复杂度</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.6.0</li>
+        </ul>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>🔧 Optimization</b>：The AI service provider dashboard is uniformly managed by Engine, simplifying the complexity of
+                sub-plugins.
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.6.0</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ 重要说明</b>：此版本是最后一个最低支持 2022.3 的版本，下个版本将最低支持 2024.2</li>
+            <li><b>🔄 兼容性升级</b>：适配 IntelliJ IDEA 2025.3 版本</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.5.0</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ Important Notice</b>: This version is the last one that supports 2022.3, the next version will have minimum support
+                for
+                2024.2.
+            </li>
+            <li><b>🔄 Compatibility Upgrade</b>: Adapted for IntelliJ IDEA 2025.3</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.5.0</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>🔧 优化</b>：完善提供者配置检查及通知机制，统一使用 Engine 提供的工具类</li>
+            <li><b>🔧 优化</b>：优化日志及异常处理相关代码，取消不必要的通知提示及打印</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.4.0</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>🔧 Optimized</b>：Improved provider configuration checking and notification mechanism, unified use of Engine-provided
+                utility
+                classes
+            </li>
+            <li><b>🔧 Optimized</b>：Optimized logging and exception handling code, removed unnecessary notification prompts and prints</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.4.0</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ 优化</b>：优化线程模型确保 EDT/BGT 线程安全规范</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ Optimization</b>：Optimize thread model to ensure EDT/BGT thread safety specifications</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 架构优化</b>：日志输出统一使用 Engine 的 console，不再子插件中单独维护</li>
+            <li><b>⚙️ 配置优化</b>：开启日志配置使用全局，不再由各个模型服务商维护</li>
+            <li><b>⚡ 优化</b>：优化异常处理与错误提示</li>
+            <li><b>🔧 优化</b>：优化服务商测试逻辑，可用服务商独立运行配置和超时配置</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.3.0</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 Architecture Optimization</b>: Unified log output to use Engine's console, no longer maintained separately in
+                sub-plugins
+            </li>
+            <li><b>⚙️ Configuration Optimization</b>: Verbose logging configuration is now global, no longer maintained by individual model
+                providers
+            </li>
+            <li><b>⚡ Optimization</b>: Improved exception handling and error messages</li>
+            <li><b>🔧 Optimization</b>: Optimized provider testing logic, available providers now have independent runtime configuration and
+                timeout
+                settings
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.3.0</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.2.0</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.2.0</li>
+        </ul>
+        <h3>1.1.0</h3>
+        <ul>
+            <li>🔄 Menu Reorganization: All generation features now grouped under unified submenu for better UX</li>
+            <li>🎨 Icon Update: New custom icons for changelog, daily report, weekly report, and commit message generation</li>
+            <li>⬆️ Dependency Update: Updated IntelliAI Engine to version 1.1.0</li>
+        </ul>
+        <hr/>
+
+        <h3>1.0.0</h3>
+        <ul>
+            <li>🎉 Initial release</li>
+            <li>✨ Support generating changelogs based on Git commit history</li>
+            <li>✨ Support generating daily and weekly reports</li>
+            <li>✨ Support generating commit messages based on code changes (diff)</li>
+            <li>✨ Integrated with IntelliAI Engine plugin, supporting multiple AI providers (Qwen, Ollama, OpenAI, etc.)</li>
+            <li>✨ Complete settings panel with customizable prompt templates</li>
+            <li>✨ Full internationalization support (Chinese and English)</li>
+            <li>✨ Generation features available in Git Log tool window context menu</li>
+            <li>✨ Commit message generation available in Git commit panel</li>
+            <li>🔧 Support for IntelliJ IDEA 2022.3 and later</li>
+        </ul>
+
+        <h4>Main Features</h4>
+        <ul>
+            <li><b>Changelog Generation</b>: Select commits in Git Log tool window and right-click to generate changelog</li>
+            <li><b>Daily/Weekly Reports</b>: Generate daily and weekly reports based on selected commits</li>
+            <li><b>Commit Message Generation</b>: Automatically generate commit messages in Git commit panel based on code changes</li>
+            <li><b>Custom Templates</b>: Support customizing system prompts, changelog templates, daily report templates, and weekly report
+                templates
+            </li>
+            <li><b>AI Provider Selection</b>: Support selecting default provider from IntelliAI Engine plugin configured providers</li>
+        </ul>
+
+        <h4>System Requirements</h4>
+        <ul>
+            <li>IntelliJ IDEA 2022.3 or later</li>
+            <li>IntelliAI Engine plugin (dev.dong4j.zeka.stack.idea.plugin.common.ai) must be installed</li>
+            <li>Java 17+</li>
+        </ul>
+
+        <h3>1.1.0</h3>
+        <ul>
+            <li>🔄 菜单重组：所有生成功能现已归组到统一子菜单中，提升用户体验</li>
+            <li>🎨 图标更新：为变更日志、日报、周报和提交信息生成功能更新了全新的自定义图标</li>
+            <li>⬆️ 依赖升级：更新 IntelliAI Engine 插件到 1.1.0 版本</li>
+        </ul>
+        <hr/>
+
+        <h3>1.0.0</h3>
+        <ul>
+            <li>🎉 初始版本发布</li>
+            <li>✨ 支持基于 Git 提交记录生成变更日志</li>
+            <li>✨ 支持生成工作日报和周报</li>
+            <li>✨ 支持基于代码变更（diff）生成提交记录</li>
+            <li>✨ 集成 IntelliAI Engine 插件，支持多种 AI 提供商（通义千问、Ollama、OpenAI 等）</li>
+            <li>✨ 提供完整的设置面板，支持自定义提示词模板</li>
+            <li>✨ 完整的国际化支持（中英文）</li>
+            <li>✨ 在 Git Log 工具窗口右键菜单中提供生成功能</li>
+            <li>✨ 在 Git 提交面板中提供提交记录生成功能</li>
+            <li>🔧 支持 IntelliJ IDEA 2022.3 及更高版本</li>
+        </ul>
+
+        <h4>主要功能</h4>
+        <ul>
+            <li><b>变更日志生成</b>：在 Git Log 工具窗口中选择提交记录，右键生成变更日志</li>
+            <li><b>工作日报/周报</b>：根据选中的提交记录生成工作日报和周报</li>
+            <li><b>提交记录生成</b>：在 Git 提交面板中，根据代码变更自动生成提交记录</li>
+            <li><b>自定义模板</b>：支持自定义系统提示词、变更日志模板、日报模板、周报模板</li>
+            <li><b>AI 提供商选择</b>：支持从 IntelliAI Engine 插件配置的提供商中选择默认提供商</li>
+        </ul>
+
+        <h4>系统要求</h4>
+        <ul>
+            <li>IntelliJ IDEA 2022.3 或更高版本</li>
+            <li>需要安装 IntelliAI Engine 插件（dev.dong4j.zeka.stack.idea.plugin.common.ai）</li>
+            <li>Java 17+</li>
+        </ul>
+        <hr/>
+    </script>
+    <section class="card" onclick="openModal(3)">
+        <div class="card-header">
+            <div class="card-title">IntelliAI Engine</div>
+            <div class="card-meta">intelli-ai-engine</div>
+        </div>
+        <div class="card-body" id="preview-3">
+            <h3>1.8.0</h3>
+            <ul>
+                <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+                <li><b>✨ 新增</b>：新增自动检测更新功能(可关闭)</li>
+                <li><b>ℹ️ 数据收集说明</b>：提交反馈时会自动收集系统版本、IDEA 版本、Engine 或子插件版本，用作反馈信息的元数据，不会收集其他额外数据。可审查代码验证，如有疑虑可不使用此功能
+                </li>
+                <li><b>🔧 优化</b>：优化 Agent Server 逻辑，完善自启动与 Jar 版本更新检测功能，添加 Agent Server 开发手册</li>
+            </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-3" style="display:none;">
+        <h3>1.8.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+            <li><b>✨ 新增</b>：新增自动检测更新功能(可关闭)</li>
+            <li><b>ℹ️ 数据收集说明</b>：提交反馈时会自动收集系统版本、IDEA 版本、Engine 或子插件版本，用作反馈信息的元数据，不会收集其他额外数据。可审查代码验证，如有疑虑可不使用此功能
+            </li>
+            <li><b>🔧 优化</b>：优化 Agent Server 逻辑，完善自启动与 Jar 版本更新检测功能，添加 Agent Server 开发手册</li>
+        </ul>
+        <h3>1.8.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: New feedback panel, can submit feedback directly on the plugin configuration page</li>
+            <li><b>✨ Added</b>: New automatic update detection feature (can be disabled)</li>
+            <li><b>ℹ️ Data Collection Notice</b>: When submitting feedback, the system automatically collects system version, IDEA version,
+                and
+                Engine or sub-plugin version as metadata for feedback information. No other additional data is collected. You can review the
+                code to
+                verify. If you have concerns, you can choose not to use this feature
+            </li>
+            <li><b>🔧 Optimized</b>: Optimized Agent Server logic, improved auto-start and Jar version update detection functionality, added
+                Agent
+                Server development manual
+            </li>
+        </ul>
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：使用外部 Jar 包集成非 HTTP 协议服务</li>
+        </ul>
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: Use external Jar package to integrate non-HTTP protocol services</li>
+        </ul>
+        <p><b>⚠️ 特别注意事项：</b></p>
+        <ol>
+            <li>支持最低版本 2024.2</li>
+        </ol>
+        <p><b>⚠️ Special Notice:</b></p>
+        <ol>
+            <li>Minimum supported version: 2024.1</li>
+        </ol>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：个人信息面板头像支持淡入淡出过渡效果，提升用户体验</li>
+            <li><b>🔧 优化</b>：AI 服务商面板统一由 Engine 管理, 简化子插件复杂度</li>
+        </ul>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: Personal info panel avatar now supports fade in/out transition effects, improving user experience</li>
+            <li><b>🔧 Optimized</b>: The AI service provider dashboard is uniformly managed by Engine, simplifying the complexity of
+                sub-plugins.
+            </li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ 重要说明</b>：此版本是最后一个最低支持 2022.3 的版本，下个版本将最低支持 2024.2</li>
+            <li><b>🔄 兼容性升级</b>：适配 IntelliJ IDEA 2025.3 版本</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ Important Notice</b>: This version is the last one that supports 2022.3, the next version will have minimum support
+                for
+                2024.2.
+            </li>
+            <li><b>🔄 Compatibility Upgrade</b>: Adapted for IntelliJ IDEA 2025.3</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>🔧 优化</b>：完善提供者配置检查及通知机制，提供统一的 AI 配置缺失通知并提示打开设置页面</li>
+            <li><b>🔧 优化</b>：优化日志及异常处理相关代码，取消不必要的通知提示及打印</li>
+            <li><b>✨ 新增</b>：可用 AI 服务商增加超时与最大Token字段</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>🔧 Optimized</b>：Improved provider configuration checking and notification mechanism, providing unified AI configuration
+                missing
+                notifications with prompt to open settings page
+            </li>
+            <li><b>🔧 Optimized</b>：Optimized logging and exception handling code, removed unnecessary notification prompts and prints</li>
+            <li><b>✨ Added</b>：Added timeout and max tokens fields to available AI providers</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ 优化</b>：优化线程模型确保 EDT/BGT 线程安全规范</li>
+            <li>增加AI服务商配置界面超时与最大Token字段(需根据模型设置最大 Token, 避免调用失败)</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ Optimization</b>：Optimize thread model to ensure EDT/BGT thread safety specifications</li>
+            <li><b>➕ Addition</b>：Add timeout and max tokens fields to AI provider configuration UI(Require setting max tokens based on
+                model to
+                avoid call failure)
+            </li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 架构优化</b>：日志输出统一使用 Engine 的 console，不再子插件中单独维护</li>
+            <li><b>⚙️ 配置优化</b>：开启日志配置使用全局，不再由各个模型服务商维护</li>
+            <li><b>⚡ 优化</b>：优化异常处理与错误提示</li>
+            <li><b>🔧 优化</b>：优化服务商测试逻辑，可用服务商独立运行配置和超时配置</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 Architecture Optimization</b>: Unified log output to use Engine's console, no longer maintained separately in
+                sub-plugins
+            </li>
+            <li><b>⚙️ Configuration Optimization</b>: Verbose logging configuration is now global, no longer maintained by individual model
+                providers
+            </li>
+            <li><b>⚡ Optimization</b>: Improved exception handling and error messages</li>
+            <li><b>🔧 Optimization</b>: Optimized provider testing logic, available providers now have independent runtime configuration and
+                timeout
+                settings
+            </li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>🆕 新特性</b>：集成 iFlow（全部为免费模型）和智谱 AI（注册后可使用免费模型：glm-4.5-flash）</li>
+            <li><b>⚙️ 优化</b>：移除状态栏抽象类，由第三方模块自行选择是否添加状态栏模型切换，Engine 插件只提供可用模型列表</li>
+            <li><b>⚡ 优化</b>：优化 API 请求处理逻辑，完善异常处理，增加 429 错误提示</li>
+            <li><b>🐛 错误修复</b>：修复日志配置不生效的问题</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>🆕 New Features</b>: Integrated iFlow (all free models) and Zhipu AI (free model available after registration:
+                glm-4.5-flash)
+            </li>
+            <li><b>⚙️ Optimization</b>: Removed status bar abstract class, allowing third-party modules to choose whether to add status bar
+                model
+                switching, Engine plugin only provides available model list
+            </li>
+            <li><b>⚡ Optimization</b>: Optimized API request processing logic, improved exception handling, added 429 error prompt</li>
+            <li><b>🐛 Bug Fix</b>: Fixed issue where log configuration was not taking effect</li>
+        </ul>
+        <h3>1.1.0</h3>
+        <ul>
+            <li>新增 ModelScope 模型服务商，设置页可直接选择并刷新模型列表</li>
+            <li>Base URL 默认指向 AI 问答接口（https://api-inference.modelscope.cn/v1）</li>
+            <li>模型参数与运行时配置现在和每个服务商配置绑定，可独立调优并持久化到可用列表</li>
+            <li>AIServiceFactory 及相关调用链更新为读取提供商自身参数，Javadoc 执行器根据提供商开关日志</li>
+            <li>Ollama 与 LM Studio 配置页的 API Key 输入框改为可选项，不再强制禁用，便于使用自定义代理或本地认证</li>
+            <li>优化设置页的超时输入，改为以秒为单位展示与保存</li>
+            <li>将最大 Token 数以 K 为单位配置，提示文案同步更新，确保表述更直观</li>
+        </ul>
+        <h3>1.1.0</h3>
+        <ul>
+            <li>Added the ModelScope provider so it can be configured and refreshed from the settings UI</li>
+            <li>Base URL defaults to the AI inference endpoint (https://api-inference.modelscope.cn/v1)</li>
+            <li>Bound model parameters and runtime settings to each provider config so every entry keeps its own tuning</li>
+            <li>Updated AIServiceFactory and the Javadoc executor to honor per-provider parameters and verbose logging switches</li>
+            <li>Made the API Key field optional for Ollama and LM Studio so users can enter keys when needed without being blocked</li>
+            <li>Switched the timeout control to seconds for clearer configuration</li>
+            <li>Updated the Max Tokens control to use K units with refreshed hints for clearer guidance</li>
+        </ul>
+        <h3>1.0.0</h3>
+        <ul>
+            <li><b>🚀 Initial release</b>: IntelliAI Engine with a unified, reusable AI Service API</li>
+            <li><b>🤖 Multi-model support</b>: Bundled provider presets for OpenAI, QianWen, Ollama, LM Studio, and SiliconFlow</li>
+            <li><b>⚙️ Unified configuration</b>: Centralized settings plus Password Safe backed credential storage</li>
+            <li><b>🎨 Reusable components</b>: Shared UI widgets, status-bar entry points, and model parameter presets for downstream plugins
+            </li>
+            <li><b>📦 Easy integration</b>: Designed so dependent plugins can adopt AI capabilities by simply adding this engine as a
+                dependency
+            </li>
+        </ul>
+        <h3>1.0.0</h3>
+        <ul>
+            <li><b>🚀 初始发布</b>：发布 IntelliAI Engine 插件，对外提供统一可复用的 AI Service API</li>
+            <li><b>🤖 多模型支持</b>：内置 OpenAI、通义千问、Ollama、LM Studio、SiliconFlow 等多家模型服务商配置</li>
+            <li><b>⚙️ 统一配置</b>：提供集中式设置页与基于 Password Safe 的安全 API Key 管理</li>
+            <li><b>🎨 可复用组件</b>：沉淀可复用的 UI 组件、状态栏入口和模型参数预设，便于其它插件快速接入</li>
+            <li><b>📦 易于集成</b>：支持通过 Plugin SDK 直接依赖本插件，以最小成本获得 AI 能力</li>
+        </ul>
+    </script>
+    <section class="card" onclick="openModal(4)">
+        <div class="card-header">
+            <div class="card-title">IntelliAI Javadoc</div>
+            <div class="card-meta">intelli-ai-javadoc</div>
+        </div>
+        <div class="card-body" id="preview-4">
+            <h3>2.6.2</h3>
+            <ul>
+                <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+                <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+            </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-4" style="display:none;">
+        <h3>2.6.2</h3>
+        <ul>
+            <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+        </ul>
+        <h3>2.6.2</h3>
+        <ul>
+            <li><b>✨ Added</b>: New feedback panel, can submit feedback directly on the plugin configuration page</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.8.0</li>
+        </ul>
+        <h3>2.6.1</h3>
+        <p><b>围绕提升 Javadoc 生成质量和用户体验所做的改进：</b></p>
+        <ul>
+            <li><b>✨ 新增</b>：可以使用额外的 Jar 包来对接第三方服务, 只需要提供 OpenAI API 标准接口即可, 比如将 Websocket 服务转换为 HTTP 服务
+            </li>
+            <li><b>✨ 新增</b>：新增允许删除 Javadoc 功能，可在设置页面开启/关闭，支持通过 Code Vision、意图动作和菜单动作快速删除已存在的
+                Javadoc 注释
+            </li>
+            <li><b>✨ 新增</b>：新增修复错误注释功能，当覆写模式为"仅修复"时，使用专门的修复提示词模板，智能修复已有注释中的错误并保留正确部分
+            </li>
+            <li><b>✨ 新增</b>：重构状态栏快捷设置菜单，新增"生成配置"分组（类、方法、字段多选）和"覆写配置"分组（仅修复、删除替换单选），优化配置项组织
+            </li>
+            <li><b>✨ 新增</b>：状态栏快捷设置新增多项配置项，包括启用生成上下文、允许代码压缩、压缩成一行、中英文标点符号替换等，提升配置便捷性
+            </li>
+            <li><b>🔧 优化</b>：优化文档插入助手，自动清理多余的 <code>@param</code> / <code>@throws</code> / <code>@return</code>
+                标签，特别优化字段和方法的标签清理
+            </li>
+        </ul>
+        <h3>2.6.1</h3>
+        <ul>
+            <li><b>✨ Added</b>: Ability to use additional Jar packages to connect third-party services, only need to provide OpenAI API
+                standard
+                interface,
+                such as converting Websocket services to HTTP services
+            </li>
+            <li><b>✨ Added</b>: Added allow delete Javadoc feature, can be enabled/disabled in settings page, supports quick deletion of
+                existing
+                Javadoc comments via Code Vision, intention action, and menu action
+            </li>
+            <li><b>✨ Added</b>: Added fix error comments feature, when override mode is "Fix", uses specialized fix prompt template to
+                intelligently
+                fix errors in existing comments while preserving correct parts
+            </li>
+            <li><b>✨ Added</b>: Refactored status bar quick settings menu, added "Generation Config" group (class, method, field
+                multi-select) and
+                "Override Config" group (fix only, delete and replace single-select), optimized configuration organization
+            </li>
+            <li><b>✨ Added</b>: Status bar quick settings added multiple configuration items, including enable generation context, allow
+                code
+                compression, compress to single line, replace Chinese punctuation, etc., improving configuration convenience
+            </li>
+            <li><b>🔧 Optimized</b>: Optimized documentation insertion helper, automatically cleaning up redundant <code>@param</code> /
+                <code>@throws</code>
+                / <code>@return</code> tags, especially optimized tag cleanup for fields and methods
+            </li>
+        </ul>
+        <h3>2.6.0</h3>
+        <p><b>围绕提升 Javadoc 生成质量所做的改进：</b></p>
+        <ul>
+            <li><b>✨ 新增</b>：新增"添加上下文"开关，可在方法/字段注释时将所属类前 N 行压缩后的代码片段作为上下文注入到用户提示词中，提升注释语境理解能力
+            </li>
+            <li><b>🔧 优化</b>：优化性能模式处理逻辑，提高并发度，修复单文件多服务商时只有一个服务商在处理的问题</li>
+            <li><b>🔧 优化</b>：优化性能模式统计弹窗样式，使用 IDE 当前主题颜色构建表格，修复暗色主题下文字不可见问题，并统一服务商名称列为居中显示
+            </li>
+            <li><b>🐛 修复</b>：因模型不稳定性,在插入 Javadoc 前增加清洗逻辑，自动移除 LLM 返回的多余 Markdown 代码块与原始代码行；并根据方法签名移除不存在的
+                <code>@param</code> / <code>@throws</code> / <code>@exception</code> 标签，避免生成错误注释
+            </li>
+            <li><b>🐛 修复</b>：修复自定义标签在每次插件更新后被重置的问题</li>
+        </ul>
+        <h3>2.6.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: Introduced a new "Add context" toggle that, when enabled, injects up to the first N lines of the enclosing
+                class (after compression) into the user prompt as contextual code, improving the accuracy of generated comments for methods
+                and fields while allowing you to disable it to control token usage
+            </li>
+            <li><b>🔧 Optimized</b>: Optimized performance mode processing logic to improve concurrency; fixed issue where only one provider
+                was used
+                when multiple providers were configured for a single file
+            </li>
+            <li><b>🔧 Optimized</b>: Improved performance mode statistics dialog styling by using current IDE theme colors for the table,
+                fixing text
+                visibility issues in dark theme and centering the provider name column for consistent layout
+            </li>
+            <li><b>🐛 Fixed</b>: Added a Javadoc cleanup step before insertion to automatically remove extra Markdown code fences and
+                original code
+                lines returned by LLM, and to drop <code>@param</code> / <code>@throws</code> / <code>@exception</code> tags that do not
+                exist in
+                the
+                actual method signature, preventing incorrect documentation
+            </li>
+            <li><b>✨ Added</b>: Fix the issue where custom tags were reset after each plugin update</li>
+        </ul>
+        <p><b>⚠️ 特别注意事项：</b></p>
+        <ol>
+            <li>支持最低版本 2024.2</li>
+            <li>新增的功能（Kotlin 注释和英文注释）需要重置提示词，请在重置之前保存自己的提示词设置</li>
+            <li>插件已支持 Kotlin K2 编译器模式，推荐启用 K2 编译器以获得更好的性能和体验。插件同时兼容传统 K1 编译器，未启用 K2
+                的用户可正常使用所有功能
+            </li>
+        </ol>
+        <p><b>⚠️ Special Notice:</b></p>
+        <ol>
+            <li>Minimum supported version: 2024.2</li>
+            <li>New features (Kotlin comments and English comments) require resetting prompt templates. Please save your prompt template
+                settings
+                before resetting
+            </li>
+            <li>The plugin supports Kotlin K2 compiler mode. We recommend enabling the K2 compiler for better performance and experience.
+                The plugin
+                is also compatible with the traditional K1 compiler, and users without K2 enabled can use all features normally
+            </li>
+        </ol>
+        <h3>2.5.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：新增 Code Vision 功能，在代码上方显示"生成 Javadoc"的可点击提示链接，支持快速生成文档注释</li>
+            <li><b>✨ 新增</b>：完整支持 Kotlin 语言，可为 Kotlin 代码生成 KDoc 注释</li>
+            <li><b>✨ 新增</b>：多语言支持，可为代码生成中文和英文注释</li>
+            <li><b>✨ 新增</b>：单行 Javadoc 注释压缩功能，可将只有一行内容的 Javadoc 注释自动压缩为单行格式（如：/** comment
+                */），可在设置页面开启/关闭（默认开启）
+            </li>
+            <li><b>✨ 新增</b>：启用类 Javadoc 模板功能，可为新建的 Java 类自动添加 Javadoc 注释模板，使用自定义标签中的 author、date、email 等信息
+            </li>
+            <li><b>🔧 重构</b>：重构状态栏快捷配置，将 AI 服务商选择改为子菜单形式，新增注释语言和显示生成 Javadoc 提示的快捷配置</li>
+            <li><b>🔧 优化</b>：AI 服务商面板统一由 Engine 管理, 简化子插件复杂度</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.6.0</li>
+        </ul>
+        <h3>2.5.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: Added Code Vision feature, displaying clickable "Generate Javadoc" hint links above code, supporting quick
+                generation of documentation comments
+            </li>
+            <li><b>✨ Added</b>: Full Kotlin language support, can generate KDoc comments for Kotlin code</li>
+            <li><b>✨ Added</b>: Multi-language support, can generate comments in Chinese and English</li>
+            <li><b>✨ Added</b>: Single-line Javadoc comment compression feature, automatically compresses single-line Javadoc comments to
+                single-line format (e.g., /** comment */), can be enabled/disabled in settings page (enabled by default)
+            </li>
+            <li><b>✨ Added</b>: Enable Class Javadoc Template feature, automatically adds Javadoc comment template for newly created Java
+                classes
+                using author, date, email and other information from custom tags
+            </li>
+            <li><b>🔧 Refactored</b>: Refactored status bar quick settings, changed AI provider selection to submenu format, added quick
+                settings for
+                comment language and show generate Javadoc hint
+            </li>
+            <li><b>🔧 Optimization</b>：The AI service provider dashboard is uniformly managed by Engine, simplifying the complexity of
+                sub-plugins.
+            </li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.6.0</li>
+        </ul>
+        <h3>2.4.0</h3>
+        <ul>
+            <li><b>⚠️ 重要说明</b>：此版本是最后一个最低支持 2022.3 的版本，下个版本将最低支持 2024.2</li>
+            <li><b>🔄 兼容性升级</b>：适配 IntelliJ IDEA 2025.3 版本</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.5.0</li>
+        </ul>
+        <h3>2.4.0</h3>
+        <ul>
+            <li><b>⚠️ Important Notice</b>: This version is the last one that supports 2022.3, the next version will have minimum support
+                for
+                2024.2.
+            </li>
+            <li><b>🔄 Compatibility Upgrade</b>: Adapted for IntelliJ IDEA 2025.3</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.5.0</li>
+        </ul>
+        <h3>2.3.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：添加状态栏快速打开设置页面选项</li>
+            <li><b>🔧 优化</b>：完善提供者配置检查及通知机制，统一使用 Engine 提供的工具类</li>
+            <li><b>🔧 优化</b>：修改设置面板相关字段名称和注释，更准确表达提示词设置含义</li>
+            <li><b>🔧 优化</b>：优化日志及异常处理相关代码，取消不必要的通知提示及打印</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.4.0</li>
+        </ul>
+        <h3>2.3.0</h3>
+        <ul>
+            <li><b>✨ Added</b>：Added status bar quick access option to open settings page</li>
+            <li><b>🔧 Optimized</b>：Improved provider configuration checking and notification mechanism, unified use of Engine-provided
+                utility
+                classes
+            </li>
+            <li><b>🔧 Optimized</b>：Modified settings panel field names and comments to more accurately express prompt settings meaning</li>
+            <li><b>🔧 Optimized</b>：Optimized logging and exception handling code, removed unnecessary notification prompts and prints</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.4.0</li>
+        </ul>
+        <h3>2.2.1</h3>
+        <ul>
+            <li><b>⚡ 优化</b>：优化线程模型确保 EDT/BGT 线程安全规范</li>
+        </ul>
+        <h3>2.2.1</h3>
+        <ul>
+            <li><b>⚡ Optimization</b>：Optimize thread model to ensure EDT/BGT thread safety specifications</li>
+        </ul>
+        <h3>2.2.0</h3>
+        <ul>
+            <li><b>🔄 架构优化</b>：日志输出统一使用 Engine 的 console，不再子插件中单独维护</li>
+            <li><b>⚙️ 配置优化</b>：开启日志配置使用全局，不再由各个模型服务商维护</li>
+            <li><b>⚡ 优化</b>：优化异常处理与错误提示</li>
+            <li><b>🔧 优化</b>：优化服务商测试逻辑，可用服务商独立运行配置和超时配置</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.3.0</li>
+        </ul>
+        <h3>2.2.0</h3>
+        <ul>
+            <li><b>🔄 Architecture Optimization</b>: Unified log output to use Engine's console, no longer maintained separately in
+                sub-plugins
+            </li>
+            <li><b>⚙️ Configuration Optimization</b>: Verbose logging configuration is now global, no longer maintained by individual model
+                providers
+            </li>
+            <li><b>⚡ Optimization</b>: Improved exception handling and error messages</li>
+            <li><b>🔧 Optimization</b>: Optimized provider testing logic, available providers now have independent runtime configuration and
+                timeout
+                settings
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.3.0</li>
+        </ul>
+        <h3>2.1.0</h3>
+        <ul>
+            <li><b>🐛 错误修复</b>：重构性能模式处理逻辑，修复并发时注释写入位置错误的问题</li>
+            <li><b>🆕 新特性</b>：状态栏新增多个快捷设置操作</li>
+            <li><b>🐛 错误修复</b>：修复 NPE 导致崩溃的问题</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.2.0</li>
+        </ul>
+        <h3>2.1.0</h3>
+        <ul>
+            <li><b>🐛 Bug Fix</b>: Refactored performance mode processing logic, fixed issue where comment write position was incorrect
+                during
+                concurrent operations
+            </li>
+            <li><b>🆕 New Feature</b>: Added multiple quick settings operations in the status bar</li>
+            <li><b>🐛 Bug Fix</b>: Fixed NPE issue that caused crashes</li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.2.0</li>
+        </ul>
+        <h3>2.0.0</h3>
+        <p><b>⚠️ 重要提示：本版本需要先安装 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 插件才能使用。</b></p>
+        <ul>
+            <li><b>⚡ 集成 IntelliAI Engine</b>：重构核心架构，深度集成 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI
+                Engine</a>，提供统一、可扩展、高性能的
+                AI 能力支持
+            </li>
+            <li><b>🔧 架构升级</b>：移除内置 AI 服务实现，改为依赖 IntelliAI Engine 提供的统一 AI Service API</li>
+            <li><b>🎯 统一配置</b>：AI 提供商配置迁移至 IntelliAI Engine 设置页面，实现跨插件的统一配置管理</li>
+            <li><b>🔒 安全增强</b>：沿用 IntelliAI Engine 的系统级加密存储机制，API Key 安全更有保障</li>
+            <li><b>⚡ 性能优化</b>：利用 IntelliAI Engine 的优化任务管线，提升批量处理性能和稳定性</li>
+        </ul>
+        <h3>2.0.0</h3>
+        <p><b>⚠️ Important: This version requires <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> to be installed
+            first.</b></p>
+        <ul>
+            <li><b>⚡ Integrated IntelliAI Engine</b>: Refactored core architecture, deeply integrated with
+                <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> to provide unified, pluggable, and
+                high-performance AI
+                capabilities
+            </li>
+            <li><b>🔧 Architecture upgrade</b>: Removed built-in AI service implementation, now depends on unified AI Service API provided by
+                IntelliAI Engine
+            </li>
+            <li><b>🎯 Unified configuration</b>: AI provider configuration migrated to IntelliAI Engine settings page for cross-plugin
+                unified
+                configuration management
+            </li>
+            <li><b>🔒 Security enhancement</b>: Leveraging IntelliAI Engine's system-level encrypted storage mechanism for better API Key
+                security
+            </li>
+            <li><b>⚡ Performance optimization</b>: Utilizing IntelliAI Engine's optimized task pipeline to improve batch processing
+                performance and
+                stability
+            </li>
+        </ul>
+
+        <h3>1.5.1</h3>
+        <ul>
+            <li>修复国际化问题</li>
+        </ul>
+        <h3>1.5.1</h3>
+        <ul>
+            <li>Fixed internationalization issues</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li>新增编辑器状态栏默认服务商切换控件，支持直接查看并切换已验证的 AI 服务提供商</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li>Added a default provider switch widget in the editor status bar, supporting direct viewing and switching of verified AI
+                service
+                providers
+            </li>
+        </ul>
+        <h3>1.4.4</h3>
+        <ul>
+            <li>Added a status bar widget to display and switch verified AI providers directly from the editor</li>
+            <li>Updated default provider persistence with success notifications when switching providers</li>
+        </ul>
+        <h3>1.4.3</h3>
+        <ul>
+            <li>修复设置页面中清空按钮的 ActionUpdateThread 使用问题，将线程类型从 BGT 改为 EDT，确保访问 Swing 组件时线程安全</li>
+            <li>优化清空按钮的启用状态，根据表格数据动态启用/禁用，提升用户体验</li>
+        </ul>
+        <h3>1.4.3</h3>
+        <ul>
+            <li>Fixed ActionUpdateThread usage issue for clear buttons on settings page, changed thread type from BGT to EDT to ensure
+                thread safety
+                when accessing Swing components
+            </li>
+            <li>Optimized clear button enabled state, dynamically enable/disable based on table data, improving user experience</li>
+        </ul>
+        <h3>1.4.2</h3>
+        <ul>
+            <li>修复设置页面在 EDT 上读取 API Key 导致 SlowOperations 异常的问题，改为后台线程加载并在 UI 线程更新</li>
+        </ul>
+        <h3>1.4.2</h3>
+        <ul>
+            <li>Fixed SlowOperations error when loading API keys on the settings page by fetching in background and updating on EDT</li>
+        </ul>
+        <h3>1.4.1</h3>
+        <ul>
+            <li>修复 BUG</li>
+        </ul>
+        <h3>1.4.1</h3>
+        <ul>
+            <li>FIX BUG</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li>新增 Git 提交页面集成功能，在 Git 提交工具栏中添加 Javadoc 生成按钮，支持在提交代码前快速为缺少 Javadoc 的代码生成文档注释
+            </li>
+            <li>新增自定义 Javadoc 标签配置功能，支持在设置页面动态添加、删除和编辑自定义标签, 默认添加 date 和 email</li>
+            <li>新增注释格式化: 标点符号转换和中英文之间添加空格(Pangu), 可在设置页面关闭(默认开启)</li>
+            <li>重构设置页面，通过组件分组和边框优化布局，隐藏高级配置以减小设置页面长度，提升用户体验</li>
+            <li>优化设置页面布局，自定义 Javadoc 标签配置使用复选框控制显示，减少页面长度</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li>Added Git commit page integration feature, adding Javadoc generation button in Git commit toolbar, supporting quick
+                generation of
+                documentation comments for code missing Javadoc before committing code.
+            </li>
+            <li>Added custom Javadoc tags configuration feature, supporting dynamic addition, deletion, and editing of custom tags in
+                settings
+                page. Default tags added: date and email.
+            </li>
+            <li>Added Javadoc formatting: Punctuation conversion and space between Chinese and English (Pangu)</li>
+            <li>Refactored settings page, optimized layout through component grouping and borders, hidden advanced settings to reduce
+                settings page
+                length and improve user experience
+            </li>
+            <li>Optimized settings page layout, custom Javadoc tags configuration uses checkbox to control display, reducing page length
+            </li>
+        </ul>
+        <h3>1.3.3</h3>
+        <ul>
+            <li>修复切换模型时 Apply 按钮不可用的问题</li>
+            <li>修复切换模型后配置无法保存的问题</li>
+            <li>优化 API Key 保存逻辑，避免频繁写入密钥管理器</li>
+            <li>修复测试通过后配置未及时保存的问题，测试通过后自动保存配置</li>
+        </ul>
+        <h3>1.3.3</h3>
+        <ul>
+            <li>Fixed issue where Apply button was not available when switching models</li>
+            <li>Fixed issue where configuration could not be saved after switching models</li>
+            <li>Optimized API Key saving logic to avoid frequent writes to key manager</li>
+            <li>Fixed issue where configuration was not saved immediately after test passed, now automatically saves configuration after
+                test
+                passes
+            </li>
+        </ul>
+        <h3>1.3.2</h3>
+        <ul>
+            <li>修改插件图标</li>
+            <li>修复在格式化代码时可能出现的问题</li>
+            <li>修复删除可用服务商时当前选择的服务商的 API Key 丢失的问题</li>
+            <li>减少设置页面提示信息</li>
+        </ul>
+        <h3>1.3.2</h3>
+        <ul>
+            <li>Modified plugin icon</li>
+            <li>Fixed potential issues when formatting code</li>
+            <li>Fixed issue where API Key of currently selected provider was lost when deleting available providers</li>
+            <li>Reduced hint information on settings page</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li>修复意图预览问题</li>
+            <li>新增可用服务商列表展示与相关操作(列表中的可用服务商用于性能模式, 提高批量处理速度)</li>
+            <li>优化错误提示, 新增快速打开设置页面功能</li>
+            <li>优化控制台日志输出, 添加 Token 使用量展示</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li>Fixed intention preview issue</li>
+            <li>Added available provider list display and related operations (providers in the list are used for performance mode to improve
+                batch
+                processing speed)
+            </li>
+            <li>Enhanced error messages with quick access to settings page</li>
+            <li>Enhanced console log output with token usage display</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <b>因增加了系统级加密存储 API Key 的功能, 需要重新配置服务商</b>
+        <ul>
+            <li><b>安全增强：API Key 使用系统级加密存储</b>（macOS Keychain / Linux Keyring / Windows Credential Manager），确保敏感数据安全
+            </li>
+            <li>性能模式优化: 可为同一服务商配置不同模型,不同 apiKey, 增加并行处理速度</li>
+            <li>新增代码压缩控制功能, 可有效减少 Token 发送量</li>
+            <li>新增控制台日志输出, 主要用于提示词调优</li>
+            <li>将「跳过已有注释」修改为「覆盖已有注释」(这样才符合逻辑)</li>
+            <li>其他逻辑与 BUG 修复</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <b>The service provider needs to be reconfigured due to the addition of the system-level encrypted storage API Key.</b>
+        <ul>
+            <li><b>Security Enhancement: API Key encryption using system-level storage</b> (macOS Keychain / Linux Keyring / Windows
+                Credential
+                Manager) for secure sensitive data handling
+            </li>
+            <li>Snapshot Performance Mode Optimization: Can configure different models and different apiKey for the same service provider,
+                increasing parallel processing speed.
+            </li>
+            <li>Added code compression control feature to effectively reduce token usage</li>
+            <li>Added token statistics and optional statistics sending functionality</li>
+            <li>Added console log output, mainly for prompt optimization</li>
+            <li>Changed "Skip existing comments" to "Override existing comments" (more logical)</li>
+            <li>Other logic improvements and bug fixes</li>
+        </ul>
+        <h3>1.2.1</h3>
+        <ul>
+            <li>修复国际化问题</li>
+        </ul>
+        <h3>1.2.1</h3>
+        <ul>
+            <li>Fixed internationalization issues</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li>优化用户体验与 UI</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li>Improved user experience and UI</li>
+        </ul>
+        <h3>1.1.0</h3>
+        <ul>
+            <li>新增性能模式：支持多提供商并行处理，大幅提升批量处理速度</li>
+            <li>新增统计信息对话框：显示各提供商的处理结果和耗时统计</li>
+            <li>优化设置界面：添加"显示统计信息"开关，可控制是否显示统计对话框</li>
+            <li>改进用户体验：统计对话框改为非模态，不影响继续使用IDE</li>
+            <li>优化UI文本：简化设置项的显示文本，增加更详细的提示信息</li>
+            <li>优化类代码处理：支持更大的类代码行数（最大300000行）</li>
+        </ul>
+        <h3>1.1.0</h3>
+        <ul>
+            <li>Added Performance Mode: Support for parallel processing with multiple providers, significantly improving batch processing
+                speed
+            </li>
+            <li>Added Statistics Dialog: Display processing results and time statistics for each provider</li>
+            <li>Enhanced Settings Interface: Added "Task Result Display" toggle to control whether to show statistics dialog</li>
+            <li>Improved User Experience: Statistics dialog changed to non-modal, allowing continued IDE usage</li>
+            <li>Optimized UI Text: Simplified setting item display text with more detailed hints</li>
+            <li>Optimized Class Code Processing: Support for larger class code lines (up to 300,000 lines)</li>
+        </ul>
+        <h3>1.0.0</h3>
+        <ul>
+            <li>首次发布</li>
+            <li>支持多种 AI 提供商（通义千问、Ollama）</li>
+            <li>支持快捷键、右键菜单、Generate 菜单等多种触发方式</li>
+            <li>支持批量处理文件和目录</li>
+            <li>支持异步处理和进度显示</li>
+        </ul>
+        <h3>1.0.0</h3>
+        <ul>
+            <li>Initial release</li>
+            <li>Support for multiple AI providers (QianWen, Ollama)</li>
+            <li>Support for multiple trigger methods: keyboard shortcuts, right-click menu, Generate menu, etc.</li>
+            <li>Support for batch processing of files and directories</li>
+            <li>Support for asynchronous processing and progress display</li>
+        </ul>
+    </script>
+    <section class="card" onclick="openModal(5)">
+        <div class="card-header">
+            <div class="card-title">IntelliAI Nacos</div>
+            <div class="card-meta">intelli-ai-nacos</div>
+        </div>
+        <div class="card-body" id="preview-5">
+            <h3>1.7.0</h3>
+            <ul>
+                <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+                <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+            </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-5" style="display:none;">
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+        </ul>
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: New feedback panel, can submit feedback directly on the plugin configuration page</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.8.0</li>
+        </ul>
+        <p><b>⚠️ 特别注意事项：</b></p>
+        <ol>
+            <li>支持最低版本 2024.2</li>
+        </ol>
+        <p><b>⚠️ Special Notice:</b></p>
+        <ol>
+            <li>Minimum supported version: 2024.2</li>
+        </ol>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>🔧 优化</b>：AI 服务商面板统一由 Engine 管理, 简化子插件复杂度</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.6.0</li>
+        </ul>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>🔧 Optimization</b>：The AI service provider dashboard is uniformly managed by Engine, simplifying the complexity of
+                sub-plugins.
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.6.0</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ 重要说明</b>：此版本是最后一个最低支持 2022.3 的版本，下个版本将最低支持 2024.2</li>
+            <li><b>🔄 兼容性升级</b>：适配 IntelliJ IDEA 2025.3 版本</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.5.0</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ Important Notice</b>: This version is the last one that supports 2022.3, the next version will have minimum support
+                for
+                2024.2.
+            </li>
+            <li><b>🔄 Compatibility Upgrade</b>: Adapted for IntelliJ IDEA 2025.3</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.5.0</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：GitHub 加速下载功能，支持配置代理地址加速下载 Nacos 安装包</li>
+            <li><b>✨ 新增</b>：动态获取下载文件大小，不再写死文件大小，进度显示更准确</li>
+            <li><b>🔧 优化</b>：自建 Nacos 服务默认服务器地址设置为 http://127.0.0.1:8848</li>
+            <li><b>🔧 优化</b>：设置面板中的 "Nacos 注册中心" 统一改为 "Nacos 服务"</li>
+            <li><b>🗑️ 移除</b>：移除全局管理员配置功能及相关代码</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.4.0</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>✨ Added</b>：GitHub accelerated download feature, supporting proxy address configuration to speed up Nacos package
+                downloads
+            </li>
+            <li><b>✨ Added</b>：Dynamic file size detection, no longer hardcoded file size, more accurate progress display</li>
+            <li><b>🔧 Optimized</b>：Default server address for custom Nacos service set to http://127.0.0.1:8848</li>
+            <li><b>🔧 Optimized</b>：Unified "Nacos Registry" to "Nacos Service" in settings panel</li>
+            <li><b>🗑️ Removed</b>：Removed global administrator configuration feature and related code</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.4.0</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ 优化</b>：优化线程模型确保 EDT/BGT 线程安全规范</li>
+            <li><b>⚡ 优化</b>：异常处理与错误提示</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ Optimization</b>：Optimize thread model to ensure EDT/BGT thread safety specifications</li>
+            <li><b>⚡ Optimization</b>：Improve exception handling and error messages</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 架构优化</b>：日志输出统一使用 Engine 的 console，不再子插件中单独维护</li>
+            <li><b>⚙️ 配置优化</b>：开启日志配置使用全局，不再由各个模型服务商维护</li>
+            <li><b>⚡ 优化</b>：优化异常处理与错误提示</li>
+            <li><b>🔧 优化</b>：优化服务商测试逻辑，可用服务商独立运行配置和超时配置</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.3.0</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 Architecture Optimization</b>: Unified log output to use Engine's console, no longer maintained separately in
+                sub-plugins
+            </li>
+            <li><b>⚙️ Configuration Optimization</b>: Verbose logging configuration is now global, no longer maintained by individual model
+                providers
+            </li>
+            <li><b>⚡ Optimization</b>: Improved exception handling and error messages</li>
+            <li><b>🔧 Optimization</b>: Optimized provider testing logic, available providers now have independent runtime configuration and
+                timeout
+                settings
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.3.0</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.2.0</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.2.0</li>
+        </ul>
+        <h3>v1.1.0</h3>
+        <ul>
+            <li>新增 设置页本地 Nacos 注册中心启停，支持自动下载、启动、停止和通知反馈</li>
+            <li>新增 LocalNacosService 服务封装异步生命周期管理</li>
+            <li>新增 本地 Nacos 状态指示与可点击控制台链接，实时显示运行/停止状态</li>
+            <li>新增 一键打开本地 Nacos 目录按钮，快速定位安装路径</li>
+            <li>新增 IDE 关闭监听，自动停止本地 Nacos，避免遗留进程</li>
+            <li>升级 OpenAPI 调用至 Nacos v2 版本，兼容新的 data 包装格式</li>
+            <li>优化 勾选/取消使用本地注册中心时的行为：可同时配置自建地址并在取消时自动停服</li>
+            <li>优化 Nacos 连接测试，用户名/密码可选填</li>
+            <li>移除 EDAS 轻量级注册中心相关逻辑，统一只保留 Nacos 模式</li>
+            <li>修复 本地 Nacos 启动前端口校验固定检查轻量级端口的问题</li>
+            <li>新增 Nacos 连接测试与安全登录流程，支持自动检测管理员权限</li>
+            <li>新增 Tool Window 刷新、命名空间树、配置拉取/发布/对比及多标签编辑能力</li>
+            <li>新增 工具栏/右键/意图操作：一键发布、对比配置并展示通知</li>
+        </ul>
+        <h3>v1.1.0</h3>
+        <ul>
+            <li>Added local Nacos toggle in settings with auto download/start/stop notifications</li>
+            <li>Added LocalNacosService to encapsulate async lifecycle management</li>
+            <li>Added status indicator + console hyperlink to visualize local Nacos health</li>
+            <li>Added quick action to open the local Nacos directory from settings</li>
+            <li>Added AppLifecycle listener to stop local Nacos when IDE exits</li>
+            <li>Switched REST calls to Nacos OpenAPI v2 and handle the new data wrapper</li>
+            <li>Improved toggle logic: coexisting with custom registry settings and auto-stop on disable</li>
+            <li>Relaxed connection validation so username/password become optional</li>
+            <li>Removed legacy EDAS lightweight registry code so only Nacos remains</li>
+            <li>Fixed port detection to respect Nacos-specific ports before launch</li>
+            <li>Added secure Nacos connection test with token reuse and admin detection</li>
+            <li>Added Tool Window refresh, namespace tree, pull/push/compare actions and multi-tab editor</li>
+            <li>Added toolbar/context/intention actions for one-click publish & diff with notifications</li>
+        </ul>
+        <h3>v1.0.0</h3>
+        <ul>
+            <li>🎉 初始版本发布</li>
+            <li>✨ 提供完整的 Nacos 配置管理功能</li>
+            <li>✨ 集成 IntelliAI Engine 插件，支持 AI 功能</li>
+            <li>✨ 提供可视化的 Nacos 配置管理界面</li>
+            <li>✨ 支持配置的拉取、发布、对比、删除操作</li>
+            <li>✨ 提供配置树形结构展示</li>
+            <li>✨ 支持多 Tab 配置编辑</li>
+            <li>✨ 集成 Nacos Client 2.2.0</li>
+            <li>🔧 支持多版本 IntelliJ IDEA</li>
+        </ul>
+
+        <h4>核心功能</h4>
+        <ul>
+            <li><b>Nacos 连接管理</b>：服务器连接配置和测试</li>
+            <li><b>配置树视图</b>：按 Namespace → Group → DataId 三级分组展示</li>
+            <li><b>配置编辑器</b>：支持多 Tab 编辑，支持多种格式</li>
+            <li><b>配置操作</b>：拉取、发布、对比配置</li>
+            <li><b>权限管理</b>：基于 Nacos 权限的配置删除控制</li>
+            <li><b>右键菜单</b>：项目视图右键发布配置</li>
+            <li><b>意图操作</b>：快速发布和对比配置</li>
+        </ul>
+
+        <h4>技术特性</h4>
+        <ul>
+            <li>基于 IntelliJ Platform SDK 2.1.0</li>
+            <li>集成 Nacos Client 2.2.0</li>
+            <li>集成 IntelliAI Engine 插件</li>
+            <li>使用 Kotlin DSL 配置构建</li>
+            <li>JUnit 5 单元测试框架</li>
+            <li>Lombok 简化 Java 代码</li>
+        </ul>
+
+        <h4>系统要求</h4>
+        <ul>
+            <li>IntelliJ IDEA 2022.3 或更高版本</li>
+            <li>Java 17+</li>
+            <li>Gradle 8.0+</li>
+            <li>IntelliAI Engine 插件</li>
+            <li>Nacos 2.x 服务器</li>
+        </ul>
+    </script>
+    <section class="card" onclick="openModal(6)">
+        <div class="card-header">
+            <div class="card-title">IntelliAI Tracer</div>
+            <div class="card-meta">intelli-ai-tracer</div>
+        </div>
+        <div class="card-body" id="preview-6">
+            <h3>1.7.0</h3>
+            <ul>
+                <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+                <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+            </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-6" style="display:none;">
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>✨ 新增</b>：新增反馈面板, 可在插件配置页面直接提交反馈</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.8.0</li>
+        </ul>
+        <h3>1.7.0</h3>
+        <ul>
+            <li><b>✨ Added</b>: New feedback panel, can submit feedback directly on the plugin configuration page</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.8.0</li>
+        </ul>
+        <p><b>⚠️ 特别注意事项：</b></p>
+        <ol>
+            <li>支持最低版本 2024.2</li>
+        </ol>
+        <p><b>⚠️ Special Notice:</b></p>
+        <ol>
+            <li>Minimum supported version: 2024.2</li>
+        </ol>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>🔧 优化</b>：AI 服务商面板统一由 Engine 管理, 简化子插件复杂度</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.6.0</li>
+        </ul>
+        <h3>1.6.0</h3>
+        <ul>
+            <li><b>🔧 Optimization</b>：The AI service provider dashboard is uniformly managed by Engine, simplifying the complexity of
+                sub-plugins.
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.6.0</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ 重要说明</b>：此版本是最后一个最低支持 2022.3 的版本，下个版本将最低支持 2024.2</li>
+            <li><b>🔄 兼容性升级</b>：适配 IntelliJ IDEA 2025.3 版本</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.5.0</li>
+        </ul>
+        <h3>1.5.0</h3>
+        <ul>
+            <li><b>⚠️ Important Notice</b>: This version is the last one that supports 2022.3, the next version will have minimum support
+                for
+                2024.2.
+            </li>
+            <li><b>🔄 Compatibility Upgrade</b>: Adapted for IntelliJ IDEA 2025.3</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.5.0</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>🔧 优化</b>：完善提供者配置检查及通知机制，统一使用 Engine 提供的工具类</li>
+            <li><b>🔧 优化</b>：优化日志及异常处理相关代码，取消不必要的通知提示及打印</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.4.0</li>
+        </ul>
+        <h3>1.4.0</h3>
+        <ul>
+            <li><b>🔧 Optimized</b>：Improved provider configuration checking and notification mechanism, unified use of Engine-provided
+                utility
+                classes
+            </li>
+            <li><b>🔧 Optimized</b>：Optimized logging and exception handling code, removed unnecessary notification prompts and prints</li>
+            <li><b>⬆️ Dependency Update</b>：Upgraded IntelliAI Engine to 1.4.0</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ 优化</b>：优化线程模型确保 EDT/BGT 线程安全规范</li>
+        </ul>
+        <h3>1.3.1</h3>
+        <ul>
+            <li><b>⚡ Optimization</b>：Optimize thread model to ensure EDT/BGT thread safety specifications</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 架构优化</b>：日志输出统一使用 Engine 的 console，不再子插件中单独维护</li>
+            <li><b>⚙️ 配置优化</b>：开启日志配置使用全局，不再由各个模型服务商维护</li>
+            <li><b>⚡ 优化</b>：优化异常处理与错误提示</li>
+            <li><b>🔧 优化</b>：优化服务商测试逻辑，可用服务商独立运行配置和超时配置</li>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.3.0</li>
+        </ul>
+        <h3>1.3.0</h3>
+        <ul>
+            <li><b>🔄 Architecture Optimization</b>: Unified log output to use Engine's console, no longer maintained separately in
+                sub-plugins
+            </li>
+            <li><b>⚙️ Configuration Optimization</b>: Verbose logging configuration is now global, no longer maintained by individual model
+                providers
+            </li>
+            <li><b>⚡ Optimization</b>: Improved exception handling and error messages</li>
+            <li><b>🔧 Optimization</b>: Optimized provider testing logic, available providers now have independent runtime configuration and
+                timeout
+                settings
+            </li>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.3.0</li>
+        </ul>
+        <h3>1.2.1</h3>
+        <ul>
+            <li>添加意图菜单图标</li>
+        </ul>
+        <h3>1.2.1</h3>
+        <ul>
+            <li>Add Intent Menu Icon</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 1.2.0</li>
+        </ul>
+        <h3>1.2.0</h3>
+        <ul>
+            <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 1.2.0</li>
+        </ul>
+        <h3>1.1.0</h3>
+        <ul>
+            <li>新增设置页面，可选择默认 AI 提供商并实时监听 IntelliAI Engine 配置变化</li>
+            <li>新增系统提示词与工作流模板管理，可折叠显示并支持恢复默认内容</li>
+            <li>WorkflowExplainerService 支持使用自定义提示词及提供商配置</li>
+        </ul>
+
+        <h3>1.1.0</h3>
+        <ul>
+            <li>Added a dedicated settings page with provider selector that listens to IntelliAI Engine updates</li>
+            <li>Introduced system prompt & workflow template editors with collapsible UI and reset actions</li>
+            <li>WorkflowExplainerService now respects user-selected providers and prompt templates</li>
+        </ul>
+
+        <h3>1.0.0</h3>
+        <ul>
+            <li>🎉 初始版本发布</li>
+            <li>✨ 支持分析方法的调用链（上行和下行）</li>
+            <li>✨ 支持提取方法的上下文信息（类、注解、注释等）</li>
+            <li>✨ 支持通过 AI 生成调用时序图和业务逻辑说明</li>
+            <li>✨ 集成 IntelliAI Engine 插件，支持多种 AI 提供商（通义千问、Ollama、OpenAI 等）</li>
+            <li>✨ 在编辑器右键菜单中提供工作流解释功能</li>
+            <li>✨ 完整的国际化支持（中英文）</li>
+            <li>🔧 支持 IntelliJ IDEA 2022.3 及更高版本</li>
+        </ul>
+
+        <h4>主要功能</h4>
+        <ul>
+            <li><b>调用链分析</b>：自动分析方法的调用链，包括谁调用了该方法以及该方法调用了哪些方法</li>
+            <li><b>上下文提取</b>：提取方法的完整上下文信息，包括类信息、注解、注释等</li>
+            <li><b>AI 生成说明</b>：使用 AI 生成 Mermaid 格式的调用时序图和业务逻辑说明</li>
+            <li><b>智能定位</b>：在代码编辑器中选中方法调用即可分析</li>
+        </ul>
+
+        <h4>系统要求</h4>
+        <ul>
+            <li>IntelliJ IDEA 2022.3 或更高版本</li>
+            <li>需要安装 IntelliAI Engine 插件（dev.dong4j.zeka.stack.idea.plugin.common.ai）</li>
+            <li>Java 17+</li>
+        </ul>
+
+        <hr/>
+
+        <h3>1.0.0</h3>
+        <ul>
+            <li>🎉 Initial release (MVP)</li>
+            <li>✨ Support analyzing method call chains (upstream and downstream)</li>
+            <li>✨ Support extracting method context information (class, annotations, comments, etc.)</li>
+            <li>✨ Support generating call sequence diagrams and business logic explanations using AI</li>
+            <li>✨ Integrated with IntelliAI Engine plugin, supporting multiple AI providers (Qwen, Ollama, OpenAI, etc.)</li>
+            <li>✨ Workflow explanation feature available in editor context menu</li>
+            <li>✨ Full internationalization support (Chinese and English)</li>
+            <li>🔧 Support for IntelliJ IDEA 2022.3 and later</li>
+        </ul>
+
+        <h4>Main Features</h4>
+        <ul>
+            <li><b>Call Chain Analysis</b>: Automatically analyze method call chains, including who calls the method and what methods the
+                method
+                calls
+            </li>
+            <li><b>Context Extraction</b>: Extract complete context information of methods, including class information, annotations,
+                comments,
+                etc.
+            </li>
+            <li><b>AI-Generated Explanations</b>: Use AI to generate Mermaid-format call sequence diagrams and business logic explanations
+            </li>
+            <li><b>Smart Positioning</b>: Select method calls in code editor to analyze</li>
+        </ul>
+
+        <h4>System Requirements</h4>
+        <ul>
+            <li>IntelliJ IDEA 2022.3 or later</li>
+            <li>IntelliAI Engine plugin (dev.dong4j.zeka.stack.idea.plugin.common.ai) must be installed</li>
+            <li>Java 17+</li>
+        </ul>
+    </script>
+    <section class="card" onclick="openModal(7)">
+        <div class="card-header">
+            <div class="card-title">Zeka Stack Dev Helper</div>
+            <div class="card-meta">zks-dev-helper</div>
+        </div>
+        <div class="card-body" id="preview-7">
+            <h3>v1.0.0</h3>
+            <ul>
+                <li>🎉 初始版本发布</li>
+                <li>✨ 支持文件模板自动配置</li>
+                <li>✨ 支持 Live Template 快速生成代码片段</li>
+                <li>✨ 支持代码风格自动配置</li>
+                <li>✨ 支持使用统计功能</li>
+                <ul>
+                    <ul>
+                        <ul>
+                        </ul>
+        </div>
+        <div class="card-footer">点击查看完整更新日志 →</div>
+    </section>
+    <script type="text/template" id="modal-content-7" style="display:none;">
+        <div>
+            <h3>v1.0.0</h3>
+            <ul>
+                <li>🎉 初始版本发布</li>
+                <li>✨ 支持文件模板自动配置</li>
+                <li>✨ 支持 Live Template 快速生成代码片段</li>
+                <li>✨ 支持代码风格自动配置</li>
+                <li>✨ 支持使用统计功能</li>
+                <li>🔧 提供设置面板配置</li>
+            </ul>
+
+            <h4>主要功能</h4>
+            <ul>
+                <li><b>文件模板</b>：自动添加统一的文件头部注释，包含公司信息、作者、版本等</li>
+                <li><b>Live Template</b>：支持快速生成常用代码片段，包括 todo、fixme、javadoc、日志、测试等</li>
+                <li><b>代码风格</b>：自动配置统一的代码格式化规则，支持多种语言</li>
+                <li><b>使用统计</b>：统计模板使用情况，帮助了解团队开发习惯</li>
+            </ul>
+
+            <h4>Live Template 列表</h4>
+            <ul>
+                <li><code>todo</code> + Tab：标记待处理的地方</li>
+                <li><code>fix</code> + Tab：标记需要修复的地方</li>
+                <li><code>cd</code> + Tab：生成 class javadoc</li>
+                <li><code>li/ld/lw/le</code> + Tab：快速生成日志语句</li>
+                <li><code>test</code> + Tab：快速生成单元测试方法</li>
+            </ul>
+
+            <h4>系统要求</h4>
+            <ul>
+                <li>IntelliJ IDEA 2022.3 或更高版本</li>
+                <li>Java 17+</li>
+            </ul>
+        </div>
+    </script>
+</main>
+
+<!-- 模态框 -->
+<div id="modal" class="modal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modal-title"></h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+    </div>
+</div>
+
+<script>
+    // 打开模态框
+    function openModal(index) {
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const template = document.getElementById('modal-content-' + index);
+
+        if (!template) {
+            return;
+        }
+
+        // 从卡片标题获取插件名称
+        const card = document.querySelectorAll('.card')[index];
+        const cardTitle = card.querySelector('.card-title').textContent;
+
+        modalTitle.textContent = cardTitle;
+        modalBody.innerHTML = template.textContent;
+        modal.classList.add('active');
+
+        // 阻止背景滚动
+        document.body.style.overflow = 'hidden';
+    }
+
+    // 关闭模态框
+    function closeModal() {
+        const modal = document.getElementById('modal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // 点击背景关闭模态框
+    function closeModalOnBackdrop(event) {
+        if (event.target.id === 'modal') {
+            closeModal();
+        }
+    }
+
+    // ESC 键关闭模态框
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+</body>
+</html>
