@@ -113,12 +113,9 @@ public final class ChangelogToolWindowService {
             return new ChangelogOutputSession(null);
         }
 
-        // 移除工具窗口初始化时的空白占位内容，避免出现无标题标签页
-        if (toolWindow.getContentManager().getContentCount() == 1) {
-            Content placeholder = toolWindow.getContentManager().getContent(0);
-            if (placeholder != null && (placeholder.getDisplayName() == null || placeholder.getDisplayName().isBlank())) {
-                toolWindow.getContentManager().removeContent(placeholder, true);
-            }
+        // 首次使用时，动态设置 toolwindow 的布局
+        if (toolWindow.getContentManager().getContentCount() == 0) {
+            setRightBottomDock(toolWindow);
         }
 
         JBTextArea textArea = new JBTextArea();
@@ -174,6 +171,51 @@ public final class ChangelogToolWindowService {
      */
     private @NotNull String buildTitle(@NotNull String title) {
         return title;
+    }
+
+    /**
+     * 设置工具窗口的右下角布局
+     * <p> 尝试调用不同的版本方法以实现将右侧区域拆分为上下两块的效果. 优先使用带有 Runnable 参数的 setSplitMode 方法,
+     * 如果失败, 则尝试调用不带参数的 setSplitMode 方法.
+     *
+     * @param toolWindow 工具窗口实例
+     */
+    private void setRightBottomDock(@NotNull ToolWindow toolWindow) {
+        // 兼容不同版本的 API，优先使用 split mode 将右侧区域拆分为上下两块
+        boolean applied = invokeBooleanMethod(toolWindow, "setSplitMode", true, Runnable.class);
+        if (!applied) {
+            invokeBooleanMethod(toolWindow, "setSplitMode", true);
+        }
+    }
+
+    /**
+     * 尝试调用指定的布尔方法并设置其参数
+     * <p> 该方法通过反射机制调用工具窗口对象上的指定布尔方法, 并传递相应的参数. 如果方法调用成功, 则返回 true; 否则返回 false.
+     *
+     * @param toolWindow 工具窗口对象
+     * @param methodName 要调用的方法名
+     * @param value      布尔参数值
+     * @param extraTypes 额外的参数类型数组
+     * @return 如果方法调用成功则返回 true, 否则返回 false
+     */
+    private boolean invokeBooleanMethod(@NotNull ToolWindow toolWindow,
+                                        @NotNull String methodName,
+                                        boolean value,
+                                        Class<?>... extraTypes) {
+        try {
+            Class<?>[] paramTypes = new Class<?>[1 + extraTypes.length];
+            paramTypes[0] = boolean.class;
+            System.arraycopy(extraTypes, 0, paramTypes, 1, extraTypes.length);
+            Object[] params = new Object[1 + extraTypes.length];
+            params[0] = value;
+            for (int i = 0; i < extraTypes.length; i++) {
+                params[i + 1] = null;
+            }
+            toolWindow.getClass().getMethod(methodName, paramTypes).invoke(toolWindow, params);
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
     }
 
     /**

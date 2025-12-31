@@ -11,7 +11,8 @@ import java.nio.file.Path;
 
 /**
  * GitCliff 二进制解析器类
- * <p> 用于在 macOS 系统上解析和设置 Git-Cliff 工具的二进制路径. 该类提供了静态方法来检查和设置 Git-Cliff 的可执行权限.
+ * <p> 用于解析和设置 Git-Cliff 工具的二进制路径，支持 macOS、Windows 和 Linux 系统。
+ * 该类提供了静态方法来检查和设置 Git-Cliff 的可执行权限。
  *
  * @author dong4j
  * @version 1.0.0
@@ -27,11 +28,6 @@ public final class GitCliffBinaryResolver {
      * @see Logger
      */
     private static final Logger log = Logger.getInstance(GitCliffBinaryResolver.class);
-    /**
-     * macOS 平台上 Git Cliff 二进制文件的路径
-     * <p> 此路径用于在 macOS 系统中定位 Git Cliff 工具的安装位置
-     */
-    private static final String MAC_BINARY_PATH = "/Users/dong4j/.zeka-stack/plugin/changelog/git-cliff-2.11.0/git-cliff";
 
     /**
      * GitCliffBinaryResolver 的私有构造函数
@@ -42,27 +38,25 @@ public final class GitCliffBinaryResolver {
 
     /**
      * 解析并返回 Git-cliff 二进制文件的路径
-     * <p> 此方法仅在系统为 macOS 时有效. 首先检查指定路径是否存在, 若存在则尝试将其设置为可执行文件.
-     * 若路径不存在或系统不是 macOS, 则返回 null.
+     * <p> 根据操作系统类型自动检测二进制文件路径，支持 macOS、Windows 和 Linux。
+     * 首先检查指定路径是否存在, 若存在则尝试将其设置为可执行文件（非 Windows 系统）。
      *
-     * @return Git-cliff 二进制文件的路径, 如果路径不存在或系统不是 macOS 则返回 null
+     * @return Git-cliff 二进制文件的路径, 如果路径不存在则返回 null
      */
     @Nullable
     public static Path resolve() {
-        if (!SystemInfo.isMac) {
+        Path binary = GitCliffDownloadManager.getBinaryPath();
+        if (binary == null || !Files.exists(binary)) {
             return null;
         }
 
-        Path binary = Path.of(MAC_BINARY_PATH);
-        if (!Files.exists(binary)) {
-            return null;
-        }
-
-        // 确保可执行（macOS）
-        try {
-            binary.toFile().setExecutable(true);
-        } catch (Exception e) {
-            log.warn("Git-cliff 二进制设置可执行权限失败: " + binary, e);
+        // 确保可执行（非 Windows 系统）
+        if (!SystemInfo.isWindows) {
+            try {
+                binary.toFile().setExecutable(true);
+            } catch (Exception e) {
+                log.warn("Git-cliff 二进制设置可执行权限失败: " + binary, e);
+            }
         }
         return binary;
     }

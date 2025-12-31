@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 
 /**
  * GitCliffRunner 类
@@ -81,6 +82,7 @@ public final class GitCliffRunner {
             while ((read = input.read(buffer)) != -1) {
                 String chunk = new String(buffer, 0, read, StandardCharsets.UTF_8);
                 output.append(chunk);
+                // 流式输出原始内容，最后统一格式化
                 outputSession.append(chunk);
             }
         }
@@ -90,6 +92,11 @@ public final class GitCliffRunner {
             throw new Exception("git-cliff 执行失败，退出码: " + exitCode);
         }
 
-        return output.toString();
+        String result = output.toString();
+        // 格式化输出结果
+        String formattedResult = CommitMessageFormatter.format(result);
+        // 更新 toolwindow 中的最终结果（替换流式输出的原始内容）
+        outputSession.setText(formattedResult);
+        return formattedResult;
     }
 }
