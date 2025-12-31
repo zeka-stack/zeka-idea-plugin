@@ -19,6 +19,8 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -96,18 +98,17 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                     SettingsState settings = SettingsState.getInstance();
                     String range = buildRangeForSelection(selectedCommits, settings, gitRoot);
                     if (provider == ReleaseLogProvider.GIT_CLIFF) {
-                        String config = settings.gitCliffConfig;
-                        List<String> args = buildGitCliffArgs(settings, range);
+                        Path cliffConfigPath = resolveCliffConfigPath(gitRoot);
+                        String config = cliffConfigPath == null ? settings.gitCliffConfig : null;
+                        List<String> args = buildGitCliffArgs(settings, range, cliffConfigPath);
                         GitCliffRunner.run(binary, gitRoot, config, args, outputSession);
-                        if (updateLastUsedRange) {
-                            updateLastUsedRange(settings, gitRoot, selectedCommits);
-                        }
                     } else {
                         AIProviderConfig config = settings.providerConfig;
                         if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
                             return;
                         }
                         ChangelogService service = ChangelogService.getInstance(project);
+                        String promptTemplate = readReleasePrompt(gitRoot);
                         AIStreamResponseListener listener = new AIStreamResponseListener() {
                             @Override
                             public void onStart() {
@@ -125,10 +126,10 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                 outputSession.setText(formattedText);
                             }
                         };
-                        service.generateReleaseLogByAiStream(gitRoot, range, listener);
-                        if (updateLastUsedRange) {
-                            updateLastUsedRange(settings, gitRoot, selectedCommits);
-                        }
+                        service.generateReleaseLogByAiStream(gitRoot, range, promptTemplate, listener);
+                    }
+                    if (updateLastUsedRange) {
+                        updateLastUsedRange(settings, gitRoot, selectedCommits);
                     }
                 } catch (Exception ex) {
                     NotificationUtil.showError(project,
@@ -158,8 +159,15 @@ public abstract class AbstractReleaseLogAction extends AnAction {
      * @return 构建好的 GitCliff 命令行参数列表
      */
     @NotNull
-    private List<String> buildGitCliffArgs(@NotNull SettingsState settings, @Nullable String range) {
+    private List<String> buildGitCliffArgs(@NotNull SettingsState settings,
+                                           @Nullable String range,
+                                           @Nullable Path cliffConfigPath) {
         List<String> args = new ArrayList<>();
+        if (cliffConfigPath != null) {
+            // 优先使用项目内的 cliff.toml 配置
+            args.add("-c");
+            args.add(cliffConfigPath.toString());
+        }
         if (range != null && !range.isBlank()) {
             args.add(range);
             return args;
@@ -178,6 +186,39 @@ public abstract class AbstractReleaseLogAction extends AnAction {
             args.add(settings.lastUsedHash + "..HEAD");
         }
         return args;
+    }
+
+    /**
+     * 解析 Git 仓库中的 Cliff 配置文件路径
+     * <p> 根据给定的 Git 仓库根路径, 构建并检查 "cliff.toml" 配置文件是否存在. 如果存在, 则返回其路径; 否则返回 null.</p>
+     *
+     * @param gitRoot Git 仓库的根路径
+     * @return "cliff.toml" 文件的路径, 如果文件不存在则返回 null
+     */
+    @Nullable
+    private Path resolveCliffConfigPath(@NotNull Path gitRoot) {
+        Path configPath = gitRoot.resolve("cliff.toml");
+        return Files.exists(configPath) ? configPath : null;
+    }
+
+    /**
+     * 读取发布提示文件的内容
+     * <p> 从指定的 Git 仓库根路径中读取 "release.prompt" 文件的内容. 如果文件不存在, 则返回 null.</p>
+     *
+     * @param gitRoot Git 仓库的根路径
+     * @return 文件内容的字符串表示, 如果文件不存在或读取失败则返回 null
+     */
+    @Nullable
+    private String readReleasePrompt(@NotNull Path gitRoot) {
+        Path promptPath = gitRoot.resolve("release.prompt");
+        if (!Files.exists(promptPath)) {
+            return null;
+        }
+        try {
+            return Files.readString(promptPath);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     /**
