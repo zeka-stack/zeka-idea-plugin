@@ -189,16 +189,30 @@ public final class ChangelogService {
      * @param gitRoot  Git 仓库根目录
      * @param range    提交范围（例如 tag..HEAD），可为空
      * @param listener 流式监听器
-     * @return 生成的 Release Log 内容
      * @throws Exception 当读取提交记录或调用 AI 服务失败时抛出
      */
-    @NotNull
-    public String generateReleaseLogByAiStream(@NotNull Path gitRoot,
-                                               @Nullable String range,
-                                               @NotNull AIStreamResponseListener listener) throws Exception {
+    public void generateReleaseLogByAiStream(@NotNull Path gitRoot,
+                                             @Nullable String range,
+                                             @NotNull AIStreamResponseListener listener) throws Exception {
+        generateReleaseLogByAiStream(gitRoot, range, null, listener);
+    }
+
+    /**
+     * 基于 Git 范围生成 Release Log（AI，可覆盖提示词）
+     *
+     * @param gitRoot        Git 仓库根目录
+     * @param range          提交范围（例如 tag..HEAD），可为空
+     * @param promptTemplate 提示词模板，可为空
+     * @param listener       流式监听器
+     * @throws Exception 当读取提交记录或调用 AI 服务失败时抛出
+     */
+    public void generateReleaseLogByAiStream(@NotNull Path gitRoot,
+                                             @Nullable String range,
+                                             @Nullable String promptTemplate,
+                                             @NotNull AIStreamResponseListener listener) throws Exception {
         List<CommitInfo> commits = readCommitsFromRange(gitRoot, range);
-        String prompt = buildReleaseLogPrompt(commits);
-        return callAIServiceStreamForChangelog(prompt, listener);
+        String prompt = buildReleaseLogPrompt(commits, promptTemplate);
+        callAIServiceStreamForChangelog(prompt, listener);
     }
 
     /**
@@ -492,9 +506,11 @@ public final class ChangelogService {
      * @return 组装好的 Release Log prompt
      */
     @NotNull
-    private String buildReleaseLogPrompt(@NotNull List<CommitInfo> commits) {
+    private String buildReleaseLogPrompt(@NotNull List<CommitInfo> commits, @Nullable String promptTemplate) {
         SettingsState settings = SettingsState.getInstance();
-        String template = settings.aiReleaseLogPrompt;
+        String template = promptTemplate != null && !promptTemplate.isBlank()
+                          ? promptTemplate
+                          : settings.aiReleaseLogPrompt;
         String commitsText = buildCommitsText(commits);
         String date = formatCurrentDate();
 
