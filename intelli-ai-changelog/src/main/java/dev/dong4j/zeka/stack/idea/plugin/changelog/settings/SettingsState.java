@@ -142,9 +142,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 是否使用 tag 作为起点
      * <p>true 表示使用 tag 作为起点，false 表示使用 hash 作为起点。
      *
-     * <p>默认值: false（默认使用 hash）
+     * <p>默认值: true（默认使用 tag）
      */
-    public boolean useTagAsStart = false;
+    public boolean useTagAsStart = true;
 
     /**
      * 最近使用的 tag
