@@ -362,19 +362,29 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
             return false;
         }
 
-        if (Double.compare(modelParameters.temperature, other.modelParameters.temperature) != 0) {
+        String temp1 = modelParameters.temperature != null ? modelParameters.temperature : "auto";
+        String temp2 = other.modelParameters.temperature != null ? other.modelParameters.temperature : "auto";
+        if (!temp1.equals(temp2)) {
             return false;
         }
-        if (modelParameters.maxTokens != other.modelParameters.maxTokens) {
+        String maxTokens1 = modelParameters.maxTokens != null ? modelParameters.maxTokens : "auto";
+        String maxTokens2 = other.modelParameters.maxTokens != null ? other.modelParameters.maxTokens : "auto";
+        if (!maxTokens1.equals(maxTokens2)) {
             return false;
         }
-        if (Double.compare(modelParameters.topP, other.modelParameters.topP) != 0) {
+        String topP1 = modelParameters.topP != null ? modelParameters.topP : "auto";
+        String topP2 = other.modelParameters.topP != null ? other.modelParameters.topP : "auto";
+        if (!topP1.equals(topP2)) {
             return false;
         }
-        if (modelParameters.topK != other.modelParameters.topK) {
+        String topK1 = modelParameters.topK != null ? modelParameters.topK : "auto";
+        String topK2 = other.modelParameters.topK != null ? other.modelParameters.topK : "auto";
+        if (!topK1.equals(topK2)) {
             return false;
         }
-        if (Double.compare(modelParameters.presencePenalty, other.modelParameters.presencePenalty) != 0) {
+        String presencePenalty1 = modelParameters.presencePenalty != null ? modelParameters.presencePenalty : "auto";
+        String presencePenalty2 = other.modelParameters.presencePenalty != null ? other.modelParameters.presencePenalty : "auto";
+        if (!presencePenalty1.equals(presencePenalty2)) {
             return false;
         }
 
