@@ -13,10 +13,14 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +44,7 @@ public class CommitMessageGenerator {
      * @see Project
      */
     private final Project project;
+    private static final Map<Project, GenerationState> GENERATION_STATES = new ConcurrentHashMap<>();
 
     /**
      * 初始化 CommitMessageGenerator 实例
@@ -79,6 +84,9 @@ public class CommitMessageGenerator {
             return;
         }
 
+        GenerationState state = new GenerationState();
+        GENERATION_STATES.put(project, state);
+
         // 在后台任务中执行生成
         ProgressManager.getInstance().run(
             new Task.Backgroundable(project, ChangelogBundle.message("commit.generating.progress"), true) {
@@ -92,8 +100,13 @@ public class CommitMessageGenerator {
                 public void run(@NotNull ProgressIndicator indicator) {
                     indicator.setIndeterminate(true);
                     indicator.setText(ChangelogBundle.message("commit.analyzing.changes"));
+                    state.indicator.set(indicator);
+                    state.thread.set(Thread.currentThread());
 
                     try {
+                        if (state.cancelled.get()) {
+                            return;
+                        }
                         ChangelogService service = ChangelogService.getInstance(project);
                         StringBuilder buffer = new StringBuilder();
                         AtomicReference<Boolean> updated = new AtomicReference<>(false);
@@ -121,6 +134,9 @@ public class CommitMessageGenerator {
                              */
                             @Override
                             public void onChunk(@NotNull String chunk) {
+                                if (state.cancelled.get()) {
+                                    return;
+                                }
                                 buffer.append(chunk);
                                 ApplicationManager.getApplication().invokeLater(() -> {
                                     if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
@@ -137,6 +153,9 @@ public class CommitMessageGenerator {
                              */
                             @Override
                             public void onComplete(@NotNull String fullText) {
+                                if (state.cancelled.get()) {
+                                    return;
+                                }
                                 ApplicationManager.getApplication().invokeLater(() -> {
                                     if (setCommitMessageText(fullText, commitMessageControl)) {
                                         updated.set(true);
@@ -147,11 +166,13 @@ public class CommitMessageGenerator {
 
                         // 流式生成并同步返回最终结果
                         String commitMessage = service.generateCommitMessageFromDiffStream(changes, listener);
+                        String formattedCommitMessage = CommitMessageFormatter.format(commitMessage);
 
                         // 在 EDT 中显示结果
                         ApplicationManager.getApplication().invokeLater(() -> {
                             // 直接写入提交面板，避免弹窗打断提交流程
-                            boolean applied = setCommitMessageText(commitMessage, commitMessageControl);
+                            boolean applied = !state.cancelled.get()
+                                              && setCommitMessageText(formattedCommitMessage, commitMessageControl);
                             if (!applied && !updated.get()) {
                                 log.warn("Git 提交页面：提交面板不可用，无法写入提交记录");
                             }
@@ -170,6 +191,8 @@ public class CommitMessageGenerator {
                                                                                    ChangelogBundle.message("error.ai.service.unknown")));
                             }
                         });
+                    } finally {
+                        GENERATION_STATES.remove(project);
                     }
                 }
             }
@@ -219,5 +242,56 @@ public class CommitMessageGenerator {
         } catch (NoSuchMethodException e) {
             return null;
         }
+    }
+
+    /**
+     * 检查指定项目的提交记录生成是否正在运行
+     * <p> 通过检查全局的生成状态映射表来判断指定项目的提交记录生成任务是否正在进行中.
+     *
+     * @param project 要检查的项目对象
+     * @return 如果提交记录生成任务正在运行, 则返回 true; 否则返回 false
+     * @since 1.0.0
+     */
+    public static boolean isRunning(@NotNull Project project) {
+        return GENERATION_STATES.containsKey(project);
+    }
+
+    /**
+     * 停止指定项目的提交记录生成任务
+     * <p> 此方法用于停止正在运行的提交记录生成任务. 如果任务正在运行, 则取消进度指示器并中断相关线程.
+     *
+     * @param project 要停止的项目对象
+     * @since 1.0.0
+     */
+    public static void stop(@NotNull Project project) {
+        GenerationState state = GENERATION_STATES.remove(project);
+        if (state == null) {
+            return;
+        }
+        state.cancelled.set(true);
+        ProgressIndicator indicator = state.indicator.get();
+        if (indicator != null) {
+            indicator.cancel();
+        }
+        Thread runningThread = state.thread.get();
+        if (runningThread != null) {
+            runningThread.interrupt();
+        }
+    }
+
+    /**
+     * 生成状态类
+     * <p> 用于管理生成过程中的状态信息, 包括取消标志, 进度指示器和线程引用
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2025.12.31
+     * @since 1.0.0
+     */
+    private static class GenerationState {
+        private final AtomicBoolean cancelled = new AtomicBoolean(false);
+        private final AtomicReference<ProgressIndicator> indicator = new AtomicReference<>();
+        private final AtomicReference<Thread> thread = new AtomicReference<>();
     }
 }

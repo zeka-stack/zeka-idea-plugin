@@ -62,7 +62,11 @@ https://api-inference.modelscope.cn/v1/chat/completions
 
 ## 2025.12.30
 
-- [ ] 支持 SSE
+- [x] 支持 SSE
+
+## 2025.12.31
+
+- [ ] 将自定义语言从 javadoc 中迁移到 engine 中, 这样所有子插件就可以使用
 
 ## 功能增强建议
 

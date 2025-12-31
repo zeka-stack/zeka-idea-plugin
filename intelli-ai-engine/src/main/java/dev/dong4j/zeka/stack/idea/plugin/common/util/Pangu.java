@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.util;
+package dev.dong4j.zeka.stack.idea.plugin.common.util;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -213,5 +213,4 @@ public class Pangu {
             }
         }
     }
-
 }

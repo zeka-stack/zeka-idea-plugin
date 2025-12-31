@@ -38,6 +38,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 变更日志服务类
@@ -50,6 +51,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 @Service(Service.Level.PROJECT)
 public final class ChangelogService {
 
@@ -390,7 +392,7 @@ public final class ChangelogService {
         if (codeDiffs.isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
-
+        log.debug("Generating commit message from diff:\n{}", codeDiffs);
         String prompt = buildPromptFromCodeDiff(codeDiffs);
         return callAIServiceForCommitMessageStream(prompt, listener);
     }
@@ -420,9 +422,18 @@ public final class ChangelogService {
             codeDiffsText.append("\n");
         }
 
-        // 替换模板变量，兼容 {diff} 与 {codeDiffs}
+        String recentCommitsText = buildRecentCommitMessagesText(3);
+
+        // 替换模板变量，兼容 {diff}/{codeDiffs}/{recentCommits}
         String diffText = codeDiffsText.toString().trim();
-        return template.replace("{diff}", diffText).replace("{codeDiffs}", diffText);
+        String prompt = template.replace("{diff}", diffText)
+            .replace("{codeDiffs}", diffText)
+            .replace("{recentCommits}", recentCommitsText);
+        if (!template.contains("{recentCommits}") && !recentCommitsText.isEmpty()) {
+            // 模板未显式包含占位符时，追加最近提交记录
+            prompt = prompt + "\n\n历史提交(最近3条):\n" + recentCommitsText;
+        }
+        return prompt;
     }
 
     /**
@@ -456,6 +467,7 @@ public final class ChangelogService {
             - 第一行是简短摘要，使用祈使语气，不要句号
             - 如需详细说明，空一行后给出正文描述
             - 避免无意义的空白行或多余的格式符号
+            - 输出必须为中文（type 和 scope 使用常见英文约定）
             """;
 
         // 创建 AI 聊天请求
@@ -521,6 +533,7 @@ public final class ChangelogService {
             - 第一行是简短摘要，使用祈使语气，不要句号
             - 如需详细说明，空一行后给出正文描述
             - 避免无意义的空白行或多余的格式符号
+            - 输出必须为中文（type 和 scope 使用常见英文约定）
             """;
 
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
@@ -540,14 +553,20 @@ public final class ChangelogService {
         AtomicReference<String> resultRef = new AtomicReference<>();
 
         AIStreamResponseListener listener = new AIStreamResponseListener() {
+            @Override
+            public void onStart() {
+                externalListener.onStart();
+            }
 
             @Override
             public void onChunk(@NotNull String chunk) {
                 buffer.append(chunk);
+                externalListener.onChunk(chunk);
             }
 
             public void onComplete(@NotNull String fullText) {
                 resultRef.set(fullText);
+                externalListener.onComplete(fullText);
                 latch.countDown();
             }
 
@@ -580,6 +599,40 @@ public final class ChangelogService {
             throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
         }
         return result;
+    }
+
+    @NotNull
+    private String buildRecentCommitMessagesText(int limit) {
+        List<String> commitMessages = new ArrayList<>();
+        try {
+            String basePathValue = project.getBasePath();
+            if (basePathValue == null || basePathValue.isBlank()) {
+                return "";
+            }
+            File basePath = new File(basePathValue);
+            FileRepositoryBuilder builder = new FileRepositoryBuilder();
+            try (Repository repository = builder.findGitDir(basePath).build()) {
+                try (Git git = new Git(repository)) {
+                    for (RevCommit commit : git.log().setMaxCount(limit).call()) {
+                        String message = commit.getFullMessage();
+                        if (message != null && !message.trim().isEmpty()) {
+                            commitMessages.add(message.trim());
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // 忽略获取历史提交失败的情况
+        }
+
+        if (commitMessages.isEmpty()) {
+            return "";
+        }
+        StringBuilder result = new StringBuilder();
+        for (String message : commitMessages) {
+            result.append("- ").append(message).append("\n");
+        }
+        return result.toString().trim();
     }
 
     /**

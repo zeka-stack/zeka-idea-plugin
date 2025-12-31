@@ -493,6 +493,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
                 if (line.isBlank()) {
                     continue;
                 }

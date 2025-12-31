@@ -1,11 +1,15 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vcs.changes.ContentRevision;
+import com.intellij.openapi.vcs.changes.CurrentContentRevision;
 import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
@@ -56,8 +60,13 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
         }
 
         // 设置按钮文本和图标
-        e.getPresentation().setText(ChangelogBundle.message("commit.action.text"));
-        e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
+        if (CommitMessageGenerator.isRunning(project)) {
+            e.getPresentation().setText(ChangelogBundle.message("commit.action.stop.text"));
+            e.getPresentation().setIcon(AllIcons.Process.Stop);
+        } else {
+            e.getPresentation().setText(ChangelogBundle.message("commit.action.text"));
+            e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
+        }
 
         e.getPresentation().setEnabled(true);
         e.getPresentation().setVisible(true);
@@ -86,6 +95,11 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        if (CommitMessageGenerator.isRunning(project)) {
+            CommitMessageGenerator.stop(project);
             return;
         }
 
@@ -131,13 +145,26 @@ public class GenerateCommitMessageForCommitAction extends AnAction {
     private Collection<Change> getSelectedChanges(@NotNull CommitWorkflowHandler commitWorkflowHandler) {
         Object ui = invoke(commitWorkflowHandler, "getUi");
         Object changes = invoke(ui, "getIncludedChanges");
+        List<Change> result = new java.util.ArrayList<>();
         if (changes instanceof Collection<?> items) {
-            return items.stream()
-                .filter(Change.class::isInstance)
-                .map(Change.class::cast)
-                .toList();
+            for (Object item : items) {
+                if (item instanceof Change change) {
+                    result.add(change);
+                }
+            }
         }
-        return Collections.emptyList();
+
+        Object unversioned = invoke(ui, "getIncludedUnversionedFiles");
+        if (unversioned instanceof Collection<?> items) {
+            for (Object item : items) {
+                if (item instanceof FilePath filePath) {
+                    ContentRevision revision = new CurrentContentRevision(filePath);
+                    result.add(new Change(null, revision));
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
