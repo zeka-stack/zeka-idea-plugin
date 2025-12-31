@@ -44,6 +44,7 @@ public class ChangelogIcons {
     public static final Icon WEEKLY = load("/icons/weekly.svg");
     public static final Icon DAILY = load("/icons/daily.svg");
     public static final Icon DIFF = load("/icons/diff.svg");
+    public static final Icon RELEASE = load("/icons/release.svg");
 
 }
 

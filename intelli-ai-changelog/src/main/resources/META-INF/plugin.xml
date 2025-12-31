@@ -69,9 +69,13 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"
                 popup="true">
         </action>
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogAction">
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromProjectAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromProjectAction">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"
+                popup="true">
         </action>
 
         <!-- Git 提交工具栏操作 -->
@@ -86,9 +90,9 @@
                icon="ChangelogIcons.CHANGELOG_16">
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitLogAction"/>
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"/>
-            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogAction"/>
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"/>
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"/>
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="first"/>
         </group>
     </actions>

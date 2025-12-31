@@ -2,13 +2,12 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.vcs.log.VcsFullCommitDetails;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
@@ -20,7 +19,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -62,45 +60,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
  * @date 2025.12.31
  * @since 1.0.0
  */
-public class GenerateReleaseLogAction extends AnAction {
+public abstract class AbstractReleaseLogAction extends AnAction {
 
     /** 用于格式化时间的日期时间格式器, 格式为 "HH:mm:ss" */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    /**
-     * 更新操作按钮的状态
-     * <p> 根据当前上下文判断是否启用该操作, 若项目有效且存在 Git 仓库, 则启用按钮并设置其文本和描述信息.
-     *
-     * @param e 动作事件, 包含当前上下文信息
-     */
-    @Override
-    public void update(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        boolean enabled = project != null && resolveGitRoot(e) != null;
-        e.getPresentation().setEnabled(enabled);
-        e.getPresentation().setText(ChangelogBundle.message("action.generate.release.log"));
-        e.getPresentation().setDescription(ChangelogBundle.message("action.generate.release.log.description"));
-    }
-
-    /**
-     * 执行生成发布日志的动作
-     * <p> 根据当前项目配置, 调用 GitCliff 或 AI 提供商生成发布日志, 并在工具窗口中显示结果. 若项目未初始化 Git 仓库或缺少必要配置, 将显示错误提示.
-     *
-     * @param e 动作事件对象, 包含项目信息和操作上下文
-     */
-    @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        if (project == null || project.isDisposed()) {
-            return;
-        }
-
-        Path gitRoot = resolveGitRoot(e);
-        if (gitRoot == null) {
-            NotificationUtil.showError(project, ChangelogBundle.message("gitcliff.no.git.repo"));
-            return;
-        }
-
+    protected void generate(@NotNull Project project,
+                            @NotNull Path gitRoot,
+                            @NotNull List<VcsFullCommitDetails> selectedCommits,
+                            boolean updateLastUsedRange) {
         ReleaseLogProvider provider = SettingsState.getInstance().releaseLog;
         Path binary = GitCliffBinaryResolver.resolve();
         if (provider == ReleaseLogProvider.GIT_CLIFF && binary == null) {
@@ -118,12 +86,6 @@ public class GenerateReleaseLogAction extends AnAction {
 
         ProgressManager.getInstance().run(new Task.Backgroundable(
             project, ChangelogBundle.message("action.generate.release.log.progress.title"), true) {
-            /**
-             * 执行生成发布日志的后台任务
-             * <p> 此方法用于在后台执行生成发布日志的操作, 设置进度指示器并处理不同日志生成方式 (GitCliff 或 AI 生成).
-             *
-             * @param indicator 进度指示器, 用于显示任务执行状态
-             */
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(true);
@@ -131,53 +93,40 @@ public class GenerateReleaseLogAction extends AnAction {
                 try {
                     outputSession.setText("");
                     SettingsState settings = SettingsState.getInstance();
+                    String range = buildRangeForSelection(selectedCommits, settings, gitRoot);
                     if (provider == ReleaseLogProvider.GIT_CLIFF) {
                         String config = settings.gitCliffConfig;
-                        List<String> args = buildGitCliffArgs(settings);
+                        List<String> args = buildGitCliffArgs(settings, range);
                         GitCliffRunner.run(binary, gitRoot, config, args, outputSession);
-                        updateLastUsedRange(settings, gitRoot);
+                        if (updateLastUsedRange) {
+                            updateLastUsedRange(settings, gitRoot, selectedCommits);
+                        }
                     } else {
                         AIProviderConfig config = settings.providerConfig;
                         if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
                             return;
                         }
-                        String range = buildRangeForAi(settings, gitRoot);
                         ChangelogService service = ChangelogService.getInstance(project);
                         AIStreamResponseListener listener = new AIStreamResponseListener() {
-                            /**
-                             * 在流式响应开始时清空输出会话内容
-                             * <p> 当接收到流式响应的开始信号时, 清空输出会话中的文本内容, 为新的响应内容做准备
-                             *
-                             */
                             @Override
                             public void onStart() {
                                 outputSession.setText("");
                             }
 
-                            /**
-                             * 处理接收到的文本块数据
-                             * <p> 当接收到分块的文本数据时, 将其追加到输出会话中
-                             *
-                             * @param chunk 分块的文本数据
-                             */
                             @Override
                             public void onChunk(@NotNull String chunk) {
                                 outputSession.append(chunk);
                             }
 
-                            /**
-                             * 处理完成时调用的方法
-                             * <p> 当所有数据处理完成后, 将完整的文本设置到输出会话中
-                             *
-                             * @param fullText 完整的文本内容
-                             */
                             @Override
                             public void onComplete(@NotNull String fullText) {
                                 outputSession.setText(fullText);
                             }
                         };
                         service.generateReleaseLogByAiStream(gitRoot, range, listener);
-                        updateLastUsedRange(settings, gitRoot);
+                        if (updateLastUsedRange) {
+                            updateLastUsedRange(settings, gitRoot, selectedCommits);
+                        }
                     }
                 } catch (Exception ex) {
                     NotificationUtil.showError(project,
@@ -200,79 +149,6 @@ public class GenerateReleaseLogAction extends AnAction {
     }
 
     /**
-     * 解析 Git 仓库根目录路径
-     * <p> 该方法尝试从当前操作事件中获取文件或项目信息, 并查找包含 .git 目录的 Git 仓库根路径.
-     * 优先从选中的文件数组中查找, 若未找到则从单个文件中查找, 最后尝试从项目根目录查找.
-     *
-     * @param e 当前操作事件, 包含上下文信息
-     * @return Git 仓库根路径, 若未找到则返回 null
-     */
-    @Nullable
-    private Path resolveGitRoot(@NotNull AnActionEvent e) {
-        VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-        if (files != null) {
-            for (VirtualFile file : files) {
-                Path gitRoot = findGitRoot(file);
-                if (gitRoot != null) {
-                    return gitRoot;
-                }
-            }
-        }
-
-        VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        if (file != null) {
-            Path gitRoot = findGitRoot(file);
-            if (gitRoot != null) {
-                return gitRoot;
-            }
-        }
-
-        Project project = e.getProject();
-        if (project != null && project.getBasePath() != null) {
-            Path candidate = Path.of(project.getBasePath());
-            if (hasGitRepository(candidate)) {
-                return candidate;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 查找文件所在目录的 Git 仓库根路径
-     * <p> 从给定的文件路径开始, 向上查找 Git 仓库根目录. 如果文件不是目录, 则先获取其父目录再进行查找.
-     * 如果找到包含 .git 目录的路径, 则返回该路径; 否则返回 null.
-     *
-     * @param file 要查找的文件或目录
-     * @return Git 仓库根路径, 如果未找到则返回 null
-     */
-    @Nullable
-    private Path findGitRoot(@NotNull VirtualFile file) {
-        Path current = Path.of(file.getPath());
-        if (!file.isDirectory()) {
-            current = current.getParent();
-        }
-        while (current != null) {
-            if (hasGitRepository(current)) {
-                return current;
-            }
-            current = current.getParent();
-        }
-        return null;
-    }
-
-    /**
-     * 检查指定路径下是否存在 Git 仓库
-     * <p> 通过检查路径下的 .git 目录是否存在来判断是否为有效的 Git 仓库
-     *
-     * @param basePath 要检查的路径
-     * @return 如果存在 Git 仓库则返回 true, 否则返回 false
-     */
-    private boolean hasGitRepository(@NotNull Path basePath) {
-        File gitDir = basePath.resolve(".git").toFile();
-        return gitDir.exists();
-    }
-
-    /**
      * 构建 GitCliff 工具的命令行参数
      * <p> 根据配置的设置构建 GitCliff 命令行参数, 用于生成发布日志. 如果启用了基于 tag 的范围, 则使用指定的 tag 或默认的最新 tag; 否则使用指定的 commit hash 范围.
      *
@@ -280,8 +156,12 @@ public class GenerateReleaseLogAction extends AnAction {
      * @return 构建好的 GitCliff 命令行参数列表
      */
     @NotNull
-    private List<String> buildGitCliffArgs(@NotNull SettingsState settings) {
+    private List<String> buildGitCliffArgs(@NotNull SettingsState settings, @Nullable String range) {
         List<String> args = new ArrayList<>();
+        if (range != null && !range.isBlank()) {
+            args.add(range);
+            return args;
+        }
         if (settings.useTagAsStart) {
             if (settings.lastUsedTag != null && !settings.lastUsedTag.isBlank()) {
                 args.add(settings.lastUsedTag + "..HEAD");
@@ -326,6 +206,54 @@ public class GenerateReleaseLogAction extends AnAction {
     }
 
     /**
+     * 构建用于生成发布日志的范围字符串
+     * <p> 根据选定的提交列表和配置, 构建生成发布日志的范围字符串. 如果选定的提交列表为空, 则调用 {@link #buildRangeForAi(SettingsState, Path)} 方法获取范围;
+     * 如果只有一个提交, 则返回该提交的哈希值到 HEAD 的范围; 如果有多个提交, 则返回最早和最晚提交的哈希值之间的范围.</p>
+     *
+     * @param selectedCommits 选定的提交列表
+     * @param settings        当前的设置状态, 包含生成日志的相关配置
+     * @param gitRoot         项目的 Git 仓库根路径
+     * @return 日志生成的范围字符串, 格式为 "起始点.. 结束点", 如果无法确定范围则返回 null
+     */
+    @Nullable
+    private String buildRangeForSelection(@NotNull List<VcsFullCommitDetails> selectedCommits,
+                                          @NotNull SettingsState settings,
+                                          @NotNull Path gitRoot) {
+        if (selectedCommits.isEmpty()) {
+            return buildRangeForAi(settings, gitRoot);
+        }
+        if (selectedCommits.size() == 1) {
+            return selectedCommits.get(0).getId().asString() + "..HEAD";
+        }
+        VcsFullCommitDetails oldest = selectedCommits.stream()
+            .min(Comparator.comparingLong(VcsFullCommitDetails::getCommitTime))
+            .orElse(null);
+        VcsFullCommitDetails newest = selectedCommits.stream()
+            .max(Comparator.comparingLong(VcsFullCommitDetails::getCommitTime))
+            .orElse(null);
+        if (newest == null) {
+            return buildRangeForAi(settings, gitRoot);
+        }
+        return oldest.getId().asString() + ".." + newest.getId().asString();
+    }
+
+    /**
+     * 解析选定提交的 Git 仓库根路径
+     * <p> 根据传入的提交列表, 获取第一个提交的根路径, 并将其转换为 Path 对象. 如果提交列表为空, 则返回 null.</p>
+     *
+     * @param selectedCommits 选定的提交列表
+     * @return 提交对应的 Git 仓库根路径, 如果提交列表为空则返回 null
+     */
+    @Nullable
+    protected Path resolveGitRootForLog(@NotNull List<VcsFullCommitDetails> selectedCommits) {
+        if (selectedCommits.isEmpty()) {
+            return null;
+        }
+        VirtualFile root = selectedCommits.get(0).getRoot();
+        return Path.of(root.getPath());
+    }
+
+    /**
      * 更新最近使用的版本范围
      * <p> 根据当前配置, 更新 settings 中记录的最近使用的标签或提交哈希. 如果配置为使用标签作为起始点, 则查找并设置最新的标签;
      * 否则查找并设置当前 HEAD 的提交哈希.</p>
@@ -333,7 +261,15 @@ public class GenerateReleaseLogAction extends AnAction {
      * @param settings 配置状态对象, 用于读取和更新最近使用的标签或哈希
      * @param gitRoot  Git 仓库的根路径, 用于解析 Git 信息
      */
-    private void updateLastUsedRange(@NotNull SettingsState settings, @NotNull Path gitRoot) {
+    private void updateLastUsedRange(@NotNull SettingsState settings,
+                                     @NotNull Path gitRoot,
+                                     @NotNull List<VcsFullCommitDetails> selectedCommits) {
+        if (!selectedCommits.isEmpty()) {
+            selectedCommits.stream()
+                .min(Comparator.comparingLong(VcsFullCommitDetails::getCommitTime))
+                .ifPresent(oldest -> settings.lastUsedHash = oldest.getId().asString());
+            return;
+        }
         if (settings.useTagAsStart) {
             if (settings.lastUsedTag == null || settings.lastUsedTag.isBlank()) {
                 String latestTag = resolveLatestTag(gitRoot);
