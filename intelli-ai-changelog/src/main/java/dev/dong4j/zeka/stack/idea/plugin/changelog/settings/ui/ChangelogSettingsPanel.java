@@ -14,10 +14,13 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -25,6 +28,7 @@ import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -58,6 +62,34 @@ public class ChangelogSettingsPanel {
     private final JBCheckBox showAdvancedSettingsCheckBox;
     /** 高级设置容器面板（用于控制可见性） */
     private final JPanel advancedSettingsPanel;
+
+    // Release Log 配置
+    /** Release Log 生成方式：AI */
+    private final JRadioButton releaseLogByAiRadioButton;
+    /** Release Log 生成方式：git-cliff */
+    private final JRadioButton releaseLogByGitCliffRadioButton;
+    /** 使用 tag 作为起点单选框 */
+    private final JRadioButton useTagAsStartRadioButton;
+    /** 使用 hash 作为起点单选框 */
+    private final JRadioButton useHashAsStartRadioButton;
+    /** 清除 tag 和 hash 按钮 */
+    private final JButton clearTagAndHashButton;
+    /** Git-cliff 配置文本区域 */
+    private final JBTextArea gitCliffConfigTextArea;
+    /** 重置 Git-cliff 配置按钮 */
+    private JButton resetGitCliffConfigButton;
+    /** 显示 Git-cliff 配置复选框 */
+    private final JBCheckBox showGitCliffConfigCheckBox;
+    /** Git-cliff 配置容器面板（用于控制可见性） */
+    private final JPanel gitCliffConfigPanel;
+    /** 显示 AI Release Log 提示词复选框 */
+    private final JBCheckBox showAiReleaseLogPromptCheckBox;
+    /** AI Release Log 提示词容器面板（用于控制可见性） */
+    private final JPanel aiReleaseLogPromptPanel;
+    /** AI Release Log 提示词文本区域 */
+    private final JBTextArea aiReleaseLogPromptTextArea;
+    /** 重置 AI Release Log 提示词按钮 */
+    private JButton resetAiReleaseLogPromptButton;
 
     // Prompt 配置 - 创建文本区域（将在 Tab 页中使用）
     /** 系统提示文本区域, 用于显示或编辑系统提示信息 */
@@ -108,6 +140,70 @@ public class ChangelogSettingsPanel {
             }
         );
 
+        // 初始化 Release Log 配置组件
+        releaseLogByAiRadioButton = new JRadioButton(ChangelogBundle.message("settings.release.log.generator.ai"));
+        releaseLogByGitCliffRadioButton =
+            new JRadioButton(ChangelogBundle.message("settings.release.log.generator.gitcliff"));
+        ButtonGroup releaseLogGeneratorButtonGroup = new ButtonGroup();
+        releaseLogGeneratorButtonGroup.add(releaseLogByAiRadioButton);
+        releaseLogGeneratorButtonGroup.add(releaseLogByGitCliffRadioButton);
+        useTagAsStartRadioButton = new JRadioButton(ChangelogBundle.message("settings.gitcliff.use.tag"));
+        useHashAsStartRadioButton = new JRadioButton(ChangelogBundle.message("settings.gitcliff.use.hash"));
+
+        // 创建按钮组
+        ButtonGroup gitCliffStartPointButtonGroup = new ButtonGroup();
+        gitCliffStartPointButtonGroup.add(useTagAsStartRadioButton);
+        gitCliffStartPointButtonGroup.add(useHashAsStartRadioButton);
+
+        // 创建清除按钮
+        clearTagAndHashButton = new JButton(ChangelogBundle.message("settings.gitcliff.clear.tag.and.hash"));
+        clearTagAndHashButton.addActionListener(e -> clearTagAndHash());
+
+        // 创建显示 Git-cliff 配置复选框
+        showGitCliffConfigCheckBox = new JBCheckBox(ChangelogBundle.message("settings.gitcliff.config.show"));
+
+        // 创建 Git-cliff 配置容器面板
+        gitCliffConfigPanel = new JPanel(new BorderLayout());
+
+        // 创建 Git-cliff 配置文本区域
+        gitCliffConfigTextArea = new JBTextArea(15, 50);
+        gitCliffConfigTextArea.setLineWrap(true);
+        gitCliffConfigTextArea.setWrapStyleWord(true);
+        gitCliffConfigTextArea.setToolTipText(ChangelogBundle.message("settings.gitcliff.config.tooltip"));
+
+        // 构建 Git-cliff 配置面板内容
+        JPanel gitCliffConfigContent = createGitCliffConfigContentPanel();
+        gitCliffConfigPanel.add(gitCliffConfigContent, BorderLayout.NORTH);
+        gitCliffConfigPanel.setVisible(false); // 默认隐藏
+
+        // 创建显示 AI Release Log 提示词复选框
+        showAiReleaseLogPromptCheckBox = new JBCheckBox(ChangelogBundle.message("settings.ai.release.log.prompt.show"));
+
+        // 创建 AI Release Log 提示词容器面板
+        aiReleaseLogPromptPanel = new JPanel(new BorderLayout());
+
+        // 创建 AI Release Log 提示词文本区域
+        aiReleaseLogPromptTextArea = new JBTextArea(15, 50);
+        aiReleaseLogPromptTextArea.setLineWrap(true);
+        aiReleaseLogPromptTextArea.setWrapStyleWord(true);
+        aiReleaseLogPromptTextArea.setToolTipText(ChangelogBundle.message("settings.ai.release.log.prompt.tooltip"));
+
+        // 构建 AI Release Log 提示词面板内容
+        JPanel aiReleaseLogPromptContent = createAiReleaseLogPromptContentPanel();
+        aiReleaseLogPromptPanel.add(aiReleaseLogPromptContent, BorderLayout.NORTH);
+        aiReleaseLogPromptPanel.setVisible(false); // 默认隐藏
+
+        // 初始化子配置的可用状态
+        // use tag 和 use hash 始终可用，不受 provider 选择影响
+        useTagAsStartRadioButton.setEnabled(true);
+        useHashAsStartRadioButton.setEnabled(true);
+        clearTagAndHashButton.setEnabled(true);
+        updateGitCliffConfigAvailability(false);
+        updateAiReleaseLogPromptAvailability(true); // 默认选择 AI，所以 AI 提示词可用
+
+        // 默认选择 AI
+        releaseLogByAiRadioButton.setSelected(true);
+
         // 初始化反馈面板
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
@@ -122,15 +218,20 @@ public class ChangelogSettingsPanel {
             .addComponent(aiProviderSelectionPanel.getPanel())
             .addSeparator(10)
 
-            // 第二组：高级设置（可折叠）
+            // 第二组：Release Log 配置（带边框的独立面板）
+            .addComponent(createReleaseLogPanel())
+            .addSeparator(10)
+
+            // 第三组：高级设置（可折叠）
             .addComponent(showAdvancedSettingsCheckBox)
             .addComponent(advancedSettingsPanel)
             .addSeparator(10)
 
-            // 第三组：反馈面板
-            .addComponent(feedbackPanel.getContent())
-
+            // 填充垂直空间，使反馈面板固定在底部
             .addComponentFillVertically(new JPanel(), 0)
+
+            // 第三组：反馈面板（固定在底部）
+            .addComponent(feedbackPanel.getContent())
             .getPanel();
 
         // 设置边框
@@ -158,7 +259,13 @@ public class ChangelogSettingsPanel {
             || !dailyReportTemplateTextArea.getText().equals(settings.dailyReportTemplate)
             || !weeklyReportTemplateTextArea.getText().equals(settings.weeklyReportTemplate)
             || !commitMessageTemplateTextArea.getText().equals(settings.commitMessageTemplate)
-            || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings) {
+            || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings
+            || releaseLogByGitCliffRadioButton.isSelected() != (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF)
+            || useTagAsStartRadioButton.isSelected() != settings.useTagAsStart
+            || showGitCliffConfigCheckBox.isSelected() != settings.showGitCliffConfig
+            || !gitCliffConfigTextArea.getText().equals(settings.gitCliffConfig)
+            || showAiReleaseLogPromptCheckBox.isSelected() != settings.showAiReleaseLogPrompt
+            || !aiReleaseLogPromptTextArea.getText().equals(settings.aiReleaseLogPrompt)) {
             return true;
         }
         AIProviderConfig selectedConfig = aiProviderSelectionPanel != null ? aiProviderSelectionPanel.getSelectedProvider() : null;
@@ -185,6 +292,13 @@ public class ChangelogSettingsPanel {
         settings.weeklyReportTemplate = weeklyReportTemplateTextArea.getText();
         settings.commitMessageTemplate = commitMessageTemplateTextArea.getText();
         settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
+        settings.releaseLog = releaseLogByGitCliffRadioButton.isSelected() ? ReleaseLogProvider.GIT_CLIFF : ReleaseLogProvider.AI;
+        settings.useTagAsStart = useTagAsStartRadioButton.isSelected();
+        settings.showGitCliffConfig = showGitCliffConfigCheckBox.isSelected();
+        settings.gitCliffConfig = gitCliffConfigTextArea.getText();
+        settings.showAiReleaseLogPrompt = showAiReleaseLogPromptCheckBox.isSelected();
+        settings.aiReleaseLogPrompt = aiReleaseLogPromptTextArea.getText();
+        // 注意：lastUsedTag 和 lastUsedHash 不需要在这里更新，它们应该在使用时更新
         if (aiProviderSelectionPanel != null) {
             AIProviderConfig selectedConfig = aiProviderSelectionPanel.getSelectedProvider();
             if (selectedConfig != null) {
@@ -209,6 +323,51 @@ public class ChangelogSettingsPanel {
         commitMessageTemplateTextArea.setText(settings.commitMessageTemplate);
         showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
         advancedSettingsPanel.setVisible(settings.showPromptSettings);
+
+        // 重置 Release Log 生成方式（默认选择 AI）
+        if (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF) {
+            releaseLogByGitCliffRadioButton.setSelected(true);
+        } else {
+            // 默认选择 AI（如果 releaseLog 为 AI 或未设置）
+            releaseLogByAiRadioButton.setSelected(true);
+        }
+
+        // 更新 git-cliff 配置区域的可用状态
+        boolean isGitCliffEnabled = releaseLogByGitCliffRadioButton.isSelected();
+        updateGitCliffConfigAvailability(isGitCliffEnabled);
+        updateAiReleaseLogPromptAvailability(!isGitCliffEnabled);
+
+        // 重置显示 git-cliff 配置复选框
+        // 只有在选择 git-cliff 时才显示配置面板
+        if (isGitCliffEnabled) {
+            showGitCliffConfigCheckBox.setSelected(settings.showGitCliffConfig);
+            gitCliffConfigPanel.setVisible(settings.showGitCliffConfig);
+            // 选择 git-cliff 时，隐藏 AI 提示词面板
+            showAiReleaseLogPromptCheckBox.setSelected(false);
+            aiReleaseLogPromptPanel.setVisible(false);
+        } else {
+            // 选择 AI 时，隐藏 git-cliff 配置面板，显示/隐藏 AI 提示词面板
+            showGitCliffConfigCheckBox.setSelected(false);
+            gitCliffConfigPanel.setVisible(false);
+            showAiReleaseLogPromptCheckBox.setSelected(settings.showAiReleaseLogPrompt);
+            aiReleaseLogPromptPanel.setVisible(settings.showAiReleaseLogPrompt);
+        }
+
+        // 重置 AI Release Log 提示词文本
+        aiReleaseLogPromptTextArea.setText(settings.aiReleaseLogPrompt);
+
+        // 动态更新单选框文本，将最近使用的 tag/hash 拼接到描述中
+        updateRadioButtonTexts(settings);
+
+        // 重置 Git-cliff 配置文本
+        gitCliffConfigTextArea.setText(settings.gitCliffConfig);
+
+        if (settings.useTagAsStart) {
+            useTagAsStartRadioButton.setSelected(true);
+        } else {
+            useHashAsStartRadioButton.setSelected(true);
+        }
+
         if (aiProviderSelectionPanel != null) {
             // 设置选中的提供商配置
             aiProviderSelectionPanel.setSelectedProvider(settings.providerConfig);
@@ -218,12 +377,303 @@ public class ChangelogSettingsPanel {
     /**
      * 设置监听器
      * <p>
-     * 为高级设置复选框添加监听器，控制高级设置面板的显示/隐藏。
+     * 为高级设置和 Release Log 相关控件添加监听器。
      */
     private void setupListeners() {
         showAdvancedSettingsCheckBox.addActionListener(e -> {
             advancedSettingsPanel.setVisible(showAdvancedSettingsCheckBox.isSelected());
         });
+
+        // Release Log 生成方式切换时，控制配置区可用状态
+        releaseLogByAiRadioButton.addActionListener(e -> {
+            updateGitCliffConfigAvailability(false);
+            updateAiReleaseLogPromptAvailability(true);
+            // 当选择 AI 时，隐藏 git-cliff 配置面板，显示/隐藏 AI 提示词面板
+            gitCliffConfigPanel.setVisible(false);
+            showGitCliffConfigCheckBox.setSelected(false);
+            aiReleaseLogPromptPanel.setVisible(showAiReleaseLogPromptCheckBox.isSelected());
+        });
+        releaseLogByGitCliffRadioButton.addActionListener(e -> {
+            updateGitCliffConfigAvailability(true);
+            updateAiReleaseLogPromptAvailability(false);
+            // 当选择 git-cliff 时，根据复选框状态显示/隐藏配置面板，隐藏 AI 提示词面板
+            gitCliffConfigPanel.setVisible(showGitCliffConfigCheckBox.isSelected());
+            aiReleaseLogPromptPanel.setVisible(false);
+            showAiReleaseLogPromptCheckBox.setSelected(false);
+        });
+
+        // 显示 Git-cliff 配置复选框控制配置面板的显示/隐藏
+        showGitCliffConfigCheckBox.addActionListener(e -> {
+            gitCliffConfigPanel.setVisible(showGitCliffConfigCheckBox.isSelected());
+        });
+
+        // 显示 AI Release Log 提示词复选框控制提示词面板的显示/隐藏
+        showAiReleaseLogPromptCheckBox.addActionListener(e -> {
+            aiReleaseLogPromptPanel.setVisible(showAiReleaseLogPromptCheckBox.isSelected());
+        });
+    }
+
+    /**
+     * 创建 Release Log 配置面板（带边框）
+     *
+     * @return 带边框的 Release Log 配置面板
+     */
+    private JPanel createReleaseLogPanel() {
+        // 创建子配置面板
+        JPanel subConfigPanel = new JPanel(new BorderLayout());
+
+        JPanel subConfigContent = FormBuilder.createFormBuilder()
+            .addComponent(createStartPointPanel())
+            .addComponent(createReleaseLogProviderPanel())
+            .getPanel();
+
+        subConfigPanel.add(subConfigContent, BorderLayout.CENTER);
+
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(subConfigPanel)
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加带标题的边框
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            ChangelogBundle.message("settings.release.log.title"));
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建起点选择面板（带边框，无标题）
+     * <p>
+     * 包含 use tag、use hash 单选按钮和清除按钮。
+     *
+     * @return 带边框的起点选择面板
+     */
+    private JPanel createStartPointPanel() {
+        // 创建清除按钮和提示文本的面板（同一行显示）
+        JPanel clearButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        clearButtonPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
+        clearButtonPanel.add(clearTagAndHashButton);
+
+        // 创建提示文本标签
+        JBLabel clearButtonHint = new JBLabel(ChangelogBundle.message("settings.gitcliff.clear.tag.and.hash.hint"));
+        clearButtonHint.setForeground(UIUtil.getLabelForeground());
+        clearButtonHint.setFont(UIManager.getFont("Label.font").deriveFont(UIManager.getFont("Label.font").getSize() - 1f));
+        clearButtonPanel.add(clearButtonHint);
+
+        // 创建内容面板，使用 FormBuilder 确保与 provider 面板对齐
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(useTagAsStartRadioButton)
+            .addComponent(useHashAsStartRadioButton)
+            .addComponent(clearButtonPanel)
+            .getPanel();
+
+        // 创建带边框的面板（无标题）
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加无标题的边框
+        panel.setBorder(BorderFactory.createEtchedBorder());
+
+        return panel;
+    }
+
+    private JPanel createReleaseLogProviderPanel() {
+        // 创建带缩进的 AI 提示词复选框面板
+        JPanel aiPromptCheckBoxPanel = new JPanel(new BorderLayout());
+        aiPromptCheckBoxPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
+        aiPromptCheckBoxPanel.add(showAiReleaseLogPromptCheckBox, BorderLayout.WEST);
+
+        // 创建带缩进的 AI 提示词面板容器
+        JPanel aiPromptPanelWrapper = new JPanel(new BorderLayout());
+        aiPromptPanelWrapper.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
+        aiPromptPanelWrapper.add(aiReleaseLogPromptPanel, BorderLayout.CENTER);
+
+        // 创建带缩进的 git-cliff 配置复选框面板
+        JPanel gitCliffConfigCheckBoxPanel = new JPanel(new BorderLayout());
+        gitCliffConfigCheckBoxPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
+        gitCliffConfigCheckBoxPanel.add(showGitCliffConfigCheckBox, BorderLayout.WEST);
+
+        // 创建带缩进的 git-cliff 配置面板容器
+        JPanel gitCliffConfigPanelWrapper = new JPanel(new BorderLayout());
+        gitCliffConfigPanelWrapper.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
+        gitCliffConfigPanelWrapper.add(gitCliffConfigPanel, BorderLayout.CENTER);
+
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(releaseLogByAiRadioButton)
+            // 显示 AI Release Log 提示词复选框（由 AI 单选框控制，带缩进）
+            .addComponent(aiPromptCheckBoxPanel)
+            .addComponent(aiPromptPanelWrapper)
+            .addComponent(releaseLogByGitCliffRadioButton)
+            // 显示 git-cliff 配置复选框（移到 provider 面板中，带缩进）
+            .addComponent(gitCliffConfigCheckBoxPanel)
+            .addComponent(gitCliffConfigPanelWrapper)
+            .getPanel();
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            ChangelogBundle.message("settings.release.log.provider.title"));
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 更新单选框文本
+     * <p>
+     * 根据设置中的 tag/hash 值动态更新单选框的描述文本。
+     * 如果有值就显示，没有就不显示。
+     *
+     * @param settings 设置状态对象
+     */
+    private void updateRadioButtonTexts(SettingsState settings) {
+        String baseTagText = ChangelogBundle.message("settings.gitcliff.use.tag");
+        String tagValue = settings.lastUsedTag != null && !settings.lastUsedTag.isEmpty()
+                          ? settings.lastUsedTag : null;
+        if (tagValue != null) {
+            useTagAsStartRadioButton.setText(baseTagText + " (" + tagValue + ")");
+        } else {
+            useTagAsStartRadioButton.setText(baseTagText);
+        }
+
+        String baseHashText = ChangelogBundle.message("settings.gitcliff.use.hash");
+        String hashValue = settings.lastUsedHash != null && !settings.lastUsedHash.isEmpty()
+                           ? settings.lastUsedHash : null;
+        if (hashValue != null) {
+            useHashAsStartRadioButton.setText(baseHashText + " (" + hashValue + ")");
+        } else {
+            useHashAsStartRadioButton.setText(baseHashText);
+        }
+    }
+
+    /**
+     * 清除 tag 和 hash
+     * <p>
+     * 清除设置中的 tag 和 hash 值，并更新单选框文本。
+     */
+    private void clearTagAndHash() {
+        SettingsState settings = SettingsState.getInstance();
+        settings.lastUsedTag = "";
+        settings.lastUsedHash = "";
+        updateRadioButtonTexts(settings);
+    }
+
+    private void updateGitCliffConfigAvailability(boolean enabled) {
+        // 控制 git-cliff 相关配置的可用状态
+        // 注意：use tag 和 use hash 不再受此方法控制，它们始终可用
+        gitCliffConfigTextArea.setEnabled(enabled);
+        showGitCliffConfigCheckBox.setEnabled(enabled);
+        if (!enabled) {
+            gitCliffConfigPanel.setVisible(false);
+            showGitCliffConfigCheckBox.setSelected(false);
+        }
+        if (resetGitCliffConfigButton != null) {
+            resetGitCliffConfigButton.setEnabled(enabled);
+        }
+    }
+
+    private void updateAiReleaseLogPromptAvailability(boolean enabled) {
+        // 控制 AI Release Log 提示词相关配置的可用状态
+        aiReleaseLogPromptTextArea.setEnabled(enabled);
+        showAiReleaseLogPromptCheckBox.setEnabled(enabled);
+        if (!enabled) {
+            aiReleaseLogPromptPanel.setVisible(false);
+            showAiReleaseLogPromptCheckBox.setSelected(false);
+        }
+        if (resetAiReleaseLogPromptButton != null) {
+            resetAiReleaseLogPromptButton.setEnabled(enabled);
+        }
+    }
+
+    /**
+     * 创建 Git-cliff 配置内容面板
+     * <p>
+     * 创建包含配置文本区域和重置按钮的面板。
+     *
+     * @return Git-cliff 配置内容面板
+     */
+    private JPanel createGitCliffConfigContentPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 创建文本区域（参考提示词的实现）
+        gitCliffConfigTextArea.setLineWrap(true);
+        gitCliffConfigTextArea.setWrapStyleWord(true);
+
+        // 创建滚动面板，并添加边框以在四周留出空间（参考提示词的实现）
+        JBScrollPane scrollPane = new JBScrollPane(gitCliffConfigTextArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // 添加边框，在四周留出10像素的空间
+        scrollPane.setBorder(JBUI.Borders.empty(10));
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 创建重置按钮
+        resetGitCliffConfigButton = new JButton(ChangelogBundle.message("settings.gitcliff.config.reset"));
+        resetGitCliffConfigButton.addActionListener(e -> resetGitCliffConfig());
+        resetGitCliffConfigButton.setEnabled(false); // 默认禁用
+        panel.add(resetGitCliffConfigButton, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    /**
+     * 重置 Git-cliff 配置为默认值
+     * <p>
+     * 将 Git-cliff 配置文本区域重置为默认配置。
+     */
+    private void resetGitCliffConfig() {
+        gitCliffConfigTextArea.setText(SettingsState.getDefaultGitCliffConfig());
+    }
+
+    /**
+     * 创建 AI Release Log 提示词内容面板
+     * <p>
+     * 创建包含提示词文本区域和重置按钮的面板。
+     *
+     * @return AI Release Log 提示词内容面板
+     */
+    private JPanel createAiReleaseLogPromptContentPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 创建文本区域（参考提示词的实现）
+        aiReleaseLogPromptTextArea.setLineWrap(true);
+        aiReleaseLogPromptTextArea.setWrapStyleWord(true);
+
+        // 创建滚动面板，并添加边框以在四周留出空间（参考提示词的实现）
+        JBScrollPane scrollPane = new JBScrollPane(aiReleaseLogPromptTextArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // 添加边框，在四周留出10像素的空间
+        scrollPane.setBorder(JBUI.Borders.empty(10));
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 创建重置按钮
+        resetAiReleaseLogPromptButton = new JButton(ChangelogBundle.message("settings.ai.release.log.prompt.reset"));
+        resetAiReleaseLogPromptButton.addActionListener(e -> resetAiReleaseLogPrompt());
+        resetAiReleaseLogPromptButton.setEnabled(false); // 默认禁用
+        panel.add(resetAiReleaseLogPromptButton, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    /**
+     * 重置 AI Release Log 提示词为默认值
+     * <p>
+     * 将 AI Release Log 提示词文本区域重置为默认提示词。
+     */
+    private void resetAiReleaseLogPrompt() {
+        aiReleaseLogPromptTextArea.setText(SettingsState.getDefaultAiReleaseLogPrompt());
     }
 
     /**
