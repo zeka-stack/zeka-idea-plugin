@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class GenerateCommitMessageForCommitAction extends AnAction {
+public class GenerateCommitMessageAction extends AnAction {
 
     /**
      * 更新动作状态
