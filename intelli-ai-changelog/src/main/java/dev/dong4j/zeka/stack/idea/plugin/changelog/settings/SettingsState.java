@@ -168,7 +168,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             你是一位经验丰富的软件发布经理和技术文档编写者。
             你的目标是根据 Git 提交记录为软件项目生成清晰、结构化、简洁的变更日志。
             你总是输出格式良好的 Markdown，包含一致的章节结构。
-            
+
             重要要求：
             - 输出的 markdown 内容不要使用 markdown 代码块包裹（如 ```markdown）
             - 直接输出 markdown 格式的内容，不要添加任何代码块标记
@@ -186,7 +186,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultChangelogTemplate() {
         return """
             请根据以下 Git 提交记录生成发布变更日志。
-            
+
             要求：
             1. 提交记录已经按照提交日期进行了分组，每个日期分组使用三级标题（### 日期）标识。
             2. 将每个日期分组内的提交记录分类到以下类别：
@@ -203,10 +203,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 在每个日期分组下，使用四级标题表示每个类别（格式：#### ⭐ 新功能）
             6. 保持句子简短、客观和技术性。
             7. 不要在 Markdown 之外包含解释或注释。
-            
+
             版本: {version}
             提交记录（已按日期分组）:
-            
+
             {commits}
             """;
     }
@@ -222,7 +222,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultDailyReportTemplate() {
         return """
             请根据以下 Git 提交记录生成工作日报。
-            
+
             要求：
             1. 按照时间顺序整理提交记录
             2. 将工作内容分类为：
@@ -242,10 +242,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 详细工作内容（按类别分组）
                - 遇到的问题和解决方案（如有）
                - 明日计划（可选）
-            
+
             日期: {date}
             提交记录:
-            
+
             {commits}
             """;
     }
@@ -261,7 +261,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultWeeklyReportTemplate() {
         return """
             请根据以下 Git 提交记录生成工作周报。
-            
+
             要求：
             1. 按周统计提交记录
             2. 将工作内容分类为：
@@ -283,10 +283,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 本周完成的主要成果
                - 遇到的问题和解决方案
                - 下周工作计划
-            
+
             日期范围: {dateRange}
             提交记录:
-            
+
             {commits}
             """;
     }
@@ -304,16 +304,20 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
         return """
             使用 Conventional Commits，输出格式：
             <type>(<scope>): <subject>
-            
+
             <body(可选，说明动机、影响、兼容性)>
-            
+
             规则：
             1. 优先表达设计意图 / 约束变化 / 行为变化
             2. 如果是重构，请说明“为什么现在要重构”
             3. 避免描述实现细节
-            
+            4. 输出必须为中文（type 和 scope 使用常见英文约定）
+
             变更内容：
             {diff}
+
+            历史提交(最近3条):
+            {recentCommits}
             """;
     }
 

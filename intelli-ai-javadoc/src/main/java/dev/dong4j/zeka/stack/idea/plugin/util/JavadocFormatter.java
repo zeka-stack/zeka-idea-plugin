@@ -2,6 +2,8 @@ package dev.dong4j.zeka.stack.idea.plugin.util;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.util.Pangu;
+
 /**
  * Javadoc 格式化工具类
  * <p>
