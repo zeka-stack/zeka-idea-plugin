@@ -5,10 +5,18 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -127,6 +135,20 @@ public final class ChangelogService {
     }
 
     /**
+     * 基于 Git diff 生成变更日志
+     *
+     * @param commitHashes 提交哈希列表
+     * @return 生成的变更日志内容
+     * @throws Exception 当生成过程中发生错误
+     */
+    @NotNull
+    public String generateChangelogFromDiff(@NotNull List<String> commitHashes) throws Exception {
+        List<DiffCommitInfo> diffCommits = readCommitDiffs(commitHashes);
+        String prompt = buildDiffChangelogPrompt(diffCommits);
+        return callAIService(prompt);
+    }
+
+    /**
      * 读取提交记录
      * <p>
      * 从指定的提交哈希列表中读取提交信息, 并返回包含提交详情的 CommitInfo 列表.
@@ -235,6 +257,42 @@ public final class ChangelogService {
             }
 
             // 日期分组之间添加空行
+            commitsText.append("\n");
+        }
+
+        return commitsText.toString().trim();
+    }
+
+    @NotNull
+    private String buildDiffChangelogPrompt(@NotNull List<DiffCommitInfo> diffCommits) {
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.changelogTemplate;
+        String diffText = buildDiffCommitsText(diffCommits);
+        return template.replace("{commits}", diffText);
+    }
+
+    @NotNull
+    private String buildDiffCommitsText(@NotNull List<DiffCommitInfo> diffCommits) {
+        if (diffCommits.isEmpty()) {
+            return "";
+        }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Map<String, List<DiffCommitInfo>> commitsByDate = new LinkedHashMap<>();
+        for (DiffCommitInfo commit : diffCommits) {
+            String dateStr = dateFormat.format(commit.date);
+            commitsByDate.computeIfAbsent(dateStr, k -> new ArrayList<>()).add(commit);
+        }
+
+        StringBuilder commitsText = new StringBuilder();
+        for (Map.Entry<String, List<DiffCommitInfo>> entry : commitsByDate.entrySet()) {
+            String dateStr = entry.getKey();
+            commitsText.append("### ").append(dateStr).append("\n\n");
+            for (DiffCommitInfo commit : entry.getValue()) {
+                commitsText.append("- 提交 ").append(commit.hash, 0, Math.min(8, commit.hash.length()))
+                    .append(":\n");
+                commitsText.append(commit.diffText).append("\n");
+            }
             commitsText.append("\n");
         }
 
@@ -440,18 +498,36 @@ public final class ChangelogService {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.commitMessageTemplate;
 
-        // 构建代码变更文本
+        // 构建代码变更文本（限制长度与文件数，避免提示词过长）
+        final int maxDiffChars = 10_000;
+        final int maxFiles = 30;
         StringBuilder codeDiffsText = new StringBuilder();
+        int fileCount = 0;
         for (CodeDiff diff : codeDiffs) {
+            if (fileCount >= maxFiles || codeDiffsText.length() >= maxDiffChars) {
+                break;
+            }
             codeDiffsText.append("文件: ").append(diff.filePath).append("\n");
             codeDiffsText.append("变更类型: ").append(diff.changeType.name()).append("\n");
             codeDiffsText.append("新增行数: ").append(diff.addedLines).append("\n");
             codeDiffsText.append("删除行数: ").append(diff.deletedLines).append("\n");
+            if (codeDiffsText.length() >= maxDiffChars) {
+                codeDiffsText.setLength(maxDiffChars);
+                break;
+            }
             if (diff.diffContent != null && !diff.diffContent.isEmpty()) {
                 codeDiffsText.append("变更内容:\n");
-                codeDiffsText.append(diff.diffContent).append("\n");
+                int remaining = maxDiffChars - codeDiffsText.length();
+                if (remaining > 0) {
+                    String diffContent = diff.diffContent;
+                    if (diffContent.length() > remaining) {
+                        diffContent = diffContent.substring(0, remaining);
+                    }
+                    codeDiffsText.append(diffContent).append("\n");
+                }
             }
             codeDiffsText.append("\n");
+            fileCount++;
         }
 
         String recentCommitsText = buildRecentCommitMessagesText(3);
@@ -681,6 +757,88 @@ public final class ChangelogService {
     }
 
     /**
+     * 读取提交记录的差异信息
+     * <p> 从指定的提交哈希列表中读取提交信息, 并返回包含提交差异详情的 DiffCommitInfo 列表.
+     *
+     * @param commitHashes 提交记录的哈希列表, 不能为空
+     * @return 包含提交差异详情的 DiffCommitInfo 列表
+     */
+    @NotNull
+    private List<DiffCommitInfo> readCommitDiffs(@NotNull List<String> commitHashes) {
+        List<DiffCommitInfo> diffCommits = new ArrayList<>();
+        Repository repository = getRepository();
+        if (repository == null) {
+            return diffCommits;
+        }
+
+        try (repository; RevWalk revWalk = new RevWalk(repository)) {
+            for (String hash : commitHashes) {
+                try {
+                    ObjectId commitId = repository.resolve(hash);
+                    if (commitId == null) {
+                        continue;
+                    }
+                    RevCommit commit = revWalk.parseCommit(commitId);
+                    RevCommit parent = commit.getParentCount() > 0
+                                       ? revWalk.parseCommit(commit.getParent(0).getId())
+                                       : null;
+                    String diffText = buildCommitDiffText(repository, parent, commit);
+                    if (diffText.isEmpty()) {
+                        diffText = "变更内容为空或无法解析。";
+                    }
+                    diffCommits.add(new DiffCommitInfo(
+                        commit.getName(),
+                        new Date(commit.getCommitTime() * 1000L),
+                        diffText
+                    ));
+                } catch (Exception ignored) {
+                    // 忽略无法解析的提交
+                }
+            }
+        } catch (Exception ignored) {
+            // 忽略仓库读取异常
+        }
+
+        return diffCommits;
+    }
+
+    /**
+     * 构建提交差异文本
+     * <p> 根据父提交和当前提交之间的差异生成差异文本. 如果父提交为空, 则与空树进行比较.
+     *
+     * @param repository 仓库对象, 不能为空
+     * @param parent     父提交对象, 可以为空
+     * @param commit     当前提交对象, 不能为空
+     * @return 差异文本, 包含文件的增删改信息
+     * @throws IOException 当读取仓库对象或解析提交树时发生 I/O 错误
+     */
+    @NotNull
+    private String buildCommitDiffText(@NotNull Repository repository,
+                                       @Nullable RevCommit parent,
+                                       @NotNull RevCommit commit) throws IOException {
+        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        try (ObjectReader reader = repository.newObjectReader();
+             DiffFormatter formatter = new DiffFormatter(output)) {
+            formatter.setRepository(repository);
+            formatter.setDiffComparator(RawTextComparator.DEFAULT);
+            formatter.setDetectRenames(true);
+
+            AbstractTreeIterator parentIter = parent == null
+                                              ? new EmptyTreeIterator()
+                                              : new CanonicalTreeParser(null, reader, parent.getTree());
+            CanonicalTreeParser commitIter = new CanonicalTreeParser();
+            commitIter.reset(reader, commit.getTree());
+
+            List<DiffEntry> diffs = formatter.scan(parentIter, commitIter);
+            for (DiffEntry entry : diffs) {
+                formatter.format(entry);
+            }
+            formatter.flush();
+        }
+        return output.toString(java.nio.charset.StandardCharsets.UTF_8).trim();
+    }
+
+    /**
      * 提供提交信息的不可变记录类
      * <p>
      * 用于封装 Git 提交的相关信息, 包括提交哈希, 简短信息, 完整信息, 提交日期和作者等字段
@@ -692,6 +850,19 @@ public final class ChangelogService {
      * @since 1.0.0
      */
     private record CommitInfo(String hash, String shortMessage, String fullMessage, Date date, String author) {
+    }
+
+    /**
+     * 差异提交信息记录类
+     * <p> 用于存储和表示 Git 提交的差异信息, 包括提交哈希, 日期和差异文本.
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2025.12.31
+     * @since 1.0.0
+     */
+    private record DiffCommitInfo(String hash, Date date, String diffText) {
     }
 
     /**

@@ -1,21 +1,13 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.project.Project;
-import com.intellij.vcs.log.VcsFullCommitDetails;
-import com.intellij.vcs.log.VcsLog;
-import com.intellij.vcs.log.VcsLogDataKeys;
-
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import icons.ChangelogIcons;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 用于从 Git diff 生成变更日志的操作类
@@ -29,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
  * @date 2025.11.30
  * @since 1.0.0
  */
-@Slf4j
 public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
 
     /**
@@ -69,46 +60,47 @@ public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
     }
 
     /**
-     * 处理用户操作事件, 用于在 Git 日志中执行提交相关操作
-     * <p>
-     * 该方法获取当前项目和 Git 日志数据, 并检查是否选择了提交记录. 如果没有选择提交记录, 则显示错误通知.
-     * 如果选择了提交记录, 则显示提示信息.
+     * 获取进度标题的资源键
      *
-     * @param e 操作事件对象, 包含项目和数据信息
-     * @throws IllegalArgumentException 如果事件对象为 null 或项目已被释放
+     * @return 进度标题的资源键
      */
     @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
-        if (project == null || project.isDisposed()) {
-            return;
-        }
+    protected @NotNull String getProgressTitleKey() {
+        return "action.generate.changelog.diff.progress.title";
+    }
 
-        // 获取选中的提交记录
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
-        if (log == null) {
-            NotificationUtil.showError(project, ChangelogBundle.message("error.no.git.log"));
-            return;
-        }
+    /**
+     * 获取进度文本键
+     *
+     * @return 进度文本键
+     */
+    @Override
+    protected @NotNull String getProgressTextKey() {
+        return "action.generate.changelog.diff.progress.text";
+    }
 
-        // 获取选中的提交记录 hash
-        List<VcsFullCommitDetails> selectedCommits = log.getSelectedDetails();
-        if (selectedCommits.isEmpty()) {
-            NotificationUtil.showError(project, ChangelogBundle.message("error.no.commits.selected"));
-            return;
-        }
+    /**
+     * 获取错误键
+     *
+     * @return 错误键
+     */
+    @Override
+    protected @NotNull String getErrorKey() {
+        return "action.generate.changelog.diff.error";
+    }
 
-        // MVP 版本：提示用户此功能需要从已提交的 commit 中获取 diff
-        // 后续版本可以实现从 commit 中提取 diff 的功能
-        NotificationUtil.showInfo(project, ChangelogBundle.message("commit.gitlog.feature.coming.soon"));
-
-        // TODO: 实现从已提交的 commit 中提取 diff 并生成提交记录的功能
-        // 这需要：
-        // 1. 从 VcsFullCommitDetails 获取 commit hash
-        // 2. 使用 JGit 获取 commit 的 diff
-        // 3. 将 diff 转换为 Change 对象或直接使用 CodeDiffUtil
-        // 4. 调用 ChangelogService.generateCommitMessageFromDiff
+    /**
+     * 生成变更日志内容（基于 code diff）
+     *
+     * @param service      变更日志服务实例
+     * @param commitHashes 提交哈希列表
+     * @return 生成的变更日志内容
+     * @throws Exception 如果生成过程中发生错误
+     */
+    @Override
+    protected @NotNull String generateContent(@NotNull ChangelogService service,
+                                              @NotNull List<String> commitHashes) throws Exception {
+        return service.generateChangelogFromDiff(commitHashes);
     }
 
 }
-

@@ -74,10 +74,10 @@
         <group popup="true" id="dev.dong4j.zeka.stack.idea.plugin.changelog.group"
                text="IntelliAI Changelog"
                icon="ChangelogIcons.CHANGELOG_16">
-            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageForGitLogAction"/>
-            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogForGitLogAction"/>
-            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportForGitLogAction"/>
-            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportForGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"/>
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="first"/>
         </group>
     </actions>
