@@ -18,11 +18,13 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.ItemEvent;
 import java.nio.file.Path;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -272,6 +274,9 @@ public class ChangelogSettingsPanel {
 
         // 设置高级设置复选框的监听器
         setupListeners();
+
+        // 初始化时更新 AI 单选按钮文本
+        SwingUtilities.invokeLater(this::updateAiRadioButtonText);
     }
 
     /**
@@ -407,6 +412,8 @@ public class ChangelogSettingsPanel {
         if (aiProviderSelectionPanel != null) {
             // 设置选中的提供商配置
             aiProviderSelectionPanel.setSelectedProvider(settings.providerConfig);
+            // 更新 AI 单选按钮文本
+            updateAiRadioButtonText();
         }
     }
 
@@ -453,6 +460,9 @@ public class ChangelogSettingsPanel {
         showAiReleaseLogPromptCheckBox.addActionListener(e -> {
             aiReleaseLogPromptPanel.setVisible(showAiReleaseLogPromptCheckBox.isSelected());
         });
+
+        // 监听 AI 提供商选择变化，动态更新 AI 单选按钮文本
+        setupAiProviderSelectionListener();
     }
 
     /**
@@ -499,7 +509,7 @@ public class ChangelogSettingsPanel {
     private JPanel createStartPointPanel() {
         // 创建清除按钮和提示文本的面板（同一行显示）
         JPanel clearButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        clearButtonPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
+        clearButtonPanel.setBorder(JBUI.Borders.emptyLeft(20)); // 缩进 20 像素
         clearButtonPanel.add(clearTagAndHashButton);
 
         // 创建提示文本标签
@@ -583,6 +593,54 @@ public class ChangelogSettingsPanel {
             releaseLogByGitCliffRadioButton.setText(baseText + " (" + version + ")");
         } else {
             releaseLogByGitCliffRadioButton.setText(baseText);
+        }
+    }
+
+    /**
+     * 更新 AI 单选框文本，添加当前选中的 AI 提供商名称和模型名称
+     * <p>
+     * 根据当前选中的 AI 提供商，动态更新 AI 单选按钮的显示文本。
+     * 格式：AI (提供商名称:模型名称)
+     */
+    private void updateAiRadioButtonText() {
+        String baseText = ChangelogBundle.message("settings.release.log.generator.ai");
+        AIProviderConfig selectedProvider = aiProviderSelectionPanel != null
+                                            ? aiProviderSelectionPanel.getSelectedProvider()
+                                            : null;
+        if (selectedProvider != null && selectedProvider.providerType != null) {
+            String providerName = selectedProvider.providerType.getDisplayName();
+            String modelName = selectedProvider.modelName != null && !selectedProvider.modelName.isEmpty()
+                               ? selectedProvider.modelName : "";
+            if (!modelName.isEmpty()) {
+                releaseLogByAiRadioButton.setText(baseText + " (" + providerName + ":" + modelName + ")");
+            } else {
+                releaseLogByAiRadioButton.setText(baseText + " (" + providerName + ")");
+            }
+        } else {
+            releaseLogByAiRadioButton.setText(baseText);
+        }
+    }
+
+    /**
+     * 设置 AI 提供商选择监听器
+     * <p>
+     * 直接使用 AIProviderSelectionPanel 的 providerComboBox 字段添加监听器，动态更新 AI 单选按钮文本。
+     */
+    private void setupAiProviderSelectionListener() {
+        if (aiProviderSelectionPanel == null) {
+            return;
+        }
+
+        // 直接使用 public 字段添加监听器
+        JComboBox<AIProviderConfig> comboBox = aiProviderSelectionPanel.providerComboBox;
+        if (comboBox != null) {
+            comboBox.addItemListener(e -> {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    updateAiRadioButtonText();
+                }
+            });
+            // 初始化时也更新一次
+            SwingUtilities.invokeLater(this::updateAiRadioButtonText);
         }
     }
 
