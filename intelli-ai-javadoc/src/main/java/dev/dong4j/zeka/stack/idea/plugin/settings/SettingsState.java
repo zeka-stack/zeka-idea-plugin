@@ -535,8 +535,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用中文编写注释内容
+            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述类/接口/枚举/对象的职责、主要功能和使用场景
             4. Java: 如果是工具类，需要说明主要提供的功能
             5. Kotlin: 如果是工具对象（object），需要说明主要提供的功能；如果是数据类（data class），需要说明数据类的用途和主要属性
@@ -550,7 +550,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 如果已存在 @date ,需要格式化为 yyyy.mm.dd, 否则使用 ${date} 作为时间戳
                - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
 
-            # 示例(中文示例, 其他语言类似)：
+            # 示例说明
+            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+
             示例1 - Java 代码：
             输入代码：
             public class UserService {
@@ -558,7 +560,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 public void save(User user) { ... }
             }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 用户服务类
              * <p>提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
@@ -577,7 +579,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 fun save(user: User) { ... }
             }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 用户服务类
              * <p>提供用户相关的业务逻辑处理，包括用户的查询、创建、更新和删除等操作
@@ -604,7 +606,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>模板特点:
      * <ul>
-     *   <li>要求使用中文编写</li>
+     *   <li>支持通过${commentLanguage}变量指定注释语言（中文或英文）</li>
      *   <li>强调 @param、@return、@throws 标签</li>
      *   <li>提供 Java 和 Kotlin 两种示例</li>
      *   <li>使用 %s 作为代码占位符</li>
@@ -625,8 +627,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用${commentLanguage}编写注释内容
+            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述方法/函数的功能、参数、返回值、异常
             4. 如果有参数, 必须包含 @param 标签
             5. 如果有返回值（Java 方法或 Kotlin 非 Unit 函数），必须包含 @return 标签
@@ -635,14 +637,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             8. 可以使用 @since, @Deprecated 等标签
             9. Kotlin: 注意可空类型（如 String?）和默认参数
 
-            # 示例(中文示例, 其他语言类似)：
+            # 示例说明
+            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+
             示例1 - Java 代码：
             输入代码：
             public String getUserName(int userId) throws UserNotFoundException {
                 return userService.findById(userId).getName();
             }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 根据用户ID获取用户名称
              * <p>通过用户ID查找用户并返回用户名称
@@ -658,7 +662,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 return userService.findById(userId)?.name
             }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 根据用户ID获取用户名称
              * <p>通过用户ID查找用户并返回用户名称，如果用户不存在则返回 null
@@ -703,15 +707,17 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. 必须返回完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用${commentLanguage}编写注释内容
+            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            2. 必须返回完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述字段/属性的用途和含义
             4. **格式规则（重要）**：
                - 如果字段/属性说明简单（不超过 80 个字符，没有 @tag 标签），必须使用单行格式：/** 字段/属性说明 */
                - 如果字段/属性说明复杂（包含多个信息点、有 @tag 标签、或超过 80 个字符），使用多行格式
             5. Kotlin: 注意属性的可空类型（如 String?）和可变性（var/val）
 
-            # 示例（中文示例, 其他语言类似）：
+            # 示例说明
+            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+
             示例1 - Java 简单字段：
             输入：private String username;
             输出：/** 用户名 */
@@ -728,7 +734,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             示例4 - 复杂字段/属性：
             Java: 输入：private UserConfig config;
             Kotlin: 输入：private val config: UserConfig
-            输出：
+            输出（中文示例）：
             /**
              * 用户配置信息
              * <p>包含用户偏好设置、主题配置等
@@ -772,13 +778,15 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用${commentLanguage}编写注释内容
+            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释应描述：测试目标、测试场景、预期结果
             4. 如果代码中有 @link 引用，请在注释中使用 {@link ClassName#methodName} 格式
             5. 如果运行单元测试需要特殊的场景, 尽量添加上说明
 
-            # 示例
+            # 示例说明
+            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+
             示例1 - Java 代码：
             输入代码：
             @Test
@@ -788,7 +796,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 assertEquals("John", service.getUserName(1));
             }
 
-            输出注释(中文示例, 其他语言类似)：
+            输出注释（中文示例）：
             /**
              * 测试获取用户名称功能
              * <p>
@@ -805,7 +813,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 assertEquals("John", service.getUserName(1))
             }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 测试获取用户名称功能
              * <p>
@@ -850,7 +858,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
             - Javadoc 和 KDoc 都使用相同的注释格式（/** */）和标签格式（@param, @return, @throws 等）
             - 注释内容要准确描述代码的功能和用途
-            - 请始终使用${commentLanguage}编写注释，确保注释内容准确、简洁、易懂
+            - **语言要求（强制）：必须使用${commentLanguage}编写所有注释内容，这是绝对要求，不能使用其他语言**
+              * 无论示例使用什么语言，都必须严格按照${commentLanguage}的要求输出
             """;
     }
 
@@ -884,26 +893,26 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 保留原有注释中正确的部分，只修复错误的部分
 
             # 修复要求
-            1. 检查注释描述是否准确反映代码的功能
-            2. 检查 @param 标签是否与方法的实际参数匹配, 如果参数不存在, 需要删除存在的 @param 标签
-            3. 检查 @return 标签是否与方法的实际返回值匹配, 如果返回 void, 需要删除存在的 @return 标签
-            4. 检查 @throws 标签是否与方法的实际异常匹配, 如果方法签名没有异常申明, 需要删除存在的 @throws 标签
-            5. 检查注释格式是否符合 Javadoc/KDoc 规范
-            6. 检查注释语言是否一致（${commentLanguage}）
-            7. 保留原有注释中正确的标签和描述
-            8. 如果原有注释完全正确，只需返回原注释（不做修改）
+            1. 重要规则: **检查注释语言是否为（${commentLanguage}），如果不一致必须修改为${commentLanguage}**
+            2. 检查注释描述是否准确反映代码的功能, 如果原有注释与代码完全匹配，只需返回原注释（不做修改）
+            3. 检查 @param 标签是否与方法的实际参数匹配, 如果参数不存在, 需要删除存在的 @param 标签
+            4. 检查 @return 标签是否与方法的实际返回值匹配, 如果返回 void, 需要删除存在的 @return 标签
+            5. 检查 @throws 标签是否与方法的实际异常匹配, 如果方法签名没有异常申明, 需要删除存在的 @throws 标签
+            6. 检查注释格式是否符合 Javadoc/KDoc 规范
 
             # 格式要求
-            1. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
-            2. 使用${commentLanguage}编写注释内容
+            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述代码的功能、参数、返回值、异常
             4. 如果有参数, 必须包含 @param 标签
             5. 如果有返回值（Java 方法或 Kotlin 非 Unit 函数），必须包含 @return 标签
             6. 如果有异常抛出，使用 @throws 标签
             7. 不要添加不存在的参数、返回值和异常的注释标签
 
-            # 示例(中文示例, 其他语言类似)：
-            示例1 - 修复错误的参数描述：
+            # 示例说明
+            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+
+            示例1 - 修复错误的参数描述
             输入代码：
             /**
              * 根据用户ID获取用户名称
@@ -912,7 +921,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              */
             public String getUserName(int userId) { ... }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 根据用户ID获取用户名称
              * @param userId 用户ID
@@ -927,7 +936,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              */
             public boolean saveUser(User user) { ... }
 
-            输出注释：
+            输出注释（中文示例）：
             /**
              * 保存用户信息
              * @param user 用户对象
