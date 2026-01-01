@@ -1,13 +1,27 @@
 package dev.dong4j.zeka.stack.idea.plugin.settings;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
+import com.intellij.util.ui.JBUI;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
 
+import dev.dong4j.zeka.stack.idea.plugin.codestyle.CodeStyleDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.util.HelperBundle;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ZKS Dev Helper 插件设置面板
@@ -22,6 +36,7 @@ import lombok.Data;
  * @date 2025.10.25
  * @since 1.0.0
  */
+@Slf4j
 @Data
 public class UniformFormatSettingsPanel {
 
@@ -41,6 +56,22 @@ public class UniformFormatSettingsPanel {
     private JBCheckBox enableCodeStyleCheckBox;
     /** 描述标签，用于显示相关信息 */
     private JBLabel descriptionLabel;
+
+    // ========== 代码样式更新配置组件 ==========
+    /** 自动更新代码样式复选框 */
+    private JBCheckBox autoUpdateCodeStyleCheckBox;
+    /** 下载地址输入框 */
+    private JBTextField downloadUrlField;
+    /** 设置为全局方案复选框 */
+    private JBCheckBox useGlobalSchemeCheckBox;
+    /** 手动下载按钮 */
+    private JButton downloadButton;
+    /** 下载进度条 */
+    private JProgressBar downloadProgressBar;
+    /** 状态标签 */
+    private JBLabel statusLabel;
+    /** 是否正在下载 */
+    private final AtomicBoolean isDownloading = new AtomicBoolean(false);
 
     /**
      * 构造函数，初始化统一格式设置面板
@@ -92,6 +123,9 @@ public class UniformFormatSettingsPanel {
         enableLiveTemplatesCheckBox.setSelected(true);
         enableCodeStyleCheckBox.setSelected(true);
 
+        // 创建代码样式更新配置面板
+        JPanel codeStyleUpdatePanel = createCodeStyleUpdatePanel();
+
         // 使用 FormBuilder 创建布局
         mainPanel = FormBuilder.createFormBuilder()
             .addComponent(descriptionLabel)
@@ -99,8 +133,153 @@ public class UniformFormatSettingsPanel {
             .addComponent(enableFileTemplatesCheckBox)
             .addComponent(enableLiveTemplatesCheckBox)
             .addComponent(enableCodeStyleCheckBox)
+            .addSeparator()
+            .addComponent(codeStyleUpdatePanel)
             .addComponentFillVertically(new JPanel(), 0)
             .getPanel();
+    }
+
+    /**
+     * 创建代码样式在线更新配置面板
+     *
+     * @return 代码样式更新配置面板
+     */
+    private JPanel createCodeStyleUpdatePanel() {
+        // 创建组件
+        autoUpdateCodeStyleCheckBox = new JBCheckBox(
+            HelperBundle.message("settings.codestyle.update.auto.label"));
+        autoUpdateCodeStyleCheckBox.setToolTipText(
+            HelperBundle.message("settings.codestyle.update.auto.hint"));
+
+        downloadUrlField = new JBTextField();
+        downloadUrlField.setToolTipText(
+            HelperBundle.message("settings.codestyle.update.download.url.hint"));
+        downloadUrlField.setPreferredSize(new java.awt.Dimension(500, downloadUrlField.getPreferredSize().height));
+
+        useGlobalSchemeCheckBox = new JBCheckBox(
+            HelperBundle.message("settings.codestyle.update.use.global.scheme.label"));
+        useGlobalSchemeCheckBox.setToolTipText(
+            HelperBundle.message("settings.codestyle.update.use.global.scheme.hint"));
+
+        downloadButton = new JButton(
+            HelperBundle.message("settings.codestyle.update.download.button"));
+
+        downloadProgressBar = new JProgressBar(0, 100);
+        downloadProgressBar.setStringPainted(false);
+        downloadProgressBar.setVisible(false);
+        downloadProgressBar.setPreferredSize(new java.awt.Dimension(500, JBUI.scale(3)));
+
+        statusLabel = new JBLabel(HelperBundle.message("settings.codestyle.update.status.ready"));
+
+        // 设置初始状态
+        downloadUrlField.setEnabled(false);
+        downloadButton.setEnabled(false);
+
+        // 自动更新复选框控制下载地址输入框的可用性
+        autoUpdateCodeStyleCheckBox.addActionListener(e -> {
+            boolean enabled = autoUpdateCodeStyleCheckBox.isSelected();
+            downloadUrlField.setEnabled(enabled);
+            downloadButton.setEnabled(enabled);
+        });
+
+        // 手动下载按钮
+        downloadButton.addActionListener(e -> {
+            String url = downloadUrlField.getText().trim();
+            if (url.isEmpty()) {
+                statusLabel.setText(HelperBundle.message("settings.codestyle.update.download.failed", "请先输入下载地址"));
+                return;
+            }
+            triggerCodeStyleDownload(url);
+        });
+
+        return FormBuilder.createFormBuilder()
+            .addComponent(autoUpdateCodeStyleCheckBox)
+            .addLabeledComponent(new JBLabel(HelperBundle.message("settings.codestyle.update.download.url.label")), downloadUrlField)
+            .addComponent(useGlobalSchemeCheckBox)
+            .addComponent(downloadButton)
+            .addComponent(downloadProgressBar)
+            .addComponent(statusLabel)
+            .getPanel();
+    }
+
+    /**
+     * 触发代码样式下载
+     *
+     * @param downloadUrl 下载地址
+     */
+    private void triggerCodeStyleDownload(@NotNull String downloadUrl) {
+        // 防止重复下载
+        if (!isDownloading.compareAndSet(false, true)) {
+            log.warn("Download already in progress, skipping");
+            return;
+        }
+
+        // 重置状态
+        downloadProgressBar.setVisible(true);
+        downloadProgressBar.setIndeterminate(true);
+        downloadProgressBar.setValue(0);
+        statusLabel.setText(HelperBundle.message("settings.codestyle.update.status.checking"));
+        downloadButton.setEnabled(false);
+
+        // 后台下载
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            ProgressIndicator indicator = new EmptyProgressIndicator();
+            try {
+                // 检查并更新代码样式
+                CodeStyleDownloadManager.checkAndUpdate(
+                    null, // 项目对象，在设置页面中可以为 null
+                    downloadUrl, // baseUrl
+                    indicator,
+                    (downloaded, total) -> {
+                        // 更新进度条
+                        SwingUtilities.invokeLater(() -> {
+                            // 确保进度条和状态标签可见
+                            if (!downloadProgressBar.isVisible()) {
+                                downloadProgressBar.setVisible(true);
+                            }
+                            if (!statusLabel.isVisible()) {
+                                statusLabel.setVisible(true);
+                            }
+
+                            if (total > 0) {
+                                int percent = (int) Math.min(100, Math.round(downloaded * 100.0 / total));
+                                downloadProgressBar.setIndeterminate(false);
+                                downloadProgressBar.setValue(percent);
+                                statusLabel.setText(
+                                    HelperBundle.message("settings.codestyle.update.status.downloading") + " (" + percent + "%)");
+                            } else {
+                                downloadProgressBar.setIndeterminate(true);
+                                statusLabel.setText(HelperBundle.message("settings.codestyle.update.status.downloading"));
+                            }
+                            // 强制刷新
+                            downloadProgressBar.revalidate();
+                            downloadProgressBar.repaint();
+                            statusLabel.revalidate();
+                            statusLabel.repaint();
+                        });
+                    }
+                                                       );
+
+                // 下载成功
+                SwingUtilities.invokeLater(() -> {
+                    downloadProgressBar.setVisible(false);
+                    downloadProgressBar.setValue(0);
+                    statusLabel.setText(HelperBundle.message("settings.codestyle.update.download.success"));
+                    downloadButton.setEnabled(autoUpdateCodeStyleCheckBox.isSelected());
+                });
+            } catch (Exception e) {
+                log.error("Failed to download code style", e);
+                // 下载失败
+                SwingUtilities.invokeLater(() -> {
+                    downloadProgressBar.setVisible(false);
+                    downloadProgressBar.setValue(0);
+                    statusLabel.setText(HelperBundle.message("settings.codestyle.update.download.failed", e.getMessage()));
+                    downloadButton.setEnabled(autoUpdateCodeStyleCheckBox.isSelected());
+                });
+            } finally {
+                isDownloading.set(false);
+            }
+        });
     }
 
     /**
@@ -112,9 +291,27 @@ public class UniformFormatSettingsPanel {
      * @return 如果当前设置与给定设置状态不同，返回 true；否则返回 false
      */
     public boolean isModified(UniformFormatSettingsState settings) {
-        return enableFileTemplatesCheckBox.isSelected() != settings.isEnableFileTemplates() ||
-               enableLiveTemplatesCheckBox.isSelected() != settings.isEnableLiveTemplates() ||
-               enableCodeStyleCheckBox.isSelected() != settings.isEnableCodeStyle();
+        boolean basicModified = enableFileTemplatesCheckBox.isSelected() != settings.isEnableFileTemplates() ||
+                                enableLiveTemplatesCheckBox.isSelected() != settings.isEnableLiveTemplates() ||
+                                enableCodeStyleCheckBox.isSelected() != settings.isEnableCodeStyle();
+
+        // 检查代码样式更新配置
+        UniformFormatSettingsState.CodeStyleUpdateSettings currentUpdateSettings = getCodeStyleUpdateSettings();
+        UniformFormatSettingsState.CodeStyleUpdateSettings savedUpdateSettings = settings.getCodeStyleUpdateSettings();
+
+        boolean updateModified = false;
+        if (currentUpdateSettings != null && savedUpdateSettings != null) {
+            updateModified = currentUpdateSettings.isAutoUpdate() != savedUpdateSettings.isAutoUpdate() ||
+                             !java.util.Objects.equals(
+                                 currentUpdateSettings.getDownloadUrl() != null ? currentUpdateSettings.getDownloadUrl().trim() : "",
+                                 savedUpdateSettings.getDownloadUrl() != null ? savedUpdateSettings.getDownloadUrl().trim() : ""
+                                                      ) ||
+                             currentUpdateSettings.isUseGlobalScheme() != savedUpdateSettings.isUseGlobalScheme();
+        } else if (currentUpdateSettings != null || savedUpdateSettings != null) {
+            updateModified = true;
+        }
+
+        return basicModified || updateModified;
     }
 
     /**
@@ -128,6 +325,10 @@ public class UniformFormatSettingsPanel {
         settings.setEnableFileTemplates(enableFileTemplatesCheckBox.isSelected());
         settings.setEnableLiveTemplates(enableLiveTemplatesCheckBox.isSelected());
         settings.setEnableCodeStyle(enableCodeStyleCheckBox.isSelected());
+
+        // 应用代码样式更新配置
+        UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings = getCodeStyleUpdateSettings();
+        settings.setCodeStyleUpdateSettings(updateSettings);
     }
 
     /**
@@ -141,6 +342,40 @@ public class UniformFormatSettingsPanel {
         enableFileTemplatesCheckBox.setSelected(settings.isEnableFileTemplates());
         enableLiveTemplatesCheckBox.setSelected(settings.isEnableLiveTemplates());
         enableCodeStyleCheckBox.setSelected(settings.isEnableCodeStyle());
+
+        // 重置代码样式更新配置
+        UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings = settings.getCodeStyleUpdateSettings();
+        if (updateSettings != null) {
+            autoUpdateCodeStyleCheckBox.setSelected(updateSettings.isAutoUpdate());
+            downloadUrlField.setText(updateSettings.getDownloadUrl() != null ? updateSettings.getDownloadUrl() : "");
+            downloadUrlField.setEnabled(updateSettings.isAutoUpdate());
+            downloadButton.setEnabled(updateSettings.isAutoUpdate());
+            useGlobalSchemeCheckBox.setSelected(updateSettings.isUseGlobalScheme());
+        } else {
+            autoUpdateCodeStyleCheckBox.setSelected(false);
+            downloadUrlField.setText("");
+            downloadUrlField.setEnabled(false);
+            downloadButton.setEnabled(false);
+            useGlobalSchemeCheckBox.setSelected(false);
+        }
+        downloadProgressBar.setVisible(false);
+        downloadProgressBar.setValue(0);
+        statusLabel.setText(HelperBundle.message("settings.codestyle.update.status.ready"));
+    }
+
+    /**
+     * 获取代码样式更新配置
+     *
+     * @return 代码样式更新配置
+     */
+    @NotNull
+    private UniformFormatSettingsState.CodeStyleUpdateSettings getCodeStyleUpdateSettings() {
+        UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings =
+            new UniformFormatSettingsState.CodeStyleUpdateSettings();
+        updateSettings.setAutoUpdate(autoUpdateCodeStyleCheckBox.isSelected());
+        updateSettings.setDownloadUrl(downloadUrlField.getText().trim());
+        updateSettings.setUseGlobalScheme(useGlobalSchemeCheckBox.isSelected());
+        return updateSettings;
     }
 
 }

@@ -36,11 +36,28 @@ public class UniformFormatSettingsState implements PersistentStateComponent<Unif
     private boolean enableLiveTemplates = true;
     /** 是否启用代码风格配置，默认启用 */
     private boolean enableCodeStyle = true;
+    /** 代码样式在线更新配置 */
+    @Nullable
+    private CodeStyleUpdateSettings codeStyleUpdateSettings;
 
     // ========== 后续功能模块配置将在此添加 ==========
     // MyBatis 模块配置
     // Proxyer 模块配置
     // ...
+
+    /**
+     * 代码样式在线更新配置
+     */
+    @Data
+    public static class CodeStyleUpdateSettings {
+        /** 是否启用自动更新，默认 false */
+        private boolean autoUpdate = false;
+        /** 下载地址 */
+        @Nullable
+        private String downloadUrl;
+        /** 是否设置为全局方案（IDE级别），默认 false（仅项目级别） */
+        private boolean useGlobalScheme = false;
+    }
 
     /**
      * 获取当前对象的统一格式设置状态
