@@ -22,6 +22,8 @@ import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
+import dev.dong4j.zeka.stack.idea.plugin.example.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.example.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.example.util.ExampleBundle;
 
@@ -70,12 +72,20 @@ public class ExampleSettingsPanel {
             }
         );
 
+        FeedbackPanel feedbackPanel = new FeedbackPanel(
+            null,
+            PluginContents.PLUGIN_ID,
+            PluginContents.PLUGIN_NAME,
+            "zeka-stack-example-plugin"
+        );
+
         mainPanel = FormBuilder.createFormBuilder()
             .addComponent(aiProviderSelectionPanel.getPanel())
             .addSeparator(10)
             .addComponent(showAdvancedSettingsCheckBox)
             .addComponent(advancedSettingsPanel)
             .addComponentFillVertically(new JPanel(), 0)
+            .addComponent(feedbackPanel.getContent())
             .getPanel();
 
         mainPanel.setBorder(JBUI.Borders.empty(10));

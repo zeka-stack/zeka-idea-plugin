@@ -22,7 +22,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
-import dev.dong4j.zeka.stack.idea.plugin.example.ExampleContents;
+import dev.dong4j.zeka.stack.idea.plugin.example.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.example.settings.ExampleSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.example.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.example.util.ExampleBundle;
@@ -49,7 +49,7 @@ public class ExampleStatusBarPopupProvider implements AIStatusBarPopupProvider {
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, ExampleContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
@@ -89,7 +89,7 @@ public class ExampleStatusBarPopupProvider implements AIStatusBarPopupProvider {
 
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, ExampleContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
                 return;
             }
 

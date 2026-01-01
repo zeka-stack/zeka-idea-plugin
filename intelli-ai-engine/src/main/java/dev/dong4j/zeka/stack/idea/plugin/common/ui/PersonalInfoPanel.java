@@ -438,6 +438,7 @@ public class PersonalInfoPanel {
             });
 
             mainPanel.add(footerLabel);
+            mainPanel.add(Box.createVerticalStrut(12));
         }
 
         // Buy Me a Coffee 链接

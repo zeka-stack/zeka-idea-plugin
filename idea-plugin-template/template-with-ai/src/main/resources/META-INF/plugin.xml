@@ -42,6 +42,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.example.update.ExamplePluginUpdateInfoProvider"/>
         <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.example.statusbar.ExampleStatusBarPopupProvider"/>
     </extensions>
 
