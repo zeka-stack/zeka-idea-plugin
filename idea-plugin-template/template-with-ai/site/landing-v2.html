@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliAI Plugin Template (With AI)</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg-2: #0b1324;
+            --panel: #121a2f;
+            --panel-2: #0f1726;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --accent: #ff6b35;
+            --accent-2: #22c55e;
+            --accent-3: #38bdf8;
+            --line: #1f2a44;
+            --shadow: 0 20px 40px rgba(2, 6, 23, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Space Grotesk", "IBM Plex Sans", "Noto Sans", sans-serif;
+            color: var(--text);
+            background: radial-gradient(1200px 600px at 10% 0%, rgba(56, 189, 248, 0.18), transparent 50%),
+            radial-gradient(900px 700px at 90% 10%, rgba(255, 107, 53, 0.25), transparent 55%),
+            linear-gradient(160deg, var(--bg) 0%, var(--bg-2) 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.08;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/></filter><rect width="160" height="160" filter="url(%23n)" opacity="0.35"/></svg>');
+            mix-blend-mode: soft-light;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(14px);
+            background: rgba(15, 23, 42, 0.7);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .brand svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .nav-links a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .hero {
+            padding: 80px 0 40px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-family: "Source Serif 4", "Iowan Old Style", serif;
+            font-size: clamp(36px, 5vw, 56px);
+            line-height: 1.05;
+        }
+
+        .hero p {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            padding: 12px 18px;
+            border-radius: 999px;
+            font-weight: 600;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: #0b1324;
+        }
+
+        .btn.ghost {
+            border-color: var(--line);
+            color: var(--text);
+            background: transparent;
+        }
+
+        .hero-card {
+            background: linear-gradient(160deg, rgba(18, 26, 47, 0.92), rgba(15, 23, 38, 0.92));
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 18px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card pre {
+            font-family: "JetBrains Mono", "Fira Code", monospace;
+            font-size: 13px;
+            color: #e2e8f0;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .hero-card .tag {
+            display: inline-block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-3);
+            margin-bottom: 12px;
+        }
+
+        .section {
+            padding: 60px 0;
+        }
+
+        .section h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 14px;
+            padding: 18px;
+        }
+
+        .card h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .steps {
+            display: grid;
+            gap: 12px;
+        }
+
+        .step {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .step span {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--accent);
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 6px 10px;
+            min-width: 38px;
+            text-align: center;
+        }
+
+        .footer {
+            border-top: 1px solid var(--line);
+            padding: 32px 0 50px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .footer-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .footer-grid a {
+            display: block;
+            margin: 8px 0;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .footer-grid a:hover {
+            color: var(--accent-3);
+        }
+
+        .page-footer {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(56, 189, 248, 0.12);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(226, 232, 240, 0.4);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .footer-link:hover {
+            color: var(--accent-3);
+        }
+
+        .footer-link-icon {
+            font-size: 13px;
+        }
+
+        .fade-up {
+            animation: fadeUp 0.8s ease-out both;
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="noise"></div>
+<header>
+    <div class="container">
+        <nav>
+            <div class="brand">
+                <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="4" y="4" width="40" height="40" rx="12" stroke="#38bdf8" stroke-width="2"/>
+                    <path d="M14 26L24 14L34 26" stroke="#ff6b35" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M18 32H30" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+                IntelliAI Plugin Template
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">特性</a></li>
+                <li><a href="#quickstart">快速开始</a></li>
+                <li><a href="#integrations">集成</a></li>
+                <li><a href="#docs">文档</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div class="fade-up">
+            <h1>一个能直接跑起来的 AI 插件骨架，
+                <br>专为 Engine 生态准备</h1>
+            <p>
+                最小可用模板，内置 AI 服务商选择、状态栏扩展点、控制台日志、设置与持久化配置。
+                你只需要替换业务逻辑，就能快速发布自己的 AI 子插件。
+            </p>
+            <div class="hero-cta">
+                <a class="btn primary" href="#quickstart">开始构建</a>
+                <a class="btn ghost" href="#docs">查看文档</a>
+            </div>
+        </div>
+        <div class="hero-card fade-up delay-2">
+            <span class="tag">Minimal but complete</span>
+            <pre>AIProviderSelectionPanel panel = new AIProviderSelectionPanel(
+    ExampleBundle::message,
+    () -> reset(settings)
+);
+
+AIService ai = ApplicationManager.getApplication()
+    .getService(AIService.class);
+
+String result = ai.generateContent(project, request, provider, null);</pre>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <h2 class="fade-up">模板内置能力</h2>
+        <div class="grid">
+            <div class="card fade-up delay-1">
+                <h3>🧠 AI 服务商选择</h3>
+                <p>直接复用 Engine 的下拉组件，自动刷新与校验，减少重复实现。</p>
+            </div>
+            <div class="card fade-up delay-2">
+                <h3>🧩 状态栏扩展点</h3>
+                <p>一键注册到 Engine 状态栏，插件快捷设置统一聚合。</p>
+            </div>
+            <div class="card fade-up delay-3">
+                <h3>📟 控制台日志</h3>
+                <p>统一输出到 Engine Console，支持流式与超链接定位。</p>
+            </div>
+            <div class="card fade-up delay-1">
+                <h3>⚙️ 设置与持久化</h3>
+                <p>SettingsState + Configurable 结构齐全，面板可直接扩展。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart" class="section">
+        <h2 class="fade-up">快速开始</h2>
+        <div class="steps">
+            <div class="step fade-up delay-1">
+                <span>1</span>
+                <div>
+                    <strong>复制模板并修改插件信息</strong>
+                    <p class="muted">改包名、改 plugin.xml、更新 gradle.properties。</p>
+                </div>
+            </div>
+            <div class="step fade-up delay-2">
+                <span>2</span>
+                <div>
+                    <strong>配置 IntelliAI Engine 服务商</strong>
+                    <p class="muted">在 Settings → Tools → IntelliAI Engine 中验证服务商。</p>
+                </div>
+            </div>
+            <div class="step fade-up delay-3">
+                <span>3</span>
+                <div>
+                    <strong>替换示例 Action 为你的业务逻辑</strong>
+                    <p class="muted">保持 AIService 调用方式即可。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="integrations" class="section">
+        <h2 class="fade-up">集成模块</h2>
+        <div class="grid">
+            <div class="card fade-up delay-1">
+                <h3>AI 接口调用</h3>
+                <p>支持非流式调用示例，流式调用可按需扩展。</p>
+            </div>
+            <div class="card fade-up delay-2">
+                <h3>状态栏聚合</h3>
+                <p>通过扩展点注册二级菜单，不影响 Engine 主入口。</p>
+            </div>
+            <div class="card fade-up delay-3">
+                <h3>文档结构</h3>
+                <p>统一 `site/docs` 目录，文档列表由 `docs-list.json` 管理。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="docs" class="section">
+        <h2 class="fade-up">文档入口</h2>
+        <div class="card fade-up delay-1">
+            <p>模板内置文档位于：</p>
+            <p><strong>site/docs/用户手册.md</strong>、<strong>site/docs/插件开发指南.md</strong></p>
+        </div>
+    </section>
+</main>
+
+<footer class="footer">
+    <div class="container footer-grid">
+        <div>
+            <strong>导航</strong>
+            <a href="#features">特性</a>
+            <a href="#quickstart">快速开始</a>
+            <a href="#integrations">集成</a>
+            <a href="#docs">文档</a>
+        </div>
+        <div>
+            <strong>文档</strong>
+            <a href="docs.html" target="_blank" rel="noreferrer">Documentation</a>
+            <a href="docs.html" target="_blank" rel="noreferrer">Quick Start</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">Support</a>
+        </div>
+        <div>
+            <strong>社区</strong>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues" target="_blank" rel="noreferrer">Issues</a>
+            <a href="https://github.com/zeka-stack/zeka-idea-plugin/discussions" target="_blank" rel="noreferrer">Discussions</a>
+        </div>
+        <div>
+            <strong>更多插件</strong>
+            <a href="https://ideaplugin.dong4j.site/changelog/landing.html">IntelliAI Changelog</a>
+            <a href="https://ideaplugin.dong4j.site/javadoc/landing.html">IntelliAI Javadoc</a>
+            <a href="https://ideaplugin.dong4j.site/tracer/landing.html">IntelliAI Tracer</a>
+        </div>
+    </div>
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 IntelliAI Plugin Template</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Engine powers every AI plugin · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

@@ -17,20 +17,19 @@
 - **本地开发支持**：开发时自动将 Engine 插件复制到沙盒环境
 - **生产发布支持**：发布时通过 Marketplace 依赖声明，用户需单独安装 Engine 插件
 
+### 🧩 通用能力示例
+
+- **AI 服务商选择**：使用 `AIProviderSelectionPanel` 复用 Engine 下拉选择组件
+- **状态栏集成**：通过 Engine 的状态栏扩展点注册快捷设置
+- **AI 控制台日志**：统一输出到 Engine Console
+- **AI 接口调用**：示例 Action 内置最小非流式调用
+
 ### 🛠️ 开发环境
 
 - **Gradle Kotlin DSL**：使用现代化的 Kotlin DSL 构建脚本
 - **热更新支持**：配置了 `-XX:AllowEnhancedClassRedefinition` JVM 参数
 - **测试框架**：预配置 JUnit 5、Mockito、AssertJ
 - **代码规范**：集成 Lombok 支持
-
-### 📦 预配置内容
-
-- **示例 Action**：`ExampleAction` 展示如何创建插件动作
-- **设置页面**：`ExampleSettingsConfigurable` 和 `ExampleSettingsPanel` 展示设置页面实现
-- **国际化支持**：`ExampleBundle` 展示国际化资源使用
-- **通知工具**：`NotificationUtil` 提供便捷的通知显示方法
-- **图标资源**：示例 SVG 图标文件
 
 ## 🚀 快速开始
 
@@ -115,82 +114,47 @@ dependencies {
 
 ### 使用 AI 服务
 
-参考 IntelliAI Engine 的文档，使用以下方式调用 AI 服务：
-
 ```java
-// 获取 AI 服务实例
-AIService aiService = AIServiceManager.getInstance().getService();
-
-// 调用 AI API
-aiService.chat(/* ... */);
+AIService aiService = ApplicationManager.getApplication().getService(AIService.class);
+AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
+String result = aiService.generateContent(project, request, providerConfig, null);
 ```
 
-### 项目结构
+## 📁 项目结构
 
 ```
 template-with-ai/
-├── build.gradle.kts              # Gradle 构建脚本
-├── gradle.properties             # 插件配置
-├── settings.gradle.kts            # Gradle 设置
+├── build.gradle.kts
+├── gradle.properties
+├── settings.gradle.kts
 ├── src/
 │   ├── main/
-│   │   ├── java/                 # Java 源代码
+│   │   ├── java/
 │   │   │   └── dev/dong4j/zeka/stack/idea/plugin/example/
-│   │   │       ├── action/       # 动作类
-│   │   │       ├── icons/        # 图标常量
-│   │   │       ├── settings/     # 设置相关
-│   │   │       └── util/         # 工具类
+│   │   │       ├── action/
+│   │   │       ├── settings/
+│   │   │       ├── statusbar/
+│   │   │       ├── icons/
+│   │   │       └── util/
 │   │   └── resources/
-│   │       ├── icons/            # 图标资源
-│   │       ├── messages/         # 国际化资源
+│   │       ├── icons/
+│   │       ├── messages/
 │   │       └── META-INF/
-│   │           └── plugin.xml    # 插件配置
-│   └── test/                     # 测试代码
+│   └── test/
 ├── includes/
-│   ├── pluginDescription.html    # 插件描述
-│   └── pluginChanges.html        # 更新日志
-└── docs/                         # 文档
+└── site/
+    └── docs/
 ```
 
-## 🔧 配置说明
+## 📖 文档
 
-### gradle.properties
-
-| 配置项                  | 说明                  | 示例                                          |
-|----------------------|---------------------|---------------------------------------------|
-| `pluginGroup`        | 插件组 ID              | `dev.dong4j.zeka.stack.idea.plugin.example` |
-| `pluginName`         | 插件显示名称              | `My New AI Plugin`                          |
-| `pluginVersion`      | 插件版本号               | `1.0.0`                                     |
-| `aiEngineVersion`    | IntelliAI Engine 版本 | `1.7.0`                                     |
-| `rootProjectName`    | 项目根目录名称             | `my-new-ai-plugin`                          |
-| `platformType`       | IntelliJ 平台类型       | `IC` (Community) 或 `IU` (Ultimate)          |
-| `platformVersion`    | IntelliJ 版本         | `2025.2`                                    |
-| `platformSinceBuild` | 最低支持版本              | `242.2`                                     |
-| `platformUntilBuild` | 最高支持版本              | `999.*`                                     |
-
-### plugin.xml
-
-关键配置项：
-
-- `<id>`：插件唯一标识符
-- `<name>`：插件显示名称
-- `<depends>`：依赖 IntelliAI Engine
-- `<extensions>`：注册到 Engine 的扩展点（如需要）
-
-## 📖 更多资源
-
-- [主项目 README](../../README.md) - 完整的插件开发指南
-- [IntelliAI Engine 集成详解](../../README.md#-ai-插件-engine-依赖集成详解) - AI 插件开发详细说明
-- [IntelliJ Platform SDK 文档](https://plugins.jetbrains.com/docs/intellij/welcome.html) - 官方开发文档
+- `site/docs/用户手册.md`
+- `site/docs/插件开发指南.md`
 
 ## ⚠️ 注意事项
 
 1. **Engine 版本管理**：`aiEngineVersion` 在 `gradle.properties` 中统一管理，避免版本不一致
-2. **本地开发路径**：`buildAiCommonPlugin` 任务假设 `intelli-ai-engine` 位于 `../intelli-ai-engine`，如路径不同需修改
+2. **本地开发路径**：`buildAiCommonPlugin` 任务假设 `intelli-ai-engine` 位于 `../intelli-ai-engine`
 3. **发布前检查**：确保 `plugin.xml` 中已正确声明 Engine 依赖
 4. **线程安全**：遵循 IntelliJ Platform 的线程模型，UI 操作在 EDT，耗时操作在 BGT
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
 

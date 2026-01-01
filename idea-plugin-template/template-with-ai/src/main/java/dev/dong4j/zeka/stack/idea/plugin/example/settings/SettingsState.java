@@ -25,10 +25,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     /**
-     * AI 提供商配置
+     * AI 服务商配置
      * <p>
-     * 插件使用的默认供应商，从全局可用供应商列表中选取。
-     * 全局供应商配置在 Settings → Tools → IntelliAI Engine 中管理。
+     * 插件使用的默认服务商，从全局可用服务商列表中选取。
+     * 全局服务商配置在 Settings → Tools → IntelliAI Engine 中管理。
      */
     public AIProviderConfig providerConfig;
 
@@ -118,4 +118,3 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             """;
     }
 }
-

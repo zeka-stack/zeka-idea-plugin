@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * 国际化资源管理类
  *
  * <p>负责加载和管理插件的多语言资源文件。
- * 资源文件位置：src/main/resources/messages.properties
+ * 资源文件位置：src/main/resources/messages/ExampleBundle.properties
  *
  * @author dong4j
  * @since 1.0.0
@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 public class ExampleBundle extends DynamicBundle {
 
     @NonNls
-    private static final String BUNDLE = "messages";
+    private static final String BUNDLE = "messages.ExampleBundle";
 
     private static final ExampleBundle INSTANCE = new ExampleBundle();
 
@@ -41,4 +41,3 @@ public class ExampleBundle extends DynamicBundle {
         return INSTANCE.getLazyMessage(key, params);
     }
 }
-

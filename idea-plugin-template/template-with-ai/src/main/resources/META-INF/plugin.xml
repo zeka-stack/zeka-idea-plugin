@@ -29,16 +29,20 @@
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
-                parentId="tools"
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 instance="dev.dong4j.zeka.stack.idea.plugin.example.settings.ExampleSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.example.settings.ExampleSettingsConfigurable"
-                displayName="Example Plugin"/>
+            displayName="🧩 Example Plugin"/>
 
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup id="Example Plugin Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.example.statusbar.ExampleStatusBarPopupProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->
@@ -50,4 +54,3 @@
         </action>
     </actions>
 </idea-plugin>
-
