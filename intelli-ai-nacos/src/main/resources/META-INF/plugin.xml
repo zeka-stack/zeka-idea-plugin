@@ -26,10 +26,10 @@
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
-                parentId="tools"
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 instance="dev.dong4j.zeka.stack.idea.plugin.nacos.settings.NacosSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.nacos.settings.NacosSettingsConfigurable"
-                displayName="IntelliAI Nacos"/>
+            displayName="🧑‍💻 IntelliAI Nacos"/>
 
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
@@ -76,4 +76,3 @@
         </action>
     </actions>
 </idea-plugin>
-

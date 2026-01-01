@@ -32,10 +32,10 @@
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
-                parentId="tools"
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 instance="dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable"
-                displayName="IntelliAI Javadoc"/>
+            displayName="🙉 IntelliAI Javadoc"/>
 
         <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
         <!--suppress PluginXmlI18n -->
