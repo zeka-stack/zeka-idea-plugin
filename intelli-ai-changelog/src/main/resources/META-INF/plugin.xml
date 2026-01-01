@@ -47,13 +47,12 @@
                     canCloseContents="true"
                     doNotActivateOnStart="true"/>
 
-        <!-- 状态栏快捷设置 -->
-        <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.statusbar.ChangelogStatusBarWidgetFactory"
-                                order="first" id="dev.dong4j.zeka.stack.idea.plugin.changelog.statusbar.ChangelogStatusBarWidget"/>
+        <!-- 状态栏快捷设置改为由 engine 聚合 -->
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.update.ChengelogPluginUpdateInfoProvider"/>
+        <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.statusbar.ChangelogStatusBarPopupProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->

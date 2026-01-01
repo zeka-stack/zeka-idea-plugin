@@ -135,7 +135,7 @@ public final class IntelliAgentManager {
      */
     @NotNull
     public String fetchLatestJarName(@NotNull String baseUrl) {
-        String versionEndpoint = normalizeBase(baseUrl) + "/version";
+        String versionEndpoint = normalizeBase(baseUrl) + "/agent/version";
         try {
             String version = HttpRequests.request(versionEndpoint).productNameAsUserAgent().readString();
             return version.trim();
@@ -410,6 +410,28 @@ public final class IntelliAgentManager {
     }
 
     /**
+     * 快速检查 IntelliAI Agent 是否在本地运行
+     * <p>仅检查本地进程和 PID 文件，不访问网络端口。</p>
+     *
+     * @return 如果检测到本地进程则返回 true, 否则返回 false
+     */
+    public boolean isRunningQuick() {
+        synchronized (processLock) {
+            if (processHandler != null && !processHandler.isProcessTerminated()) {
+                return true;
+            }
+        }
+        Long pid = readPidFromFile();
+        if (pid != null) {
+            if (isProcessAlive(pid)) {
+                return true;
+            }
+            deletePidFile();
+        }
+        return false;
+    }
+
+    /**
      * 默认的本地 OpenAI API 地址
      */
     @NotNull
@@ -515,7 +537,7 @@ public final class IntelliAgentManager {
 
     @NotNull
     private Path getWorkDir() {
-        Path dir = Paths.get(System.getProperty("user.home"), ".zeka-stack", "registry", "local", "agent");
+        Path dir = Paths.get(System.getProperty("user.home"), ".zeka-stack", "plugin", "agent");
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {

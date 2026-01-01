@@ -27,6 +27,9 @@
         <extensionPoint name="whatsNewProvider"
                         interface="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewProvider"
                         dynamic="true"/>
+        <extensionPoint name="statusBarPopupProvider"
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider"
+                        dynamic="true"/>
     </extensionPoints>
 
     <!-- 插件定义的扩展点 -->
@@ -83,6 +86,10 @@
         <notificationGroup id="IntelliAI Engine Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
+
+        <!-- 状态栏聚合入口 -->
+        <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidgetFactory"
+                                order="first" id="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidget"/>
 
     </extensions>
 

@@ -147,7 +147,7 @@ Engine 通过以下机制检查和管理 JAR 版本：
 
 JAR 的下载服务器必须提供版本检查端点：
 
-**端点格式：** `{baseUrl}/version`
+**端点格式：** `{baseUrl}/agent/version`
 
 **请求方式：** `GET`
 
@@ -156,7 +156,7 @@ JAR 的下载服务器必须提供版本检查端点：
 **示例：**
 
 ```
-请求: GET https://example.com/version
+请求: GET https://example.com/agent/version
 响应: agent-service-1.2.0.jar
 ```
 
@@ -180,7 +180,7 @@ JAR 的下载服务器必须提供版本检查端点：
 Engine 的版本更新流程如下：
 
 1. **获取最新版本**
-    - Engine 向 `{baseUrl}/version` 发送 GET 请求
+    - Engine 向 `{baseUrl}/agent/version` 发送 GET 请求
     - 解析返回的 JAR 文件名
 
 2. **检查本地版本**
@@ -207,7 +207,7 @@ sequenceDiagram
     participant AI as 原始AI服务
 
     Note over Engine,Server: 1. 版本检查与下载阶段
-    Engine->>Server: GET {baseUrl}/version
+    Engine->>Server: GET {baseUrl}/agent/version
     Server-->>Engine: 返回最新JAR文件名<br/>(如: intelli-ai-agent-1.0.0.jar)
 
     Engine->>Local: 检查本地是否存在该JAR
@@ -273,7 +273,7 @@ graph TB
     end
 
     subgraph External["外部服务"]
-        DownloadServer[下载服务器<br/>/version<br/>/jarFileName]
+        DownloadServer[下载服务器<br/>/agent/version<br/>/jarFileName]
         AIService[原始 AI 服务商<br/>WebSocket/gRPC/其他协议]
     end
 
@@ -814,12 +814,12 @@ curl -X POST http://127.0.0.1:8765/v1/chat/completions \
 
 #### 8.3.1 版本检查端点实现
 
-在你的下载服务器上实现 `/version` 端点，返回最新的 JAR 文件名：
+在你的下载服务器上实现 `/agent/version` 端点，返回最新的 JAR 文件名：
 
 **示例（使用 Nginx）：**
 
 ```nginx
-location /version {
+location /agent/version {
     default_type text/plain;
     return 200 "intelli-ai-agent-1.0.0.jar";
 }
@@ -836,7 +836,7 @@ location /agent/ {
 @RestController
 @RequestMapping("/agent")
 public class VersionController {
-    @GetMapping("/version")
+    @GetMapping("/agent/version")
     public String getVersion() {
         return "intelli-ai-agent-1.0.0.jar";
     }
@@ -852,7 +852,7 @@ public class VersionController {
 
 将 JAR 文件部署到服务器的 `/agent/` 目录下，确保可以通过 `{baseUrl}/intelli-ai-agent-1.0.0.jar` 访问。
 
-**注意：** JAR 文件名应该与 `/version` 端点返回的文件名一致。默认生成的 JAR 文件名为 `intelli-ai-agent-{version}.jar`（如
+**注意：** JAR 文件名应该与 `/agent/version` 端点返回的文件名一致。默认生成的 JAR 文件名为 `intelli-ai-agent-{version}.jar`（如
 `intelli-ai-agent-1.0.0.jar`）。
 
 ### 8.4 Engine 配置
@@ -864,7 +864,7 @@ public class VersionController {
 
 Engine 会自动：
 
-1. 访问 `https://your-server.com/version` 获取最新版本（例如：`intelli-ai-agent-1.0.0.jar`）
+1. 访问 `https://your-server.com/agent/version` 获取最新版本（例如：`intelli-ai-agent-1.0.0.jar`）
 2. 检查本地是否存在该版本
 3. 如需要，下载 `https://your-server.com/agent/intelli-ai-agent-1.0.0.jar`
 4. 使用 `java -jar {localJarPath}` 启动服务
@@ -940,7 +940,7 @@ java -jar target/intelli-ai-agent-1.0.0.jar
 1. ✅ 实现标准的 OpenAI API 接口（`/health`, `/v1/models`, `/v1/chat/completions`）
 2. ✅ 固定监听 8765 端口
 3. ✅ 实现协议转换逻辑（原始协议 ↔ OpenAI API）
-4. ✅ 提供版本检查端点（`/version`）
+4. ✅ 提供版本检查端点（`/agent/version`）
 5. ✅ 打包成可执行 JAR
 6. ✅ 实现健康检查机制
 

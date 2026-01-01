@@ -53,9 +53,7 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.component.JavadocFileTemplatesHandler"/>
 
 
-        <!-- 状态栏默认服务商控件 -->
-        <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidgetFactory"
-                                order="first" id="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarWidget"/>
+        <!-- 状态栏快捷设置改为由 engine 聚合 -->
 
         <!-- Intention Action (Option+Enter / Alt+Enter 快捷菜单) -->
         <intentionAction>
@@ -84,6 +82,7 @@
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.update.JavadocPluginUpdateInfoProvider"/>
+        <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.statusbar.AIJavadocStatusBarPopupProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->

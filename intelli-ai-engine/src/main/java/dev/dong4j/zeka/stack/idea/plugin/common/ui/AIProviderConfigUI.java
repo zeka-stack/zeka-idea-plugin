@@ -609,29 +609,6 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 加载图片资源并转换为 ImageIcon
-     * <p>
-     * 从类路径加载指定的图片资源，如果加载失败则返回 null
-     *
-     * @param resourcePath 资源路径，例如 "/icons/avatar.png"
-     * @return ImageIcon 对象，如果加载失败则返回 null
-     */
-    @Nullable
-    private javax.swing.ImageIcon loadImageIcon(@NotNull String resourcePath) {
-        try {
-            java.net.URL imageUrl = getClass().getResource(resourcePath);
-            if (imageUrl != null) {
-                java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(imageUrl);
-                if (image != null) {
-                    return new ImageIcon(image);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    /**
      * 创建个人信息面板
      * <p>
      * 构建包含作者信息的面板，展示个人简介、社交媒体链接等信息
@@ -640,27 +617,7 @@ public final class AIProviderConfigUI {
      */
     @NotNull
     private PersonalInfoPanel createPersonalInfoPanel() {
-        javax.swing.ImageIcon avatar = loadImageIcon("/icons/personal/avatar.png");
-        javax.swing.ImageIcon hoverAvatar = loadImageIcon("/icons/personal/avatar2.png");
-
-        PersonalInfoPanel.PersonalInfo info = PersonalInfoPanel.PersonalInfo.builder()
-            .name("dong4j")
-            .role("✨ Gifted Web Developer | 🛠️ Tool Creator")
-            .bio("Passionate about creating useful developer tools and plugins that make developers' lives easier.<br><br>" +
-                 "💡 Try running this in your terminal to connect with me:")
-            .avatar(avatar)
-            .hoverAvatar(hoverAvatar)
-            .command("npx dong4j --no")
-            .githubUrl("https://github.com/dong4j")
-            .blogUrl("https://blog.dong4j.site")
-            .websiteUrl("https://home.dong4j.site")
-            .npxCardUrl("https://npx-card.dong4j.site")
-            .chatUrl("https://chat.dong4j.site")
-            .email("dong4j@gmail.com")
-            .footerGitHubUrl("https://github.com/zeka-stack/zeka-idea-plugin")
-            .build();
-
-        return new PersonalInfoPanel(info);
+        return PersonalInfoPanel.create();
     }
 
     /**
