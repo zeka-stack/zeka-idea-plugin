@@ -388,22 +388,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean replaceChinesePunctuation = true;
 
-    /**
-     * 注释生成语言
-     *
-     * <p>控制生成 Javadoc 注释时使用的语言。
-     * 可选值：
-     * <ul>
-     *   <li>ZH - 中文（默认）</li>
-     *   <li>EN - 英文</li>
-     * </ul>
-     *
-     * <p>默认值: ZH（中文）
-     *
-     * @since 2.1.0
-     */
-    public CommentLanguage commentLanguage = CommentLanguage.ZH;
-
     // ==================== 性能模式配置 ====================
 
     /**
@@ -993,18 +977,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 加载状态信息到当前对象
      * <p>
      * 通过复制传入的 SettingsState 对象的状态数据到当前对象中。
-     * 包含对旧版本字符串类型 commentLanguage 的兼容性处理。
      *
      * @param state 要加载的状态对象
      */
     @Override
     public void loadState(@NotNull SettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
-
-        // 确保 commentLanguage 不为 null（兼容旧版本字符串类型配置）
-        if (this.commentLanguage == null) {
-            this.commentLanguage = CommentLanguage.ZH;
-        }
 
         // 确保 overrideMode 不为 null（兼容旧版本字符串类型配置）
         if (this.overrideMode == null) {
@@ -1103,4 +1081,3 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
 }
-

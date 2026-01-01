@@ -54,6 +54,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     /** AI 运行时设置 */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
 
+    /** 注释生成语言 */
+    public CommentLanguage commentLanguage = CommentLanguage.ZH;
+
     /** 是否启用详细日志记录(全局),true 表示启用,false 表示禁用 */
     public boolean verboseLogging = false;
 
@@ -162,6 +165,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         if (this.intelliAgentSettings == null) {
             this.intelliAgentSettings = state.intelliAgentSettings != null ? state.intelliAgentSettings.copy() : new IntelliAgentSettings();
         }
+        if (this.commentLanguage == null) {
+            this.commentLanguage = CommentLanguage.ZH;
+        }
     }
 
     /**
@@ -198,6 +204,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.showAdvancedSettings = this.showAdvancedSettings;
         settings.showAvailableProviders = this.showAvailableProviders;
         settings.aiProviderType = this.aiProviderType;
+        settings.commentLanguage = this.commentLanguage != null ? this.commentLanguage : CommentLanguage.ZH;
         return settings;
     }
 
@@ -338,6 +345,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.showAdvancedSettings = source.showAdvancedSettings;
         this.showAvailableProviders = source.showAvailableProviders;
         this.aiProviderType = source.aiProviderType;
+        this.commentLanguage = source.commentLanguage != null ? source.commentLanguage : CommentLanguage.ZH;
 
         // 如果可用提供商列表有变化，通知监听器并触发持久化
         if (availableProvidersChanged) {
@@ -410,6 +418,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
             return false;
         }
         if (lastUpdateCheck != other.lastUpdateCheck) {
+            return false;
+        }
+        if (commentLanguage != other.commentLanguage) {
             return false;
         }
 
