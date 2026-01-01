@@ -461,51 +461,55 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultGitCliffConfig() {
         return """
             [changelog]
-            header = ""
-            body = "{% for group, commits in commits | group_by(attribute=\\"group\\") %}\
-            {% if group == \\"Features\\" %}\
-            ## ✨ Features\\n\
-            {% elif group == \\"Bug Fixes\\" %}\
-            ## 🐛 Bug Fixes\\n\
-            {% elif group == \\"Refactor\\" %}\
-            ## ♻️ Refactor\\n\
-            {% elif group == \\"Docs\\" %}\
-            ## 📚 Documentation\\n\
-            {% elif group == \\"Performance\\" %}\
-            ## ⚡ Performance\\n\
-            {% elif group == \\"Tests\\" %}\
-            ## ✅ Tests\\n\
-            {% elif group == \\"Build\\" %}\
-            ## 📦 Build\\n\
-            {% elif group == \\"Chore\\" %}\
-            ## 🔧 Chore\\n\
-            {% elif group == \\"CI\\" %}\
-            ## 🔄 CI\\n\
-            {% elif group == \\"Miscellaneous Tasks\\" %}\
-            ## ⚙️ Miscellaneous Tasks\\n\
-            {% else %}\
-            ## {{ group }}\\n\
-            {% endif %}\
-            {% for commit in commits %}- {{ commit.message | trim }}\\n{% endfor %}\\n\
-            {% endfor %}"
-            footer = ""
+            body = ""\"
+            {% if version %}\\
+                ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+            {% else %}\\
+                ## [unreleased]
+            {% endif %}\\
+            {% for group, commits in commits | group_by(attribute="group") %}
+                ### {{ group | striptags | trim | upper_first }}
+                {% for commit in commits %}
+                    - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\\
+                        {% if commit.breaking %}[**breaking**] {% endif %}\\
+                        {{ commit.message | upper_first }}\\
+                {% endfor %}
+            {% endfor %}
+            ""\"
+            trim = true
+            render_always = true
 
             [git]
             conventional_commits = true
             filter_unconventional = false
+            require_conventional = false
             split_commits = false
+            protect_breaking_commits = false
             commit_parsers = [
-              { message = "^feat", group = "Features" },
-              { message = "^fix", group = "Bug Fixes" },
-              { message = "^refactor", group = "Refactor" },
-              { message = "^docs", group = "Docs" },
-              { message = "^perf", group = "Performance" },
-              { message = "^test", group = "Tests" },
-              { message = "^build", group = "Build" },
-              { message = "^chore", group = "Chore" },
-              { message = "^ci", group = "CI" },
-              { message = ".*", group = "Miscellaneous Tasks" }
+                { message = "^feat", group = "<!-- 0 -->🚀 Features" },
+                { message = "^fix", group = "<!-- 1 -->🐛 Bug Fixes" },
+                { message = "^doc", group = "<!-- 3 -->📚 Documentation" },
+                { message = "^perf", group = "<!-- 4 -->⚡ Performance" },
+                { message = "^refactor", group = "<!-- 2 -->🚜 Refactor" },
+                { message = "^style", group = "<!-- 5 -->🎨 Styling" },
+                { message = "^test", group = "<!-- 6 -->🧪 Testing" },
+                { message = "^chore\\\\(release\\\\): prepare for", skip = true },
+                { message = "^chore\\\\(deps.*\\\\)", skip = true },
+                { message = "^chore\\\\(pr\\\\)", skip = true },
+                { message = "^chore\\\\(pull\\\\)", skip = true },
+                { message = "^chore|^ci", group = "<!-- 7 -->⚙️ Miscellaneous Tasks" },
+                { body = ".*security", group = "<!-- 8 -->🛡️ Security" },
+                { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
+                { message = ".*", group = "<!-- 10 -->💼 Other" },
             ]
+            filter_commits = false
+            fail_on_unmatched_commit = false
+            link_parsers = []
+            use_branch_tags = false
+            topo_order = false
+            topo_order_commits = true
+            sort_commits = "oldest"
+            recurse_submodules = false
             """;
     }
 
