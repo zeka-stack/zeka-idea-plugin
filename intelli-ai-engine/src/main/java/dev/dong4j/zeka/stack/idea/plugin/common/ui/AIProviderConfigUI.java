@@ -51,7 +51,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.CommentLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
@@ -102,7 +102,7 @@ public final class AIProviderConfigUI {
     /** 控制是否启用自动更新检查的复选框 */
     private JBCheckBox lastUpdateCheckCheckBox;
     /** 注释语言选择下拉框 */
-    private ComboBox<CommentLanguage> commentLanguageComboBox;
+    private ComboBox<ResponseLanguage> languageComboBox;
     /** 控制是否显示高级设置内容的复选框 */
     private JBCheckBox showAdvancedSettingsCheckBox;
     /** 高级设置内容面板, 用于展示和管理高级配置选项 */
@@ -175,8 +175,8 @@ public final class AIProviderConfigUI {
         // 初始化基础配置组件
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
         lastUpdateCheckCheckBox = new JBCheckBox(AICommonBundle.message("settings.auto.update"));
-        commentLanguageComboBox = new ComboBox<>(CommentLanguage.values());
-        commentLanguageComboBox.setRenderer(new DefaultListCellRenderer() {
+        languageComboBox = new ComboBox<>(ResponseLanguage.values());
+        languageComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list,
                                                           Object value,
@@ -184,13 +184,13 @@ public final class AIProviderConfigUI {
                                                           boolean isSelected,
                                                           boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                if (value instanceof CommentLanguage language) {
+                if (value instanceof ResponseLanguage language) {
                     label.setText(language.getDesc());
                 }
                 return label;
             }
         });
-        commentLanguageComboBox.setSelectedItem(CommentLanguage.ZH);
+        languageComboBox.setSelectedItem(ResponseLanguage.ZH);
 
         // 初始化高级配置组件
         showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
@@ -387,8 +387,8 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public ComboBox<CommentLanguage> getCommentLanguageComboBox() {
-        return commentLanguageComboBox;
+    public ComboBox<ResponseLanguage> getLanguageComboBox() {
+        return languageComboBox;
     }
 
     @NotNull
@@ -545,7 +545,7 @@ public final class AIProviderConfigUI {
      */
     private JPanel createBasicPanel() {
         JPanel panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.comment.language")), commentLanguageComboBox)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.comment.language")), languageComboBox)
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(lastUpdateCheckCheckBox, "settings.auto.update.hint"))
             .getPanel();

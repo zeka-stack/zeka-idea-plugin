@@ -47,6 +47,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -578,8 +579,12 @@ public final class ChangelogService {
         String systemPrompt = settings.systemPrompt;
         if (systemPrompt == null || systemPrompt.trim().isEmpty()) {
             // 使用默认系统提示词
-            systemPrompt = SettingsState.getDefaultSystemPrompt();
+            systemPrompt = SettingsState.getDefaultChangelogSystemPrompt();
         }
+
+        // 替换语言占位符
+        systemPrompt = replaceLanguagePlaceholder(systemPrompt);
+        userPrompt = replaceLanguagePlaceholder(userPrompt);
 
         // 创建 AI 聊天请求
         AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
@@ -643,8 +648,13 @@ public final class ChangelogService {
         SettingsState settings = SettingsState.getInstance();
         String systemPrompt = settings.systemPrompt;
         if (systemPrompt == null || systemPrompt.trim().isEmpty()) {
-            systemPrompt = SettingsState.getDefaultSystemPrompt();
+            systemPrompt = SettingsState.getDefaultChangelogSystemPrompt();
         }
+
+        // 替换语言占位符
+        systemPrompt = replaceLanguagePlaceholder(systemPrompt);
+        userPrompt = replaceLanguagePlaceholder(userPrompt);
+
         return new AIChatRequest(systemPrompt, userPrompt);
     }
 
@@ -759,7 +769,7 @@ public final class ChangelogService {
      */
     @NotNull
     private String callAIServiceForCommitMessage(@NotNull String userPrompt) throws Exception {
-        // 获取系统提示词（使用专门的提交记录生成提示词）
+        // 获取系统提示词（使用专门地提交记录生成提示词）
         final AIChatRequest request = getAiChatRequest(userPrompt);
 
         // 获取 AIService 实例
@@ -1081,31 +1091,41 @@ public final class ChangelogService {
      * @return AIChatRequest 对象, 包含系统提示和用户提示
      */
     private static @NotNull AIChatRequest getAiChatRequest(@NotNull String userPrompt) {
-        String systemPrompt = """
-            你是一位经验丰富的代码审查专家和技术文档编写者。
-            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
-            输出格式为 Conventional Commits：
-            <type>(<scope>): <subject>
+        SettingsState settings = SettingsState.getInstance();
+        String systemPrompt = settings.commitMessageSystemPrompt;
+        if (systemPrompt == null || systemPrompt.trim().isEmpty()) {
+            systemPrompt = SettingsState.getDefaultCommitMessageSystemPrompt();
+        }
 
-            <body(可选，说明动机、影响、兼容性)>
-
-            你需要：
-            1. 分析代码变更的实际内容，而不是依赖提交记录
-            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
-            3. 优先表达设计意图 / 约束变化 / 行为变化
-            4. 如果是重构，请说明“为什么现在要重构”
-            5. 避免描述实现细节
-            6. 忽略无意义的变更（如格式化、空白字符等）
-
-            重要要求：
-            - 只输出提交记录正文，不要解释过程或附加说明
-            - 第一行是简短摘要，使用祈使语气，不要句号
-            - 如需详细说明，空一行后给出正文描述
-            - 避免无意义的空白行或多余的格式符号
-            - 输出必须为中文（type 和 scope 使用常见英文约定）
-            """;
+        // 替换语言占位符
+        systemPrompt = replaceLanguagePlaceholder(systemPrompt);
+        userPrompt = replaceLanguagePlaceholder(userPrompt);
 
         // 创建 AI 聊天请求
         return new AIChatRequest(systemPrompt, userPrompt);
+    }
+
+    /**
+     * 替换提示词中的语言占位符
+     * <p>
+     * 将提示词中的所有 ${language} 占位符替换为实际的语言文本。
+     * 支持多次替换，确保所有占位符都被正确替换。
+     *
+     * @param prompt 包含占位符的提示词
+     * @return 替换后的提示词
+     */
+    @NotNull
+    private static String replaceLanguagePlaceholder(@NotNull String prompt) {
+        // 根据语言选择替换提示词中的语言占位符
+        // 必须在所有其他占位符（如 {version}、{date} 等）替换完成后进行
+        AIProviderSettings providerSettings = AIProviderSettings.getInstance();
+        ResponseLanguage responseLanguage = providerSettings != null && providerSettings.responseLanguage != null
+                                            ? providerSettings.responseLanguage
+                                            : ResponseLanguage.ZH;
+        // 提示词模板使用中文，因此使用 getDescForPrompt() 获取中文文本
+        String languageText = responseLanguage.getDescForPrompt();
+
+        // 替换所有 ${language} 占位符
+        return prompt.replace("${language}", languageText);
     }
 }

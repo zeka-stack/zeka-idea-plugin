@@ -65,9 +65,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: getDefaultSystemPrompt()
      *
-     * @see #getDefaultSystemPrompt()
+     * @see #getDefaultChangelogSystemPrompt()
      */
-    public String systemPrompt = getDefaultSystemPrompt();
+    public String systemPrompt = getDefaultChangelogSystemPrompt();
 
     /**
      * 变更日志模板
@@ -77,9 +77,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: getDefaultChangelogTemplate()
      *
-     * @see #getDefaultChangelogTemplate()
+     * @see #getDefaultChangelogUserPrompt()
      */
-    public String changelogTemplate = getDefaultChangelogTemplate();
+    public String changelogTemplate = getDefaultChangelogUserPrompt();
 
     /**
      * 日报模板
@@ -89,9 +89,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: getDefaultDailyReportTemplate()
      *
-     * @see #getDefaultDailyReportTemplate()
+     * @see #getDefaultDailyReportUserPrompt()
      */
-    public String dailyReportTemplate = getDefaultDailyReportTemplate();
+    public String dailyReportTemplate = getDefaultDailyReportUserPrompt();
 
     /**
      * 周报模板
@@ -101,9 +101,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: getDefaultWeeklyReportTemplate()
      *
-     * @see #getDefaultWeeklyReportTemplate()
+     * @see #getDefaultWeeklyReportUserPrompt()
      */
-    public String weeklyReportTemplate = getDefaultWeeklyReportTemplate();
+    public String weeklyReportTemplate = getDefaultWeeklyReportUserPrompt();
 
     /**
      * 提交记录模板
@@ -113,9 +113,22 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: getDefaultCommitMessageTemplate()
      *
-     * @see #getDefaultCommitMessageTemplate()
+     * @see #getDefaultCommitMessageUserPrompt()
      */
-    public String commitMessageTemplate = getDefaultCommitMessageTemplate();
+    public String commitMessageTemplate = getDefaultCommitMessageUserPrompt();
+
+    /**
+     * 提交消息系统提示词
+     *
+     * <p>用于生成提交消息的系统提示词。
+     * 这个提示词会作为 system 消息发送给 AI 服务，
+     * 用于设定 AI 在生成提交消息时的角色和行为准则。
+     *
+     * <p>默认值: getDefaultCommitMessageSystemPrompt()
+     *
+     * @see #getDefaultCommitMessageSystemPrompt()
+     */
+    public String commitMessageSystemPrompt = getDefaultCommitMessageSystemPrompt();
 
     /**
      * git-cliff 配置
@@ -187,9 +200,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: getDefaultAiReleaseLogPrompt()
      *
-     * @see #getDefaultAiReleaseLogPrompt()
+     * @see #getDefaultReleaseLogUserPrompt()
      */
-    public String aiReleaseLogPrompt = getDefaultAiReleaseLogPrompt();
+    public String aiReleaseLogPrompt = getDefaultReleaseLogUserPrompt();
 
     /**
      * 获取 SettingsState 的单例实例
@@ -237,13 +250,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 默认的系统提示词
      */
     @NotNull
-    public static String getDefaultSystemPrompt() {
+    public static String getDefaultChangelogSystemPrompt() {
         return """
             你是一位经验丰富的软件发布经理和技术文档编写者。
             你的目标是根据 Git 提交记录为软件项目生成清晰、结构化、简洁的变更日志。
             你总是输出格式良好的 Markdown，包含一致的章节结构。
 
             重要要求：
+            - **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
             - 输出的 markdown 内容不要使用 markdown 代码块包裹（如 ```markdown）
             - 直接输出 markdown 格式的内容，不要添加任何代码块标记
             """;
@@ -257,26 +271,27 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 默认的变更日志模板
      */
     @NotNull
-    public static String getDefaultChangelogTemplate() {
+    public static String getDefaultChangelogUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成发布变更日志。
+            请根据以下 Git 提交记录生成发布变更日志（${language}）。
 
             要求：
-            1. 提交记录已经按照提交日期进行了分组，每个日期分组使用三级标题（### 日期）标识。
-            2. 将每个日期分组内的提交记录分类到以下类别：
+            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            2. 提交记录已经按照提交日期进行了分组，每个日期分组使用三级标题（### 日期）标识。
+            3. 将每个日期分组内的提交记录分类到以下类别：
                - ⭐ 新功能
                - 🪲 问题修复
                - ♻️ 代码重构
                - 📓 文档更新
                - 🔧 其他改进
-            3. 每个条目应重写为简洁、易读的描述。
-            4. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"）。
-            5. 严格按照 Markdown 格式输出：
+            4. 每个条目应重写为简洁、易读的描述。
+            5. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"）。
+            6. 严格按照 Markdown 格式输出：
                - 使用二级标题表示版本号（格式：## 版本 {version}）
                - 保持原有的日期分组结构（三级标题：### 日期）
                - 在每个日期分组下，使用四级标题表示每个类别（格式：#### ⭐ 新功能）
-            6. 保持句子简短、客观和技术性。
-            7. 不要在 Markdown 之外包含解释或注释。
+            7. 保持句子简短、客观和技术性。
+            8. 不要在 Markdown 之外包含解释或注释。
 
             版本: {version}
             提交记录（已按日期分组）:
@@ -293,24 +308,25 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 默认的日报模板
      */
     @NotNull
-    public static String getDefaultDailyReportTemplate() {
+    public static String getDefaultDailyReportUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成工作日报。
+            请根据以下 Git 提交记录生成工作日报（${language}）。
 
             要求：
-            1. 按照时间顺序整理提交记录
-            2. 将工作内容分类为：
+            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            2. 按照时间顺序整理提交记录
+            3. 将工作内容分类为：
                - 💻 开发工作
                - 🐛 Bug 修复
                - 📝 文档编写
                - 🔧 代码优化
                - 🧪 测试工作
                - 📋 其他工作
-            3. 每个条目应包含：
+            4. 每个条目应包含：
                - 工作内容描述
                - 涉及的功能或模块
                - 完成情况
-            4. 输出格式为 Markdown，包含：
+            5. 输出格式为 Markdown，包含：
                - 日期标题
                - 工作摘要
                - 详细工作内容（按类别分组）
@@ -332,13 +348,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 默认的周报模板
      */
     @NotNull
-    public static String getDefaultWeeklyReportTemplate() {
+    public static String getDefaultWeeklyReportUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成工作周报。
+            请根据以下 Git 提交记录生成工作周报（${language}）。
 
             要求：
-            1. 按周统计提交记录
-            2. 将工作内容分类为：
+            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            2. 按周统计提交记录
+            3. 将工作内容分类为：
                - 🎯 主要功能开发
                - 🐛 Bug 修复
                - ♻️ 代码重构
@@ -346,11 +363,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 🔧 性能优化
                - 🧪 测试工作
                - 📋 其他工作
-            3. 每个条目应包含：
+            4. 每个条目应包含：
                - 工作内容描述
                - 完成的功能或模块
                - 工作量评估
-            4. 输出格式为 Markdown，包含：
+            5. 输出格式为 Markdown，包含：
                - 周报标题（包含日期范围）
                - 本周工作摘要
                - 详细工作内容（按类别分组）
@@ -374,7 +391,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 默认的提交记录模板
      */
     @NotNull
-    public static String getDefaultCommitMessageTemplate() {
+    public static String getDefaultCommitMessageUserPrompt() {
         return """
             使用 Conventional Commits，输出格式：
             <type>(<scope>): <subject>
@@ -382,16 +399,54 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             <body(可选，说明动机、影响、兼容性)>
 
             规则：
-            1. 优先表达设计意图 / 约束变化 / 行为变化
-            2. 如果是重构，请说明“为什么现在要重构”
-            3. 避免描述实现细节
-            4. 输出必须为中文（type 和 scope 使用常见英文约定）
+            1. **必须使用${language}编写提交消息内容**，这是强制要求，不能使用其他语言
+            2. 优先表达设计意图 / 约束变化 / 行为变化
+            3. 如果是重构，请说明"为什么现在要重构"
+            4. 避免描述实现细节
+            5. type 和 scope 使用常见英文约定（如 feat、fix、refactor 等）
 
             变更内容：
             {codeDiffs}
 
             历史提交(最近3条):
             {recentCommits}
+            """;
+    }
+
+    /**
+     * 获取默认的提交消息系统提示词
+     *
+     * <p>返回用于生成提交消息的默认系统提示词。
+     * 这个提示词会作为 system 消息发送给 AI 服务，
+     * 用于设定 AI 在生成提交消息时的角色和行为准则。
+     *
+     * @return 默认的提交消息系统提示词
+     */
+    @NotNull
+    public static String getDefaultCommitMessageSystemPrompt() {
+        return """
+            你是一位经验丰富的代码审查专家和技术文档编写者。
+            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
+            输出格式为 Conventional Commits：
+            <type>(<scope>): <subject>
+
+            <body(可选，说明动机、影响、兼容性)>
+
+            你需要：
+            1. 分析代码变更的实际内容，而不是依赖提交记录
+            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
+            3. 优先表达设计意图 / 约束变化 / 行为变化
+            4. 如果是重构，请说明"为什么现在要重构"
+            5. 避免描述实现细节
+            6. 忽略无意义的变更（如格式化、空白字符等）
+
+            重要要求：
+            - **必须使用${language}编写提交消息内容**，这是强制要求，不能使用其他语言
+            - 只输出提交记录正文，不要解释过程或附加说明
+            - 第一行是简短摘要，使用祈使语气，不要句号
+            - 如需详细说明，空一行后给出正文描述
+            - 避免无意义的空白行或多余的格式符号
+            - type 和 scope 使用常见英文约定（如 feat、fix、refactor 等）
             """;
     }
 
@@ -455,20 +510,21 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     }
 
     /**
-     * 获取默认的 AI Release Log 提示词
+     * 获取默认的 Release Log 提示词
      * <p>
-     * 返回用于生成 Release Log 的默认 AI 提示词模板。
+     * 返回用于生成 Release Log 的默认提示词模板。
      * 输出格式与 git-cliff 保持一致，按照类别分组，不包含日期分组。
      *
-     * @return 默认的 AI Release Log 提示词
+     * @return 默认的 Release Log 提示词
      */
     @NotNull
-    public static String getDefaultAiReleaseLogPrompt() {
+    public static String getDefaultReleaseLogUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成项目 Release Log。
+            请根据以下 Git 提交记录生成项目 Release Log（${language}）。
 
             要求：
-            1. 将提交记录分类到以下类别（使用二级标题，格式与 git-cliff 保持一致）：
+            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            2. 将提交记录分类到以下类别（使用二级标题，格式与 git-cliff 保持一致）：
                - ## ✨ Features（新功能）
                - ## 🐛 Bug Fixes（问题修复）
                - ## ♻️ Refactor（代码重构）
@@ -479,15 +535,15 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - ## 🔧 Chore（其他改进）
                - ## 🔄 CI（CI/CD 相关）
                - ## ⚙️ Miscellaneous Tasks（其他任务）
-            2. 每个条目应重写为简洁、易读的描述，删除提交信息中的类型前缀（如 feat:、fix: 等）。
-            3. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"、"chore: update"等）。
-            4. 严格按照 Markdown 格式输出：
+            3. 每个条目应重写为简洁、易读的描述，删除提交信息中的类型前缀（如 feat:、fix: 等）。
+            4. 删除无意义或琐碎的提交（例如"更新代码"、"合并分支"、"chore: update"等）。
+            5. 严格按照 Markdown 格式输出：
                - 使用二级标题（##）表示类别，格式：## [表情符号] [类别名称]
                - 每个提交使用列表项（-）表示
                - 只输出分类后的内容，不要添加版本号标题或其他额外信息
-            5. 保持句子简短、客观和技术性。
-            6. 不要在 Markdown 之外包含解释或注释。
-            7. 如果某个类别没有提交记录，则不要输出该类别。无法明确分类到上述类别的提交，应归类到 ## ⚙️ Miscellaneous Tasks 类别中。
+            6. 保持句子简短、客观和技术性。
+            7. 不要在 Markdown 之外包含解释或注释。
+            8. 如果某个类别没有提交记录，则不要输出该类别。无法明确分类到上述类别的提交，应归类到 ## ⚙️ Miscellaneous Tasks 类别中。
 
             提交记录:
 
