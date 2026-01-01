@@ -16,7 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +69,7 @@ public class UniformFileTemplatesHandler implements ProjectActivity {
             // 只在第一次运行时检查更新
             if (hasRun.compareAndSet(false, true) && !ApplicationManager.getApplication().isUnitTestMode()) {
                 // 检查是否启用文件模板功能
-                UniformFormatSettingsState settings = UniformFormatSettingsState.getInstance();
+                CodeStyleSettingsState settings = CodeStyleSettingsState.getInstance();
                 if (!settings.isEnableFileTemplates()) {
                     log.info("File templates disabled, skipping configuration");
                     return Unit.INSTANCE;

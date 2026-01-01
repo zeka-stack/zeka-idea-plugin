@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -74,8 +75,8 @@ public class UniformCodeStyleSchemeProvider {
 
             // 获取配置，判断是否使用全局方案
             boolean useGlobalScheme = false;
-            dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState settings =
-                dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState.getInstance();
+            CodeStyleSettingsState settings =
+                CodeStyleSettingsState.getInstance();
             if (settings.getCodeStyleUpdateSettings() != null) {
                 useGlobalScheme = settings.getCodeStyleUpdateSettings().isUseGlobalScheme();
             }

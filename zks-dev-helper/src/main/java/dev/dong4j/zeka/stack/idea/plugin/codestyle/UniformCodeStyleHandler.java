@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import lombok.extern.slf4j.Slf4j;
@@ -41,14 +41,14 @@ public class UniformCodeStyleHandler implements ProjectActivity {
         try {
             // 只在第一次运行时检查更新
             if (hasRun.compareAndSet(false, true) && !ApplicationManager.getApplication().isUnitTestMode()) {
-                UniformFormatSettingsState settings = UniformFormatSettingsState.getInstance();
+                CodeStyleSettingsState settings = CodeStyleSettingsState.getInstance();
                 if (!settings.isEnableCodeStyle()) {
                     log.info("Code style disabled, skipping configuration");
                     return Unit.INSTANCE;
                 }
 
                 // 检查自动更新配置
-                UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings =
+                CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings =
                     settings.getCodeStyleUpdateSettings();
                 if (updateSettings != null && updateSettings.isAutoUpdate() &&
                     updateSettings.getDownloadUrl() != null && !updateSettings.getDownloadUrl().trim().isEmpty()) {

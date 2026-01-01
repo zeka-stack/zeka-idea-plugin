@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.settings;
+package dev.dong4j.zeka.stack.idea.plugin.settings.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
@@ -19,26 +19,36 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.codestyle.CodeStyleDownloadManager;
+import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.HelperBundle;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * ZKS Dev Helper 插件设置面板
+ * 代码样式设置面板
  * <p>
- * 该类用于展示和管理 ZKS Dev Helper 插件的设置界面，提供代码样式模块（文件模板、Live Template、代码风格）等功能的开关配置。
+ * 该类用于展示和管理代码样式相关的设置界面，提供代码样式模块（文件模板、Live Template、代码风格）等功能的开关配置。
  * 用户可以通过该面板对插件的各项功能进行启用或禁用设置，并将配置保存或恢复到指定的设置对象中。
- * 后续会扩展支持 MyBatis、Proxyer 等其他功能模块的配置界面。
+ * 该类位于 {@code settings.ui} 包中，作为二级菜单的设置面板。
+ * <p>
+ * 目录结构说明：
+ * <ul>
+ *   <li>{@code settings.configurable} - 配置类（Configurable 接口实现）</li>
+ *   <li>{@code settings.ui} - UI 面板类（Panel 类）</li>
+ *   <li>{@code settings.state} - 状态类（PersistentStateComponent 实现）</li>
+ * </ul>
  *
  * @author dong4j
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2025.10.25
  * @since 1.0.0
+ * @see dev.dong4j.zeka.stack.idea.plugin.settings.configurable.CodeStyleSettingsConfigurable
+ * @see dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState
  */
 @Slf4j
 @Data
-public class UniformFormatSettingsPanel {
+public class CodeStyleSettingsPanel {
 
     /**
      * 主界面主面板，用于承载主要功能组件和布局
@@ -54,8 +64,6 @@ public class UniformFormatSettingsPanel {
     private JBCheckBox enableLiveTemplatesCheckBox;
     /** 启用代码样式检查的复选框 */
     private JBCheckBox enableCodeStyleCheckBox;
-    /** 描述标签，用于显示相关信息 */
-    private JBLabel descriptionLabel;
 
     // ========== 代码样式更新配置组件 ==========
     /** 自动更新代码样式复选框 */
@@ -78,7 +86,7 @@ public class UniformFormatSettingsPanel {
      * <p>
      * 调用初始化组件方法，完成面板的初始化工作
      */
-    public UniformFormatSettingsPanel() {
+    public CodeStyleSettingsPanel() {
         initializeComponents();
     }
 
@@ -100,24 +108,6 @@ public class UniformFormatSettingsPanel {
         enableCodeStyleCheckBox = new JBCheckBox(
             HelperBundle.message("settings.codestyle.enable.code.style.label"));
 
-        // 构建描述文本（使用国际化）
-        String descriptionHtml = "<html>" +
-                                 "<p>" + HelperBundle.message("settings.description.title") + "</p>" +
-                                 "<p><b>" + HelperBundle.message("settings.description.current.features") + "</b></p>" +
-                                 "<ul>" +
-                                 "<li><b>" + HelperBundle.message("settings.description.file.templates") + "</b></li>" +
-                                 "<li><b>" + HelperBundle.message("settings.description.live.templates") + "</b></li>" +
-                                 "<li><b>" + HelperBundle.message("settings.description.code.style") + "</b></li>" +
-                                 "</ul>" +
-                                 "<p><b>" + HelperBundle.message("settings.description.planned.features") + "</b></p>" +
-                                 "<ul>" +
-                                 "<li>" + HelperBundle.message("settings.description.planned.mybatis") + "</li>" +
-                                 "<li>" + HelperBundle.message("settings.description.planned.proxyer") + "</li>" +
-                                 "<li>" + HelperBundle.message("settings.description.planned.more") + "</li>" +
-                                 "</ul>" +
-                                 "</html>";
-        descriptionLabel = new JBLabel(descriptionHtml);
-
         // 设置默认值
         enableFileTemplatesCheckBox.setSelected(true);
         enableLiveTemplatesCheckBox.setSelected(true);
@@ -128,8 +118,6 @@ public class UniformFormatSettingsPanel {
 
         // 使用 FormBuilder 创建布局
         mainPanel = FormBuilder.createFormBuilder()
-            .addComponent(descriptionLabel)
-            .addSeparator()
             .addComponent(enableFileTemplatesCheckBox)
             .addComponent(enableLiveTemplatesCheckBox)
             .addComponent(enableCodeStyleCheckBox)
@@ -290,14 +278,14 @@ public class UniformFormatSettingsPanel {
      * @param settings 要比较的设置状态对象
      * @return 如果当前设置与给定设置状态不同，返回 true；否则返回 false
      */
-    public boolean isModified(UniformFormatSettingsState settings) {
+    public boolean isModified(CodeStyleSettingsState settings) {
         boolean basicModified = enableFileTemplatesCheckBox.isSelected() != settings.isEnableFileTemplates() ||
                                 enableLiveTemplatesCheckBox.isSelected() != settings.isEnableLiveTemplates() ||
                                 enableCodeStyleCheckBox.isSelected() != settings.isEnableCodeStyle();
 
         // 检查代码样式更新配置
-        UniformFormatSettingsState.CodeStyleUpdateSettings currentUpdateSettings = getCodeStyleUpdateSettings();
-        UniformFormatSettingsState.CodeStyleUpdateSettings savedUpdateSettings = settings.getCodeStyleUpdateSettings();
+        CodeStyleSettingsState.CodeStyleUpdateSettings currentUpdateSettings = getCodeStyleUpdateSettings();
+        CodeStyleSettingsState.CodeStyleUpdateSettings savedUpdateSettings = settings.getCodeStyleUpdateSettings();
 
         boolean updateModified = false;
         if (currentUpdateSettings != null && savedUpdateSettings != null) {
@@ -321,13 +309,13 @@ public class UniformFormatSettingsPanel {
      *
      * @param settings 格式设置状态对象，用于存储配置信息
      */
-    public void apply(UniformFormatSettingsState settings) {
+    public void apply(CodeStyleSettingsState settings) {
         settings.setEnableFileTemplates(enableFileTemplatesCheckBox.isSelected());
         settings.setEnableLiveTemplates(enableLiveTemplatesCheckBox.isSelected());
         settings.setEnableCodeStyle(enableCodeStyleCheckBox.isSelected());
 
         // 应用代码样式更新配置
-        UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings = getCodeStyleUpdateSettings();
+        CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings = getCodeStyleUpdateSettings();
         settings.setCodeStyleUpdateSettings(updateSettings);
     }
 
@@ -338,13 +326,13 @@ public class UniformFormatSettingsPanel {
      *
      * @param settings 统一格式设置状态对象
      */
-    public void reset(UniformFormatSettingsState settings) {
+    public void reset(CodeStyleSettingsState settings) {
         enableFileTemplatesCheckBox.setSelected(settings.isEnableFileTemplates());
         enableLiveTemplatesCheckBox.setSelected(settings.isEnableLiveTemplates());
         enableCodeStyleCheckBox.setSelected(settings.isEnableCodeStyle());
 
         // 重置代码样式更新配置
-        UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings = settings.getCodeStyleUpdateSettings();
+        CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings = settings.getCodeStyleUpdateSettings();
         if (updateSettings != null) {
             autoUpdateCodeStyleCheckBox.setSelected(updateSettings.isAutoUpdate());
             downloadUrlField.setText(updateSettings.getDownloadUrl() != null ? updateSettings.getDownloadUrl() : "");
@@ -369,9 +357,9 @@ public class UniformFormatSettingsPanel {
      * @return 代码样式更新配置
      */
     @NotNull
-    private UniformFormatSettingsState.CodeStyleUpdateSettings getCodeStyleUpdateSettings() {
-        UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings =
-            new UniformFormatSettingsState.CodeStyleUpdateSettings();
+    private CodeStyleSettingsState.CodeStyleUpdateSettings getCodeStyleUpdateSettings() {
+        CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings =
+            new CodeStyleSettingsState.CodeStyleUpdateSettings();
         updateSettings.setAutoUpdate(autoUpdateCodeStyleCheckBox.isSelected());
         updateSettings.setDownloadUrl(downloadUrlField.getText().trim());
         updateSettings.setUseGlobalScheme(useGlobalSchemeCheckBox.isSelected());
