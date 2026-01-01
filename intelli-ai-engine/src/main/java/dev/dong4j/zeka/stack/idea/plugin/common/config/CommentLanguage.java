@@ -6,7 +6,21 @@ import org.jetbrains.annotations.Nullable;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
- * Comment Language
+ * 注释语言枚举
+ * <p>
+ * 定义支持的注释生成语言类型，包括：
+ * <ul>
+ *   <li>中文 (ZH) - 简体中文</li>
+ *   <li>英文 (EN) - English</li>
+ *   <li>日文 (JA) - 日本語</li>
+ *   <li>韩文 (KO) - 한국어</li>
+ *   <li>法文 (FR) - Français</li>
+ *   <li>德文 (DE) - Deutsch</li>
+ *   <li>西班牙文 (ES) - Español</li>
+ *   <li>俄文 (RU) - Русский</li>
+ *   <li>葡萄牙文 (PT) - Português</li>
+ *   <li>意大利文 (IT) - Italiano</li>
+ * </ul>
  *
  * @author dong4j
  * @date 2026-01-01 04:28:45
@@ -22,7 +36,47 @@ public enum CommentLanguage {
     /**
      * 英文
      */
-    EN("en", "英文");
+    EN("en", "英文"),
+
+    /**
+     * 日文
+     */
+    JA("ja", "日文"),
+
+    /**
+     * 韩文
+     */
+    KO("ko", "韩文"),
+
+    /**
+     * 法文
+     */
+    FR("fr", "法文"),
+
+    /**
+     * 德文
+     */
+    DE("de", "德文"),
+
+    /**
+     * 西班牙文
+     */
+    ES("es", "西班牙文"),
+
+    /**
+     * 俄文
+     */
+    RU("ru", "俄文"),
+
+    /**
+     * 葡萄牙文
+     */
+    PT("pt", "葡萄牙文"),
+
+    /**
+     * 意大利文
+     */
+    IT("it", "意大利文");
 
     /**
      * 语言代码值
@@ -64,9 +118,18 @@ public enum CommentLanguage {
      */
     @NotNull
     public String getDesc() {
-        return this == ZH
-               ? AICommonBundle.message("settings.comment.language.chinese")
-               : AICommonBundle.message("settings.comment.language.english");
+        return switch (this) {
+            case ZH -> AICommonBundle.message("settings.comment.language.chinese");
+            case EN -> AICommonBundle.message("settings.comment.language.english");
+            case JA -> AICommonBundle.message("settings.comment.language.japanese");
+            case KO -> AICommonBundle.message("settings.comment.language.korean");
+            case FR -> AICommonBundle.message("settings.comment.language.french");
+            case DE -> AICommonBundle.message("settings.comment.language.german");
+            case ES -> AICommonBundle.message("settings.comment.language.spanish");
+            case RU -> AICommonBundle.message("settings.comment.language.russian");
+            case PT -> AICommonBundle.message("settings.comment.language.portuguese");
+            case IT -> AICommonBundle.message("settings.comment.language.italian");
+        };
     }
 
     /**

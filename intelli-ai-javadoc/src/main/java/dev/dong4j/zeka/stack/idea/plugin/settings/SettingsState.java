@@ -514,10 +514,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>模板特点:
      * <ul>
-     *   <li>要求使用中文编写</li>
+     *   <li>支持通过${commentLanguage}变量指定注释语言</li>
      *   <li>包含完整的 Javadoc/KDoc 格式</li>
      *   <li>提供 Java 和 Kotlin 两种示例</li>
      *   <li>使用 %s 作为代码占位符</li>
+     *   <li>支持代码示例格式：使用 &lt;pre&gt;{@code ... }&lt;/pre&gt; 包裹代码片段</li>
      * </ul>
      *
      * @return 默认的类 Prompt 模板
@@ -543,12 +544,17 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             6. 如果是接口，需要说明接口的用途和实现要求
             7. 如果是枚举，需要说明枚举的用途和各个值的含义
             8. 如果有特殊的设计模式，需要说明
-            9. 添加 @author、@version、@email、@date、@since 标签且保存顺序
-               - 如果已存在 @author 且添加了作者信息则直接使用, 否则使用 ${author} 作为作者
-               - 如果已存在 @version 则保存不变, 否则使用 1.0.0 作为版本号
-               - 如果已存在 @email 则保持不变, 否则使用 ${email} 作为邮箱
-               - 如果已存在 @date ,需要格式化为 yyyy.mm.dd, 否则使用 ${date} 作为时间戳
-               - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
+            9. **代码格式规则（重要）**：如果注释中需要包含代码片段，必须使用以下格式：
+               <pre>{@code
+               代码片段
+               }</pre>
+               注意：代码片段必须放在 {@code} 标签内，并且外层使用 <pre> 标签包裹
+            10. 添加 @author、@version、@email、@date、@since 标签且保存顺序
+                - 如果已存在 @author 且添加了作者信息则直接使用, 否则使用 ${author} 作为作者
+                - 如果已存在 @version 则保存不变, 否则使用 1.0.0 作为版本号
+                - 如果已存在 @email 则保持不变, 否则使用 ${email} 作为邮箱
+                - 如果已存在 @date ,需要格式化为 yyyy.mm.dd, 否则使用 ${date} 作为时间戳
+                - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
 
             # 示例说明
             **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
@@ -591,6 +597,29 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              * @since 1.0.0
              */
 
+            示例3 - 包含代码示例的类注释：
+            输入代码：
+            public class ConfigManager {
+                public void loadConfig(String path) { ... }
+            }
+
+            输出注释（中文示例）：
+            /**
+             * 配置管理器类
+             * <p>用于加载和管理应用程序配置信息
+             * <p>使用示例：
+             * <pre>{@code
+             * ConfigManager manager = new ConfigManager();
+             * manager.loadConfig("/path/to/config.properties");
+             * }</pre>
+             *
+             * @author dong4j
+             * @version 1.0.0
+             * @email "mailto:dong4j@gmail.com"
+             * @date 2025.10.24
+             * @since 1.0.0
+             */
+
             待处理的代码片段:
 
             %s
@@ -610,6 +639,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *   <li>强调 @param、@return、@throws 标签</li>
      *   <li>提供 Java 和 Kotlin 两种示例</li>
      *   <li>使用 %s 作为代码占位符</li>
+     *   <li>支持代码示例格式：使用 &lt;pre&gt;{@code ... }&lt;/pre&gt; 包裹代码片段</li>
      * </ul>
      *
      * @return 默认的方法 Prompt 模板
@@ -636,6 +666,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             7. 不要添加不存在的参数,返回值和异常的注释标签
             8. 可以使用 @since, @Deprecated 等标签
             9. Kotlin: 注意可空类型（如 String?）和默认参数
+            10. **代码格式规则（重要）**：如果注释中需要包含代码片段，必须使用以下格式：
+                <pre>{@code
+                代码片段
+                }</pre>
+                注意：代码片段必须放在 {@code} 标签内，并且外层使用 <pre> 标签包裹
 
             # 示例说明
             **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
@@ -669,6 +704,26 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
              *
              * @param userId 用户ID
              * @return 用户名称，如果用户不存在则返回 null
+             */
+
+            示例3 - 包含代码示例的方法注释：
+            输入代码：
+            public List<User> findUsersByCondition(Predicate<User> condition) {
+                return users.stream().filter(condition).collect(Collectors.toList());
+            }
+
+            输出注释（中文示例）：
+            /**
+             * 根据条件查找用户列表
+             * <p>使用指定的条件过滤用户列表并返回匹配的用户
+             * <p>使用示例：
+             * <pre>{@code
+             * List<User> activeUsers = findUsersByCondition(user -> user.isActive());
+             * List<User> adminUsers = findUsersByCondition(user -> user.getRole().equals("admin"));
+             * }</pre>
+             *
+             * @param condition 用户过滤条件，不能为 null
+             * @return 匹配条件的用户列表，如果没有匹配的用户则返回空列表
              */
 
             待处理的代码片段:
