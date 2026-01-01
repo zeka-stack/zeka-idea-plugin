@@ -514,7 +514,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>模板特点:
      * <ul>
-     *   <li>支持通过${commentLanguage}变量指定注释语言</li>
+     *   <li>支持通过${language}变量指定注释语言</li>
      *   <li>包含完整的 Javadoc/KDoc 格式</li>
      *   <li>提供 Java 和 Kotlin 两种示例</li>
      *   <li>使用 %s 作为代码占位符</li>
@@ -526,7 +526,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultClassPromptTemplate() {
         return """
-            请为以下类/接口/枚举/对象生成类级别的文档注释（${commentLanguage}）。
+            请为以下类/接口/枚举/对象生成类级别的文档注释（${language}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
@@ -536,7 +536,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            1. **必须使用${language}编写注释内容**，这是强制要求，不能使用其他语言
             2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述类/接口/枚举/对象的职责、主要功能和使用场景
             4. Java: 如果是工具类，需要说明主要提供的功能
@@ -557,7 +557,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
 
             # 示例说明
-            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+            **重要：以下示例仅用于展示格式，实际输出必须使用${language}编写注释内容。**
 
             示例1 - Java 代码：
             输入代码：
@@ -635,7 +635,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>模板特点:
      * <ul>
-     *   <li>支持通过${commentLanguage}变量指定注释语言（中文或英文）</li>
+     *   <li>支持通过${language}变量指定注释语言（中文或英文）</li>
      *   <li>强调 @param、@return、@throws 标签</li>
      *   <li>提供 Java 和 Kotlin 两种示例</li>
      *   <li>使用 %s 作为代码占位符</li>
@@ -647,7 +647,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultMethodPromptTemplate() {
         return """
-            请为以下方法/函数生成文档注释（${commentLanguage}）。
+            请为以下方法/函数生成文档注释（${language}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
@@ -657,7 +657,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            1. **必须使用${language}编写注释内容**，这是强制要求，不能使用其他语言
             2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述方法/函数的功能、参数、返回值、异常
             4. 如果有参数, 必须包含 @param 标签
@@ -673,7 +673,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 注意：代码片段必须放在 {@code} 标签内，并且外层使用 <pre> 标签包裹
 
             # 示例说明
-            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+            **重要：以下示例仅用于展示格式，实际输出必须使用${language}编写注释内容。**
 
             示例1 - Java 代码：
             输入代码：
@@ -752,7 +752,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultFieldPromptTemplate() {
         return """
-            请为以下字段/属性生成文档注释（${commentLanguage}）。
+            请为以下字段/属性生成文档注释（${language}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
@@ -762,7 +762,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            1. **必须使用${language}编写注释内容**，这是强制要求，不能使用其他语言
             2. 必须返回完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述字段/属性的用途和含义
             4. **格式规则（重要）**：
@@ -771,7 +771,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             5. Kotlin: 注意属性的可空类型（如 String?）和可变性（var/val）
 
             # 示例说明
-            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+            **重要：以下示例仅用于展示格式，实际输出必须使用${language}编写注释内容。**
 
             示例1 - Java 简单字段：
             输入：private String username;
@@ -823,7 +823,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultTestPromptTemplate() {
         return """
-            请为以下测试方法/函数生成文档注释（${commentLanguage}）。
+            请为以下测试方法/函数生成文档注释（${language}）。
             请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
 
             # 重要说明
@@ -833,14 +833,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
 
             # 格式要求
-            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            1. **必须使用${language}编写注释内容**，这是强制要求，不能使用其他语言
             2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释应描述：测试目标、测试场景、预期结果
             4. 如果代码中有 @link 引用，请在注释中使用 {@link ClassName#methodName} 格式
             5. 如果运行单元测试需要特殊的场景, 尽量添加上说明
 
             # 示例说明
-            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+            **重要：以下示例仅用于展示格式，实际输出必须使用${language}编写注释内容。**
 
             示例1 - Java 代码：
             输入代码：
@@ -904,7 +904,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultSystemPromptTemplate() {
         return """
             你是一个专业的 Java/Kotlin 开发工程师，专门负责为代码生成高质量的文档注释,
-            精通 Java 和 Kotlin 编程语言，以及 Javadoc 和 KDoc 规范，能够准确理解代码逻辑并生成清晰、准确的${commentLanguage}注释。
+            精通 Java 和 Kotlin 编程语言，以及 Javadoc 和 KDoc 规范，能够准确理解代码逻辑并生成清晰、准确的${language}注释。
             现在的任务是分析用户提供的代码片段，自动识别代码语言（Java 或 Kotlin），并生成符合相应标准的注释。
 
             重要要求：
@@ -913,8 +913,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
             - Javadoc 和 KDoc 都使用相同的注释格式（/** */）和标签格式（@param, @return, @throws 等）
             - 注释内容要准确描述代码的功能和用途
-            - **语言要求（强制）：必须使用${commentLanguage}编写所有注释内容，这是绝对要求，不能使用其他语言**
-              * 无论示例使用什么语言，都必须严格按照${commentLanguage}的要求输出
+            - **语言要求（强制）：必须使用${language}编写所有注释内容，这是绝对要求，不能使用其他语言**
+              * 无论示例使用什么语言，都必须严格按照${language}的要求输出
             """;
     }
 
@@ -948,7 +948,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 保留原有注释中正确的部分，只修复错误的部分
 
             # 修复要求
-            1. 重要规则: **检查注释语言是否为（${commentLanguage}），如果不一致必须修改为${commentLanguage}**
+            1. 重要规则: **检查注释语言是否为（${language}），如果不一致必须修改为${language}**
             2. 检查注释描述是否准确反映代码的功能, 如果原有注释与代码完全匹配，只需返回原注释（不做修改）
             3. 检查 @param 标签是否与方法的实际参数匹配, 如果参数不存在, 需要删除存在的 @param 标签
             4. 检查 @return 标签是否与方法的实际返回值匹配, 如果返回 void, 需要删除存在的 @return 标签
@@ -956,7 +956,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             6. 检查注释格式是否符合 Javadoc/KDoc 规范
 
             # 格式要求
-            1. **必须使用${commentLanguage}编写注释内容**，这是强制要求，不能使用其他语言
+            1. **必须使用${language}编写注释内容**，这是强制要求，不能使用其他语言
             2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
             3. 注释要准确描述代码的功能、参数、返回值、异常
             4. 如果有参数, 必须包含 @param 标签
@@ -965,7 +965,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             7. 不要添加不存在的参数、返回值和异常的注释标签
 
             # 示例说明
-            **重要：以下示例仅用于展示格式，实际输出必须使用${commentLanguage}编写注释内容。**
+            **重要：以下示例仅用于展示格式，实际输出必须使用${language}编写注释内容。**
 
             示例1 - 修复错误的参数描述
             输入代码：

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.CommentLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -63,32 +63,32 @@ public final class AIRequestComposer {
         // 根据语言选择替换提示词中的语言占位符
         // 必须在所有其他占位符（如 ${author}、${date} 等）替换完成后进行
         AIProviderSettings providerSettings = AIProviderSettings.getInstance();
-        CommentLanguage commentLanguage = providerSettings != null && providerSettings.commentLanguage != null
-                                          ? providerSettings.commentLanguage
-                                          : CommentLanguage.ZH;
-        // 提示词模板使用中文，因此使用 getDescForPrompt() 获取中文文本
-        String languageText = commentLanguage.getDescForPrompt();
+        ResponseLanguage responseLanguage = providerSettings != null && providerSettings.responseLanguage != null
+                                            ? providerSettings.responseLanguage
+                                            : ResponseLanguage.ZH;
+        // 提示词模板使用中文，因此使用 getDesc() 获取中文文本
+        String languageText = responseLanguage.getDesc();
 
-        // 替换系统提示词和用户提示词中的所有 ${commentLanguage} 占位符
-        systemPrompt = replaceCommentLanguagePlaceholder(systemPrompt, languageText);
-        userPrompt = replaceCommentLanguagePlaceholder(userPrompt, languageText);
+        // 替换系统提示词和用户提示词中的所有 ${language} 占位符
+        systemPrompt = replaceLanguagePlaceholder(systemPrompt, languageText);
+        userPrompt = replaceLanguagePlaceholder(userPrompt, languageText);
 
         int tokenEstimate = TokenCounter.estimateTokens(systemPrompt) + TokenCounter.estimateTokens(userPrompt);
         return new AIChatRequest(systemPrompt, userPrompt, tokenEstimate);
     }
 
     /**
-     * 替换提示词中的注释语言占位符
+     * 替换提示词中的语言占位符
      * <p>
-     * 将提示词中的所有 ${commentLanguage} 占位符替换为实际的语言文本。
+     * 将提示词中的所有 ${language} 占位符替换为实际的语言文本。
      * 支持多次替换，确保所有占位符都被正确替换。
      *
      * @param prompt       包含占位符的提示词
      * @param languageText 要替换的语言文本（"中文" 或 "英文"）
      * @return 替换后的提示词
      */
-    private static String replaceCommentLanguagePlaceholder(@NotNull String prompt, @NotNull String languageText) {
-        return prompt.replace("${commentLanguage}", languageText);
+    private static String replaceLanguagePlaceholder(@NotNull String prompt, @NotNull String languageText) {
+        return prompt.replace("${language}", languageText);
     }
 
     /**

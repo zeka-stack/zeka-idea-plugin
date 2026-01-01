@@ -27,7 +27,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
  * @version hello.world
  * @since hello.world
  */
-public enum CommentLanguage {
+public enum ResponseLanguage {
     /**
      * 中文
      */
@@ -94,7 +94,7 @@ public enum CommentLanguage {
      * @param value 语言代码值
      * @param desc  语言显示描述
      */
-    CommentLanguage(@NotNull String value, @NotNull String desc) {
+    ResponseLanguage(@NotNull String value, @NotNull String desc) {
         this.value = value;
         this.desc = desc;
     }
@@ -151,8 +151,8 @@ public enum CommentLanguage {
      * @return 对应的枚举值，如果未找到则返回默认值 ZH
      */
     @NotNull
-    public static CommentLanguage fromValue(@NotNull String value) {
-        for (CommentLanguage language : values()) {
+    public static ResponseLanguage fromValue(@NotNull String value) {
+        for (ResponseLanguage language : values()) {
             if (language.value.equals(value)) {
                 return language;
             }
@@ -167,7 +167,7 @@ public enum CommentLanguage {
      * @return 对应的枚举值，如果未找到或 value 为 null 则返回默认值 ZH
      */
     @NotNull
-    public static CommentLanguage fromValueOrNull(@Nullable String value) {
+    public static ResponseLanguage fromValueOrNull(@Nullable String value) {
         if (value == null || value.isEmpty()) {
             return ZH;
         }

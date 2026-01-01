@@ -812,7 +812,7 @@ public class ChangelogSettingsPanel {
      * 将 AI Release Log 提示词文本区域重置为默认提示词。
      */
     private void resetAiReleaseLogPrompt() {
-        aiReleaseLogPromptTextArea.setText(SettingsState.getDefaultAiReleaseLogPrompt());
+        aiReleaseLogPromptTextArea.setText(SettingsState.getDefaultReleaseLogUserPrompt());
     }
 
     /**
@@ -1113,19 +1113,19 @@ public class ChangelogSettingsPanel {
     private void resetPromptToDefault(String promptType, JBTextArea textArea) {
         switch (promptType) {
             case "system":
-                textArea.setText(SettingsState.getDefaultSystemPrompt());
+                textArea.setText(SettingsState.getDefaultChangelogSystemPrompt());
                 break;
             case "changelog":
-                textArea.setText(SettingsState.getDefaultChangelogTemplate());
+                textArea.setText(SettingsState.getDefaultChangelogUserPrompt());
                 break;
             case "daily.report":
-                textArea.setText(SettingsState.getDefaultDailyReportTemplate());
+                textArea.setText(SettingsState.getDefaultDailyReportUserPrompt());
                 break;
             case "weekly.report":
-                textArea.setText(SettingsState.getDefaultWeeklyReportTemplate());
+                textArea.setText(SettingsState.getDefaultWeeklyReportUserPrompt());
                 break;
             case "commit.message":
-                textArea.setText(SettingsState.getDefaultCommitMessageTemplate());
+                textArea.setText(SettingsState.getDefaultCommitMessageUserPrompt());
                 break;
         }
         adjustTextAreaSize(textArea);

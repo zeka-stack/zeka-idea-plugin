@@ -14,6 +14,8 @@ import com.intellij.vcs.log.VcsLogDataKeys;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -209,11 +211,9 @@ public abstract class AbstractGitLogAction extends AnAction {
             "toolwindow.title.short",
             ChangelogBundle.message(getTextKey()),
             selectedHashes.size(),
-            java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
-                                                        );
+            LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
-            ChangelogToolWindowService.getInstance(project)
-                .openSession(toolWindowTitle);
+            ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle);
 
         // 在后台任务中生成内容
         String progressTitle = ChangelogBundle.message(getProgressTitleKey());
