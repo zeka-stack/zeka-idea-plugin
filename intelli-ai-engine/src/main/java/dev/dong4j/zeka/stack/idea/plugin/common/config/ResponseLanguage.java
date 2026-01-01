@@ -31,7 +31,11 @@ public enum ResponseLanguage {
     /**
      * 中文
      */
-    ZH("zh", "中文"),
+    ZH("zh", "简体中文"),
+    /**
+     * 繁体中文
+     */
+    ZH_TRADITIONAL("zh-TW", "繁体中文"),
 
     /**
      * 英文
@@ -119,7 +123,8 @@ public enum ResponseLanguage {
     @NotNull
     public String getDesc() {
         return switch (this) {
-            case ZH -> AICommonBundle.message("settings.comment.language.chinese");
+            case ZH -> AICommonBundle.message("settings.comment.language.chinese.simplified");
+            case ZH_TRADITIONAL -> AICommonBundle.message("settings.comment.language.chinese.traditional");
             case EN -> AICommonBundle.message("settings.comment.language.english");
             case JA -> AICommonBundle.message("settings.comment.language.japanese");
             case KO -> AICommonBundle.message("settings.comment.language.korean");

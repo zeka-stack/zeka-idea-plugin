@@ -66,8 +66,8 @@ public final class AIRequestComposer {
         ResponseLanguage responseLanguage = providerSettings != null && providerSettings.responseLanguage != null
                                             ? providerSettings.responseLanguage
                                             : ResponseLanguage.ZH;
-        // 提示词模板使用中文，因此使用 getDesc() 获取中文文本
-        String languageText = responseLanguage.getDesc();
+        // 提示词模板使用中文，因此使用 getDescForPrompt() 获取中文文本
+        String languageText = responseLanguage.getDescForPrompt();
 
         // 替换系统提示词和用户提示词中的所有 ${language} 占位符
         systemPrompt = replaceLanguagePlaceholder(systemPrompt, languageText);

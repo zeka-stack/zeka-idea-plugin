@@ -692,7 +692,14 @@ public class NacosSettingsPanel {
     }
 
     private void openLocalNacosDir() {
-        String path = LocalRegistryConstants.NACOS_DIR;
+        String version = (String) versionComboBox.getSelectedItem();
+        if (StringUtils.isBlank(version)) {
+            version = SettingsState.getInstance().localNacosVersion;
+        }
+        if (StringUtils.isBlank(version)) {
+            version = "2.4.3";
+        }
+        String path = LocalRegistryConstants.getNacosDir(version);
         try {
             File dir = new File(path);
             if (!dir.exists()) {

@@ -23,12 +23,6 @@ public class LocalRegistryConstants {
     public static final String LOCAL_REGISTRY_LOG_DIR;
     /** 本地注册中心临时日志文件 */
     public static final String LOCAL_REGISTRY_TMP_LOG;
-    /** Nacos 目录 */
-    public static final String NACOS_DIR;
-    /** Nacos bin 目录 */
-    public static final String NACOS_BIN_DIR;
-    /** Nacos 日志目录 */
-    public static final String NACOS_LOG_DIR;
     /** Nacos 远程下载地址 */
     public static final String LOCAL_USERNAME;
 
@@ -83,12 +77,6 @@ public class LocalRegistryConstants {
         return LOCAL_REGISTRY_PKG_DIR + File.separator + "nacos-server-" + version + ".zip";
     }
 
-    /** Nacos Windows 启动文件 */
-    public static final String NACOS_START_UP_FILE_WIN;
-    /** Nacos Mac 启动文件 */
-    public static final String NACOS_START_UP_FILE_MAC;
-    /** Nacos 启动日志文件 */
-    public static final String NACOS_START_LOG;
     /** Nacos 测试 URL */
     public static final String NACOS_TEST_URL = "http://127.0.0.1:8848/nacos/index.html";
     /** Nacos 使用的端口列表 */
@@ -99,16 +87,70 @@ public class LocalRegistryConstants {
         EDAS_HOME = var10000 + File.separator + ".zeka-stack";
         REGISTRY_DIR = EDAS_HOME + File.separator + "registry";
         LOCAL_REGISTRY_DIR = REGISTRY_DIR + File.separator + "local";
-        LOCAL_REGISTRY_PKG_DIR = LOCAL_REGISTRY_DIR + File.separator + "pkg";
+        LOCAL_REGISTRY_PKG_DIR = EDAS_HOME + File.separator + "plugin" + File.separator + "nacos" + File.separator + "dists";
         LOCAL_REGISTRY_LOG_DIR = LOCAL_REGISTRY_DIR + File.separator + "logs";
         LOCAL_REGISTRY_TMP_LOG = LOCAL_REGISTRY_DIR + File.separator + "temp_log";
-        NACOS_DIR = LOCAL_REGISTRY_DIR + File.separator + "nacos";
-        NACOS_BIN_DIR = NACOS_DIR + File.separator + "bin";
-        NACOS_LOG_DIR = NACOS_DIR + File.separator + "logs";
-        NACOS_START_UP_FILE_WIN = NACOS_BIN_DIR + File.separator + "startup.cmd";
-        NACOS_START_UP_FILE_MAC = NACOS_BIN_DIR + File.separator + "startup.sh";
-        NACOS_START_LOG = NACOS_LOG_DIR + File.separator + "start.out";
         NACOS_PORTS = new int[] {8848};
         LOCAL_USERNAME = "localman";
+    }
+
+    /**
+     * 获取 Nacos 目录（根据版本号）
+     *
+     * @param version Nacos 版本号
+     * @return Nacos 目录路径
+     */
+    public static String getNacosDir(String version) {
+        return EDAS_HOME + File.separator + "plugin" + File.separator + "nacos" + File.separator + version;
+    }
+
+    /**
+     * 获取 Nacos bin 目录（根据版本号）
+     *
+     * @param version Nacos 版本号
+     * @return Nacos bin 目录路径
+     */
+    public static String getNacosBinDir(String version) {
+        return getNacosDir(version) + File.separator + "bin";
+    }
+
+    /**
+     * 获取 Nacos 日志目录（根据版本号）
+     *
+     * @param version Nacos 版本号
+     * @return Nacos 日志目录路径
+     */
+    public static String getNacosLogDir(String version) {
+        return getNacosDir(version) + File.separator + "logs";
+    }
+
+    /**
+     * 获取 Nacos Windows 启动文件路径（根据版本号）
+     *
+     * @param version Nacos 版本号
+     * @return Windows 启动文件路径
+     */
+    public static String getNacosStartUpFileWin(String version) {
+        return getNacosBinDir(version) + File.separator + "startup.cmd";
+    }
+
+    /**
+     * 获取 Nacos Mac 启动文件路径（根据版本号）
+     *
+     * @param version Nacos 版本号
+     * @return Mac 启动文件路径
+     */
+    public static String getNacosStartUpFileMac(String version) {
+        return getNacosBinDir(version) + File.separator + "startup.sh";
+    }
+
+    /**
+     * 获取 Nacos 启动日志文件路径（根据版本号）
+     *
+     * @param version Nacos 版本号
+     * @return 启动日志文件路径
+     */
+    public static String getNacosStartLog(String version) {
+        return getNacosLogDir(version) + File.separator + "start.out";
     }
 }

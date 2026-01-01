@@ -207,7 +207,17 @@ public class PersonalInfoPanel {
      * @param info 个人信息配置
      */
     public PersonalInfoPanel(@NotNull PersonalInfo info) {
-        createPersonalInfoPanel(info);
+        this(info, true);
+    }
+
+    /**
+     * 构造函数
+     *
+     * @param info        个人信息配置
+     * @param collapsible 是否使用折叠面板
+     */
+    public PersonalInfoPanel(@NotNull PersonalInfo info, boolean collapsible) {
+        createPersonalInfoPanel(info, collapsible);
     }
 
     /**
@@ -215,9 +225,19 @@ public class PersonalInfoPanel {
      *
      * @param info 个人信息配置
      */
-    private void createPersonalInfoPanel(@NotNull PersonalInfo info) {
-        content = new JPanel();
-        content.setLayout(new BorderLayout());
+    private void createPersonalInfoPanel(@NotNull PersonalInfo info, boolean collapsible) {
+        content = collapsible ? createCollapsiblePanel(info) : createContentOnlyPanel(info);
+    }
+
+    /**
+     * 创建折叠式个人信息面板
+     *
+     * @param info 个人信息配置
+     * @return 折叠式面板
+     */
+    @NotNull
+    private JPanel createCollapsiblePanel(@NotNull PersonalInfo info) {
+        JPanel container = new JPanel(new BorderLayout());
 
         // 创建标题文本
         final String titleText = "👨‍💻 About Me";
@@ -229,11 +249,7 @@ public class PersonalInfoPanel {
         titlePanel.setOpaque(false);
 
         // 主内容面板（居中布局）
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setAlignmentX(JPanel.CENTER_ALIGNMENT);
-        mainPanel.setBorder(JBUI.Borders.empty(15));
-
+        JPanel mainPanel = buildContentPanel(info);
         // 默认折叠：隐藏内容面板
         mainPanel.setVisible(false);
 
@@ -243,25 +259,25 @@ public class PersonalInfoPanel {
         contentWrapper.setOpaque(false);
 
         // 将标题栏和内容面板添加到主面板
-        content.add(titlePanel, BorderLayout.NORTH);
-        content.add(contentWrapper, BorderLayout.CENTER);
+        container.add(titlePanel, BorderLayout.NORTH);
+        container.add(contentWrapper, BorderLayout.CENTER);
 
         // 为容器设置 TitledBorder（边框会包围整个区域）
         TitledBorder containerBorder = BorderFactory.createTitledBorder("▶ " + titleText);
         configureTitledBorder(containerBorder);
-        content.setBorder(BorderFactory.createCompoundBorder(
+        container.setBorder(BorderFactory.createCompoundBorder(
             containerBorder,
             JBUI.Borders.empty(5)
                                                             ));
-        content.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-        content.setOpaque(true);
-        content.setBackground(UIUtil.getPanelBackground());
+        container.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+        container.setOpaque(true);
+        container.setBackground(UIUtil.getPanelBackground());
 
         // 存储内容面板的引用，以便在点击时切换显示
         final JPanel contentPanel = mainPanel;
 
         // 为容器添加点击事件（整个容器都可以点击）
-        content.addMouseListener(new MouseAdapter() {
+        container.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 boolean isVisible = contentPanel.isVisible();
@@ -271,15 +287,48 @@ public class PersonalInfoPanel {
                 String arrow = !isVisible ? "▼ " : "▶ ";
                 TitledBorder containerBorder = BorderFactory.createTitledBorder(arrow + titleText);
                 configureTitledBorder(containerBorder);
-                content.setBorder(BorderFactory.createCompoundBorder(
+                container.setBorder(BorderFactory.createCompoundBorder(
                     containerBorder,
                     JBUI.Borders.empty(5)
                                                                     ));
 
-                content.revalidate();
-                content.repaint();
+                container.revalidate();
+                container.repaint();
             }
         });
+
+        return container;
+    }
+
+    /**
+     * 创建仅内容的个人信息面板
+     *
+     * @param info 个人信息配置
+     * @return 内容面板
+     */
+    @NotNull
+    private JPanel createContentOnlyPanel(@NotNull PersonalInfo info) {
+        JPanel mainPanel = buildContentPanel(info);
+        mainPanel.setVisible(true);
+
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.add(mainPanel, BorderLayout.NORTH);
+        contentWrapper.setOpaque(false);
+        return contentWrapper;
+    }
+
+    /**
+     * 创建个人信息内容面板
+     *
+     * @param info 个人信息配置
+     * @return 内容面板
+     */
+    @NotNull
+    private JPanel buildContentPanel(@NotNull PersonalInfo info) {
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setAlignmentX(JPanel.CENTER_ALIGNMENT);
+        mainPanel.setBorder(JBUI.Borders.empty(15));
 
         // 头像（圆形，居中）
         if (info.avatar != null) {
@@ -390,6 +439,8 @@ public class PersonalInfoPanel {
 
             mainPanel.add(footerLabel);
         }
+
+        return mainPanel;
     }
 
     /**
@@ -679,5 +730,74 @@ public class PersonalInfoPanel {
         return label;
     }
 
-}
+    /**
+     * 加载图像图标
+     * <p> 根据给定的资源路径加载图像, 并返回一个 ImageIcon 对象. 如果加载失败, 则返回 null.
+     *
+     * @param resourcePath 资源路径, 例如 "/icons/personal/avatar.png"
+     * @return 加载成功的 ImageIcon 对象, 如果加载失败则返回 null
+     */
+    @Nullable
+    private static ImageIcon loadImageIcon(@NotNull String resourcePath) {
+        try {
+            java.net.URL imageUrl = PersonalInfoPanel.class.getResource(resourcePath);
+            if (imageUrl != null) {
+                java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(imageUrl);
+                if (image != null) {
+                    return new ImageIcon(image);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
 
+    /**
+     * 返回默认的个人信息配置对象
+     * <p> 此方法提供了一个预定义的个人信息配置, 包含了姓名, 职位, 简介, 头像, 社交媒体链接等信息.
+     *
+     * @return 默认的个人信息配置对象
+     */
+    @NotNull
+    public static PersonalInfoPanel.PersonalInfo defaultInfo() {
+        ImageIcon avatar = loadImageIcon("/icons/personal/avatar.png");
+        ImageIcon hoverAvatar = loadImageIcon("/icons/personal/avatar2.png");
+
+        return PersonalInfoPanel.PersonalInfo.builder()
+            .name("dong4j")
+            .role("✨ Gifted Web Developer | 🛠️ Tool Creator")
+            .bio("Passionate about creating useful developer tools and plugins that make developers' lives easier.<br><br>" +
+                 "💡 Try running this in your terminal to connect with me:")
+            .avatar(avatar)
+            .hoverAvatar(hoverAvatar)
+            .command("npx dong4j --no")
+            .githubUrl("https://github.com/dong4j")
+            .blogUrl("https://blog.dong4j.site")
+            .websiteUrl("https://home.dong4j.site")
+            .npxCardUrl("https://npx-card.dong4j.site")
+            .chatUrl("https://chat.dong4j.site")
+            .email("dong4j@gmail.com")
+            .footerGitHubUrl("https://github.com/zeka-stack/zeka-idea-plugin")
+            .build();
+    }
+
+    /**
+     * 创建一个默认的个人信息面板实例
+     * <p> 使用默认的个人信息配置创建并返回一个个人信息面板实例
+     *
+     * @return 默认的个人信息面板实例
+     */
+    public static PersonalInfoPanel create() {
+        return new PersonalInfoPanel(defaultInfo());
+    }
+
+    /**
+     * 创建一个仅内容的个人信息面板实例
+     * <p> 用于对话框等场景，不包含折叠标题 </p>
+     *
+     * @return 内容面板实例
+     */
+    public static PersonalInfoPanel createContentOnly() {
+        return new PersonalInfoPanel(defaultInfo(), false);
+    }
+}

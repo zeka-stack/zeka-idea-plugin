@@ -35,6 +35,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -76,7 +79,21 @@ public class LocalRegistryManager {
      * @return true 如果已下载
      */
     public static boolean isRegisterDownloaded(LocalRegistry registry) {
-        String registerPath = getRegisterStartupFilePath(registry);
+        SettingsState settings = SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        return isRegisterDownloaded(registry, version);
+    }
+
+    /**
+     * 检查注册中心是否已下载（支持版本号）
+     *
+     * @param registry 注册中心类型
+     * @param version  Nacos 版本号
+     * @return true 如果已下载
+     */
+    public static boolean isRegisterDownloaded(LocalRegistry registry, String version) {
+        String registerPath = getRegisterStartupFilePath(registry, version);
         return checkRegisterExists(registerPath);
     }
 
@@ -98,8 +115,22 @@ public class LocalRegistryManager {
      * @return 启动文件路径
      */
     public static String getRegisterStartupFilePath(LocalRegistry registry) {
-        return RegistryUtils.isWindows() ? LocalRegistryConstants.NACOS_START_UP_FILE_WIN :
-               LocalRegistryConstants.NACOS_START_UP_FILE_MAC;
+        SettingsState settings = SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
+        return getRegisterStartupFilePath(registry, version);
+    }
+
+    /**
+     * 获取注册中心启动文件路径（支持版本号）
+     *
+     * @param registry 注册中心类型
+     * @param version  Nacos 版本号
+     * @return 启动文件路径
+     */
+    public static String getRegisterStartupFilePath(LocalRegistry registry, String version) {
+        return RegistryUtils.isWindows() ? LocalRegistryConstants.getNacosStartUpFileWin(version) :
+               LocalRegistryConstants.getNacosStartUpFileMac(version);
     }
 
 
@@ -174,7 +205,7 @@ public class LocalRegistryManager {
                         // 检查指定版本是否已下载
                         String packagePath = getRegisterPackageFilePath(registry, version);
                         File packageFile = new File(packagePath);
-                        if (packageFile.exists() && LocalRegistryManager.isRegisterDownloaded(registry)) {
+                        if (packageFile.exists() && LocalRegistryManager.isRegisterDownloaded(registry, version)) {
                             logger.info("Registry version " + version + " is already downloaded");
                             return;
                         }
@@ -213,8 +244,8 @@ public class LocalRegistryManager {
      */
     private static void download0(LocalRegistry registry, String version, RegistryLogger logger) throws Exception {
         String startupFile = RegistryUtils.isWindows()
-                             ? LocalRegistryConstants.NACOS_START_UP_FILE_WIN
-                             : LocalRegistryConstants.NACOS_START_UP_FILE_MAC;
+                             ? LocalRegistryConstants.getNacosStartUpFileWin(version)
+                             : LocalRegistryConstants.getNacosStartUpFileMac(version);
         String localPath = RegistryUtils.isWindows()
                            ? LocalRegistryConstants.getNacosLocalPathForWin(version)
                            : LocalRegistryConstants.getNacosLocalPathForMac(version);
@@ -227,9 +258,12 @@ public class LocalRegistryManager {
             settings.gitHubProxyUrl
                                                                      );
 
+        // 解压目标目录（根据版本号）
+        String extractDir = LocalRegistryConstants.getNacosDir(version);
+
         // 如果启动文件不存在，或者本地 zip 文件不存在，则下载
         if (!checkRegisterExists(startupFile) || !new File(localPath).exists()) {
-            // 确保目录存在
+            // 确保压缩包目录存在
             File pkgDir = new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR);
             if (!pkgDir.exists()) {
                 pkgDir.mkdirs();
@@ -240,21 +274,99 @@ public class LocalRegistryManager {
 
             // 如果启动文件不存在，则解压
             if (!checkRegisterExists(startupFile)) {
-                if (RegistryUtils.isWindows()) {
-                    RegistryUtils.unzip(localPath, LocalRegistryConstants.LOCAL_REGISTRY_DIR);
-                } else {
-                    // 使用 ProcessBuilder 替代过时的 Runtime.exec()
-                    ProcessBuilder processBuilder = new ProcessBuilder("unzip", localPath, "-d", LocalRegistryConstants.LOCAL_REGISTRY_DIR);
-                    processBuilder.directory(new File(LocalRegistryConstants.LOCAL_REGISTRY_PKG_DIR));
-                    Process extractProcess = processBuilder.start();
-                    int result = extractProcess.waitFor();
-                    if (result != 0) {
-                        throw new Exception("Unable to extract registry package, the package maybe broken");
-                    }
+                // 创建临时解压目录
+                String tempExtractDir = extractDir + ".tmp";
+                File tempExtractDirFile = new File(tempExtractDir);
+                if (!tempExtractDirFile.exists()) {
+                    tempExtractDirFile.mkdirs();
                 }
-                logger.info("Registry version " + version + " is extract to " + LocalRegistryConstants.LOCAL_REGISTRY_DIR);
+
+                try {
+                    // 使用 Java 的 ZipInputStream 解压（跨平台支持）
+                    RegistryUtils.unzip(localPath, tempExtractDir);
+
+                    // 将 nacos/ 目录内的内容移动到目标目录
+                    File nacosDir = new File(tempExtractDir, "nacos");
+                    if (!nacosDir.exists() || !nacosDir.isDirectory()) {
+                        throw new Exception("Nacos directory not found in extracted package");
+                    }
+
+                    // 确保目标目录存在
+                    File extractDirFile = new File(extractDir);
+                    if (!extractDirFile.exists()) {
+                        extractDirFile.mkdirs();
+                    }
+
+                    // 移动 nacos 目录内的所有内容到目标目录
+                    moveDirectoryContents(nacosDir, extractDirFile);
+
+                    logger.info("Registry version " + version + " is extract to " + extractDir);
+                } finally {
+                    // 清理临时目录
+                    deleteDirectory(tempExtractDirFile);
+                }
             }
         }
+    }
+
+    /**
+     * 移动目录内容到目标目录
+     *
+     * @param sourceDir 源目录
+     * @param targetDir 目标目录
+     * @throws IOException IO异常
+     */
+    private static void moveDirectoryContents(File sourceDir, File targetDir) throws IOException {
+        File[] files = sourceDir.listFiles();
+        if (files == null) {
+            return;
+        }
+
+        for (File file : files) {
+            File targetFile = new File(targetDir, file.getName());
+            if (file.isDirectory()) {
+                if (!targetFile.exists()) {
+                    targetFile.mkdirs();
+                }
+                moveDirectoryContents(file, targetFile);
+                // 删除空的源目录
+                file.delete();
+            } else {
+                Path sourcePath = Paths.get(file.getAbsolutePath());
+                Path targetPath = Paths.get(targetFile.getAbsolutePath());
+                // 如果目标文件已存在，先删除
+                if (targetFile.exists()) {
+                    Files.delete(targetPath);
+                }
+                // 确保目标文件的父目录存在
+                Files.createDirectories(targetPath.getParent());
+                // 移动文件
+                Files.move(sourcePath, targetPath);
+            }
+        }
+    }
+
+    /**
+     * 递归删除目录
+     *
+     * @param directory 要删除的目录
+     */
+    private static void deleteDirectory(File directory) {
+        if (directory == null || !directory.exists()) {
+            return;
+        }
+
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    deleteDirectory(file);
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        directory.delete();
     }
 
     /**
@@ -344,7 +456,7 @@ public class LocalRegistryManager {
                         }, "Downloading " + target + sizeText, true, registryContext.getProject());
                     }
 
-                    if (!LocalRegistryManager.isRegisterDownloaded(registryContext.getRegistry())) {
+                    if (!LocalRegistryManager.isRegisterDownloaded(registryContext.getRegistry(), version)) {
                         throw new RuntimeException("Failed to download " + target);
                     } else {
                         (new Thread(new Runnable() {
@@ -375,9 +487,12 @@ public class LocalRegistryManager {
      * @throws Exception 异常
      */
     public static void stopRegistry(LocalRegistry registry) throws Exception {
+        SettingsState settings = SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
         ProcessBuilder pb = new ProcessBuilder(new String[0]);
         List<String> commands = new LinkedList();
-        pb.directory(new File(LocalRegistryConstants.NACOS_BIN_DIR));
+        pb.directory(new File(LocalRegistryConstants.getNacosBinDir(version)));
         if (RegistryUtils.isWindows()) {
             commands.add("cmd");
             commands.add("/c");
@@ -609,10 +724,13 @@ public class LocalRegistryManager {
      * @throws Exception 异常
      */
     private static void startRegistryProcess(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
+        SettingsState settings = SettingsState.getInstance();
+        String version = settings.localNacosVersion != null && !settings.localNacosVersion.isEmpty()
+                         ? settings.localNacosVersion : "2.4.3";
         if (RegistryUtils.isWindows()) {
-            startRegistryProcessOnWindows(localRegistryContext, logger);
+            startRegistryProcessOnWindows(localRegistryContext, logger, version);
         } else {
-            startRegistryProcessOnMac(localRegistryContext, logger);
+            startRegistryProcessOnMac(localRegistryContext, logger, version);
         }
     }
 
@@ -638,11 +756,12 @@ public class LocalRegistryManager {
      *
      * @param localRegistryContext 本地注册中心上下文
      * @param logger               日志记录器
+     * @param version              Nacos 版本号
      * @throws Exception 异常
      */
-    private static void startRegistryProcessOnMac(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
+    private static void startRegistryProcessOnMac(LocalRegistryContext localRegistryContext, RegistryLogger logger, String version) throws Exception {
         String sdkHome = getSdkHome(localRegistryContext.getProject());
-        String targetLog = LocalRegistryConstants.NACOS_START_LOG;
+        String targetLog = LocalRegistryConstants.getNacosStartLog(version);
         File logFile = new File(targetLog);
         if (logFile.exists()) {
             logFile.delete();
@@ -650,7 +769,7 @@ public class LocalRegistryManager {
 
         ProcessBuilder pb = new ProcessBuilder(new String[0]);
         List<String> commands = new LinkedList();
-        pb.directory(new File(LocalRegistryConstants.NACOS_BIN_DIR));
+        pb.directory(new File(LocalRegistryConstants.getNacosBinDir(version)));
         commands.add("sh");
         commands.add("startup.sh");
         commands.add("-m");
@@ -664,7 +783,7 @@ public class LocalRegistryManager {
 
         Process registryProcess = pb.start();
         localRegistryContext.setRegisterProcess(registryProcess);
-        waitForRegistryStartOnMac(localRegistryContext, logger);
+        waitForRegistryStartOnMac(localRegistryContext, logger, version);
     }
 
     /**
@@ -672,19 +791,20 @@ public class LocalRegistryManager {
      *
      * @param localRegistryContext 本地注册中心上下文
      * @param logger               日志记录器
+     * @param version              Nacos 版本号
      * @throws Exception 异常
      */
-    private static void startRegistryProcessOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
+    private static void startRegistryProcessOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger, String version) throws Exception {
         String sdkHome = getSdkHome(localRegistryContext.getProject());
         ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "startup.cmd", "-m", "standalone");
-        pb.directory(new File(LocalRegistryConstants.NACOS_BIN_DIR));
+        pb.directory(new File(LocalRegistryConstants.getNacosBinDir(version)));
         if (sdkHome != null && !sdkHome.isEmpty()) {
             pb.environment().put("JAVA_HOME", sdkHome);
         }
         applyCustomEnvVariables(pb.environment());
         Process registryProcess = pb.start();
         localRegistryContext.setRegisterProcess(registryProcess);
-        waitForRegistryStartOnWindows(localRegistryContext, logger);
+        waitForRegistryStartOnWindows(localRegistryContext, logger, version);
     }
 
     /**
@@ -692,10 +812,11 @@ public class LocalRegistryManager {
      *
      * @param localRegistryContext 本地注册中心上下文
      * @param logger               日志记录器
+     * @param version              Nacos 版本号
      */
-    private static void waitForRegistryStartOnMac(LocalRegistryContext localRegistryContext, RegistryLogger logger) {
+    private static void waitForRegistryStartOnMac(LocalRegistryContext localRegistryContext, RegistryLogger logger, String version) {
         BufferedReader reader = null;
-        String targetLog = LocalRegistryConstants.NACOS_START_LOG;
+        String targetLog = LocalRegistryConstants.getNacosStartLog(version);
 
         try {
             long end = System.currentTimeMillis() + 120000L;
@@ -751,9 +872,10 @@ public class LocalRegistryManager {
      *
      * @param localRegistryContext 本地注册中心上下文
      * @param logger               日志记录器
+     * @param version              Nacos 版本号
      * @throws Exception 异常
      */
-    private static void waitForRegistryStartOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger) throws Exception {
+    private static void waitForRegistryStartOnWindows(LocalRegistryContext localRegistryContext, RegistryLogger logger, String version) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(localRegistryContext.getRegisterProcess().getInputStream()));
         long end = System.currentTimeMillis() + 120000L;
 
