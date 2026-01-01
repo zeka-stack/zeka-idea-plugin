@@ -27,6 +27,7 @@ import java.util.List;
 import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -164,7 +165,7 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
         // 2. 快捷设置
         group.add(Separator.create(ChangelogBundle.message("statusbar.quick.settings.title")));
         group.add(new ReleaseLogStartPointActionGroup());
-        group.add(createReleaseLogProviderActionGroup());
+        group.add(createReleaseLogProviderActionGroup(context));
 
         group.add(Separator.create());
         group.add(new OpenSettingsAction());
@@ -476,16 +477,41 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
     /**
      * 创建发布日志提供程序选择动作组
      * <p> 根据当前设置创建包含 AI 和 GitCliff 两种发布日志提供程序选项的动作组
-     * 动作组标题会根据当前选择的提供程序动态显示, 例如:'发布日志提供程序 (🤖 AI)' 或 '发布日志提供程序 (🪨 GitCliff)'
+     * 动作组标题会根据当前选择的提供程序动态显示, 例如:'发布日志提供程序 (🤖 AI (Qianwen:qwen-turbo))' 或 '发布日志提供程序 (🪨 GitCliff (2.11.0))'
      *
+     * @param context 数据上下文, 用于创建动作
      * @return 包含发布日志提供程序选择选项的动作组
      */
     @NotNull
-    private static DefaultActionGroup createReleaseLogProviderActionGroup() {
+    private DefaultActionGroup createReleaseLogProviderActionGroup(@NotNull DataContext context) {
         SettingsState settings = SettingsState.getInstance();
-        String current = settings.releaseLog == ReleaseLogProvider.GIT_CLIFF
-                         ? "🪨 " + ChangelogBundle.message("statusbar.release.log.provider.gitcliff")
-                         : "🤖 " + ChangelogBundle.message("statusbar.release.log.provider.ai");
+        String current;
+        if (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF) {
+            // 获取 git-cliff 版本号
+            String version = GitCliffDownloadManager.getInstalledVersion();
+            String gitCliffText = ChangelogBundle.message("statusbar.release.log.provider.gitcliff");
+            if (version != null && !version.isEmpty()) {
+                current = "🪨 " + gitCliffText + " (" + version + ")";
+            } else {
+                current = "🪨 " + gitCliffText;
+            }
+        } else {
+            // 获取 AI 提供商和模型名称
+            String aiText = ChangelogBundle.message("statusbar.release.log.provider.ai");
+            AIProviderConfig providerConfig = settings.providerConfig;
+            if (providerConfig != null && providerConfig.providerType != null) {
+                String providerName = providerConfig.providerType.getDisplayName();
+                String modelName = providerConfig.modelName != null && !providerConfig.modelName.isEmpty()
+                                   ? providerConfig.modelName : "";
+                if (!modelName.isEmpty()) {
+                    current = "🤖 " + aiText + " (" + providerName + ":" + modelName + ")";
+                } else {
+                    current = "🤖 " + aiText + " (" + providerName + ")";
+                }
+            } else {
+                current = "🤖 " + aiText;
+            }
+        }
         String title = ChangelogBundle.message("statusbar.release.log.provider") + " (" + current + ")";
         DefaultActionGroup group = new DefaultActionGroup(title, true);
         group.add(new ReleaseLogProviderAction(ReleaseLogProvider.AI));
@@ -497,6 +523,7 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
      * 释放日志提供者操作类
      * <p> 用于在 IDE 状态栏中提供不同的释放日志生成方式, 支持 Git Cliffs 和 AI 两种模式.
      * 用户可以通过状态栏选择不同的日志生成方式, 该类作为 UI 按钮的事件处理器, 负责更新设置并同步 UI 状态.
+     * <p> AI 选项会动态显示当前选择的服务商名称和模型名称, git-cliff 选项会动态显示版本号.
      *
      * @author dong4j
      * @version 1.0.0
@@ -510,15 +537,57 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
 
         /**
          * 构造函数, 用于创建一个 ReleaseLogProviderAction 实例
-         * <p> 根据传入的 ReleaseLogProvider 类型设置动作的显示名称, 并初始化 provider 字段
+         * <p> 根据传入的 ReleaseLogProvider 类型设置动作的显示名称, 并初始化 provider 字段.
+         * 对于 AI 选项, 会动态获取当前选择的服务商名称和模型名称.
+         * 对于 git-cliff 选项, 会动态获取版本号.
          *
          * @param provider 用于确定显示名称的 ReleaseLogProvider 实例
          */
         ReleaseLogProviderAction(ReleaseLogProvider provider) {
-            super(provider == ReleaseLogProvider.GIT_CLIFF
-                  ? "🪨 " + ChangelogBundle.message("statusbar.release.log.provider.gitcliff")
-                  : "🤖 " + ChangelogBundle.message("statusbar.release.log.provider.ai"));
+            super(getProviderDisplayTextStatic(provider));
             this.provider = provider;
+        }
+
+        /**
+         * 获取提供程序的显示文本（静态方法）
+         * <p> 根据提供程序类型动态生成显示文本:
+         * <ul>
+         *   <li>AI: 显示 "🤖 AI (提供商名称:模型名称)"</li>
+         *   <li>GitCliff: 显示 "🪨 GitCliff (版本号)"</li>
+         * </ul>
+         *
+         * @param provider 发布日志提供程序类型
+         * @return 格式化后的显示文本
+         */
+        @NotNull
+        private static String getProviderDisplayTextStatic(@NotNull ReleaseLogProvider provider) {
+            if (provider == ReleaseLogProvider.GIT_CLIFF) {
+                // 获取 git-cliff 版本号
+                String baseText = ChangelogBundle.message("statusbar.release.log.provider.gitcliff");
+                String version = GitCliffDownloadManager.getInstalledVersion();
+                if (version != null && !version.isEmpty()) {
+                    return "🪨 " + baseText + " (" + version + ")";
+                } else {
+                    return "🪨 " + baseText;
+                }
+            } else {
+                // 获取 AI 提供商和模型名称
+                String baseText = ChangelogBundle.message("statusbar.release.log.provider.ai");
+                SettingsState settings = SettingsState.getInstance();
+                AIProviderConfig providerConfig = settings.providerConfig;
+                if (providerConfig != null && providerConfig.providerType != null) {
+                    String providerName = providerConfig.providerType.getDisplayName();
+                    String modelName = providerConfig.modelName != null && !providerConfig.modelName.isEmpty()
+                                       ? providerConfig.modelName : "";
+                    if (!modelName.isEmpty()) {
+                        return "🤖 " + baseText + " (" + providerName + ":" + modelName + ")";
+                    } else {
+                        return "🤖 " + baseText + " (" + providerName + ")";
+                    }
+                } else {
+                    return "🤖 " + baseText;
+                }
+            }
         }
 
         /**
@@ -533,8 +602,9 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
         }
 
         /**
-         * 更新操作按钮的选中状态
-         * <p> 根据当前设置中的 releaseLog 是否等于 provider, 更新动作按钮的选中状态
+         * 更新操作按钮的选中状态和显示文本
+         * <p> 根据当前设置中的 releaseLog 是否等于 provider, 更新动作按钮的选中状态.
+         * 同时动态更新显示文本, 以反映当前选择的 AI 提供商和模型名称, 或 git-cliff 版本号.
          *
          * @param e 事件对象, 包含动作执行上下文信息
          */
@@ -542,6 +612,8 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
         public void update(@NotNull AnActionEvent e) {
             boolean isSelected = SettingsState.getInstance().releaseLog == provider;
             e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+            // 动态更新显示文本
+            e.getPresentation().setText(getProviderDisplayTextStatic(provider));
         }
 
         /**

@@ -34,10 +34,10 @@
 
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
-                parentId="tools"
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 instance="dev.dong4j.zeka.stack.idea.plugin.workflow.settings.TracerSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.workflow.settings"
-                displayName="IntelliAI Tracer"/>
+            displayName="🧭 IntelliAI Tracer"/>
 
         <!-- 工具窗口 -->
         <!--suppress PluginXmlI18n -->
@@ -80,4 +80,3 @@
         </action>
     </actions>
 </idea-plugin>
-

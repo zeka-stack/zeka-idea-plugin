@@ -28,10 +28,10 @@
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
-                parentId="tools"
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
                 instance="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
                 id="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable"
-                displayName="IntelliAI Changelog"/>
+            displayName="🎉 IntelliAI Changelog"/>
 
         <!-- 通知组 dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil.NOTIFICATION_GROUP_ID 保持一致 -->
         <!--suppress PluginXmlI18n -->

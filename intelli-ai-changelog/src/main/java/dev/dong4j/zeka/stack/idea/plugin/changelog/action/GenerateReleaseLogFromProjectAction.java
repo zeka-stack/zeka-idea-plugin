@@ -43,7 +43,7 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
         e.getPresentation().setEnabled(enabled);
         e.getPresentation().setText(ChangelogBundle.message("action.generate.release.log"));
         e.getPresentation().setDescription(ChangelogBundle.message("action.generate.release.log.description"));
-        e.getPresentation().setIcon(ChangelogIcons.RELEASE);
+        e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
     }
 
     /**
