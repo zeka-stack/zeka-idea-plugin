@@ -1,5 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.config;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * AI 模型参数配置类
  * <p>
@@ -44,10 +47,57 @@ public class AIModelParameters {
     public AIModelParameters copy() {
         AIModelParameters parameters = new AIModelParameters();
         parameters.temperature = this.temperature;
-        parameters.maxTokens = this.maxTokens;
+        // 在复制时也进行迁移，确保复制的配置格式正确
+        parameters.maxTokens = migrateMaxTokens(this.maxTokens);
         parameters.topP = this.topP;
         parameters.topK = this.topK;
         parameters.presencePenalty = this.presencePenalty;
         return parameters;
+    }
+
+    /**
+     * 将老配置中的 maxTokens 值转换为新格式（K 单位，纯数字）
+     * <p>
+     * 输入框已经提示单位是 K，用户只能输入数字，所以返回值应该是纯数字字符串。
+     * <p>
+     * 转换规则：
+     * <ul>
+     *   <li>如果 maxTokens 是 "auto"，返回 "auto"</li>
+     *   <li>如果 maxTokens 是纯数字且 >= 1000，说明是老配置（实际 token 数），需要除以 1000 转换为 K 单位</li>
+     *   <li>如果 maxTokens 是纯数字且 < 1000，可能是 K 单位的值，直接返回</li>
+     * </ul>
+     *
+     * @param maxTokens 原始 maxTokens 值（老配置只有纯数字）
+     * @return 转换后的 maxTokens 值（纯数字字符串或 "auto"）
+     */
+    @NotNull
+    public static String migrateMaxTokens(@Nullable String maxTokens) {
+        if (maxTokens == null || maxTokens.trim().isEmpty() || "auto".equalsIgnoreCase(maxTokens.trim())) {
+            return "auto";
+        }
+
+        String trimmed = maxTokens.trim();
+        
+        // 尝试解析为数字（老配置只有纯数字）
+        try {
+            int value = Integer.parseInt(trimmed);
+            // 如果 >= 1000，说明是老配置（实际 token 数），转换为 K 单位（除以 1000）
+            if (value >= 1000) {
+                double valueInK = value / 1000.0;
+                // 如果是整数，返回整数部分
+                if (valueInK == (int) valueInK) {
+                    return String.valueOf((int) valueInK);
+                } else {
+                    // 保留一位小数
+                    return String.format("%.1f", valueInK);
+                }
+            } else {
+                // 如果 < 1000，可能是 K 单位的值，直接返回（保持原值）
+                return trimmed;
+            }
+        } catch (NumberFormatException e) {
+            // 如果不是数字，返回 "auto"
+            return "auto";
+        }
     }
 }

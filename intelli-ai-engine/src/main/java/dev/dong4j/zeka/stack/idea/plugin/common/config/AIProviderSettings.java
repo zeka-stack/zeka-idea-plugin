@@ -164,6 +164,16 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         }
         if (this.modelParameters == null) {
             this.modelParameters = state.modelParameters != null ? state.modelParameters.copy() : new AIModelParameters();
+        } else {
+            // 如果 modelParameters 已存在，需要更新其值并迁移老配置
+            if (state.modelParameters != null) {
+                this.modelParameters.temperature = state.modelParameters.temperature;
+                // 迁移老配置中的 maxTokens（从实际 token 数转换为 K 单位）
+                this.modelParameters.maxTokens = AIModelParameters.migrateMaxTokens(state.modelParameters.maxTokens);
+                this.modelParameters.topP = state.modelParameters.topP;
+                this.modelParameters.topK = state.modelParameters.topK;
+                this.modelParameters.presencePenalty = state.modelParameters.presencePenalty;
+            }
         }
         if (this.intelliAgentSettings == null) {
             this.intelliAgentSettings = state.intelliAgentSettings != null ? state.intelliAgentSettings.copy() : new IntelliAgentSettings();
@@ -187,7 +197,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
 
         AIModelParameters sourceModel = this.modelParameters != null ? this.modelParameters : new AIModelParameters();
         settings.modelParameters.temperature = sourceModel.temperature;
-        settings.modelParameters.maxTokens = sourceModel.maxTokens;
+        // 在复制时也进行迁移，确保复制的配置格式正确
+        settings.modelParameters.maxTokens = AIModelParameters.migrateMaxTokens(sourceModel.maxTokens);
         settings.modelParameters.topP = sourceModel.topP;
         settings.modelParameters.topK = sourceModel.topK;
         settings.modelParameters.presencePenalty = sourceModel.presencePenalty;
@@ -328,7 +339,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
 
         AIModelParameters sourceModel = source.modelParameters != null ? source.modelParameters : new AIModelParameters();
         this.modelParameters.temperature = sourceModel.temperature;
-        this.modelParameters.maxTokens = sourceModel.maxTokens;
+        // 在应用配置时也进行迁移，确保配置格式正确
+        this.modelParameters.maxTokens = AIModelParameters.migrateMaxTokens(sourceModel.maxTokens);
         this.modelParameters.topP = sourceModel.topP;
         this.modelParameters.topK = sourceModel.topK;
         this.modelParameters.presencePenalty = sourceModel.presencePenalty;

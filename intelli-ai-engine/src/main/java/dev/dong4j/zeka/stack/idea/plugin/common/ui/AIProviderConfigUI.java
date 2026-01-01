@@ -41,10 +41,13 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
@@ -107,10 +110,10 @@ public final class AIProviderConfigUI {
     private JBCheckBox showAdvancedSettingsCheckBox;
     /** 高级设置内容面板, 用于展示和管理高级配置选项 */
     private JPanel advancedSettingsContentPanel;
-    /** 最大重试次数选择器 */
-    private JSpinner maxRetriesSpinner;
-    /** 超时时间选择器, 用于设置请求超时时间 */
-    private JSpinner timeoutSpinner;
+    /** 最大重试次数输入框, 支持输入数字或 "auto" */
+    private JBTextField maxRetriesField;
+    /** 超时时间输入框, 用于设置请求超时时间, 支持输入数字或 "auto" */
+    private JBTextField timeoutField;
     /** 温度设置控件, 用于用户输入和调整温度值, 支持输入 "auto" 或数字 */
     private JBTextField temperatureField;
     /** 最大令牌数输入控件, 支持输入 "auto" 或数字 */
@@ -194,8 +197,10 @@ public final class AIProviderConfigUI {
 
         // 初始化高级配置组件
         showAdvancedSettingsCheckBox = new JBCheckBox(AICommonBundle.message("settings.advanced.settings.show"));
-        maxRetriesSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 10, 1));
-        timeoutSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 600, 1));
+        maxRetriesField = new JBTextField("2");
+        maxRetriesField.setHorizontalAlignment(JBTextField.RIGHT);
+        timeoutField = new JBTextField("10");
+        timeoutField.setHorizontalAlignment(JBTextField.RIGHT);
         temperatureField = new JBTextField("auto");
         temperatureField.setHorizontalAlignment(JBTextField.RIGHT);
         maxTokensField = new JBTextField("auto");
@@ -207,15 +212,29 @@ public final class AIProviderConfigUI {
         presencePenaltyField = new JBTextField("auto");
         presencePenaltyField.setHorizontalAlignment(JBTextField.RIGHT);
 
+        // 为所有输入框添加验证逻辑（只能输入数字或 "auto"），并设置边界条件
+        // max retries(整数): [0,10]
+        setupInputValidation(maxRetriesField, true, 0, 10, true, true);
+        // timeout(整数): [1,999999999999]
+        setupInputValidation(timeoutField, true, 1, 999999999999L, true, true);
+        // max tokens(整数): [1,999999999999]
+        setupInputValidation(maxTokensField, true, 1, 999999999999L, true, true);
+        // temperature(小数): [0.0, 2.0)
+        setupInputValidation(temperatureField, false, 0.0, 2.0, true, false);
+        // top_p(小数): (0,1.0]
+        setupInputValidation(topPField, false, 0.0, 1.0, false, true);
+        // top_k(整数): [0,100]
+        setupInputValidation(topKField, true, 0, 100, true, true);
+        // presence_penalty(小数): [-2.0, 2.0]
+        setupInputValidation(presencePenaltyField, false, -2.0, 2.0, true, true);
+
         // Agent 相关配置
         intelliAgentPanel = new IntelliAgentPanel();
 
-        // 设置所有 JSpinner 的长度一致
-        Dimension spinnerSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
-        maxRetriesSpinner.setPreferredSize(spinnerSize);
-        timeoutSpinner.setPreferredSize(spinnerSize);
-        // 设置文本输入框的长度一致
-        Dimension fieldSize = new Dimension(120, maxRetriesSpinner.getPreferredSize().height);
+        // 设置所有输入框的长度一致
+        Dimension fieldSize = new Dimension(120, maxRetriesField.getPreferredSize().height);
+        maxRetriesField.setPreferredSize(fieldSize);
+        timeoutField.setPreferredSize(fieldSize);
         temperatureField.setPreferredSize(fieldSize);
         maxTokensField.setPreferredSize(fieldSize);
         topPField.setPreferredSize(fieldSize);
@@ -402,13 +421,13 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public JSpinner getMaxRetriesSpinner() {
-        return maxRetriesSpinner;
+    public JBTextField getMaxRetriesField() {
+        return maxRetriesField;
     }
 
     @NotNull
-    public JSpinner getTimeoutSpinner() {
-        return timeoutSpinner;
+    public JBTextField getTimeoutField() {
+        return timeoutField;
     }
 
     @NotNull
@@ -565,9 +584,9 @@ public final class AIProviderConfigUI {
     private JPanel createAdvancedPanel() {
         advancedSettingsContentPanel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.max.retries")),
-                                 createSpinnerWithHint(maxRetriesSpinner, "settings.max.retries.hint"))
+                                 createTextFieldWithHint(maxRetriesField, "settings.max.retries.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.timeout")),
-                                 createSpinnerWithHint(timeoutSpinner, "settings.timeout.hint"))
+                                 createTextFieldWithHint(timeoutField, "settings.timeout.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.max.tokens")),
                                  createTextFieldWithHint(maxTokensField, "settings.max.tokens.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.temperature")),
@@ -747,6 +766,198 @@ public final class AIProviderConfigUI {
         }
     }
 
+    /**
+     * 为输入框设置验证逻辑，只允许输入数字（正负、小数、整数）或 "auto" 字符串
+     * <p>
+     * 该方法使用 DocumentFilter 来限制输入，确保用户只能输入有效的数字或 "auto" 字符串。
+     *
+     * @param textField 要设置验证的输入框
+     */
+    private void setupInputValidation(@NotNull JBTextField textField) {
+        setupInputValidation(textField, false, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, true, true);
+    }
+
+    /**
+     * 为输入框设置验证逻辑，只允许输入数字（正负、小数、整数）或 "auto" 字符串，并验证边界条件
+     * <p>
+     * 该方法使用 DocumentFilter 来限制输入，确保用户只能输入有效的数字或 "auto" 字符串，并在范围内。
+     *
+     * @param textField     要设置验证的输入框
+     * @param integerOnly   是否只允许整数
+     * @param minValue      最小值
+     * @param maxValue      最大值
+     * @param minInclusive  最小值是否包含边界（true 表示 [min, false 表示 (min）
+     * @param maxInclusive  最大值是否包含边界（true 表示 max], false 表示 max)）
+     */
+    private void setupInputValidation(@NotNull JBTextField textField, boolean integerOnly, double minValue, double maxValue, boolean minInclusive, boolean maxInclusive) {
+        // 使用 final 变量以便在内部类中访问
+        final boolean isIntegerOnly = integerOnly;
+        final double min = minValue;
+        final double max = maxValue;
+        final boolean minInc = minInclusive;
+        final boolean maxInc = maxInclusive;
+
+        AbstractDocument doc = (AbstractDocument) textField.getDocument();
+        doc.setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+                if (isValidInput(fb.getDocument().getText(0, fb.getDocument().getLength()), string, offset)) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                if (isValidInput(currentText, text, offset, length)) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            /**
+             * 验证输入是否有效
+             *
+             * @param currentText 当前文本
+             * @param newText     新输入的文本
+             * @param offset      插入位置
+             * @return 如果输入有效返回 true
+             */
+            private boolean isValidInput(String currentText, String newText, int offset) {
+                return isValidInput(currentText, newText, offset, 0);
+            }
+
+            /**
+             * 验证输入是否有效
+             *
+             * @param currentText 当前文本
+             * @param newText     新输入的文本
+             * @param offset      插入位置
+             * @param length      要替换的长度
+             * @return 如果输入有效返回 true
+             */
+            private boolean isValidInput(String currentText, String newText, int offset, int length) {
+                if (newText == null || newText.isEmpty()) {
+                    return true; // 允许删除
+                }
+
+                // 构建新文本
+                String before = currentText.substring(0, offset);
+                String after = currentText.substring(offset + length);
+                String fullText = before + newText + after;
+                String trimmed = fullText.trim();
+
+                // 允许 "auto"（不区分大小写）
+                if ("auto".equalsIgnoreCase(trimmed)) {
+                    return true;
+                }
+
+                // 如果输入的是 "auto" 的一部分（如 "a", "au", "aut"），允许输入
+                String lowerTrimmed = trimmed.toLowerCase();
+                if (lowerTrimmed.length() <= 4 && "auto".startsWith(lowerTrimmed)) {
+                    return true;
+                }
+
+                // 检查是否为有效的数字（正负、小数、整数）
+                // 正则表达式：可选的正负号，后跟数字（可能包含小数点）
+                // 匹配：-123, +123, 123, -123.45, +123.45, 123.45, .5, -.5, +.5
+                // 但不匹配：空字符串、单独的 +、-、.、多个小数点
+                String numberPattern = isIntegerOnly ? "^[+-]?\\d+$" : "^[+-]?(\\d+(\\.\\d*)?|\\.\\d+)$";
+                if (trimmed.matches(numberPattern)) {
+                    // 验证数值范围
+                    try {
+                        double value = Double.parseDouble(trimmed);
+                        // 检查最小值边界
+                        if (minInc) {
+                            if (value < min) {
+                                return false;
+                            }
+                        } else {
+                            if (value <= min) {
+                                return false;
+                            }
+                        }
+                        // 检查最大值边界
+                        if (maxInc) {
+                            if (value > max) {
+                                return false;
+                            }
+                        } else {
+                            if (value >= max) {
+                                return false;
+                            }
+                        }
+                        // 如果是整数类型，检查是否为整数
+                        return !isIntegerOnly || value == (long) value;
+                    } catch (NumberFormatException e) {
+                        // 如果无法解析为数字，返回 false
+                        return false;
+                    }
+                }
+
+                // 如果新输入的文本是单个字符，检查是否可以作为数字的一部分
+                if (newText.length() == 1) {
+                    char c = newText.charAt(0);
+                    // 允许数字、小数点、正负号
+                    if (Character.isDigit(c) || c == '.' || c == '+' || c == '-') {
+                        // 检查插入后是否可能形成有效数字
+                        String testText = before + newText + after;
+                        String testTrimmed = testText.trim();
+
+                        // 如果当前文本是 "auto"，允许替换
+                        if ("auto".equalsIgnoreCase(currentText.trim())) {
+                            return true;
+                        }
+
+                        // 检查是否可能形成有效数字或 "auto" 的一部分
+                        if (testTrimmed.toLowerCase().length() <= 4 && "auto".startsWith(testTrimmed.toLowerCase())) {
+                            return true;
+                        }
+
+                        // 检查是否可能形成有效数字
+                        String testNumberPattern = isIntegerOnly ? "^[+-]?\\d*$" : "^[+-]?(\\d+(\\.\\d*)?|\\.\\d+)$";
+                        if (testTrimmed.matches(testNumberPattern)) {
+                            // 如果已经是一个完整的数字，验证范围
+                            if (testTrimmed.matches(isIntegerOnly ? "^[+-]?\\d+$" : "^[+-]?(\\d+(\\.\\d*)?|\\.\\d+)$")) {
+                                try {
+                                    double testValue = Double.parseDouble(testTrimmed);
+                                    // 检查最小值边界
+                                    if (minInc) {
+                                        if (testValue < min) {
+                                            return false;
+                                        }
+                                    } else {
+                                        if (testValue <= min) {
+                                            return false;
+                                        }
+                                    }
+                                    // 检查最大值边界
+                                    if (maxInc) {
+                                        if (testValue > max) {
+                                            return false;
+                                        }
+                                    } else {
+                                        if (testValue >= max) {
+                                            return false;
+                                        }
+                                    }
+                                    // 如果是整数类型，检查是否为整数
+                                    if (isIntegerOnly && testValue != (long) testValue) {
+                                        return false;
+                                    }
+                                } catch (NumberFormatException e) {
+                                    // 如果无法解析，可能是输入过程中的中间状态，允许继续输入
+                                }
+                            }
+                            return true;
+                        }
+                        return false;
+                    }
+                }
+
+                return false;
+            }
+        });
+    }
 
     /**
      * 配置 TitledBorder 的字体和颜色
@@ -958,7 +1169,8 @@ public final class AIProviderConfigUI {
                 }
                 case 3 -> {
                     AIModelParameters params = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
-                    yield params.maxTokens;
+                    // 迁移老配置中的 maxTokens（从实际 token 数转换为 K 单位）
+                    yield AIModelParameters.migrateMaxTokens(params.maxTokens);
                 }
                 case 4 -> config.remark != null ? config.remark : "";
                 default -> "";

@@ -143,13 +143,15 @@ public final class AIProviderConfigController {
         if (advancedPanel != null) {
             advancedPanel.setVisible(workingSettings.showAdvancedSettings);
         }
-        ui.getMaxRetriesSpinner().setValue(runtimeSettings.maxRetries);
-        ui.getTimeoutSpinner().setValue(runtimeSettings.timeout);
+        ui.getMaxRetriesField().setText(String.valueOf(runtimeSettings.maxRetries));
+        ui.getTimeoutField().setText(String.valueOf(runtimeSettings.timeout));
         AIModelParameters modelParameters = workingSettings.modelParameters != null
                                             ? workingSettings.modelParameters
                                             : new AIModelParameters();
         ui.getTemperatureField().setText(modelParameters.temperature != null ? modelParameters.temperature : "auto");
-        ui.getMaxTokensField().setText(modelParameters.maxTokens != null ? modelParameters.maxTokens : "auto");
+        // 迁移老配置中的 maxTokens（从实际 token 数转换为 K 单位）
+        String maxTokens = AIModelParameters.migrateMaxTokens(modelParameters.maxTokens);
+        ui.getMaxTokensField().setText(maxTokens);
         ui.getTopPField().setText(modelParameters.topP != null ? modelParameters.topP : "auto");
         ui.getTopKField().setText(modelParameters.topK != null ? modelParameters.topK : "auto");
         ui.getPresencePenaltyField().setText(modelParameters.presencePenalty != null ? modelParameters.presencePenalty : "auto");
@@ -731,19 +733,33 @@ public final class AIProviderConfigController {
     /**
      * 从 UI 组件中获取 AI 模型参数的快照
      * <p>
-     * 该方法用于从用户界面的各个旋钮控件中读取当前设置的 AI 模型参数, 并创建一个 AIModelParameters 对象进行保存.
+     * 该方法用于从用户界面的各个输入框中读取当前设置的 AI 模型参数, 并创建一个 AIModelParameters 对象进行保存.
      * 参数包括温度, 最大令牌数,Top P,Top K 和存在惩罚值等.
+     * <p>
+     * 如果输入为空, 则设置为 "auto".
      *
      * @return 包含当前 UI 设置的 AI 模型参数对象
      */
     @NotNull
     private AIModelParameters snapshotModelParameters() {
         AIModelParameters params = new AIModelParameters();
-        params.temperature = ui.getTemperatureField().getText().trim();
-        params.maxTokens = ui.getMaxTokensField().getText().trim();
-        params.topP = ui.getTopPField().getText().trim();
-        params.topK = ui.getTopKField().getText().trim();
-        params.presencePenalty = ui.getPresencePenaltyField().getText().trim();
+        
+        // 如果输入为空, 设置为 "auto"
+        String temperature = ui.getTemperatureField().getText().trim();
+        params.temperature = temperature.isEmpty() ? "auto" : temperature;
+        
+        String maxTokens = ui.getMaxTokensField().getText().trim();
+        params.maxTokens = maxTokens.isEmpty() ? "auto" : maxTokens;
+        
+        String topP = ui.getTopPField().getText().trim();
+        params.topP = topP.isEmpty() ? "auto" : topP;
+        
+        String topK = ui.getTopKField().getText().trim();
+        params.topK = topK.isEmpty() ? "auto" : topK;
+        
+        String presencePenalty = ui.getPresencePenaltyField().getText().trim();
+        params.presencePenalty = presencePenalty.isEmpty() ? "auto" : presencePenalty;
+        
         return params;
     }
 
@@ -760,8 +776,29 @@ public final class AIProviderConfigController {
         AIRuntimeSettings baseline = workingSettings.runtimeSettings != null ? workingSettings.runtimeSettings : new AIRuntimeSettings();
         snapshot.waitDuration = baseline.waitDuration;
         // verboseLogging 已迁移到全局配置，不在这里设置
-        snapshot.maxRetries = ((Number) ui.getMaxRetriesSpinner().getValue()).intValue();
-        snapshot.timeout = ((Number) ui.getTimeoutSpinner().getValue()).intValue();
+        // 解析 maxRetries，如果为空或无效则使用默认值 2
+        String maxRetriesText = ui.getMaxRetriesField().getText().trim();
+        if (maxRetriesText.isEmpty() || "auto".equalsIgnoreCase(maxRetriesText)) {
+            snapshot.maxRetries = 2; // 默认值
+        } else {
+            try {
+                snapshot.maxRetries = Integer.parseInt(maxRetriesText);
+            } catch (NumberFormatException e) {
+                snapshot.maxRetries = 2; // 默认值
+            }
+        }
+
+        // 解析 timeout，如果为空或无效则使用默认值 10
+        String timeoutText = ui.getTimeoutField().getText().trim();
+        if (timeoutText.isEmpty() || "auto".equalsIgnoreCase(timeoutText)) {
+            snapshot.timeout = 10; // 默认值
+        } else {
+            try {
+                snapshot.timeout = Integer.parseInt(timeoutText);
+            } catch (NumberFormatException e) {
+                snapshot.timeout = 10; // 默认值
+            }
+        }
         return snapshot;
     }
 
