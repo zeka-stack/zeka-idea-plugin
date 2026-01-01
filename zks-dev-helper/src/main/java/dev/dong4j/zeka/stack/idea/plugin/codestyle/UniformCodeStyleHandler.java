@@ -1,6 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.codestyle;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
@@ -45,7 +47,28 @@ public class UniformCodeStyleHandler implements ProjectActivity {
                     return Unit.INSTANCE;
                 }
 
-                // 提供统一代码风格方案
+                // 检查自动更新配置
+                UniformFormatSettingsState.CodeStyleUpdateSettings updateSettings =
+                    settings.getCodeStyleUpdateSettings();
+                if (updateSettings != null && updateSettings.isAutoUpdate() &&
+                    updateSettings.getDownloadUrl() != null && !updateSettings.getDownloadUrl().trim().isEmpty()) {
+                    // 后台检查并更新
+                    ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                        try {
+                            ProgressIndicator indicator = new EmptyProgressIndicator();
+                            CodeStyleDownloadManager.checkAndUpdate(
+                                project,
+                                updateSettings.getDownloadUrl().trim(), // baseUrl
+                                indicator,
+                                null // 启动时不需要显示进度
+                                                                   );
+                        } catch (Exception e) {
+                            log.error("Failed to check and update code style", e);
+                        }
+                    });
+                }
+
+                // 提供统一代码风格方案（会优先使用本地下载的文件）
                 UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);
 
                 // 报告使用统计
