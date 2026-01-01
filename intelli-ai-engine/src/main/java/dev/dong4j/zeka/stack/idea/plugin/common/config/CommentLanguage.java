@@ -1,19 +1,17 @@
-package dev.dong4j.zeka.stack.idea.plugin.settings;
+package dev.dong4j.zeka.stack.idea.plugin.common.config;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import dev.dong4j.zeka.stack.idea.plugin.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 
 /**
- * 注释生成语言枚举
- * <p>
- * 用于表示 Javadoc 注释生成时使用的语言类型。
- * 包含语言代码（value）和显示描述（desc）两个字段。
+ * Comment Language
  *
- * @author zeka.stack.team
- * @version 2.1.0
- * @since 2.1.0
+ * @author dong4j
+ * @date 2026-01-01 04:28:45
+ * @version hello.world
+ * @since hello.world
  */
 public enum CommentLanguage {
     /**
@@ -60,23 +58,21 @@ public enum CommentLanguage {
     /**
      * 获取语言显示描述（国际化）
      *
-     * <p>返回国际化后的语言显示描述，用于UI显示。
-     * 根据当前语言环境返回对应的文本。
+     * <p>返回国际化后的语言显示描述，用于 UI 显示。
      *
      * @return 语言显示描述（如 "中文" 或 "English"）
      */
     @NotNull
     public String getDesc() {
         return this == ZH
-               ? JavadocBundle.message("statusbar.quick.settings.comment.language.chinese")
-               : JavadocBundle.message("statusbar.quick.settings.comment.language.english");
+               ? AICommonBundle.message("settings.comment.language.chinese")
+               : AICommonBundle.message("settings.comment.language.english");
     }
 
     /**
      * 获取语言显示描述（原始值，用于提示词）
      *
-     * <p>返回原始的语言显示描述，用于提示词模板中的占位符替换。
-     * 提示词模板使用中文，因此返回中文文本。
+     * <p>提示词模板使用中文，因此返回中文文本。
      *
      * @return 语言显示描述（"中文" 或 "英文"）
      */
@@ -98,7 +94,6 @@ public enum CommentLanguage {
                 return language;
             }
         }
-        // 默认返回中文
         return ZH;
     }
 
@@ -116,4 +111,3 @@ public enum CommentLanguage {
         return fromValue(value);
     }
 }
-

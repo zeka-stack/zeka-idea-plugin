@@ -31,6 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
@@ -130,6 +131,10 @@ public final class AIProviderConfigController {
                                             : new AIRuntimeSettings();
         ui.getVerboseLoggingCheckBox().setSelected(workingSettings.verboseLogging);
         ui.getLastUpdateCheckCheckBox().setSelected(workingSettings.lastUpdateCheck);
+        CommentLanguage commentLanguage = workingSettings.commentLanguage != null
+                                          ? workingSettings.commentLanguage
+                                          : CommentLanguage.ZH;
+        ui.getCommentLanguageComboBox().setSelectedItem(commentLanguage);
         ui.updateCheckBoxHintColors();
 
         // 加载高级配置
@@ -202,6 +207,8 @@ public final class AIProviderConfigController {
         // verboseLogging 已迁移到全局配置
         workingSettings.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
         workingSettings.lastUpdateCheck = ui.getLastUpdateCheckCheckBox().isSelected();
+        CommentLanguage selectedLanguage = (CommentLanguage) ui.getCommentLanguageComboBox().getSelectedItem();
+        workingSettings.commentLanguage = selectedLanguage != null ? selectedLanguage : CommentLanguage.ZH;
 
         AIModelParameters modelSnapshot = snapshotModelParameters();
         workingSettings.modelParameters = modelSnapshot.copy();

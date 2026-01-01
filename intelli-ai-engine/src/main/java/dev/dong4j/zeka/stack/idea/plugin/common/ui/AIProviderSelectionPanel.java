@@ -61,7 +61,7 @@ public class AIProviderSelectionPanel {
     }
 
     /** AI 提供商选择下拉框 */
-    private JComboBox<AIProviderConfig> providerComboBox;
+    public JComboBox<AIProviderConfig> providerComboBox;
 
     /** 主面板 */
     private JPanel panel;

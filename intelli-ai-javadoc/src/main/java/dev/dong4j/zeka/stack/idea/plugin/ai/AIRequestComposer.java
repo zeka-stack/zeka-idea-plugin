@@ -10,7 +10,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -61,8 +62,10 @@ public final class AIRequestComposer {
 
         // 根据语言选择替换提示词中的语言占位符
         // 必须在所有其他占位符（如 ${author}、${date} 等）替换完成后进行
-        CommentLanguage commentLanguage = settings.commentLanguage != null
-                                          ? settings.commentLanguage : CommentLanguage.ZH;
+        AIProviderSettings providerSettings = AIProviderSettings.getInstance();
+        CommentLanguage commentLanguage = providerSettings != null && providerSettings.commentLanguage != null
+                                          ? providerSettings.commentLanguage
+                                          : CommentLanguage.ZH;
         // 提示词模板使用中文，因此使用 getDescForPrompt() 获取中文文本
         String languageText = commentLanguage.getDescForPrompt();
 

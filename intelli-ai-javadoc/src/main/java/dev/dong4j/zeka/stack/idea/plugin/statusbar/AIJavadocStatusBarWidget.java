@@ -31,7 +31,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
-import dev.dong4j.zeka.stack.idea.plugin.settings.CommentLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -134,6 +133,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * 获取小部件状态
      * <p>
      * 根据虚拟文件获取小部件的当前状态, 包括显示文本, 工具提示和图标
+     * 状态栏只显示插件图标，不显示模型名称
      *
      * @param file 虚拟文件, 可为 null
      * @return 小部件状态对象, 不为 null
@@ -142,13 +142,11 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
         String displayText = getCurrentProviderModelName();
         String tooltip = JavadocBundle.message("statusbar.provider.tooltip", displayText);
-        WidgetState state = new WidgetState(tooltip, " " + displayText, true);
+        // 只显示图标，不显示文本
+        WidgetState state = new WidgetState(tooltip, "", true);
 
-        // 获取当前提供商的图标（已缩放为 13x13）
-        AIProviderType providerType = getCurrentProviderType();
-        Icon providerIcon = AICommonIcons.getProviderIcon(providerType);
-        // 如果提供商有图标则使用（已缩放），否则缩放主图标
-        Icon iconToUse = providerIcon != null ? providerIcon : IconUtil.scale(AIJicons.AIJ_16, null, 0.8125f);
+        // 使用插件图标，不显示提供商图标
+        Icon iconToUse = IconUtil.scale(AIJicons.AIJ_16, null, 0.8125f);
         state.setIcon(iconToUse);
 
         return state;
@@ -202,13 +200,10 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 2.7 性能模式
         group.add(new PerformanceModeToggleAction());
 
-        // 2.8 注释语言（单选，显示当前选择）
-        group.add(createCommentLanguageActionGroup());
-
-        // 2.9 显示生成 Javadoc 提示
+        // 2.8 显示生成 Javadoc 提示
         group.add(new ShowGenerateJavadocHintToggleAction());
 
-        // 2.10 允许删除 Javadoc
+        // 2.9 允许删除 Javadoc
         group.add(new AllowDeleteJavadocToggleAction());
 
         group.add(Separator.create());
@@ -864,65 +859,6 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().allowDeleteJavadoc = state;
-        }
-    }
-
-    /**
-     * 创建注释语言选择动作组
-     * <p>
-     * 动态创建动作组，在标题中显示当前选择的语言.
-     *
-     * @return 注释语言选择动作组
-     * @since 2.8.0
-     */
-    @NotNull
-    private static DefaultActionGroup createCommentLanguageActionGroup() {
-        // 获取当前选择的语言，显示在菜单标题中
-        SettingsState settings = SettingsState.getInstance();
-        String currentLanguage = settings.commentLanguage == CommentLanguage.ZH
-                                 ? JavadocBundle.message("statusbar.quick.settings.comment.language.chinese")
-                                 : JavadocBundle.message("statusbar.quick.settings.comment.language.english");
-        String title = JavadocBundle.message("statusbar.quick.settings.comment.language") + " (" + currentLanguage + ")";
-        DefaultActionGroup group = new DefaultActionGroup(title, true);
-        group.add(new CommentLanguageAction(CommentLanguage.ZH));
-        group.add(new CommentLanguageAction(CommentLanguage.EN));
-        return group;
-    }
-
-    /**
-     * 注释语言选择动作类
-     * <p>
-     * 该类继承自 AnAction, 用于选择注释生成语言.
-     *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @since 2.6.0
-     */
-    private static class CommentLanguageAction extends AnAction {
-        private final CommentLanguage language;
-
-        CommentLanguageAction(CommentLanguage language) {
-            super(language == CommentLanguage.ZH
-                  ? JavadocBundle.message("statusbar.quick.settings.comment.language.chinese")
-                  : JavadocBundle.message("statusbar.quick.settings.comment.language.english"));
-            this.language = language;
-        }
-
-        @Override
-        public void actionPerformed(@NotNull AnActionEvent e) {
-            SettingsState.getInstance().commentLanguage = language;
-        }
-
-        @Override
-        public void update(@NotNull AnActionEvent e) {
-            SettingsState settings = SettingsState.getInstance();
-            boolean isSelected = settings.commentLanguage == language;
-            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
-        }
-
-        @Override
-        public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.BGT;
         }
     }
 

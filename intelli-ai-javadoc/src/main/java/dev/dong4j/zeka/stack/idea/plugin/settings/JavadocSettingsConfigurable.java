@@ -236,9 +236,6 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.replaceChinesePunctuation != panelSettings.replaceChinesePunctuation) {
             return true;
         }
-        if (!Objects.equals(currentSettings.commentLanguage, panelSettings.commentLanguage)) {
-            return true;
-        }
         if (currentSettings.performanceMode != panelSettings.performanceMode) {
             return true;
         }
@@ -344,7 +341,6 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.compressSingleLineJavaDoc = panelSettings.compressSingleLineJavaDoc;
         currentSettings.addSpaceBetweenChineseAndEnglish = panelSettings.addSpaceBetweenChineseAndEnglish;
         currentSettings.replaceChinesePunctuation = panelSettings.replaceChinesePunctuation;
-        currentSettings.commentLanguage = panelSettings.commentLanguage;
         currentSettings.performanceMode = panelSettings.performanceMode;
         currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
         currentSettings.showGenerateJavadocHint = panelSettings.showGenerateJavadocHint;
@@ -444,4 +440,3 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
     }
 
 }
-
