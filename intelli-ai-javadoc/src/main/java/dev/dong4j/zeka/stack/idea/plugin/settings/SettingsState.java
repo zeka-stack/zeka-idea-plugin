@@ -298,7 +298,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * <p>注意：${author} 和 ${email} 会在应用配置时自动替换为自定义标签中的实际值。
      *
      * <p>默认模板：
-     * <pre>
+     * <pre>{@code
      * /**
      *  * ${description}
      *  *
@@ -307,7 +307,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *  * @email ${email}
      *  * @date ${YEAR}.${MONTH}.${DAY} ${HOUR}:${MINUTE}
      *  * @since x.x.x
-     *  /
+     * }
      * </pre>
      *
      * @see #customJavadocTags
@@ -323,7 +323,8 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
          * @email ${email}
          * @date ${YEAR}.${MONTH}.${DAY} ${HOUR}:${MINUTE}
          * @since x.x.x
-         */""";
+         */
+        """;
 
     /** 是否显示提示模板 */
     public boolean showPromptTemplates = false;
@@ -345,14 +346,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>控制是否将只有一行内容的 Javadoc 注释压缩为单行格式。
      * 例如：
-     * <pre>
+     * <pre>{@code
      * /**
      *  * One-line comment
      *  /
+     * }
      * </pre>
      * 会压缩为：
-     * <pre>
+     * <pre>{@code
      * /** One-line comment /
+     * }
      * </pre>
      *
      * <p>默认值: true（默认启用）
@@ -547,7 +550,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 如果已存在 @date ,需要格式化为 yyyy.mm.dd, 否则使用 ${date} 作为时间戳
                - 如果已存在 @since 则保存不变, 否则使用 ${since} 作为版本号
 
-            # 示例
+            # 示例(中文示例, 其他语言类似)：
             示例1 - Java 代码：
             输入代码：
             public class UserService {
@@ -632,7 +635,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             8. 可以使用 @since, @Deprecated 等标签
             9. Kotlin: 注意可空类型（如 String?）和默认参数
 
-            # 示例
+            # 示例(中文示例, 其他语言类似)：
             示例1 - Java 代码：
             输入代码：
             public String getUserName(int userId) throws UserNotFoundException {
@@ -708,7 +711,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 如果字段/属性说明复杂（包含多个信息点、有 @tag 标签、或超过 80 个字符），使用多行格式
             5. Kotlin: 注意属性的可空类型（如 String?）和可变性（var/val）
 
-            # 示例
+            # 示例（中文示例, 其他语言类似）：
             示例1 - Java 简单字段：
             输入：private String username;
             输出：/** 用户名 */
@@ -785,7 +788,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 assertEquals("John", service.getUserName(1));
             }
 
-            输出注释：
+            输出注释(中文示例, 其他语言类似)：
             /**
              * 测试获取用户名称功能
              * <p>
@@ -899,7 +902,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             6. 如果有异常抛出，使用 @throws 标签
             7. 不要添加不存在的参数、返回值和异常的注释标签
 
-            # 示例
+            # 示例(中文示例, 其他语言类似)：
             示例1 - 修复错误的参数描述：
             输入代码：
             /**
