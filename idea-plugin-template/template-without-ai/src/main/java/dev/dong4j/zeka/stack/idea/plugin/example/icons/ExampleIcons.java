@@ -10,7 +10,7 @@ import javax.swing.Icon;
  * IntelliJ IDEA Plugin Template 插件图标管理类
  * <p>
  * 用于集中管理插件中使用的所有图标资源。
- * 图标文件应放置在 {@code src/main/resources/icons/} 目录下。
+ * 图标文件应放置在与插件包路径一致的资源目录下。
  * <p>
  * 图标尺寸说明：
  * <ul>
@@ -26,10 +26,10 @@ public class ExampleIcons {
     /**
      * 加载图标
      * <p>
-     * 用于加载位于 {@code /icons/} 目录下的图标文件。
-     * 路径必须以 {@code /icons/} 开头。
+     * 用于加载位于资源包路径下的图标文件。
+     * 路径应与插件包路径保持一致。
      *
-     * @param iconPath 图标文件路径，相对于 resources 根目录（例如："/icons/icon.svg"）
+     * @param iconPath 图标文件路径，相对于 resources 根目录
      * @return 加载的图标
      */
     @NotNull
@@ -44,6 +44,6 @@ public class ExampleIcons {
      * <p>
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */
-    public static final Icon EXAMPLE_16 = load("/icons/example_16.svg");
+    public static final Icon EXAMPLE_16 =
+        load("/dev/dong4j/zeka/stack/idea/plugin/example/icons/example_16.svg");
 }
-

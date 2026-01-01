@@ -60,8 +60,15 @@ vim gradle.properties
 ./gradlew runIde
 ```
 
+## ✅ 规范
+
+### 图标资源
+
+- 图标文件应放置在 `src/main/resources/dev/dong4j/zeka/stack/idea/plugin/example/icons/` 目录下
+- 图标加载统一通过 `ExampleIcons` 管理，路径与包名保持一致
+- 图标路径示例：`/dev/dong4j/zeka/stack/idea/plugin/example/icons/example_16.svg`
+
 ## 📚 更多信息
 
 - [主项目 README](../README.md) - 查看完整的插件开发指南
 - [IntelliAI Engine 集成详解](../README.md#-ai-插件-engine-依赖集成详解) - AI 插件开发详细说明
-

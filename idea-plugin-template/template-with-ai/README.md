@@ -23,6 +23,8 @@
 - **状态栏集成**：通过 Engine 的状态栏扩展点注册快捷设置
 - **AI 控制台日志**：统一输出到 Engine Console
 - **AI 接口调用**：示例 Action 内置最小非流式调用
+- **更新检查入口**：集成 `PluginUpdateInfoProvider`，统一插件更新信息
+- **反馈面板**：集成 `FeedbackPanel`，用于收集用户反馈
 
 ### 🛠️ 开发环境
 
@@ -132,12 +134,13 @@ template-with-ai/
 │   │   ├── java/
 │   │   │   └── dev/dong4j/zeka/stack/idea/plugin/example/
 │   │   │       ├── action/
+│   │   │       ├── PluginContents.java
 │   │   │       ├── settings/
 │   │   │       ├── statusbar/
 │   │   │       ├── icons/
 │   │   │       └── util/
 │   │   └── resources/
-│   │       ├── icons/
+│   │       ├── dev/dong4j/zeka/stack/idea/plugin/example/icons/
 │   │       ├── messages/
 │   │       └── META-INF/
 │   └── test/
@@ -157,4 +160,4 @@ template-with-ai/
 2. **本地开发路径**：`buildAiCommonPlugin` 任务假设 `intelli-ai-engine` 位于 `../intelli-ai-engine`
 3. **发布前检查**：确保 `plugin.xml` 中已正确声明 Engine 依赖
 4. **线程安全**：遵循 IntelliJ Platform 的线程模型，UI 操作在 EDT，耗时操作在 BGT
-
+5. **统一常量**：插件 ID/Name 统一维护在 `PluginContents`，避免散落引用
