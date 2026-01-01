@@ -46,6 +46,10 @@
                     factoryClass="dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowFactory"
                     canCloseContents="true"
                     doNotActivateOnStart="true"/>
+
+        <!-- 状态栏快捷设置 -->
+        <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.statusbar.ChangelogStatusBarWidgetFactory"
+                                order="first" id="dev.dong4j.zeka.stack.idea.plugin.changelog.statusbar.ChangelogStatusBarWidget"/>
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
