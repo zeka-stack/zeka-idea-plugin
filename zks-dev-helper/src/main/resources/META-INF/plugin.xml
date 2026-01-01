@@ -19,14 +19,42 @@
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- 配置持久化 -->
-        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState"/>
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.state.ZksDevHelperMainState"/>
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState"/>
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.state.MyBatisSettingsState"/>
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.settings.state.ProxyerSettingsState"/>
 
-        <!-- 设置面板 -->
+        <!-- 设置面板 - 主配置（一级菜单） -->
+        <!--suppress PluginXmlI18n -->
         <projectConfigurable
-            parentId="tools"
-            instance="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"
-            id="dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsConfigurable"
-            displayName="ZKS Dev Helper"/>
+            parentId="other"
+            instance="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ZksDevHelperMainConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ZksDevHelperMainConfigurable"
+            displayName="🙉 ZKS Dev Helper"/>
+
+        <!-- 设置面板 - 代码样式配置（二级菜单） -->
+        <!--suppress PluginXmlI18n -->
+        <projectConfigurable
+            parentId="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ZksDevHelperMainConfigurable"
+            instance="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.CodeStyleSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.CodeStyleSettingsConfigurable"
+            displayName="🎨 Code Style"/>
+
+        <!-- 设置面板 - MyBatis 配置（二级菜单） -->
+        <!--suppress PluginXmlI18n -->
+        <projectConfigurable
+            parentId="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ZksDevHelperMainConfigurable"
+            instance="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.MyBatisSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.MyBatisSettingsConfigurable"
+            displayName="🗄️ MyBatis"/>
+
+        <!-- 设置面板 - Proxyer 配置（二级菜单） -->
+        <!--suppress PluginXmlI18n -->
+        <projectConfigurable
+            parentId="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ZksDevHelperMainConfigurable"
+            instance="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ProxyerSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.settings.configurable.ProxyerSettingsConfigurable"
+            displayName="🔄 Proxyer"/>
 
         <!-- 通知组 -->
         <notificationGroup id="ZKS Dev Helper Notifications"

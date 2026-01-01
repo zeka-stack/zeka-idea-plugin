@@ -5,7 +5,7 @@ import com.intellij.codeInsight.template.TemplateContextType;
 
 import org.jetbrains.annotations.NotNull;
 
-import dev.dong4j.zeka.stack.idea.plugin.settings.UniformFormatSettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 
 /**
  * Live Template 上下文
@@ -46,7 +46,7 @@ public class UniformLiveTemplateContext extends TemplateContextType {
     public boolean isInContext(@NotNull TemplateActionContext templateActionContext) {
         // 检查是否启用 Live Template 功能
         try {
-            UniformFormatSettingsState settings = UniformFormatSettingsState.getInstance();
+            CodeStyleSettingsState settings = CodeStyleSettingsState.getInstance();
             return settings != null && settings.isEnableLiveTemplates();
         } catch (Exception e) {
             // 如果获取配置失败，默认返回 true（保持向后兼容）
