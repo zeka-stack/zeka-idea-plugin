@@ -440,6 +440,27 @@ public class PersonalInfoPanel {
             mainPanel.add(footerLabel);
         }
 
+        // Buy Me a Coffee 链接
+        final String buyMeACoffeeUrl = "https://ideaplugin.dong4j.site/buy-me-a-coffee";
+        JBLabel buyMeACoffeeLabel = new JBLabel(
+            "<html><div style='text-align: center; color: #999; font-size: 11px;'>" +
+            "<a href='" + buyMeACoffeeUrl + "'>Buy Me a Coffee</a>" +
+            "</div></html>",
+            SwingConstants.CENTER
+        );
+        buyMeACoffeeLabel.setAlignmentX(JLabel.CENTER_ALIGNMENT);
+        buyMeACoffeeLabel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+
+        // 添加鼠标监听器来处理链接点击
+        buyMeACoffeeLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                BrowserUtil.browse(buyMeACoffeeUrl);
+            }
+        });
+
+        mainPanel.add(buyMeACoffeeLabel);
+
         return mainPanel;
     }
 

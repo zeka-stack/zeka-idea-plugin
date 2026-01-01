@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>捐赠支持 - IntelliAI Plugins</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #4a63d4;
+            --primary-hover: #5a73e4;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(120deg, #ff9a62, #ff6f61, #ffc371, #ff9f68);
+            background-size: 300% 300%;
+            animation: warmGradient 16s ease infinite;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        @keyframes warmGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: rgba(255, 248, 240, 0.94);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(165, 84, 40, 0.2);
+        }
+
+        .donation-card {
+            padding: 20px 24px;
+        }
+
+        .donation-card .payment-section {
+            margin-bottom: 16px;
+        }
+
+        .donation-card .qr-code {
+            width: 160px;
+            height: 160px;
+        }
+
+        .donation-card .payment-method h3 {
+            margin-bottom: 10px;
+        }
+
+        .donation-card .buy-coffee-section {
+            padding: 10px 0 0;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        .payment-section {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .payment-method {
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .payment-method h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 15px;
+            border: 3px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .qr-code:hover {
+            transform: scale(1.05);
+        }
+
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .buy-coffee-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .buy-coffee-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .buy-coffee-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .form-group label .required {
+            color: var(--danger-color);
+            margin-left: 4px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .page-footer {
+            margin: 40px auto 20px;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 18px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(6px);
+            text-align: center;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.92rem;
+            justify-content: center;
+        }
+
+        .footer-text {
+            white-space: nowrap;
+        }
+
+        .footer-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+            display: inline-block;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .footer-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.92);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-link:hover {
+            color: #ffffff;
+        }
+
+        .footer-link-icon {
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .payment-section {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>☀️ 捐赠支持 IntelliAI</h1>
+        <p>感谢您使用 IntelliAI 插件！您的支持是我持续开发的动力。</p>
+    </div>
+
+    <div class="card donation-card">
+        <h2 class="card-title">捐赠方式</h2>
+        <div class="payment-section">
+            <div class="payment-method">
+                <h3>微信捐赠</h3>
+                <div class="qr-code">
+                    <img src="https://cdn.dong4j.site/source/image/wechat-pay.webp" alt="微信支付二维码">
+                </div>
+            </div>
+            <div class="payment-method">
+                <h3>支付宝捐赠</h3>
+                <div class="qr-code">
+                    <img src="https://cdn.dong4j.site/source/image/alipay.webp" alt="支付宝二维码">
+                </div>
+            </div>
+        </div>
+        <div class="buy-coffee-section">
+            <a href="javascript:void(0)" class="buy-coffee-btn" onclick="window.open('', '_blank')">
+                ❤️ 立即捐赠
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="card-title">意见反馈</h2>
+        <div id="alert-container"></div>
+        <form id="feedback-form">
+            <div class="form-group">
+                <label for="type">
+                    反馈类型
+                    <span class="required">*</span>
+                </label>
+                <select id="type" name="type" required>
+                    <option value="BUG">Bug 报告</option>
+                    <option value="FEATURE">功能建议</option>
+                    <option value="QUESTION">使用问题</option>
+                    <option value="OTHER">其他</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="title">
+                    标题
+                    <span class="required">*</span>
+                </label>
+                <input type="text" id="title" name="title" required maxlength="255" placeholder="请输入反馈标题">
+            </div>
+
+            <div class="form-group">
+                <label for="content">
+                    内容
+                    <span class="required">*</span>
+                </label>
+                <textarea id="content" name="content" required maxlength="10000" placeholder="请详细描述您的反馈内容..."></textarea>
+                <small>最多 10000 个字符</small>
+            </div>
+
+            <div class="form-group">
+                <label for="githubUsername">GitHub 用户名（可选）</label>
+                <input type="text" id="githubUsername" name="githubUsername" maxlength="39" placeholder="用于 @ 提及">
+            </div>
+
+            <div class="form-group">
+                <label for="pluginName">插件名称（可选）</label>
+                <input type="text" id="pluginName" name="pluginName" maxlength="100" placeholder="例如：intelli-ai-javadoc">
+            </div>
+
+            <div class="form-group">
+                <label for="pluginVersion">插件版本（可选）</label>
+                <input type="text" id="pluginVersion" name="pluginVersion" maxlength="50" placeholder="例如：1.0.0">
+            </div>
+
+            <div class="form-group">
+                <label for="ideaVersion">IDEA 版本（可选）</label>
+                <input type="text" id="ideaVersion" name="ideaVersion" maxlength="50" placeholder="例如：2024.1">
+            </div>
+
+            <div class="form-group">
+                <label for="os">操作系统（可选）</label>
+                <input type="text" id="os" name="os" maxlength="100" placeholder="例如：macOS 14.0、Windows 11、Linux">
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="clearForm()">清空</button>
+                <button type="submit" class="btn btn-primary" id="submit-btn">提交反馈</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="container page-footer">
+        <div class="footer-content">
+            <div class="footer-meta">
+                <span class="footer-text">© 2025 IntelliAI Engine</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Powered by zeka.stack</span>
+                <span class="footer-dot"></span>
+                <span class="footer-text">Engine powers every AI plugin · Build beyond limits</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/dong4j" target="_blank" rel="noopener noreferrer" class="footer-link" title="GitHub">
+                    <span class="footer-link-icon">🔗</span>
+                    <span>GitHub</span>
+                </a>
+                <a href="https://home.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="个人主页">
+                    <span class="footer-link-icon">🏠</span>
+                    <span>主页</span>
+                </a>
+                <a href="https://blog.dong4j.site" target="_blank" rel="noopener noreferrer" class="footer-link" title="博客">
+                    <span class="footer-link-icon">📝</span>
+                    <span>博客</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'https://api.dong4j.site/idea-plugin-feedback';
+
+    function showAlert(message, type = 'info') {
+        const alertContainer = document.getElementById('alert-container');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} show`;
+        alert.textContent = message;
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alert);
+
+        // 自动隐藏成功和错误提示
+        if (type === 'success' || type === 'error') {
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        // 滚动到顶部
+        alert.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    }
+
+    function clearForm() {
+        document.getElementById('feedback-form').reset();
+        document.getElementById('alert-container').innerHTML = '';
+    }
+
+    async function submitFeedback(event) {
+        event.preventDefault();
+
+        const form = document.getElementById('feedback-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        // 验证必填字段
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+
+        if (!title) {
+            showAlert('请输入反馈标题', 'error');
+            return;
+        }
+
+        if (!content) {
+            showAlert('请输入反馈内容', 'error');
+            return;
+        }
+
+        // 构建请求体
+        const requestBody = {
+            title: title,
+            content: content,
+            type: document.getElementById('type').value,
+            category: 'GENERAL',
+            userInfo: {
+                githubUsername: document.getElementById('githubUsername').value.trim() || undefined,
+                pluginName: document.getElementById('pluginName').value.trim() || undefined,
+                pluginVersion: document.getElementById('pluginVersion').value.trim() || undefined,
+                ideaVersion: document.getElementById('ideaVersion').value.trim() || undefined,
+                os: document.getElementById('os').value.trim() || undefined
+            },
+            metadata: {
+                timestamp: Date.now()
+            }
+        };
+
+        // 移除 undefined 字段
+        Object.keys(requestBody.userInfo).forEach(key => {
+            if (requestBody.userInfo[key] === undefined) {
+                delete requestBody.userInfo[key];
+            }
+        });
+
+        // 禁用提交按钮
+        submitBtn.disabled = true;
+        submitBtn.textContent = '提交中...';
+        showAlert('正在提交反馈，请稍候...', 'info');
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showAlert('反馈提交成功！感谢您的反馈。', 'success');
+                clearForm();
+                // 如果有讨论链接，可以在这里处理
+                if (data.discussion && data.discussion.url) {
+                    setTimeout(() => {
+                        if (confirm('反馈已成功提交到 GitHub Discussions，是否前往查看？')) {
+                            window.open(data.discussion.url, '_blank');
+                        }
+                    }, 1000);
+                }
+            } else {
+                showAlert(data.error || '提交失败，请稍后重试。', 'error');
+            }
+        } catch (error) {
+            console.error('提交反馈失败:', error);
+            showAlert('提交失败：' + error.message + '。请检查网络连接后重试。', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '提交反馈';
+        }
+    }
+
+    // 绑定表单提交事件
+    document.getElementById('feedback-form').addEventListener('submit', submitFeedback);
+</script>
+</body>
+</html>
