@@ -2,7 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.example;
 
 /**
  * 插件内容配置类
- * <p> 用于存储插件的基础标识信息, 包括插件 ID 和插件名称, 为插件的注册和识别提供基础数据支持
+ * <p> 用于存储插件的基本标识信息, 包括插件 ID 和插件名称, 供插件系统识别和使用
  *
  * @author dong4j
  * @version 1.0.0
@@ -11,16 +11,18 @@ package dev.dong4j.zeka.stack.idea.plugin.example;
  * @since 1.0.0
  */
 public final class PluginContents {
-    /** 插件唯一标识符, 用于在插件系统中识别该插件 */
+    /**
+     * 插件的唯一标识符
+     * <p>
+     * 该常量用于标识插件的唯一 ID, 在整个系统中是唯一的.
+     */
     public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin.example";
     /** 插件名称 */
     public static final String PLUGIN_NAME = "Example Plugin";
 
     /**
-     * 构造函数, 用于初始化 PluginContents 类
-     * <p> 该构造函数为私有构造函数, 防止外部实例化该类
-     *
-     * @since hello.world
+     * 私有构造函数, 防止外部实例化
+     * <p> 该类为工具类, 包含插件相关常量, 不允许被实例化
      */
     private PluginContents() {
     }
