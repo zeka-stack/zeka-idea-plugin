@@ -500,7 +500,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 编辑 `gradle.properties`:
 
 ```properties
-pluginVersion=1.0.1
+pluginVersion=2025.3.1
 ```
 
 #### 2. 更新变更日志

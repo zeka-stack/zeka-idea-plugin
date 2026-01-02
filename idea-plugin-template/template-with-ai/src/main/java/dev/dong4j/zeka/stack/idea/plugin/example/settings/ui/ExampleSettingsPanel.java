@@ -26,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
 import dev.dong4j.zeka.stack.idea.plugin.example.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.example.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.example.util.ExampleBundle;
+import lombok.Getter;
 
 /**
  * 示例设置面板类
@@ -51,6 +52,7 @@ public class ExampleSettingsPanel {
      * 主面板
      * <p> 用于布局和管理设置面板中的各个组件.
      */
+    @Getter
     private final JPanel mainPanel;
     /** AI 服务商选择面板 */
     private final AIProviderSelectionPanel aiProviderSelectionPanel;
@@ -120,16 +122,6 @@ public class ExampleSettingsPanel {
     }
 
     /**
-     * 获取主面板
-     * <p> 返回设置面板的主容器面板, 用于在 UI 中显示所有设置选项
-     *
-     * @return 主面板, 包含所有设置控件
-     */
-    public JPanel getMainPanel() {
-        return mainPanel;
-    }
-
-    /**
      * 判断当前设置是否与给定的设置状态发生修改
      * <p>比较界面上的配置项 (如系统提示词, 示例模板和高级设置可见性) 与传入的 SettingsState 实例, 以确定是否有变更.
      * <p>如果 AI 服务商配置为空或不匹配, 也认为设置已修改.
@@ -194,7 +186,7 @@ public class ExampleSettingsPanel {
      */
     private void setupListeners() {
         showAdvancedSettingsCheckBox.addActionListener(e ->
-            advancedSettingsPanel.setVisible(showAdvancedSettingsCheckBox.isSelected()));
+                                                           advancedSettingsPanel.setVisible(showAdvancedSettingsCheckBox.isSelected()));
     }
 
     /**
@@ -232,9 +224,9 @@ public class ExampleSettingsPanel {
         promptTabbedPane.setPreferredSize(new Dimension(600, 400));
 
         promptTabbedPane.addTab(ExampleBundle.message("settings.prompt.tab.system"),
-            createPromptTab(systemPromptTextArea, "system"));
+                                createPromptTab(systemPromptTextArea, "system"));
         promptTabbedPane.addTab(ExampleBundle.message("settings.prompt.tab.example"),
-            createPromptTab(exampleTemplateTextArea, "example"));
+                                createPromptTab(exampleTemplateTextArea, "example"));
 
         return promptTabbedPane;
     }
@@ -283,7 +275,7 @@ public class ExampleSettingsPanel {
                 textArea.setText(SettingsState.getDefaultSystemPrompt());
                 break;
             case "example":
-                textArea.setText(SettingsState.getDefaultExampleTemplate());
+                textArea.setText(SettingsState.getDefaultUserTemplate());
                 break;
             default:
                 break;

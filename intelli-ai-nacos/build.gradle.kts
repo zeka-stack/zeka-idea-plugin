@@ -7,7 +7,8 @@ group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
 // IntelliAI Engine 插件版本号（从 gradle.properties 中获取）
-val aiEngineVersion: String = providers.gradleProperty("aiEngineVersion").get()
+val kitVersion: String = providers.gradleProperty("kitVersion").get()
+val engineVersion: String = providers.gradleProperty("engineVersion").get()
 
 repositories {
     mavenCentral()
@@ -63,7 +64,7 @@ dependencies {
         // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
         // 发布到市场后，用户需要单独安装 IntelliAI Engine 插件
         // 不要在这里使用 plugin()，否则会导致发布到市场时找不到相关 class
-        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai", aiEngineVersion)
+        // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai", engineVersion)
 
         zipSigner()
         pluginVerifier()
@@ -71,13 +72,13 @@ dependencies {
     }
 
     // 编译时依赖：本地开发时，includeBuild 会自动将依赖替换为本地项目
-    // 发布到市场后，编译时使用 compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:${aiEngineVersion}")
+    // 发布到市场后，编译时使用 compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:${engineVersion}")
     // 运行时依赖通过 plugin.xml 中的 <depends> 声明，用户需要单独安装 IntelliAI Engine 插件
     // 本地开发时，运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:$aiEngineVersion")
+    compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:$engineVersion")
 
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
-    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:1.0.0")
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:$kitVersion")
 
     // Nacos Client 依赖
     implementation("com.alibaba.nacos:nacos-client:2.2.0")

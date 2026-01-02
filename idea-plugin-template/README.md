@@ -2,9 +2,16 @@
 
 提供两种 IntelliJ IDEA 插件开发模板，帮助快速创建新的插件项目。
 
-## 📦 包含模板
+## 目录
 
-### [带 AI 能力的插件模板](./template-with-ai)
+- [1 📦 包含模板](#1-📦-包含模板)
+- [2 🚀 快速开始](#2-🚀-快速开始)
+- [3 ✅ 规范](#3-✅-规范)
+- [4 📚 更多信息](#4-📚-更多信息)
+
+## 1 📦 包含模板
+
+### 1.1 [带 AI 能力的插件模板](./template-with-ai)
 
 适用于需要集成 AI 服务的插件开发。
 
@@ -17,7 +24,7 @@
 
 **详细说明：** 请查看 [template-with-ai/README.md](./template-with-ai/README.md)
 
-### [不带 AI 能力的插件模板](./template-without-ai)
+### 1.2 [不带 AI 能力的插件模板](./template-without-ai)
 
 适用于纯工具类插件开发，无需 AI 集成。
 
@@ -30,9 +37,9 @@
 
 **详细说明：** 请查看 [template-without-ai/README.md](./template-without-ai/README.md)
 
-## 🚀 快速开始
+## 2 🚀 快速开始
 
-### 使用带 AI 能力的模板
+### 2.1 使用带 AI 能力的模板
 
 ```bash
 # 复制模板
@@ -46,7 +53,7 @@ vim gradle.properties
 ./gradlew runIde
 ```
 
-### 使用不带 AI 能力的模板
+### 2.2 使用不带 AI 能力的模板
 
 ```bash
 # 复制模板
@@ -60,15 +67,15 @@ vim gradle.properties
 ./gradlew runIde
 ```
 
-## ✅ 规范
+## 3 ✅ 规范
 
-### 图标资源
+### 3.1 图标资源
 
 - 图标文件应放置在 `src/main/resources/dev/dong4j/zeka/stack/idea/plugin/example/icons/` 目录下
 - 图标加载统一通过 `ExampleIcons` 管理，路径与包名保持一致
 - 图标路径示例：`/dev/dong4j/zeka/stack/idea/plugin/example/icons/example_16.svg`
 
-## 📚 更多信息
+## 4 📚 更多信息
 
 - [主项目 README](../README.md) - 查看完整的插件开发指南
 - [IntelliAI Engine 集成详解](../README.md#-ai-插件-engine-依赖集成详解) - AI 插件开发详细说明
