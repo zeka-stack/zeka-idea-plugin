@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.ide.AppLifecycleListener;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
@@ -33,6 +35,7 @@ public class AgentServerLifecycleListener implements ProjectActivity, AppLifecyc
      * <p> 该 Logger 对象被初始化为 AgentServerLifecycleListener 类的实例, 用于在项目生命周期中记录相关日志信息.
      */
     private static final Logger LOG = Logger.getInstance(AgentServerLifecycleListener.class);
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
     /**
      * 在项目启动时自动启动 IntelliAI Agent
@@ -46,6 +49,11 @@ public class AgentServerLifecycleListener implements ProjectActivity, AppLifecyc
     @Override
     public @Nullable Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         if (project.isDefault()) {
+            return Unit.INSTANCE;
+        }
+
+        // 只在第一次运行时检查更新
+        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
             return Unit.INSTANCE;
         }
 

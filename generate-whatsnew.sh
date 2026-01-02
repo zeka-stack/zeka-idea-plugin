@@ -649,17 +649,17 @@ HTML
     echo "          <div class=\"card-title\">$plugin_name</div>"
     echo "          <div class=\"card-meta\">$module_name</div>"
     echo "        </div>"
-    echo "        <div class=\"card-header-actions\" onclick=\"event.stopPropagation()\">"
-    if [[ -n "$home_url" ]]; then
-      echo "          <a href=\"$home_url\" target=\"_blank\" class=\"card-button card-button-home\">🏠 主页</a>"
-    fi
-    if [[ -n "$docs_url" ]]; then
-      echo "          <a href=\"$docs_url\" target=\"_blank\" class=\"card-button card-button-docs\">📚 文档</a>"
-    fi
-    if [[ -n "$download_url" ]]; then
-      echo "          <a href=\"$download_url\" target=\"_blank\" class=\"card-button card-button-download\" title=\"因插件市场审核延迟, 可下载最新版本手动安装\">⬇️ 离线安装</a>"
-    fi
-    echo "        </div>"
+      echo "        <div class=\"card-header-actions\" onclick=\"event.stopPropagation()\">"
+      if [[ -n "$home_url" ]]; then
+        echo "          <a href=\"#\" onclick=\"openLink('$home_url'); return false;\" class=\"card-button card-button-home\">🏠 主页</a>"
+      fi
+      if [[ -n "$docs_url" ]]; then
+        echo "          <a href=\"#\" onclick=\"openLink('$docs_url'); return false;\" class=\"card-button card-button-docs\">📚 文档</a>"
+      fi
+      if [[ -n "$download_url" ]]; then
+        echo "          <a href=\"#\" onclick=\"openLink('$download_url'); return false;\" class=\"card-button card-button-download\" title=\"因插件市场审核延迟, 可下载最新版本手动安装\">⬇️ 离线安装</a>"
+      fi
+      echo "        </div>"
     echo "      </div>"
     echo "      <div class=\"card-body\" id=\"preview-$card_index\">"
     echo "$preview_content"
@@ -693,6 +693,13 @@ HTML
   </div>
 
   <script>
+    // 打开链接（兼容 JCEF 浏览器）
+    function openLink(url) {
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    }
+
     // 打开模态框
     function openModal(index) {
       const modal = document.getElementById('modal');

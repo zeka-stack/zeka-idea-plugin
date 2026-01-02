@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.whatsnew;
 
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.fileEditor.FileEditor;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.UserDataHolderBase;
@@ -7,7 +8,9 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.jcef.JBCefApp;
 import com.intellij.ui.jcef.JBCefBrowser;
-
+import org.cef.browser.CefBrowser;
+import org.cef.browser.CefFrame;
+import org.cef.handler.CefLifeSpanHandlerAdapter;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +59,16 @@ public class WhatsNewHtmlEditor extends UserDataHolderBase implements FileEditor
         this.file = file;
         if (JBCefApp.isSupported()) {
             browser = new JBCefBrowser();
+            // 注册新窗口请求处理器，拦截所有新窗口请求并在外部浏览器中打开
+            browser.getJBCefClient().addLifeSpanHandler(new CefLifeSpanHandlerAdapter() {
+                @Override
+                public boolean onBeforePopup(CefBrowser browser, CefFrame frame, String targetUrl, String targetFrameName) {
+                    // 在外部浏览器中打开链接，避免在 JCEF 浏览器中打开新窗口导致页面被阻塞
+                    BrowserUtil.browse(targetUrl);
+                    // 返回 true 表示已处理，阻止在 JCEF 浏览器中打开新窗口
+                    return true;
+                }
+            }, browser.getCefBrowser());
             browser.loadHTML(html);
             component = browser.getComponent();
         } else {

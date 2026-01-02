@@ -36,7 +36,7 @@ public final class WhatsNewEditorOpener {
      *
      * @see #RESOURCE_PATH
      */
-    private static final String RESOURCE_FILE = "index.html";
+    private static final String RESOURCE_FILE = "latest.html";
     /**
      * 默认标题文本
      * <p>

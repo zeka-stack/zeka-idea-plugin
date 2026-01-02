@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -38,7 +39,7 @@ import kotlin.coroutines.Continuation;
  * @since 1.0.0
  */
 public class CustomJavadocTagRegistrar implements ProjectActivity {
-
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
     /**
      * 在项目启动时运行，注册自定义的 Javadoc 标签
      *
@@ -49,6 +50,10 @@ public class CustomJavadocTagRegistrar implements ProjectActivity {
     @Nullable
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
+        // 只在第一次运行时检查更新
+        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
+            return Unit.INSTANCE;
+        }
         // 在写操作中执行标签注册
         ApplicationManager.getApplication().invokeLater(() -> {
             ApplicationManager.getApplication().runWriteAction(() -> {

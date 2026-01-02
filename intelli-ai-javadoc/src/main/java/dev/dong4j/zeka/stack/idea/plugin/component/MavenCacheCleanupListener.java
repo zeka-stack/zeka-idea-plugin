@@ -10,6 +10,8 @@ import com.intellij.openapi.util.Disposer;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import dev.dong4j.zeka.stack.idea.plugin.PluginDisposable;
 import dev.dong4j.zeka.stack.idea.plugin.util.MavenUtil;
 import kotlin.Unit;
@@ -31,6 +33,8 @@ import kotlin.coroutines.Continuation;
  */
 public final class MavenCacheCleanupListener implements ProjectActivity, ProjectManagerListener {
 
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
+
     /**
      * 启动活动：注册项目关闭监听器
      * <p>
@@ -47,6 +51,11 @@ public final class MavenCacheCleanupListener implements ProjectActivity, Project
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         // 获取项目级别的服务作为 Disposable 父对象
         Disposable parentDisposable = Disposer.newDisposable(PluginDisposable.getInstance(project), "MavenCacheCleanupListener");
+
+        // 只在第一次运行时检查更新
+        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
+            return Unit.INSTANCE;
+        }
 
         // 使用应用级别的 MessageBus 订阅 ProjectManager.TOPIC（应用级别的话题）
         // 使用项目级别的 Disposable 作为父对象
