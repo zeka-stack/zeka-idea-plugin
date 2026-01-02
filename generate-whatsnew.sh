@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 生成 IntelliAI 平台的聚合更新日志页面
-# 
+#
 # 功能说明：
 # 1. 扫描整个项目，查找所有插件的 pluginChanges.html 文件
 # 2. 验证每个文件对应的目录是否为有效的插件目录（包含 plugin.xml）
@@ -8,37 +8,98 @@
 # 4. 生成一个聚合的 HTML 页面，包含所有插件的更新日志
 # 5. 生成的页面使用现代化的深色主题样式，每个插件以卡片形式展示
 #
-# 输出文件：intelli-ai-engine/src/main/resources/whatsnew/index.html
+# 输出文件：
+# 1. 主目录下的 latest.html
+# 2. intelli-ai-engine/src/main/resources/whatsnew/latest.html（自动拷贝）
 # 该文件用于在 IDE 中显示 "What's New" 对话框
 
 set -euo pipefail
 
 # 获取脚本所在目录和项目根目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ROOT_DIR="$SCRIPT_DIR"
 ENGINE_DIR="$ROOT_DIR/intelli-ai-engine"
-OUTPUT_FILE="$ENGINE_DIR/src/main/resources/whatsnew/index.html"
+OUTPUT_FILE="$ROOT_DIR/latest.html"
+TARGET_DIR="$ENGINE_DIR/src/main/resources/whatsnew"
 
-# 忽略列表：不包含在 What's New 页面中的插件目录名
-# 可以添加需要忽略的插件目录名，用空格分隔
-IGNORE_PLUGINS=(
-  "idea-plugin-template"
-  "reference"
-  "feedback-server"
-  "archiver-man"
-  "intelli-ai-agent-template"
+# 白名单：包含在 What's New 页面中的插件目录名
+# 按照此列表的顺序生成 release notes
+ALLOWED_PLUGINS=(
+  "intelli-ai-engine"
+  "intelli-ai-javadoc"
+  "intelli-ai-changelog"
+  "intelli-ai-nacos"
+  "intelli-ai-swagger"
+  "intelli-ai-tracer"
 )
 
-# 检查插件是否在忽略列表中
-is_ignored() {
+# 检查插件是否在白名单中
+is_allowed() {
   local plugin_dir="$1"
   local plugin_name="$(basename "$plugin_dir")"
-  for ignored in "${IGNORE_PLUGINS[@]}"; do
-    if [[ "$plugin_name" == "$ignored" ]]; then
-      return 0  # 在忽略列表中
+  for allowed in "${ALLOWED_PLUGINS[@]}"; do
+    if [[ "$plugin_name" == "$allowed" ]]; then
+      return 0  # 在白名单中
     fi
   done
-  return 1  # 不在忽略列表中
+  return 1  # 不在白名单中
+}
+
+# 获取插件在白名单中的索引位置（用于排序）
+get_plugin_order() {
+  local plugin_name="$1"
+  local index=0
+  for allowed in "${ALLOWED_PLUGINS[@]}"; do
+    if [[ "$plugin_name" == "$allowed" ]]; then
+      echo "$index"
+      return 0
+    fi
+    index=$((index + 1))
+  done
+  # 如果不在白名单中，返回一个很大的数字，确保排在最后
+  echo "9999"
+}
+
+# 获取插件的主页链接
+get_plugin_home_url() {
+  local plugin_name="$1"
+  case "$plugin_name" in
+    "intelli-ai-engine") echo "https://ideaplugin.dong4j.site/engine/landing.html" ;;
+    "intelli-ai-javadoc") echo "https://ideaplugin.dong4j.site/javadoc/landing.html" ;;
+    "intelli-ai-changelog") echo "https://ideaplugin.dong4j.site/changelog/landing.html" ;;
+    "intelli-ai-nacos") echo "https://ideaplugin.dong4j.site/nacos/landing.html" ;;
+    "intelli-ai-swagger") echo "https://ideaplugin.dong4j.site/swagger/landing.html" ;;
+    "intelli-ai-tracer") echo "https://ideaplugin.dong4j.site/tracer/landing.html" ;;
+    *) echo "" ;;
+  esac
+}
+
+# 获取插件的文档链接
+get_plugin_docs_url() {
+  local plugin_name="$1"
+  case "$plugin_name" in
+    "intelli-ai-engine") echo "https://ideaplugin.dong4j.site/engine/docs.html" ;;
+    "intelli-ai-javadoc") echo "https://ideaplugin.dong4j.site/javadoc/docs.html" ;;
+    "intelli-ai-changelog") echo "https://ideaplugin.dong4j.site/changelog/docs.html" ;;
+    "intelli-ai-nacos") echo "https://ideaplugin.dong4j.site/nacos/docs.html" ;;
+    "intelli-ai-swagger") echo "https://ideaplugin.dong4j.site/swagger/docs.html" ;;
+    "intelli-ai-tracer") echo "https://ideaplugin.dong4j.site/tracer/docs.html" ;;
+    *) echo "" ;;
+  esac
+}
+
+# 获取插件的离线安装链接
+get_plugin_download_url() {
+  local plugin_name="$1"
+  case "$plugin_name" in
+    "intelli-ai-engine") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-engine.zip" ;;
+    "intelli-ai-javadoc") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-javadoc.zip" ;;
+    "intelli-ai-changelog") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-changelog.zip" ;;
+    "intelli-ai-nacos") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-nacos.zip" ;;
+    "intelli-ai-swagger") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-swagger.zip" ;;
+    "intelli-ai-tracer") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-tracer.zip" ;;
+    *) echo "" ;;
+  esac
 }
 
 # 查找所有插件的 pluginChanges.html 文件
@@ -46,25 +107,30 @@ is_ignored() {
 mapfile -d '' CHANGE_FILES < <(find "$ROOT_DIR" -type f -path "*/includes/pluginChanges.html" -print0)
 
 # 验证每个文件对应的目录是否为有效的插件目录
-# 通过检查是否存在 plugin.xml 文件来确认，并排除忽略列表中的插件
+# 通过检查是否存在 plugin.xml 文件来确认，并且只处理白名单中的插件
 plugin_dirs=()
 for change_file in "${CHANGE_FILES[@]}"; do
   # 获取插件目录：pluginChanges.html 位于 includes/ 目录下，需要向上两级
   plugin_dir="$(dirname "$(dirname "$change_file")")"
-  # 验证是否为有效的插件目录（包含 plugin.xml）且不在忽略列表中
-  if [[ -f "$plugin_dir/src/main/resources/META-INF/plugin.xml" ]] && ! is_ignored "$plugin_dir"; then
+  # 验证是否为有效的插件目录（包含 plugin.xml）且在白名单中
+  if [[ -f "$plugin_dir/src/main/resources/META-INF/plugin.xml" ]] && is_allowed "$plugin_dir"; then
     plugin_dirs+=("$plugin_dir")
   fi
 done
 
 # 如果没有找到任何插件目录，退出并报错
 if [[ ${#plugin_dirs[@]} -eq 0 ]]; then
-  echo "No pluginChanges.html files found." >&2
+  echo "No pluginChanges.html files found in allowed plugins." >&2
   exit 1
 fi
 
-# 对插件目录进行排序并去重
-sorted_dirs=$(printf "%s\n" "${plugin_dirs[@]}" | sort -u)
+# 按照白名单的顺序对插件目录进行排序
+# 创建一个临时文件来存储排序后的目录
+sorted_dirs=$(for plugin_dir in "${plugin_dirs[@]}"; do
+  plugin_name="$(basename "$plugin_dir")"
+  order=$(get_plugin_order "$plugin_name")
+  printf "%04d|%s\n" "$order" "$plugin_dir"
+done | sort -t'|' -k1,1n | cut -d'|' -f2-)
 
 # 获取当前时间，用于在生成的页面中显示生成时间
 generated_at=$(date "+%Y-%m-%d %H:%M")
@@ -175,10 +241,17 @@ generated_at=$(date "+%Y-%m-%d %H:%M")
 
     .card-header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 16px;
+    }
+
+    .card-header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex: 1;
     }
 
     .card-title {
@@ -190,6 +263,12 @@ generated_at=$(date "+%Y-%m-%d %H:%M")
     .card-meta {
       color: var(--muted);
       font-size: 12px;
+    }
+
+    .card-header-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
     }
 
     .card-body {
@@ -232,6 +311,63 @@ generated_at=$(date "+%Y-%m-%d %H:%M")
 
     .card:hover .card-footer {
       opacity: 1;
+    }
+
+    .card-button {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-block;
+      white-space: nowrap;
+      border: 1px solid;
+    }
+
+    .card-button-home {
+      background: rgba(77, 211, 255, 0.1);
+      border-color: rgba(77, 211, 255, 0.3);
+      color: #4dd3ff;
+    }
+
+    .card-button-home:hover {
+      background: rgba(77, 211, 255, 0.2);
+      border-color: rgba(77, 211, 255, 0.5);
+      color: #4dd3ff;
+      transform: translateY(-1px);
+    }
+
+    .card-button-docs {
+      background: rgba(74, 222, 128, 0.1);
+      border-color: rgba(74, 222, 128, 0.3);
+      color: #4ade80;
+    }
+
+    .card-button-docs:hover {
+      background: rgba(74, 222, 128, 0.2);
+      border-color: rgba(74, 222, 128, 0.5);
+      color: #4ade80;
+      transform: translateY(-1px);
+    }
+
+    .card-button-download {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #f59e0b;
+    }
+
+    .card-button-download:hover {
+      background: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.5);
+      color: #f59e0b;
+      transform: translateY(-1px);
+    }
+
+    .card-button:active {
+      transform: translateY(0);
     }
 
     /* 弹窗样式 */
@@ -404,29 +540,29 @@ HTML
   while IFS= read -r plugin_dir; do
     # 插件配置文件路径
     plugin_xml="$plugin_dir/src/main/resources/META-INF/plugin.xml"
-    
+
     # 从 plugin.xml 中提取插件名称（使用 ripgrep 查找 <name> 标签）
     plugin_name=$(rg -n "<name>" "$plugin_xml" | head -n 1 | sed -E 's/.*<name>([^<]+).*/\1/')
     # 如果提取失败，使用目录名作为插件名称
     if [[ -z "$plugin_name" ]]; then
       plugin_name="$(basename "$plugin_dir")"
     fi
-    
+
     # 模块名称（使用目录名）
     module_name="$(basename "$plugin_dir")"
     # 更新日志文件路径
     changes_file="$plugin_dir/includes/pluginChanges.html"
-    
+
     # 读取更新日志内容
     full_content=$(cat "$changes_file")
-    
+
     # 提取预览内容：提取第一个版本块中的前 5 个列表项
     # 策略：提取第一个 <h3> 版本块，然后在这个块中提取前 5 个 <li> 项
-    
+
     # 找到第一个和第二个 <h3> 标签的行号
     first_h3_line=$(echo "$full_content" | grep -n "<h3>" | head -n 1 | cut -d: -f1)
     second_h3_line=$(echo "$full_content" | grep -n "<h3>" | sed -n '2p' | cut -d: -f1)
-    
+
     # 提取第一个版本块
     if [[ -n "$first_h3_line" ]]; then
       if [[ -n "$second_h3_line" ]]; then
@@ -440,13 +576,13 @@ HTML
       # 如果没有找到 <h3>，使用前 12 行
       first_version_block=$(echo "$full_content" | head -n 12)
     fi
-    
+
     # 从第一个版本块中提取前 5 个 <li> 项
     # 使用更简单的方法：提取包含 <li> 的行，直到找到 5 个完整的 <li> 项
     preview_content=$(echo "$first_version_block" | awk '
-      BEGIN { 
-        li_count = 0; 
-        in_li = 0; 
+      BEGIN {
+        li_count = 0;
+        in_li = 0;
         output = "";
       }
       # 输出 <h3> 和 <ul> 标签
@@ -489,23 +625,41 @@ HTML
         print output;
       }
     ')
-    
+
     # 如果提取的内容为空或太少，则使用前 10 行作为预览
     if [[ -z "$preview_content" ]] || [[ $(echo "$preview_content" | grep -c "<li>") -lt 2 ]]; then
       preview_content=$(echo "$full_content" | head -n 10)
     fi
-    
+
     # 检查是否有更多内容
     full_li_count=$(echo "$full_content" | grep -c "<li>")
     preview_li_count=$(echo "$preview_content" | grep -c "<li>")
     # 如果原始内容有超过 5 个 <li> 项，认为有更多内容
     has_more=$((full_li_count > 5 ? 1 : 0))
 
+    # 获取插件链接
+    home_url=$(get_plugin_home_url "$module_name")
+    docs_url=$(get_plugin_docs_url "$module_name")
+    download_url=$(get_plugin_download_url "$module_name")
+
     # 输出插件卡片 HTML 结构（只显示预览内容）
     echo "    <section class=\"card\" onclick=\"openModal($card_index)\">"
     echo "      <div class=\"card-header\">"
-    echo "        <div class=\"card-title\">$plugin_name</div>"
-    echo "        <div class=\"card-meta\">$module_name</div>"
+    echo "        <div class=\"card-header-left\">"
+    echo "          <div class=\"card-title\">$plugin_name</div>"
+    echo "          <div class=\"card-meta\">$module_name</div>"
+    echo "        </div>"
+    echo "        <div class=\"card-header-actions\" onclick=\"event.stopPropagation()\">"
+    if [[ -n "$home_url" ]]; then
+      echo "          <a href=\"$home_url\" target=\"_blank\" class=\"card-button card-button-home\">🏠 主页</a>"
+    fi
+    if [[ -n "$docs_url" ]]; then
+      echo "          <a href=\"$docs_url\" target=\"_blank\" class=\"card-button card-button-docs\">📚 文档</a>"
+    fi
+    if [[ -n "$download_url" ]]; then
+      echo "          <a href=\"$download_url\" target=\"_blank\" class=\"card-button card-button-download\" title=\"因插件市场审核延迟, 可下载最新版本手动安装\">⬇️ 离线安装</a>"
+    fi
+    echo "        </div>"
     echo "      </div>"
     echo "      <div class=\"card-body\" id=\"preview-$card_index\">"
     echo "$preview_content"
@@ -514,12 +668,12 @@ HTML
       echo "      <div class=\"card-footer\">点击查看完整更新日志 →</div>"
     fi
     echo "    </section>"
-    
+
     # 输出完整内容到隐藏的模态框数据中
     echo "    <script type=\"text/template\" id=\"modal-content-$card_index\" style=\"display:none;\">"
     echo "$full_content"
     echo "    </script>"
-    
+
     card_index=$((card_index + 1))
   done <<< "$sorted_dirs"
 
@@ -545,17 +699,17 @@ HTML
       const modalTitle = document.getElementById('modal-title');
       const modalBody = document.getElementById('modal-body');
       const template = document.getElementById('modal-content-' + index);
-      
+
       if (!template) return;
-      
+
       // 从卡片标题获取插件名称
       const card = document.querySelectorAll('.card')[index];
       const cardTitle = card.querySelector('.card-title').textContent;
-      
+
       modalTitle.textContent = cardTitle;
       modalBody.innerHTML = template.textContent;
       modal.classList.add('active');
-      
+
       // 阻止背景滚动
       document.body.style.overflow = 'hidden';
     }
@@ -589,3 +743,9 @@ HTML
 
 # 输出生成成功信息
 echo "Generated: $OUTPUT_FILE"
+
+# 拷贝一份到 intelli-ai-engine/src/main/resources/whatsnew/ 目录
+mkdir -p "$TARGET_DIR"
+cp "$OUTPUT_FILE" "$TARGET_DIR/latest.html"
+echo "Copied to: $TARGET_DIR/latest.html"
+

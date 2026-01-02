@@ -10,6 +10,7 @@
 #   changelog - intelli-ai-changelog
 #   nacos     - intelli-ai-nacos
 #   tracer    - intelli-ai-tracer
+#   swagger   - intelli-ai-swagger
 
 set -e  # 遇到错误立即退出
 
@@ -52,9 +53,62 @@ if [ "${1:-}" = "-n" ]; then
     exit 0
 fi
 
+# 如果第一个参数是 -w，则执行 latest.html 部署，不依赖具体插件
+if [ "${1:-}" = "-w" ]; then
+    REMOTE_HOST="aliyun"
+    REMOTE_ROOT_DIR="/var/www/zeka-idea-plugin"
+    REMOTE_WHATSNEW_DIR="$REMOTE_ROOT_DIR"
+
+    echo "================================"
+    echo "开始部署 latest.html (What's New 聚合页面)"
+    echo "目标服务器: $REMOTE_HOST"
+    echo "远程目录: $REMOTE_WHATSNEW_DIR"
+    echo "================================"
+
+    GENERATE_WHATSNEW_SCRIPT="$SCRIPT_DIR/generate-whatsnew.sh"
+    if [ ! -f "$GENERATE_WHATSNEW_SCRIPT" ]; then
+        echo "错误: 找不到 generate-whatsnew.sh 脚本: $GENERATE_WHATSNEW_SCRIPT"
+        exit 1
+    fi
+
+    echo "执行 generate-whatsnew.sh 生成 latest.html ..."
+    bash "$GENERATE_WHATSNEW_SCRIPT"
+    if [ $? -ne 0 ]; then
+        echo "错误: 生成 latest.html 失败"
+        exit 1
+    fi
+
+    LATEST_HTML_FILE="$SCRIPT_DIR/latest.html"
+
+    if [ ! -f "$LATEST_HTML_FILE" ]; then
+        echo "错误: 生成 latest.html 后未找到文件: $LATEST_HTML_FILE"
+        exit 1
+    fi
+
+    BUYMYACOFFEE_HTML_FILE="$SCRIPT_DIR/buy-me-a-coffee.html"
+
+    if [ ! -f "$BUYMYACOFFEE_HTML_FILE" ]; then
+        echo "错误: buy-me-a-coffee.html 不存在: $BUYMYACOFFEE_HTML_FILE"
+        exit 1
+    fi
+
+    echo "正在上传 latest.html 到 $REMOTE_HOST:$REMOTE_WHATSNEW_DIR/ ..."
+    ssh "$REMOTE_HOST" "mkdir -p $REMOTE_WHATSNEW_DIR"
+    rsync -avz --progress \
+        "$LATEST_HTML_FILE" \
+        "$BUYMYACOFFEE_HTML_FILE" \
+        "$REMOTE_HOST:$REMOTE_WHATSNEW_DIR/"
+
+    echo "设置 latest.html 文件权限..."
+    ssh "$REMOTE_HOST" "chmod 644 $REMOTE_WHATSNEW_DIR/latest.html"
+    echo "✓ latest.html 部署完成"
+    echo "================================"
+    exit 0
+fi
+
 # 检查参数
 if [ $# -lt 1 ]; then
-    echo "用法: $0 <plugin-name> [options]"
+    echo "用法: $0 <plugin-name> [options] 或 $0 [-n|-w]"
     echo ""
     echo "支持的插件名称:"
     echo "  engine    - intelli-ai-engine"
@@ -69,7 +123,8 @@ if [ $# -lt 1 ]; then
     echo "  -z           仅上传 zip 到阿里云"
     echo "  -d           仅部署 site 整个目录 (包含 landing.html, docs.html, docs/ 等)"
     echo "  -p           仅打包并发布到插件市场 (publishPlugin)"
-    echo "  -n           部署 Nginx 配置并在远程服务器上重载"
+    echo "  -n           部署 Nginx 配置并在远程服务器上重载 (无需指定插件名称)"
+    echo "  -w           部署 latest.html (What's New 聚合页面) (无需指定插件名称，独立使用)"
     exit 1
 fi
 
@@ -98,6 +153,10 @@ case "$PLUGIN_NAME" in
     tracer)
         PLUGIN_DIR_NAME="intelli-ai-tracer"
         PLUGIN_PATH="tracer"
+        ;;
+    swagger)
+        PLUGIN_DIR_NAME="intelli-ai-swagger"
+        PLUGIN_PATH="swagger"
         ;;
     archiver)
         PLUGIN_DIR_NAME="archiver-man"
@@ -128,7 +187,8 @@ fi
 
 # 设置路径配置
 REMOTE_HOST="aliyun"
-REMOTE_BASE_DIR="/var/www/$PLUGIN_DIR_NAME"
+REMOTE_ROOT_DIR="/var/www/zeka-idea-plugin"
+REMOTE_BASE_DIR="$REMOTE_ROOT_DIR/$PLUGIN_DIR_NAME"
 if [ "$USE_SITE_DIR" = true ]; then
     REMOTE_DIR="$REMOTE_BASE_DIR/site"
 else
