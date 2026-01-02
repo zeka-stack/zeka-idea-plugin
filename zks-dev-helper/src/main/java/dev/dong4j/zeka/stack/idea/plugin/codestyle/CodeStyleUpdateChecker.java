@@ -203,16 +203,18 @@ public final class CodeStyleUpdateChecker {
         String downloadUrl = settings.getDownloadUrl() != null ? settings.getDownloadUrl().trim() : "";
         if (downloadUrl.isEmpty()) {
             if (project != null) {
-                NotificationUtil.showError(project, PluginContents.PLUGIN_NAME, HelperBundle.message("settings.codestyle.update.error.no" +
-                                                                                                     ".url"));
+                NotificationUtil.showError(
+                    project,
+                    PluginContents.PLUGIN_NAME, HelperBundle.message("settings.codestyle.update.error.no.url"));
             }
             return;
         }
 
         if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://")) {
             if (project != null) {
-                NotificationUtil.showInfo(project, PluginContents.PLUGIN_NAME, HelperBundle.message("settings.codestyle.update.error" +
-                                                                                                    ".local.path"));
+                NotificationUtil.showInfo(
+                    project,
+                    PluginContents.PLUGIN_NAME, HelperBundle.message("settings.codestyle.update.error.local.path"));
             }
             return;
         }
