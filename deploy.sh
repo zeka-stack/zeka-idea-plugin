@@ -162,6 +162,10 @@ case "$PLUGIN_NAME" in
         PLUGIN_DIR_NAME="archiver-man"
         PLUGIN_PATH="archiver"
         ;;
+    helper)
+        PLUGIN_DIR_NAME="zks-dev-helper"
+        PLUGIN_PATH="helper"
+        ;;
     *)
         echo "错误: 未知的插件名称 '$PLUGIN_NAME'"
         echo "支持的插件名称: engine javadoc changelog nacos tracer archiver"
