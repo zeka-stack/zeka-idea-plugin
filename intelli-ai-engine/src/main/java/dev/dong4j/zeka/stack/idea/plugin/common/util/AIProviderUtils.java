@@ -31,44 +31,56 @@ public class AIProviderUtils {
 
     /**
      * 检查项目中是否存在可用的 AI 提供者配置
-     * <p>
-     * 如果没有可用的 AI 提供者, 将创建错误通知并添加配置面板打开动作
-     * 返回布尔值表示是否存在有效提供者
+     * <p> 如果没有可用的 AI 提供者配置, 则会创建错误通知并添加打开配置面板的操作
+     * <p> 返回布尔值表示是否存在有效的 AI 提供者配置
      *
-     * @param project    当前项目实例
-     * @param configName 配置面板的标识名称
-     * @return true 表示存在可用提供者,false 表示不存在且已创建配置提示
+     * @param project     当前项目实例, 用于获取配置和添加通知操作
+     * @param displayName 配置面板的标识名称
+     * @param actionName  操作名称, 用于通知中的操作按钮
+     * @return true 表示存在可用的 AI 提供者配置,false 表示不存在且已创建配置提示
      */
-    public static boolean hasAIProvider(Project project, String configName) {
+    public static boolean hasAIProvider(Project project, String displayName, String actionName) {
         if (AIProviderUtils.getProviders().isEmpty()) {
-            return notify(project, configName);
+            return notify(project, displayName, actionName);
         }
         return true;
     }
 
     /**
      * 检查项目中是否存在可用的 AI 提供者配置
-     * <p>
-     * 如果未配置 AI 提供者, 则会显示错误通知并添加打开配置面板的操作
+     * <p> 如果传入的 AI 提供者配置为空, 则会创建错误通知并添加打开配置面板的操作
+     * <p> 返回布尔值表示是否存在有效的 AI 提供者配置
      *
-     * @param project 当前项目实例, 用于获取配置和添加通知操作
-     * @return 如果存在可用 AI 提供者配置返回 true, 否则返回 false
+     * @param project     当前项目实例, 用于获取配置和添加通知操作
+     * @param config      要检查的 AI 提供者配置对象
+     * @param displayName 配置面板的标识名称
+     * @param actionName  打开配置面板的操作名称
+     * @return true 表示存在有效的 AI 提供者配置,false 表示不存在且已创建配置提示
      */
-    public static boolean hasAIProvider(Project project, AIProviderConfig config, String configName) {
+    public static boolean hasAIProvider(Project project, AIProviderConfig config, String displayName, String actionName) {
         // 获取 AI 配置
         if (config == null) {
-            return notify(project, configName);
+            return notify(project, displayName, actionName);
         }
         return true;
     }
 
-    private static boolean notify(Project project, String configName) {
+    /**
+     * 创建并显示错误通知, 提示没有可用的 AI 提供者配置
+     * <p> 同时为通知添加打开配置面板的操作
+     *
+     * @param project     当前项目实例, 用于获取配置和添加通知操作
+     * @param displayName 配置面板的标识名称
+     * @param actionName  操作名称, 用于通知中的操作按钮
+     * @return 始终返回 false, 表示没有可用的 AI 提供者配置
+     */
+    private static boolean notify(Project project, String displayName, String actionName) {
         Notification notification = new Notification(NotificationUtil.NOTIFICATION_GROUP_ID,
                                                      AICommonBundle.message("settings.ai.provider.no.provider.available"),
                                                      AICommonBundle.message("settings.ai.provider.no.available.warning"),
                                                      NotificationType.ERROR);
         // 添加设置动作
-        NotificationUtil.addOpenConfigurablePanelAction(notification, project, configName);
+        NotificationUtil.addOpenConfigurablePanelAction(project, notification, displayName, actionName);
         return false;
     }
 }

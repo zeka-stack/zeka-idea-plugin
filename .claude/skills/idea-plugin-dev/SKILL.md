@@ -112,7 +112,7 @@ template-with-ai/
 
 1. **Update `gradle.properties`**:
    ```properties
-   pluginGroup=dev.dong4j.zeka.stack.idea.plugin.example
+   pluginGroup=dev.dong4j.zeka.stack
    pluginName=Your Plugin Name
    pluginVersion=1.0.0
    rootProjectName=your-plugin-name
@@ -146,12 +146,12 @@ public class ExampleAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
-        
+
         if (project == null || psiFile == null) {
             NotificationUtil.showError(project, ExampleBundle.message("error.no.file"));
             return;
         }
-        
+
         // Your action logic here
         NotificationUtil.showInfo(project, "Action executed");
     }
@@ -227,7 +227,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean showAdvancedSettings = false;
     public String systemPrompt = getDefaultSystemPrompt();
     public String exampleTemplate = getDefaultExampleTemplate();
-    
+
     public static SettingsState getInstance() {
         return ApplicationManager.getApplication().getService(SettingsState.class);
     }
@@ -240,7 +240,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 public class ExampleSettingsPanel {
     private JComboBox<AIProviderConfig> providerComboBox;
     private JBTextArea systemPromptTextArea;
-    
+
     // Create AI provider selection panel
     private JPanel createAIProviderSelectionPanel() {
         List<AIProviderConfig> providers = getAiProviderTypes();
@@ -267,7 +267,7 @@ public class ExampleSettingsPanel {
 ```kotlin
 dependencies {
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), 
+        create(providers.gradleProperty("platformType"),
                providers.gradleProperty("platformVersion"))
         bundledPlugin("com.intellij.java")
         // No AI Engine dependency
@@ -283,7 +283,7 @@ dependencies {
         // ... same as standard
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")  // Uncomment for marketplace
     }
-    compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
+    compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:1.1.0")
 }
 
 tasks {

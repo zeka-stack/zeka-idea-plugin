@@ -49,7 +49,7 @@ public class ExampleStatusBarPopupProvider implements AIStatusBarPopupProvider {
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, ExampleBundle.message("settings.display.name"), ExampleBundle.message("settings.ai.provider.selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
@@ -89,7 +89,7 @@ public class ExampleStatusBarPopupProvider implements AIStatusBarPopupProvider {
 
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, ExampleBundle.message("settings.display.name"), ExampleBundle.message("settings.ai.provider.selection"))) {
                 return;
             }
 

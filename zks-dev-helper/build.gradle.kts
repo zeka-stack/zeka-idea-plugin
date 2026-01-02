@@ -63,6 +63,9 @@ dependencies {
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
+    // Idea Plugin Common 库依赖（本地库，打包时需要包含）
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:1.0.0")
+
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
 

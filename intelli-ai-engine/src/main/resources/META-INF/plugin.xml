@@ -36,12 +36,12 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- 应用级服务：全局 AI 配置（可用供应商列表） -->
         <applicationService
-                serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings"/>
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings"/>
 
         <!-- 应用级服务：统一的 AI 服务入口 -->
         <applicationService
-                serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"
-                serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
+            serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
 
         <applicationService
             serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewProviderService"
@@ -53,8 +53,8 @@
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
             parentId="other"
-                instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
-                id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
+            instance="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
             displayName="🤖 IntelliAI Engine"/>
 
         <!-- Console 工具窗口 -->

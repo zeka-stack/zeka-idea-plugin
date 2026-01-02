@@ -194,10 +194,10 @@ public final class IntelliAgentUpdateChecker {
         // 添加打开设置操作
         Project defaultProject = ProjectManager.getInstance().getDefaultProject();
         NotificationUtil.addOpenConfigurablePanelAction(
-            notification,
             defaultProject,
-            "dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
-                                                       );
+            notification,
+            AICommonBundle.message("settings.display.name"),
+            AICommonBundle.message("settings.ai.provider.open.engine.settings"));
 
         notification.notify(defaultProject);
     }

@@ -1,9 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.util;
 
-import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationGroup;
-import com.intellij.notification.NotificationGroupManager;
-import com.intellij.notification.NotificationType;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
@@ -24,100 +20,35 @@ import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
  * @since 1.0.0
  */
 public class NotificationUtil {
-    /**
-     * 通知分组的 ID
-     * <p>
-     * 用于标识一组与 Javadoc 生成相关的通知
-     */
-    public static final String NOTIFICATION_GROUP_ID = PluginContents.PLUGIN_NAME + " Notifications";
 
     /**
-     * 获取指定 ID 的通知组
-     * <p>
-     * 从通知组管理器中获取与给定 ID 关联的预定义通知组
+     * 显示信息通知
      *
-     * @return 与 NOTIFICATION_GROUP_ID 关联的 NotificationGroup 实例
-     * @since 1.0
+     * @param project 项目对象，可为空
+     * @param message 通知内容
      */
-    @NotNull
-    private static NotificationGroup getNotificationGroup() {
-        return NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP_ID);
+    public static void showInfo(@Nullable Project project, @NotNull String message) {
+        dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.showInfo(project, PluginContents.PLUGIN_NAME, message);
     }
 
     /**
-     * 发送信息通知
-     * <p>
-     * 根据指定的项目, 标题和内容发送信息类型的通知
+     * 显示警告通知
      *
-     * @param project 项目对象, 可为空
-     * @param title   通知标题, 不能为空
-     * @param content 通知内容, 不能为空
+     * @param project 项目对象，可为空
+     * @param message 通知内容
      */
-    public static void notifyInfo(@Nullable Project project, @NotNull String title, @NotNull String content) {
-        notify(project, title, content, NotificationType.INFORMATION);
+    public static void showWarning(@Nullable Project project, @NotNull String message) {
+        dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.showWarning(project, PluginContents.PLUGIN_NAME, message);
     }
 
     /**
-     * 发送警告通知
-     * <p>
-     * 向指定项目发送带有指定标题和内容的警告类型通知.
+     * 显示错误通知
      *
-     * @param project 可能为 null 的项目对象
-     * @param title   通知标题, 不可为 null
-     * @param content 通知内容, 不可为 null
+     * @param project 项目对象，可为空
+     * @param message 通知内容
      */
-    public static void notifyWarning(@Nullable Project project, @NotNull String title, @NotNull String content) {
-        notify(project, title, content, NotificationType.WARNING);
-    }
-
-    /**
-     * 发送错误通知
-     * <p>
-     * 向指定项目发送一条错误类型的通知, 包含指定的标题和内容
-     *
-     * @param project 项目对象, 可以为 null
-     * @param title   通知标题, 不能为空
-     * @param content 通知内容, 不能为空
-     */
-    public static void notifyError(@Nullable Project project, @NotNull String title, @NotNull String content) {
-        notify(project, title, content, NotificationType.ERROR);
-    }
-
-    /**
-     * 向指定项目发送通知
-     * <p>
-     * 创建一个通知对象并发送至对应的项目
-     *
-     * @param project 项目对象, 可为空
-     * @param title   通知标题
-     * @param content 通知内容
-     * @param type    通知类型
-     */
-    private static void notify(@Nullable Project project, @NotNull String title, @NotNull String content, @NotNull NotificationType type) {
-        Notification notification = getNotificationGroup().createNotification(title, content, type);
-        notification.notify(project);
-    }
-
-    /**
-     * 根据完成和失败的数量确定通知类型
-     * <p>
-     * 根据传入的完成任务数和失败任务数判断应使用哪种通知类型. 如果存在失败任务, 则返回警告类型; 如果只有完成任务, 则返回信息类型; 如果两者都为零, 则默认返回警告类型.
-     *
-     * @param completed 完成的任务数量
-     * @param failed    失败的任务数量
-     * @return 返回对应的通知类型, 可能是 {@link NotificationType#WARNING} 或 {@link NotificationType#INFORMATION}
-     */
-    @NotNull
-    private static NotificationType getNotificationType(int completed, int failed) {
-        NotificationType type;
-        if (failed > 0) {
-            type = NotificationType.WARNING;
-        } else if (completed > 0) {
-            type = NotificationType.INFORMATION;
-        } else {
-            type = NotificationType.WARNING;
-        }
-        return type;
+    public static void showError(@Nullable Project project, @NotNull String message) {
+        dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.showError(project, PluginContents.PLUGIN_NAME, message);
     }
 
     /**
@@ -137,31 +68,6 @@ public class NotificationUtil {
     }
 
     /**
-     * 通知用户无任务可执行
-     * <p>
-     * 该方法会弹出一个信息类型的通知, 标题为 {@code JavaDocBundle.message("notification.title")}, 内容为传入的 {@code message}. 如果 {@code project} 为 {@code null
-     * }, 则通知不绑定到任何项目.
-     *
-     * @param project 可为空的项目对象, 若为 {@code null} 则通知不关联任何项目
-     * @param message 通知内容, 不能为空
-     */
-    public static void notifyNoTask(@Nullable Project project, @NotNull String message) {
-        notify(project, JavadocBundle.message("notification.title"), message, NotificationType.INFORMATION);
-    }
-
-    /**
-     * 显示错误通知消息
-     * <p>
-     * 在指定的项目上下文中显示一条带有错误标题的通知消息
-     *
-     * @param project 可为空的项目对象, 用于确定通知的显示上下文
-     * @param message 要显示的错误消息内容
-     */
-    public static void notifyErrorMessage(@Nullable Project project, @NotNull String message) {
-        notify(project, JavadocBundle.message("notification.error.title"), message, NotificationType.ERROR);
-    }
-
-    /**
      * 通知用户项目正在索引
      * <p>
      * 向用户发送通知, 提示项目正在进行索引操作
@@ -169,9 +75,7 @@ public class NotificationUtil {
      * @param project 项目对象, 可以为 null
      */
     public static void notifyIndexing(@Nullable Project project) {
-        notify(project, JavadocBundle.message("notification.title"),
-               JavadocBundle.message("notification.indexing.warning"),
-               NotificationType.WARNING);
+        showWarning(project, JavadocBundle.message("notification.indexing.warning"));
     }
 
 }

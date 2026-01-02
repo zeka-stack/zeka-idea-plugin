@@ -186,8 +186,7 @@ public class PluginUpdater {
         Notification notification = NotificationUtil.getNotificationGroup().createNotification(
             title,
             message,
-            NotificationType.IDE_UPDATE
-                                                                                              );
+            NotificationType.IDE_UPDATE);
 
         notification.addAction(NotificationAction.createSimple(
             AICommonBundle.message("plugin.update.install"),

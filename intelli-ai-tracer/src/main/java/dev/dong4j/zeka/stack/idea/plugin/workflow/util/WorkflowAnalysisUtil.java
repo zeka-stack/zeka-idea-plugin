@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.service.WorkflowExplainerService;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.settings.SettingsState;
@@ -52,7 +53,10 @@ public final class WorkflowAnalysisUtil {
             public void run(@NotNull ProgressIndicator indicator) {
                 // 检查 AI Provider 配置
                 AIProviderConfig config = SettingsState.getInstance().providerConfig;
-                if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+                if (!AIProviderUtils.hasAIProvider(project,
+                                                   config,
+                                                   WorkflowBundle.message("settings.display.name"),
+                                                   WorkflowBundle.message("settings.ai.provider.selection"))) {
                     return;
                 }
 
@@ -67,7 +71,8 @@ public final class WorkflowAnalysisUtil {
                 } catch (Exception e) {
                     // 在 EDT 中显示错误通知
                     ApplicationManager.getApplication().invokeLater(() -> {
-                        NotificationUtil.showError(project, WorkflowBundle.message("error.analysis.failed", e.getMessage()));
+                        NotificationUtil.showError(project, PluginContents.PLUGIN_NAME, WorkflowBundle.message("error.analysis.failed",
+                                                                                                               e.getMessage()));
                     });
                 }
             }

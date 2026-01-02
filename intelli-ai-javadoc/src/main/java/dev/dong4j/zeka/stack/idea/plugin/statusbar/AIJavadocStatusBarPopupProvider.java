@@ -9,7 +9,6 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 
@@ -17,12 +16,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.JavadocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
@@ -82,7 +81,9 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, JavadocBundle.message("settings.display.name"), JavadocBundle.message("settings.ai" +
+                                                                                                                          ".provider" +
+                                                                                                                          ".selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
@@ -178,7 +179,8 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
          */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"), JavadocBundle.message(
+                "settings.ai.provider.selection"))) {
                 return;
             }
 
@@ -381,7 +383,7 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
          * 获取此操作的更新线程
          * <p> 返回在后台线程中更新操作状态, 以避免阻塞 UI 线程
          *
-         * @return 操作更新所使用的线程, 本方法始终返回 {@link ActionUpdateThread.BGT}
+         * @return 操作更新所使用的线程, 本方法始终返回
          */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
@@ -584,8 +586,6 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
         /**
          * 构造一个 OverrideModeFixAction 实例
          * <p> 初始化时设置操作的显示名称为 "statusbar.quick.settings.override.mode.fix" 的本地化消息
-         *
-         * @see JavadocBundle#message(String)
          */
         OverrideModeFixAction() {
             super(JavadocBundle.message("statusbar.quick.settings.override.mode.fix"));
@@ -1136,7 +1136,7 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
          */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, JavadocSettingsConfigurable.class);
+            SettingsUtil.openSettings(project, JavadocSettingsConfigurable.class);
         }
 
         /**

@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.swing.Icon;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
@@ -32,6 +33,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentUpdateChecker;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewEditorOpener;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 import icons.AICommonIcons;
 
 /**
@@ -156,7 +158,7 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
             context,
             JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
             true
-        );
+                                                                  );
     }
 
     /**
@@ -216,7 +218,7 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
             if (project.isDisposed()) {
                 return;
             }
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, AICommonSettingsConfigurable.class);
+            SettingsUtil.openSettings(project, AICommonSettingsConfigurable.class);
         }
     }
 
@@ -568,12 +570,12 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
          *              <p>
          *              使用示例:
          *              <pre>{@code
-         *              // 启用自动更新
-         *              setSelected(e, true);
+         *                           // 启用自动更新
+         *                           setSelected(e, true);
          *
-         *              // 禁用自动更新
-         *              setSelected(e, false);
-         *              }</pre>
+         *                           // 禁用自动更新
+         *                           setSelected(e, false);
+         *                           }</pre>
          */
         @Override
         public void setSelected(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e, boolean state) {

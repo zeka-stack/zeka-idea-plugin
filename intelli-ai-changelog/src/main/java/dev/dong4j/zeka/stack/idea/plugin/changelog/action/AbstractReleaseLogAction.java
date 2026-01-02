@@ -29,7 +29,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffBinaryResolver;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffRunner;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
@@ -37,11 +36,11 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 
 /**
  * 生成发布日志的动作类
@@ -104,7 +103,8 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                         GitCliffRunner.run(binary, gitRoot, config, args, outputSession);
                     } else {
                         AIProviderConfig config = settings.providerConfig;
-                        if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+                        if (!AIProviderUtils.hasAIProvider(project, config, ChangelogBundle.message("settings.display.name"),
+                                                           ChangelogBundle.message("settings.ai.provider.selection"))) {
                             return;
                         }
                         ChangelogService service = ChangelogService.getInstance(project);
@@ -122,7 +122,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
 
                             @Override
                             public void onComplete(@NotNull String fullText) {
-                                String formattedText = CommitMessageFormatter.format(fullText);
+                                String formattedText = MessageFormatter.format(fullText);
                                 outputSession.setText(formattedText);
                             }
                         };

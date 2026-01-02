@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
+import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 
 /**
  * GitCliffRunner 类
@@ -94,7 +94,7 @@ public final class GitCliffRunner {
 
         String result = output.toString();
         // 格式化输出结果
-        String formattedResult = CommitMessageFormatter.format(result);
+        String formattedResult = MessageFormatter.format(result);
         // 更新 toolwindow 中的最终结果（替换流式输出的原始内容）
         outputSession.setText(formattedResult);
         return formattedResult;

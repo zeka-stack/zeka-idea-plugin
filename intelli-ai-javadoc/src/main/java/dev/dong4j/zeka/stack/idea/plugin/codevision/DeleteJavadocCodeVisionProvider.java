@@ -469,13 +469,9 @@ public class DeleteJavadocCodeVisionProvider implements CodeVisionProvider<Unit>
                                                                    @NotNull Project project) {
         return (event, editor) -> {
             boolean deleted = deletionService.deleteJavadoc(project, element);
-            if (deleted) {
-                // ApplicationManager.getApplication().invokeLater(() -> {
-                //     NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.delete.javadoc.success"));
-                // });
-            } else {
+            if (!deleted) {
                 ApplicationManager.getApplication().invokeLater(() -> {
-                    NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.javadoc.to.delete"));
+                    NotificationUtil.showInfo(project, JavadocBundle.message("notification.no.javadoc.to.delete"));
                 });
             }
             return Unit.INSTANCE;

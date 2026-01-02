@@ -88,7 +88,7 @@ public class CommitJavadocGenerator {
 
                     if (tasks.isEmpty()) {
                         ApplicationManager.getApplication().invokeLater(() -> {
-                            NotificationUtil.notifyNoTask(project,
+                            NotificationUtil.showWarning(project,
                                                           JavadocBundle.message("commit.no.missing.javadoc"));
                         });
                         return;

@@ -59,7 +59,7 @@ public class DeleteJavadocForFilesAction extends AnAction {
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         if (!settings.allowDeleteJavadoc) {
-            NotificationUtil.notifyWarning(project, "删除 Javadoc", JavadocBundle.message("notification.delete.javadoc.not.enabled"));
+            NotificationUtil.showWarning(project, JavadocBundle.message("notification.delete.javadoc.not.enabled"));
             return;
         }
 
@@ -91,7 +91,7 @@ public class DeleteJavadocForFilesAction extends AnAction {
         }).finishOnUiThread(ModalityState.current(), psiFiles -> {
             // 在 EDT 上检查结果和显示确认对话框
             if (psiFiles == null || psiFiles.isEmpty()) {
-                NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.files.to.delete"));
+                NotificationUtil.showInfo(project, JavadocBundle.message("notification.no.files.to.delete"));
                 return;
             }
 
@@ -113,8 +113,7 @@ public class DeleteJavadocForFilesAction extends AnAction {
 
                 // 切回 EDT 显示完成信息
                 ApplicationManager.getApplication().invokeLater(() -> {
-                    NotificationUtil.notifyInfo(project, "删除 Javadoc",
-                                                JavadocBundle.message("notification.delete.javadoc.completed", totalDeleted,
+                    NotificationUtil.showInfo(project, JavadocBundle.message("notification.delete.javadoc.completed", totalDeleted,
                                                                       psiFiles.size()));
                 });
             });

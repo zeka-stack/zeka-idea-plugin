@@ -64,7 +64,7 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
          */
         @Override
         protected void onLocateFailed(@NotNull Project project) {
-            NotificationUtil.notifyNoTask(project, JavadocBundle.message("notification.no.task.location"));
+            NotificationUtil.showWarning(project, JavadocBundle.message("notification.no.task.location"));
         }
     };
 
@@ -91,7 +91,7 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
     @NotNull
     @Override
     public String getFamilyName() {
-        return JavadocBundle.message("plugin.name");
+        return PluginContents.PLUGIN_NAME;
     }
 
     /**

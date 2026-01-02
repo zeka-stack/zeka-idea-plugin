@@ -21,17 +21,16 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import icons.ChangelogIcons;
 
 /**
@@ -231,7 +230,8 @@ public abstract class AbstractGitLogAction extends AnAction {
             public void run(@NotNull ProgressIndicator indicator) {
                 // 检查 AI Provider 配置
                 AIProviderConfig config = SettingsState.getInstance().providerConfig;
-                if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+                if (!AIProviderUtils.hasAIProvider(project, config, ChangelogBundle.message("settings.display.name"),
+                                                   ChangelogBundle.message("settings.ai.provider.selection"))) {
                     return;
                 }
 
@@ -253,7 +253,7 @@ public abstract class AbstractGitLogAction extends AnAction {
 
                         @Override
                         public void onComplete(@NotNull String fullText) {
-                            String formattedText = CommitMessageFormatter.format(fullText);
+                            String formattedText = MessageFormatter.format(fullText);
                             outputSession.setText(formattedText);
                         }
                     };

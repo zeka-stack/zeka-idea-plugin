@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("maven-publish")
     id("org.jetbrains.intellij.platform") version "2.10.5"
 }
 
@@ -12,6 +13,17 @@ repositories {
 
     intellijPlatform {
         defaultRepositories()
+    }
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            groupId = providers.gradleProperty("pluginGroup").get()
+            artifactId = "intelli-ai-engine"
+            version = providers.gradleProperty("pluginVersion").get()
+        }
     }
 }
 
@@ -58,7 +70,8 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
-
+    // Idea Plugin Kit 库依赖（本地库，打包时需要包含）
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:1.0.0")
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.platform:junit-platform-suite:1.9.2")

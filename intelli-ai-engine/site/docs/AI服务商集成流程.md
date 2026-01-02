@@ -144,7 +144,7 @@ public List<String> getAvailableModels(@Nullable String apiKey) {
 
         // 3. 构建请求体（根据接口要求）
         String requestBody = "{}"; // 或构建 JSON 对象
-        
+
         // 4. 发送请求
         String responseBody = HttpRequests.post(MODELS_LIST_URL, "application/json")
             .tuner(connection -> {
@@ -166,7 +166,7 @@ public List<String> getAvailableModels(@Nullable String apiKey) {
         // 5. 解析响应
         if (!responseBody.trim().isEmpty()) {
             List<String> models = parseModelsResponse(responseBody);
-            return models.isEmpty() 
+            return models.isEmpty()
                 ? new ArrayList<>(AIProviderType.{SERVICE_ID}.getSupportedModels())
                 : models;
         }
@@ -194,11 +194,11 @@ protected List<String> parseModelsResponse(String responseBody) {
     Set<String> models = new LinkedHashSet<>();
     try {
         JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
-        
+
         // 检查响应是否成功
         if (json.has("success") && !json.get("success").getAsBoolean()) {
-            String errorMessage = json.has("message") 
-                ? json.get("message").getAsString() 
+            String errorMessage = json.has("message")
+                ? json.get("message").getAsString()
                 : "未知错误";
             LOG.info("{服务商名称} API 返回失败: " + errorMessage);
             return new ArrayList<>();
@@ -211,7 +211,7 @@ protected List<String> parseModelsResponse(String responseBody) {
         }
 
         JsonObject dataObj = json.getAsJsonObject("data");
-        
+
         // 遍历 data 对象中的所有厂商分类
         for (String vendorKey : dataObj.keySet()) {
             JsonElement vendorElement = dataObj.get(vendorKey);
@@ -299,20 +299,20 @@ protected List<String> parseModelsResponse(String responseBody) {
 protected JsonObject buildRequestBody(AIChatRequest request) {
     // 构建自定义格式的请求体
     JsonObject body = new JsonObject();
-    
+
     // 根据服务商 API 要求构建请求体
     body.addProperty("model_id", config.modelName);
     body.addProperty("prompt", request.userPrompt());
     body.addProperty("system_prompt", request.systemPrompt());
-    
+
     // 设置模型参数（根据服务商支持的参数名称调整）
     AIModelParameters params = modelParameters;
     body.addProperty("temperature", params.temperature);
     body.addProperty("max_length", params.maxTokens);
-    
+
     // 添加服务商特定的字段
     body.addProperty("custom_param", "value");
-    
+
     return body;
 }
 ```

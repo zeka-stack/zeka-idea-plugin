@@ -87,7 +87,7 @@ public class NotificationUtilTest {
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
 
-            NotificationUtil.notifyInfo(mockProject, "测试标题", "测试内容");
+            NotificationUtil.showInfo(mockProject, "测试内容");
 
             verify(mockNotificationGroup).createNotification(
                 eq("测试标题"),
@@ -119,10 +119,9 @@ public class NotificationUtilTest {
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
 
-            NotificationUtil.notifyWarning(mockProject, "警告标题", "警告内容");
+            NotificationUtil.showWarning(mockProject, "警告内容");
 
             verify(mockNotificationGroup).createNotification(
-                eq("警告标题"),
                 eq("警告内容"),
                 eq(NotificationType.WARNING)
                                                             );
@@ -151,10 +150,9 @@ public class NotificationUtilTest {
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
 
-            NotificationUtil.notifyError(mockProject, "错误标题", "错误内容");
+            NotificationUtil.showError(mockProject, "错误内容");
 
             verify(mockNotificationGroup).createNotification(
-                eq("错误标题"),
                 eq("错误内容"),
                 eq(NotificationType.ERROR)
                                                             );
@@ -334,13 +332,12 @@ public class NotificationUtilTest {
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
 
-            NotificationUtil.notifyNoTask(mockProject, "没有需要生成文档的元素");
+            NotificationUtil.showWarning(mockProject, "没有需要生成文档的元素");
 
             verify(mockNotificationGroup).createNotification(
                 eq(PluginContents.PLUGIN_NAME),
                 eq("没有需要生成文档的元素"),
-                eq(NotificationType.INFORMATION)
-                                                            );
+                eq(NotificationType.WARNING));
         }
     }
 
@@ -348,7 +345,7 @@ public class NotificationUtilTest {
      * 测试错误消息通知功能
      * <p>
      * 测试场景: 模拟 NotificationGroupManager 的静态方法并验证错误消息是否正确通知
-     * 预期结果: 调用 {@link NotificationUtil#notifyErrorMessage} 方法后, 应通过 {@link NotificationGroup#createNotification} 方法创建包含指定标题, 内容和类型的通知
+     * 预期结果: 调用 {@link NotificationUtil#showError} 方法后, 应通过 {@link NotificationGroup#createNotification} 方法创建包含指定标题, 内容和类型的通知
      * <p>
      * 特殊说明: 测试使用了 {@link MockedStatic} 来模拟静态方法 {@link NotificationGroupManager#getInstance}, 并验证通知参数是否符合预期
      */
@@ -365,7 +362,7 @@ public class NotificationUtilTest {
             when(mockNotificationGroup.createNotification(anyString(), anyString(), any(NotificationType.class)))
                 .thenReturn(mockNotification);
 
-            NotificationUtil.notifyErrorMessage(mockProject, "API 调用失败");
+            NotificationUtil.showError(mockProject, "API 调用失败");
 
             verify(mockNotificationGroup).createNotification(
                 eq("IntelliAI Javadoc - 错误"),
@@ -435,7 +432,7 @@ public class NotificationUtilTest {
                 .thenReturn(mockNotification);
 
             // 传递 null project 应该不会抛出异常
-            NotificationUtil.notifyInfo(null, "测试标题", "测试内容");
+            NotificationUtil.showInfo(null, "测试内容");
 
             verify(mockNotification).notify(null);
         }

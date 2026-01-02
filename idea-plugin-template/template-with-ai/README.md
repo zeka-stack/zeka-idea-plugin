@@ -48,7 +48,7 @@ cd my-new-ai-plugin
 
 ```properties
 # 插件基本信息
-pluginGroup=dev.dong4j.zeka.stack.idea.plugin.example
+pluginGroup=dev.dong4j.zeka.stack
 pluginName=My New AI Plugin
 pluginVersion=1.0.0
 
@@ -89,7 +89,7 @@ platformUntilBuild=999.*
 ```kotlin
 dependencies {
     // 编译时依赖
-    compileOnly("dev.dong4j:intelli-ai-engine:$aiEngineVersion")
+    compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:$aiEngineVersion")
 
     // 运行时依赖通过 plugin.xml 中的 <depends> 声明
 }

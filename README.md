@@ -280,7 +280,7 @@ dependencies {
     }
 
     // 编译时依赖 - 本地开发和发布都需要
-    compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")
+    compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:1.1.0")
 
     // 其他依赖...
 }
@@ -451,7 +451,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 
 对于依赖 `intelli-ai-engine` 的插件(如 `intelli-ai-javadoc`),本地开发时需要:
 
-1. **编译时依赖**:通过 `compileOnly("dev.dong4j:intelli-ai-engine:1.1.0")` 声明
+1. **编译时依赖**:通过 `compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:1.1.0")` 声明
 2. **运行时依赖**:通过自定义 Gradle 任务自动构建和复制 Engine 插件到沙盒
 
 ```kotlin

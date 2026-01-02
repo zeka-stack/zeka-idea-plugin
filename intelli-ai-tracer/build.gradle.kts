@@ -79,10 +79,13 @@ dependencies {
     }
 
     // 编译时依赖：本地开发时，includeBuild 会自动将依赖替换为本地项目
-    // 发布到市场后，编译时使用 compileOnly("dev.dong4j:intelli-ai-engine:${aiEngineVersion}")
+    // 发布到市场后，编译时使用 compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:${aiEngineVersion}")
     // 运行时依赖通过 plugin.xml 中的 <depends> 声明，用户需要单独安装 IntelliAI Engine 插件
     // 本地开发时，运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
-    compileOnly("dev.dong4j:intelli-ai-engine:$aiEngineVersion")
+    compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:$aiEngineVersion")
+
+    // Idea Plugin Common 库依赖（本地库，打包时需要包含）
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:1.0.0")
 
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
