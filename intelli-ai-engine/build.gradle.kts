@@ -6,6 +6,7 @@ plugins {
 
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
+val kitVersion: String = providers.gradleProperty("kitVersion").get()
 
 repositories {
     mavenLocal()
@@ -68,10 +69,12 @@ dependencies {
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
+    // Idea Plugin Common 库依赖（本地库，打包时需要包含）
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:${kitVersion}")
+
     compileOnly("org.projectlombok:lombok:1.18.26")
     annotationProcessor("org.projectlombok:lombok:1.18.26")
-    // Idea Plugin Kit 库依赖（本地库，打包时需要包含）
-    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:1.0.0")
+
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.platform:junit-platform-suite:1.9.2")

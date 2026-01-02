@@ -69,7 +69,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p> 默认值: getDefaultExampleTemplate()
      */
-    public String exampleTemplate = getDefaultExampleTemplate();
+    public String exampleTemplate = getDefaultUserTemplate();
 
     /**
      * 获取 SettingsState 的单例实例
@@ -134,7 +134,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @return 默认的示例模板
      */
     @NotNull
-    public static String getDefaultExampleTemplate() {
+    public static String getDefaultUserTemplate() {
         return """
             请根据以下内容生成示例：
 
