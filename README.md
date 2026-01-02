@@ -6,7 +6,20 @@
 [![IntelliJ IDEA](https://img.shields.io/badge/IntelliJ%20IDEA-2022.3+-blue.svg)](https://www.jetbrains.com/idea/)
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://www.oracle.com/java/)
 
-## 🎯 项目概述
+## 目录
+
+- [1 🎯 项目概述](#1-🎯-项目概述)
+- [2 📦 包含插件](#2-📦-包含插件)
+- [3 🚀 快速开始](#3-🚀-快速开始)
+- [4 🛠️ 开发指南](#4-🛠️-开发指南)
+- [5 ⚠️ 注意事项](#5-⚠️-注意事项)
+- [6 📚 文档资源](#6-📚-文档资源)
+- [7 🤝 贡献指南](#7-🤝-贡献指南)
+- [8 📄 许可证](#8-📄-许可证)
+- [9 📮 联系方式](#9-📮-联系方式)
+- [10 🙏 致谢](#10-🙏-致谢)
+
+## 1 🎯 项目概述
 
 Zeka IDEA Plugin Suite 是一个现代化的 IntelliJ IDEA 插件生态系统，包含两大类插件：
 
@@ -15,11 +28,11 @@ Zeka IDEA Plugin Suite 是一个现代化的 IntelliJ IDEA 插件生态系统，
 
 项目采用模块化架构，每个插件都是独立的 Gradle 项目，便于开发、测试和维护。
 
-## 📦 包含插件
+## 2 📦 包含插件
 
-### 核心引擎
+### 2.1 核心引擎
 
-#### [IntelliAI Engine](./intelli-ai-engine)
+#### 2.1.1 [IntelliAI Engine](./intelli-ai-engine)
 
 AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 
@@ -35,11 +48,11 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 
 ---
 
-### AI 驱动插件
+### 2.2 AI 驱动插件
 
 > 以下插件均依赖 IntelliAI Engine,需要先安装 IntelliAI Engine 才能使用
 
-#### [IntelliAI Javadoc](./intelli-ai-javadoc)
+#### 2.2.1 [IntelliAI Javadoc](./intelli-ai-javadoc)
 
 专为批量生成符合规范的 Javadoc 注释而设计,解决传统工具翻译质量差、生成速度慢的问题。
 
@@ -56,7 +69,7 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 
 **[使用指南](./intelli-ai-javadoc/docs/用户手册.md)**
 
-#### [IntelliAI Changelog](./intelli-ai-changelog)
+#### 2.2.2 [IntelliAI Changelog](./intelli-ai-changelog)
 
 基于 Git 提交记录自动生成变更日志、工作日报/周报和智能提交信息。
 
@@ -78,7 +91,7 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 
 **[使用指南](./intelli-ai-changelog/docs/用户手册.md)**
 
-#### [IntelliAI Tracer](./intelli-ai-tracer)
+#### 2.2.3 [IntelliAI Tracer](./intelli-ai-tracer)
 
 使用 AI 自动分析代码方法调用链和业务流程,帮助快速理解复杂系统。
 
@@ -100,7 +113,7 @@ AI 能力基础引擎,为其他插件提供统一的 AI 服务接口。
 
 **[使用指南](./intelli-ai-tracer/docs/用户手册.md)**
 
-#### [IntelliAI Nacos](./intelli-ai-nacos)
+#### 2.2.4 [IntelliAI Nacos](./intelli-ai-nacos)
 
 Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能力。
 
@@ -117,9 +130,9 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 
 ---
 
-### 工具类插件
+### 2.3 工具类插件
 
-#### [Archiver Man](./archiver-man)
+#### 2.3.1 [Archiver Man](./archiver-man)
 
 在 IDEA 中直接编辑 ZIP/JAR 压缩包内的文件,无需解压。
 
@@ -141,7 +154,7 @@ Nacos 配置管理增强插件,提供便捷的配置查看、对比和管理能�
 
 **[使用指南](./archiver-man/docs/用户手册.md)**
 
-#### [ZKS Dev Helper](./zks-dev-helper)
+#### 2.3.2 [ZKS Dev Helper](./zks-dev-helper)
 
 Zeka Stack 框架开发助手,专为 Zeka Stack 框架开发提供辅助功能。目前提供统一的代码样式配置功能,后续将持续添加更多开发辅助特性,如 MyBatis
 自动提示、Proxyer 组件接口自动识别等。
@@ -172,17 +185,17 @@ Zeka Stack 框架开发助手,专为 Zeka Stack 框架开发提供辅助功能�
 
 ---
 
-## 🚀 快速开始
+## 3 🚀 快速开始
 
-### 环境要求
+### 3.1 环境要求
 
 - **IntelliJ IDEA:** 2022.3 及以上版本(支持 IC 和 IU)
 - **Java:** 17 及以上
 - **Gradle:** 8.x (项目自带 Gradle Wrapper)
 
-### 安装插件
+### 3.2 安装插件
 
-#### 从 JetBrains Marketplace 安装(推荐)
+#### 3.2.1 从 JetBrains Marketplace 安装(推荐)
 
 1. 打开 IntelliJ IDEA
 2. 进入 `Settings/Preferences` → `Plugins`
@@ -191,7 +204,7 @@ Zeka Stack 框架开发助手,专为 Zeka Stack 框架开发提供辅助功能�
 
 **注意:** 如果安装 AI 驱动插件,需要先安装 `IntelliAI Engine`
 
-#### 手动安装
+#### 3.2.2 手动安装
 
 1. 从各插件的产品页下载插件 ZIP 包
 2. 进入 `Settings/Preferences` → `Plugins` → 齿轮图标 → `Install Plugin from Disk...`
@@ -200,23 +213,23 @@ Zeka Stack 框架开发助手,专为 Zeka Stack 框架开发提供辅助功能�
 
 ---
 
-## 🛠️ 开发指南
+## 4 🛠️ 开发指南
 
-### 🚀 快速上手开发
+### 4.1 🚀 快速上手开发
 
-#### 前置要求
+#### 4.1.1 前置要求
 
 - **IntelliJ IDEA:** 2022.3 及以上版本
 - **Java:** 17 及以上
 - **Gradle:** 8.x (项目已包含 Gradle Wrapper)
 
-#### 选择插件模板
+#### 4.1.2 选择插件模板
 
 项目提供两种插件模板，根据是否需要 AI 能力选择。模板位于 `idea-plugin-template` 目录。
 
 **📖 详细说明：** 请查看 [idea-plugin-template/README.md](./idea-plugin-template/README.md)
 
-##### 1. 带 AI 能力的插件模板
+##### 4.1.2.1 带 AI 能力的插件模板
 
 **适用场景:** 需要集成 OpenAI、通义千问等 AI 服务的插件
 
@@ -236,7 +249,7 @@ vim gradle.properties
 
 **详细说明：** 请查看 [template-with-ai/README.md](./idea-plugin-template/template-with-ai/README.md)
 
-##### 2. 不带 AI 能力的插件模板
+##### 4.1.2.2 不带 AI 能力的插件模板
 
 **适用场景:** 纯工具类插件，无需 AI 集成
 
@@ -256,11 +269,11 @@ vim gradle.properties
 
 **详细说明：** 请查看 [template-without-ai/README.md](./idea-plugin-template/template-without-ai/README.md)
 
-### 🔌 AI 插件 Engine 依赖集成详解
+### 4.2 🔌 AI 插件 Engine 依赖集成详解
 
 对于需要 AI 能力的插件，必须正确集成 IntelliAI Engine。以下是完整的集成步骤：
 
-#### 1. 依赖配置
+#### 4.2.1 依赖配置
 
 在 `build.gradle.kts` 中配置依赖：
 
@@ -286,11 +299,11 @@ dependencies {
 }
 ```
 
-#### 2. 关键 Gradle 任务配置
+#### 4.2.2 关键 Gradle 任务配置
 
 **两个核心任务用于本地开发：**
 
-##### `buildAiCommonPlugin` 任务
+##### 4.2.2.1 `buildAiCommonPlugin` 任务
 
 ```kotlin
 val buildAiCommonPlugin = register<Exec>("buildAiCommonPlugin") {
@@ -303,7 +316,7 @@ val buildAiCommonPlugin = register<Exec>("buildAiCommonPlugin") {
 }
 ```
 
-##### `copyAiCommonPlugin` 任务
+##### 4.2.2.2 `copyAiCommonPlugin` 任务
 
 ```kotlin
 val copyAiCommonPlugin = register<Copy>("copyAiCommonPlugin") {
@@ -348,7 +361,7 @@ val copyAiCommonPlugin = register<Copy>("copyAiCommonPlugin") {
 }
 ```
 
-#### 3. 自动化集成
+#### 4.2.3 自动化集成
 
 在 `runIde` 任务中自动执行依赖插件的安装：
 
@@ -359,7 +372,7 @@ runIde {
 }
 ```
 
-#### 4. 本地开发 vs 生产发布
+#### 4.2.4 本地开发 vs 生产发布
 
 **本地开发流程:**
 
@@ -374,7 +387,7 @@ runIde {
 2. 移除或注释 `buildAiCommonPlugin` 和 `copyAiCommonPlugin` 任务
 3. 执行发布流程
 
-#### 5. plugin.xml 配置
+#### 4.2.5 plugin.xml 配置
 
 ```xml
 <!-- 依赖 IntelliAI Engine 插件 -->
@@ -386,14 +399,14 @@ runIde {
 </extensions>
 ```
 
-### 克隆仓库
+### 4.3 克隆仓库
 
 ```bash
 git clone https://github.com/zeka-stack/zeka-idea-plugin.git
 cd zeka-idea-plugin
 ```
 
-### 项目结构
+### 4.4 项目结构
 
 ```
 zeka-idea-plugin/
@@ -418,13 +431,13 @@ zeka-idea-plugin/
 - `docs/` - 详细设计文档
 - `deploy.sh` - 自动化部署脚本
 
-### 开发环境配置
+### 4.5 开发环境配置
 
-#### 1. 导入项目
+#### 4.5.1 导入项目
 
 使用 IntelliJ IDEA 打开任一子项目目录(如 `intelli-ai-javadoc`),IDE 会自动识别 Gradle 项目。
 
-#### 2. 构建插件
+#### 4.5.2 构建插件
 
 ```bash
 cd intelli-ai-javadoc  # 进入任一插件目录
@@ -433,7 +446,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 
 构建产物位于 `build/distributions/` 目录。
 
-#### 3. 运行调试
+#### 4.5.3 运行调试
 
 **方法一:使用 Gradle 任务**
 
@@ -447,7 +460,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 
 项目已配置 `.run/Run Plugin.run.xml`,直接点击运行按钮即可。
 
-#### 4. 依赖 IntelliAI Engine 的插件开发
+#### 4.5.4 依赖 IntelliAI Engine 的插件开发
 
 对于依赖 `intelli-ai-engine` 的插件(如 `intelli-ai-javadoc`),本地开发时需要:
 
@@ -464,7 +477,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 - 取消注释 `plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")`
 - 移除 `buildAiCommonPlugin` 和 `copyAiCommonPlugin` 任务
 
-### 代码规范
+### 4.6 代码规范
 
 项目使用 Google Java Format 进行代码格式化:
 
@@ -473,7 +486,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 ./gradlew verifyGoogleJavaFormat # 验证格式
 ```
 
-### 测试
+### 4.7 测试
 
 ```bash
 ./gradlew test  # 运行单元测试
@@ -486,16 +499,16 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 - AssertJ
 - IntelliJ Platform Test Framework
 
-### 插件验证
+### 4.8 插件验证
 
 ```bash
 ./gradlew verifyPlugin  # 验证插件描述符
 ./gradlew runPluginVerifier  # 验证插件兼容性
 ```
 
-### 发布流程
+### 4.9 发布流程
 
-#### 1. 更新版本号
+#### 4.9.1 更新版本号
 
 编辑 `gradle.properties`:
 
@@ -503,11 +516,11 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 pluginVersion=2025.3.1
 ```
 
-#### 2. 更新变更日志
+#### 4.9.2 更新变更日志
 
 编辑 `includes/pluginChanges.html`,添加新版本的变更内容。
 
-#### 3. 插件签名和发布
+#### 4.9.3 插件签名和发布
 
 **环境变量配置:**
 
@@ -532,7 +545,7 @@ export PUBLISH_TOKEN="JetBrains Marketplace Token"
 
 **JetBrains Marketplace 账号:** `code.dsj@gmail.com`
 
-#### 4. 版本号规范
+#### 4.9.4 版本号规范
 
 遵循 [JetBrains 版本号范围规范](https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html):
 
@@ -541,14 +554,14 @@ export PUBLISH_TOKEN="JetBrains Marketplace Token"
 
 ---
 
-## ⚠️ 注意事项
+## 5 ⚠️ 注意事项
 
-### 1. Gradle 构建脚本
+### 5.1 Gradle 构建脚本
 
 - 使用 **Kotlin DSL** (`build.gradle.kts`),而非 Groovy
 - 必须使用 Kotlin 语法编写配置
 
-### 2. 热更新支持
+### 5.2 热更新支持
 
 所有插件的 `runIde` 任务已配置 JVM 参数:
 
@@ -558,7 +571,7 @@ jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
 
 开发时修改代码后,使用 `Build → Reload Changed Classes` 即可热更新。
 
-### 3. API Key 安全存储
+### 5.3 API Key 安全存储
 
 AI 插件使用 IntelliJ Platform 的 `PasswordSafe` 机制:
 
@@ -568,7 +581,7 @@ AI 插件使用 IntelliJ Platform 的 `PasswordSafe` 机制:
 
 **绝不**将 API Key 保存在配置文件或代码中。
 
-### 4. 插件依赖关系
+### 5.4 插件依赖关系
 
 ```
 IntelliAI Engine (基础引擎)
@@ -581,7 +594,7 @@ Archiver Man (独立)
 ZKS Dev Helper (独立)
 ```
 
-### 5. 国际化支持
+### 5.5 国际化支持
 
 插件支持中英文双语,资源文件位于:
 
@@ -591,7 +604,7 @@ src/main/resources/messages/
     └── Bundle_zh.properties   # 中文
 ```
 
-### 6. 插件描述文件
+### 5.6 插件描述文件
 
 插件的市场描述和更新日志通过外部 HTML 文件管理:
 
@@ -601,7 +614,7 @@ includes/
     └── pluginChanges.html      # 更新日志
 ```
 
-### 7. 文件路径限制
+### 5.7 文件路径限制
 
 开发时只能编辑工作区路径内的文件:
 
@@ -611,7 +624,7 @@ includes/
 
 无法编辑此路径之外的文件。
 
-### 8. 线程安全
+### 5.8 线程安全
 
 插件开发必须注意:
 
@@ -624,9 +637,9 @@ includes/
 
 ---
 
-## 📚 文档资源
+## 6 📚 文档资源
 
-### 各插件详细文档
+### 6.1 各插件详细文档
 
 - [IntelliAI Engine - AI 工作流解释器](./intelli-ai-engine/docs/AI工作流解释器功能实现方案.md)
 - [IntelliAI Engine - 扩展点实现方案](./intelli-ai-engine/docs/扩展点实现方案.md)
@@ -637,7 +650,7 @@ includes/
 - [Archiver Man - 功能规划](./archiver-man/docs/ArchiverMan功能规划清单.md)
 - [ZKS Dev Helper - 重构总结](./zks-dev-helper/重构总结.md)
 
-### 官方文档
+### 6.2 官方文档
 
 - [IntelliJ Platform SDK](https://plugins.jetbrains.com/docs/intellij/welcome.html)
 - [Plugin 开发基础](https://plugins.jetbrains.com/docs/intellij/getting-started.html)
@@ -646,7 +659,7 @@ includes/
 
 ---
 
-## 🤝 贡献指南
+## 7 🤝 贡献指南
 
 欢迎提交 Issue 和 Pull Request!
 
@@ -658,13 +671,13 @@ includes/
 
 ---
 
-## 📄 许可证
+## 8 📄 许可证
 
 MIT License
 
 ---
 
-## 📮 联系方式
+## 9 📮 联系方式
 
 - **GitHub:** [zeka-stack/zeka-idea-plugin](https://github.com/zeka-stack/zeka-idea-plugin)
 - **Issues:** [提交问题](https://github.com/zeka-stack/zeka-idea-plugin/issues)
@@ -672,7 +685,7 @@ MIT License
 
 ---
 
-## 🙏 致谢
+## 10 🙏 致谢
 
 感谢所有贡献者的支持!
 

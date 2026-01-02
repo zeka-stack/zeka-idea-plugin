@@ -20,24 +20,32 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # 如果第一个参数是 -n，则执行全局 Nginx 配置部署，不依赖具体插件
 if [ "${1:-}" = "-n" ]; then
     REMOTE_HOST="aliyun"
-    LOCAL_NGINX_CONF="$SCRIPT_DIR/ideaplugin.dong4j.site.conf"
+    IDEAPLUGIN_NGINX_CONF="$SCRIPT_DIR/ideaplugin.dong4j.site.conf"
+    DOWNLOAD_NGINX_CONF="$SCRIPT_DIR/download.dong4j.site.conf"
     REMOTE_NGINX_DIR="/etc/nginx/conf.d"
 
     echo "================================"
     echo "开始部署全局 Nginx 配置 (无需指定插件)"
-    echo "本地配置文件: $LOCAL_NGINX_CONF"
+    echo "本地配置文件: $IDEAPLUGIN_NGINX_CONF"
+    echo "本地配置文件: $DOWNLOAD_NGINX_CONF"
     echo "远程目录: $REMOTE_NGINX_DIR"
     echo "目标服务器: $REMOTE_HOST"
     echo "================================"
 
-    if [ ! -f "$LOCAL_NGINX_CONF" ]; then
-        echo "错误: 找不到本地 Nginx 配置文件: $LOCAL_NGINX_CONF"
+    if [ ! -f "$IDEAPLUGIN_NGINX_CONF" ]; then
+        echo "错误: 找不到本地 Nginx 配置文件: $IDEAPLUGIN_NGINX_CONF"
         exit 1
     fi
 
+    if [ ! -f "$DOWNLOAD_NGINX_CONF" ]; then
+            echo "错误: 找不到本地 Nginx 配置文件: $DOWNLOAD_NGINX_CONF"
+            exit 1
+        fi
+
     echo "上传 Nginx 配置到 $REMOTE_HOST:$REMOTE_NGINX_DIR/ ..."
     rsync -avz --progress \
-        "$LOCAL_NGINX_CONF" \
+        "$IDEAPLUGIN_NGINX_CONF" \
+        "$DOWNLOAD_NGINX_CONF" \
         "$REMOTE_HOST:$REMOTE_NGINX_DIR/"
 
     echo "Testing and reloading Nginx on server '$REMOTE_HOST'..."
@@ -403,38 +411,6 @@ if $do_site; then
     echo "✓ site 目录部署完成"
 else
     echo "[跳过] 部署 site 目录 (根据参数设置)"
-fi
-
-############################################
-# 6) 部署 Nginx 配置并重载
-############################################
-if $deploy_nginx; then
-    echo "部署 Nginx 配置 ..."
-
-    LOCAL_NGINX_CONF="$SCRIPT_DIR/ideaplugin.dong4j.site.conf"
-    REMOTE_NGINX_DIR="/etc/nginx/conf.d"
-
-    if [ ! -f "$LOCAL_NGINX_CONF" ]; then
-        echo "错误: 找不到本地 Nginx 配置文件: $LOCAL_NGINX_CONF"
-        exit 1
-    fi
-
-    echo "上传 Nginx 配置到 $REMOTE_HOST:$REMOTE_NGINX_DIR/ ..."
-    rsync -avz --progress \
-        "$LOCAL_NGINX_CONF" \
-        "$REMOTE_HOST:$REMOTE_NGINX_DIR/"
-
-    echo "Testing and reloading Nginx on server '$REMOTE_HOST'..."
-    ssh "$REMOTE_HOST" "nginx -t && systemctl restart nginx"
-
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to reload Nginx on server '$REMOTE_HOST'."
-        exit 1
-    fi
-
-    echo "Nginx configuration successfully updated and reloaded on '$REMOTE_HOST'."
-else
-    echo "[跳过] 部署 Nginx 配置 (根据参数设置)"
 fi
 
 # 收尾输出
