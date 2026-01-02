@@ -24,7 +24,15 @@ public class InternalWhatsNewProvider implements WhatsNewProvider {
      */
     private static final List<WhatsNewPage> PAGES = List.of(
         new DefaultWhatsNewPage("1.8.0", "1_8_0.html"),
-        new DefaultWhatsNewPage("2025.3.1", "2025_3_1.html")
+        new DefaultWhatsNewPage("1.7.0", "1_7_0.html"),
+        new DefaultWhatsNewPage("1.6.0", "1_6_0.html"),
+        new DefaultWhatsNewPage("1.5.0", "1_5_0.html"),
+        new DefaultWhatsNewPage("1.4.0", "1_4_0.html"),
+        new DefaultWhatsNewPage("1.3.1", "1_3_1.html"),
+        new DefaultWhatsNewPage("1.3.0", "1_3_0.html"),
+        new DefaultWhatsNewPage("1.2.0", "1_2_0.html"),
+        new DefaultWhatsNewPage("1.1.0", "1_1_0.html"),
+        new DefaultWhatsNewPage("1.0.0", "1_0_0.html")
                                                            );
     /** 插件描述信息 */
     private PluginDescriptor pluginDescriptor;
