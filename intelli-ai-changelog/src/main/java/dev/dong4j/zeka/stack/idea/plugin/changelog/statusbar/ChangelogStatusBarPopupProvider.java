@@ -304,6 +304,7 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
          * 构造函数, 初始化 ReleaseLogStartPointActionGroup 对象
          * <p> 创建一个包含两个 ReleaseLogStartPointAction 的动作组
          * <p> 第一个动作使用 true 参数, 第二个动作使用 false 参数
+         * <p> 最后添加一个分隔符和清除 Tag 和 Hash 的动作
          *
          * @since 1.0
          */
@@ -311,6 +312,8 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
             super(getTitle(), true);
             add(new ReleaseLogStartPointAction(true));
             add(new ReleaseLogStartPointAction(false));
+            add(Separator.create());
+            add(new ClearTagAndHashAction());
         }
 
         /**
@@ -541,6 +544,52 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
                 return;
             }
             SettingsUtil.openSettings(project, ChangelogSettingsConfigurable.class);
+        }
+
+        /**
+         * 获取动作更新线程
+         * <p> 返回此动作更新应在哪个线程中执行. 此实现返回后台线程 (BGT), 表示动作更新应在后台线程中进行, 以避免阻塞 UI 线程.
+         *
+         * @return 动作更新线程类型, 此处返回 {@link ActionUpdateThread#BGT}
+         */
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+    }
+
+    /**
+     * 清除 Tag 和 Hash 动作类
+     * <p>用于在状态栏中清除已保存的 Tag 和 Hash 值, 执行与设置页面清除按钮相同的操作
+     * <p>清除后, 下次生成 Release Log 时将生成全量日志
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.02
+     * @since 1.0.0
+     */
+    private static class ClearTagAndHashAction extends AnAction {
+        /**
+         * 构造一个用于清除 Tag 和 Hash 的操作对象
+         * <p> 初始化操作时设置操作名称为 "settings.gitcliff.clear.tag.and.hash" 的本地化字符串
+         */
+        ClearTagAndHashAction() {
+            super(ChangelogBundle.message("settings.gitcliff.clear.tag.and.hash"));
+        }
+
+        /**
+         * 处理动作事件, 清除已保存的 Tag 和 Hash 值
+         * <p> 当用户触发该动作时, 将 SettingsState 中的 lastUsedTag 和 lastUsedHash 设置为空字符串
+         * <p> 清除后, 下次生成 Release Log 时将生成全量日志
+         *
+         * @param e 动作事件对象, 不能为 null
+         */
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.lastUsedTag = "";
+            settings.lastUsedHash = "";
         }
 
         /**
