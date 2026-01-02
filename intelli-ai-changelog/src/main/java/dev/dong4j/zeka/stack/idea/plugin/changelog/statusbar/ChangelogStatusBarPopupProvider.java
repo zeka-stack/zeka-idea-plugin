@@ -9,7 +9,6 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 
@@ -17,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
@@ -28,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 import icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
 
@@ -83,7 +82,8 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, ChangelogBundle.message("settings.display.name"), ChangelogBundle.message("settings" +
+                                                                                                                              ".ai.provider.selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
@@ -212,7 +212,8 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
          */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, ChangelogBundle.message("settings.display.name"),
+                                               ChangelogBundle.message("settings.ai.provider.selection"))) {
                 return;
             }
 
@@ -539,7 +540,7 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
             if (project.isDisposed()) {
                 return;
             }
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, ChangelogSettingsConfigurable.class);
+            SettingsUtil.openSettings(project, ChangelogSettingsConfigurable.class);
         }
 
         /**

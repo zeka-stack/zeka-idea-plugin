@@ -26,7 +26,6 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
@@ -164,7 +163,9 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
     @Override
     protected @Nullable ListPopup createPopup(@NotNull DataContext context) {
         // 检查 AI Provider 配置
-        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, JavadocBundle.message("settings.display.name"), JavadocBundle.message("settings.ai" +
+                                                                                                                          ".provider" +
+                                                                                                                          ".selection"))) {
             return null;
         }
 
@@ -329,7 +330,8 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             // 检查 AI Provider 配置
-            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"), JavadocBundle.message(
+                "settings.ai.provider.selection"))) {
                 return;
             }
 

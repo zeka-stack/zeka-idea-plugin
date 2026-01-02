@@ -26,8 +26,8 @@ import java.util.Objects;
 
 import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavadocFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocSingleLineFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -320,7 +320,7 @@ public class DocumentationInserterHelper {
             return javadoc;
         }
 
-        return JavadocFormatter.format(
+        return MessageFormatter.format(
             javadoc,
             settings.addSpaceBetweenChineseAndEnglish,
             settings.replaceChinesePunctuation

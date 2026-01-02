@@ -50,7 +50,7 @@ public class DeleteJavadocForEditorAction extends AbstractDeleteJavadocAction {
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         if (!settings.allowDeleteJavadoc) {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.delete.javadoc.not.enabled"));
+            NotificationUtil.showInfo(project, JavadocBundle.message("notification.delete.javadoc.not.enabled"));
             return;
         }
 
@@ -71,21 +71,18 @@ public class DeleteJavadocForEditorAction extends AbstractDeleteJavadocAction {
             psiFile, editor.getCaretModel().getOffset());
 
         if (locateResult == null) {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.element.to.delete"));
+            NotificationUtil.showInfo(project, JavadocBundle.message("notification.no.element.to.delete"));
             return;
         }
 
         PsiElement element = locateResult.element();
-        if (element == null) {
-            return;
-        }
 
         // 删除注释
         boolean deleted = deletionService.deleteJavadoc(project, element);
         if (deleted) {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.delete.javadoc.success"));
+            NotificationUtil.showInfo(project, JavadocBundle.message("notification.delete.javadoc.success"));
         } else {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.javadoc.to.delete"));
+            NotificationUtil.showInfo(project, JavadocBundle.message("notification.no.javadoc.to.delete"));
         }
     }
 

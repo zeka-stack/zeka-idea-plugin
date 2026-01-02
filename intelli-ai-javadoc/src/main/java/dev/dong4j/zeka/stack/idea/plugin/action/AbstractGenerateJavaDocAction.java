@@ -86,7 +86,8 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
 
         // 检查 AI Provider 配置
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
-        if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"), JavadocBundle.message(
+            "settings.ai.provider.selection"))) {
             return;
         }
 

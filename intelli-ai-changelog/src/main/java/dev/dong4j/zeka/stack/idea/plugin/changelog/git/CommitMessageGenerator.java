@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CommitMessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -191,7 +191,7 @@ public class CommitMessageGenerator {
 
                         // 流式生成并同步返回最终结果
                         String commitMessage = service.generateCommitMessageFromDiffStream(changes, listener);
-                        String formattedCommitMessage = CommitMessageFormatter.format(commitMessage);
+                        String formattedCommitMessage = MessageFormatter.format(commitMessage);
 
                         // 在 EDT 中显示结果
                         ApplicationManager.getApplication().invokeLater(() -> {

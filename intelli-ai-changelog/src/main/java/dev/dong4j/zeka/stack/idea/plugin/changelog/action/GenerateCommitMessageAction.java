@@ -19,7 +19,6 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
@@ -111,7 +110,10 @@ public class GenerateCommitMessageAction extends AnAction {
 
         // 检查 AI Provider 配置
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
-        if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project,
+                                           config,
+                                           ChangelogBundle.message("settings.display.name"),
+                                           ChangelogBundle.message("settings.ai.provider.selection"))) {
             return;
         }
 

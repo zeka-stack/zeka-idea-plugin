@@ -9,7 +9,8 @@ import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
-import dev.dong4j.zeka.stack.idea.plugin.workflow.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.workflow.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowAnalysisUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
 import icons.TracerIcons;
@@ -39,7 +40,7 @@ public class ExplainWorkflowAction extends AnAction {
         Editor editor = e.getData(CommonDataKeys.EDITOR);
         com.intellij.psi.PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         if (editor == null || psiFile == null) {
-            NotificationUtil.showError(project, WorkflowBundle.message("error.no.editor"));
+            NotificationUtil.showError(project, PluginContents.PLUGIN_NAME, WorkflowBundle.message("error.no.editor"));
             return;
         }
 

@@ -26,7 +26,6 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
@@ -152,7 +151,8 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
      */
     @Override
     protected @Nullable ListPopup createPopup(@NotNull DataContext context) {
-        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, ChangelogBundle.message("settings.display.name"), ChangelogBundle.message("settings" +
+                                                                                                                              ".ai.provider.selection"))) {
             return null;
         }
 
@@ -290,7 +290,8 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
          */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, ChangelogBundle.message("settings.display.name"),
+                                               ChangelogBundle.message("settings.ai.provider.selection"))) {
                 return;
             }
 

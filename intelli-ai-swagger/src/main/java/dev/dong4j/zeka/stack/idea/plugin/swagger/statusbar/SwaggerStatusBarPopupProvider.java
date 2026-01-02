@@ -22,7 +22,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
-import dev.dong4j.zeka.stack.idea.plugin.swagger.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.swagger.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.swagger.settings.SwaggerSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.swagger.util.SwaggerBundle;
@@ -49,7 +48,9 @@ public class SwaggerStatusBarPopupProvider implements AIStatusBarPopupProvider {
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, PluginContents.PLUGIN_NAME)) {
+        if (!AIProviderUtils.hasAIProvider(project, SwaggerBundle.message("settings.display.name"), SwaggerBundle.message("settings.ai" +
+                                                                                                                          ".provider" +
+                                                                                                                          ".selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
@@ -89,7 +90,8 @@ public class SwaggerStatusBarPopupProvider implements AIStatusBarPopupProvider {
 
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, PluginContents.PLUGIN_NAME)) {
+            if (!AIProviderUtils.hasAIProvider(project, config, SwaggerBundle.message("settings.display.name"), SwaggerBundle.message(
+                "settings.ai.provider.selection"))) {
                 return;
             }
 

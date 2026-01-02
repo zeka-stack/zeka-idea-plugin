@@ -108,9 +108,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultExampleTemplate() {
         return """
             请根据以下内容生成示例：
-            
+
             {content}
-            
+
             要求：
             1. 生成的内容要清晰、准确
             2. 符合最佳实践

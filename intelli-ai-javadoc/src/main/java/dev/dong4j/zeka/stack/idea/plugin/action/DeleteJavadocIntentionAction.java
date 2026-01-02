@@ -51,10 +51,11 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
     @NotNull
     @Override
     public String getText() {
-        return JavadocBundle.message("intention.delete.javadoc");
+        return JavadocBundle.message("action.delete.javadoc");
     }
 
-    /**意图在 'description.html' 旁必须有 'before.*.template' 和 'after.*.template'
+    /**
+     * 意图在 'description.html' 旁必须有 'before.*.template' 和 'after.*.template'
      * 获取插件的家族名称
      *
      * @return 插件家族名称
@@ -62,7 +63,7 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
     @NotNull
     @Override
     public String getFamilyName() {
-        return JavadocBundle.message("plugin.name");
+        return PluginContents.PLUGIN_NAME;
     }
 
     /**
@@ -127,9 +128,6 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
 
         // 4. 检查元素是否有文档注释
         PsiElement locatedElement = locateResult.element();
-        if (locatedElement == null) {
-            return false;
-        }
 
         // 检查 Java 元素的文档注释
         if (locatedElement instanceof PsiDocCommentOwner docOwner) {
@@ -181,16 +179,13 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
         }
 
         PsiElement locatedElement = locateResult.element();
-        if (locatedElement == null) {
-            return;
-        }
 
         // 删除注释
         boolean deleted = deletionService.deleteJavadoc(project, locatedElement);
         if (deleted) {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.delete.javadoc.success"));
+            NotificationUtil.showInfo(project, JavadocBundle.message("notification.delete.javadoc.success"));
         } else {
-            NotificationUtil.notifyInfo(project, "删除 Javadoc", JavadocBundle.message("notification.no.javadoc.to.delete"));
+            NotificationUtil.showInfo(project, JavadocBundle.message("notification.no.javadoc.to.delete"));
         }
     }
 }

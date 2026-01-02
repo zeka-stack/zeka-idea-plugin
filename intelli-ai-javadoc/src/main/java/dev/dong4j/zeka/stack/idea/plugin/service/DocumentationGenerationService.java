@@ -143,7 +143,7 @@ public class DocumentationGenerationService {
      */
     public boolean checkEmptyTasks(@NotNull Project project, @NotNull List<DocumentationTask> tasks, @NotNull String message) {
         if (tasks.isEmpty()) {
-            NotificationUtil.notifyNoTask(project, message);
+            NotificationUtil.showWarning(project, message);
             return true;
         }
         return false;

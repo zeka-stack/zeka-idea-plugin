@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.util;
+package dev.dong4j.zeka.stack.idea.plugin.kit;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

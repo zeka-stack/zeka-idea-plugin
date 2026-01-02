@@ -1,8 +1,6 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
+package dev.dong4j.zeka.stack.idea.plugin.kit;
 
 import org.jetbrains.annotations.NotNull;
-
-import dev.dong4j.zeka.stack.idea.plugin.common.util.Pangu;
 
 /**
  * 提交消息格式化工具类
@@ -15,7 +13,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.Pangu;
  * @date 2025.12.31
  * @since 1.0.0
  */
-public final class CommitMessageFormatter {
+public final class MessageFormatter {
     /**
      * 中文标点符号与英文标点符号的映射表
      * <p> 用于将中文标点符号转换为对应的英文标点符号
@@ -51,7 +49,7 @@ public final class CommitMessageFormatter {
      * <p> 此构造函数被标记为私有且抛出异常, 以防止实例化该工具类
      *
      */
-    private CommitMessageFormatter() {
+    private MessageFormatter() {
         throw new UnsupportedOperationException("Utility class");
     }
 
@@ -64,22 +62,43 @@ public final class CommitMessageFormatter {
      */
     @NotNull
     public static String format(@NotNull String text) {
+        return format(text, true, true);
+    }
+
+    /**
+     * 格式化 Javadoc 文本（支持配置）
+     *
+     * <p>对 AI 生成的 Javadoc 文本进行格式化处理，根据配置决定是否执行各项格式化操作。
+     *
+     * @param text                             原始 Javadoc 文本
+     * @param addSpaceBetweenChineseAndEnglish 是否在中英文之间添加空格
+     * @param replaceChinesePunctuation        是否将中文标点符号替换为英文标点符号
+     * @return 格式化后的文本
+     */
+    @NotNull
+    public static String format(@NotNull String text,
+                                boolean addSpaceBetweenChineseAndEnglish,
+                                boolean replaceChinesePunctuation) {
         if (text.isEmpty()) {
             return text;
         }
 
         String result = text;
 
-        // 1. 在中英文之间添加空格
-        result = pangu.spacingText(result);
-
-        // 2. 删除前后的代码包裹符号
+        // 1. 删除前后的代码包裹符号
         result = stripCodeFences(result);
 
-        // 3. 将中文标点替换为英文标点
-        result = replaceChinesePunctuation(result);
+        // 2. 替换中文标点符号为英文标点符号
+        if (replaceChinesePunctuation) {
+            result = replaceChinesePunctuation(result);
+        }
 
-        return result.trim();
+        // 3. 在中英文之间添加空格
+        if (addSpaceBetweenChineseAndEnglish) {
+            result = pangu.spacingText(result);
+        }
+
+        return result;
     }
 
     /**

@@ -23,8 +23,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.component.CustomJavadocTagRegistrar;
 import dev.dong4j.zeka.stack.idea.plugin.component.JavadocFileTemplatesHandler;
+import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector;
-import dev.dong4j.zeka.stack.idea.plugin.util.JavadocFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.util.JavadocSingleLineFormatter;
 
 /**
@@ -373,7 +373,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: true（默认启用，提升可读性）
      *
-     * @see JavadocFormatter
+     * @see MessageFormatter
      * @since 1.4.0
      */
     public boolean addSpaceBetweenChineseAndEnglish = true;
@@ -386,7 +386,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      *
      * <p>默认值: true（默认启用，符合 Javadoc 规范）
      *
-     * @see JavadocFormatter
+     * @see MessageFormatter
      * @since 1.4.0
      */
     public boolean replaceChinesePunctuation = true;

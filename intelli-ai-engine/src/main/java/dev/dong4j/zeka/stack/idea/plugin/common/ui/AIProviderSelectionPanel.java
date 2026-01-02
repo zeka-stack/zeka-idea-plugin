@@ -27,6 +27,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 import icons.AICommonIcons;
 
 /**
@@ -122,9 +124,7 @@ public class AIProviderSelectionPanel {
             // 创建跳转链接
             HyperlinkLabel linkLabel = new HyperlinkLabel(messageProvider.message("settings.ai.provider.open.ai.common.settings"));
             linkLabel.addHyperlinkListener(e -> {
-                // 打开 IntelliAI Engine 全局设置页面（应用级配置）
-                // 使用 null 作为 parent 参数表示打开应用级（全局）配置，而不是项目级配置
-                ShowSettingsUtil.getInstance().editConfigurable(null, EngineContents.PLUGIN_NAME);
+                SettingsUtil.openSettings(AICommonBundle.message("settings.display.name"));
             });
 
             // 创建空的下拉框（禁用状态）

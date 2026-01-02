@@ -46,7 +46,7 @@ cd my-new-plugin
 
 ```properties
 # 插件基本信息
-pluginGroup=dev.dong4j.zeka.stack.idea.plugin.example
+pluginGroup=dev.dong4j.zeka.stack
 pluginName=My New Plugin
 pluginVersion=1.0.0
 
