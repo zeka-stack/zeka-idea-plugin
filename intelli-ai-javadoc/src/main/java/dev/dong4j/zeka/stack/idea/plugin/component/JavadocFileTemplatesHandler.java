@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.CustomJavadocTag;
@@ -74,6 +75,8 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
      */
     private static final String JAVA_CLASS_CODE_TEMPLATE = "#parse(\"Java Class Header.java\")\n";
 
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
+
     /**
      * 执行启动活动
      * <p>
@@ -84,6 +87,11 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
     @Nullable
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
+        // 只在第一次运行时检查更新
+        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
+            return Unit.INSTANCE;
+        }
+
         ApplicationManager.getApplication().invokeLater(() -> {
             try {
                 SettingsState settings = SettingsState.getInstance();

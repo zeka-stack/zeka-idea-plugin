@@ -1,12 +1,15 @@
 package dev.dong4j.zeka.stack.idea.plugin.codestyle;
 
 import com.intellij.ide.AppLifecycleListener;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import kotlin.Unit;
@@ -27,6 +30,7 @@ public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecy
      * 用于记录 CodeStyleVersionCheckListener 类中的各种日志信息, 帮助调试和监控.
      */
     private static final Logger LOG = Logger.getInstance(CodeStyleVersionCheckListener.class);
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
     /**
      * 在项目打开时启动代码样式检查更新定时器
@@ -43,7 +47,10 @@ public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecy
         if (project.isDefault()) {
             return Unit.INSTANCE;
         }
-
+        // 只在第一次运行时检查更新
+        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
+            return Unit.INSTANCE;
+        }
         try {
             CodeStyleSettingsState settings = CodeStyleSettingsState.getInstance();
             CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings = settings.getCodeStyleUpdateSettings();

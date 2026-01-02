@@ -1,12 +1,15 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.ide.AppLifecycleListener;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
@@ -31,6 +34,7 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
      * 用于记录 AgentVersionCheckListener 类中的各种日志信息, 帮助调试和监控.
      */
     private static final Logger LOG = Logger.getInstance(AgentVersionCheckListener.class);
+    private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
     /**
      * 在项目打开时启动 agent 检查更新定时器
@@ -46,7 +50,10 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
         if (project.isDefault()) {
             return Unit.INSTANCE;
         }
-
+        // 只在第一次运行时检查更新
+        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
+            return Unit.INSTANCE;
+        }
         try {
             AIProviderSettings settings = AIProviderSettings.getInstance();
             IntelliAgentSettings intelliAgentSettings = settings.intelliAgentSettings;
