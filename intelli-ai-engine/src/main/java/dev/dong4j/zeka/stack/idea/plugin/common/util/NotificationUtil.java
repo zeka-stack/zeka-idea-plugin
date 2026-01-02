@@ -1,13 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.util;
 
 import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationGroup;
-import com.intellij.notification.NotificationGroupManager;
-import com.intellij.notification.NotificationType;
-import com.intellij.notification.Notifications;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
@@ -31,7 +25,6 @@ public class NotificationUtil {
      *
      * @return 通知组实例
      */
-    @NotNull
     public static NotificationGroup getNotificationGroup() {
         return dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.getNotificationGroup(EngineContents.PLUGIN_NAME);
     }
