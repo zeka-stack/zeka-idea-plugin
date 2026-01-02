@@ -15,10 +15,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 反馈服务
+ * 反馈服务类
+ * <p> 用于处理用户反馈的提交, 通过 GitHub GraphQL API 创建讨论帖子.
+ * <p> 该服务类负责构建反馈标题和内容, 并将其提交到指定的 GitHub 讨论类别中.
+ * <p> 主要功能包括:
+ * <ul>
+ * <li> 根据反馈请求构建合适的标题和内容 </li>
+ * <li> 将反馈提交到 GitHub 的指定讨论类别中 </li>
+ * <li> 处理提交过程中可能出现的异常情况 </li>
+ * </ul>
  *
  * @author dong4j
  * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.02
  * @since 1.0.0
  */
 @Slf4j
@@ -26,16 +36,35 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class FeedbackService {
 
+    /**
+     * GitHub GraphQL 客户端实例
+     * <p>
+     * 用于与 GitHub 的 GraphQL API 进行交互, 执行相关操作, 如创建讨论等.
+     *
+     * @see GitHubGraphQLClient
+     */
     private final GitHubGraphQLClient gitHubClient;
+    /**
+     * GitHub 配置属性
+     * <p> 包含与 GitHub 相关的配置信息, 例如讨论类别映射等
+     *
+     * @see GitHubProperties
+     */
     private final GitHubProperties gitHubProperties;
 
+    /**
+     * 日期格式化器, 用于将本地日期时间格式化为指定的字符串格式.
+     * <p> 格式为:yyyy-MM-dd HH:mm:ss</p>
+     */
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 提交反馈
+     * <p> 根据反馈请求构建标题和内容, 并在 GitHub 上创建一个新的讨论, 返回反馈响应.
+     * <p> 如果提交过程中出现异常, 则记录错误日志并返回失败的反馈响应.
      *
-     * @param request 反馈请求
-     * @return 反馈响应
+     * @param request 包含反馈信息的请求对象, 不能为空
+     * @return 反馈响应对象, 包含提交结果和相关信息
      */
     public FeedbackResponse submitFeedback(FeedbackRequest request) {
         try {
@@ -69,6 +98,11 @@ public class FeedbackService {
 
     /**
      * 构建讨论标题
+     * <p> 根据反馈请求中的类型描述和插件名称生成讨论标题
+     * <p> 如果用户信息中的插件名称为空, 则使用默认值“插件”
+     *
+     * @param request 反馈请求
+     * @return 构建好的讨论标题
      */
     private String buildTitle(FeedbackRequest request) {
         String typeLabel = request.getType().getDescription();
@@ -80,7 +114,12 @@ public class FeedbackService {
     }
 
     /**
-     * 构建讨论内容
+     * 构建反馈讨论的内容
+     * <p> 根据反馈请求中的用户信息和反馈内容, 生成详细的反馈讨论内容文本
+     * <p> 内容包括提交人的 GitHub 用户名, 反馈内容, 提交人信息 (如姓名, 邮箱,GitHub 用户名, 插件名称, 插件版本,IDEA 版本, 操作系统等), 反馈类型和提交时间
+     *
+     * @param request 包含反馈信息和用户信息的反馈请求对象
+     * @return 构建好的反馈讨论内容文本
      */
     private String buildBody(FeedbackRequest request) {
         StringBuilder body = new StringBuilder();
@@ -131,6 +170,12 @@ public class FeedbackService {
 
     /**
      * 获取类别 ID
+     * <p> 根据反馈请求中的讨论类别获取对应的类别 ID. 如果类别为空, 则使用默认的一般类别.
+     * <p> 如果找不到对应的类别 ID, 则记录警告日志并尝试使用默认的“general”类别 ID.
+     * <p> 如果仍然找不到类别 ID, 则抛出非法状态异常.
+     *
+     * @param category 反馈请求中的讨论类别
+     * @return 对应的类别 ID
      */
     private String getCategoryId(FeedbackRequest.DiscussionCategory category) {
         if (category == null) {
@@ -154,6 +199,10 @@ public class FeedbackService {
 
     /**
      * 转义 Markdown 特殊字符
+     * <p> 将可能导致 Markdown 解析错误的特殊字符进行转义, 确保文本在 Markdown 中正确显示
+     *
+     * @param text 需要转义的文本
+     * @return 转义后的文本
      */
     private String escapeMarkdown(String text) {
         if (text == null) {
