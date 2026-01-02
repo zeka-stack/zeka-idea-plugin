@@ -23,9 +23,9 @@ public class InternalWhatsNewProvider implements WhatsNewProvider {
      * @see DefaultWhatsNewPage
      */
     private static final List<WhatsNewPage> PAGES = List.of(
-        new DefaultWhatsNewPage("0.1.0", "0_1_0.html")
-    );
-
+        new DefaultWhatsNewPage("1.8.0", "1_8_0.html"),
+        new DefaultWhatsNewPage("2025.3.1", "2025_3_1.html")
+                                                           );
     /** 插件描述信息 */
     private PluginDescriptor pluginDescriptor;
 
@@ -108,7 +108,7 @@ public class InternalWhatsNewProvider implements WhatsNewProvider {
      * @date 2025.10.24
      * @since 1.0.0
      */
-        private record DefaultWhatsNewPage(String version, String fileName) implements WhatsNewPage {
+    private record DefaultWhatsNewPage(String version, String fileName) implements WhatsNewPage {
         /**
          * 初始化一个新的 DefaultWhatsNewPage 实例
          * <p> 构造函数用于创建一个 DefaultWhatsNewPage 对象, 设置版本号和文件名
@@ -119,25 +119,25 @@ public class InternalWhatsNewProvider implements WhatsNewProvider {
         private DefaultWhatsNewPage {
         }
 
-            /**
-             * 获取当前版本号
-             *
-             * @return 返回版本字符串
-             */
-            @Override
-            public String version() {
-                return version;
-            }
-
-            /**
-             * 获取文件名
-             * <p> 返回与当前对象关联的文件名
-             *
-             * @return 文件名
-             */
-            @Override
-            public String fileName() {
-                return fileName;
-            }
+        /**
+         * 获取当前版本号
+         *
+         * @return 返回版本字符串
+         */
+        @Override
+        public String version() {
+            return version;
         }
+
+        /**
+         * 获取文件名
+         * <p> 返回与当前对象关联的文件名
+         *
+         * @return 文件名
+         */
+        @Override
+        public String fileName() {
+            return fileName;
+        }
+    }
 }
