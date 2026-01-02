@@ -1,0 +1,20 @@
+<h3>1.1.0</h3>
+<ul>
+    <li>新增 ModelScope 模型服务商，设置页可直接选择并刷新模型列表</li>
+    <li>Base URL 默认指向 AI 问答接口（https://api-inference.modelscope.cn/v1）</li>
+    <li>模型参数与运行时配置现在和每个服务商配置绑定，可独立调优并持久化到可用列表</li>
+    <li>AIServiceFactory 及相关调用链更新为读取提供商自身参数，Javadoc 执行器根据提供商开关日志</li>
+    <li>Ollama 与 LM Studio 配置页的 API Key 输入框改为可选项，不再强制禁用，便于使用自定义代理或本地认证</li>
+    <li>优化设置页的超时输入，改为以秒为单位展示与保存</li>
+    <li>将最大 Token 数以 K 为单位配置，提示文案同步更新，确保表述更直观</li>
+</ul>
+<h3>1.1.0</h3>
+<ul>
+    <li>Added the ModelScope provider so it can be configured and refreshed from the settings UI</li>
+    <li>Base URL defaults to the AI inference endpoint (https://api-inference.modelscope.cn/v1)</li>
+    <li>Bound model parameters and runtime settings to each provider config so every entry keeps its own tuning</li>
+    <li>Updated AIServiceFactory and the Javadoc executor to honor per-provider parameters and verbose logging switches</li>
+    <li>Made the API Key field optional for Ollama and LM Studio so users can enter keys when needed without being blocked</li>
+    <li>Switched the timeout control to seconds for clearer configuration</li>
+    <li>Updated the Max Tokens control to use K units with refreshed hints for clearer guidance</li>
+</ul>

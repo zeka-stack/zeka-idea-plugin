@@ -54,8 +54,7 @@ public class WhatsNewDialog extends DialogWrapper {
      *
      * @see WhatsNewProviderServiceHolder#getProviders()
      */
-    private final List<WhatsNewProvider> providers =
-        WhatsNewProviderServiceHolder.getProviders();
+    private final List<WhatsNewProvider> providers;
 
     /**
      * 选项卡面板, 用于显示不同的“最新动态”页面.
@@ -75,6 +74,8 @@ public class WhatsNewDialog extends DialogWrapper {
         setModal(false);
         setTitle(AICommonBundle.message("whatsnew.title"));
         setCancelButtonText(AICommonBundle.message("whatsnew.dialog.close"));
+        // 延迟获取提供者列表，避免在类初始化时获取服务
+        this.providers = WhatsNewProviderServiceHolder.getProviders();
         init();
     }
 
@@ -324,8 +325,8 @@ public class WhatsNewDialog extends DialogWrapper {
 
     /**
      * 提供获取最新功能页面的服务持有者类
-     * <p> 该类通过单例模式持有 WhatsNewProviderService 的实例, 并提供获取最新功能页面提供者的列表功能.
-     * 其中, 过滤掉没有页面的提供者, 并按一定的规则进行排序.
+     * <p> 该类提供获取最新功能页面提供者的列表功能. 其中, 过滤掉没有页面的提供者, 并按一定的规则进行排序.
+     * 使用延迟加载方式获取服务, 避免在类初始化时获取服务实例.
      *
      * @author dong4j
      * @version 1.0.0
@@ -334,24 +335,28 @@ public class WhatsNewDialog extends DialogWrapper {
      * @since 1.0.0
      */
     private static final class WhatsNewProviderServiceHolder {
-        /** 用于获取 WhatsNewProviderService 单例实例 */
-        private static final WhatsNewProviderService SERVICE =
-            com.intellij.openapi.application.ApplicationManager.getApplication().getService(WhatsNewProviderService.class);
-
         /**
          * 获取所有有效的 WhatsNewProvider 列表
          * <p> 通过 WhatsNewProviderService 获取所有 WhatsNewProvider, 并过滤掉没有页面的 provider, 然后按排序规则进行排序.
+         * 使用延迟加载方式获取服务, 避免在类初始化时获取服务实例.
          *
-         * @return 有效的 WhatsNewProvider 列表, 如果 SERVICE 为 null 则返回空列表
+         * @return 有效的 WhatsNewProvider 列表, 如果服务获取失败则返回空列表
          */
         private static List<WhatsNewProvider> getProviders() {
-            if (SERVICE == null) {
+            try {
+                WhatsNewProviderService service = com.intellij.openapi.application.ApplicationManager.getApplication()
+                    .getService(WhatsNewProviderService.class);
+                if (service == null) {
+                    return List.of();
+                }
+                return service.getWhatsNewProviders().stream()
+                    .filter(provider -> !provider.getPages().isEmpty())
+                    .sorted(new WhatsNewProviderComparator())
+                    .collect(Collectors.toList());
+            } catch (Exception e) {
+                // 如果获取服务失败（例如在类初始化时），返回空列表
                 return List.of();
             }
-            return SERVICE.getWhatsNewProviders().stream()
-                .filter(provider -> !provider.getPages().isEmpty())
-                .sorted(new WhatsNewProviderComparator())
-                .collect(Collectors.toList());
         }
     }
 

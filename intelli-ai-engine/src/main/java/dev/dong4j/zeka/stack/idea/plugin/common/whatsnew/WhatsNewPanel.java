@@ -192,6 +192,7 @@ public class WhatsNewPanel extends JPanel {
      * <p> 根据指定的文件名加载变更日志内容并设置到浏览器组件中.
      * 如果文件名为空或仅包含空白字符, 将抛出异常.
      * 如果文件未找到, 也将抛出异常.
+     * 如果 HTML 解析失败（例如包含不支持的 CSS 属性）, 将显示错误消息.
      *
      * @param fileName 变更日志文件名
      */
@@ -208,7 +209,18 @@ public class WhatsNewPanel extends JPanel {
             if (stream == null) {
                 throw new IllegalStateException("Whats new file not found: " + fileName);
             }
-            browser.setText(ResourceUtil.loadText(stream));
+            String htmlContent = ResourceUtil.loadText(stream);
+            try {
+                browser.setText(htmlContent);
+            } catch (Exception e) {
+                // Swing 的 HTML 解析器可能不支持某些 CSS 属性，显示错误消息
+                String errorHtml = "<html><body>" +
+                    "<h3>无法显示内容</h3>" +
+                    "<p>HTML 内容包含不支持的 CSS 属性，无法在 Swing 浏览器中正确显示。</p>" +
+                    "<p>错误信息: " + e.getMessage() + "</p>" +
+                    "</body></html>";
+                browser.setText(errorHtml);
+            }
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to load whats new page: " + fileName, ex);
         }

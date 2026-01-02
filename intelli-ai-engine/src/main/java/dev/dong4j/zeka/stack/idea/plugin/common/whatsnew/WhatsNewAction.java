@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.whatsnew;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.DumbAwareAction;
+import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -42,15 +43,16 @@ public class WhatsNewAction extends DumbAwareAction {
     }
 
     /**
-     * 处理动作事件, 用于打开 Whats New 编辑器
-     * <p> 当接收到动作事件时, 检查项目是否为空, 若不为空则调用 WhatsNewEditorOpener 打开编辑器
+     * 处理动作事件, 用于打开 Whats New 对话框
+     * <p> 当接收到动作事件时, 检查项目是否为空, 若不为空则调用 WhatsNewDialog.showForProject 显示对话框
      *
      * @param e 动作事件对象, 包含触发动作的上下文信息
      */
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        if (e.getProject() != null) {
-            WhatsNewEditorOpener.open(e.getProject());
+        Project project = e.getProject();
+        if (project != null) {
+            WhatsNewDialog.showForProject(project);
         }
     }
 }
