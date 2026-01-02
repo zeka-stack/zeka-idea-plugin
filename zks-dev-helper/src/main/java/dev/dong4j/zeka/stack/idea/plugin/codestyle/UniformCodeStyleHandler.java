@@ -66,10 +66,10 @@ public class UniformCodeStyleHandler implements ProjectActivity {
                             log.error("Failed to check and update code style", e);
                         }
                     });
+                } else {
+                    // 提供统一代码风格方案（会优先使用本地下载的文件）
+                    UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);
                 }
-
-                // 提供统一代码风格方案（会优先使用本地下载的文件）
-                UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);
 
                 // 报告使用统计
                 // StatisticsUtil.reportCodeStyleUsage();
