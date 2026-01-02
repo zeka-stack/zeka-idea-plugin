@@ -861,22 +861,30 @@ public final class ChangelogService {
             /**
              * 调用外部监听器的 onStart 方法
              * <p> 此方法在 AIStreamResponseListener 的生命周期中被调用, 用于通知外部监听器开始事件
+             * <p> 如果线程被中断, 则停止处理
              *
              * @since 1.0
              */
             @Override
             public void onStart() {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 externalListener.onStart();
             }
 
             /**
              * 处理数据流中的一个数据块
              * <p> 将接收到的数据块追加到缓冲区, 并通知外部监听器处理该数据块
+             * <p> 如果线程被中断, 则停止处理
              *
              * @param chunk 数据块内容
              */
             @Override
             public void onChunk(@NotNull String chunk) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
                 buffer.append(chunk);
                 externalListener.onChunk(chunk);
             }
@@ -884,10 +892,15 @@ public final class ChangelogService {
             /**
              * 完成处理操作
              * <p> 当所有数据处理完成后调用此方法. 设置结果引用, 通知外部监听器, 并减少计数器.
+             * <p> 如果线程被中断, 则直接结束
              *
              * @param fullText 完整的处理结果文本
              */
             public void onComplete(@NotNull String fullText) {
+                if (Thread.currentThread().isInterrupted()) {
+                    latch.countDown();
+                    return;
+                }
                 resultRef.set(fullText);
                 externalListener.onComplete(fullText);
                 latch.countDown();

@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.datatransfer.StringSelection;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.JPanel;
@@ -50,6 +53,12 @@ public final class ChangelogToolWindowService {
      * @see Project
      */
     private final Project project;
+
+    /**
+     * 存储每个输出会话的取消状态
+     * <p> 键为输出会话的标题，值为取消标志
+     */
+    private static final Map<String, AtomicBoolean> CANCELLATION_FLAGS = new ConcurrentHashMap<>();
 
     /**
      * 获取 ChangelogToolWindowService 的单例实例
@@ -110,7 +119,7 @@ public final class ChangelogToolWindowService {
         ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(PluginContents.PLUGIN_NAME);
         if (toolWindow == null) {
             NotificationUtil.showError(project, ChangelogBundle.message("toolwindow.unavailable"));
-            return new ChangelogOutputSession(null);
+            return new ChangelogOutputSession(null, null);
         }
 
         // 首次使用时，动态设置 toolwindow 的布局
@@ -127,14 +136,23 @@ public final class ChangelogToolWindowService {
         textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, textArea.getFont().getSize()));
         textArea.setBorder(JBUI.Borders.empty(8));
 
+        String fullTitle = buildTitle(title);
+        // 为每个会话创建取消标志
+        AtomicBoolean cancellationFlag = new AtomicBoolean(false);
+        CANCELLATION_FLAGS.put(fullTitle, cancellationFlag);
+
         JPanel panel = new JPanel(new BorderLayout());
         // ActionToolbar 需要添加其组件实例到容器中
-        panel.add(buildToolbar(textArea).getComponent(), BorderLayout.NORTH);
+        panel.add(buildToolbar(textArea, fullTitle).getComponent(), BorderLayout.NORTH);
         panel.add(new JBScrollPane(textArea), BorderLayout.CENTER);
 
-        String fullTitle = buildTitle(title);
         Content content = ContentFactory.getInstance().createContent(panel, fullTitle, false);
         content.setCloseable(true);
+        // 当内容关闭时，清理取消标志
+        content.setCloseableDelegate(() -> {
+            CANCELLATION_FLAGS.remove(fullTitle);
+            return true;
+        });
         toolWindow.getContentManager().addContent(content);
         toolWindow.getContentManager().setSelectedContent(content);
 
@@ -144,19 +162,44 @@ public final class ChangelogToolWindowService {
             toolWindow.activate(null, true, true);
         }
 
-        return new ChangelogOutputSession(textArea);
+        return new ChangelogOutputSession(textArea, cancellationFlag);
+    }
+
+    /**
+     * 检查指定会话是否已取消
+     *
+     * @param sessionTitle 会话标题
+     * @return 如果已取消返回 true，否则返回 false
+     */
+    public static boolean isCancelled(@NotNull String sessionTitle) {
+        AtomicBoolean flag = CANCELLATION_FLAGS.get(sessionTitle);
+        return flag != null && flag.get();
+    }
+
+    /**
+     * 停止指定会话的输出
+     *
+     * @param sessionTitle 会话标题
+     */
+    public static void stopOutput(@NotNull String sessionTitle) {
+        AtomicBoolean flag = CANCELLATION_FLAGS.get(sessionTitle);
+        if (flag != null) {
+            flag.set(true);
+        }
     }
 
     /**
      * 构建工具栏
-     * <p> 为给定的文本区域创建一个包含复制操作的工具栏.
+     * <p> 为给定的文本区域创建一个包含复制和停止操作的工具栏.
      *
      * @param textArea 文本区域对象
-     * @return 包含复制操作的工具栏
+     * @param sessionTitle 输出会话的标题，用于标识取消标志
+     * @return 包含复制和停止操作的工具栏
      */
-    private @NotNull ActionToolbar buildToolbar(@NotNull JBTextArea textArea) {
+    private @NotNull ActionToolbar buildToolbar(@NotNull JBTextArea textArea, @NotNull String sessionTitle) {
         DefaultActionGroup group = new DefaultActionGroup();
         group.add(new CopyAllAction(textArea));
+        group.add(new StopOutputAction(sessionTitle));
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ChangelogToolWindow", group, true);
         toolbar.setTargetComponent(textArea);
         return toolbar;
@@ -231,13 +274,29 @@ public final class ChangelogToolWindowService {
         private final @Nullable JBTextArea textArea;
 
         /**
+         * 取消标志, 用于停止流式输出
+         */
+        private final @Nullable AtomicBoolean cancellationFlag;
+
+        /**
          * 构造函数, 初始化 ChangelogOutputSession 对象
-         * <p> 用于创建一个输出会话对象, 并设置关联的文本区域
+         * <p> 用于创建一个输出会话对象, 并设置关联的文本区域和取消标志
          *
          * @param textArea 关联的文本区域, 可以为 null
+         * @param cancellationFlag 取消标志, 可以为 null
          */
-        private ChangelogOutputSession(@Nullable JBTextArea textArea) {
+        private ChangelogOutputSession(@Nullable JBTextArea textArea, @Nullable AtomicBoolean cancellationFlag) {
             this.textArea = textArea;
+            this.cancellationFlag = cancellationFlag;
+        }
+
+        /**
+         * 检查是否已取消
+         *
+         * @return 如果已取消返回 true，否则返回 false
+         */
+        public boolean isCancelled() {
+            return cancellationFlag != null && cancellationFlag.get();
         }
 
         /**
@@ -270,6 +329,38 @@ public final class ChangelogToolWindowService {
                 textArea.setText(text);
                 textArea.setCaretPosition(textArea.getDocument().getLength());
             });
+        }
+    }
+
+    /** 停止输出的动作类 */
+    private static final class StopOutputAction extends AnAction {
+        /**
+         * 会话标题, 用于标识要停止的输出会话
+         */
+        private final String sessionTitle;
+
+        /**
+         * 构造函数, 初始化 StopOutputAction 对象
+         * <p> 该构造函数用于创建一个 StopOutputAction 实例, 并设置其名称和图标.
+         *
+         * @param sessionTitle 要停止的输出会话标题
+         */
+        private StopOutputAction(@NotNull String sessionTitle) {
+            super(ChangelogBundle.message("toolwindow.stop.text"),
+                  ChangelogBundle.message("toolwindow.stop.text"),
+                  AllIcons.Actions.Suspend);
+            this.sessionTitle = sessionTitle;
+        }
+
+        /**
+         * 停止输出会话的流式输出
+         * <p> 设置取消标志并中断相关线程, 以停止流式输出.
+         *
+         * @param e AnActionEvent 对象, 包含动作事件信息
+         */
+        @Override
+        public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+            stopOutput(sessionTitle);
         }
     }
 

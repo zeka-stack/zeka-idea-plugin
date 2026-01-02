@@ -112,18 +112,36 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                         AIStreamResponseListener listener = new AIStreamResponseListener() {
                             @Override
                             public void onStart() {
+                                if (outputSession.isCancelled()) {
+                                    Thread.currentThread().interrupt();
+                                    return;
+                                }
                                 outputSession.setText("");
                             }
 
                             @Override
                             public void onChunk(@NotNull String chunk) {
+                                if (outputSession.isCancelled()) {
+                                    Thread.currentThread().interrupt();
+                                    return;
+                                }
                                 outputSession.append(chunk);
                             }
 
                             @Override
                             public void onComplete(@NotNull String fullText) {
+                                if (outputSession.isCancelled()) {
+                                    return;
+                                }
                                 String formattedText = MessageFormatter.format(fullText);
                                 outputSession.setText(formattedText);
+                            }
+
+                            @Override
+                            public void onError(@NotNull String error, @Nullable Throwable exception) {
+                                if (!outputSession.isCancelled()) {
+                                    NotificationUtil.showError(project, error);
+                                }
                             }
                         };
                         service.generateReleaseLogByAiStream(gitRoot, range, promptTemplate, listener);
