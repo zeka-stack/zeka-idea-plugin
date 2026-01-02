@@ -57,6 +57,7 @@
             displayName="🔄 Proxyer"/>
 
         <!-- 通知组 -->
+        <!--suppress PluginXmlI18n -->
         <notificationGroup id="ZKS Dev Helper Notifications"
                            displayType="BALLOON"
                            isLogByDefault="true"/>
@@ -69,6 +70,7 @@
         <!-- Startup Activities -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.codestyle.UniformCodeStyleHandler"/>
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.template.file.UniformFileTemplatesHandler"/>
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.codestyle.CodeStyleVersionCheckListener"/>
 
     </extensions>
 </idea-plugin>

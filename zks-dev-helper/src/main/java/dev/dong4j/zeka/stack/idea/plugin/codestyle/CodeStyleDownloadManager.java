@@ -161,7 +161,7 @@ public final class CodeStyleDownloadManager {
                 .tuner(connection -> {
                     java.net.HttpURLConnection conn = (java.net.HttpURLConnection) connection;
                     conn.setConnectTimeout(3000);
-                    conn.setReadTimeout(3000);
+                    conn.setReadTimeout(5000);
                 })
                 .readString();
             return fileName.trim();
@@ -231,8 +231,8 @@ public final class CodeStyleDownloadManager {
             .tuner(connection -> {
                 java.net.HttpURLConnection conn = (java.net.HttpURLConnection) connection;
                 // 设置连接超时为 5 秒，读取超时为 30 秒
-                conn.setConnectTimeout(5000);
-                conn.setReadTimeout(30000);
+                conn.setConnectTimeout(3000);
+                conn.setReadTimeout(5000);
             })
             .connect(request -> {
                 URLConnection connection = request.getConnection();
@@ -270,7 +270,7 @@ public final class CodeStyleDownloadManager {
      * 先调用版本接口获取远程版本，比较本地版本与远程版本，如果版本不一致或本地文件不存在，则下载最新版本
      *
      * @param project          项目对象，可以为 null（在设置页面中）
-     * @param baseUrl          基础下载地址（如 https://download.dong4j.site）
+     * @param baseUrl          基础下载地址（如 <a href="https://download.dong4j.site">...</a>）
      * @param indicator        进度指示器
      * @param progressListener 进度监听器
      * @return 是否进行了更新
