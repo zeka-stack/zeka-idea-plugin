@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.util;
 
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
 import com.intellij.openapi.project.Project;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 
 /**
  * AI 提供者工具类
@@ -80,7 +82,8 @@ public class AIProviderUtils {
                                                      AICommonBundle.message("settings.ai.provider.no.available.warning"),
                                                      NotificationType.ERROR);
         // 添加设置动作
-        NotificationUtil.addOpenConfigurablePanelAction(project, notification, displayName, actionName);
+        SettingsUtil.addOpenAction(notification, displayName, actionName);
+        Notifications.Bus.notify(notification, project);
         return false;
     }
 }

@@ -23,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 
 /**
  * IntelliAgent 更新检查器
@@ -193,8 +194,7 @@ public final class IntelliAgentUpdateChecker {
 
         // 添加打开设置操作
         Project defaultProject = ProjectManager.getInstance().getDefaultProject();
-        NotificationUtil.addOpenConfigurablePanelAction(
-            defaultProject,
+        SettingsUtil.addOpenAction(
             notification,
             AICommonBundle.message("settings.display.name"),
             AICommonBundle.message("settings.ai.provider.open.engine.settings"));
