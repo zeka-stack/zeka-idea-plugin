@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.toolwindow;
 
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -28,6 +29,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigInfo;
@@ -218,7 +220,11 @@ public class NacosToolWindow {
                                                              NacosBundle.message("notification.service.config.error"),
                                                              NotificationType.ERROR);
                 // 添加设置动作
-                NotificationUtil.addOpenConfigurablePanelAction(notification, project);
+                SettingsUtil.addOpenAction(
+                    notification,
+                    NacosBundle.message("settings.display.name"),
+                    NacosBundle.message("notification.error.message.config"));
+                Notifications.Bus.notify(notification, project);
                 return root;
             }
             client.login();

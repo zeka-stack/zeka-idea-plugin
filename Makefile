@@ -4,6 +4,7 @@
 .PHONY: help build run test clean doc publish-install publish-repo verify check-format copy-zips install-plugins
 
 # 插件目录
+KIT_DIR := idea-plugin-kit
 ENGINE_DIR := intelli-ai-engine
 JAVADOC_DIR := intelli-ai-javadoc
 CHANGELOG_DIR := intelli-ai-changelog
@@ -71,6 +72,15 @@ doc-javadoc:
 doc-engine:
 	@echo "正在生成引擎文档..."
 	cd $(ENGINE_DIR) && ./gradlew javadoc
+
+# 本地安装 kit
+install-kit:
+	cd $(KIT_DIR) && ./gradlew publishToMavenLocal
+
+install-engine:
+	cd $(ENGINE_DIR) && ./gradlew publishToMavenLocal
+
+install-dependencies: install-kit install-engine
 
 # 发布命令
 publish-engine:

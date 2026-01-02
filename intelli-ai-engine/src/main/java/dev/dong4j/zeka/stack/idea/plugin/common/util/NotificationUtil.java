@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 
 /**
  * 通知工具类
@@ -67,19 +68,16 @@ public class NotificationUtil {
 
     /**
      * 为通知添加一个可配置面板的操作
-     * <p> 创建一个通知操作, 当用户点击时会打开指定的配置面板并使通知过期.
+     * <p> 此方法调用底层实现以创建一个通知操作, 当用户点击该操作时, 会打开指定的配置面板并使通知过期.
      *
-     * @param project      与通知关联的项目对象, 可以为空
-     * @param notification 要添加操作的通知对象, 不能为空
+     * @param notification 与通知关联的对象, 不能为空
      * @param displayName  操作的显示名称, 不能为空, 用于打开指定的设置页面
+     * @param actionName   操作的动作名称, 不能为空
      */
-    public static void addOpenConfigurablePanelAction(Project project,
-                                                      Notification notification,
+    public static void addOpenConfigurablePanelAction(Notification notification,
                                                       String displayName,
                                                       String actionName) {
-
-        dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.addOpenConfigurablePanelAction(
-            project,
+        SettingsUtil.addOpenAction(
             notification,
             displayName,
             actionName);

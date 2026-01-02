@@ -1,5 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.kit;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
@@ -59,6 +62,34 @@ public class SettingsUtil {
         // 打开 IntelliAI Engine 全局设置页面（应用级配置）
         // 使用 null 作为 parent 参数表示打开应用级（全局）配置，而不是项目级配置
         ShowSettingsUtil.getInstance().editConfigurable(null, displayName);
+    }
+
+    /**
+     * 为通知添加一个可配置面板的操作
+     * <p> 此方法调用底层实现以创建一个通知操作, 当用户点击该操作时, 会打开指定的配置面板并使通知过期.
+     *
+     * @param notification 与通知关联的对象, 不能为空
+     * @param displayName  操作的显示名称, 不能为空, 用于打开指定的设置页面
+     * @param actionName   操作的动作名称, 不能为空
+     */
+    public static void addOpenAction(@NotNull Notification notification,
+                                     @NotNull String displayName,
+                                     @NotNull String actionName) {
+        notification.addAction(new NotificationAction(actionName) {
+            /**
+             * 处理动作事件, 用于显示指定配置面板并关闭通知
+             * <p>
+             * 该方法在接收到动作事件时, 创建指定配置面板并打开编辑窗口, 随后关闭传入的通知
+             *
+             * @param e            动作事件对象, 包含触发动作的相关信息
+             * @param notification 通知对象, 用于在操作完成后关闭通知
+             */
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
+                openSettings(displayName);
+                notification.expire();
+            }
+        });
     }
 
 }

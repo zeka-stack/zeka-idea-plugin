@@ -1,12 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.kit;
 
 import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
-import com.intellij.notification.Notifications;
-import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
@@ -81,6 +78,7 @@ public class NotificationUtil {
         }
         Notification notification = notificationGroup.createNotification(pluginName, content, type);
         notification.notify(project);
+        notification.expire();
     }
 
     /**
@@ -128,7 +126,7 @@ public class NotificationUtil {
      */
     public static @Nullable NotificationGroup getNotificationGroup(String pluginName) {
         String notificationGroupId = getGroupId(pluginName);
-        NotificationGroup notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup(pluginName);
+        NotificationGroup notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup(notificationGroupId);
         if (notificationGroup == null) {
             log.error("Notification group not found: {}", notificationGroupId);
             return null; // or throw an exception, depending on your use case
@@ -136,36 +134,9 @@ public class NotificationUtil {
         return notificationGroup;
     }
 
-    /**
-     * 为通知添加一个可配置面板的操作
-     * <p> 创建一个通知操作, 当用户点击时会打开指定的配置面板并使通知过期.
-     *
-     * @param project      与通知关联的项目对象
-     * @param notification 要添加操作的通知对象
-     * @param displayName  显示名称, 用于标识配置面板
-     * @param actionName   操作名称, 用于显示在通知中的按钮文本
-     * @since 1.0
-     */
-    public static void addOpenConfigurablePanelAction(@NotNull Project project,
-                                                      @NotNull Notification notification,
-                                                      @NotNull String displayName,
-                                                      @NotNull String actionName) {
-        notification.addAction(new NotificationAction(actionName) {
-            /**
-             * 处理动作事件, 用于显示指定配置面板并关闭通知
-             * <p>
-             * 该方法在接收到动作事件时, 创建指定配置面板并打开编辑窗口, 随后关闭传入的通知
-             *
-             * @param e            动作事件对象, 包含触发动作的相关信息
-             * @param notification 通知对象, 用于在操作完成后关闭通知
-             */
-            @Override
-            public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
-                SettingsUtil.openSettings(displayName);
-                notification.expire();
-            }
-        });
-        Notifications.Bus.notify(notification, project);
+    public static void showInfo(@NotNull String message) {
+
     }
+
 }
 

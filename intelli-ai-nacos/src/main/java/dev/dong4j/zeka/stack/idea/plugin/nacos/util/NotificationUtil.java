@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.util;
 
-import com.intellij.notification.Notification;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
@@ -64,20 +63,5 @@ public class NotificationUtil {
         dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.showError(project, PluginContents.PLUGIN_NAME, message);
     }
 
-    /**
-     * 向通知中添加可配置的面板操作项
-     * <p> 为指定的通知添加一个操作项, 点击该操作项将打开 Nacos 设置配置面板, 并使通知消失
-     *
-     * @param notification 要添加操作项的通知对象
-     * @param project      项目对象, 用于关联配置面板和项目
-     */
-    public static void addOpenConfigurablePanelAction(Notification notification, Project project) {
-        dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.addOpenConfigurablePanelAction(
-            project,
-            notification,
-            NacosBundle.message("settings.display.name"),
-            NacosBundle.message("notification.error.message.config"));
-
-    }
 }
 
