@@ -12,12 +12,21 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
- * Changelog AI Stream Response Listener
+ * ChangelogAIStreamResponseListener 类
+ * <p>实现了 AIStreamResponseListener 接口, 用于处理变更日志的流式响应.
+ * <p>该类的主要职责是将接收到的流式响应数据追加到缓冲区中, 并在完成或发生错误时进行相应的处理.
+ * <p>具体功能包括:
+ * <ul>
+ * <li>接收并处理每个数据块(chunk), 将其追加到缓冲区.</li>
+ * <li>在接收到完整文本时, 调用计数信号量 (CountDownLatch) 以通知处理完成.</li>
+ * <li>在发生错误时, 记录错误信息并设置异常引用(AtomicReference).</li>
+ * </ul>
  *
  * @author dong4j
- * @version hello.world
- * @date 2025-12-30 18:45:32
- * @since hello.world
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.02
+ * @since 1.0.0
  */
 public class ChangelogAIStreamResponseListener implements AIStreamResponseListener {
 
