@@ -42,7 +42,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
             if (!project.isDisposed()) {
                 WhatsNewEditorOpener.open(project);
             }
-        }, 1100L, TimeUnit.MILLISECONDS);
+        }, 5000L, TimeUnit.MILLISECONDS);
 
         return Unit.INSTANCE;
     }
