@@ -105,6 +105,8 @@ public final class ChangelogToolWindowService {
     private static final JBColor CATEGORY_BG = new JBColor(new Color(0xE6E6E6), new Color(0x3D3D3D));
     /** 分类标签前景色 */
     private static final JBColor CATEGORY_FG = new JBColor(new Color(0x4A4A4A), new Color(0xC8C8C8));
+    /** 列表悬停背景色 */
+    private static final JBColor HISTORY_HOVER_BG = new JBColor(new Color(0xEEF3FF), new Color(0x2B2D30));
     /** Frontmatter 日期格式 */
     private static final DateTimeFormatter FRONT_MATTER_DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
@@ -192,6 +194,10 @@ public final class ChangelogToolWindowService {
      * 历史记录过滤条件
      */
     private @NotNull String historyFilterText = "";
+    /**
+     * 历史记录悬停索引
+     */
+    private int historyHoverIndex = -1;
 
     /**
      * 存储每个输出会话的取消状态
@@ -543,6 +549,31 @@ public final class ChangelogToolWindowService {
         historyList.setCellRenderer(new HistoryCellRenderer());
         historyList.setFixedCellHeight(JBUI.scale(40));
         historyList.getEmptyText().setText("暂无历史记录");
+        historyList.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                if (historyList == null) {
+                    return;
+                }
+                int index = historyList.locationToIndex(e.getPoint());
+                Rectangle bounds = index >= 0 ? historyList.getCellBounds(index, index) : null;
+                int nextIndex = bounds != null && bounds.contains(e.getPoint()) ? index : -1;
+                if (historyHoverIndex != nextIndex) {
+                    historyHoverIndex = nextIndex;
+                    historyList.repaint();
+                }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (historyHoverIndex != -1) {
+                    historyHoverIndex = -1;
+                    if (historyList != null) {
+                        historyList.repaint();
+                    }
+                }
+            }
+        });
         historyList.addMouseListener(new MouseAdapter() {
             /**
              * 处理鼠标点击事件
@@ -1363,7 +1394,7 @@ public final class ChangelogToolWindowService {
      * @date 2026.01.03
      * @since 1.0.0
      */
-    private static final class HistoryCellRenderer extends JPanel implements ListCellRenderer<HistoryItem> {
+    private final class HistoryCellRenderer extends JPanel implements ListCellRenderer<HistoryItem> {
         private final JBLabel categoryLabel;
         private final JBLabel titleLabel;
         private final JBLabel deleteLabel;
@@ -1413,7 +1444,9 @@ public final class ChangelogToolWindowService {
             categoryLabel.setText(resolveCategoryText(value.actionKey, value.category()));
             categoryLabel.setIcon(resolveCategoryIcon(value.actionKey));
 
-            Color background = isSelected ? list.getSelectionBackground() : list.getBackground();
+            boolean hover = !isSelected && index == historyHoverIndex;
+            Color background = isSelected ? list.getSelectionBackground()
+                                          : (hover ? HISTORY_HOVER_BG : list.getBackground());
             Color foreground = isSelected ? list.getSelectionForeground() : list.getForeground();
             setBackground(background);
             titleLabel.setForeground(foreground);
