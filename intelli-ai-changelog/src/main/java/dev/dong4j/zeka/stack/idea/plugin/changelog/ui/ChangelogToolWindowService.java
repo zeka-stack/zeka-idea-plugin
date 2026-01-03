@@ -9,11 +9,13 @@ import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
@@ -21,6 +23,7 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.openapi.wm.ex.ToolWindowEx;
 import com.intellij.serviceContainer.NonInjectable;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
@@ -32,15 +35,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.Rectangle;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -49,10 +52,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
+import javax.swing.Icon;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
@@ -82,12 +86,14 @@ public final class ChangelogToolWindowService {
     private static final String HISTORY_DIR_NAME = "IntelliAI Changelog";
     /** 历史记录文件的扩展名, 用于标识历史记录文件的格式 */
     private static final String HISTORY_FILE_EXTENSION = ".md";
-    /**
-     * 历史文件时间格式化器
-     * <p> 用于格式化历史文件的时间戳, 格式为 "yyyyMMdd-HHmmss-SSS"
-     */
-    private static final DateTimeFormatter HISTORY_FILE_TIME_FORMATTER =
-        DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS");
+    /** 删除图标 */
+    private static final Icon DELETE_ICON = AllIcons.Actions.GC;
+    /** 删除图标点击边距 */
+    private static final int DELETE_ICON_PADDING = 8;
+    /** 分类标签背景色 */
+    private static final JBColor CATEGORY_BG = new JBColor(new Color(0xE6E6E6), new Color(0x3D3D3D));
+    /** 分类标签前景色 */
+    private static final JBColor CATEGORY_FG = new JBColor(new Color(0x4A4A4A), new Color(0xC8C8C8));
 
     /**
      * 当前项目实例
@@ -384,6 +390,7 @@ public final class ChangelogToolWindowService {
                 }
                 String fileContent = buildHistoryFileContent(title, content);
                 ApplicationManager.getApplication().runWriteAction(() -> document.setText(fileContent));
+                FileDocumentManager.getInstance().saveDocument(document);
                 refreshHistoryList();
             } catch (Exception ignored) {
                 // 忽略写入异常，避免影响主流程
@@ -431,15 +438,29 @@ public final class ChangelogToolWindowService {
         historyList = new JBList<>(historyListModel);
         historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         historyList.setCellRenderer(new HistoryCellRenderer());
+        historyList.setFixedCellHeight(JBUI.scale(40));
+        historyList.getEmptyText().setText("暂无历史记录");
         historyList.addMouseListener(new MouseAdapter() {
             /**
              * 处理鼠标点击事件
-             * <p> 当鼠标点击次数为 1 时, 打开选中的历史记录
+             * <p> 单击删除区域时删除记录, 其它区域单击打开记录
              *
              * @param e 鼠标事件对象, 不能为 null
              */
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (historyList == null) {
+                    return;
+                }
+                int index = historyList.locationToIndex(e.getPoint());
+                if (index < 0) {
+                    return;
+                }
+                historyList.setSelectedIndex(index);
+                if (isDeleteClick(e, index)) {
+                    deleteHistoryItem(historyList.getModel().getElementAt(index));
+                    return;
+                }
                 if (e.getClickCount() == 1) {
                     openSelectedHistory();
                 }
@@ -448,7 +469,7 @@ public final class ChangelogToolWindowService {
         historyList.addKeyListener(new KeyAdapter() {
             /**
              * 处理键盘按键按下事件
-             * <p>当检测到用户按下回车键 (Enter) 时, 调用 {@code openSelectedHistory()} 方法执行相关操作
+             * <p> 回车键打开记录, Delete 键删除记录
              *
              * @param e 键盘事件对象, 包含按键信息
              */
@@ -456,6 +477,13 @@ public final class ChangelogToolWindowService {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     openSelectedHistory();
+                    return;
+                }
+                if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+                    HistoryItem selected = historyList.getSelectedValue();
+                    if (selected != null) {
+                        deleteHistoryItem(selected);
+                    }
                 }
             }
         });
@@ -503,6 +531,52 @@ public final class ChangelogToolWindowService {
     }
 
     /**
+     * 判断是否点击了删除区域
+     *
+     * @param e     鼠标事件
+     * @param index 列表索引
+     * @return 点击在删除区域则返回 true
+     */
+    private boolean isDeleteClick(@NotNull MouseEvent e, int index) {
+        if (historyList == null) {
+            return false;
+        }
+        Rectangle bounds = historyList.getCellBounds(index, index);
+        if (bounds == null) {
+            return false;
+        }
+        int iconWidth = DELETE_ICON.getIconWidth();
+        int iconHeight = DELETE_ICON.getIconHeight();
+        int padding = JBUI.scale(DELETE_ICON_PADDING);
+        int x = bounds.x + bounds.width - iconWidth - padding;
+        int y = bounds.y + (bounds.height - iconHeight) / 2;
+        Rectangle iconRect = new Rectangle(x - JBUI.scale(4), y - JBUI.scale(4),
+                                           iconWidth + JBUI.scale(8), iconHeight + JBUI.scale(8));
+        return iconRect.contains(e.getPoint());
+    }
+
+    /**
+     * 删除指定的历史记录项
+     *
+     * @param item 历史记录项
+     */
+    private void deleteHistoryItem(@NotNull HistoryItem item) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            try {
+                ApplicationManager.getApplication().runWriteAction(() -> {
+                    try {
+                        item.file.delete(this);
+                    } catch (Exception ignored) {
+                        // 忽略删除异常
+                    }
+                });
+            } finally {
+                refreshHistoryList();
+            }
+        });
+    }
+
+    /**
      * 打开选中的历史记录
      * <p> 从历史记录列表中获取选中的历史记录项, 并加载其内容, 然后在新的输出会话中显示该内容.
      *
@@ -537,6 +611,10 @@ public final class ChangelogToolWindowService {
             return;
         }
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            VirtualFile historyDir = getHistoryDir();
+            if (historyDir != null) {
+                VfsUtil.markDirtyAndRefresh(true, false, false, historyDir);
+            }
             List<HistoryItem> items = loadHistoryItems();
             ApplicationManager.getApplication().invokeLater(() -> {
                 if (historyListModel == null) {
@@ -557,26 +635,27 @@ public final class ChangelogToolWindowService {
      * @return 历史记录项列表, 如果未找到历史目录或无有效文件则返回空列表
      */
     private @NotNull List<HistoryItem> loadHistoryItems() {
-        List<HistoryItem> items = new ArrayList<>();
-        VirtualFile historyDir = getHistoryDir();
-        if (historyDir == null) {
+        return ReadAction.compute(() -> {
+            List<HistoryItem> items = new ArrayList<>();
+            VirtualFile historyDir = getHistoryDir();
+            if (historyDir == null) {
+                return items;
+            }
+            for (VirtualFile file : historyDir.getChildren()) {
+                if (file.isDirectory() || !file.getName().endsWith(HISTORY_FILE_EXTENSION)) {
+                    continue;
+                }
+                HistoryContent content = loadHistoryContent(file);
+                if (content == null) {
+                    continue;
+                }
+                String category = ToolWindowTitleUtil.extractCategory(content.title);
+                items.add(new HistoryItem(file, content.title, category, file.getTimeStamp()));
+            }
+            items.sort(Comparator.comparing(HistoryItem::category)
+                           .thenComparing(HistoryItem::timeStamp, Comparator.reverseOrder()));
             return items;
-        }
-        historyDir.refresh(false, true);
-        for (VirtualFile file : historyDir.getChildren()) {
-            if (file.isDirectory() || !file.getName().endsWith(HISTORY_FILE_EXTENSION)) {
-                continue;
-            }
-            HistoryContent content = loadHistoryContent(file);
-            if (content == null) {
-                continue;
-            }
-            String category = ToolWindowTitleUtil.extractCategory(content.title);
-            items.add(new HistoryItem(file, content.title, category, file.getTimeStamp()));
-        }
-        items.sort(Comparator.comparing(HistoryItem::category)
-                       .thenComparing(HistoryItem::timeStamp, Comparator.reverseOrder()));
-        return items;
+        });
     }
 
     /**
@@ -588,7 +667,10 @@ public final class ChangelogToolWindowService {
      */
     private @Nullable HistoryContent loadHistoryContent(@NotNull VirtualFile file) {
         try {
-            String text = VfsUtilCore.loadText(file);
+            String text = ReadAction.compute(() -> {
+                Document document = FileDocumentManager.getInstance().getDocument(file);
+                return document != null ? document.getText() : VfsUtilCore.loadText(file);
+            });
             String title = file.getNameWithoutExtension();
             String body = text;
             if (text.startsWith(HISTORY_FILE_TITLE_PREFIX)) {
@@ -649,9 +731,8 @@ public final class ChangelogToolWindowService {
 
     /**
      * 构建历史记录文件的名称
-     * <p>根据传入的标题生成符合规范的历史记录文件名, 包含时间戳和安全化的标题部分.
-     * <p>文件名格式为: 时间戳 - 安全化标题. 扩展名
-     * <p>时间戳格式:yyyyMMdd-HHmmss-SSS
+     * <p>根据传入的标题生成符合规范的历史记录文件名, 仅包含安全化的标题部分.
+     * <p>文件名格式为: 安全化标题. 扩展名
      * <p>安全化规则:
      * <ul>
      *   <li>将冒号 (:) 替换为连字符(-)</li>
@@ -660,19 +741,18 @@ public final class ChangelogToolWindowService {
      * </ul>
      * <p>示例:
      * <pre>{@code
-     * buildHistoryFileName("My: Title with Spaces");
-     * // 返回:20240101-123456-789-My_Title_with_Spaces.md
+     * buildHistoryFileName("RL:20260103114605");
+     * // 返回:RL-20260103114605.md
      * }</pre>
      *
      * @param title 历史记录的标题, 不能为空
-     * @return 构建后的文件名, 格式为时间戳 - 安全化标题. 扩展名
+     * @return 构建后的文件名, 格式为安全化标题. 扩展名
      */
     private @NotNull String buildHistoryFileName(@NotNull String title) {
         String safeTitle = title.replace(':', '-')
             .replaceAll("\\s+", "_")
             .replaceAll("[^a-zA-Z0-9._-]", "_");
-        String timestamp = LocalDateTime.now().format(HISTORY_FILE_TIME_FORMATTER);
-        return timestamp + "-" + safeTitle + HISTORY_FILE_EXTENSION;
+        return safeTitle + HISTORY_FILE_EXTENSION;
     }
 
     /**
@@ -799,15 +879,6 @@ public final class ChangelogToolWindowService {
      */
     private record HistoryItem(@NotNull VirtualFile file, @NotNull String title, @NotNull String category,
                                long timeStamp) {
-        /**
-         * 获取当前历史项的显示文本
-         * <p> 返回历史项的标题作为显示文本
-         *
-         * @return 历史项的标题
-         */
-        private String displayText() {
-            return title;
-        }
     }
 
     /**
@@ -825,8 +896,7 @@ public final class ChangelogToolWindowService {
 
     /**
      * 历史单元渲染器类
-     * <p> 用于自定义 JList 单元的显示, 继承自 DefaultListCellRenderer 并重写 getListCellRendererComponent 方法
-     * <p> 当列表项为 HistoryItem 类型时, 设置单元文本为 HistoryItem 的 displayText()
+     * <p> 自定义列表单元的布局, 展示分类标签、标题与删除图标
      *
      * @author dong4j
      * @version 1.0.0
@@ -834,11 +904,33 @@ public final class ChangelogToolWindowService {
      * @date 2026.01.03
      * @since 1.0.0
      */
-    private static final class HistoryCellRenderer extends DefaultListCellRenderer {
+    private static final class HistoryCellRenderer extends JPanel implements ListCellRenderer<HistoryItem> {
+        private final JBLabel categoryLabel;
+        private final JBLabel titleLabel;
+        private final JBLabel deleteLabel;
+
+        private HistoryCellRenderer() {
+            super(new BorderLayout(JBUI.scale(8), 0));
+            setBorder(JBUI.Borders.empty(6, 8));
+            setOpaque(true);
+
+            categoryLabel = new JBLabel();
+            categoryLabel.setOpaque(true);
+            categoryLabel.setBorder(JBUI.Borders.empty(2, 6));
+
+            titleLabel = new JBLabel();
+            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.PLAIN));
+
+            deleteLabel = new JBLabel(DELETE_ICON);
+            deleteLabel.setBorder(JBUI.Borders.emptyLeft(6));
+
+            add(categoryLabel, BorderLayout.WEST);
+            add(titleLabel, BorderLayout.CENTER);
+            add(deleteLabel, BorderLayout.EAST);
+        }
+
         /**
-         * 重写列表单元格渲染器组件
-         * <p> 根据指定的列表, 值, 索引, 选中状态和焦点状态配置单元格组件
-         * <p> 当渲染的值是 HistoryItem 类型时, 使用其 displayText 方法设置文本内容
+         * 生成列表单元格渲染组件
          *
          * @param list         显示列表, 不能为 null
          * @param value        要渲染的值, 可能为 null
@@ -848,16 +940,42 @@ public final class ChangelogToolWindowService {
          * @return 配置好的单元格组件
          */
         @Override
-        public Component getListCellRendererComponent(JList<?> list,
-                                                      Object value,
+        public Component getListCellRendererComponent(JList<? extends HistoryItem> list,
+                                                      HistoryItem value,
                                                       int index,
                                                       boolean isSelected,
                                                       boolean cellHasFocus) {
-            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof HistoryItem item) {
-                setText(item.displayText());
+            if (value == null) {
+                return this;
             }
+            String title = value.title();
+            String displayTitle = extractDisplayTitle(title);
+            titleLabel.setText(displayTitle);
+            categoryLabel.setText(value.category());
+
+            Color background = isSelected ? list.getSelectionBackground() : list.getBackground();
+            Color foreground = isSelected ? list.getSelectionForeground() : list.getForeground();
+            setBackground(background);
+            titleLabel.setForeground(foreground);
+            deleteLabel.setForeground(foreground);
+            categoryLabel.setForeground(isSelected ? foreground : CATEGORY_FG);
+            categoryLabel.setBackground(isSelected ? background : CATEGORY_BG);
+
             return this;
+        }
+
+        /**
+         * 提取标题的展示文本
+         *
+         * @param title 原始标题
+         * @return 展示用标题
+         */
+        private String extractDisplayTitle(@NotNull String title) {
+            int index = title.indexOf(':');
+            if (index > 0 && index < title.length() - 1) {
+                return title.substring(index + 1);
+            }
+            return title;
         }
     }
 
@@ -947,19 +1065,7 @@ public final class ChangelogToolWindowService {
             if (selected == null) {
                 return;
             }
-            ApplicationManager.getApplication().invokeLater(() -> {
-                try {
-                    ApplicationManager.getApplication().runWriteAction(() -> {
-                        try {
-                            selected.file.delete(this);
-                        } catch (Exception ignored) {
-                            // 忽略删除异常
-                        }
-                    });
-                } finally {
-                    refreshHistoryList();
-                }
-            });
+            deleteHistoryItem(selected);
         }
     }
 

@@ -2,7 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,7 +11,7 @@ import java.util.Map;
  * 工具窗口标题工具类
  * <p>
  * 提供统一的工具窗口标题生成功能，将 action 的国际化 key 映射为简称，并组合时间戳生成标题。
- * 格式为：简称:时间戳（例如：RL:14:30:25）
+ * 格式为：简称:时间戳（例如：RL:20260103114605）
  *
  * @author dong4j
  * @version 1.0.0
@@ -20,9 +20,9 @@ import java.util.Map;
 public final class ToolWindowTitleUtil {
 
     /**
-     * 时间格式化器，格式为 "HH:mm:ss"
+     * 时间格式化器，格式为 "yyyyMMddHHmmss"
      */
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     /**
      * Action 国际化 key 到简称的映射
@@ -55,24 +55,24 @@ public final class ToolWindowTitleUtil {
      * 构建工具窗口标题
      * <p>
      * 根据 action 的国际化 key 获取简称，并组合当前时间戳生成标题。
-     * 格式为：简称:时间戳（例如：RL:14:30:25）
+     * 格式为：简称:时间戳（例如：RL:20260103114605）
      * <p>
      * 如果 actionKey 不在映射表中，则使用 actionKey 的最后一个单词作为简称。
      *
      * @param actionKey Action 的国际化 key（例如："action.generate.release.log"）
-     * @return 格式化的标题字符串（例如："RL:14:30:25"）
+     * @return 格式化的标题字符串（例如："RL:20260103114605"）
      */
     @NotNull
     public static String buildToolWindowTitle(@NotNull String actionKey) {
         String abbreviation = ACTION_KEY_TO_ABBREVIATION.getOrDefault(actionKey, getDefaultAbbreviation(actionKey));
-        String timestamp = LocalTime.now().format(TIME_FORMATTER);
+        String timestamp = LocalDateTime.now().format(TIME_FORMATTER);
         return abbreviation + ":" + timestamp;
     }
 
     /**
      * 从工具窗口标题中提取分类标识
      * <p>
-     * 标题格式为：简称:时间戳（例如：RL:14:30:25）
+     * 标题格式为：简称:时间戳（例如：RL:20260103114605）
      * 分类标识为冒号前的简称部分
      *
      * @param title 工具窗口标题
