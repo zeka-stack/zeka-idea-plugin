@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,13 +36,20 @@ public final class ToolWindowTitleUtil {
      * - action.generate.release.log → RL
      */
     private static final Map<String, String> ACTION_KEY_TO_ABBREVIATION = new HashMap<>();
+    /**
+     * Action 简称到国际化 key 的映射
+     */
+    private static final Map<String, String> ABBREVIATION_TO_ACTION_KEY = new HashMap<>();
 
     static {
+        ACTION_KEY_TO_ABBREVIATION.put("action.generate.changelog.gitlog", "GL");
         ACTION_KEY_TO_ABBREVIATION.put("action.generate.changelog.diff", "CD");
-        ACTION_KEY_TO_ABBREVIATION.put("action.generate.changelog.gitlog", "CM");
         ACTION_KEY_TO_ABBREVIATION.put("action.generate.daily.report.gitlog", "DR");
         ACTION_KEY_TO_ABBREVIATION.put("action.generate.weekly.report.gitlog", "WR");
         ACTION_KEY_TO_ABBREVIATION.put("action.generate.release.log", "RL");
+        for (Map.Entry<String, String> entry : ACTION_KEY_TO_ABBREVIATION.entrySet()) {
+            ABBREVIATION_TO_ACTION_KEY.put(entry.getValue(), entry.getKey());
+        }
     }
 
     /**
@@ -85,6 +93,16 @@ public final class ToolWindowTitleUtil {
             return title.substring(0, index);
         }
         return title;
+    }
+
+    /**
+     * 根据简称获取国际化 key
+     *
+     * @param abbreviation 简称
+     * @return 国际化 key，不存在则返回 null
+     */
+    public static @Nullable String getActionKeyByAbbreviation(@NotNull String abbreviation) {
+        return ABBREVIATION_TO_ACTION_KEY.get(abbreviation);
     }
 
     /**

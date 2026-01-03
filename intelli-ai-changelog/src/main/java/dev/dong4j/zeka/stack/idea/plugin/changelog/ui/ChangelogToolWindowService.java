@@ -28,6 +28,7 @@ import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.intellij.util.ui.JBUI;
@@ -45,8 +46,13 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,15 +61,19 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
+import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
+import icons.ChangelogIcons;
 
 /**
  * Changelog 工具窗口服务类
@@ -95,6 +105,47 @@ public final class ChangelogToolWindowService {
     private static final JBColor CATEGORY_BG = new JBColor(new Color(0xE6E6E6), new Color(0x3D3D3D));
     /** 分类标签前景色 */
     private static final JBColor CATEGORY_FG = new JBColor(new Color(0x4A4A4A), new Color(0xC8C8C8));
+    /** Frontmatter 日期格式 */
+    private static final DateTimeFormatter FRONT_MATTER_DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
+
+    /**
+     * 根据 actionKey 获取标签图标
+     *
+     * @param actionKey 国际化 key
+     * @return 图标
+     */
+    private static @NotNull Icon resolveCategoryIcon(@Nullable String actionKey) {
+        if (actionKey == null) {
+            return ChangelogIcons.CHANGELOG_16;
+        }
+        return switch (actionKey) {
+            case "action.generate.changelog.gitlog" -> ChangelogIcons.LOGS;
+            case "action.generate.changelog.diff" -> ChangelogIcons.DIFF;
+            case "action.generate.daily.report.gitlog" -> ChangelogIcons.DAILY;
+            case "action.generate.weekly.report.gitlog" -> ChangelogIcons.WEEKLY;
+            case "action.generate.release.log" -> ChangelogIcons.RELEASE;
+            default -> ChangelogIcons.CHANGELOG_16;
+        };
+    }
+
+    /**
+     * 根据 actionKey 获取标签文案
+     *
+     * @param actionKey 国际化 key
+     * @param fallback  兜底文案
+     * @return 标签文案
+     */
+    private static @NotNull String resolveCategoryText(@Nullable String actionKey, @NotNull String fallback) {
+        if (actionKey == null) {
+            return fallback;
+        }
+        try {
+            return ChangelogBundle.message(actionKey);
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
 
     /**
      * 当前项目实例
@@ -126,6 +177,19 @@ public final class ChangelogToolWindowService {
      * @see HistoryItem
      */
     private @Nullable JBList<HistoryItem> historyList;
+    /**
+     * 历史记录统计文本
+     * <p> 用于展示历史记录数量
+     */
+    private @Nullable JBLabel historyStatsLabel;
+    /**
+     * 历史记录过滤输入框
+     */
+    private @Nullable JBTextField historyFilterField;
+    /**
+     * 历史记录过滤条件
+     */
+    private @NotNull String historyFilterText = "";
 
     /**
      * 存储每个输出会话的取消状态
@@ -494,13 +558,28 @@ public final class ChangelogToolWindowService {
         });
 
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(buildHistoryToolbar(historyList).getComponent(), BorderLayout.NORTH);
+        panel.add(buildHistoryHeader(historyList), BorderLayout.NORTH);
         panel.add(new JBScrollPane(historyList), BorderLayout.CENTER);
+        panel.add(buildHistoryFooter(), BorderLayout.SOUTH);
 
         historyContent = ContentFactory.getInstance().createContent(panel, HISTORY_CONTENT_TITLE, false);
         historyContent.setCloseable(false);
         toolWindow.getContentManager().addContent(historyContent, 0);
         refreshHistoryList();
+    }
+
+    /**
+     * 构建 History 底部统计栏
+     *
+     * @return 底部面板
+     */
+    private @NotNull JComponent buildHistoryFooter() {
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.setBorder(JBUI.Borders.empty(4, 8));
+        historyStatsLabel = new JBLabel("共 0 条");
+        historyStatsLabel.setForeground(JBColor.GRAY);
+        footer.add(historyStatsLabel, BorderLayout.WEST);
+        return footer;
     }
 
     /**
@@ -521,18 +600,57 @@ public final class ChangelogToolWindowService {
     }
 
     /**
-     * 构建历史记录工具栏
-     * <p> 为指定的历史记录列表创建包含删除操作的工具栏
+     * 构建历史记录头部
+     * <p> 包含工具栏与过滤输入框
      *
      * @param list 历史记录列表组件, 用于设置工具栏的目标组件
-     * @return 包含删除操作的工具栏
+     * @return 头部组件
      */
-    private @NotNull ActionToolbar buildHistoryToolbar(@NotNull JBList<HistoryItem> list) {
+    private @NotNull JComponent buildHistoryHeader(@NotNull JBList<HistoryItem> list) {
         DefaultActionGroup group = new DefaultActionGroup();
         group.add(new DeleteAllHistoryAction(list));
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ChangelogHistory", group, true);
         toolbar.setTargetComponent(list);
-        return toolbar;
+        JPanel header = new JPanel(new BorderLayout());
+        header.add(toolbar.getComponent(), BorderLayout.WEST);
+        header.add(buildHistoryFilterField(), BorderLayout.CENTER);
+        header.setBorder(JBUI.Borders.empty(4));
+        return header;
+    }
+
+    /**
+     * 构建 History 过滤输入框
+     *
+     * @return 过滤输入框
+     */
+    private @NotNull JComponent buildHistoryFilterField() {
+        historyFilterField = new JBTextField();
+        historyFilterField.getEmptyText().setText("筛选历史记录");
+        historyFilterField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateFilterText();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateFilterText();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateFilterText();
+            }
+
+            private void updateFilterText() {
+                if (historyFilterField == null) {
+                    return;
+                }
+                historyFilterText = historyFilterField.getText();
+                refreshHistoryList();
+            }
+        });
+        return historyFilterField;
     }
 
     /**
@@ -685,7 +803,8 @@ public final class ChangelogToolWindowService {
             if (historyDir != null) {
                 VfsUtil.markDirtyAndRefresh(true, false, false, historyDir);
             }
-            List<HistoryItem> items = loadHistoryItems();
+            String filterText = historyFilterText;
+            List<HistoryItem> items = loadHistoryItems(filterText);
             ApplicationManager.getApplication().invokeLater(() -> {
                 if (historyListModel == null) {
                     return;
@@ -694,8 +813,80 @@ public final class ChangelogToolWindowService {
                 for (HistoryItem item : items) {
                     historyListModel.addElement(item);
                 }
+                updateHistoryStats(items);
             });
         });
+    }
+
+    /**
+     * 更新 History 统计信息
+     *
+     * @param count 历史记录数量
+     */
+    private void updateHistoryStats(@NotNull List<HistoryItem> items) {
+        if (historyStatsLabel == null) {
+            return;
+        }
+        int count = items.size();
+        String categoryText = buildCategoryStatsText(items);
+        String latestText = buildLatestTimeText(items);
+        StringBuilder builder = new StringBuilder();
+        builder.append("共 ").append(count).append(" 条");
+        if (!categoryText.isBlank()) {
+            builder.append(" | 分类: ").append(categoryText);
+        }
+        if (!latestText.isBlank()) {
+            builder.append(" | 最近: ").append(latestText);
+        }
+        historyStatsLabel.setText(builder.toString());
+    }
+
+    /**
+     * 构建分类统计文案
+     *
+     * @param items 历史记录列表
+     * @return 分类统计文本
+     */
+    private @NotNull String buildCategoryStatsText(@NotNull List<HistoryItem> items) {
+        Map<String, Integer> counters = new LinkedHashMap<>();
+        for (HistoryItem item : items) {
+            String categoryText = resolveCategoryText(item.actionKey, item.category);
+            counters.put(categoryText, counters.getOrDefault(categoryText, 0) + 1);
+        }
+        if (counters.isEmpty()) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : counters.entrySet()) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(entry.getKey()).append(" ").append(entry.getValue());
+        }
+        return builder.toString();
+    }
+
+    /**
+     * 构建最近时间文案
+     *
+     * @param items 历史记录列表
+     * @return 最近时间文本
+     */
+    private @NotNull String buildLatestTimeText(@NotNull List<HistoryItem> items) {
+        LocalDateTime latest = null;
+        for (HistoryItem item : items) {
+            LocalDateTime itemTime = item.resolveDateTime();
+            if (itemTime == null) {
+                continue;
+            }
+            if (latest == null || itemTime.isAfter(latest)) {
+                latest = itemTime;
+            }
+        }
+        if (latest == null) {
+            return "";
+        }
+        return latest.format(FRONT_MATTER_DATE_FORMATTER);
     }
 
     /**
@@ -704,7 +895,7 @@ public final class ChangelogToolWindowService {
      *
      * @return 历史记录项列表, 如果未找到历史目录或无有效文件则返回空列表
      */
-    private @NotNull List<HistoryItem> loadHistoryItems() {
+    private @NotNull List<HistoryItem> loadHistoryItems(@NotNull String filterText) {
         return ReadAction.compute(() -> {
             List<HistoryItem> items = new ArrayList<>();
             VirtualFile historyDir = getHistoryDir();
@@ -720,12 +911,44 @@ public final class ChangelogToolWindowService {
                     continue;
                 }
                 String category = ToolWindowTitleUtil.extractCategory(content.title);
-                items.add(new HistoryItem(file, content.title, category, file.getTimeStamp()));
+                String actionKey = ToolWindowTitleUtil.getActionKeyByAbbreviation(category);
+                if (!matchesFilter(filterText, content, actionKey, category)) {
+                    continue;
+                }
+                items.add(new HistoryItem(file, content.title, category, file.getTimeStamp(), content.dateText,
+                                          actionKey));
             }
             items.sort(Comparator.comparing(HistoryItem::category)
                            .thenComparing(HistoryItem::timeStamp, Comparator.reverseOrder()));
             return items;
         });
+    }
+
+    /**
+     * 判断是否匹配过滤条件
+     *
+     * @param filterText 过滤文本
+     * @param content    历史内容
+     * @param actionKey  国际化 key
+     * @param category   简称
+     * @return 匹配则返回 true
+     */
+    private boolean matchesFilter(@NotNull String filterText,
+                                  @NotNull HistoryContent content,
+                                  @Nullable String actionKey,
+                                  @NotNull String category) {
+        if (filterText.isBlank()) {
+            return true;
+        }
+        String query = filterText.toLowerCase();
+        if (content.title.toLowerCase().contains(query)) {
+            return true;
+        }
+        if (content.body.toLowerCase().contains(query)) {
+            return true;
+        }
+        String categoryText = resolveCategoryText(actionKey, category);
+        return categoryText.toLowerCase().contains(query);
     }
 
     /**
@@ -741,22 +964,24 @@ public final class ChangelogToolWindowService {
                 Document document = FileDocumentManager.getInstance().getDocument(file);
                 return document != null ? document.getText() : VfsUtilCore.loadText(file);
             });
+            FrontMatterData frontMatter = parseFrontMatter(text);
             String title = file.getNameWithoutExtension();
-            String body = text;
-            if (text.startsWith(HISTORY_FILE_TITLE_PREFIX)) {
-                int lineEnd = text.indexOf('\n');
+            String strippedText = frontMatter.body;
+            String body = strippedText;
+            if (strippedText.startsWith(HISTORY_FILE_TITLE_PREFIX)) {
+                int lineEnd = strippedText.indexOf('\n');
                 if (lineEnd > 0) {
-                    title = text.substring(HISTORY_FILE_TITLE_PREFIX.length(), lineEnd).trim();
-                    body = text.substring(lineEnd + 1);
+                    title = strippedText.substring(HISTORY_FILE_TITLE_PREFIX.length(), lineEnd).trim();
+                    body = strippedText.substring(lineEnd + 1);
                     if (body.startsWith("\n")) {
                         body = body.substring(1);
                     }
                 } else {
-                    title = text.substring(HISTORY_FILE_TITLE_PREFIX.length()).trim();
+                    title = strippedText.substring(HISTORY_FILE_TITLE_PREFIX.length()).trim();
                     body = "";
                 }
             }
-            return new HistoryContent(title, body);
+            return new HistoryContent(title, body, frontMatter.dateText);
         } catch (Exception ignored) {
             return null;
         }
@@ -834,7 +1059,49 @@ public final class ChangelogToolWindowService {
      * @return 拼接后的文件内容字符串
      */
     private @NotNull String buildHistoryFileContent(@NotNull String title, @NotNull String content) {
-        return HISTORY_FILE_TITLE_PREFIX + title + "\n\n" + content;
+        String frontMatter = buildFrontMatter(title);
+        return frontMatter + "\n" + HISTORY_FILE_TITLE_PREFIX + title + "\n\n" + content;
+    }
+
+    /**
+     * 构建 Frontmatter
+     *
+     * @param title 标题
+     * @return Frontmatter 内容
+     */
+    private @NotNull String buildFrontMatter(@NotNull String title) {
+        String date = LocalDateTime.now().format(FRONT_MATTER_DATE_FORMATTER);
+        String abbreviation = ToolWindowTitleUtil.extractCategory(title);
+        String actionKey = ToolWindowTitleUtil.getActionKeyByAbbreviation(abbreviation);
+        String type = actionKey == null ? abbreviation : ChangelogBundle.message(actionKey);
+        return "---\n" + "date: " + date + "\n" + "type: " + type + "\n---";
+    }
+
+    /**
+     * 解析 Frontmatter
+     *
+     * @param text 原始内容
+     * @return Frontmatter 数据
+     */
+    private @NotNull FrontMatterData parseFrontMatter(@NotNull String text) {
+        if (!text.startsWith("---\n")) {
+            return new FrontMatterData(null, text);
+        }
+        int endIndex = text.indexOf("\n---\n");
+        if (endIndex < 0) {
+            return new FrontMatterData(null, text);
+        }
+        String header = text.substring(4, endIndex);
+        String body = text.substring(endIndex + "\n---\n".length());
+        String dateText = null;
+        for (String line : header.split("\n")) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("date:")) {
+                dateText = trimmed.substring("date:".length()).trim();
+                break;
+            }
+        }
+        return new FrontMatterData(dateText, body);
     }
 
     /**
@@ -947,8 +1214,27 @@ public final class ChangelogToolWindowService {
      * @date 2026.01.03
      * @since 1.0.0
      */
-    private record HistoryItem(@NotNull VirtualFile file, @NotNull String title, @NotNull String category,
-                               long timeStamp) {
+    private record HistoryItem(@NotNull VirtualFile file,
+                               @NotNull String title,
+                               @NotNull String category,
+                               long timeStamp,
+                               @Nullable String dateText,
+                               @Nullable String actionKey) {
+        /**
+         * 获取解析后的时间
+         *
+         * @return 时间对象
+         */
+        private @Nullable LocalDateTime resolveDateTime() {
+            if (dateText != null) {
+                try {
+                    return LocalDateTime.parse(dateText, FRONT_MATTER_DATE_FORMATTER);
+                } catch (Exception ignored) {
+                    // 忽略解析失败
+                }
+            }
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(timeStamp), ZoneId.systemDefault());
+        }
     }
 
     /**
@@ -961,7 +1247,15 @@ public final class ChangelogToolWindowService {
      * @date 2026.01.03
      * @since 1.0.0
      */
-    private record HistoryContent(@NotNull String title, @NotNull String body) {
+    private record HistoryContent(@NotNull String title,
+                                  @NotNull String body,
+                                  @Nullable String dateText) {
+    }
+
+    /**
+     * Frontmatter 数据
+     */
+    private record FrontMatterData(@Nullable String dateText, @NotNull String body) {
     }
 
     /**
@@ -1021,7 +1315,8 @@ public final class ChangelogToolWindowService {
             String title = value.title();
             String displayTitle = extractDisplayTitle(title);
             titleLabel.setText(displayTitle);
-            categoryLabel.setText(value.category());
+            categoryLabel.setText(resolveCategoryText(value.actionKey, value.category()));
+            categoryLabel.setIcon(resolveCategoryIcon(value.actionKey));
 
             Color background = isSelected ? list.getSelectionBackground() : list.getBackground();
             Color foreground = isSelected ? list.getSelectionForeground() : list.getForeground();
