@@ -536,6 +536,14 @@ public class ChangelogSettingsPanel {
     }
 
     private JPanel createReleaseLogProviderPanel() {
+        // 创建 AI 单选框的提示标签
+        JBLabel aiHintLabel = new JBLabel(ChangelogBundle.message("settings.release.log.generator.ai.hint"));
+        aiHintLabel.setForeground(UIUtil.getLabelForeground());
+        aiHintLabel.setFont(UIManager.getFont("Label.font").deriveFont(UIManager.getFont("Label.font").getSize() - 1f));
+        JPanel aiHintPanel = new JPanel(new BorderLayout());
+        aiHintPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素，与单选框对齐
+        aiHintPanel.add(aiHintLabel, BorderLayout.WEST);
+
         // 创建带缩进的 AI 提示词复选框面板
         JPanel aiPromptCheckBoxPanel = new JPanel(new BorderLayout());
         aiPromptCheckBoxPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
@@ -545,6 +553,14 @@ public class ChangelogSettingsPanel {
         JPanel aiPromptPanelWrapper = new JPanel(new BorderLayout());
         aiPromptPanelWrapper.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素
         aiPromptPanelWrapper.add(aiReleaseLogPromptPanel, BorderLayout.CENTER);
+
+        // 创建 git-cliff 单选框的提示标签
+        JBLabel gitCliffHintLabel = new JBLabel(ChangelogBundle.message("settings.release.log.generator.gitcliff.hint"));
+        gitCliffHintLabel.setForeground(UIUtil.getLabelForeground());
+        gitCliffHintLabel.setFont(UIManager.getFont("Label.font").deriveFont(UIManager.getFont("Label.font").getSize() - 1f));
+        JPanel gitCliffHintPanel = new JPanel(new BorderLayout());
+        gitCliffHintPanel.setBorder(JBUI.Borders.emptyLeft(22)); // 缩进 22 像素，与单选框对齐
+        gitCliffHintPanel.add(gitCliffHintLabel, BorderLayout.WEST);
 
         // 创建带缩进的 git-cliff 配置复选框面板
         JPanel gitCliffConfigCheckBoxPanel = new JPanel(new BorderLayout());
@@ -558,10 +574,14 @@ public class ChangelogSettingsPanel {
 
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(releaseLogByAiRadioButton)
+            // AI 提示信息
+            .addComponent(aiHintPanel)
             // 显示 AI Release Log 提示词复选框（由 AI 单选框控制，带缩进）
             .addComponent(aiPromptCheckBoxPanel)
             .addComponent(aiPromptPanelWrapper)
             .addComponent(releaseLogByGitCliffRadioButton)
+            // git-cliff 提示信息
+            .addComponent(gitCliffHintPanel)
             // 显示 git-cliff 配置复选框（移到 provider 面板中，带缩进）
             .addComponent(gitCliffConfigCheckBoxPanel)
             .addComponent(gitCliffConfigPanelWrapper)
