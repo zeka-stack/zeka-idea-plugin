@@ -31,8 +31,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
@@ -131,6 +131,7 @@ public final class AIProviderConfigController {
                                             : new AIRuntimeSettings();
         ui.getVerboseLoggingCheckBox().setSelected(workingSettings.verboseLogging);
         ui.getLastUpdateCheckCheckBox().setSelected(workingSettings.lastUpdateCheck);
+        ui.getShowUpdateNotificationCheckBox().setSelected(workingSettings.showUpdateNotification);
         ResponseLanguage responseLanguage = workingSettings.responseLanguage != null
                                           ? workingSettings.responseLanguage
                                           : ResponseLanguage.ZH;
@@ -209,6 +210,7 @@ public final class AIProviderConfigController {
         // verboseLogging 已迁移到全局配置
         workingSettings.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
         workingSettings.lastUpdateCheck = ui.getLastUpdateCheckCheckBox().isSelected();
+        workingSettings.showUpdateNotification = ui.getShowUpdateNotificationCheckBox().isSelected();
         ResponseLanguage selectedLanguage = (ResponseLanguage) ui.getLanguageComboBox().getSelectedItem();
         workingSettings.responseLanguage = selectedLanguage != null ? selectedLanguage : ResponseLanguage.ZH;
 
@@ -743,23 +745,23 @@ public final class AIProviderConfigController {
     @NotNull
     private AIModelParameters snapshotModelParameters() {
         AIModelParameters params = new AIModelParameters();
-        
+
         // 如果输入为空, 设置为 "auto"
         String temperature = ui.getTemperatureField().getText().trim();
         params.temperature = temperature.isEmpty() ? "auto" : temperature;
-        
+
         String maxTokens = ui.getMaxTokensField().getText().trim();
         params.maxTokens = maxTokens.isEmpty() ? "auto" : maxTokens;
-        
+
         String topP = ui.getTopPField().getText().trim();
         params.topP = topP.isEmpty() ? "auto" : topP;
-        
+
         String topK = ui.getTopKField().getText().trim();
         params.topK = topK.isEmpty() ? "auto" : topK;
-        
+
         String presencePenalty = ui.getPresencePenaltyField().getText().trim();
         params.presencePenalty = presencePenalty.isEmpty() ? "auto" : presencePenalty;
-        
+
         return params;
     }
 

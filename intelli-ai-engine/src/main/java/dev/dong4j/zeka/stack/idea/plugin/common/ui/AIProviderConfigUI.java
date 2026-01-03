@@ -104,6 +104,8 @@ public final class AIProviderConfigUI {
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
     private JBCheckBox lastUpdateCheckCheckBox;
+    /** 控制是否显示新版本通知的复选框 */
+    private JBCheckBox showUpdateNotificationCheckBox;
     /** 注释语言选择下拉框 */
     private ComboBox<ResponseLanguage> languageComboBox;
     /** 控制是否显示高级设置内容的复选框 */
@@ -178,6 +180,7 @@ public final class AIProviderConfigUI {
         // 初始化基础配置组件
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
         lastUpdateCheckCheckBox = new JBCheckBox(AICommonBundle.message("settings.auto.update"));
+        showUpdateNotificationCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.update.notification"));
         languageComboBox = new ComboBox<>(ResponseLanguage.values());
         languageComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -406,6 +409,11 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
+    public JBCheckBox getShowUpdateNotificationCheckBox() {
+        return showUpdateNotificationCheckBox;
+    }
+
+    @NotNull
     public ComboBox<ResponseLanguage> getLanguageComboBox() {
         return languageComboBox;
     }
@@ -567,6 +575,7 @@ public final class AIProviderConfigUI {
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.comment.language")), languageComboBox)
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(lastUpdateCheckCheckBox, "settings.auto.update.hint"))
+            .addComponent(createCheckBoxWithHint(showUpdateNotificationCheckBox, "settings.show.update.notification.hint"))
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));

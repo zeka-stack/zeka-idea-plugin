@@ -17,16 +17,15 @@ import com.intellij.util.io.HttpRequests;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import kotlin.Unit;
-import kotlin.coroutines.Continuation;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 
 /**
  * 新特性启动活动类
@@ -93,6 +92,13 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                 String localVersion = getPluginVersion();
                 if (localVersion == null) {
                     LOG.debug("无法获取本地插件版本");
+                    return;
+                }
+
+                // 检查是否启用新版本通知
+                AIProviderSettings settings = AIProviderSettings.getInstance();
+                if (!settings.showUpdateNotification) {
+                    LOG.debug("新版本通知已禁用，跳过显示");
                     return;
                 }
 
@@ -213,6 +219,20 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                                         @NotNull Notification notification) {
                 // 打开 What's New 页面
                 WhatsNewEditorOpener.open(project);
+                notification.expire();
+            }
+        });
+
+        // 添加不再显示操作
+        notification.addAction(new NotificationAction(
+            AICommonBundle.message("whatsnew.update.dont.show.again")) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e,
+                                        @NotNull Notification notification) {
+                // 禁用新版本通知
+                AIProviderSettings settings = AIProviderSettings.getInstance();
+                settings.showUpdateNotification = false;
+                ApplicationManager.getApplication().saveSettings();
                 notification.expire();
             }
         });

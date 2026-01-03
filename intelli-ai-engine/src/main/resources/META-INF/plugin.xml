@@ -57,14 +57,6 @@
             id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
             displayName="🤖 IntelliAI Engine"/>
 
-        <!-- Console 工具窗口 -->
-        <!--suppress PluginXmlI18n -->
-        <toolWindow id="IntelliAI Engine Console"
-                    factoryClass="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleToolWindowFactory"
-                    anchor="bottom"
-                    icon="icons.AICommonIcons.TOOL_ICON"
-                    doNotActivateOnStart="true"/>
-
         <!-- Chat 工具窗口 -->
         <!--suppress PluginXmlI18n -->
         <!--<toolWindow id="IntelliAI Chat"-->
@@ -81,6 +73,8 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.update.UpdateStartupActivity"/>
         <!-- 项目启动时显示更新日志 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewStartupActivity"/>
+        <!-- 项目启动时初始化 Console Tab -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleStartupActivity"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup id="IntelliAI Engine Notifications"
@@ -103,5 +97,6 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewAction">
             <add-to-group group-id="HelpMenu" anchor="last"/>
         </action>
+
     </actions>
 </idea-plugin>
