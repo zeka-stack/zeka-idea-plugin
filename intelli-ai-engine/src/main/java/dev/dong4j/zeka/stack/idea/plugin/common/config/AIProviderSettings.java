@@ -63,6 +63,12 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     /** 是否启用详细日志记录(全局),true 表示启用,false 表示禁用 */
     public boolean verboseLogging = false;
 
+    /** 是否自动滚动到末尾 */
+    public boolean autoScrollToEnd = false;
+
+    /** 是否启用自动换行 */
+    public boolean autoWordWrap = false;
+
     /** 是否启用自动更新检查,true 表示启用,false 表示禁用 */
     public boolean lastUpdateCheck = true;
 
@@ -217,6 +223,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.intelliAgentSettings = sourceIntelliAgent.copy();
 
         settings.verboseLogging = this.verboseLogging;
+        settings.autoScrollToEnd = this.autoScrollToEnd;
+        settings.autoWordWrap = this.autoWordWrap;
         settings.lastUpdateCheck = this.lastUpdateCheck;
         settings.showUpdateNotification = this.showUpdateNotification;
         settings.showAdvancedSettings = this.showAdvancedSettings;
@@ -360,6 +368,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.intelliAgentSettings = sourceIntelliAgent.copy();
 
         this.verboseLogging = source.verboseLogging;
+        this.autoScrollToEnd = source.autoScrollToEnd;
+        this.autoWordWrap = source.autoWordWrap;
         this.lastUpdateCheck = source.lastUpdateCheck;
         this.showUpdateNotification = source.showUpdateNotification;
         this.showAdvancedSettings = source.showAdvancedSettings;
@@ -435,6 +445,12 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         }
         // verboseLogging 已迁移到全局配置
         if (verboseLogging != other.verboseLogging) {
+            return false;
+        }
+        if (autoScrollToEnd != other.autoScrollToEnd) {
+            return false;
+        }
+        if (autoWordWrap != other.autoWordWrap) {
             return false;
         }
         if (lastUpdateCheck != other.lastUpdateCheck) {

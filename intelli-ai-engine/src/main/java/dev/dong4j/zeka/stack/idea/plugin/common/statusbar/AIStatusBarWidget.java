@@ -6,11 +6,9 @@ import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.ui.popup.ListPopup;
-import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.StatusBarWidget;
 import com.intellij.openapi.wm.impl.status.EditorBasedStatusBarPopup;
@@ -23,13 +21,12 @@ import java.util.List;
 
 import javax.swing.Icon;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
-import dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable;
+import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentUpdateChecker;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
-import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentManager;
-import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentUpdateChecker;
+import dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewEditorOpener;
@@ -173,9 +170,11 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
         engineGroup.add(new OutputLanguageActionGroup());
         engineGroup.add(new VerboseLoggingToggleAction());
         engineGroup.add(new AutoUpdateCheckToggleAction());
+        engineGroup.add(Separator.create());
         engineGroup.add(new AutoStartAgentToggleAction());
         engineGroup.add(new AutoUpdateAgentToggleAction());
         engineGroup.add(new StartStopAgentAction());
+        engineGroup.add(Separator.create());
         engineGroup.add(new WhatsNewAction());
         return engineGroup;
     }
@@ -513,6 +512,20 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
                 settings.autoStart = state;
             }
         }
+
+        /**
+         * 更新动作状态
+         * <p> 检查 downloadUrl 是否为空，如果为空则置灰该动作
+         *
+         * @param e 动作事件, 包含当前操作的上下文信息, 不能为 null
+         */
+        @Override
+        public void update(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+            super.update(e);
+            IntelliAgentSettings settings = AIProviderSettings.getInstance().intelliAgentSettings;
+            boolean enabled = settings != null && settings.downloadUrl != null && !settings.downloadUrl.isBlank();
+            e.getPresentation().setEnabled(enabled);
+        }
     }
 
     /**
@@ -591,6 +604,20 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
                 updateChecker.stop();
             }
         }
+
+        /**
+         * 更新动作状态
+         * <p> 检查 downloadUrl 是否为空，如果为空则置灰该动作
+         *
+         * @param e 动作事件对象, 包含当前操作的上下文信息, 不能为 null
+         */
+        @Override
+        public void update(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+            super.update(e);
+            IntelliAgentSettings settings = AIProviderSettings.getInstance().intelliAgentSettings;
+            boolean enabled = settings != null && settings.downloadUrl != null && !settings.downloadUrl.isBlank();
+            e.getPresentation().setEnabled(enabled);
+        }
     }
 
     /**
@@ -649,6 +676,7 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
         /**
          * 更新动作的显示文本
          * <p> 根据智能代理的运行状态更新动作的显示文本, 如果智能代理正在快速运行, 则显示停止文本, 否则显示启动文本
+         * <p> 同时检查 downloadUrl 是否为空，如果为空则置灰该动作
          *
          * @param e 动作事件, 不能为 null
          */
@@ -659,6 +687,11 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
                           ? AICommonBundle.message("settings.agent.stop")
                           : AICommonBundle.message("settings.agent.start");
             e.getPresentation().setText(text);
+
+            // 检查 downloadUrl 是否为空，如果为空则置灰
+            IntelliAgentSettings settings = AIProviderSettings.getInstance().intelliAgentSettings;
+            boolean enabled = settings != null && settings.downloadUrl != null && !settings.downloadUrl.isBlank();
+            e.getPresentation().setEnabled(enabled);
         }
 
         /**
