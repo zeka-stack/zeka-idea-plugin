@@ -13,6 +13,7 @@ import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -25,13 +26,14 @@ import com.intellij.openapi.wm.ex.ToolWindowEx;
 import com.intellij.serviceContainer.NonInjectable;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
+import com.intellij.ui.treeStructure.Tree;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +42,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Rectangle;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyAdapter;
@@ -59,15 +62,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.swing.DefaultListModel;
 import javax.swing.Icon;
 import javax.swing.JComponent;
-import javax.swing.JList;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.ListCellRenderer;
-import javax.swing.ListSelectionModel;
+import javax.swing.JPopupMenu;
+import javax.swing.JTree;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeCellRenderer;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
@@ -105,13 +112,9 @@ public final class ChangelogToolWindowService {
     private static final JBColor CATEGORY_BG = new JBColor(new Color(0xE6E6E6), new Color(0x3D3D3D));
     /** 分类标签前景色 */
     private static final JBColor CATEGORY_FG = new JBColor(new Color(0x4A4A4A), new Color(0xC8C8C8));
-    /** 列表悬停背景色 */
-    private static final JBColor HISTORY_HOVER_BG = new JBColor(new Color(0xEEF3FF), new Color(0x2B2D30));
     /** Frontmatter 日期格式 */
     private static final DateTimeFormatter FRONT_MATTER_DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
-    /** 历史列表标题最大长度 */
-    private static final int HISTORY_TITLE_MAX_LENGTH = 60;
 
     /**
      * 根据 actionKey 获取标签图标
@@ -167,20 +170,17 @@ public final class ChangelogToolWindowService {
      */
     private @Nullable Content historyContent;
     /**
-     * 存储历史记录项的模型
-     * <p> 用于管理历史记录项的列表, 支持添加和移除项.
-     *
-     * @see HistoryItem
+     * 历史记录树模型
      */
-    private @Nullable DefaultListModel<HistoryItem> historyListModel;
+    private @Nullable DefaultTreeModel historyTreeModel;
     /**
-     * 历史记录列表组件
-     * <p> 用于显示和管理变更日志的历史记录项
-     *
-     * @see JBList
-     * @see HistoryItem
+     * 历史记录树根节点
      */
-    private @Nullable JBList<HistoryItem> historyList;
+    private @Nullable DefaultMutableTreeNode historyRootNode;
+    /**
+     * 历史记录树组件
+     */
+    private @Nullable Tree historyTree;
     /**
      * 历史记录统计文本
      * <p> 用于展示历史记录数量
@@ -197,7 +197,7 @@ public final class ChangelogToolWindowService {
     /**
      * 历史记录悬停索引
      */
-    private int historyHoverIndex = -1;
+    private int historyHoverRow = -1;
 
     /**
      * 存储每个输出会话的取消状态
@@ -235,7 +235,7 @@ public final class ChangelogToolWindowService {
      * @return 包含 JBTextArea 的 ChangelogOutputSession 对象
      */
     public @NotNull ChangelogOutputSession openSession(@NotNull String title) {
-        return openSession(title, "", "");
+        return openSession(title, "", "", "");
     }
 
     /**
@@ -249,11 +249,27 @@ public final class ChangelogToolWindowService {
     public @NotNull ChangelogOutputSession openSession(@NotNull String title,
                                                        @NotNull String startPoint,
                                                        @NotNull String endPoint) {
+        return openSession(title, startPoint, endPoint, "");
+    }
+
+    /**
+     * 创建一个新的输出会话
+     *
+     * @param title      输出标题
+     * @param startPoint 起始点
+     * @param endPoint   结束点
+     * @param provider   使用的服务商信息
+     * @return 输出会话
+     */
+    public @NotNull ChangelogOutputSession openSession(@NotNull String title,
+                                                       @NotNull String startPoint,
+                                                       @NotNull String endPoint,
+                                                       @NotNull String provider) {
         if (ApplicationManager.getApplication().isDispatchThread()) {
-            return createSession(title, startPoint, endPoint);
+            return createSession(title, startPoint, endPoint, provider);
         }
         AtomicReference<ChangelogOutputSession> ref = new AtomicReference<>();
-        ApplicationManager.getApplication().invokeAndWait(() -> ref.set(createSession(title, startPoint, endPoint)));
+        ApplicationManager.getApplication().invokeAndWait(() -> ref.set(createSession(title, startPoint, endPoint, provider)));
         return ref.get();
     }
 
@@ -267,6 +283,29 @@ public final class ChangelogToolWindowService {
     public void showResult(@NotNull String title, @NotNull String content) {
         ChangelogOutputSession session = openSession(title);
         session.complete(content);
+    }
+
+    /**
+     * 显示 History 页面
+     */
+    public void showHistoryContent() {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(PluginContents.PLUGIN_NAME);
+            if (toolWindow == null) {
+                NotificationUtil.showError(project, ChangelogBundle.message("toolwindow.unavailable"));
+                return;
+            }
+            ensureHistoryContent(toolWindow);
+            Content content = findContent(toolWindow, HISTORY_CONTENT_TITLE);
+            if (content != null) {
+                toolWindow.getContentManager().setSelectedContent(content);
+            }
+            if (toolWindow instanceof ToolWindowEx toolWindowEx) {
+                toolWindowEx.activate(null, true, true);
+            } else {
+                toolWindow.activate(null, true, true);
+            }
+        });
     }
 
     /**
@@ -291,7 +330,7 @@ public final class ChangelogToolWindowService {
      * @return 包含 JBTextArea 的 ChangelogOutputSession 对象
      */
     private @NotNull ChangelogOutputSession createSession(@NotNull String title) {
-        return createSession(title, "", "");
+        return createSession(title, "", "", "");
     }
 
     /**
@@ -304,11 +343,12 @@ public final class ChangelogToolWindowService {
      */
     private @NotNull ChangelogOutputSession createSession(@NotNull String title,
                                                           @NotNull String startPoint,
-                                                          @NotNull String endPoint) {
+                                                          @NotNull String endPoint,
+                                                          @NotNull String provider) {
         ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(PluginContents.PLUGIN_NAME);
         if (toolWindow == null) {
             NotificationUtil.showError(project, ChangelogBundle.message("toolwindow.unavailable"));
-            return new ChangelogOutputSession(this, title, startPoint, endPoint, null, null);
+            return new ChangelogOutputSession(this, title, startPoint, endPoint, provider, null, null);
         }
 
         // 首次使用时，动态设置 toolwindow 的布局
@@ -361,7 +401,7 @@ public final class ChangelogToolWindowService {
             toolWindow.activate(null, true, true);
         }
 
-        return new ChangelogOutputSession(this, fullTitle, startPoint, endPoint, textArea, cancellationFlag);
+        return new ChangelogOutputSession(this, fullTitle, startPoint, endPoint, provider, textArea, cancellationFlag);
     }
 
     /**
@@ -467,23 +507,26 @@ public final class ChangelogToolWindowService {
      * <p> 根据给定的标题和内容创建或更新一个历史记录文件, 并刷新历史记录列表
      * <p> 如果内容为空, 则不会执行任何操作
      *
-     * @param title   历史记录的标题
-     * @param content 历史记录的内容
+     * @param title      历史记录的标题
+     * @param content    历史记录的内容
      * @param startPoint 起始点
-     * @param endPoint 结束点
+     * @param endPoint   结束点
+     * @param provider   使用的服务商信息
      *                <p>
      *                使用示例:
      *                <pre>{@code
      *                               saveHistory("RL:20260103120000",
      *                                          "Added a new feature to the application.",
      *                                          "v1.2.3",
-     *                                          "HEAD");
+     *                                          "HEAD",
+     *                                          "Qianwen(qwen-turbo)");
      *                               }</pre>
      */
     public void saveHistory(@NotNull String title,
                             @NotNull String content,
                             @NotNull String startPoint,
-                            @NotNull String endPoint) {
+                            @NotNull String endPoint,
+                            @NotNull String provider) {
         if (content.isBlank()) {
             return;
         }
@@ -497,7 +540,7 @@ public final class ChangelogToolWindowService {
                 if (document == null) {
                     return;
                 }
-                String fileContent = buildHistoryFileContent(title, content, startPoint, endPoint);
+                String fileContent = buildHistoryFileContent(title, content, startPoint, endPoint, provider);
                 ApplicationManager.getApplication().runWriteAction(() -> document.setText(fileContent));
                 FileDocumentManager.getInstance().saveDocument(document);
                 refreshHistoryList();
@@ -518,7 +561,7 @@ public final class ChangelogToolWindowService {
     private void ensureHistoryContent(@NotNull ToolWindow toolWindow) {
         Content existing = findContent(toolWindow, HISTORY_CONTENT_TITLE);
         if (existing != null) {
-            if (historyListModel == null || historyList == null) {
+            if (historyTreeModel == null || historyTree == null || historyRootNode == null) {
                 toolWindow.getContentManager().removeContent(existing, false);
                 rebuildHistoryContent(toolWindow);
                 return;
@@ -543,38 +586,46 @@ public final class ChangelogToolWindowService {
         if (toolWindow.getContentManager().getContentCount() == 0) {
             setRightBottomDock(toolWindow);
         }
-        historyListModel = new DefaultListModel<>();
-        historyList = new JBList<>(historyListModel);
-        historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        historyList.setCellRenderer(new HistoryCellRenderer());
-        historyList.setFixedCellHeight(JBUI.scale(40));
-        historyList.getEmptyText().setText("暂无历史记录");
-        historyList.addMouseMotionListener(new MouseAdapter() {
+        historyRootNode = new DefaultMutableTreeNode("root");
+        historyTreeModel = new DefaultTreeModel(historyRootNode);
+        historyTree = new Tree(historyTreeModel);
+        historyTree.setRootVisible(false);
+        historyTree.setShowsRootHandles(true);
+        historyTree.setRowHeight(JBUI.scale(30));
+        historyTree.setOpaque(true);
+        historyTree.setBackground(UIUtil.getTreeBackground());
+        historyTree.getEmptyText().setText("暂无历史记录");
+        historyTree.setToggleClickCount(0);
+        historyTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+        historyTree.setCellRenderer(new HistoryTreeCellRenderer());
+        historyTree.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                if (historyList == null) {
+                if (historyTree == null) {
                     return;
                 }
-                int index = historyList.locationToIndex(e.getPoint());
-                Rectangle bounds = index >= 0 ? historyList.getCellBounds(index, index) : null;
-                int nextIndex = bounds != null && bounds.contains(e.getPoint()) ? index : -1;
-                if (historyHoverIndex != nextIndex) {
-                    historyHoverIndex = nextIndex;
-                    historyList.repaint();
+                int row = historyTree.getRowForLocation(e.getX(), e.getY());
+                Rectangle bounds = row >= 0 ? historyTree.getRowBounds(row) : null;
+                int nextRow = bounds != null && e.getY() >= bounds.y && e.getY() <= bounds.y + bounds.height
+                              ? row
+                              : -1;
+                if (historyHoverRow != nextRow) {
+                    historyHoverRow = nextRow;
+                    historyTree.repaint();
                 }
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
-                if (historyHoverIndex != -1) {
-                    historyHoverIndex = -1;
-                    if (historyList != null) {
-                        historyList.repaint();
+                if (historyHoverRow != -1) {
+                    historyHoverRow = -1;
+                    if (historyTree != null) {
+                        historyTree.repaint();
                     }
                 }
             }
         });
-        historyList.addMouseListener(new MouseAdapter() {
+        historyTree.addMouseListener(new MouseAdapter() {
             /**
              * 处理鼠标点击事件
              * <p> 单击删除区域时删除记录, 其它区域单击打开记录
@@ -583,28 +634,58 @@ public final class ChangelogToolWindowService {
              */
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (historyList == null) {
+                if (historyTree == null) {
                     return;
                 }
-                int index = historyList.locationToIndex(e.getPoint());
-                if (index < 0) {
+                int row = historyTree.getClosestRowForLocation(e.getX(), e.getY());
+                if (row < 0) {
                     return;
                 }
-                Rectangle bounds = historyList.getCellBounds(index, index);
-                if (bounds == null || !bounds.contains(e.getPoint())) {
+                Rectangle bounds = historyTree.getRowBounds(row);
+                if (bounds == null || e.getY() < bounds.y || e.getY() > bounds.y + bounds.height) {
                     return;
                 }
-                historyList.setSelectedIndex(index);
-                if (isDeleteClick(e, index)) {
-                    deleteHistoryItem(historyList.getModel().getElementAt(index));
+                TreePath path = historyTree.getPathForRow(row);
+                if (path == null) {
                     return;
                 }
-                if (e.getClickCount() == 1) {
-                    openSelectedHistory();
+                historyTree.setSelectionPath(path);
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                Object userObject = node.getUserObject();
+                if (isDeleteClick(e, row)) {
+                    if (userObject instanceof HistoryItem item) {
+                        deleteHistoryItem(item);
+                    } else if (userObject instanceof HistoryGroup) {
+                        deleteHistoryGroup(node);
+                    }
+                    return;
+                }
+                if (e.getClickCount() == 2) {
+                    if (userObject instanceof HistoryGroup) {
+                        if (historyTree.isExpanded(path)) {
+                            historyTree.collapsePath(path);
+                        } else {
+                            historyTree.expandPath(path);
+                        }
+                        return;
+                    }
+                    if (userObject instanceof HistoryItem item) {
+                        openHistoryItem(item);
+                    }
                 }
             }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showHistoryPopupIfNeeded(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                showHistoryPopupIfNeeded(e);
+            }
         });
-        historyList.addKeyListener(new KeyAdapter() {
+        historyTree.addKeyListener(new KeyAdapter() {
             /**
              * 处理键盘按键按下事件
              * <p> 回车键打开记录, Delete 键删除记录
@@ -614,11 +695,14 @@ public final class ChangelogToolWindowService {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    openSelectedHistory();
+                    HistoryItem selected = getSelectedHistoryItem();
+                    if (selected != null) {
+                        openHistoryItem(selected);
+                    }
                     return;
                 }
                 if (e.getKeyCode() == KeyEvent.VK_DELETE) {
-                    HistoryItem selected = historyList.getSelectedValue();
+                    HistoryItem selected = getSelectedHistoryItem();
                     if (selected != null) {
                         deleteHistoryItem(selected);
                     }
@@ -627,8 +711,8 @@ public final class ChangelogToolWindowService {
         });
 
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(buildHistoryHeader(historyList), BorderLayout.NORTH);
-        panel.add(new JBScrollPane(historyList), BorderLayout.CENTER);
+        panel.add(buildHistoryHeader(historyTree), BorderLayout.NORTH);
+        panel.add(new JBScrollPane(historyTree), BorderLayout.CENTER);
         panel.add(buildHistoryFooter(), BorderLayout.SOUTH);
 
         historyContent = ContentFactory.getInstance().createContent(panel, HISTORY_CONTENT_TITLE, false);
@@ -672,14 +756,14 @@ public final class ChangelogToolWindowService {
      * 构建历史记录头部
      * <p> 包含工具栏与过滤输入框
      *
-     * @param list 历史记录列表组件, 用于设置工具栏的目标组件
+     * @param tree 历史记录树组件, 用于设置工具栏的目标组件
      * @return 头部组件
      */
-    private @NotNull JComponent buildHistoryHeader(@NotNull JBList<HistoryItem> list) {
+    private @NotNull JComponent buildHistoryHeader(@NotNull Tree tree) {
         DefaultActionGroup group = new DefaultActionGroup();
-        group.add(new DeleteAllHistoryAction(list));
+        group.add(new DeleteAllHistoryAction(tree));
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ChangelogHistory", group, true);
-        toolbar.setTargetComponent(list);
+        toolbar.setTargetComponent(tree);
         JPanel header = new JPanel(new BorderLayout());
         header.add(toolbar.getComponent(), BorderLayout.WEST);
         header.add(buildHistoryFilterField(), BorderLayout.CENTER);
@@ -726,25 +810,24 @@ public final class ChangelogToolWindowService {
      * 判断是否点击了删除区域
      *
      * @param e     鼠标事件
-     * @param index 列表索引
+     * @param row 列表行
      * @return 点击在删除区域则返回 true
      */
-    private boolean isDeleteClick(@NotNull MouseEvent e, int index) {
-        if (historyList == null) {
+    private boolean isDeleteClick(@NotNull MouseEvent e, int row) {
+        if (historyTree == null) {
             return false;
         }
-        Rectangle bounds = historyList.getCellBounds(index, index);
+        Rectangle bounds = historyTree.getRowBounds(row);
         if (bounds == null) {
             return false;
         }
         int iconWidth = DELETE_ICON.getIconWidth();
         int iconHeight = DELETE_ICON.getIconHeight();
-        int padding = JBUI.scale(DELETE_ICON_PADDING);
-        int x = bounds.x + bounds.width - iconWidth - padding;
-        int y = bounds.y + (bounds.height - iconHeight) / 2;
-        Rectangle iconRect = new Rectangle(x - JBUI.scale(4), y - JBUI.scale(4),
-                                           iconWidth + JBUI.scale(8), iconHeight + JBUI.scale(8));
-        return iconRect.contains(e.getPoint());
+        int xStart = bounds.x + JBUI.scale(4);
+        int yStart = bounds.y + (bounds.height - iconHeight) / 2;
+        boolean inY = e.getY() >= yStart && e.getY() <= yStart + iconHeight;
+        boolean inX = e.getX() >= xStart && e.getX() <= xStart + iconWidth;
+        return inX && inY;
     }
 
     /**
@@ -769,11 +852,44 @@ public final class ChangelogToolWindowService {
     }
 
     /**
-     * 删除全部历史记录
+     * 删除指定分组下的所有历史记录
      *
-     * @param list 历史记录列表
+     * @param groupNode 分组节点
      */
-    private void deleteAllHistoryItems(@NotNull JBList<HistoryItem> list) {
+    private void deleteHistoryGroup(@NotNull DefaultMutableTreeNode groupNode) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            try {
+                ApplicationManager.getApplication().runWriteAction(() -> {
+                    for (int i = 0; i < groupNode.getChildCount(); i++) {
+                        DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
+                        Object userObject = child.getUserObject();
+                        if (userObject instanceof HistoryItem item) {
+                            try {
+                                item.file.delete(this);
+                            } catch (Exception ignored) {
+                                // 忽略删除异常
+                            }
+                        }
+                    }
+                });
+            } finally {
+                refreshHistoryList();
+            }
+        });
+    }
+
+    /**
+     * 删除所有历史记录项
+     * <p> 此方法会在确认对话框中询问用户是否删除所有历史记录. 如果用户选择确认, 则删除指定目录下的所有历史记录文件, 并刷新历史记录列表.
+     * <p> 具体步骤如下:
+     * 1. 显示确认对话框, 询问用户是否删除所有历史记录.
+     * 2. 如果用户选择取消, 则不执行任何操作.
+     * 3. 如果用户选择确认, 则在写入操作中删除历史记录目录下的所有符合条件的文件.
+     * 4. 清除树形控件的选中状态, 并刷新历史记录列表以反映最新的状态.
+     *
+     * @param tree 树形控件对象, 用于显示和管理历史记录项
+     */
+    private void deleteAllHistoryItems(@NotNull Tree tree) {
         int result = Messages.showYesNoDialog(project,
                                               "确定要删除全部历史记录吗？",
                                               "删除全部历史记录",
@@ -800,7 +916,7 @@ public final class ChangelogToolWindowService {
                     }
                 });
             } finally {
-                list.clearSelection();
+                tree.clearSelection();
                 refreshHistoryList();
             }
         });
@@ -812,15 +928,41 @@ public final class ChangelogToolWindowService {
      *
      */
     private void openSelectedHistory() {
-        if (historyList == null) {
-            return;
-        }
-        HistoryItem selected = historyList.getSelectedValue();
+        HistoryItem selected = getSelectedHistoryItem();
         if (selected == null) {
             return;
         }
+        openHistoryItem(selected);
+    }
+
+    /**
+     * 获取选中的历史记录
+     *
+     * @return 历史记录项
+     */
+    private @Nullable HistoryItem getSelectedHistoryItem() {
+        if (historyTree == null) {
+            return null;
+        }
+        TreePath path = historyTree.getSelectionPath();
+        if (path == null) {
+            return null;
+        }
+        Object userObject = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+        if (userObject instanceof HistoryItem item) {
+            return item;
+        }
+        return null;
+    }
+
+    /**
+     * 打开指定历史记录
+     *
+     * @param item 历史记录项
+     */
+    private void openHistoryItem(@NotNull HistoryItem item) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            HistoryContent content = loadHistoryContent(selected.file);
+            HistoryContent content = loadHistoryContent(item.file);
             if (content == null || content.body.isBlank()) {
                 return;
             }
@@ -832,6 +974,53 @@ public final class ChangelogToolWindowService {
                 session.setText(content.body);
             });
         });
+    }
+
+    /**
+     * 显示历史记录右键菜单
+     *
+     * @param e 鼠标事件
+     */
+    private void showHistoryPopupIfNeeded(@NotNull MouseEvent e) {
+        if (!e.isPopupTrigger() || historyTree == null) {
+            return;
+        }
+        int row = historyTree.getClosestRowForLocation(e.getX(), e.getY());
+        if (row < 0) {
+            return;
+        }
+        Rectangle bounds = historyTree.getRowBounds(row);
+        if (bounds == null || e.getY() < bounds.y || e.getY() > bounds.y + bounds.height) {
+            return;
+        }
+        TreePath path = historyTree.getPathForRow(row);
+        if (path == null) {
+            return;
+        }
+        Object userObject = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
+        if (!(userObject instanceof HistoryItem item)) {
+            return;
+        }
+        historyTree.setSelectionPath(path);
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem openItem = new JMenuItem("在编辑器中打开");
+        openItem.addActionListener(actionEvent -> openHistoryFileInEditor(item));
+        JMenuItem deleteItem = new JMenuItem("删除");
+        deleteItem.addActionListener(actionEvent -> deleteHistoryItem(item));
+        menu.add(openItem);
+        menu.add(deleteItem);
+        menu.show(historyTree, e.getX(), e.getY());
+    }
+
+    /**
+     * 在编辑器中打开历史记录文件
+     *
+     * @param item 历史记录项
+     */
+    private void openHistoryFileInEditor(@NotNull HistoryItem item) {
+        ApplicationManager.getApplication().invokeLater(() ->
+                                                            new OpenFileDescriptor(project, item.file).navigate(true)
+                                                       );
     }
 
     /**
@@ -864,7 +1053,7 @@ public final class ChangelogToolWindowService {
      *
      */
     private void refreshHistoryList() {
-        if (historyListModel == null) {
+        if (historyTreeModel == null || historyRootNode == null || historyTree == null) {
             return;
         }
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
@@ -875,22 +1064,54 @@ public final class ChangelogToolWindowService {
             String filterText = historyFilterText;
             List<HistoryItem> items = loadHistoryItems(filterText);
             ApplicationManager.getApplication().invokeLater(() -> {
-                if (historyListModel == null) {
+                if (historyTreeModel == null || historyRootNode == null || historyTree == null) {
                     return;
                 }
-                historyListModel.clear();
-                for (HistoryItem item : items) {
-                    historyListModel.addElement(item);
-                }
+                rebuildHistoryTree(items);
                 updateHistoryStats(items);
             });
         });
     }
 
     /**
-     * 更新 History 统计信息
+     * 重建历史记录树
      *
-     * @param count 历史记录数量
+     * @param items 历史记录列表
+     */
+    private void rebuildHistoryTree(@NotNull List<HistoryItem> items) {
+        if (historyRootNode == null || historyTreeModel == null || historyTree == null) {
+            return;
+        }
+        historyRootNode.removeAllChildren();
+        Map<String, DefaultMutableTreeNode> groupNodes = new LinkedHashMap<>();
+        for (HistoryItem item : items) {
+            String groupText = resolveCategoryText(item.actionKey, item.category);
+            DefaultMutableTreeNode groupNode = groupNodes.get(groupText);
+            if (groupNode == null) {
+                HistoryGroup group = new HistoryGroup(groupText, resolveCategoryIcon(item.actionKey));
+                groupNode = new DefaultMutableTreeNode(group);
+                groupNodes.put(groupText, groupNode);
+                historyRootNode.add(groupNode);
+            }
+            groupNode.add(new DefaultMutableTreeNode(item));
+        }
+        historyTreeModel.reload();
+        for (int i = 0; i < historyTree.getRowCount(); i++) {
+            historyTree.expandRow(i);
+        }
+    }
+
+    /**
+     * 更新历史记录统计信息
+     * <p> 根据给定的历史记录项列表, 更新历史记录统计标签的内容, 包括总数, 分类信息和最近时间.
+     *
+     * @param items 历史记录项列表, 不能为 null
+     *              <p>
+     *              使用示例:
+     *              <pre>{@code
+     *              List<HistoryItem> items = getRecentHistoryItems();
+     *              updateHistoryStats(items);
+     *              }</pre>
      */
     private void updateHistoryStats(@NotNull List<HistoryItem> items) {
         if (historyStatsLabel == null) {
@@ -1132,7 +1353,7 @@ public final class ChangelogToolWindowService {
      * @return 拼接后的文件内容字符串
      */
     private @NotNull String buildHistoryFileContent(@NotNull String title, @NotNull String content) {
-        return buildHistoryFileContent(title, content, "", "");
+        return buildHistoryFileContent(title, content, "", "", "");
     }
 
     /**
@@ -1142,25 +1363,31 @@ public final class ChangelogToolWindowService {
      * @param content    内容
      * @param startPoint 起始点
      * @param endPoint   结束点
+     * @param provider   使用的服务商信息
      * @return 拼接后的文件内容字符串
      */
     private @NotNull String buildHistoryFileContent(@NotNull String title,
                                                     @NotNull String content,
                                                     @NotNull String startPoint,
-                                                    @NotNull String endPoint) {
-        String frontMatter = buildFrontMatter(title, startPoint, endPoint);
+                                                    @NotNull String endPoint,
+                                                    @NotNull String provider) {
+        String frontMatter = buildFrontMatter(title, startPoint, endPoint, provider);
         return frontMatter + "\n" + HISTORY_FILE_TITLE_PREFIX + title + "\n\n" + content;
     }
 
     /**
      * 构建 Frontmatter
      *
-     * @param title 标题
+     * @param title      标题
+     * @param startPoint 起始点
+     * @param endPoint   结束点
+     * @param provider   使用的服务商信息
      * @return Frontmatter 内容
      */
     private @NotNull String buildFrontMatter(@NotNull String title,
                                              @NotNull String startPoint,
-                                             @NotNull String endPoint) {
+                                             @NotNull String endPoint,
+                                             @NotNull String provider) {
         String date = LocalDateTime.now().format(FRONT_MATTER_DATE_FORMATTER);
         String abbreviation = ToolWindowTitleUtil.extractCategory(title);
         String actionKey = ToolWindowTitleUtil.getActionKeyByAbbreviation(abbreviation);
@@ -1168,10 +1395,11 @@ public final class ChangelogToolWindowService {
         return "---\n"
                + "date: " + date + "\n"
                + "type: " + type + "\n"
+               + "provider: " + provider + "\n"
                + "point:\n"
                + "  start: " + startPoint + "\n"
                + "  end: " + endPoint + "\n"
-               + "---";
+               + "---\n";
     }
 
     /**
@@ -1223,6 +1451,8 @@ public final class ChangelogToolWindowService {
         private final @NotNull String sessionTitle;
         private final @NotNull String startPoint;
         private final @NotNull String endPoint;
+        /** 使用的服务商信息 */
+        private final @NotNull String provider;
         /** 文本区域组件, 用于显示输出内容 */
         private final @Nullable JBTextArea textArea;
 
@@ -1237,6 +1467,7 @@ public final class ChangelogToolWindowService {
          * @param sessionTitle     会话标题, 不能为空
          * @param startPoint       起始点
          * @param endPoint         结束点
+         * @param provider         使用的服务商信息
          * @param textArea         关联的文本区域, 可以为 null
          * @param cancellationFlag 取消标志, 可以为 null
          */
@@ -1244,12 +1475,14 @@ public final class ChangelogToolWindowService {
                                        @NotNull String sessionTitle,
                                        @NotNull String startPoint,
                                        @NotNull String endPoint,
+                                       @NotNull String provider,
                                        @Nullable JBTextArea textArea,
                                        @Nullable AtomicBoolean cancellationFlag) {
             this.service = service;
             this.sessionTitle = sessionTitle;
             this.startPoint = startPoint;
             this.endPoint = endPoint;
+            this.provider = provider;
             this.textArea = textArea;
             this.cancellationFlag = cancellationFlag;
         }
@@ -1305,7 +1538,7 @@ public final class ChangelogToolWindowService {
          */
         public void complete(@NotNull String text) {
             setText(text);
-            service.saveHistory(sessionTitle, text, startPoint, endPoint);
+            service.saveHistory(sessionTitle, text, startPoint, endPoint, provider);
         }
     }
 
@@ -1385,8 +1618,14 @@ public final class ChangelogToolWindowService {
     }
 
     /**
-     * 历史单元渲染器类
-     * <p> 自定义列表单元的布局, 展示分类标签、标题与删除图标
+     * 历史树分组节点
+     */
+    private record HistoryGroup(@NotNull String text, @NotNull Icon icon) {
+    }
+
+    /**
+     * 历史树渲染器
+     * <p> 展示分组节点与记录节点的不同样式
      *
      * @author dong4j
      * @version 1.0.0
@@ -1394,81 +1633,142 @@ public final class ChangelogToolWindowService {
      * @date 2026.01.03
      * @since 1.0.0
      */
-    private final class HistoryCellRenderer extends JPanel implements ListCellRenderer<HistoryItem> {
-        private final JBLabel categoryLabel;
+    private final class HistoryTreeCellRenderer extends JPanel implements TreeCellRenderer {
+        private final JBLabel timestampLabel;
         private final JBLabel titleLabel;
         private final JBLabel deleteLabel;
+        private final JBLabel groupLabel;
+        private final JPanel contentPanel;
 
-        private HistoryCellRenderer() {
-            super(new BorderLayout(JBUI.scale(8), 0));
-            setBorder(JBUI.Borders.empty(6, 8));
+        private HistoryTreeCellRenderer() {
+            super(new BorderLayout(JBUI.scale(2), 0));
+            setBorder(JBUI.Borders.empty(2, 4));
             setOpaque(true);
 
-            categoryLabel = new JBLabel();
-            categoryLabel.setOpaque(true);
-            categoryLabel.setBorder(JBUI.Borders.empty(2, 6));
+            timestampLabel = new JBLabel();
+            timestampLabel.setOpaque(true);
+            timestampLabel.setBorder(JBUI.Borders.empty(2, 6));
 
             titleLabel = new JBLabel();
             titleLabel.setFont(titleLabel.getFont().deriveFont(Font.PLAIN));
 
             deleteLabel = new JBLabel(DELETE_ICON);
-            deleteLabel.setBorder(JBUI.Borders.emptyLeft(6));
+            deleteLabel.setBorder(JBUI.Borders.empty(0, 2));
 
-            add(categoryLabel, BorderLayout.WEST);
-            add(titleLabel, BorderLayout.CENTER);
-            add(deleteLabel, BorderLayout.EAST);
+            groupLabel = new JBLabel();
+            groupLabel.setFont(groupLabel.getFont().deriveFont(Font.BOLD));
+
+            contentPanel = new JPanel(new BorderLayout(JBUI.scale(6), 0));
+            contentPanel.setOpaque(false);
+            contentPanel.add(timestampLabel, BorderLayout.WEST);
+            contentPanel.add(titleLabel, BorderLayout.CENTER);
         }
 
-        /**
-         * 生成列表单元格渲染组件
-         *
-         * @param list         显示列表, 不能为 null
-         * @param value        要渲染的值, 可能为 null
-         * @param index        列表中的索引位置
-         * @param isSelected   是否被选中
-         * @param cellHasFocus 是否获得焦点
-         * @return 配置好的单元格组件
-         */
         @Override
-        public Component getListCellRendererComponent(JList<? extends HistoryItem> list,
-                                                      HistoryItem value,
-                                                      int index,
-                                                      boolean isSelected,
-                                                      boolean cellHasFocus) {
-            if (value == null) {
+        public Component getTreeCellRendererComponent(JTree tree,
+                                                      Object value,
+                                                      boolean selected,
+                                                      boolean expanded,
+                                                      boolean leaf,
+                                                      int row,
+                                                      boolean hasFocus) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+            Object userObject = node.getUserObject();
+            removeAll();
+
+            boolean hover = !selected && row == historyHoverRow;
+            Color background = selected ? UIUtil.getTreeSelectionBackground(true)
+                                        : (hover ? getHoverBackground(tree) : tree.getBackground());
+            Color foreground = selected ? UIUtil.getTreeSelectionForeground(true) : tree.getForeground();
+            setBackground(background);
+            setPreferredSize(null);
+
+            if (userObject instanceof HistoryGroup group) {
+                groupLabel.setText(group.text);
+                groupLabel.setIcon(group.icon);
+                groupLabel.setForeground(foreground);
+                add(deleteLabel, BorderLayout.WEST);
+                add(groupLabel, BorderLayout.CENTER);
                 return this;
             }
-            String title = value.title();
-            String displayTitle = buildDisplayTitle(title, value.heading);
-            titleLabel.setText(displayTitle);
-            categoryLabel.setText(resolveCategoryText(value.actionKey, value.category()));
-            categoryLabel.setIcon(resolveCategoryIcon(value.actionKey));
+            if (userObject instanceof HistoryItem item) {
+                String timestampText = formatTimestamp(item);
+                timestampLabel.setText(timestampText);
+                int maxHeadingWidth = calculateHeadingWidth(tree, timestampLabel);
+                String headingText = buildHeadingTitle(item.heading, titleLabel.getFontMetrics(titleLabel.getFont()),
+                                                       maxHeadingWidth);
+                titleLabel.setText(headingText);
+                titleLabel.setForeground(foreground);
+                deleteLabel.setForeground(foreground);
 
-            boolean hover = !isSelected && index == historyHoverIndex;
-            Color background = isSelected ? list.getSelectionBackground()
-                                          : (hover ? HISTORY_HOVER_BG : list.getBackground());
-            Color foreground = isSelected ? list.getSelectionForeground() : list.getForeground();
-            setBackground(background);
-            titleLabel.setForeground(foreground);
-            deleteLabel.setForeground(foreground);
-            categoryLabel.setForeground(isSelected ? foreground : CATEGORY_FG);
-            categoryLabel.setBackground(isSelected ? background : CATEGORY_BG);
-
+                add(deleteLabel, BorderLayout.WEST);
+                timestampLabel.setBackground(selected ? background : CATEGORY_BG);
+                timestampLabel.setForeground(selected ? foreground : CATEGORY_FG);
+                add(contentPanel, BorderLayout.CENTER);
+                return this;
+            }
             return this;
         }
 
-        /**
-         * 提取标题的展示文本
-         *
-         * @param title 原始标题
-         * @return 展示用标题
-         */
-        private String buildDisplayTitle(@NotNull String title, @Nullable String heading) {
-            String baseTitle = extractDisplayTitle(title);
-            String fullTitle = heading == null || heading.isBlank()
-                               ? baseTitle
-                               : baseTitle + " - " + heading.trim();
-            return truncateTitle(fullTitle);
+        private Color getHoverBackground(@NotNull JTree tree) {
+            Color background = UIUtil.getTreeSelectionBackground(false);
+            if (background != null) {
+                return background;
+            }
+            Color base = tree.getBackground();
+            if (base == null) {
+                return new JBColor(new Color(0xE6EEF7), new Color(0x2B2D30));
+            }
+            return base.brighter();
+        }
+
+        private String formatTimestamp(@NotNull HistoryItem item) {
+            if (item.dateText != null) {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(item.dateText, FRONT_MATTER_DATE_FORMATTER);
+                    return dateTime.format(FRONT_MATTER_DATE_FORMATTER);
+                } catch (Exception ignored) {
+                    // 忽略解析失败，继续降级
+                }
+            }
+            String raw = extractDisplayTitle(item.title);
+            if (raw.length() == 14) {
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(raw, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+                    return dateTime.format(FRONT_MATTER_DATE_FORMATTER);
+                } catch (Exception ignored) {
+                    // 忽略解析失败
+                }
+            }
+            return raw;
+        }
+
+        private int calculateHeadingWidth(@NotNull JTree tree, @NotNull JBLabel timestamp) {
+            Rectangle visible = tree.getVisibleRect();
+            if (visible.width <= 0) {
+                return 0;
+            }
+            int deleteWidth = DELETE_ICON.getIconWidth() + JBUI.scale(6);
+            int timestampWidth = timestamp.getPreferredSize().width;
+            int gaps = JBUI.scale(12);
+            return Math.max(0, visible.width - deleteWidth - timestampWidth - gaps);
+        }
+
+        private String buildHeadingTitle(@Nullable String heading, @NotNull FontMetrics metrics, int maxWidth) {
+            if (heading == null || heading.isBlank()) {
+                return "";
+            }
+            String trimmed = heading.trim();
+            if (maxWidth <= 0) {
+                return "";
+            }
+            String prefix = " - ";
+            int available = maxWidth - metrics.stringWidth(prefix);
+            if (available <= 0) {
+                return "";
+            }
+            String fitted = fitToWidth(trimmed, metrics, available);
+            return fitted.isEmpty() ? "" : prefix + fitted;
         }
 
         private String extractDisplayTitle(@NotNull String title) {
@@ -1479,12 +1779,23 @@ public final class ChangelogToolWindowService {
             return title;
         }
 
-        private String truncateTitle(@NotNull String title) {
-            if (title.length() <= HISTORY_TITLE_MAX_LENGTH) {
-                return title;
+        private String fitToWidth(@NotNull String text, @NotNull FontMetrics metrics, int maxWidth) {
+            if (metrics.stringWidth(text) <= maxWidth) {
+                return text;
             }
-            return title.substring(0, HISTORY_TITLE_MAX_LENGTH - 3) + "...";
+            String ellipsis = "...";
+            int ellipsisWidth = metrics.stringWidth(ellipsis);
+            int available = maxWidth - ellipsisWidth;
+            if (available <= 0) {
+                return "";
+            }
+            int end = text.length();
+            while (end > 0 && metrics.stringWidth(text.substring(0, end)) > available) {
+                end--;
+            }
+            return end <= 0 ? "" : text.substring(0, end) + ellipsis;
         }
+
     }
 
     /**
@@ -1539,24 +1850,21 @@ public final class ChangelogToolWindowService {
      */
     private final class DeleteAllHistoryAction extends AnAction {
         /**
-         * 包含历史记录项的列表组件
-         *
-         * @see JBList
-         * @see HistoryItem
+         * 历史记录树组件
          */
-        private final JBList<HistoryItem> list;
+        private final Tree tree;
 
         /**
          * 构造函数, 初始化删除全部历史记录动作
-         * <p> 设置动作名称, 描述和图标, 并将传入的列表组件赋值给成员变量
+         * <p> 设置动作名称, 描述和图标, 并将传入的树组件赋值给成员变量
          *
-         * @param list 历史记录列表组件, 不能为 null
+         * @param tree 历史记录树组件, 不能为 null
          */
-        private DeleteAllHistoryAction(@NotNull JBList<HistoryItem> list) {
+        private DeleteAllHistoryAction(@NotNull Tree tree) {
             super("Delete All",
                   "Delete All",
                   AllIcons.Actions.GC);
-            this.list = list;
+            this.tree = tree;
         }
 
         /**
@@ -1568,7 +1876,7 @@ public final class ChangelogToolWindowService {
          */
         @Override
         public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
-            deleteAllHistoryItems(list);
+            deleteAllHistoryItems(tree);
         }
     }
 

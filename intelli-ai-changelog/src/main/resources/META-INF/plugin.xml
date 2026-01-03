@@ -82,6 +82,10 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"
                 popup="true">
         </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction">
+            <add-to-group group-id="Vcs.Log.Toolbar" anchor="last"/>
+        </action>
 
         <!-- Git 提交工具栏操作 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"

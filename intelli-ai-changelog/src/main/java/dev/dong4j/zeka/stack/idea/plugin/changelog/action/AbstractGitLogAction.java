@@ -21,11 +21,11 @@ import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
@@ -208,18 +208,17 @@ public abstract class AbstractGitLogAction extends AnAction {
         String toolWindowTitle = ToolWindowTitleUtil.buildToolWindowTitle(getTextKey());
         String startPoint = selectedHashes.get(0);
         String endPoint = selectedHashes.get(selectedHashes.size() - 1);
+        String provider = resolveProviderText();
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
-            ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle, startPoint, endPoint);
+            ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle, startPoint, endPoint, provider);
 
         // 在后台任务中生成内容
         String progressTitle = ChangelogBundle.message(getProgressTitleKey());
         ProgressManager.getInstance().run(new Task.Backgroundable(project, progressTitle, true) {
             /**
              * 执行变更日志生成任务.
-             * <p>
-             * 该方法在进度指示器上设置为不确定进度, 并显示相应文本. 随后尝试使用 {@link ChangelogService} 生成变更日志内容,
-             * 并在 UI 线程中弹出 {@link ChangelogResultDialog} 显示结果. 如果生成过程中出现异常, 则在 UI 线程中通过 {@link NotificationUtil}
-             * 显示错误通知.
+             * <p> 该方法在进度指示器上设置为不确定进度, 并显示相应文本. 随后尝试使用 {@link ChangelogService} 生成变更日志内容.
+             * 如果生成过程中出现异常, 则在 UI 线程中通过 {@link NotificationUtil} 显示错误通知.
              *
              * @param indicator 用于显示任务进度的进度指示器
              */
@@ -280,5 +279,24 @@ public abstract class AbstractGitLogAction extends AnAction {
     public @NotNull ActionUpdateThread getActionUpdateThread() {
         // 在后台线程中执行 update，避免阻塞 EDT
         return ActionUpdateThread.BGT;
+    }
+
+    /**
+     * 构建当前 AI Provider 信息
+     *
+     * @return provider 文本
+     */
+    private @NotNull String resolveProviderText() {
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        if (config == null || config.providerType == null) {
+            return "";
+        }
+        AIProviderType providerType = config.providerType;
+        String providerName = providerType.getDisplayName();
+        String modelName = config.modelName != null ? config.modelName.trim() : "";
+        if (!modelName.isEmpty()) {
+            return providerName + "(" + modelName + ")";
+        }
+        return providerName;
     }
 }
