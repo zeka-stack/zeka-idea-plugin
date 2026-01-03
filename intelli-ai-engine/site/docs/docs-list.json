@@ -32,6 +32,10 @@
     "path": "./docs/IntelliJ平台超链接实现方式总结.md"
   },
   {
+    "name": "JCEF浏览器链接点击阻塞问题修复方案",
+    "path": "./docs/JCEF浏览器链接点击阻塞问题修复方案.md"
+  },
+  {
     "name": "ModelScope服务商接入方案",
     "path": "./docs/ModelScope服务商接入方案.md"
   },

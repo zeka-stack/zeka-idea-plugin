@@ -1,34 +1,65 @@
 <h3>2025.3.1</h3>
+<h4>本次更新主要聚焦于功能性和易用性的升级, 包括:</h4>
 <ul>
-    <li><b>🔄 重构</b>：重构发布日志生成逻辑，统一为抽象类 AbstractReleaseLogAction，支持基于选中 Git 提交生成发布日志</li>
-    <li><b>✨ 新增</b>：支持 GitCliff 与 AI 提供商两种日志生成方式，用户可根据需求选择</li>
-    <li><b>⚙️ 优化</b>：集成 git-cliff 自动安装功能，支持 Windows、macOS 和 Linux 多平台自动下载和安装</li>
-    <li><b>📝 优化</b>：优化提交信息格式化功能，提升生成内容可读性</li>
-    <li><b>📁 新增</b>：优先支持项目内的 cliff.toml 和 release.prompt 配置文件，提升配置灵活性</li>
-    <li><b>🪟 优化</b>：优化工具窗口行为，支持关闭内容页签，提升交互体验</li>
-    <li><b>📚 优化</b>：完善用户手册，新增工具窗口使用说明、流式输出方案等技术文档</li>
-    <li><b>🎨 新增</b>：新增 release.svg 图标，提升界面美观度</li>
-    <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到最新版本</li>
+    <li><b>🔧 版本统一</b>：版本号与 Engine 保持一致，统一为 2025.3.1，便于维护与版本管理</li>
+    <li><b>✨ 新增</b>：集成 Engine 状态栏扩展，可通过状态栏快速修改配置，提升操作便捷性</li>
+    <li><b>✨ 新增</b>：集成 Engine 版本更新检查功能，及时获取最新版本信息</li>
+    <li><b>✨ 新增</b>：新增 Release Log 生成功能，提供 AI 和 GitCliff 两种生成方式，支持项目树右键和 Git Log 面板右键入口，生成后自动记录最后一次的
+        hash 或 tag，便于重复生成
+    </li>
+    <li><b>✨ 新增</b>：Release Log 配置支持项目级隔离，优先使用项目中的 release.prompt 或 cliff.toml 配置文件（需至少存在一条提交记录），设置页面配置作为备选方案
+    </li>
+    <li><b>✨ 新增</b>：GitCliff 自动安装功能，首次使用时自动从 GitHub 下载并保存到 ~/.zeka-stack/plugin/changelog，支持 Windows、macOS 和 Linux
+        多平台，如无法正常下载可通过其他途径下载后将压缩包保存到 ~/.zeka-stack/plugin/changelog/dists
+    </li>
+    <li><b>✨ 新增</b>：集成 Engine 的 SSE 功能，所有输出均为流式输出并支持中断操作，提升响应速度</li>
+    <li><b>✨ 新增</b>：新增基于 Code Diff 生成变更日志功能，适用于 Git Log 不规范的项目场景（相比基于 Git Log 生成会消耗更多 Token）</li>
+    <li><b>🔄 重构</b>：重写 Toolwindow 面板，新增变更日志和 Release 日志历史记录功能，以 Markdown 文件形式保存在 IDEA 临时文件中，方便查看和管理
+    </li>
+    <li><b>✨ 新增</b>：所有输出完成后自动进行格式化处理，包括中文标点转英文标点、中英文数字间添加空格，提升内容规范性</li>
+    <li><b>🔧 优化</b>：合并设置菜单到 Engine 一级菜单下，统一管理配置入口</li>
+    <li><b>🔧 优化</b>：优化提示词以支持多语言输出，由 Engine 统一控制输出语言，所有子插件共享此配置</li>
+    <li><b>🔧 优化</b>：优化 Git Commit Message 生成功能，推荐使用非思考模型以快速响应</li>
+    <li><b>📝 提示</b>：基于 Tag 生成 Release Log 时，请确保存在合规的 Tag 标签名称（如 v1.1.0、v2025.3.1）</li>
 </ul>
 <h3>2025.3.1</h3>
 <ul>
-    <li><b>🔄 Refactor</b>: Refactored release log generation logic, unified as abstract class AbstractReleaseLogAction, supporting
-        generation based on selected Git commits
+    <li><b>🔧 Version Unification</b>: Version number unified to 2025.3.1, consistent with Engine, for easier maintenance and version
+        management
     </li>
-    <li><b>✨ Added</b>: Support for both GitCliff and AI provider log generation methods, users can choose according to their needs</li>
-    <li><b>⚙️ Optimized</b>: Integrated git-cliff automatic installation, supporting automatic download and installation on Windows, macOS,
-        and Linux platforms
+    <li><b>✨ Added</b>: Integrated Engine status bar extension, can quickly modify configuration via status bar, improving operation
+        convenience
     </li>
-    <li><b>📝 Optimized</b>: Optimized commit message formatting functionality, improving generated content readability</li>
-    <li><b>📁 Added</b>: Priority support for project-level cliff.toml and release.prompt configuration files, improving configuration
-        flexibility
+    <li><b>✨ Added</b>: Integrated Engine version update check feature, timely access to latest version information</li>
+    <li><b>✨ Added</b>: New Release Log generation feature, providing both AI and GitCliff generation methods, supporting project tree
+        right-click and Git Log panel right-click entry, automatically records the last hash or tag after generation for easy regeneration
     </li>
-    <li><b>🪟 Optimized</b>: Optimized tool window behavior, supporting closing content tabs, improving interaction experience</li>
-    <li><b>📚 Optimized</b>: Enhanced user manual, added tool window usage instructions, streaming output solution and other technical
-        documentation
+    <li><b>✨ Added</b>: Release Log configuration supports project-level isolation, prioritizes using project-level release.prompt or
+        cliff.toml configuration files (requires at least one commit record), settings page configuration as fallback
     </li>
-    <li><b>🎨 Added</b>: Added release.svg icon, improving interface aesthetics</li>
-    <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to the latest version</li>
+    <li><b>✨ Added</b>: GitCliff automatic installation feature, automatically downloads from GitHub and saves to
+        ~/.zeka-stack/plugin/changelog
+        on first use, supports Windows, macOS, and Linux platforms. If download fails, can download through other means and save the zip
+        package to ~/.zeka-stack/plugin/changelog/dists
+    </li>
+    <li><b>✨ Added</b>: Integrated Engine's SSE feature, all outputs are streamed and support interrupt operations, improving response speed
+    </li>
+    <li><b>✨ Added</b>: New Code Diff-based changelog generation feature, suitable for projects with non-standard Git Log (consumes more
+        Tokens compared to Git Log-based generation)
+    </li>
+    <li><b>🔄 Refactored</b>: Refactored Toolwindow panel, added changelog and Release log history record feature, saved as Markdown files in
+        IDEA temporary files, convenient for viewing and management
+    </li>
+    <li><b>✨ Added</b>: Automatic formatting after all outputs complete, including converting Chinese punctuation to English punctuation,
+        adding spaces between Chinese and English numbers, improving content standardization
+    </li>
+    <li><b>🔧 Optimized</b>: Merged settings menu under Engine first-level menu, unified configuration entry management</li>
+    <li><b>🔧 Optimized</b>: Optimized prompts to support multi-language output, controlled uniformly by Engine, all sub-plugins share this
+        configuration
+    </li>
+    <li><b>🔧 Optimized</b>: Optimized Git Commit Message generation feature, recommends using non-thinking models for fast response</li>
+    <li><b>📝 Note</b>: When generating Release Log based on Tag, please ensure compliant Tag label names exist (e.g., v1.1.0, v2025.3.1)
+    </li>
 </ul>
 
 <h3>1.7.0</h3>

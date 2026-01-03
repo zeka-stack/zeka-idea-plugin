@@ -145,34 +145,42 @@ case "$PLUGIN_NAME" in
     engine)
         PLUGIN_DIR_NAME="intelli-ai-engine"
         PLUGIN_PATH="engine"
+        PLUGIN_ID="29152"
         ;;
     javadoc)
         PLUGIN_DIR_NAME="intelli-ai-javadoc"
         PLUGIN_PATH="javadoc"
+        PLUGIN_ID="28835"
         ;;
     changelog)
         PLUGIN_DIR_NAME="intelli-ai-changelog"
         PLUGIN_PATH="changelog"
+        PLUGIN_ID="29154"
         ;;
     nacos)
         PLUGIN_DIR_NAME="intelli-ai-nacos"
         PLUGIN_PATH="nacos"
+        PLUGIN_ID="29156"
         ;;
     tracer)
         PLUGIN_DIR_NAME="intelli-ai-tracer"
         PLUGIN_PATH="tracer"
+        PLUGIN_ID="29155"
         ;;
     swagger)
         PLUGIN_DIR_NAME="intelli-ai-swagger"
         PLUGIN_PATH="swagger"
+        PLUGIN_ID=""
         ;;
     archiver)
         PLUGIN_DIR_NAME="archiver-man"
         PLUGIN_PATH="archiver"
+        PLUGIN_ID=""
         ;;
     helper)
         PLUGIN_DIR_NAME="zks-dev-helper"
         PLUGIN_PATH="helper"
+        PLUGIN_ID=""
         ;;
     *)
         echo "错误: 未知的插件名称 '$PLUGIN_NAME'"
@@ -280,41 +288,66 @@ if [ -n "$VERSION" ]; then
 fi
 
 # 根据参数决定执行哪些步骤
-do_publish=true
-do_zip=true
-do_site=true
-
-# 如果只想部署 Nginx（例如: ./deploy.sh engine -n），且没有显式插件操作，则跳过插件相关步骤
-if $deploy_nginx && ! $explicit_plugin_action && ! $only_site && ! $only_zip && ! $only_publish; then
-    do_publish=false
-    do_zip=false
-    do_site=false
-fi
+# 默认行为：如果只指定插件名（没有其他参数），按顺序执行 -p, -z, -d 三个操作
+do_publish=false
+do_zip=false
+do_site=false
 
 # 如果指定了 only_* 参数，则只执行指定的步骤
 if $only_site || $only_zip || $only_publish; then
-    do_publish=false
-    do_zip=false
-    do_site=false
-
+    if $only_publish; then
+        do_publish=true
+    fi
     if $only_zip; then
         do_zip=true
     fi
     if $only_site; then
         do_site=true
     fi
-    if $only_publish; then
-        do_publish=true
-    fi
+elif $deploy_nginx && ! $explicit_plugin_action; then
+    # 如果只想部署 Nginx（例如: ./deploy.sh engine -n），且没有显式插件操作，则跳过插件相关步骤
+    do_publish=false
+    do_zip=false
+    do_site=false
+else
+    # 默认情况：只指定插件名时，按顺序执行 -p, -z, -d 三个操作
+    do_publish=true
+    do_zip=true
+    do_site=true
 fi
+
+# 显示将要执行的操作
+echo "执行计划:"
+if $do_publish; then
+    echo "  [1/3] ✓ 发布到插件市场 (publishPlugin)"
+else
+    echo "  [跳过] 发布到插件市场"
+fi
+if $do_zip; then
+    echo "  [2/3] ✓ 上传 ZIP 到服务器"
+else
+    echo "  [跳过] 上传 ZIP"
+fi
+if $do_site; then
+    echo "  [3/3] ✓ 部署 site 目录"
+else
+    echo "  [跳过] 部署 site 目录"
+fi
+if $deploy_nginx; then
+    echo "  [额外] ✓ 部署 Nginx 配置"
+fi
+echo ""
 
 ############################################
 # 1) 执行 Gradle publishPlugin
 ############################################
 if $do_publish; then
-    echo "执行 Gradle 发布 :publishPlugin ..."
+    echo "[1/3] 执行 Gradle 发布 :publishPlugin ..."
     (cd "$PLUGIN_DIR" && ./gradlew clean publishPlugin --no-daemon)
     echo "✓ 插件发布完成"
+    if [ -n "$PLUGIN_ID" ]; then
+        echo "  插件市场地址: https://plugins.jetbrains.com/plugin/$PLUGIN_ID"
+    fi
 else
     echo "[跳过] Gradle 发布 (根据参数设置)"
 fi
@@ -323,6 +356,7 @@ fi
 # 2) 上传插件 ZIP 到服务器目录
 ############################################
 if $do_zip; then
+    echo "[2/3] 上传插件 ZIP 到服务器目录 ..."
     echo "查找构建产物 ZIP ..."
     if [ ! -d "$ZIP_DIR" ]; then
         echo "未找到构建目录 $ZIP_DIR，尝试先执行构建..."
@@ -360,7 +394,7 @@ fi
 # 3) 部署 site 整个目录 (landing/docs/静态资源等)
 ############################################
 if $do_site; then
-    echo "部署 site 整个目录 ..."
+    echo "[3/3] 部署 site 整个目录 ..."
 
     # 检查 site 目录是否存在
     if [ ! -d "$SITE_DIR" ]; then

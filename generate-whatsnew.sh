@@ -29,7 +29,7 @@ ALLOWED_PLUGINS=(
   "intelli-ai-javadoc"
   "intelli-ai-changelog"
   "intelli-ai-nacos"
-  "intelli-ai-swagger"
+  # "intelli-ai-swagger"
   "intelli-ai-tracer"
 )
 
@@ -492,6 +492,25 @@ generated_at=$(date "+%Y-%m-%d %H:%M")
 
     .card-body li {
       margin: 6px 0;
+    }
+
+    /* 链接样式 */
+    .card-body a,
+    .modal-body a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(77, 211, 255, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .card-body a:hover,
+    .modal-body a:hover {
+      color: var(--accent-strong);
+      border-bottom-color: var(--accent-strong);
+      background: rgba(77, 211, 255, 0.1);
+      padding: 2px 4px;
+      margin: -2px -4px;
+      border-radius: 4px;
     }
 
     .tag {
