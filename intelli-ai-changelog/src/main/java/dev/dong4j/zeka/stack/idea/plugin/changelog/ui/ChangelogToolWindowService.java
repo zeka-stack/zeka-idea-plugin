@@ -108,6 +108,8 @@ public final class ChangelogToolWindowService {
     /** Frontmatter 日期格式 */
     private static final DateTimeFormatter FRONT_MATTER_DATE_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss");
+    /** 历史列表标题最大长度 */
+    private static final int HISTORY_TITLE_MAX_LENGTH = 60;
 
     /**
      * 根据 actionKey 获取标签图标
@@ -227,11 +229,25 @@ public final class ChangelogToolWindowService {
      * @return 包含 JBTextArea 的 ChangelogOutputSession 对象
      */
     public @NotNull ChangelogOutputSession openSession(@NotNull String title) {
+        return openSession(title, "", "");
+    }
+
+    /**
+     * 创建一个新的输出会话
+     *
+     * @param title      输出标题
+     * @param startPoint 起始点
+     * @param endPoint   结束点
+     * @return 输出会话
+     */
+    public @NotNull ChangelogOutputSession openSession(@NotNull String title,
+                                                       @NotNull String startPoint,
+                                                       @NotNull String endPoint) {
         if (ApplicationManager.getApplication().isDispatchThread()) {
-            return createSession(title);
+            return createSession(title, startPoint, endPoint);
         }
         AtomicReference<ChangelogOutputSession> ref = new AtomicReference<>();
-        ApplicationManager.getApplication().invokeAndWait(() -> ref.set(createSession(title)));
+        ApplicationManager.getApplication().invokeAndWait(() -> ref.set(createSession(title, startPoint, endPoint)));
         return ref.get();
     }
 
@@ -269,10 +285,24 @@ public final class ChangelogToolWindowService {
      * @return 包含 JBTextArea 的 ChangelogOutputSession 对象
      */
     private @NotNull ChangelogOutputSession createSession(@NotNull String title) {
+        return createSession(title, "", "");
+    }
+
+    /**
+     * 创建一个新的输出会话
+     *
+     * @param title      输出会话标题
+     * @param startPoint 起始点
+     * @param endPoint   结束点
+     * @return 输出会话
+     */
+    private @NotNull ChangelogOutputSession createSession(@NotNull String title,
+                                                          @NotNull String startPoint,
+                                                          @NotNull String endPoint) {
         ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(PluginContents.PLUGIN_NAME);
         if (toolWindow == null) {
             NotificationUtil.showError(project, ChangelogBundle.message("toolwindow.unavailable"));
-            return new ChangelogOutputSession(this, title, null, null);
+            return new ChangelogOutputSession(this, title, startPoint, endPoint, null, null);
         }
 
         // 首次使用时，动态设置 toolwindow 的布局
@@ -325,7 +355,7 @@ public final class ChangelogToolWindowService {
             toolWindow.activate(null, true, true);
         }
 
-        return new ChangelogOutputSession(this, fullTitle, textArea, cancellationFlag);
+        return new ChangelogOutputSession(this, fullTitle, startPoint, endPoint, textArea, cancellationFlag);
     }
 
     /**
@@ -433,13 +463,21 @@ public final class ChangelogToolWindowService {
      *
      * @param title   历史记录的标题
      * @param content 历史记录的内容
+     * @param startPoint 起始点
+     * @param endPoint 结束点
      *                <p>
      *                使用示例:
      *                <pre>{@code
-     *                               saveHistory("Feature Update", "Added a new feature to the application.");
+     *                               saveHistory("RL:20260103120000",
+     *                                          "Added a new feature to the application.",
+     *                                          "v1.2.3",
+     *                                          "HEAD");
      *                               }</pre>
      */
-    public void saveHistory(@NotNull String title, @NotNull String content) {
+    public void saveHistory(@NotNull String title,
+                            @NotNull String content,
+                            @NotNull String startPoint,
+                            @NotNull String endPoint) {
         if (content.isBlank()) {
             return;
         }
@@ -453,7 +491,7 @@ public final class ChangelogToolWindowService {
                 if (document == null) {
                     return;
                 }
-                String fileContent = buildHistoryFileContent(title, content);
+                String fileContent = buildHistoryFileContent(title, content, startPoint, endPoint);
                 ApplicationManager.getApplication().runWriteAction(() -> document.setText(fileContent));
                 FileDocumentManager.getInstance().saveDocument(document);
                 refreshHistoryList();
@@ -916,7 +954,7 @@ public final class ChangelogToolWindowService {
                     continue;
                 }
                 items.add(new HistoryItem(file, content.title, category, file.getTimeStamp(), content.dateText,
-                                          actionKey));
+                                          actionKey, content.heading));
             }
             items.sort(Comparator.comparing(HistoryItem::category)
                            .thenComparing(HistoryItem::timeStamp, Comparator.reverseOrder()));
@@ -945,6 +983,9 @@ public final class ChangelogToolWindowService {
             return true;
         }
         if (content.body.toLowerCase().contains(query)) {
+            return true;
+        }
+        if (content.heading != null && content.heading.toLowerCase().contains(query)) {
             return true;
         }
         String categoryText = resolveCategoryText(actionKey, category);
@@ -981,7 +1022,8 @@ public final class ChangelogToolWindowService {
                     body = "";
                 }
             }
-            return new HistoryContent(title, body, frontMatter.dateText);
+            String heading = extractFirstHeading(body);
+            return new HistoryContent(title, body, frontMatter.dateText, heading);
         } catch (Exception ignored) {
             return null;
         }
@@ -1059,7 +1101,23 @@ public final class ChangelogToolWindowService {
      * @return 拼接后的文件内容字符串
      */
     private @NotNull String buildHistoryFileContent(@NotNull String title, @NotNull String content) {
-        String frontMatter = buildFrontMatter(title);
+        return buildHistoryFileContent(title, content, "", "");
+    }
+
+    /**
+     * 构建 History 文件内容
+     *
+     * @param title      标题
+     * @param content    内容
+     * @param startPoint 起始点
+     * @param endPoint   结束点
+     * @return 拼接后的文件内容字符串
+     */
+    private @NotNull String buildHistoryFileContent(@NotNull String title,
+                                                    @NotNull String content,
+                                                    @NotNull String startPoint,
+                                                    @NotNull String endPoint) {
+        String frontMatter = buildFrontMatter(title, startPoint, endPoint);
         return frontMatter + "\n" + HISTORY_FILE_TITLE_PREFIX + title + "\n\n" + content;
     }
 
@@ -1069,12 +1127,20 @@ public final class ChangelogToolWindowService {
      * @param title 标题
      * @return Frontmatter 内容
      */
-    private @NotNull String buildFrontMatter(@NotNull String title) {
+    private @NotNull String buildFrontMatter(@NotNull String title,
+                                             @NotNull String startPoint,
+                                             @NotNull String endPoint) {
         String date = LocalDateTime.now().format(FRONT_MATTER_DATE_FORMATTER);
         String abbreviation = ToolWindowTitleUtil.extractCategory(title);
         String actionKey = ToolWindowTitleUtil.getActionKeyByAbbreviation(abbreviation);
         String type = actionKey == null ? abbreviation : ChangelogBundle.message(actionKey);
-        return "---\n" + "date: " + date + "\n" + "type: " + type + "\n---";
+        return "---\n"
+               + "date: " + date + "\n"
+               + "type: " + type + "\n"
+               + "point:\n"
+               + "  start: " + startPoint + "\n"
+               + "  end: " + endPoint + "\n"
+               + "---";
     }
 
     /**
@@ -1124,6 +1190,8 @@ public final class ChangelogToolWindowService {
          * <p> 用于标识当前输出会话的标题
          */
         private final @NotNull String sessionTitle;
+        private final @NotNull String startPoint;
+        private final @NotNull String endPoint;
         /** 文本区域组件, 用于显示输出内容 */
         private final @Nullable JBTextArea textArea;
 
@@ -1136,15 +1204,21 @@ public final class ChangelogToolWindowService {
          *
          * @param service          会话所属的服务, 不能为空
          * @param sessionTitle     会话标题, 不能为空
+         * @param startPoint       起始点
+         * @param endPoint         结束点
          * @param textArea         关联的文本区域, 可以为 null
          * @param cancellationFlag 取消标志, 可以为 null
          */
         private ChangelogOutputSession(@NotNull ChangelogToolWindowService service,
                                        @NotNull String sessionTitle,
+                                       @NotNull String startPoint,
+                                       @NotNull String endPoint,
                                        @Nullable JBTextArea textArea,
                                        @Nullable AtomicBoolean cancellationFlag) {
             this.service = service;
             this.sessionTitle = sessionTitle;
+            this.startPoint = startPoint;
+            this.endPoint = endPoint;
             this.textArea = textArea;
             this.cancellationFlag = cancellationFlag;
         }
@@ -1200,7 +1274,7 @@ public final class ChangelogToolWindowService {
          */
         public void complete(@NotNull String text) {
             setText(text);
-            service.saveHistory(sessionTitle, text);
+            service.saveHistory(sessionTitle, text, startPoint, endPoint);
         }
     }
 
@@ -1219,7 +1293,8 @@ public final class ChangelogToolWindowService {
                                @NotNull String category,
                                long timeStamp,
                                @Nullable String dateText,
-                               @Nullable String actionKey) {
+                               @Nullable String actionKey,
+                               @Nullable String heading) {
         /**
          * 获取解析后的时间
          *
@@ -1249,13 +1324,33 @@ public final class ChangelogToolWindowService {
      */
     private record HistoryContent(@NotNull String title,
                                   @NotNull String body,
-                                  @Nullable String dateText) {
+                                  @Nullable String dateText,
+                                  @Nullable String heading) {
     }
 
     /**
      * Frontmatter 数据
      */
     private record FrontMatterData(@Nullable String dateText, @NotNull String body) {
+    }
+
+    /**
+     * 提取首个一级或二级标题
+     *
+     * @param body Markdown 正文
+     * @return 标题文本
+     */
+    private @Nullable String extractFirstHeading(@NotNull String body) {
+        for (String line : body.split("\n")) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("# ")) {
+                return trimmed.substring(2).trim();
+            }
+            if (trimmed.startsWith("## ")) {
+                return trimmed.substring(3).trim();
+            }
+        }
+        return null;
     }
 
     /**
@@ -1313,7 +1408,7 @@ public final class ChangelogToolWindowService {
                 return this;
             }
             String title = value.title();
-            String displayTitle = extractDisplayTitle(title);
+            String displayTitle = buildDisplayTitle(title, value.heading);
             titleLabel.setText(displayTitle);
             categoryLabel.setText(resolveCategoryText(value.actionKey, value.category()));
             categoryLabel.setIcon(resolveCategoryIcon(value.actionKey));
@@ -1335,12 +1430,27 @@ public final class ChangelogToolWindowService {
          * @param title 原始标题
          * @return 展示用标题
          */
+        private String buildDisplayTitle(@NotNull String title, @Nullable String heading) {
+            String baseTitle = extractDisplayTitle(title);
+            String fullTitle = heading == null || heading.isBlank()
+                               ? baseTitle
+                               : baseTitle + " - " + heading.trim();
+            return truncateTitle(fullTitle);
+        }
+
         private String extractDisplayTitle(@NotNull String title) {
             int index = title.indexOf(':');
             if (index > 0 && index < title.length() - 1) {
                 return title.substring(index + 1);
             }
             return title;
+        }
+
+        private String truncateTitle(@NotNull String title) {
+            if (title.length() <= HISTORY_TITLE_MAX_LENGTH) {
+                return title;
+            }
+            return title.substring(0, HISTORY_TITLE_MAX_LENGTH - 3) + "...";
         }
     }
 

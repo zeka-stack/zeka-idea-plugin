@@ -88,8 +88,10 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         }
 
         String title = ToolWindowTitleUtil.buildToolWindowTitle("action.generate.release.log");
+        SettingsState settings = SettingsState.getInstance();
+        RangePoints points = buildReleaseRangePoints(settings, gitRoot);
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
-            ChangelogToolWindowService.getInstance(project).openSession(title);
+            ChangelogToolWindowService.getInstance(project).openSession(title, points.start, points.end);
 
         ProgressManager.getInstance().run(new Task.Backgroundable(
             project, ChangelogBundle.message("action.generate.release.log.progress.title"), true) {
@@ -99,7 +101,6 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                 indicator.setText(ChangelogBundle.message("action.generate.release.log.progress.text"));
                 try {
                     outputSession.setText("");
-                    SettingsState settings = SettingsState.getInstance();
                     String range = buildRangeForSelection(selectedCommits, settings, gitRoot);
                     if (provider == ReleaseLogProvider.GIT_CLIFF) {
                         Path cliffConfigPath = resolveCliffConfigPath(gitRoot);
@@ -350,6 +351,42 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         if (headHash != null) {
             settings.lastUsedHash = headHash;
         }
+    }
+
+    /**
+     * 构建发布日志的范围点
+     *
+     * @param settings 配置
+     * @param gitRoot Git 根目录
+     * @return 范围点
+     */
+    @NotNull
+    private RangePoints buildReleaseRangePoints(@NotNull SettingsState settings, @NotNull Path gitRoot) {
+        String start = "";
+        if (settings.useTagAsStart) {
+            if (settings.lastUsedTag != null && !settings.lastUsedTag.isBlank()) {
+                start = settings.lastUsedTag;
+            } else {
+                String latestTag = resolveLatestTag(gitRoot);
+                if (latestTag != null) {
+                    start = latestTag;
+                }
+            }
+        } else if (settings.lastUsedHash != null && !settings.lastUsedHash.isBlank()) {
+            start = settings.lastUsedHash;
+        }
+        String end = "";
+        String headHash = resolveHeadHash(gitRoot);
+        if (headHash != null) {
+            end = headHash;
+        }
+        return new RangePoints(start, end);
+    }
+
+    /**
+     * 发布日志范围点
+     */
+    private record RangePoints(@NotNull String start, @NotNull String end) {
     }
 
     /**
