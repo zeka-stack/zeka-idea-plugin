@@ -713,16 +713,21 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      */
     @SuppressWarnings("DuplicatedCode")
     private void printWelcomeMessage() {
-        printWelcome("╔════════════════════════════════════════════════════════════════╗\n");
-        printWelcome("║          " + AICommonBundle.message("console.welcome.title") + "             ║\n");
-        printWelcome("╚════════════════════════════════════════════════════════════════╝\n");
+        int width = getConsoleWidthChars();
+        int innerWidth = clamp(width - 2, 40, 120);
+        int lineWidth = clamp(width, 40, 120);
+
+        String title = AICommonBundle.message("console.welcome.title");
+        printWelcome(boxTop(innerWidth));
+        printWelcome(boxLine(center(title, innerWidth)));
+        printWelcome(boxBottom(innerWidth));
         printWelcome("");
-        printWelcome(AICommonBundle.message("console.welcome.description") + "\n");
+        printWelcome("  " + AICommonBundle.message("console.welcome.description") + "\n");
         printWelcome("");
-        printWelcome(AICommonBundle.message("console.welcome.tips.title") + "\n");
-        printWelcome(AICommonBundle.message("console.welcome.tips.verbose.logging") + "\n");
-        printWelcome(AICommonBundle.message("console.welcome.tips.code.location") + "\n");
-        printWelcome("────────────────────────────────────────────────────────────────\n");
+        printWelcome("  " + AICommonBundle.message("console.welcome.tips.title") + "\n");
+        printWelcome("  " + AICommonBundle.message("console.welcome.tips.verbose.logging") + "\n");
+        printWelcome("  " + AICommonBundle.message("console.welcome.tips.code.location") + "\n");
+        printWelcome(repeat("─", lineWidth) + "\n");
     }
 
     /**
@@ -1038,6 +1043,61 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
             ensureConsolePanel();
         }
         return consoleView;
+    }
+
+    private int getConsoleWidthChars() {
+        Editor editor = getConsoleEditor();
+        if (editor == null) {
+            return 80;
+        }
+        int width = editor.getContentComponent().getWidth();
+        if (width <= 0) {
+            return 80;
+        }
+        int charWidth = editor.getContentComponent()
+            .getFontMetrics(editor.getContentComponent().getFont())
+            .charWidth('W');
+        if (charWidth <= 0) {
+            return 80;
+        }
+        return Math.max(40, width / charWidth);
+    }
+
+    private String boxTop(int innerWidth) {
+        return "╔" + repeat("═", innerWidth) + "╗\n";
+    }
+
+    private String boxBottom(int innerWidth) {
+        return "╚" + repeat("═", innerWidth) + "╝\n";
+    }
+
+    private String boxLine(@NotNull String content) {
+        return "║" + content + "║\n";
+    }
+
+    private String center(@NotNull String text, int width) {
+        if (text.length() >= width) {
+            return text.substring(0, width);
+        }
+        int padding = width - text.length();
+        int left = padding / 2;
+        int right = padding - left;
+        return repeat(" ", left) + text + repeat(" ", right);
+    }
+
+    private String repeat(@NotNull String value, int count) {
+        if (count <= 0) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder(count * value.length());
+        for (int i = 0; i < count; i++) {
+            builder.append(value);
+        }
+        return builder.toString();
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     /**

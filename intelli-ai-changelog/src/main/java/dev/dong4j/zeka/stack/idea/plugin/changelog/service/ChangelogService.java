@@ -48,6 +48,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -595,8 +596,10 @@ public final class ChangelogService {
         try {
             String result;
             if (verboseLogging) {
+                logChangelogRequest("stream", config, request);
                 result = callAIServiceStream(aiService, request, config);
             } else {
+                logChangelogRequest("single", config, request);
                 AIResponseListener listener = new ChangelogAIResponseListener(project);
                 result = aiService.generateContent(project, request, config, listener);
             }
@@ -857,6 +860,8 @@ public final class ChangelogService {
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         AtomicReference<String> resultRef = new AtomicReference<>();
 
+        logChangelogRequest("stream", config, request);
+
         AIStreamResponseListener listener = new AIStreamResponseListener() {
             /**
              * 调用外部监听器的 onStart 方法
@@ -943,6 +948,40 @@ public final class ChangelogService {
             throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
         }
         return result;
+    }
+
+    private void logChangelogRequest(@NotNull String mode,
+                                     @NotNull AIProviderConfig config,
+                                     @NotNull AIChatRequest request) {
+        AIConsoleLoggerUtil.printWithTimestamp(project,
+                                               String.format("Changelog 请求(%s): %s | %s | %s",
+                                                             mode,
+                                                             config.providerType,
+                                                             config.modelName,
+                                                             config.baseUrl));
+        AIConsoleLoggerUtil.print(project,
+                                  String.format("参数: temp=%s, maxTokens=%s, topP=%s, topK=%s, presencePenalty=%s, " +
+                                                "timeout=%s, maxRetries=%d",
+                                                config.modelParameters.temperature,
+                                                config.modelParameters.maxTokens,
+                                                config.modelParameters.topP,
+                                                config.modelParameters.topK,
+                                                config.modelParameters.presencePenalty,
+                                                config.runtimeSettings.timeout,
+                                                config.runtimeSettings.maxRetries));
+        AIConsoleLoggerUtil.print(project,
+                                  "System Prompt (" + request.systemPrompt().length() + " chars):\n" +
+                                  truncate(request.systemPrompt(), 2000));
+        AIConsoleLoggerUtil.print(project,
+                                  "User Prompt (" + request.userPrompt().length() + " chars):\n" +
+                                  truncate(request.userPrompt(), 2000));
+    }
+
+    private String truncate(@NotNull String text, int maxLength) {
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "\n...[truncated " + (text.length() - maxLength) + " chars]";
     }
 
     /**
