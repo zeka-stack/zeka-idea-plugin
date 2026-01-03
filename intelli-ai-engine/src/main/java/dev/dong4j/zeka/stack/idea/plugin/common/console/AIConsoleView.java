@@ -58,11 +58,31 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import lombok.Getter;
 
+
 /**
- * 获取 AI 控制台视图的单例实例
+ * AI 控制台视图服务类
+ * <p> 用于管理和显示 AI 控制台界面, 支持在 IntelliJ IDEA 的 Problems 工具窗口中集成控制台视图.
+ * <p> 该类实现了 Disposable 和 AIConsoleLogger 接口, 提供了初始化, 刷新, 显示控制台等功能.
+ * <p> 通过 Problems 工具窗口的标签页展示控制台日志信息, 并支持占位面板和控制台面板之间的切换.
+ * <p> 主要功能包括:
+ * <ul>
+ * <li> 初始化控制台视图 </li>
+ * <li> 确保控制台标签页可见 </li>
+ * <li> 刷新面板显示状态 </li>
+ * <li> 创建和管理控制台面板及占位面板 </li>
+ * </ul>
+ * <p> 使用示例:
+ * <pre>{@code
+ * AIConsoleView aiConsoleView = AIConsoleView.getInstance(project);
+ * aiConsoleView.initConsole();
+ * aiConsoleView.ensureTabVisible();
+ * }</pre>
  *
- * @param project 项目实例
- * @return AI 控制台视图实例
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.03
+ * @since 1.0.0
  */
 @Service(Service.Level.PROJECT)
 public final class AIConsoleView implements Disposable, AIConsoleLogger {
@@ -295,6 +315,9 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     private void showConsolePanel() {
         ensureConsolePanel();
         rootLayout.show(rootPanel, CARD_CONSOLE);
+        if (AIProviderSettings.getInstance().verboseLogging) {
+            printWelcomeIfNeeded();
+        }
     }
 
     /**
