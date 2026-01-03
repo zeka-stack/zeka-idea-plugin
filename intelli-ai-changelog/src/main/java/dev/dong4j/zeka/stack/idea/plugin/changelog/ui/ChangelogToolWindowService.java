@@ -98,7 +98,9 @@ import icons.ChangelogIcons;
 public final class ChangelogToolWindowService {
 
     /** 历史记录内容页标题 */
-    private static final String HISTORY_CONTENT_TITLE = "History";
+    private static String getHistoryContentTitle() {
+        return ChangelogBundle.message("toolwindow.history.title");
+    }
     /** 历史记录文件标题前缀, 用于标识文件中的标题信息 */
     private static final String HISTORY_FILE_TITLE_PREFIX = "Title: ";
     /** 历史记录存储目录名称 */
@@ -295,7 +297,7 @@ public final class ChangelogToolWindowService {
                 return;
             }
             ensureHistoryContent(toolWindow);
-            Content content = findContent(toolWindow, HISTORY_CONTENT_TITLE);
+            Content content = findContent(toolWindow, getHistoryContentTitle());
             if (content != null) {
                 toolWindow.getContentManager().setSelectedContent(content);
             }
@@ -558,7 +560,7 @@ public final class ChangelogToolWindowService {
      * @param toolWindow 工具窗口实例
      */
     private void ensureHistoryContent(@NotNull ToolWindow toolWindow) {
-        Content existing = findContent(toolWindow, HISTORY_CONTENT_TITLE);
+        Content existing = findContent(toolWindow, getHistoryContentTitle());
         if (existing != null) {
             if (historyTreeModel == null || historyTree == null || historyRootNode == null) {
                 toolWindow.getContentManager().removeContent(existing, false);
@@ -593,7 +595,7 @@ public final class ChangelogToolWindowService {
         historyTree.setRowHeight(JBUI.scale(30));
         historyTree.setOpaque(true);
         historyTree.setBackground(UIUtil.getTreeBackground());
-        historyTree.getEmptyText().setText("暂无历史记录");
+        historyTree.getEmptyText().setText(ChangelogBundle.message("toolwindow.history.empty.text"));
         historyTree.setToggleClickCount(0);
         historyTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         historyTree.setCellRenderer(new HistoryTreeCellRenderer());
@@ -714,7 +716,7 @@ public final class ChangelogToolWindowService {
         panel.add(new JBScrollPane(historyTree), BorderLayout.CENTER);
         panel.add(buildHistoryFooter(), BorderLayout.SOUTH);
 
-        historyContent = ContentFactory.getInstance().createContent(panel, HISTORY_CONTENT_TITLE, false);
+        historyContent = ContentFactory.getInstance().createContent(panel, getHistoryContentTitle(), false);
         historyContent.setCloseable(false);
         toolWindow.getContentManager().addContent(historyContent, 0);
         refreshHistoryList();
@@ -728,7 +730,7 @@ public final class ChangelogToolWindowService {
     private @NotNull JComponent buildHistoryFooter() {
         JPanel footer = new JPanel(new BorderLayout());
         footer.setBorder(JBUI.Borders.empty(4, 8));
-        historyStatsLabel = new JBLabel("共 0 条");
+        historyStatsLabel = new JBLabel(ChangelogBundle.message("toolwindow.history.stats.total", 0));
         historyStatsLabel.setForeground(JBColor.GRAY);
         footer.add(historyStatsLabel, BorderLayout.WEST);
         return footer;
@@ -777,7 +779,7 @@ public final class ChangelogToolWindowService {
      */
     private @NotNull JComponent buildHistoryFilterField() {
         historyFilterField = new JBTextField();
-        historyFilterField.getEmptyText().setText("筛选历史记录");
+        historyFilterField.getEmptyText().setText(ChangelogBundle.message("toolwindow.history.filter.placeholder"));
         historyFilterField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -890,8 +892,8 @@ public final class ChangelogToolWindowService {
      */
     private void deleteAllHistoryItems(@NotNull Tree tree) {
         int result = Messages.showYesNoDialog(project,
-                                              "确定要删除全部历史记录吗？",
-                                              "删除全部历史记录",
+                                              ChangelogBundle.message("toolwindow.history.delete.all.confirm"),
+                                              ChangelogBundle.message("toolwindow.history.delete.all.title"),
                                               Messages.getWarningIcon());
         if (result != Messages.YES) {
             return;
@@ -1002,8 +1004,10 @@ public final class ChangelogToolWindowService {
         }
         historyTree.setSelectionPath(path);
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem openItem = createHistoryMenuItem("在编辑器中打开", () -> openHistoryFileInEditor(item));
-        JMenuItem deleteItem = createHistoryMenuItem("删除", () -> deleteHistoryItem(item));
+        JMenuItem openItem = createHistoryMenuItem(ChangelogBundle.message("toolwindow.history.menu.open.in.editor"),
+                                                   () -> openHistoryFileInEditor(item));
+        JMenuItem deleteItem = createHistoryMenuItem(ChangelogBundle.message("toolwindow.history.menu.delete"),
+                                                     () -> deleteHistoryItem(item));
         menu.add(openItem);
         menu.add(deleteItem);
         menu.show(historyTree, e.getX(), e.getY());
@@ -1147,12 +1151,14 @@ public final class ChangelogToolWindowService {
         String categoryText = buildCategoryStatsText(items);
         String latestText = buildLatestTimeText(items);
         StringBuilder builder = new StringBuilder();
-        builder.append("共 ").append(count).append(" 条");
+        builder.append(ChangelogBundle.message("toolwindow.history.stats.total.prefix"))
+            .append(" ").append(count)
+            .append(ChangelogBundle.message("toolwindow.history.stats.total.suffix"));
         if (!categoryText.isBlank()) {
-            builder.append(" | 分类: ").append(categoryText);
+            builder.append(ChangelogBundle.message("toolwindow.history.stats.category")).append(" ").append(categoryText);
         }
         if (!latestText.isBlank()) {
-            builder.append(" | 最近: ").append(latestText);
+            builder.append(ChangelogBundle.message("toolwindow.history.stats.latest")).append(" ").append(latestText);
         }
         historyStatsLabel.setText(builder.toString());
     }
@@ -1876,8 +1882,8 @@ public final class ChangelogToolWindowService {
          * @param tree 历史记录树组件, 不能为 null
          */
         private DeleteAllHistoryAction(@NotNull Tree tree) {
-            super("Delete All",
-                  "Delete All",
+            super(ChangelogBundle.message("toolwindow.history.delete.all"),
+                  ChangelogBundle.message("toolwindow.history.delete.all.description"),
                   AllIcons.Actions.GC);
             this.tree = tree;
         }
