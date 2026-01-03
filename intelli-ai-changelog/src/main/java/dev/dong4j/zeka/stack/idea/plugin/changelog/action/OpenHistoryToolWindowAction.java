@@ -51,7 +51,7 @@ public class OpenHistoryToolWindowAction extends AnAction {
         e.getPresentation().setEnabled(enabled);
         e.getPresentation().setText(ChangelogBundle.message("action.open.history"));
         e.getPresentation().setDescription(ChangelogBundle.message("action.open.history.description"));
-        e.getPresentation().setIcon(ChangelogIcons.LOGS);
+        e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
     }
 
     /**
