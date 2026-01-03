@@ -92,6 +92,20 @@ public final class ToolWindowTitleUtil {
         if (index > 0) {
             return title.substring(0, index);
         }
+        int dashIndex = title.indexOf('-');
+        if (dashIndex > 0) {
+            String prefix = title.substring(0, dashIndex);
+            if (ABBREVIATION_TO_ACTION_KEY.containsKey(prefix)) {
+                return prefix;
+            }
+        }
+        int underscoreIndex = title.indexOf('_');
+        if (underscoreIndex > 0) {
+            String prefix = title.substring(0, underscoreIndex);
+            if (ABBREVIATION_TO_ACTION_KEY.containsKey(prefix)) {
+                return prefix;
+            }
+        }
         return title;
     }
 

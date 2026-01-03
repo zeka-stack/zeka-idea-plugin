@@ -106,8 +106,6 @@ public final class ChangelogToolWindowService {
     private static final String HISTORY_FILE_EXTENSION = ".md";
     /** 删除图标 */
     private static final Icon DELETE_ICON = AllIcons.Actions.Close;
-    /** 删除图标点击边距 */
-    private static final int DELETE_ICON_PADDING = 8;
     /** 分类标签背景色 */
     private static final JBColor CATEGORY_BG = new JBColor(new Color(0xE6E6E6), new Color(0x3D3D3D));
     /** 分类标签前景色 */
@@ -1148,7 +1146,7 @@ public final class ChangelogToolWindowService {
         }
         StringBuilder builder = new StringBuilder();
         for (Map.Entry<String, Integer> entry : counters.entrySet()) {
-            if (builder.length() > 0) {
+            if (!builder.isEmpty()) {
                 builder.append(", ");
             }
             builder.append(entry.getKey()).append(" ").append(entry.getValue());
@@ -1166,9 +1164,6 @@ public final class ChangelogToolWindowService {
         LocalDateTime latest = null;
         for (HistoryItem item : items) {
             LocalDateTime itemTime = item.resolveDateTime();
-            if (itemTime == null) {
-                continue;
-            }
             if (latest == null || itemTime.isAfter(latest)) {
                 latest = itemTime;
             }
@@ -1564,7 +1559,7 @@ public final class ChangelogToolWindowService {
          *
          * @return 时间对象
          */
-        private @Nullable LocalDateTime resolveDateTime() {
+        private @NotNull LocalDateTime resolveDateTime() {
             if (dateText != null) {
                 try {
                     return LocalDateTime.parse(dateText, FRONT_MATTER_DATE_FORMATTER);
@@ -1711,15 +1706,7 @@ public final class ChangelogToolWindowService {
         }
 
         private Color getHoverBackground(@NotNull JTree tree) {
-            Color background = UIUtil.getTreeSelectionBackground(false);
-            if (background != null) {
-                return background;
-            }
-            Color base = tree.getBackground();
-            if (base == null) {
-                return new JBColor(new Color(0xE6EEF7), new Color(0x2B2D30));
-            }
-            return base.brighter();
+            return UIUtil.getTreeSelectionBackground(false);
         }
 
         private String formatTimestamp(@NotNull HistoryItem item) {
