@@ -22,12 +22,12 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+
+import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffBinaryResolver;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffRunner;
@@ -37,6 +37,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
@@ -64,8 +65,16 @@ import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
  */
 public abstract class AbstractReleaseLogAction extends AnAction {
 
-    /** 用于格式化时间的日期时间格式器, 格式为 "HH:mm:ss" */
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    /**
+     * 获取动作的图标
+     * <p> 子类应该重写此方法以返回对应的图标
+     *
+     * @return 动作图标，可以为 null
+     */
+    @Nullable
+    protected Icon getIcon() {
+        return null;
+    }
 
     protected void generate(@NotNull Project project,
                             @NotNull Path gitRoot,
@@ -78,11 +87,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
             return;
         }
 
-        String title = ChangelogBundle.message(
-            "toolwindow.title.simple",
-            ChangelogBundle.message("action.generate.release.log"),
-            LocalTime.now().format(TIME_FORMATTER)
-                                              );
+        String title = ToolWindowTitleUtil.buildToolWindowTitle("action.generate.release.log");
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
             ChangelogToolWindowService.getInstance(project).openSession(title);
 
@@ -134,7 +139,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                     return;
                                 }
                                 String formattedText = MessageFormatter.format(fullText);
-                                outputSession.setText(formattedText);
+                                outputSession.complete(formattedText);
                             }
 
                             @Override

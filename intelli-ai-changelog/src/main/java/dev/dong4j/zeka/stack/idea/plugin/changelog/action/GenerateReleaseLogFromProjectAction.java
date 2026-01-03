@@ -12,6 +12,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import icons.ChangelogIcons;
@@ -44,6 +46,17 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
         e.getPresentation().setText(ChangelogBundle.message("action.generate.release.log"));
         e.getPresentation().setDescription(ChangelogBundle.message("action.generate.release.log.description"));
         e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
+    }
+
+    /**
+     * 获取动作的图标
+     *
+     * @return 动作图标
+     */
+    @Override
+    @NotNull
+    protected Icon getIcon() {
+        return ChangelogIcons.CHANGELOG_16;
     }
 
     /**
