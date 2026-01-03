@@ -1,6 +1,8 @@
 <p>IntelliAI Changelog is an IntelliJ IDEA plugin that uses AI to generate changelogs, reports, and commit messages.</p>
 <a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-changelog">GitHub</a> |
-<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a>
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
+<a href="https://ideaplugin.dong4j.site/changelog/landing.html">Homepage</a> |
+<a href="https://ideaplugin.dong4j.site/changelog/docs.html">Docs</a>
 <br/>
 <br/>
 <p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>: Seamlessly integrates with
@@ -12,20 +14,43 @@
 
 <h3>Features</h3>
 <ul>
-    <li><b>🚀 AI-Generated Changelogs</b>: Automatically generate changelogs based on Git commit history</li>
+    <li><b>⚡ SSE Streaming Output</b>: Powered by Engine's SSE (Server-Sent Events) technology, providing real-time streaming output for
+        fast response and better user experience
+    </li>
+    <li><b>📋 Release Log Generation</b>: Generate professional release logs using AI or git-cliff, supporting both project tree and Git Log
+        panel context menus, with automatic tracking of last generated hash or tag
+    </li>
+    <li><b>🚀 AI-Generated Changelogs</b>: Automatically generate changelogs based on Git commit history or code diff, suitable for projects
+        with non-standard Git logs
+    </li>
     <li><b>📅 Daily/Weekly Reports</b>: Generate daily and weekly reports based on Git commits</li>
-    <li><b>💬 Smart Commit Messages</b>: Automatically generate commit messages based on code changes (diff)</li>
-    <li><b>🤖 Multiple AI Provider Support</b>: Support for various AI services including Qwen, Ollama, OpenAI, and more</li>
-    <li><b>⌨️ Flexible Trigger Methods</b>: Trigger via Git Log context menu, Git commit panel, and more</li>
-    <li><b>📝 Customizable Templates</b>: Customize prompt templates for changelogs, daily reports, weekly reports, and commit messages</li>
-    <li><b>🌍 Internationalization Support</b>: Full support for Chinese and English</li>
+    <li><b>💬 Smart Commit Messages</b>: Automatically generate commit messages based on code changes (diff) in Git commit panel, supporting
+        real-time streaming output
+    </li>
+    <li><b>🤖 Multiple AI Provider Support</b>: Support for various AI services including Qwen, Ollama, OpenAI, and more, unified through
+        IntelliAI Engine
+    </li>
+    <li><b>⌨️ Flexible Trigger Methods</b>: Trigger via Git Log context menu, Git commit panel, project tree context menu, and more</li>
+    <li><b>📝 Customizable Templates</b>: Customize prompt templates for changelogs, daily reports, weekly reports, and commit messages, with
+        project-level configuration support (release.prompt, cliff.toml)
+    </li>
+    <li><b>🌍 Internationalization Support</b>: Full support for Chinese and English, controlled by Engine's unified language settings</li>
+    <li><b>📚 History Management</b>: View and manage changelog and release log history, saved as Markdown files in IDEA temporary directory
+    </li>
 </ul>
 
 <h3>Use Cases</h3>
 <ul>
-    <li><b>Changelog Generation</b>: Select commits in Git Log tool window and right-click to generate changelog</li>
+    <li><b>Release Log Generation</b>: Generate professional release logs using AI or git-cliff, accessible via project tree or Git Log
+        panel context menu
+    </li>
+    <li><b>Changelog Generation</b>: Select commits in Git Log tool window and right-click to generate changelog, or generate based on code
+        diff for projects with non-standard Git logs
+    </li>
     <li><b>Daily/Weekly Reports</b>: Quickly generate daily and weekly reports based on Git commits</li>
-    <li><b>Commit Message Generation</b>: Automatically generate commit messages in Git commit panel based on code changes</li>
+    <li><b>Commit Message Generation</b>: Automatically generate commit messages in Git commit panel based on code changes with real-time
+        streaming output
+    </li>
 </ul>
 
 <h3>Quick Start</h3>
@@ -62,20 +87,26 @@
 
 <h3>功能特性</h3>
 <ul>
-    <li><b>🚀 AI 生成变更日志</b>：基于 Git 提交记录自动生成变更日志</li>
+    <li><b>⚡ SSE 流式输出</b>：基于 Engine 的 SSE（Server-Sent Events）技术实现，提供实时流式输出，快速响应，提升用户体验</li>
+    <li><b>📋 Release Log 生成</b>：支持使用 AI 或 git-cliff 两种方式生成专业的 Release Log，支持项目树和 Git Log 面板右键菜单，自动记录最后一次生成的
+        hash 或 tag
+    </li>
+    <li><b>🚀 AI 生成变更日志</b>：基于 Git 提交记录或代码差异自动生成变更日志，适用于 Git Log 不规范的项目场景</li>
     <li><b>📅 工作日报/周报生成</b>：根据 Git 提交记录自动生成工作日报和周报</li>
-    <li><b>💬 智能提交记录</b>：根据代码变更（diff）自动生成提交记录</li>
-    <li><b>🤖 多种 AI 提供商支持</b>：支持通义千问、Ollama、OpenAI 等多种 AI 服务</li>
-    <li><b>⌨️ 灵活的触发方式</b>：可通过 Git Log 右键菜单、Git 提交面板等多种方式触发</li>
-    <li><b>📝 自定义模板</b>：支持自定义变更日志、日报、周报和提交记录的提示词模板</li>
-    <li><b>🌍 国际化支持</b>：完整的中英文多语言支持</li>
+    <li><b>💬 智能提交记录</b>：在 Git 提交面板中，根据代码变更（diff）自动生成提交记录，支持实时流式输出，推荐使用非思考模型以快速响应</li>
+    <li><b>🤖 多种 AI 提供商支持</b>：通过 IntelliAI Engine 统一支持通义千问、Ollama、OpenAI 等多种 AI 服务</li>
+    <li><b>⌨️ 灵活的触发方式</b>：可通过 Git Log 右键菜单、Git 提交面板、项目树右键菜单等多种方式触发</li>
+    <li><b>📝 自定义模板</b>：支持自定义变更日志、日报、周报和提交记录的提示词模板，支持项目级配置（release.prompt、cliff.toml）</li>
+    <li><b>🌍 国际化支持</b>：完整的中英文多语言支持，由 Engine 统一控制输出语言，所有子插件共享此配置</li>
+    <li><b>📚 历史记录管理</b>：查看和管理变更日志和 Release Log 历史记录，以 Markdown 文件形式保存在 IDEA 临时目录中</li>
 </ul>
 
 <h3>使用场景</h3>
 <ul>
-    <li><b>变更日志生成</b>：在 Git Log 工具窗口中选择提交记录，右键生成变更日志</li>
+    <li><b>Release Log 生成</b>：使用 AI 或 git-cliff 生成专业的 Release Log，可通过项目树或 Git Log 面板右键菜单访问</li>
+    <li><b>变更日志生成</b>：在 Git Log 工具窗口中选择提交记录，右键生成变更日志；或基于代码差异生成，适用于 Git Log 不规范的项目</li>
     <li><b>工作日报/周报</b>：快速生成基于 Git 提交的工作日报和周报</li>
-    <li><b>提交记录生成</b>：在 Git 提交面板中，根据代码变更自动生成提交记录</li>
+    <li><b>提交记录生成</b>：在 Git 提交面板中，根据代码变更自动生成提交记录，支持实时流式输出</li>
 </ul>
 
 <h3>快速开始</h3>
