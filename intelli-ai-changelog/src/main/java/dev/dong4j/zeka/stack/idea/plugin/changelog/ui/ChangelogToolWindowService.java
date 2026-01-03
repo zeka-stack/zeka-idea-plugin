@@ -14,6 +14,7 @@ import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
@@ -87,7 +88,7 @@ public final class ChangelogToolWindowService {
     /** 历史记录文件的扩展名, 用于标识历史记录文件的格式 */
     private static final String HISTORY_FILE_EXTENSION = ".md";
     /** 删除图标 */
-    private static final Icon DELETE_ICON = AllIcons.Actions.GC;
+    private static final Icon DELETE_ICON = AllIcons.Actions.Close;
     /** 删除图标点击边距 */
     private static final int DELETE_ICON_PADDING = 8;
     /** 分类标签背景色 */
@@ -524,7 +525,7 @@ public final class ChangelogToolWindowService {
      */
     private @NotNull ActionToolbar buildHistoryToolbar(@NotNull JBList<HistoryItem> list) {
         DefaultActionGroup group = new DefaultActionGroup();
-        group.add(new DeleteHistoryAction(list));
+        group.add(new DeleteAllHistoryAction(list));
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ChangelogHistory", group, true);
         toolbar.setTargetComponent(list);
         return toolbar;
@@ -577,6 +578,44 @@ public final class ChangelogToolWindowService {
     }
 
     /**
+     * 删除全部历史记录
+     *
+     * @param list 历史记录列表
+     */
+    private void deleteAllHistoryItems(@NotNull JBList<HistoryItem> list) {
+        int result = Messages.showYesNoDialog(project,
+                                              "确定要删除全部历史记录吗？",
+                                              "删除全部历史记录",
+                                              Messages.getWarningIcon());
+        if (result != Messages.YES) {
+            return;
+        }
+        ApplicationManager.getApplication().invokeLater(() -> {
+            VirtualFile historyDir = getHistoryDir();
+            if (historyDir == null) {
+                return;
+            }
+            try {
+                ApplicationManager.getApplication().runWriteAction(() -> {
+                    for (VirtualFile file : historyDir.getChildren()) {
+                        if (file.isDirectory() || !file.getName().endsWith(HISTORY_FILE_EXTENSION)) {
+                            continue;
+                        }
+                        try {
+                            file.delete(this);
+                        } catch (Exception ignored) {
+                            // 忽略删除异常
+                        }
+                    }
+                });
+            } finally {
+                list.clearSelection();
+                refreshHistoryList();
+            }
+        });
+    }
+
+    /**
      * 打开选中的历史记录
      * <p> 从历史记录列表中获取选中的历史记录项, 并加载其内容, 然后在新的输出会话中显示该内容.
      *
@@ -595,10 +634,37 @@ public final class ChangelogToolWindowService {
                 return;
             }
             ApplicationManager.getApplication().invokeLater(() -> {
+                if (selectExistingContent(content.title)) {
+                    return;
+                }
                 ChangelogOutputSession session = openSession(content.title);
                 session.setText(content.body);
             });
         });
+    }
+
+    /**
+     * 选择已存在的内容页
+     *
+     * @param title 内容标题
+     * @return 如果找到并选中则返回 true
+     */
+    private boolean selectExistingContent(@NotNull String title) {
+        ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(PluginContents.PLUGIN_NAME);
+        if (toolWindow == null) {
+            return false;
+        }
+        Content existing = findContent(toolWindow, title);
+        if (existing == null) {
+            return false;
+        }
+        toolWindow.getContentManager().setSelectedContent(existing);
+        if (toolWindow instanceof ToolWindowEx toolWindowEx) {
+            toolWindowEx.activate(null, true, true);
+        } else {
+            toolWindow.activate(null, true, true);
+        }
+        return true;
     }
 
     /**
@@ -1019,10 +1085,9 @@ public final class ChangelogToolWindowService {
     }
 
     /**
-     * 删除历史记录操作类
-     * <p>该内部类用于实现删除选中历史记录项的功能, 通常作为 IntelliJ 平台插件中的一个动作 (Action) 使用.
-     * <p>该类继承自 AnAction, 并在 actionPerformed 方法中实现了删除逻辑. 通过调用 HistoryItem 的 delete 方法执行文件删除操作,
-     * 并在完成后刷新历史记录列表.
+     * 删除全部历史记录操作类
+     * <p>该内部类用于实现删除所有历史记录项的功能, 通常作为 IntelliJ 平台插件中的一个动作 (Action) 使用.
+     * <p>该类继承自 AnAction, 并在 actionPerformed 方法中触发二次确认后批量删除历史文件, 完成后刷新历史记录列表.
      *
      * @author dong4j
      * @version 1.0.0
@@ -1030,7 +1095,7 @@ public final class ChangelogToolWindowService {
      * @date 2026.01.03
      * @since 1.0.0
      */
-    private final class DeleteHistoryAction extends AnAction {
+    private final class DeleteAllHistoryAction extends AnAction {
         /**
          * 包含历史记录项的列表组件
          *
@@ -1040,32 +1105,28 @@ public final class ChangelogToolWindowService {
         private final JBList<HistoryItem> list;
 
         /**
-         * 构造函数, 初始化删除历史记录动作
+         * 构造函数, 初始化删除全部历史记录动作
          * <p> 设置动作名称, 描述和图标, 并将传入的列表组件赋值给成员变量
          *
          * @param list 历史记录列表组件, 不能为 null
          */
-        private DeleteHistoryAction(@NotNull JBList<HistoryItem> list) {
-            super("Delete",
-                  "Delete",
+        private DeleteAllHistoryAction(@NotNull JBList<HistoryItem> list) {
+            super("Delete All",
+                  "Delete All",
                   AllIcons.Actions.GC);
             this.list = list;
         }
 
         /**
-         * 处理删除历史记录的动作
-         * <p> 从列表中获取选中的历史记录项, 并尝试删除其关联的文件. 如果删除成功, 刷新历史记录列表.
+         * 处理删除全部历史记录的动作
+         * <p> 执行二次确认后批量删除历史目录下的记录文件, 并刷新历史记录列表.
          * <p> 此方法在事件发生时被调用, 确保在 UI 线程中安全地执行文件删除操作.
          *
          * @param e 动作事件对象, 包含触发事件的上下文信息, 不能为 null
          */
         @Override
         public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
-            HistoryItem selected = list.getSelectedValue();
-            if (selected == null) {
-                return;
-            }
-            deleteHistoryItem(selected);
+            deleteAllHistoryItems(list);
         }
     }
 
