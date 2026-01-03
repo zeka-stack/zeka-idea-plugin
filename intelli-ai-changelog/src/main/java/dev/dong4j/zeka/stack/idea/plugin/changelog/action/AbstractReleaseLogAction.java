@@ -1,7 +1,14 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationAction;
+import com.intellij.notification.NotificationGroup;
+import com.intellij.notification.NotificationGroupManager;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -85,10 +92,30 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         ReleaseLogProvider provider = SettingsState.getInstance().releaseLog;
         Path binary = GitCliffBinaryResolver.resolve();
         if (provider == ReleaseLogProvider.GIT_CLIFF && binary == null) {
-            NotificationUtil.showError(project, ChangelogBundle.message("gitcliff.binary.missing"));
+            showGitCliffDownloadNotification(project, gitRoot, selectedCommits, updateLastUsedRange);
             return;
         }
 
+        // 执行生成操作
+        executeGenerateWithProvider(project, gitRoot, selectedCommits, updateLastUsedRange, provider, binary);
+    }
+
+    /**
+     * 执行生成操作（根据 provider 选择不同的生成方式）
+     *
+     * @param project             项目对象
+     * @param gitRoot             Git 仓库根路径
+     * @param selectedCommits     选定的提交列表
+     * @param updateLastUsedRange 是否更新最近使用的范围
+     * @param provider            发布日志提供者
+     * @param binary              git-cliff 二进制文件路径（如果使用 git-cliff，可以为 null）
+     */
+    private void executeGenerateWithProvider(@NotNull Project project,
+                                             @NotNull Path gitRoot,
+                                             @NotNull List<VcsFullCommitDetails> selectedCommits,
+                                             boolean updateLastUsedRange,
+                                             @NotNull ReleaseLogProvider provider,
+                                             @Nullable Path binary) {
         String title = ToolWindowTitleUtil.buildToolWindowTitle("action.generate.release.log");
         SettingsState settings = SettingsState.getInstance();
         RangePoints points = buildReleaseRangePoints(settings, gitRoot);
@@ -108,6 +135,9 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                     outputSession.setText("");
                     String range = buildRangeForSelection(selectedCommits, settings, gitRoot);
                     if (provider == ReleaseLogProvider.GIT_CLIFF) {
+                        if (binary == null) {
+                            throw new IllegalStateException("git-cliff binary is required but not found");
+                        }
                         Path cliffConfigPath = resolveCliffConfigPath(gitRoot);
                         String config = cliffConfigPath == null ? settings.gitCliffConfig : null;
                         List<String> args = buildGitCliffArgs(settings, range, cliffConfigPath);
@@ -487,5 +517,107 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         } catch (Exception ignored) {
             return 0;
         }
+    }
+
+    /**
+     * 显示 git-cliff 下载通知
+     * <p> 当检测到 git-cliff 二进制文件不存在时，显示通知并提供下载操作
+     *
+     * @param project             项目对象
+     * @param gitRoot             Git 仓库根路径
+     * @param selectedCommits     选定的提交列表
+     * @param updateLastUsedRange 是否更新最近使用的范围
+     */
+    private void showGitCliffDownloadNotification(@NotNull Project project,
+                                                  @NotNull Path gitRoot,
+                                                  @NotNull List<VcsFullCommitDetails> selectedCommits,
+                                                  boolean updateLastUsedRange) {
+        NotificationGroup notificationGroup = NotificationGroupManager.getInstance()
+            .getNotificationGroup("IntelliAI Changelog Notifications");
+        if (notificationGroup == null) {
+            NotificationUtil.showError(project, ChangelogBundle.message("gitcliff.binary.missing"));
+            return;
+        }
+
+        Notification notification = notificationGroup.createNotification(
+            ChangelogBundle.message("gitcliff.binary.missing"),
+            ChangelogBundle.message("gitcliff.download.prompt"),
+            NotificationType.INFORMATION
+                                                                        );
+
+        // 添加下载操作
+        notification.addAction(new NotificationAction(
+            ChangelogBundle.message("gitcliff.download.action")) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e,
+                                        @NotNull Notification notification) {
+                notification.expire();
+                downloadAndInstallGitCliff(project, gitRoot, selectedCommits, updateLastUsedRange);
+            }
+        });
+
+        notification.notify(project);
+    }
+
+    /**
+     * 下载并安装 git-cliff，然后继续执行生成操作
+     *
+     * @param project             项目对象
+     * @param gitRoot             Git 仓库根路径
+     * @param selectedCommits     选定的提交列表
+     * @param updateLastUsedRange 是否更新最近使用的范围
+     */
+    private void downloadAndInstallGitCliff(@NotNull Project project,
+                                            @NotNull Path gitRoot,
+                                            @NotNull List<VcsFullCommitDetails> selectedCommits,
+                                            boolean updateLastUsedRange) {
+        ProgressManager.getInstance().run(new Task.Backgroundable(
+            project, ChangelogBundle.message("gitcliff.download.progress.title"), true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    // 下载并安装 git-cliff
+                    Path binary = GitCliffDownloadManager.downloadAndInstall(indicator, null);
+
+                    // 下载完成后，设置 provider 为 GIT_CLIFF
+                    SettingsState settings = SettingsState.getInstance();
+                    settings.releaseLog = ReleaseLogProvider.GIT_CLIFF;
+                    ApplicationManager.getApplication().saveSettings();
+
+                    // 继续执行生成操作（直接执行生成逻辑，不再检查二进制文件）
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        if (project.isDisposed()) {
+                            return;
+                        }
+                        executeGenerate(project, gitRoot, selectedCommits, updateLastUsedRange, binary);
+                    });
+                } catch (Exception e) {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        NotificationUtil.showError(project,
+                                                   ChangelogBundle.message("gitcliff.download.error", e.getMessage()));
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 执行生成操作（内部方法，不检查二进制文件）
+     * <p> 直接使用 git-cliff 执行生成操作，用于下载完成后的后续操作
+     *
+     * @param project             项目对象
+     * @param gitRoot             Git 仓库根路径
+     * @param selectedCommits     选定的提交列表
+     * @param updateLastUsedRange 是否更新最近使用的范围
+     * @param binary              git-cliff 二进制文件路径
+     */
+    private void executeGenerate(@NotNull Project project,
+                                 @NotNull Path gitRoot,
+                                 @NotNull List<VcsFullCommitDetails> selectedCommits,
+                                 boolean updateLastUsedRange,
+                                 @NotNull Path binary) {
+        // 直接调用 executeGenerateWithProvider，传入 GIT_CLIFF provider 和 binary
+        executeGenerateWithProvider(project, gitRoot, selectedCommits, updateLastUsedRange,
+                                    ReleaseLogProvider.GIT_CLIFF, binary);
     }
 }
