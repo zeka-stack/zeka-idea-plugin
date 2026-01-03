@@ -206,8 +206,10 @@ public abstract class AbstractGitLogAction extends AnAction {
         // 创建工具窗口输出会话，便于流式输出与复制
         // 标题格式为：简称:时间戳（例如：CM:14:30:25）
         String toolWindowTitle = ToolWindowTitleUtil.buildToolWindowTitle(getTextKey());
+        String startPoint = selectedHashes.get(0);
+        String endPoint = selectedHashes.get(selectedHashes.size() - 1);
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
-            ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle);
+            ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle, startPoint, endPoint);
 
         // 在后台任务中生成内容
         String progressTitle = ChangelogBundle.message(getProgressTitleKey());
