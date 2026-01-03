@@ -457,6 +457,10 @@ public final class ChangelogToolWindowService {
                 if (index < 0) {
                     return;
                 }
+                Rectangle bounds = historyList.getCellBounds(index, index);
+                if (bounds == null || !bounds.contains(e.getPoint())) {
+                    return;
+                }
                 historyList.setSelectedIndex(index);
                 if (isDeleteClick(e, index)) {
                     deleteHistoryItem(historyList.getModel().getElementAt(index));
