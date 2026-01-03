@@ -66,7 +66,11 @@ https://api-inference.modelscope.cn/v1/chat/completions
 
 ## 2025.12.31
 
-- [ ] 将自定义语言从 javadoc 中迁移到 engine 中, 这样所有子插件就可以使用
+- [x] 将自定义语言从 javadoc 中迁移到 engine 中, 这样所有子插件就可以使用
+
+## 2026.01.03
+
+- [ ] 模型下拉框可模糊搜索
 
 ## 功能增强建议
 
