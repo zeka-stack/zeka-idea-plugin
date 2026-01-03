@@ -7,11 +7,19 @@
 # 3. 从 plugin.xml 中提取插件名称
 # 4. 生成一个聚合的 HTML 页面，包含所有插件的更新日志
 # 5. 生成的页面使用现代化的深色主题样式，每个插件以卡片形式展示
+# 6. 解析 Engine 插件的最新版本号（从 intelli-ai-engine/includes/pluginChanges.html）
+# 7. 提取最新版本的中英文更新说明，创建版本文件（如 2025_3_1.html）
+# 8. 自动更新 InternalWhatsNewProvider.java，添加版本映射关系
 #
 # 输出文件：
-# 1. 主目录下的 latest.html
+# 1. 主目录下的 latest.html（聚合所有插件的更新日志）
 # 2. intelli-ai-engine/src/main/resources/whatsnew/latest.html（自动拷贝）
-# 该文件用于在 IDE 中显示 "What's New" 对话框
+#    该文件用于在 IDE 中显示 "What's New" 对话框
+# 3. intelli-ai-engine/src/main/resources/whatsnew/{version}.html（如 2025_3_1.html）
+#    该文件包含 Engine 插件特定版本的更新说明，用于 IDE 帮助菜单中的版本历史
+#
+# 自动更新：
+# - InternalWhatsNewProvider.java：在 // version mark 注释后自动添加新版本映射
 
 set -euo pipefail
 
@@ -774,4 +782,99 @@ echo "Generated: $OUTPUT_FILE"
 mkdir -p "$TARGET_DIR"
 cp "$OUTPUT_FILE" "$TARGET_DIR/latest.html"
 echo "Copied to: $TARGET_DIR/latest.html"
+
+# 解析 Engine 插件的最新版本并创建版本文件
+ENGINE_CHANGES_FILE="$ENGINE_DIR/includes/pluginChanges.html"
+if [ -f "$ENGINE_CHANGES_FILE" ]; then
+    echo ""
+    echo "解析 Engine 插件最新版本..."
+    
+    # 提取第一个 <h3> 标签中的版本号（去除 HTML 标签）
+    LATEST_VERSION=$(grep -m 1 "<h3>" "$ENGINE_CHANGES_FILE" | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    if [ -n "$LATEST_VERSION" ]; then
+        echo "  最新版本: $LATEST_VERSION"
+        
+        # 将版本号转换为文件名格式（如 2025.3.1 -> 2025_3_1）
+        VERSION_FILE_NAME=$(echo "$LATEST_VERSION" | sed 's/\./_/g')
+        VERSION_HTML_FILE="$TARGET_DIR/${VERSION_FILE_NAME}.html"
+        
+        # 提取第一个版本块的内容（从第一个版本号到下一个不同版本号之前）
+        # 使用兼容 BSD awk 和 GNU awk 的方法提取包含中英文两个版本块的完整内容
+        awk -v latest_version="$LATEST_VERSION" '
+            BEGIN {
+                in_version_block = 0
+                version_started = 0
+            }
+            /<h3>/ {
+                # 提取当前行的版本号（兼容 BSD awk）
+                if (match($0, /<h3>[^<]+<\/h3>/)) {
+                    # 提取匹配的版本号部分
+                    matched = substr($0, RSTART, RLENGTH)
+                    # 移除 HTML 标签
+                    gsub(/<[^>]+>/, "", matched)
+                    current_version = matched
+                    gsub(/^[[:space:]]+|[[:space:]]+$/, "", current_version)
+                    
+                    if (!version_started) {
+                        # 找到第一个版本号，开始提取
+                        if (current_version == latest_version) {
+                            in_version_block = 1
+                            version_started = 1
+                            print $0
+                            next
+                        }
+                    } else {
+                        # 如果已经开始了，检查是否是下一个不同版本号
+                        if (current_version != latest_version) {
+                            # 遇到下一个不同版本号，停止提取
+                            exit
+                        }
+                    }
+                }
+            }
+            {
+                if (in_version_block) {
+                    print $0
+                }
+            }
+        ' "$ENGINE_CHANGES_FILE" > "$VERSION_HTML_FILE"
+        
+        if [ -s "$VERSION_HTML_FILE" ]; then
+            echo "  覆盖版本文件: $VERSION_HTML_FILE"
+        else
+            echo "  警告: 版本文件内容为空，可能提取失败"
+        fi
+        
+        # 更新 InternalWhatsNewProvider.java 文件
+        PROVIDER_JAVA_FILE="$ENGINE_DIR/src/main/java/dev/dong4j/zeka/stack/idea/plugin/common/whatsnew/InternalWhatsNewProvider.java"
+        if [ -f "$PROVIDER_JAVA_FILE" ]; then
+            echo "  更新 InternalWhatsNewProvider.java..."
+            
+            # 检查是否已存在该版本的映射
+            if grep -q "\"$LATEST_VERSION\"" "$PROVIDER_JAVA_FILE"; then
+                echo "    版本 $LATEST_VERSION 已存在，跳过添加"
+            else
+                # 创建临时文件，在 // version mark 注释后添加新的映射
+                TEMP_FILE=$(mktemp)
+                awk -v version="$LATEST_VERSION" -v filename="${VERSION_FILE_NAME}.html" '
+                    /\/\/ version mark/ {
+                        print $0
+                        print "        new DefaultWhatsNewPage(\"" version "\", \"" filename "\"),"
+                        next
+                    }
+                    { print }
+                ' "$PROVIDER_JAVA_FILE" > "$TEMP_FILE"
+                mv "$TEMP_FILE" "$PROVIDER_JAVA_FILE"
+                echo "    已添加版本映射: $LATEST_VERSION -> ${VERSION_FILE_NAME}.html"
+            fi
+        else
+            echo "  警告: 找不到 InternalWhatsNewProvider.java 文件: $PROVIDER_JAVA_FILE"
+        fi
+    else
+        echo "  警告: 无法解析最新版本号"
+    fi
+else
+    echo "  警告: 找不到 Engine 插件更新日志文件: $ENGINE_CHANGES_FILE"
+fi
 
