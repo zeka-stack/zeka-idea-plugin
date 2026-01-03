@@ -28,6 +28,9 @@
 # 部署 engine 插件（完整流程：更新版本 → 发布 → 上传 ZIP → 部署 site → 部署 Nginx）
 ./deploy.sh engine -v 2025.3.1
 
+# 只指定插件名，按顺序执行 -p, -z, -d 三个操作
+./deploy.sh engine
+
 # 仅上传 ZIP 文件
 ./deploy.sh engine -z
 

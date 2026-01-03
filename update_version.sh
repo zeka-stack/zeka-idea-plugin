@@ -8,6 +8,7 @@
 # 1. 只处理白名单中指定的插件
 # 2. 更新每个插件 gradle.properties 中的 pluginVersion、kitVersion、engineVersion
 # 3. 只更新存在的字段，不存在的字段跳过
+# 4. 同步更新 ideaplugin.dong4j.site.conf 中的版本号
 
 set -e
 
@@ -129,6 +130,40 @@ for PLUGIN_DIR in "${PLUGIN_WHITELIST[@]}"; do
         fi
     done
 done
+
+# 更新 nginx 配置文件中的版本号
+echo ""
+echo "----------------------------------------"
+echo "更新 Nginx 配置文件"
+NGINX_CONF="$SCRIPT_DIR/ideaplugin.dong4j.site.conf"
+
+if [ -f "$NGINX_CONF" ]; then
+    # 检查是否存在版本号配置行
+    if grep -q 'return 200 "' "$NGINX_CONF"; then
+        # 更新版本号（匹配 return 200 "版本号"; 格式）
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS 使用 sed -i ''
+            sed -i '' "s/return 200 \"[^\"]*\";/return 200 \"${NEW_VERSION}\";/" "$NGINX_CONF"
+        else
+            # Linux 使用 sed -i
+            sed -i "s/return 200 \"[^\"]*\";/return 200 \"${NEW_VERSION}\";/" "$NGINX_CONF"
+        fi
+        echo "  ✓ 已更新 $NGINX_CONF 中的版本号为: $NEW_VERSION"
+        
+        # 验证更新结果
+        CURRENT_NGINX_VERSION=$(grep 'return 200 "' "$NGINX_CONF" | sed -n 's/.*return 200 "\([^"]*\)";/\1/p' | head -n 1)
+        if [ "$CURRENT_NGINX_VERSION" = "$NEW_VERSION" ]; then
+            echo "    ✓ 验证成功: return 200 \"${CURRENT_NGINX_VERSION}\""
+        else
+            echo "    ✗ 验证失败: 期望 $NEW_VERSION，实际 $CURRENT_NGINX_VERSION"
+            ((ERROR_COUNT++))
+        fi
+    else
+        echo "  ⚠️  跳过: 未找到版本号配置行"
+    fi
+else
+    echo "  ⚠️  跳过: $NGINX_CONF 文件不存在"
+fi
 
 # 输出总结
 echo ""
