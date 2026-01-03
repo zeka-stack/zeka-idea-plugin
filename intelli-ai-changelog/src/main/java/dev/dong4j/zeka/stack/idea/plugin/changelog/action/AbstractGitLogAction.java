@@ -14,8 +14,6 @@ import com.intellij.vcs.log.VcsLogDataKeys;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogResultDialog;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
@@ -205,12 +204,8 @@ public abstract class AbstractGitLogAction extends AnAction {
         }
 
         // 创建工具窗口输出会话，便于流式输出与复制
-        // 标题包含动作名称与提交数，便于区分多次生成
-        String toolWindowTitle = ChangelogBundle.message(
-            "toolwindow.title.short",
-            ChangelogBundle.message(getTextKey()),
-            selectedHashes.size(),
-            LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        // 标题格式为：简称:时间戳（例如：CM:14:30:25）
+        String toolWindowTitle = ToolWindowTitleUtil.buildToolWindowTitle(getTextKey());
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
             ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle);
 
@@ -254,7 +249,7 @@ public abstract class AbstractGitLogAction extends AnAction {
                         @Override
                         public void onComplete(@NotNull String fullText) {
                             String formattedText = MessageFormatter.format(fullText);
-                            outputSession.setText(formattedText);
+                            outputSession.complete(formattedText);
                         }
                     };
 

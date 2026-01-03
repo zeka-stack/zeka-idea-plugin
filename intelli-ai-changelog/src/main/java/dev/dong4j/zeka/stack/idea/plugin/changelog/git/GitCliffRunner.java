@@ -96,7 +96,7 @@ public final class GitCliffRunner {
         // 格式化输出结果
         String formattedResult = MessageFormatter.format(result);
         // 更新 toolwindow 中的最终结果（替换流式输出的原始内容）
-        outputSession.setText(formattedResult);
+        outputSession.complete(formattedResult);
         return formattedResult;
     }
 }
