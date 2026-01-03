@@ -531,7 +531,7 @@ public final class ChangelogToolWindowService {
         if (content.isBlank()) {
             return;
         }
-        ApplicationManager.getApplication().invokeLater(() -> {
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 VirtualFile file = createHistoryScratchFile(title);
                 if (file == null) {
@@ -542,9 +542,14 @@ public final class ChangelogToolWindowService {
                     return;
                 }
                 String fileContent = buildHistoryFileContent(title, content, startPoint, endPoint, provider);
-                ApplicationManager.getApplication().runWriteAction(() -> document.setText(fileContent));
-                FileDocumentManager.getInstance().saveDocument(document);
-                refreshHistoryList();
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed()) {
+                        return;
+                    }
+                    ApplicationManager.getApplication().runWriteAction(() -> document.setText(fileContent));
+                    FileDocumentManager.getInstance().saveDocument(document);
+                    refreshHistoryList();
+                });
             } catch (Exception ignored) {
                 // 忽略写入异常，避免影响主流程
             }
