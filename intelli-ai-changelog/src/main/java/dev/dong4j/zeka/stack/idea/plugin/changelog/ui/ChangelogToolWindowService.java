@@ -68,6 +68,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -650,7 +651,7 @@ public final class ChangelogToolWindowService {
                 historyTree.setSelectionPath(path);
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 Object userObject = node.getUserObject();
-                if (isDeleteClick(e, row)) {
+                if (SwingUtilities.isLeftMouseButton(e) && isDeleteClick(e, row)) {
                     if (userObject instanceof HistoryItem item) {
                         deleteHistoryItem(item);
                     } else if (userObject instanceof HistoryGroup) {
@@ -658,7 +659,7 @@ public final class ChangelogToolWindowService {
                     }
                     return;
                 }
-                if (e.getClickCount() == 2) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
                     if (userObject instanceof HistoryGroup) {
                         if (historyTree.isExpanded(path)) {
                             historyTree.collapsePath(path);
@@ -1001,13 +1002,40 @@ public final class ChangelogToolWindowService {
         }
         historyTree.setSelectionPath(path);
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem openItem = new JMenuItem("在编辑器中打开");
-        openItem.addActionListener(actionEvent -> openHistoryFileInEditor(item));
-        JMenuItem deleteItem = new JMenuItem("删除");
-        deleteItem.addActionListener(actionEvent -> deleteHistoryItem(item));
+        JMenuItem openItem = createHistoryMenuItem("在编辑器中打开", () -> openHistoryFileInEditor(item));
+        JMenuItem deleteItem = createHistoryMenuItem("删除", () -> deleteHistoryItem(item));
         menu.add(openItem);
         menu.add(deleteItem);
         menu.show(historyTree, e.getX(), e.getY());
+    }
+
+    /**
+     * 创建带悬停效果的菜单项
+     *
+     * @param text   菜单文本
+     * @param action 点击动作
+     * @return 菜单项
+     */
+    private @NotNull JMenuItem createHistoryMenuItem(@NotNull String text, @NotNull Runnable action) {
+        JMenuItem item = new JMenuItem(text);
+        item.setBorder(JBUI.Borders.empty(4, 12));
+        item.setOpaque(true);
+        Color normalBg = UIUtil.getListBackground();
+        Color hoverBg = UIUtil.getListSelectionBackground(true);
+        item.setBackground(normalBg);
+        item.addActionListener(event -> action.run());
+        item.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                item.setBackground(hoverBg);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                item.setBackground(normalBg);
+            }
+        });
+        return item;
     }
 
     /**
