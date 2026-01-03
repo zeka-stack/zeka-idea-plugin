@@ -1138,8 +1138,8 @@ public final class ChangelogToolWindowService {
     private @NotNull String buildCategoryStatsText(@NotNull List<HistoryItem> items) {
         Map<String, Integer> counters = new LinkedHashMap<>();
         for (HistoryItem item : items) {
-            String categoryText = resolveCategoryText(item.actionKey, item.category);
-            counters.put(categoryText, counters.getOrDefault(categoryText, 0) + 1);
+            String categoryKey = item.category;
+            counters.put(categoryKey, counters.getOrDefault(categoryKey, 0) + 1);
         }
         if (counters.isEmpty()) {
             return "";
@@ -1149,7 +1149,7 @@ public final class ChangelogToolWindowService {
             if (!builder.isEmpty()) {
                 builder.append(", ");
             }
-            builder.append(entry.getKey()).append(" ").append(entry.getValue());
+            builder.append(entry.getKey()).append(":").append(entry.getValue());
         }
         return builder.toString();
     }
@@ -1679,7 +1679,7 @@ public final class ChangelogToolWindowService {
             setPreferredSize(null);
 
             if (userObject instanceof HistoryGroup group) {
-                groupLabel.setText(group.text);
+                groupLabel.setText(group.text + ": " + node.getChildCount());
                 groupLabel.setIcon(group.icon);
                 groupLabel.setForeground(foreground);
                 add(deleteLabel, BorderLayout.WEST);
