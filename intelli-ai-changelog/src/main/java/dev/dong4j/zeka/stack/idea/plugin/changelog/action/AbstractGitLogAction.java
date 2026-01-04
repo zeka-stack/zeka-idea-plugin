@@ -9,7 +9,7 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.vcs.log.VcsFullCommitDetails;
-import com.intellij.vcs.log.VcsLog;
+import com.intellij.vcs.log.VcsLogCommitSelection;
 import com.intellij.vcs.log.VcsLogDataKeys;
 
 import org.jetbrains.annotations.NotNull;
@@ -150,7 +150,7 @@ public abstract class AbstractGitLogAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
+        VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
 
         // 设置按钮文本、描述和图标
         e.getPresentation().setText(ChangelogBundle.message(getTextKey()));
@@ -158,9 +158,9 @@ public abstract class AbstractGitLogAction extends AnAction {
         e.getPresentation().setIcon(getIcon());
 
         // 只有在 Git Log 工具窗口中有选中提交时才启用
-        boolean enabled = project != null && log != null;
+        boolean enabled = project != null && selection != null;
         if (enabled) {
-            List<VcsFullCommitDetails> selectedCommits = log.getSelectedDetails();
+            List<VcsFullCommitDetails> selectedCommits = selection.getCachedFullDetails();
             enabled = !selectedCommits.isEmpty();
         }
 
@@ -185,13 +185,13 @@ public abstract class AbstractGitLogAction extends AnAction {
         }
 
         // 获取选中的提交记录
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
-        if (log == null) {
+        VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
+        if (selection == null) {
             NotificationUtil.showError(project, ChangelogBundle.message("error.no.git.log"));
             return;
         }
 
-        List<VcsFullCommitDetails> selectedCommits = log.getSelectedDetails();
+        List<VcsFullCommitDetails> selectedCommits = selection.getCachedFullDetails();
         if (selectedCommits.isEmpty()) {
             NotificationUtil.showError(project, ChangelogBundle.message("error.no.commits.selected"));
             return;
