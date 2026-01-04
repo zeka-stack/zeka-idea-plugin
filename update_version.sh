@@ -165,6 +165,40 @@ else
     echo "  ⚠️  跳过: $NGINX_CONF 文件不存在"
 fi
 
+# 更新 SupportStartupActivity.java 中的版本号
+echo ""
+echo "----------------------------------------"
+echo "更新 SupportStartupActivity.java"
+SUPPORT_STARTUP_ACTIVITY="$SCRIPT_DIR/intelli-ai-engine/src/main/java/dev/dong4j/zeka/stack/idea/plugin/common/support/SupportStartupActivity.java"
+
+if [ -f "$SUPPORT_STARTUP_ACTIVITY" ]; then
+    # 检查是否存在版本号配置行
+    if grep -q 'RunOnceUtil.runOnceForApp("intelli-ai-engine\.[0-9]' "$SUPPORT_STARTUP_ACTIVITY"; then
+        # 更新版本号（匹配 RunOnceUtil.runOnceForApp("intelli-ai-engine.版本号", 格式）
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS 使用 sed -i ''
+            sed -i '' "s/RunOnceUtil\.runOnceForApp(\"intelli-ai-engine\.[^\"]*\",/RunOnceUtil.runOnceForApp(\"intelli-ai-engine.${NEW_VERSION}\",/" "$SUPPORT_STARTUP_ACTIVITY"
+        else
+            # Linux 使用 sed -i
+            sed -i "s/RunOnceUtil\.runOnceForApp(\"intelli-ai-engine\.[^\"]*\",/RunOnceUtil.runOnceForApp(\"intelli-ai-engine.${NEW_VERSION}\",/" "$SUPPORT_STARTUP_ACTIVITY"
+        fi
+        echo "  ✓ 已更新 $SUPPORT_STARTUP_ACTIVITY 中的版本号为: $NEW_VERSION"
+        
+        # 验证更新结果
+        CURRENT_ACTIVITY_VERSION=$(grep 'RunOnceUtil.runOnceForApp("intelli-ai-engine\.[0-9]' "$SUPPORT_STARTUP_ACTIVITY" | sed -n 's/.*RunOnceUtil\.runOnceForApp("intelli-ai-engine\.\([^"]*\)",.*/\1/p' | head -n 1)
+        if [ "$CURRENT_ACTIVITY_VERSION" = "$NEW_VERSION" ]; then
+            echo "    ✓ 验证成功: RunOnceUtil.runOnceForApp(\"intelli-ai-engine.${CURRENT_ACTIVITY_VERSION}\","
+        else
+            echo "    ✗ 验证失败: 期望 $NEW_VERSION，实际 $CURRENT_ACTIVITY_VERSION"
+            ((ERROR_COUNT++))
+        fi
+    else
+        echo "  ⚠️  跳过: 未找到版本号配置行"
+    fi
+else
+    echo "  ⚠️  跳过: $SUPPORT_STARTUP_ACTIVITY 文件不存在"
+fi
+
 # 输出总结
 echo ""
 echo "=========================================="
