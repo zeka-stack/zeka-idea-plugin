@@ -394,6 +394,18 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean replaceChinesePunctuation = true;
 
+    /**
+     * 是否在保存时自动生成注释
+     *
+     * <p>控制是否在文件保存时自动为缺少 Javadoc 的元素生成注释。
+     * 启用后，每次保存文件时会自动检查并生成缺失的文档注释。
+     *
+     * <p>默认值: false（默认关闭，避免频繁生成影响性能）
+     *
+     * @since 2.8.0
+     */
+    public boolean generateOnSave = false;
+
     // ==================== 性能模式配置 ====================
 
     /**

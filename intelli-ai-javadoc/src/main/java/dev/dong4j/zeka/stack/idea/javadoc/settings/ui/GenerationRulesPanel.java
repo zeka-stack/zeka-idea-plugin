@@ -116,6 +116,9 @@ public class GenerationRulesPanel {
     /** 显示任务统计复选框 */
     private JBCheckBox showProviderStatisticsCheckBox;
 
+    /** 保存时生成注释复选框 */
+    private JBCheckBox generateOnSaveCheckBox;
+
     /** 类代码最大行数标签，用于控制其可用性 */
     private JBLabel maxClassCodeLinesLabel;
 
@@ -150,6 +153,8 @@ public class GenerationRulesPanel {
 
         performanceModeCheckBox = new JBCheckBox(JavadocBundle.message("settings.performance.mode"));
         showProviderStatisticsCheckBox = new JBCheckBox(JavadocBundle.message("settings.show.provider.statistics"));
+        generateOnSaveCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.on.save"));
+        generateOnSaveCheckBox.setToolTipText(JavadocBundle.message("settings.generate.on.save.tooltip"));
 
         // 创建内容面板
         JPanel contentPanel = FormBuilder.createFormBuilder()
@@ -169,6 +174,7 @@ public class GenerationRulesPanel {
                                                  "settings.replace.chinese.punctuation.hint"))
             .addComponent(createCheckBoxWithHint(performanceModeCheckBox, "settings.performance.mode.hint"))
             .addComponent(createPerformanceModeSubConfigPanel())
+            .addComponent(createCheckBoxWithHint(generateOnSaveCheckBox, "settings.generate.on.save.hint"))
             .getPanel();
 
         // 创建带边框的面板
@@ -221,6 +227,7 @@ public class GenerationRulesPanel {
 
         settings.performanceMode = performanceModeCheckBox.isSelected();
         settings.showProviderStatistics = showProviderStatisticsCheckBox.isSelected();
+        settings.generateOnSave = generateOnSaveCheckBox.isSelected();
     }
 
     /**
@@ -248,6 +255,7 @@ public class GenerationRulesPanel {
 
         performanceModeCheckBox.setSelected(settings.performanceMode);
         showProviderStatisticsCheckBox.setSelected(settings.showProviderStatistics);
+        generateOnSaveCheckBox.setSelected(settings.generateOnSave);
 
         updateMaxClassCodeLinesEnabled();
         updatePerformanceModeSubConfigEnabled();
