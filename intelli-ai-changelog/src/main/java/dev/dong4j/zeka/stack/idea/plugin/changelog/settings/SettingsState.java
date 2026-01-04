@@ -30,8 +30,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  * @since 1.0.0
  */
 @State(
-        name = "ChangelogPluginSettings",
-        storages = @Storage("zeka.stack.intelliai.changelog.xml")
+    name = "ChangelogPluginSettings",
+    storages = @Storage("zeka.stack.intelliai.changelog.xml")
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
 
@@ -393,22 +393,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultCommitMessageUserPrompt() {
         return """
-            使用 Conventional Commits，输出格式：
-            <type>(<scope>): <subject>
+            请根据以下信息生成本次提交的 Git commit message。
 
-            <body(可选，说明动机、影响、兼容性)>
-
-            规则：
-            1. **必须使用${language}编写提交消息内容**，这是强制要求，不能使用其他语言
-            2. 优先表达设计意图 / 约束变化 / 行为变化
-            3. 如果是重构，请说明"为什么现在要重构"
-            4. 避免描述实现细节
-            5. type 和 scope 使用常见英文约定（如 feat、fix、refactor 等）
-
-            变更内容：
+            【代码变更内容】
             {codeDiffs}
 
-            历史提交(最近3条):
+            【最近的提交记录（最多 3 条，仅用于风格和上下文参考）】
             {recentCommits}
             """;
     }
@@ -426,27 +416,36 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultCommitMessageSystemPrompt() {
         return """
             你是一位经验丰富的代码审查专家和技术文档编写者。
-            你的任务是根据代码的实际改动（diff）生成准确、简洁的提交记录（commit message），
-            输出格式为 Conventional Commits：
+            你的任务是基于代码的实际变更（diff），生成高质量的 Git 提交记录。
+
+            你必须严格遵循 Conventional Commits 规范，输出格式固定为：
+
             <type>(<scope>): <subject>
 
-            <body(可选，说明动机、影响、兼容性)>
+            <body（可选）>
 
-            你需要：
-            1. 分析代码变更的实际内容，而不是依赖提交记录
-            2. 识别代码变更的类型（新功能、Bug 修复、重构等）
-            3. 优先表达设计意图 / 约束变化 / 行为变化
-            4. 如果是重构，请说明"为什么现在要重构"
-            5. 避免描述实现细节
-            6. 忽略无意义的变更（如格式化、空白字符等）
+            你的分析与表达原则：
+            1. 仅基于代码 diff 判断变更内容，不依赖提交者的描述
+            2. 关注「设计意图」「行为变化」「约束变化」，而非实现细节
+            3. 如果是重构，必须说明“为什么现在需要重构”
+            4. 忽略无语义变更（格式化、空白、等价重排）
 
-            重要要求：
-            - **必须使用${language}编写提交消息内容**，这是强制要求，不能使用其他语言
-            - 只输出提交记录正文，不要解释过程或附加说明
-            - 第一行是简短摘要，使用祈使语气，不要句号
-            - 如需详细说明，空一行后给出正文描述
-            - 避免无意义的空白行或多余的格式符号
-            - type 和 scope 使用常见英文约定（如 feat、fix、refactor 等）
+            **正文（body）书写规则（强制）：**
+            - 如果需要正文，必须使用 Markdown 无序列表
+            - 每一行以 `- ` 开头
+            - 每条只表达一个清晰观点，禁止长段落
+            - 建议 2～4 条，最多不超过 5 条
+            - 内容只能聚焦：
+              - 变更动机（Why）
+              - 行为或语义变化（What changed）
+              - 影响范围 / 兼容性（Impact）
+              - 风险或注意事项（Note）
+
+            其他强制要求：
+            - **提交消息内容必须使用 ${language}**
+            - 只输出最终提交记录，不解释、不附加说明
+            - subject 使用祈使语气，不要句号
+            - type / scope 使用通用英文约定（feat、fix、refactor、perf、test、docs 等）
             """;
     }
 
