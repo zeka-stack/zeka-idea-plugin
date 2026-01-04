@@ -161,11 +161,11 @@ copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer
 	echo "✓ 构建产物拷贝完成"
 
 # 拷贝构建产物到 IDEA 插件目录（解压后拷贝目录）
-install-plugins: build-tracer build-nacos
+install-plugins:  build-changelog
 	@TARGET=$(IDEA_PLUGINS_DIR); \
 	echo "正在安装插件到 $$TARGET..."; \
 	mkdir -p $$TARGET; \
-	for dir in $(TRACER_DIR) $(NACOS_DIR); do \
+	for dir in $(CHANGELOG_DIR); do \
 		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
 		if [ -n "$$zip_file" ]; then \
 			temp_dir=$$(mktemp -d); \
