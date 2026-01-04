@@ -1,0 +1,36 @@
+文件: /Users/dong4j/Downloads/sctelcp-gateway-service/src/main/java/com/sctelcp/gateway/core/service/BearerTokenExtractor.java
+变更类型: MODIFY
+建议scope: sctelcp-gateway-service
+新增行数: 19
+删除行数: 6
+变更内容:
+--- BearerTokenExtractor.java
++++ BearerTokenExtractor.java
+@@ -17,1 +17,7 @@
+- * 解析请求，比如Token信息
++ * Bearer Token 提取器
++ * <p>
++ * 负责从 HTTP 请求中解析并提取 Bearer 格式的访问令牌 (Access Token).
++ * 支持从请求头, 查询参数及 exchange 属性三种来源获取 Authorization 信息,
++ * 并通过正则匹配校验令牌格式, 最终返回纯令牌字符串.
++ * <p>
++ * 本工具类通常用于 Spring Security 或 OAuth2 场景下的令牌前置处理.
+@@ -19,2 +25,5 @@
+- * @author Dengzw
+- * @date 2024/3/29
++ * @author zeka.stack.team
++ * @version 1.0.0
++ * @email mailto:zeka.stack@gmail.com
++ * @date 2025.11.30
++ * @since 2.1.0
+@@ -33,3 +57,7 @@
+-     * 解析请求头中的 Authorization 信息
+-     * @param exchange
+-     * @return
++     * 从请求头中解析并获取授权令牌
++     * <p>
++     * 从 ServerWebExchange 对象中获取请求头中的 Authorization 信息, 若未找到则尝试从查询参数中获取, 最后尝试从请求属性中获取.
++     * 若 Authorization 字段以 Bearer 开头, 则使用正则表达式提取其中的令牌值, 否则返回查询参数中的访问令牌.
++     *
++     * @param exchange ServerWebExchange 对象, 用于获取请求信息
++     * @return 解析出的授权令牌, 若解析失败或未找到则返回 null

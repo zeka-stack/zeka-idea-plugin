@@ -139,6 +139,22 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean useCommitMessageInputAsContext = false;
 
     /**
+     * 提交消息 diff 生成方式
+     * <p>控制提交消息生成时使用的 diff 方案，支持 CodeDiffUtil 与 IdeaTextPatchBuilder 两种方案。
+     *
+     * <p>默认值: CODE_DIFF
+     */
+    public CommitMessageDiffProvider commitMessageDiffProvider = CommitMessageDiffProvider.CODE_DIFF;
+
+    /**
+     * 提交消息 diff 生成方式
+     */
+    public enum CommitMessageDiffProvider {
+        CODE_DIFF,
+        IDEA_PATCH
+    }
+
+    /**
      * 是否显示提交消息提示词设置
      * <p>
      * 控制设置页面中提交消息提示词设置区域的显示/隐藏。

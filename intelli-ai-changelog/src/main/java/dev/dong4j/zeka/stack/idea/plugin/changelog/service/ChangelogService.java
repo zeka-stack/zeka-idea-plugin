@@ -1,8 +1,11 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 
 import com.intellij.openapi.components.Service;
+import com.intellij.openapi.diff.impl.patch.FilePatch;
+import com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vcs.changes.patch.PatchWriter;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 
@@ -28,12 +31,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -700,15 +706,12 @@ public final class ChangelogService {
     @NotNull
     public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes,
                                                 @Nullable String userContext) throws Exception {
-        // 1. 提取代码变更信息
-        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
-
-        if (codeDiffs.isEmpty()) {
+        DiffPayload payload = buildCommitDiffPayload(changes);
+        if (payload.codeDiffs.isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
 
-        // 2. 构建 prompt
-        String prompt = buildPromptFromCodeDiff(codeDiffs, userContext);
+        String prompt = buildPromptFromCodeDiff(payload, userContext);
 
         // 3. 调用 AI 服务生成提交记录
         return callAIServiceForCommitMessage(prompt);
@@ -745,12 +748,12 @@ public final class ChangelogService {
     public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
                                                       @NotNull AIStreamResponseListener listener,
                                                       @Nullable String userContext) throws Exception {
-        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
-        if (codeDiffs.isEmpty()) {
+        DiffPayload payload = buildCommitDiffPayload(changes);
+        if (payload.codeDiffs.isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
-        log.debug("Generating commit message from diff:\n{}", codeDiffs);
-        String prompt = buildPromptFromCodeDiff(codeDiffs, userContext);
+        log.debug("Generating commit message from diff:\n{}", payload.codeDiffs);
+        String prompt = buildPromptFromCodeDiff(payload, userContext);
         return callAIServiceForCommitMessageStream(prompt, listener);
     }
 
@@ -761,7 +764,7 @@ public final class ChangelogService {
      * @return 构建好的 prompt
      */
     @NotNull
-    private String buildPromptFromCodeDiff(@NotNull List<CodeDiff> codeDiffs,
+    private String buildPromptFromCodeDiff(@NotNull DiffPayload payload,
                                            @Nullable String userContext) {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.commitMessageTemplate;
@@ -771,7 +774,7 @@ public final class ChangelogService {
         final int maxFiles = 30;
         StringBuilder codeDiffsText = new StringBuilder();
         int fileCount = 0;
-        for (CodeDiff diff : codeDiffs) {
+        for (CodeDiff diff : payload.codeDiffs) {
             if (fileCount >= maxFiles || codeDiffsText.length() >= maxDiffChars) {
                 break;
             }
@@ -788,6 +791,13 @@ public final class ChangelogService {
             }
             if (diff.diffContent != null && !diff.diffContent.isEmpty()) {
                 codeDiffsText.append("变更内容:\n");
+                String metadata = payload.metadataByPath.get(diff.filePath);
+                if (metadata != null && !metadata.isBlank()) {
+                    codeDiffsText.append(metadata);
+                    if (!metadata.endsWith("\n")) {
+                        codeDiffsText.append("\n");
+                    }
+                }
                 int remaining = maxDiffChars - codeDiffsText.length();
                 if (remaining > 0) {
                     String diffContent = diff.diffContent;
@@ -804,6 +814,9 @@ public final class ChangelogService {
         String recentCommitsText = buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
 
         String diffText = codeDiffsText.toString().trim();
+        if (!payload.fullPatchText.isBlank()) {
+            diffText = payload.fullPatchText.trim() + "\n\n=== 降噪摘要 ===\n" + diffText;
+        }
         String contextText = userContext != null ? userContext.trim() : "";
         String prompt = template.replace("{codeDiffs}", diffText)
             .replace("{recentCommits}", recentCommitsText)
@@ -816,6 +829,131 @@ public final class ChangelogService {
             prompt = prompt + "\n\n历史提交(最近" + RECENT_COMMITS_LIMIT + "条):\n" + recentCommitsText;
         }
         return prompt;
+    }
+
+    private @NotNull DiffPayload buildCommitDiffPayload(@NotNull Collection<Change> changes) {
+        SettingsState settings = SettingsState.getInstance();
+        SettingsState.CommitMessageDiffProvider provider = settings.commitMessageDiffProvider;
+        if (provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH) {
+            return buildIdeaPatchDiffPayload(changes);
+        }
+        return buildCodeDiffPayload(changes);
+    }
+
+    private @NotNull DiffPayload buildCodeDiffPayload(@NotNull Collection<Change> changes) {
+        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
+        return new DiffPayload(codeDiffs, Map.of(), "");
+    }
+
+    private @NotNull DiffPayload buildIdeaPatchDiffPayload(@NotNull Collection<Change> changes) {
+        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
+        Map<String, String> metadataByPath = buildPatchMetadataByPath(changes);
+        String patchText = buildPatchText(changes);
+        return new DiffPayload(codeDiffs, metadataByPath, patchText);
+    }
+
+    private @NotNull Map<String, String> buildPatchMetadataByPath(@NotNull Collection<Change> changes) {
+        String patchText = buildPatchText(changes);
+        if (patchText.isBlank()) {
+            return Map.of();
+        }
+        return parsePatchMetadataByPath(patchText);
+    }
+
+    private @NotNull String buildPatchText(@NotNull Collection<Change> changes) {
+        String basePath = project.getBasePath();
+        if (basePath == null || changes.isEmpty()) {
+            return "";
+        }
+        List<FilePatch> patches;
+        try {
+            patches = IdeaTextPatchBuilder.buildPatch(project, new ArrayList<>(changes), basePath, false);
+        } catch (Exception ignored) {
+            return "";
+        }
+        if (patches.isEmpty()) {
+            return "";
+        }
+        Path basePathValue = Path.of(basePath);
+        try {
+            Path tempFile = Files.createTempFile("commit-diff-", ".patch");
+            try {
+                PatchWriter.writePatches(project, tempFile, basePathValue, patches, (String) null, null, StandardCharsets.UTF_8);
+                return Files.readString(tempFile, StandardCharsets.UTF_8);
+            } finally {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException ignored) {
+                    // 忽略临时文件删除失败
+                }
+            }
+        } catch (IOException ignored) {
+            return "";
+        }
+    }
+
+    private @NotNull Map<String, String> parsePatchMetadataByPath(@NotNull String patchText) {
+        Map<String, String> metadataByPath = new HashMap<>();
+        String basePath = project.getBasePath();
+        String currentPath = null;
+        StringBuilder currentMeta = null;
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new StringReader(patchText))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("diff --git ")) {
+                    flushPatchMetadata(metadataByPath, currentPath, currentMeta);
+                    String[] parts = line.split(" ");
+                    String beforePath = parts.length > 2 ? stripDiffPrefix(parts[2], "a/") : "";
+                    String afterPath = parts.length > 3 ? stripDiffPrefix(parts[3], "b/") : "";
+                    currentPath = resolvePatchPath(basePath, beforePath, afterPath);
+                    currentMeta = new StringBuilder();
+                    currentMeta.append(line).append("\n");
+                    continue;
+                }
+                if (currentMeta == null) {
+                    continue;
+                }
+                if (line.startsWith("@@") || line.startsWith("--- ") || line.startsWith("+++ ")) {
+                    flushPatchMetadata(metadataByPath, currentPath, currentMeta);
+                    currentMeta = null;
+                    currentPath = null;
+                    continue;
+                }
+                currentMeta.append(line).append("\n");
+            }
+        } catch (IOException ignored) {
+            return metadataByPath;
+        }
+        flushPatchMetadata(metadataByPath, currentPath, currentMeta);
+        return metadataByPath;
+    }
+
+    private void flushPatchMetadata(@NotNull Map<String, String> metadataByPath,
+                                    @Nullable String path,
+                                    @Nullable StringBuilder metadata) {
+        if (path == null || metadata == null || metadata.isEmpty()) {
+            return;
+        }
+        metadataByPath.put(path, metadata.toString());
+    }
+
+    private @NotNull String stripDiffPrefix(@NotNull String value, @NotNull String prefix) {
+        return value.startsWith(prefix) ? value.substring(prefix.length()) : value;
+    }
+
+    private @NotNull String resolvePatchPath(@Nullable String basePath,
+                                             @NotNull String beforePath,
+                                             @NotNull String afterPath) {
+        String path = !afterPath.isBlank() && !DiffEntry.DEV_NULL.equals(afterPath) ? afterPath : beforePath;
+        if (basePath == null || basePath.isBlank() || path.isBlank()) {
+            return path;
+        }
+        return new File(basePath, path).getPath();
+    }
+
+    private record DiffPayload(@NotNull List<CodeDiff> codeDiffs,
+                               @NotNull Map<String, String> metadataByPath,
+                               @NotNull String fullPatchText) {
     }
 
     /**
