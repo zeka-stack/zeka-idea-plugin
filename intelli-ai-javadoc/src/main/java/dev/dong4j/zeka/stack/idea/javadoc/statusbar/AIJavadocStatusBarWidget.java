@@ -218,7 +218,10 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 2.8 显示生成 Javadoc 提示
         group.add(new ShowGenerateJavadocHintToggleAction());
 
-        // 2.9 允许删除 Javadoc
+        // 2.9 保存时生成注释
+        group.add(new GenerateOnSaveToggleAction());
+
+        // 2.10 允许删除 Javadoc
         group.add(new AllowDeleteJavadocToggleAction());
 
         group.add(Separator.create());
@@ -844,6 +847,37 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().showGenerateJavadocHint = state;
+        }
+    }
+
+    /**
+     * 保存时生成注释切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否在保存文件时自动生成 Javadoc 注释.
+     * 通过该动作可以切换保存时生成注释的开关状态, 状态信息保存在 SettingsState 中.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class GenerateOnSaveToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        GenerateOnSaveToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.generate.on.save"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().generateOnSave;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().generateOnSave = state;
         }
     }
 
