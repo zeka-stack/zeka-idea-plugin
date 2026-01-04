@@ -104,6 +104,16 @@ public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
         return service.generateChangelogFromDiff(commitHashes);
     }
 
+    /**
+     * 生成变更日志内容流 (基于 code diff)
+     * <p> 调用变更日志服务生成基于 code diff 的变更日志内容流, 并通过监听器反馈进度信息
+     *
+     * @param service      变更日志服务实例, 不能为 null
+     * @param commitHashes 提交哈希列表, 不能为 null
+     * @param listener     AI 流响应监听器, 用于接收生成过程中的反馈信息, 不能为 null
+     * @return 生成的变更日志内容
+     * @throws Exception 如果生成过程中发生错误
+     */
     @Override
     protected @NotNull String generateContentStream(@NotNull ChangelogService service,
                                                     @NotNull List<String> commitHashes,

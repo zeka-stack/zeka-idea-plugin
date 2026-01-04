@@ -195,11 +195,11 @@ public final class CodeDiffUtil {
      * @return Unified Diff 格式的字符串
      */
     @NotNull
-    private static String generateUnifiedDiff(@NotNull String beforeFileName,
-                                              @NotNull String afterFileName,
-                                              @NotNull String beforeContent,
-                                              @NotNull String afterContent,
-                                              @Nullable VirtualFile virtualFile) {
+    public static String generateUnifiedDiff(@NotNull String beforeFileName,
+                                             @NotNull String afterFileName,
+                                             @NotNull String beforeContent,
+                                             @NotNull String afterContent,
+                                             @Nullable VirtualFile virtualFile) {
         boolean isJavaFile = virtualFile != null && "java".equalsIgnoreCase(virtualFile.getExtension());
         List<LineFragment> fragments = ComparisonManager.getInstance()
             .compareLines(beforeContent, afterContent, ComparisonPolicy.DEFAULT,

@@ -3,12 +3,17 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vfs.LocalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -17,11 +22,13 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -1150,26 +1157,243 @@ public final class ChangelogService {
     private String buildCommitDiffText(@NotNull Repository repository,
                                        @Nullable RevCommit parent,
                                        @NotNull RevCommit commit) throws IOException {
-        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
-        try (ObjectReader reader = repository.newObjectReader();
-             DiffFormatter formatter = new DiffFormatter(output)) {
-            formatter.setRepository(repository);
-            formatter.setDiffComparator(RawTextComparator.DEFAULT);
-            formatter.setDetectRenames(true);
-
+        StringBuilder diffText = new StringBuilder();
+        try (ObjectReader reader = repository.newObjectReader()) {
             AbstractTreeIterator parentIter = parent == null
                                               ? new EmptyTreeIterator()
                                               : new CanonicalTreeParser(null, reader, parent.getTree());
             CanonicalTreeParser commitIter = new CanonicalTreeParser();
             commitIter.reset(reader, commit.getTree());
 
-            List<DiffEntry> diffs = formatter.scan(parentIter, commitIter);
-            for (DiffEntry entry : diffs) {
-                formatter.format(entry);
+            List<DiffEntry> diffs;
+            try (DiffFormatter formatter = new DiffFormatter(new java.io.ByteArrayOutputStream())) {
+                formatter.setRepository(repository);
+                formatter.setDiffComparator(RawTextComparator.DEFAULT);
+                formatter.setDetectRenames(true);
+                diffs = formatter.scan(parentIter, commitIter);
             }
-            formatter.flush();
+
+            for (DiffEntry entry : diffs) {
+                FileContent before = loadFileContent(repository, parent, entry.getOldPath());
+                FileContent after = loadFileContent(repository, commit, entry.getNewPath());
+                if (before.binary || after.binary) {
+                    appendEntryDiff(diffText, formatEntryWithJGit(repository, entry));
+                    continue;
+                }
+                String beforeName = formatUnifiedPath(entry.getOldPath(), "a/");
+                String afterName = formatUnifiedPath(entry.getNewPath(), "b/");
+                String codeDiff = CodeDiffUtil.generateUnifiedDiff(
+                    beforeName,
+                    afterName,
+                    before.content,
+                    after.content,
+                    resolveVirtualFile(repository, entry)
+                                                                  );
+                String metadata = buildDiffMetadata(entry);
+                if (codeDiff.isBlank()) {
+                    if (entry.getChangeType() != DiffEntry.ChangeType.MODIFY) {
+                        appendEntryDiff(diffText, metadata);
+                    }
+                    continue;
+                }
+                appendEntryDiff(diffText, metadata + codeDiff);
+            }
         }
-        return output.toString(java.nio.charset.StandardCharsets.UTF_8).trim();
+        return diffText.toString().trim();
+    }
+
+    /**
+     * 向构建器追加条目差异
+     * <p> 在构建器中追加指定的文本内容. 如果构建器不为空, 则在追加之前添加换行符.
+     *
+     * @param builder 构建器对象, 不能为空
+     * @param text    要追加的文本, 不能为空
+     */
+    private void appendEntryDiff(@NotNull StringBuilder builder, @NotNull String text) {
+        if (text.isBlank()) {
+            return;
+        }
+        if (!builder.isEmpty()) {
+            builder.append("\n");
+        }
+        builder.append(text.stripTrailing()).append("\n");
+    }
+
+    /**
+     * 构建差异元数据字符串
+     * <p> 根据给定的 DiffEntry 构造 Git 差异元数据信息, 包括文件路径, 索引, 模式等.
+     *
+     * @param entry 差异条目, 不能为空
+     * @return 差异元数据字符串, 符合 Git 差异格式
+     */
+    private @NotNull String buildDiffMetadata(@NotNull DiffEntry entry) {
+        String oldPath = entry.getOldPath();
+        String newPath = entry.getNewPath();
+        String headerOld = DiffEntry.DEV_NULL.equals(oldPath) ? newPath : oldPath;
+        String headerNew = DiffEntry.DEV_NULL.equals(newPath) ? oldPath : newPath;
+
+        StringBuilder meta = new StringBuilder();
+        meta.append("diff --git a/").append(headerOld).append(" b/").append(headerNew).append("\n");
+
+        String oldId = abbreviateObjectId(entry.getOldId());
+        String newId = abbreviateObjectId(entry.getNewId());
+        String newMode = entry.getNewMode() != null ? entry.getNewMode().toString() : "";
+        if (!oldId.isEmpty() || !newId.isEmpty()) {
+            meta.append("index ").append(oldId).append("..").append(newId);
+            if (!newMode.isBlank()) {
+                meta.append(" ").append(newMode);
+            }
+            meta.append("\n");
+        }
+
+        switch (entry.getChangeType()) {
+            case ADD -> {
+                if (!newMode.isBlank()) {
+                    meta.append("new file mode ").append(newMode).append("\n");
+                }
+            }
+            case DELETE -> meta.append("deleted file mode ").append(entry.getOldMode()).append("\n");
+            case RENAME -> appendSimilarityMetadata(meta, "rename", entry.getScore(), oldPath, newPath);
+            case COPY -> appendSimilarityMetadata(meta, "copy", entry.getScore(), oldPath, newPath);
+            default -> {
+                // no extra metadata
+            }
+        }
+        return meta.toString();
+    }
+
+    /**
+     * 向元数据构建器中追加相似度元数据
+     * <p> 根据给定的动作和相似度分数, 在元数据构建器中添加相似度索引和动作信息.
+     *
+     * @param meta    元数据构建器, 不能为空
+     * @param action  动作描述, 不能为空
+     * @param score   相似度分数, 表示两个文件之间的相似程度, 范围为 0 到 100
+     * @param oldPath 原始文件路径, 不能为空
+     * @param newPath 新文件路径, 不能为空
+     */
+    private void appendSimilarityMetadata(@NotNull StringBuilder meta,
+                                          @NotNull String action,
+                                          int score,
+                                          @NotNull String oldPath,
+                                          @NotNull String newPath) {
+        if (score > 0) {
+            meta.append("similarity index ").append(score).append("%\n");
+        }
+        meta.append(action).append(" from ").append(oldPath).append("\n");
+        meta.append(action).append(" to ").append(newPath).append("\n");
+    }
+
+    /**
+     * 缩写对象 ID
+     * <p> 将传入的缩写对象 ID 转换为其完整名称并返回.
+     *
+     * @param id 缩写对象 ID, 不能为空
+     * @return 完整的对象 ID 名称
+     */
+    private @NotNull String abbreviateObjectId(@NotNull AbbreviatedObjectId id) {
+        return id.name();
+    }
+
+    /**
+     * 格式化统一路径
+     * <p> 在给定路径前加上前缀, 并处理特殊情况
+     *
+     * @param path   要格式化的路径, 不能为空
+     * @param prefix 要添加的前缀, 不能为空
+     * @return 格式化后的统一路径
+     */
+    private @NotNull String formatUnifiedPath(@NotNull String path, @NotNull String prefix) {
+        if (DiffEntry.DEV_NULL.equals(path)) {
+            return DiffEntry.DEV_NULL;
+        }
+        return prefix + path;
+    }
+
+    /**
+     * 加载文件内容
+     * <p> 根据给定的 Git 仓库和提交信息, 加载指定路径的文件内容.
+     * 如果提交为空或路径为 DEV_NULL, 则返回一个空的文件内容对象.
+     *
+     * @param repository Git 仓库对象, 不能为空
+     * @param commit     提交对象, 可以为空
+     * @param path       文件路径, 不能为空
+     * @return 包含文件内容的 FileContent 对象
+     * @throws IOException 当读取文件内容失败时抛出
+     */
+    private @NotNull FileContent loadFileContent(@NotNull Repository repository,
+                                                 @Nullable RevCommit commit,
+                                                 @NotNull String path) throws IOException {
+        if (commit == null || DiffEntry.DEV_NULL.equals(path)) {
+            return new FileContent("", false);
+        }
+        TreeWalk treeWalk = TreeWalk.forPath(repository, path, commit.getTree());
+        if (treeWalk == null) {
+            return new FileContent("", false);
+        }
+        ObjectId objectId = treeWalk.getObjectId(0);
+        ObjectLoader loader = repository.open(objectId);
+        byte[] bytes = loader.getBytes();
+        if (RawText.isBinary(bytes)) {
+            return new FileContent("", true);
+        }
+        return new FileContent(new String(bytes, StandardCharsets.UTF_8), false);
+    }
+
+    /**
+     * 解析提交差异条目并找到对应的虚拟文件
+     * <p> 根据提交差异条目的新路径或旧路径, 解析出对应的虚拟文件路径, 并返回虚拟文件对象.
+     * <p> 如果路径为 DEV_NULL, 则返回 null.
+     *
+     * @param repository Git 仓库对象
+     * @param entry      差异条目对象
+     * @return 对应的虚拟文件对象, 如果路径无效则返回 null
+     */
+    private @Nullable VirtualFile resolveVirtualFile(@NotNull Repository repository, @NotNull DiffEntry entry) {
+        String path = DiffEntry.DEV_NULL.equals(entry.getNewPath()) ? entry.getOldPath() : entry.getNewPath();
+        if (DiffEntry.DEV_NULL.equals(path)) {
+            return null;
+        }
+        File workTree = repository.getWorkTree();
+        if (workTree == null) {
+            return null;
+        }
+        String absolutePath = new File(workTree, path).getPath();
+        return LocalFileSystem.getInstance().findFileByPath(absolutePath);
+    }
+
+    /**
+     * 使用 JGit 格式化差异条目
+     * <p> 根据给定的仓库和差异条目, 生成差异信息的格式化字符串.
+     *
+     * @param repository 仓库对象, 不能为空
+     * @param entry      差异条目, 不能为空
+     * @return 格式化后的差异信息字符串
+     * @throws IOException 当格式化差异条目时发生 I/O 错误
+     */
+    private @NotNull String formatEntryWithJGit(@NotNull Repository repository, @NotNull DiffEntry entry) throws IOException {
+        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        try (DiffFormatter formatter = new DiffFormatter(output)) {
+            formatter.setRepository(repository);
+            formatter.setDiffComparator(RawTextComparator.DEFAULT);
+            formatter.setDetectRenames(true);
+            formatter.format(entry);
+        }
+        return output.toString(StandardCharsets.UTF_8).trim();
+    }
+
+    /**
+     * 文件内容数据类
+     * <p> 表示文件的内容及其二进制状态. 该数据类包含两个主要属性: 文件内容文本和文件是否为二进制类型.
+     * <p> 此记录类提供了不可变的对象, 适用于需要存储文件内容和其二进制标志的场景.
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.04
+     * @since 1.0.0
+     */
+    private record FileContent(@NotNull String content, boolean binary) {
     }
 
     /**
