@@ -4,8 +4,8 @@ import com.intellij.diff.comparison.ComparisonManager;
 import com.intellij.diff.comparison.ComparisonPolicy;
 import com.intellij.diff.fragments.LineFragment;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.editor.Document;
-import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.progress.ProgressIndicatorProvider;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectLocator;
@@ -13,15 +13,6 @@ import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiJavaFile;
-import com.intellij.psi.PsiManager;
-import com.intellij.psi.PsiMethod;
-import com.intellij.psi.util.PsiTreeUtil;
-import com.intellij.util.DocumentUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,15 +20,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
+import java.util.Locale;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.context.ContextResolverRegistry;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 
 /**
  * 代码差异工具类
  * <p>
- * 提供代码变更差异提取和分析功能, 用于处理版本控制系统中的文件变更,
- * 可以从变更对象中提取代码差异信息, 包括变更类型, 新增行数, 删除行数和差异内容等
+ * 提供代码变更差异提取和分析功能, 用于处理版本控制系统中的文件变更. 可以从变更对象中提取代码差异信息, 包括变更类型, 新增行数, 删除行数和差异内容等.
  *
  * @author zeka.stack.team
  * @version 1.0.0
@@ -50,7 +41,7 @@ public final class CodeDiffUtil {
     /**
      * 私有构造函数, 用于防止外部实例化
      * <p>
-     * 该构造函数为私有, 确保 CodeDiffUtil 类只能通过静态方法或内部工厂方法创建实例
+     * 该构造函数为私有, 确保 CodeDiffUtil 类只能通过静态方法使用, 不能被外部实例化
      */
     private CodeDiffUtil() {
         // 工具类，禁止实例化
@@ -60,7 +51,7 @@ public final class CodeDiffUtil {
      * 从 Change 集合中提取代码变更信息
      *
      * @param changes 变更集合
-     * @return 代码变更信息列表
+     * @return 代码变更信息列表, 包含每个变更的路径, 类型, 增删行数等信息
      */
     @NotNull
     public static List<CodeDiff> extractCodeDiffs(@NotNull Collection<Change> changes) {
@@ -80,7 +71,7 @@ public final class CodeDiffUtil {
      * 从单个 Change 对象中提取代码变更信息
      *
      * @param change 变更对象
-     * @return 代码变更信息，如果无法提取则返回 null
+     * @return 代码变更信息, 如果无法提取则返回 null
      */
     @Nullable
     public static CodeDiff extractCodeDiff(@NotNull Change change) {
@@ -92,6 +83,7 @@ public final class CodeDiffUtil {
         String filePath = virtualFile.getPath();
         CodeDiff.ChangeType changeType = determineChangeType(change);
         String diffContent = extractDiffContent(change);
+        String scopeHint = resolveScopeHint(virtualFile);
 
         // 计算新增和删除的行数
         int addedLines = 0;
@@ -107,7 +99,7 @@ public final class CodeDiffUtil {
             }
         }
 
-        return new CodeDiff(filePath, changeType, addedLines, deletedLines, diffContent);
+        return new CodeDiff(filePath, changeType, addedLines, deletedLines, diffContent, scopeHint);
     }
 
     /**
@@ -142,7 +134,7 @@ public final class CodeDiffUtil {
      * 提取 Diff 内容
      *
      * @param change 变更对象
-     * @return Diff 内容字符串
+     * @return 包含代码差异信息的字符串, 如果无差异则返回 null
      */
     @SuppressWarnings("D")
     @Nullable
@@ -194,6 +186,7 @@ public final class CodeDiffUtil {
      * @param afterFileName  修改后的文件名
      * @param beforeContent  修改前的内容
      * @param afterContent   修改后的内容
+     * @param virtualFile    虚拟文件对象, 可以为空
      * @return Unified Diff 格式的字符串
      */
     @NotNull
@@ -202,6 +195,9 @@ public final class CodeDiffUtil {
                                               @NotNull String beforeContent,
                                               @NotNull String afterContent,
                                               @Nullable VirtualFile virtualFile) {
+        final int maxHunksPerFile = 6;
+        final int maxLinesPerHunk = 20;
+        boolean isJavaFile = virtualFile != null && "java".equalsIgnoreCase(virtualFile.getExtension());
         List<LineFragment> fragments = ComparisonManager.getInstance()
             .compareLines(beforeContent, afterContent, ComparisonPolicy.DEFAULT,
                           ProgressIndicatorProvider.getGlobalProgressIndicator());
@@ -213,11 +209,15 @@ public final class CodeDiffUtil {
         diff.append("--- ").append(beforeFileName).append("\n");
         diff.append("+++ ").append(afterFileName).append("\n");
         boolean hasChanges = false;
+        int hunkCount = 0;
 
         String[] beforeLines = beforeContent.split("\n", -1);
         String[] afterLines = afterContent.split("\n", -1);
 
         for (LineFragment fragment : fragments) {
+            if (hunkCount >= maxHunksPerFile) {
+                break;
+            }
             int beforeStart = fragment.getStartLine1();
             int beforeEnd = fragment.getEndLine1();
             int afterStart = fragment.getStartLine2();
@@ -230,17 +230,25 @@ public final class CodeDiffUtil {
             if (isImportOnlyChange(beforeChanged, afterChanged)) {
                 continue;
             }
+            if (isJavaFile && isCommentOnlyChange(beforeChanged, afterChanged)) {
+                continue;
+            }
+            if (isJavaFile && isReorderOnlyChange(beforeChanged, afterChanged)) {
+                continue;
+            }
             List<String> beforeOutput = filterNonIgnorableLines(beforeChanged);
             List<String> afterOutput = filterNonIgnorableLines(afterChanged);
             if (beforeOutput.isEmpty() && afterOutput.isEmpty()) {
                 continue;
             }
+            beforeOutput = trimLines(beforeOutput, maxLinesPerHunk);
+            afterOutput = trimLines(afterOutput, maxLinesPerHunk);
             hasChanges = true;
             diff.append("@@ -").append(beforeStart + 1).append(",").append(beforeEnd - beforeStart)
                 .append(" +").append(afterStart + 1).append(",").append(afterEnd - afterStart)
                 .append(" @@\n");
 
-            String context = resolveJavaSymbolContext(virtualFile, afterStart, beforeStart);
+            String context = resolveSymbolContext(virtualFile, afterStart, beforeStart);
             if (context != null && !context.isEmpty()) {
                 diff.append("上下文: ").append(context).append("\n");
             }
@@ -250,11 +258,22 @@ public final class CodeDiffUtil {
             for (String line : afterOutput) {
                 diff.append("+").append(line).append("\n");
             }
+            hunkCount++;
         }
 
         return hasChanges ? diff.toString() : "";
     }
 
+    /**
+     * 从字符串数组中提取指定范围的行内容
+     * <p> 根据起始索引和结束索引从字符串数组中提取行内容, 返回包含指定范围行的列表
+     * <p> 注意: 提取范围为 [start, end), 即包含 start 但不包含 end, 且索引必须在有效范围内
+     *
+     * @param lines 字符串数组, 不能为 null
+     * @param start 起始索引 (包含), 必须大于等于 0 且小于 lines.length
+     * @param end   结束索引 (不包含), 必须大于等于 start 且小于等于 lines.length
+     * @return 包含指定范围行的列表, 如果 lines 为空或范围无效则返回空列表
+     */
     @NotNull
     private static List<String> extractLines(@NotNull String[] lines, int start, int end) {
         List<String> result = new ArrayList<>();
@@ -264,6 +283,14 @@ public final class CodeDiffUtil {
         return result;
     }
 
+    /**
+     * 过滤非忽略行
+     * <p> 从指定的行列表中移除所有被标记为可忽略的行 (如空行), 并返回包含非忽略行的新列表
+     * <p> 此方法用于在代码差异分析中排除无关的变更内容, 例如空白行或注释行
+     *
+     * @param lines 待处理的行列表, 不能为 null
+     * @return 过滤后的行列表, 不包含任何可忽略的行, 如果输入为空或所有行都被忽略, 则返回空列表
+     */
     @NotNull
     private static List<String> filterNonIgnorableLines(@NotNull List<String> lines) {
         List<String> result = new ArrayList<>();
@@ -275,6 +302,15 @@ public final class CodeDiffUtil {
         return result;
     }
 
+    /**
+     * 判断两个代码行列表是否仅包含空白字符的变化
+     * <p>比较两个代码行列表, 检查它们是否在内容上完全相同, 仅因空白字符 (如空格, 制表符) 不同而有所差异.
+     * 如果两个列表大小不同, 或存在非空白字符的差异, 则返回 false.
+     *
+     * @param beforeLines 修改前的代码行列表, 不能为空
+     * @param afterLines  修改后的代码行列表, 不能为空
+     * @return 如果两个列表仅包含空白字符的变化, 则返回 true; 否则返回 false
+     */
     private static boolean isWhitespaceOnlyChange(@NotNull List<String> beforeLines,
                                                   @NotNull List<String> afterLines) {
         if (beforeLines.size() != afterLines.size()) {
@@ -288,6 +324,15 @@ public final class CodeDiffUtil {
         return true;
     }
 
+    /**
+     * 判断变更是否仅包含导入语句的修改
+     * <p>
+     * 检查变更中的所有行是否都为 import 语句或空行. 如果存在非 import 语句, 则认为该变更是非纯导入变更.
+     *
+     * @param beforeLines 修改前的代码行列表, 不能为 null
+     * @param afterLines  修改后的代码行列表, 不能为 null
+     * @return 如果变更仅包含 import 语句和空行, 则返回 true; 否则返回 false
+     */
     private static boolean isImportOnlyChange(@NotNull List<String> beforeLines,
                                               @NotNull List<String> afterLines) {
         if (beforeLines.isEmpty() && afterLines.isEmpty()) {
@@ -306,62 +351,275 @@ public final class CodeDiffUtil {
         return true;
     }
 
+    /**
+     * 判断是否为仅注释变更
+     * <p> 检查前后代码行列表是否仅包含注释变更, 即代码结构未变, 仅修改了注释内容
+     * <p> 该方法会先剥离 Java 注释 (包括单行注释和多行注释), 然后比较处理后的文本内容
+     * <p> 如果剥离注释后前后内容完全相同且为空, 则认为是仅注释变更
+     *
+     * @param beforeLines 修改前的代码行列表, 不能为 null
+     * @param afterLines  修改后的代码行列表, 不能为 null
+     * @return 如果前后代码仅存在注释变更, 则返回 true, 否则返回 false
+     */
+    private static boolean isCommentOnlyChange(@NotNull List<String> beforeLines,
+                                               @NotNull List<String> afterLines) {
+        String before = stripJavaComments(String.join("\n", beforeLines));
+        String after = stripJavaComments(String.join("\n", afterLines));
+        return normalizeLine(before).equals(normalizeLine(after))
+               && normalizeLine(before).isEmpty()
+               && normalizeLine(after).isEmpty();
+    }
+
+    /**
+     * 判断两组行是否仅为顺序调整的变更
+     * <p> 该方法首先检查两组行数是否相同, 若不同则直接返回 false.
+     * 随后对两组行进行标准化处理 (去除空格和空白行), 并比较其内容是否一致.
+     * 如果原始顺序不一致但排序后一致, 则判定为仅顺序调整的变更.
+     *
+     * @param beforeLines 变更前的代码行列表
+     * @param afterLines  变更后的代码行列表
+     * @return 如果是仅顺序调整的变更则返回 true, 否则返回 false
+     */
+    private static boolean isReorderOnlyChange(@NotNull List<String> beforeLines,
+                                               @NotNull List<String> afterLines) {
+        if (beforeLines.size() != afterLines.size()) {
+            return false;
+        }
+        List<String> beforeNormalized = normalizeLines(beforeLines);
+        List<String> afterNormalized = normalizeLines(afterLines);
+        if (beforeNormalized.equals(afterNormalized)) {
+            return false;
+        }
+        beforeNormalized.sort(String::compareTo);
+        afterNormalized.sort(String::compareTo);
+        return beforeNormalized.equals(afterNormalized);
+    }
+
+    /**
+     * 判断字符串是否为导入语句
+     * <p> 检查给定的代码行是否以 "import" 开头, 用于识别 Java 或 Kotlin 中的导入声明
+     *
+     * @param line 要检查的代码行, 不能为空
+     * @return 如果行以 "import" 开头则返回 true, 否则返回 false
+     */
     private static boolean isImportLine(@NotNull String line) {
         String trimmed = line.trim();
         return trimmed.startsWith("import ");
     }
 
+    /**
+     * 判断一行是否为可忽略行
+     * <p> 该方法用于判断某一行内容是否为空白行, 如果是空白行则返回 true
+     *
+     * @param line 要判断的行内容
+     * @return 如果是空白行则返回 true, 否则返回 false
+     */
     private static boolean isIgnorableLine(@NotNull String line) {
         String trimmed = line.trim();
         return trimmed.isEmpty();
     }
 
+    /**
+     * 对字符串行进行规范化处理, 移除所有空白字符
+     * <p> 该方法用于去除字符串中的所有空白字符 (包括空格, 制表符, 换行符等), 返回一个仅包含非空白字符的字符串
+     *
+     * @param line 需要规范化的字符串行
+     * @return 移除所有空白字符后的字符串
+     */
     @NotNull
     private static String normalizeLine(@NotNull String line) {
         return line.replaceAll("\\s+", "");
     }
 
-    @Nullable
-    private static String resolveJavaSymbolContext(@Nullable VirtualFile virtualFile,
-                                                   int preferredLine,
-                                                   int fallbackLine) {
-        if (virtualFile == null || !"java".equalsIgnoreCase(virtualFile.getExtension())) {
-            return null;
+    /**
+     * 正常化行列表, 移除空行并标准化每行内容
+     * <p> 遍历输入的行列表, 对每行应用 normalizeLine 方法进行标准化处理, 并过滤掉标准化后为空的行, 返回非空的标准化行列表
+     * <p> 标准化过程包括移除行首尾空白字符, 并将行内连续空白字符替换为单个空格
+     *
+     * @param lines 输入的行列表, 不能为 null
+     * @return 非空的标准化行列表, 如果输入为空或所有行标准化后为空, 则返回空列表
+     */
+    @NotNull
+    private static List<String> normalizeLines(@NotNull List<String> lines) {
+        List<String> result = new ArrayList<>();
+        for (String line : lines) {
+            String normalized = normalizeLine(line);
+            if (!normalized.isEmpty()) {
+                result.add(normalized);
+            }
         }
+        return result;
+    }
+
+    /**
+     * 限制行数并截取列表
+     * <p> 将输入的行列表限制为指定的最大行数, 如果行数超过限制, 则返回前 maxLines 行; 否则返回原始列表
+     * <p> 使用示例:
+     * <pre>{@code
+     * List<String> limitedLines = trimLines(allLines, 10);
+     * }</pre>
+     *
+     * @param lines    要处理的行列表, 不能为 null
+     * @param maxLines 最大行数, 必须大于等于 0
+     * @return 截取后的行列表, 如果行数不超过限制则返回原始列表, 否则返回前 maxLines 行
+     */
+    @NotNull
+    private static List<String> trimLines(@NotNull List<String> lines, int maxLines) {
+        if (lines.size() <= maxLines) {
+            return lines;
+        }
+        return new ArrayList<>(lines.subList(0, maxLines));
+    }
+
+    /**
+     * 移除 Java 代码中的注释
+     * <p> 该方法会移除字符串中所有的块注释 (/* ...
+     */
+    @NotNull
+    private static String stripJavaComments(@NotNull String content) {
+        String withoutBlock = content.replaceAll("(?s)/\\*.*?\\*/", "");
+        return withoutBlock.replaceAll("(?m)//.*?$", "");
+    }
+
+    /**
+     * 解析并返回文件的作用域提示信息
+     * <p> 根据虚拟文件解析出项目, 模块或路径作用域, 用于标识变更的上下文范围.
+     *
+     * @param virtualFile 虚拟文件对象, 不能为 null
+     * @return 作用域提示字符串, 如果无法解析则返回 null
+     */
+    @Nullable
+    private static String resolveScopeHint(@NotNull VirtualFile virtualFile) {
         Project project = ProjectLocator.getInstance().guessProjectForFile(virtualFile);
         if (project == null || project.isDisposed()) {
             return null;
         }
-        PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
-        if (!(psiFile instanceof PsiJavaFile)) {
+        Module module = ModuleUtilCore.findModuleForFile(virtualFile, project);
+        String moduleName = module != null ? module.getName() : null;
+        String pathScope = resolvePathScope(project, virtualFile);
+        String primarySymbol = resolvePrimarySymbolName(project, virtualFile);
+        String raw = moduleName != null ? moduleName : (pathScope != null ? pathScope : primarySymbol);
+        if (raw == null || raw.trim().isEmpty()) {
             return null;
         }
-        Document document = FileDocumentManager.getInstance().getDocument(virtualFile);
-        if (document == null) {
-            return null;
-        }
-        int lineCount = document.getLineCount();
-        int line = preferredLine >= 0 && preferredLine < lineCount ? preferredLine : fallbackLine;
-        if (line < 0 || line >= lineCount) {
-            return null;
-        }
-        int offset = DocumentUtil.getLineStartOffset(line, document);
-        PsiElement element = psiFile.findElementAt(offset);
-        if (element == null) {
-            return null;
-        }
-        PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
-        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class, false);
-        PsiField field = PsiTreeUtil.getParentOfType(element, PsiField.class, false);
+        return normalizeScope(raw);
+    }
 
-        String className = psiClass != null ? psiClass.getName() : null;
-        if (method != null) {
-            String methodSig = method.getName() + method.getParameterList().getText();
-            return className != null ? className + "#" + methodSig : methodSig;
+    /**
+     * 解析文件路径的作用域提示
+     * <p> 根据项目基础路径和文件相对路径, 解析出文件所属的路径作用域.
+     * 该作用域通常用于标识代码在项目中的位置, 如模块, 包或目录结构.
+     *
+     * @param project     项目对象, 用于获取项目基础路径
+     * @param virtualFile 虚拟文件对象, 表示具体的文件路径
+     * @return 文件路径的作用域字符串, 如果无法解析则返回 null
+     */
+    @Nullable
+    private static String resolvePathScope(@NotNull Project project, @NotNull VirtualFile virtualFile) {
+        String basePath = project.getBasePath();
+        if (basePath == null) {
+            return null;
         }
-        if (field != null) {
-            return className != null ? className + "#" + field.getName() : field.getName();
+        String fullPath = virtualFile.getPath();
+        if (!fullPath.startsWith(basePath)) {
+            return null;
         }
-        return Objects.toString(className, null);
+        String relative = fullPath.substring(basePath.length());
+        if (relative.startsWith("/")) {
+            relative = relative.substring(1);
+        }
+        if (relative.isEmpty()) {
+            return null;
+        }
+        String[] segments = relative.split("/");
+        for (int i = 0; i < segments.length; i++) {
+            String segment = segments[i];
+            if (segment.isEmpty()) {
+                continue;
+            }
+            if (isCommonSourceRoot(segment)) {
+                continue;
+            }
+            return segment;
+        }
+        return null;
+    }
+
+    /**
+     * 判断指定的文件夹段是否为常见的源代码根目录
+     * <p> 该方法用于识别常见的源代码根目录名称, 如 "src", "main", "test" 等.
+     *
+     * @param segment 文件夹名称片段
+     * @return 如果是常见源代码根目录则返回 true, 否则返回 false
+     */
+    private static boolean isCommonSourceRoot(@NotNull String segment) {
+        String value = segment.toLowerCase(Locale.ROOT);
+        return "src".equals(value)
+               || "main".equals(value)
+               || "test".equals(value)
+               || "java".equals(value)
+               || "kotlin".equals(value)
+               || "resources".equals(value);
+    }
+
+    /**
+     * 解析并获取文件中的主要符号名称
+     * <p> 通过指定的项目和虚拟文件, 调用上下文解析器注册表获取文件中的主要符号名称 (如类名, 函数名等)
+     * <p> 该方法通常用于代码分析, 重构或版本控制变更的上下文识别场景
+     *
+     * @param project     项目对象, 不能为 null
+     * @param virtualFile 虚拟文件对象, 不能为 null
+     * @return 主要符号名称, 如果无法解析则返回 null
+     */
+    @Nullable
+    private static String resolvePrimarySymbolName(@NotNull Project project, @NotNull VirtualFile virtualFile) {
+        return ContextResolverRegistry.resolvePrimarySymbolName(project, virtualFile);
+    }
+
+    /**
+     * 标准化作用域名称
+     * <p> 将原始作用域名称转换为小写并使用连字符分隔的标准化格式
+     * <p> 该方法会移除非字母数字字符, 将驼峰命名转换为连字符分隔, 并去除首尾连字符
+     * <p> 使用示例:
+     * <pre>{@code
+     * String normalized = normalizeScope("MyComponent");
+     * // 结果: "my-component"
+     *
+     * String normalized2 = normalizeScope("src/main/java");
+     * // 结果: "src-main-java"
+     *
+     * String normalized3 = normalizeScope("test");
+     * // 结果: "test"
+     * }</pre>
+     *
+     * @param raw 原始作用域名称, 不能为空
+     * @return 标准化后的作用域名称, 已转换为小写并使用连字符分隔
+     */
+    @NotNull
+    private static String normalizeScope(@NotNull String raw) {
+        String trimmed = raw.trim();
+        String dashed = trimmed.replaceAll("([a-z0-9])([A-Z])", "$1-$2")
+            .replaceAll("[^a-zA-Z0-9]+", "-")
+            .replaceAll("^-+|-+$", "");
+        return dashed.toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 解析文件中的符号上下文信息
+     * <p> 根据指定的文件和行号解析出相关的代码上下文, 用于标识变更内容在项目结构中的位置
+     *
+     * @param virtualFile   虚拟文件对象, 表示需要解析的文件
+     * @param preferredLine 优先使用的行号, 通常为修改后的起始行
+     * @param fallbackLine  备用行号, 当首选行号无效时使用
+     * @return 解析出的符号上下文字符串, 如果无法解析则返回 null
+     */
+    @Nullable
+    private static String resolveSymbolContext(@Nullable VirtualFile virtualFile,
+                                               int preferredLine,
+                                               int fallbackLine) {
+        if (virtualFile == null) {
+            return null;
+        }
+        return ContextResolverRegistry.resolveContext(virtualFile, preferredLine, fallbackLine);
     }
 }

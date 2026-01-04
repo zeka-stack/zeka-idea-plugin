@@ -11,7 +11,8 @@
     <vendor email="dong4j@gmail.com">dong4j</vendor>
 
     <depends>com.intellij.modules.platform</depends>
-    <!--<depends>com.intellij.modules.java</depends>-->
+    <depends optional="true" config-file="changelog-java.xml">com.intellij.java</depends>
+    <depends optional="true" config-file="changelog-xml.xml">com.intellij.modules.xml</depends>
     <depends>com.intellij.modules.vcs</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
