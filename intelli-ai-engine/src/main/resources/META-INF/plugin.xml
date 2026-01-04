@@ -75,11 +75,17 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewStartupActivity"/>
         <!-- 项目启动时初始化 Console Tab -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleStartupActivity"/>
+        <!-- 项目启动时显示支持通知 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.support.SupportStartupActivity"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
-        <notificationGroup id="IntelliAI Engine Notifications"
-                           displayType="BALLOON"
-                           isLogByDefault="true"/>
+        <notificationGroup displayType="BALLOON" id="IntelliAI Engine" isLogByDefault="false"/>
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup displayType="BALLOON" id="IntelliAI Engine Log" isLogByDefault="true"/>
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup displayType="STICKY_BALLOON" id="IntelliAI Engine Sticky" isLogByDefault="false"/>
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup displayType="STICKY_BALLOON" id="IntelliAI Engine Sticky Log" isLogByDefault="true"/>
 
         <!-- 状态栏聚合入口 -->
         <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidgetFactory"
@@ -93,10 +99,10 @@
     </extensions>
 
     <actions>
-        <action id="IntelliAIEngine.WhatsNewAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewAction">
+        <group id="IntelliAIEngine.PluginsActionGroup"
+               class="dev.dong4j.zeka.stack.idea.plugin.common.action.IntelliAIPluginsActionGroup"
+               popup="true">
             <add-to-group group-id="HelpMenu" anchor="last"/>
-        </action>
-
+        </group>
     </actions>
 </idea-plugin>
