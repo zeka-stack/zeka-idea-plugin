@@ -164,6 +164,7 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
 
         // 2. 快捷设置
         group.add(Separator.create(ChangelogBundle.message("statusbar.quick.settings.title")));
+        group.add(new CommitMessageContextToggleAction());
         group.add(new ReleaseLogStartPointActionGroup());
         group.add(createReleaseLogProviderActionGroup(context));
 
@@ -177,6 +178,40 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
             JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
             true
                                                                   );
+    }
+
+    /**
+     * 提交消息上下文切换动作类
+     * <p> 该类继承自 AnAction, 用于在状态栏中切换提交消息的上下文显示状态.
+     * <p> 通过点击该动作, 用户可以在提交消息的输入框与上下文之间进行切换.
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.04
+     * @since 1.0.0
+     */
+    private static class CommitMessageContextToggleAction extends AnAction {
+        CommitMessageContextToggleAction() {
+            super(ChangelogBundle.message("statusbar.commit.context.toggle"));
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.useCommitMessageInputAsContext = !settings.useCommitMessageInputAsContext;
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            boolean isSelected = SettingsState.getInstance().useCommitMessageInputAsContext;
+            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
     }
 
     /**

@@ -131,6 +131,25 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public String commitMessageSystemPrompt = getDefaultCommitMessageSystemPrompt();
 
     /**
+     * 是否将提交面板输入的说明作为上下文
+     * <p>启用后，会读取 Git 提交消息输入框中的自然语言说明，并作为上下文提供给 AI。
+     *
+     * <p>默认值: false（默认关闭，避免误用已有提交内容）
+     */
+    public boolean useCommitMessageInputAsContext = false;
+
+    /**
+     * 是否显示提交消息提示词设置
+     * <p>
+     * 控制设置页面中提交消息提示词设置区域的显示/隐藏。
+     * 提示词设置包括系统提示词和用户提示词模板。
+     * 用户可以通过复选框控制是否显示提示词设置，减少设置页面长度。
+     *
+     * <p>默认值: false（默认隐藏，减少页面长度）
+     */
+    public boolean showCommitMessagePrompt = false;
+
+    /**
      * git-cliff 配置
      * <p>用于生成项目级别变更日志的最小配置，后续可在设置中调整。
      *
@@ -397,6 +416,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
             【代码变更内容】
             {codeDiffs}
+
+            【用户补充说明（可选）】
+            {extraContext}
 
             【最近的提交记录（最多 3 条，仅用于风格和上下文参考）】
             {recentCommits}

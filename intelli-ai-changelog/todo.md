@@ -141,3 +141,7 @@ https://github.com/Blarc/ai-commits-intellij-plugin
 1. 插件内置“按需下载”（首次使用时按平台下载并缓存）
 2. 提供“离线包”模式（允许用户手动放入指定目录）
 3. 提供“使用系统已安装 git-cliff”的选项作为兜底
+
+## 2026.01.04
+
+- [x] commit message 生成时, 允许读取消息框中的文本作为上下文以提高准确率(使用用户输入的自然语言 + code diff + 提示词来重写commit message)

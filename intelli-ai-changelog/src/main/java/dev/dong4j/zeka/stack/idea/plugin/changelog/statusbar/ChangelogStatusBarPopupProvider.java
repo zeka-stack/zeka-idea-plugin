@@ -91,11 +91,55 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         List<AIProviderConfig> providers = AIProviderUtils.getProviders();
         group.add(new ProviderSelectionActionGroup(project, providers));
         group.add(Separator.create(ChangelogBundle.message("statusbar.quick.settings.title")));
+        group.add(new CommitMessageContextToggleAction(project));
         group.add(new ReleaseLogStartPointActionGroup());
         group.add(createReleaseLogProviderActionGroup());
         group.add(Separator.create());
         group.add(new OpenSettingsAction(project));
         return group;
+    }
+
+    /**
+     * 提交消息上下文切换动作类
+     * <p> 用于在 IntelliJ IDEA 的状态栏中切换提交消息的上下文显示状态.
+     * <p> 该类继承自 AnAction, 通过点击状态栏中的按钮来切换提交消息是否作为上下文显示.
+     * <p> 具体功能包括:
+     * <ul>
+     * <li> 初始化时设置动作名称为 "切换提交消息上下文".</li>
+     * <li> 在动作执行时切换设置项 `useCommitMessageInputAsContext` 的值.</li>
+     * <li> 在更新时根据当前设置项的值更新动作的显示状态.</li>
+     * </ul>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.04
+     * @since 1.0.0
+     */
+    private static class CommitMessageContextToggleAction extends AnAction {
+        private final Project project;
+
+        CommitMessageContextToggleAction(@NotNull Project project) {
+            super(ChangelogBundle.message("statusbar.commit.context.toggle"));
+            this.project = project;
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.useCommitMessageInputAsContext = !settings.useCommitMessageInputAsContext;
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            boolean isSelected = SettingsState.getInstance().useCommitMessageInputAsContext;
+            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
     }
 
     /**

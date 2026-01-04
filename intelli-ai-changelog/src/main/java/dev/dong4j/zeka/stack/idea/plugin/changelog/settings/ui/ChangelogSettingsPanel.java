@@ -123,6 +123,14 @@ public class ChangelogSettingsPanel {
     public final JBTextArea weeklyReportTemplateTextArea = new JBTextArea(15, 50);
     /** 提交记录模板文本区域, 用于显示和编辑提交记录模板内容 */
     public final JBTextArea commitMessageTemplateTextArea = new JBTextArea(15, 50);
+    /** 提交消息系统提示词文本区域, 用于显示和编辑系统提示词 */
+    public final JBTextArea commitMessageSystemPromptTextArea = new JBTextArea(15, 50);
+    /** 是否将提交说明作为上下文 */
+    private final JBCheckBox useCommitMessageInputAsContextCheckBox;
+    /** 是否显示提交消息提示词设置 */
+    private final JBCheckBox showCommitMessagePromptCheckBox;
+    /** 提交消息提示词容器面板（用于控制可见性） */
+    private final JPanel commitMessagePromptPanel;
 
     /**
      * 构造函数, 初始化变更日志设置面板.
@@ -239,6 +247,23 @@ public class ChangelogSettingsPanel {
         // 更新 git-cliff 单选框文本，如果已安装则显示版本号
         updateGitCliffRadioButtonText();
 
+        // 创建提交消息上下文开关
+        useCommitMessageInputAsContextCheckBox =
+            new JBCheckBox(ChangelogBundle.message("settings.commit.context.enabled"));
+        useCommitMessageInputAsContextCheckBox.setToolTipText(
+            ChangelogBundle.message("settings.commit.context.tooltip"));
+
+        // 创建显示提交消息提示词复选框
+        showCommitMessagePromptCheckBox = new JBCheckBox(ChangelogBundle.message("settings.commit.message.prompt.show"));
+
+        // 创建提交消息提示词容器面板
+        commitMessagePromptPanel = new JPanel(new BorderLayout());
+
+        // 构建提交消息提示词面板内容
+        JPanel commitMessagePromptContent = createCommitMessagePromptContentPanel();
+        commitMessagePromptPanel.add(commitMessagePromptContent, BorderLayout.NORTH);
+        commitMessagePromptPanel.setVisible(false); // 默认隐藏
+
         // 初始化反馈面板
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
@@ -257,9 +282,12 @@ public class ChangelogSettingsPanel {
             .addComponent(createReleaseLogPanel())
             .addSeparator(10)
 
-            // 第三组：高级设置（可折叠）
-            .addComponent(showAdvancedSettingsCheckBox)
-            .addComponent(advancedSettingsPanel)
+            // 第三组：提交消息设置
+            .addComponent(createCommitMessagePanel())
+            .addSeparator(10)
+
+            // 第四组：变更日志设置
+            .addComponent(createChangelogSettingsPanel())
             .addSeparator(10)
 
             // 填充垂直空间，使反馈面板固定在底部
@@ -297,6 +325,9 @@ public class ChangelogSettingsPanel {
             || !dailyReportTemplateTextArea.getText().equals(settings.dailyReportTemplate)
             || !weeklyReportTemplateTextArea.getText().equals(settings.weeklyReportTemplate)
             || !commitMessageTemplateTextArea.getText().equals(settings.commitMessageTemplate)
+            || !commitMessageSystemPromptTextArea.getText().equals(settings.commitMessageSystemPrompt)
+            || useCommitMessageInputAsContextCheckBox.isSelected() != settings.useCommitMessageInputAsContext
+            || showCommitMessagePromptCheckBox.isSelected() != settings.showCommitMessagePrompt
             || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings
             || releaseLogByGitCliffRadioButton.isSelected() != (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF)
             || useTagAsStartRadioButton.isSelected() != settings.useTagAsStart
@@ -329,6 +360,9 @@ public class ChangelogSettingsPanel {
         settings.dailyReportTemplate = dailyReportTemplateTextArea.getText();
         settings.weeklyReportTemplate = weeklyReportTemplateTextArea.getText();
         settings.commitMessageTemplate = commitMessageTemplateTextArea.getText();
+        settings.commitMessageSystemPrompt = commitMessageSystemPromptTextArea.getText();
+        settings.useCommitMessageInputAsContext = useCommitMessageInputAsContextCheckBox.isSelected();
+        settings.showCommitMessagePrompt = showCommitMessagePromptCheckBox.isSelected();
         settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
         settings.releaseLog = releaseLogByGitCliffRadioButton.isSelected() ? ReleaseLogProvider.GIT_CLIFF : ReleaseLogProvider.AI;
         settings.useTagAsStart = useTagAsStartRadioButton.isSelected();
@@ -359,6 +393,10 @@ public class ChangelogSettingsPanel {
         dailyReportTemplateTextArea.setText(settings.dailyReportTemplate);
         weeklyReportTemplateTextArea.setText(settings.weeklyReportTemplate);
         commitMessageTemplateTextArea.setText(settings.commitMessageTemplate);
+        commitMessageSystemPromptTextArea.setText(settings.commitMessageSystemPrompt);
+        useCommitMessageInputAsContextCheckBox.setSelected(settings.useCommitMessageInputAsContext);
+        showCommitMessagePromptCheckBox.setSelected(settings.showCommitMessagePrompt);
+        commitMessagePromptPanel.setVisible(settings.showCommitMessagePrompt);
         showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
         advancedSettingsPanel.setVisible(settings.showPromptSettings);
 
@@ -461,6 +499,11 @@ public class ChangelogSettingsPanel {
             aiReleaseLogPromptPanel.setVisible(showAiReleaseLogPromptCheckBox.isSelected());
         });
 
+        // 显示提交消息提示词复选框控制提示词面板的显示/隐藏
+        showCommitMessagePromptCheckBox.addActionListener(e -> {
+            commitMessagePromptPanel.setVisible(showCommitMessagePromptCheckBox.isSelected());
+        });
+
         // 监听 AI 提供商选择变化，动态更新 AI 单选按钮文本
         setupAiProviderSelectionListener();
     }
@@ -497,6 +540,79 @@ public class ChangelogSettingsPanel {
         panel.setBorder(titledBorder);
 
         return panel;
+    }
+
+    /**
+     * 创建提交消息设置面板（带边框）
+     *
+     * @return 提交消息设置面板
+     */
+    private JPanel createCommitMessagePanel() {
+        // 创建带缩进的提交消息提示词复选框面板
+        JPanel commitMessagePromptCheckBoxPanel = new JPanel(new BorderLayout());
+        commitMessagePromptCheckBoxPanel.setBorder(JBUI.Borders.emptyLeft(0));
+        commitMessagePromptCheckBoxPanel.add(showCommitMessagePromptCheckBox, BorderLayout.WEST);
+
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(useCommitMessageInputAsContextCheckBox)
+            .addComponent(commitMessagePromptCheckBoxPanel)
+            .addComponent(commitMessagePromptPanel)
+            .getPanel();
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(),
+            ChangelogBundle.message("settings.commit.message.settings.title"));
+        configureTitledBorder(titledBorder);
+        panel.setBorder(titledBorder);
+
+        return panel;
+    }
+
+    /**
+     * 创建提交消息提示词内容面板
+     * <p>
+     * 创建包含提示词 Tab 页的面板。
+     *
+     * @return 提交消息提示词内容面板
+     */
+    private JPanel createCommitMessagePromptContentPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(new JBLabel("  " + ChangelogBundle.message("settings.prompt.commit.message.hint")))
+            .addComponent(createCommitMessagePromptTabbedPane())
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加无标题的边框
+        panel.setBorder(BorderFactory.createEtchedBorder());
+
+        return panel;
+    }
+
+    /**
+     * 创建提交消息提示词 Tab 页面板
+     * <p>
+     * 初始化一个包含 System 和 User 选项卡的 JBTabbedPane。
+     *
+     * @return 包含提交消息提示词配置选项卡的 JBTabbedPane 实例
+     */
+    private JBTabbedPane createCommitMessagePromptTabbedPane() {
+        JBTabbedPane promptTabbedPane = new JBTabbedPane();
+        // 设置 Tab 页的尺寸
+        promptTabbedPane.setPreferredSize(new Dimension(600, 400));
+
+        // 创建各个 Tab 页
+        promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.system"),
+                                createPromptTab(commitMessageSystemPromptTextArea, "commit.message.system"));
+        promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.user"),
+                                createPromptTab(commitMessageTemplateTextArea, "commit.message"));
+
+        return promptTabbedPane;
     }
 
     /**
@@ -972,10 +1088,31 @@ public class ChangelogSettingsPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(contentPanel, BorderLayout.CENTER);
 
-        // 添加带标题的边框
+        // 添加无标题的边框
+        panel.setBorder(BorderFactory.createEtchedBorder());
+
+        return panel;
+    }
+
+    /**
+     * 创建变更日志设置面板
+     * <p>
+     * 包含显示提示词设置的复选框和提示词模板面板。
+     *
+     * @return 变更日志设置面板
+     */
+    private JPanel createChangelogSettingsPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(showAdvancedSettingsCheckBox)
+            .addComponent(advancedSettingsPanel)
+            .getPanel();
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
         TitledBorder titledBorder = BorderFactory.createTitledBorder(
             BorderFactory.createEtchedBorder(),
-            ChangelogBundle.message("settings.advanced.settings.prompt.templates"));
+            ChangelogBundle.message("settings.changelog.settings.title"));
         configureTitledBorder(titledBorder);
         panel.setBorder(titledBorder);
 
@@ -994,7 +1131,7 @@ public class ChangelogSettingsPanel {
         // 设置 Tab 页的尺寸
         promptTabbedPane.setPreferredSize(new Dimension(600, 400));
 
-        // 创建各个 Tab 页
+        // 创建各个 Tab 页（已移除 Commit Message Template）
         promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.system"), createPromptTab(systemPromptTextArea, "system"));
         promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.changelog"), createPromptTab(changelogTemplateTextArea,
                                                                                                           "changelog"));
@@ -1002,8 +1139,6 @@ public class ChangelogSettingsPanel {
                                                                                                              "daily.report"));
         promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.weekly.report"),
                                 createPromptTab(weeklyReportTemplateTextArea, "weekly.report"));
-        promptTabbedPane.addTab(ChangelogBundle.message("settings.prompt.tab.commit.message"),
-                                createPromptTab(commitMessageTemplateTextArea, "commit.message"));
 
         return promptTabbedPane;
     }
@@ -1146,6 +1281,9 @@ public class ChangelogSettingsPanel {
                 break;
             case "commit.message":
                 textArea.setText(SettingsState.getDefaultCommitMessageUserPrompt());
+                break;
+            case "commit.message.system":
+                textArea.setText(SettingsState.getDefaultCommitMessageSystemPrompt());
                 break;
         }
         adjustTextAreaSize(textArea);
