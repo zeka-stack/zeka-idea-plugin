@@ -154,6 +154,22 @@ public final class AICommonIcons {
      */
     public static final Icon PROVIDER_ZHIPU_64 = load("/icons/chatglm_64.svg");
 
+    // ========== 支付方式图标 ==========
+
+    /**
+     * 微信支付图标
+     * <p>
+     * 用于：支持对话框中的支付方式显示
+     */
+    public static final Icon WECHAT_PAY = load("/images/wechat.webp");
+
+    /**
+     * 支付宝图标
+     * <p>
+     * 用于：支持对话框中的支付方式显示
+     */
+    public static final Icon ALIPAY = load("/images/alipay.webp");
+
     // ========== 工具方法 ==========
 
     /**
