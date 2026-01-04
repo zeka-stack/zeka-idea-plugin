@@ -38,6 +38,11 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
  */
 public final class CodeDiffUtil {
 
+    /** 每个文件最多保留的 diff 块数量 */
+    private static final int MAX_HUNKS_PER_FILE = 6;
+    /** 单个 diff 块最多保留的行数 */
+    private static final int MAX_LINES_PER_HUNK = 20;
+
     /**
      * 私有构造函数, 用于防止外部实例化
      * <p>
@@ -195,8 +200,6 @@ public final class CodeDiffUtil {
                                               @NotNull String beforeContent,
                                               @NotNull String afterContent,
                                               @Nullable VirtualFile virtualFile) {
-        final int maxHunksPerFile = 6;
-        final int maxLinesPerHunk = 20;
         boolean isJavaFile = virtualFile != null && "java".equalsIgnoreCase(virtualFile.getExtension());
         List<LineFragment> fragments = ComparisonManager.getInstance()
             .compareLines(beforeContent, afterContent, ComparisonPolicy.DEFAULT,
@@ -215,7 +218,7 @@ public final class CodeDiffUtil {
         String[] afterLines = afterContent.split("\n", -1);
 
         for (LineFragment fragment : fragments) {
-            if (hunkCount >= maxHunksPerFile) {
+            if (hunkCount >= MAX_HUNKS_PER_FILE) {
                 break;
             }
             int beforeStart = fragment.getStartLine1();
@@ -241,13 +244,14 @@ public final class CodeDiffUtil {
             if (beforeOutput.isEmpty() && afterOutput.isEmpty()) {
                 continue;
             }
-            beforeOutput = trimLines(beforeOutput, maxLinesPerHunk);
-            afterOutput = trimLines(afterOutput, maxLinesPerHunk);
+            beforeOutput = trimLines(beforeOutput, MAX_LINES_PER_HUNK);
+            afterOutput = trimLines(afterOutput, MAX_LINES_PER_HUNK);
             hasChanges = true;
             diff.append("@@ -").append(beforeStart + 1).append(",").append(beforeEnd - beforeStart)
                 .append(" +").append(afterStart + 1).append(",").append(afterEnd - afterStart)
                 .append(" @@\n");
 
+            // 使用 SPI 解析上下文(需要扩展多种语言支持)
             String context = resolveSymbolContext(virtualFile, afterStart, beforeStart);
             if (context != null && !context.isEmpty()) {
                 diff.append("上下文: ").append(context).append("\n");

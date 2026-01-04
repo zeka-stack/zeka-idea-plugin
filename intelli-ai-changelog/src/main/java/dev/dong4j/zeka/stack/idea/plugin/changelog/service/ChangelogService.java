@@ -66,6 +66,11 @@ import lombok.extern.slf4j.Slf4j;
 @Service(Service.Level.PROJECT)
 public final class ChangelogService {
 
+    /** 最近提交记录数量 */
+    private static final int RECENT_COMMITS_LIMIT = 2;
+    /** 控制台提示词截断长度 */
+    private static final int PROMPT_LOG_MAX_LENGTH = 2000;
+
     /** 项目对象, 用于表示当前操作所关联的项目信息 */
     private final Project project;
 
@@ -789,7 +794,7 @@ public final class ChangelogService {
             fileCount++;
         }
 
-        String recentCommitsText = buildRecentCommitMessagesText(3);
+        String recentCommitsText = buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
 
         String diffText = codeDiffsText.toString().trim();
         String contextText = userContext != null ? userContext.trim() : "";
@@ -801,7 +806,7 @@ public final class ChangelogService {
         }
         if (!template.contains("{recentCommits}") && !recentCommitsText.isEmpty()) {
             // 模板未显式包含占位符时，追加最近提交记录
-            prompt = prompt + "\n\n历史提交(最近3条):\n" + recentCommitsText;
+            prompt = prompt + "\n\n历史提交(最近" + RECENT_COMMITS_LIMIT + "条):\n" + recentCommitsText;
         }
         return prompt;
     }
@@ -993,6 +998,14 @@ public final class ChangelogService {
         return result;
     }
 
+    /**
+     * 记录变更日志请求的信息
+     * <p> 该方法用于在控制台打印变更日志请求的相关信息, 包括请求模式,AI 提供商配置和请求参数.
+     *
+     * @param mode    请求模式, 例如 "stream" 或 "single"
+     * @param config  AI 提供商配置对象, 包含提供商类型, 模型名称, 基础 URL 等信息
+     * @param request AIChatRequest 对象, 包含系统提示词和用户提示词
+     */
     private void logChangelogRequest(@NotNull String mode,
                                      @NotNull AIProviderConfig config,
                                      @NotNull AIChatRequest request) {
@@ -1014,12 +1027,20 @@ public final class ChangelogService {
                                                 config.runtimeSettings.maxRetries));
         AIConsoleLoggerUtil.print(project,
                                   "System Prompt (" + request.systemPrompt().length() + " chars):\n" +
-                                  truncate(request.systemPrompt(), 2000));
+                                  truncate(request.systemPrompt(), PROMPT_LOG_MAX_LENGTH));
         AIConsoleLoggerUtil.print(project,
                                   "User Prompt (" + request.userPrompt().length() + " chars):\n" +
-                                  truncate(request.userPrompt(), 2000));
+                                  truncate(request.userPrompt(), PROMPT_LOG_MAX_LENGTH));
     }
 
+    /**
+     * 截断文本
+     * <p> 如果文本长度小于或等于指定的最大长度, 则返回原始文本; 否则截断文本并在末尾添加省略号和字符数信息.
+     *
+     * @param text      要截断的文本
+     * @param maxLength 允许的最大长度
+     * @return 截断后的文本, 如果超出最大长度则在末尾添加省略号和字符数信息
+     */
     private String truncate(@NotNull String text, int maxLength) {
         if (text.length() <= maxLength) {
             return text;
