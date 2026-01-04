@@ -11,7 +11,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
-import com.intellij.util.concurrency.EdtScheduledExecutorService;
+import com.intellij.util.concurrency.AppExecutorUtil;
 import com.intellij.util.io.HttpRequests;
 
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +63,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
             return Unit.INSTANCE;
         }
 
-        EdtScheduledExecutorService.getInstance().schedule(() -> {
+        AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
             if (!project.isDisposed()) {
                 checkForNewVersion(project);
             }
