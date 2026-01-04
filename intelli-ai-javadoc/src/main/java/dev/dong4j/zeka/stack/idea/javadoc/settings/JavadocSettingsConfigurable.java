@@ -152,7 +152,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         SettingsState panelSettings = settingsPanel.getSettings();
 
         // 比较各个配置项
-        if (currentSettings.providerConfig != panelSettings.providerConfig) {
+        if (!Objects.equals(currentSettings.providerConfig, panelSettings.providerConfig)) {
             return true;
         }
 
@@ -168,10 +168,10 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.overrideExisting != panelSettings.overrideExisting) {
             return true;
         }
-        if (!currentSettings.overrideMode.equals(panelSettings.overrideMode)) {
+        if (!Objects.equals(currentSettings.overrideMode, panelSettings.overrideMode)) {
             return true;
         }
-        if (!currentSettings.fixJavadocPromptTemplate.equals(panelSettings.fixJavadocPromptTemplate)) {
+        if (!Objects.equals(currentSettings.fixJavadocPromptTemplate, panelSettings.fixJavadocPromptTemplate)) {
             return true;
         }
         if (currentSettings.enableGenerationContext != panelSettings.enableGenerationContext) {
@@ -185,19 +185,19 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         }
 
         // 比较 Prompt 模板配置
-        if (!currentSettings.systemPromptTemplate.equals(panelSettings.systemPromptTemplate)) {
+        if (!Objects.equals(currentSettings.systemPromptTemplate, panelSettings.systemPromptTemplate)) {
             return true;
         }
-        if (!currentSettings.classPromptTemplate.equals(panelSettings.classPromptTemplate)) {
+        if (!Objects.equals(currentSettings.classPromptTemplate, panelSettings.classPromptTemplate)) {
             return true;
         }
-        if (!currentSettings.methodPromptTemplate.equals(panelSettings.methodPromptTemplate)) {
+        if (!Objects.equals(currentSettings.methodPromptTemplate, panelSettings.methodPromptTemplate)) {
             return true;
         }
-        if (!currentSettings.fieldPromptTemplate.equals(panelSettings.fieldPromptTemplate)) {
+        if (!Objects.equals(currentSettings.fieldPromptTemplate, panelSettings.fieldPromptTemplate)) {
             return true;
         }
-        if (!currentSettings.testPromptTemplate.equals(panelSettings.testPromptTemplate)) {
+        if (!Objects.equals(currentSettings.testPromptTemplate, panelSettings.testPromptTemplate)) {
             return true;
         }
 
