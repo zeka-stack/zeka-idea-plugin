@@ -129,6 +129,8 @@ public class ChangelogSettingsPanel {
     private final JBCheckBox useCommitMessageInputAsContextCheckBox;
     /** 是否显示提交消息提示词设置 */
     private final JBCheckBox showCommitMessagePromptCheckBox;
+    /** 提交消息 diff 生成方式 */
+    private final JComboBox<SettingsState.CommitMessageDiffProvider> commitMessageDiffProviderComboBox;
     /** 提交消息提示词容器面板（用于控制可见性） */
     private final JPanel commitMessagePromptPanel;
 
@@ -255,6 +257,24 @@ public class ChangelogSettingsPanel {
 
         // 创建显示提交消息提示词复选框
         showCommitMessagePromptCheckBox = new JBCheckBox(ChangelogBundle.message("settings.commit.message.prompt.show"));
+        commitMessageDiffProviderComboBox = new JComboBox<>(SettingsState.CommitMessageDiffProvider.values());
+        commitMessageDiffProviderComboBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
+            @Override
+            public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list,
+                                                                   Object value,
+                                                                   int index,
+                                                                   boolean isSelected,
+                                                                   boolean cellHasFocus) {
+                java.awt.Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof SettingsState.CommitMessageDiffProvider provider) {
+                    String key = provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH
+                                 ? "settings.commit.message.diff.provider.idea.patch"
+                                 : "settings.commit.message.diff.provider.code.diff";
+                    setText(ChangelogBundle.message(key));
+                }
+                return component;
+            }
+        });
 
         // 创建提交消息提示词容器面板
         commitMessagePromptPanel = new JPanel(new BorderLayout());
@@ -327,6 +347,7 @@ public class ChangelogSettingsPanel {
             || !commitMessageTemplateTextArea.getText().equals(settings.commitMessageTemplate)
             || !commitMessageSystemPromptTextArea.getText().equals(settings.commitMessageSystemPrompt)
             || useCommitMessageInputAsContextCheckBox.isSelected() != settings.useCommitMessageInputAsContext
+            || commitMessageDiffProviderComboBox.getSelectedItem() != settings.commitMessageDiffProvider
             || showCommitMessagePromptCheckBox.isSelected() != settings.showCommitMessagePrompt
             || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings
             || releaseLogByGitCliffRadioButton.isSelected() != (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF)
@@ -362,6 +383,7 @@ public class ChangelogSettingsPanel {
         settings.commitMessageTemplate = commitMessageTemplateTextArea.getText();
         settings.commitMessageSystemPrompt = commitMessageSystemPromptTextArea.getText();
         settings.useCommitMessageInputAsContext = useCommitMessageInputAsContextCheckBox.isSelected();
+        settings.commitMessageDiffProvider = (SettingsState.CommitMessageDiffProvider) commitMessageDiffProviderComboBox.getSelectedItem();
         settings.showCommitMessagePrompt = showCommitMessagePromptCheckBox.isSelected();
         settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
         settings.releaseLog = releaseLogByGitCliffRadioButton.isSelected() ? ReleaseLogProvider.GIT_CLIFF : ReleaseLogProvider.AI;
@@ -395,6 +417,7 @@ public class ChangelogSettingsPanel {
         commitMessageTemplateTextArea.setText(settings.commitMessageTemplate);
         commitMessageSystemPromptTextArea.setText(settings.commitMessageSystemPrompt);
         useCommitMessageInputAsContextCheckBox.setSelected(settings.useCommitMessageInputAsContext);
+        commitMessageDiffProviderComboBox.setSelectedItem(settings.commitMessageDiffProvider);
         showCommitMessagePromptCheckBox.setSelected(settings.showCommitMessagePrompt);
         commitMessagePromptPanel.setVisible(settings.showCommitMessagePrompt);
         showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
@@ -555,6 +578,8 @@ public class ChangelogSettingsPanel {
 
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addComponent(useCommitMessageInputAsContextCheckBox)
+            .addLabeledComponent(ChangelogBundle.message("settings.commit.message.diff.provider.label"),
+                                 commitMessageDiffProviderComboBox)
             .addComponent(commitMessagePromptCheckBoxPanel)
             .addComponent(commitMessagePromptPanel)
             .getPanel();
