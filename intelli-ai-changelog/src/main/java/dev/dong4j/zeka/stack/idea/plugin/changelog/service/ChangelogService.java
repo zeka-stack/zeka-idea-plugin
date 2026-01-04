@@ -672,6 +672,22 @@ public final class ChangelogService {
      */
     @NotNull
     public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes) throws Exception {
+        return generateCommitMessageFromDiff(changes, null);
+    }
+
+    /**
+     * 基于代码变更 (diff) 生成提交记录（带上下文）
+     * <p>
+     * 根据代码的实际改动生成提交记录, 可选提供用户输入的上下文说明.
+     *
+     * @param changes     代码变更集合
+     * @param userContext 用户输入的上下文说明, 可为空
+     * @return 生成的提交记录内容
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
+     */
+    @NotNull
+    public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes,
+                                                @Nullable String userContext) throws Exception {
         // 1. 提取代码变更信息
         List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
 
@@ -680,7 +696,7 @@ public final class ChangelogService {
         }
 
         // 2. 构建 prompt
-        String prompt = buildPromptFromCodeDiff(codeDiffs);
+        String prompt = buildPromptFromCodeDiff(codeDiffs, userContext);
 
         // 3. 调用 AI 服务生成提交记录
         return callAIServiceForCommitMessage(prompt);
@@ -699,12 +715,30 @@ public final class ChangelogService {
     @NotNull
     public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
                                                       @NotNull AIStreamResponseListener listener) throws Exception {
+        return generateCommitMessageFromDiffStream(changes, listener, null);
+    }
+
+    /**
+     * 基于代码变更 (diff) 生成提交记录(流式回调, 带上下文)
+     * <p>
+     * 根据代码的实际改动生成提交记录, 可选提供用户输入的上下文说明.
+     *
+     * @param changes     代码变更集合
+     * @param listener    流式响应监听器, 用于接收生成过程中的数据流
+     * @param userContext 用户输入的上下文说明, 可为空
+     * @return 生成的提交记录内容
+     * @throws Exception 当 AI 服务调用失败时抛出, 包含友好的错误消息
+     */
+    @NotNull
+    public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
+                                                      @NotNull AIStreamResponseListener listener,
+                                                      @Nullable String userContext) throws Exception {
         List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
         if (codeDiffs.isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
         log.debug("Generating commit message from diff:\n{}", codeDiffs);
-        String prompt = buildPromptFromCodeDiff(codeDiffs);
+        String prompt = buildPromptFromCodeDiff(codeDiffs, userContext);
         return callAIServiceForCommitMessageStream(prompt, listener);
     }
 
@@ -715,7 +749,8 @@ public final class ChangelogService {
      * @return 构建好的 prompt
      */
     @NotNull
-    private String buildPromptFromCodeDiff(@NotNull List<CodeDiff> codeDiffs) {
+    private String buildPromptFromCodeDiff(@NotNull List<CodeDiff> codeDiffs,
+                                           @Nullable String userContext) {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.commitMessageTemplate;
 
@@ -730,6 +765,9 @@ public final class ChangelogService {
             }
             codeDiffsText.append("文件: ").append(diff.filePath).append("\n");
             codeDiffsText.append("变更类型: ").append(diff.changeType.name()).append("\n");
+            if (diff.scopeHint != null && !diff.scopeHint.trim().isEmpty()) {
+                codeDiffsText.append("建议scope: ").append(diff.scopeHint).append("\n");
+            }
             codeDiffsText.append("新增行数: ").append(diff.addedLines).append("\n");
             codeDiffsText.append("删除行数: ").append(diff.deletedLines).append("\n");
             if (codeDiffsText.length() >= maxDiffChars) {
@@ -754,8 +792,13 @@ public final class ChangelogService {
         String recentCommitsText = buildRecentCommitMessagesText(3);
 
         String diffText = codeDiffsText.toString().trim();
+        String contextText = userContext != null ? userContext.trim() : "";
         String prompt = template.replace("{codeDiffs}", diffText)
-            .replace("{recentCommits}", recentCommitsText);
+            .replace("{recentCommits}", recentCommitsText)
+            .replace("{extraContext}", contextText);
+        if (!template.contains("{extraContext}") && !contextText.isEmpty()) {
+            prompt = prompt + "\n\n用户补充说明:\n" + contextText;
+        }
         if (!template.contains("{recentCommits}") && !recentCommitsText.isEmpty()) {
             // 模板未显式包含占位符时，追加最近提交记录
             prompt = prompt + "\n\n历史提交(最近3条):\n" + recentCommitsText;

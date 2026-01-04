@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
@@ -123,6 +124,10 @@ public class CommitMessageGenerator {
                         if (state.cancelled.get()) {
                             return;
                         }
+                        String contextText = null;
+                        if (SettingsState.getInstance().useCommitMessageInputAsContext) {
+                            contextText = getCommitMessageText(commitMessageControl);
+                        }
                         ChangelogService service = ChangelogService.getInstance(project);
                         StringBuilder buffer = new StringBuilder();
                         AtomicReference<Boolean> updated = new AtomicReference<>(false);
@@ -190,7 +195,7 @@ public class CommitMessageGenerator {
                         };
 
                         // 流式生成并同步返回最终结果
-                        String commitMessage = service.generateCommitMessageFromDiffStream(changes, listener);
+                        String commitMessage = service.generateCommitMessageFromDiffStream(changes, listener, contextText);
                         String formattedCommitMessage = MessageFormatter.format(commitMessage);
 
                         // 在 EDT 中显示结果
@@ -255,6 +260,35 @@ public class CommitMessageGenerator {
     }
 
     /**
+     * 读取提交消息文本
+     * <p> 尝试通过反射调用提交面板对象的方法来读取提交消息文本. 支持的方法名包括 "getCommitMessage","getCommitMessageText" 和 "getText".
+     *
+     * @param commitMessageControl 提交面板的控制对象
+     * @return 读取到的提交消息文本, 若读取失败则返回 null
+     */
+    @Nullable
+    private String getCommitMessageText(@Nullable Object commitMessageControl) {
+        if (commitMessageControl == null) {
+            return null;
+        }
+        for (String methodName : List.of("getCommitMessage", "getCommitMessageText", "getText")) {
+            Method method = findMethod(commitMessageControl.getClass(), methodName);
+            if (method != null) {
+                try {
+                    Object result = method.invoke(commitMessageControl);
+                    if (result instanceof String text) {
+                        String trimmed = text.trim();
+                        return trimmed.isEmpty() ? null : trimmed;
+                    }
+                } catch (Exception e) {
+                    log.warn("Git 提交页面：读取提交消息失败: {}", methodName, e);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * 查找指定类中的方法
      * <p> 根据方法名和参数类型查找目标类中的方法. 如果找到, 则返回该方法对象; 否则返回 null.
      *
@@ -267,6 +301,23 @@ public class CommitMessageGenerator {
     private static Method findMethod(@NotNull Class<?> target, @NotNull String name, @NotNull Class<?> paramType) {
         try {
             return target.getMethod(name, paramType);
+        } catch (NoSuchMethodException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 查找指定类中的无参方法
+     * <p> 根据方法名查找目标类中的方法. 如果找到, 则返回该方法对象; 否则返回 null.
+     *
+     * @param target 目标类
+     * @param name   方法名
+     * @return 匹配的方法对象, 如果未找到则返回 null
+     */
+    @Nullable
+    private static Method findMethod(@NotNull Class<?> target, @NotNull String name) {
+        try {
+            return target.getMethod(name);
         } catch (NoSuchMethodException e) {
             return null;
         }
