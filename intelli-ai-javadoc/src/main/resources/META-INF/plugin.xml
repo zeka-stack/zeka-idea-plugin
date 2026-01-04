@@ -52,6 +52,9 @@
         <!-- Javadoc 文件模板处理器 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.javadoc.component.JavadocFileTemplatesHandler"/>
 
+        <!-- 文件保存时自动生成 Javadoc 监听器 -->
+        <!--<applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.javadoc.listener.GenerateOnSaveListener"/>-->
+
 
         <!-- 状态栏快捷设置改为由 engine 聚合 -->
 
@@ -79,6 +82,12 @@
         </intentionAction>
 
     </extensions>
+
+    <applicationListeners>
+        <listener
+            topic="com.intellij.openapi.fileEditor.FileDocumentManagerListener"
+            class="dev.dong4j.zeka.stack.idea.javadoc.listener.GenerateOnSaveListener"/>
+    </applicationListeners>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.javadoc.update.JavadocPluginUpdateInfoProvider"/>
