@@ -1,10 +1,27 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
+import com.intellij.diff.comparison.ComparisonManager;
+import com.intellij.diff.comparison.ComparisonPolicy;
+import com.intellij.diff.fragments.LineFragment;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.progress.ProgressIndicatorProvider;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectLocator;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiJavaFile;
+import com.intellij.psi.PsiManager;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.util.PsiTreeUtil;
+import com.intellij.util.DocumentUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 
@@ -154,12 +172,14 @@ public final class CodeDiffUtil {
                 }
 
                 // 生成简单的 unified diff 格式
-                return generateUnifiedDiff(
+                String diff = generateUnifiedDiff(
                     beforeRevision != null ? beforeRevision.getFile().getName() : "null",
                     afterRevision != null ? afterRevision.getFile().getName() : "null",
                     beforeContent,
-                    afterContent
+                    afterContent,
+                    change.getVirtualFile()
                                           );
+                return diff.isEmpty() ? null : diff;
             } catch (Exception e) {
                 // 忽略异常，返回 null
                 return null;
@@ -180,43 +200,168 @@ public final class CodeDiffUtil {
     private static String generateUnifiedDiff(@NotNull String beforeFileName,
                                               @NotNull String afterFileName,
                                               @NotNull String beforeContent,
-                                              @NotNull String afterContent) {
+                                              @NotNull String afterContent,
+                                              @Nullable VirtualFile virtualFile) {
+        List<LineFragment> fragments = ComparisonManager.getInstance()
+            .compareLines(beforeContent, afterContent, ComparisonPolicy.DEFAULT,
+                          ProgressIndicatorProvider.getGlobalProgressIndicator());
+        if (fragments.isEmpty()) {
+            return "";
+        }
+
         StringBuilder diff = new StringBuilder();
         diff.append("--- ").append(beforeFileName).append("\n");
         diff.append("+++ ").append(afterFileName).append("\n");
-        diff.append("@@ -1,").append(beforeContent.split("\n").length)
-            .append(" +1,").append(afterContent.split("\n").length).append(" @@\n");
+        boolean hasChanges = false;
 
         String[] beforeLines = beforeContent.split("\n", -1);
         String[] afterLines = afterContent.split("\n", -1);
 
-        int beforeIndex = 0;
-        int afterIndex = 0;
+        for (LineFragment fragment : fragments) {
+            int beforeStart = fragment.getStartLine1();
+            int beforeEnd = fragment.getEndLine1();
+            int afterStart = fragment.getStartLine2();
+            int afterEnd = fragment.getEndLine2();
+            List<String> beforeChanged = extractLines(beforeLines, beforeStart, beforeEnd);
+            List<String> afterChanged = extractLines(afterLines, afterStart, afterEnd);
+            if (isWhitespaceOnlyChange(beforeChanged, afterChanged)) {
+                continue;
+            }
+            if (isImportOnlyChange(beforeChanged, afterChanged)) {
+                continue;
+            }
+            List<String> beforeOutput = filterNonIgnorableLines(beforeChanged);
+            List<String> afterOutput = filterNonIgnorableLines(afterChanged);
+            if (beforeOutput.isEmpty() && afterOutput.isEmpty()) {
+                continue;
+            }
+            hasChanges = true;
+            diff.append("@@ -").append(beforeStart + 1).append(",").append(beforeEnd - beforeStart)
+                .append(" +").append(afterStart + 1).append(",").append(afterEnd - afterStart)
+                .append(" @@\n");
 
-        while (beforeIndex < beforeLines.length || afterIndex < afterLines.length) {
-            if (beforeIndex >= beforeLines.length) {
-                // 只有新增的行
-                diff.append("+").append(afterLines[afterIndex]).append("\n");
-                afterIndex++;
-            } else if (afterIndex >= afterLines.length) {
-                // 只有删除的行
-                diff.append("-").append(beforeLines[beforeIndex]).append("\n");
-                beforeIndex++;
-            } else if (beforeLines[beforeIndex].equals(afterLines[afterIndex])) {
-                // 相同的行
-                diff.append(" ").append(beforeLines[beforeIndex]).append("\n");
-                beforeIndex++;
-                afterIndex++;
-            } else {
-                // 不同的行，先删除后添加
-                diff.append("-").append(beforeLines[beforeIndex]).append("\n");
-                beforeIndex++;
-                diff.append("+").append(afterLines[afterIndex]).append("\n");
-                afterIndex++;
+            String context = resolveJavaSymbolContext(virtualFile, afterStart, beforeStart);
+            if (context != null && !context.isEmpty()) {
+                diff.append("上下文: ").append(context).append("\n");
+            }
+            for (String line : beforeOutput) {
+                diff.append("-").append(line).append("\n");
+            }
+            for (String line : afterOutput) {
+                diff.append("+").append(line).append("\n");
             }
         }
 
-        return diff.toString();
+        return hasChanges ? diff.toString() : "";
+    }
+
+    @NotNull
+    private static List<String> extractLines(@NotNull String[] lines, int start, int end) {
+        List<String> result = new ArrayList<>();
+        for (int i = start; i < end && i < lines.length; i++) {
+            result.add(lines[i]);
+        }
+        return result;
+    }
+
+    @NotNull
+    private static List<String> filterNonIgnorableLines(@NotNull List<String> lines) {
+        List<String> result = new ArrayList<>();
+        for (String line : lines) {
+            if (!isIgnorableLine(line)) {
+                result.add(line);
+            }
+        }
+        return result;
+    }
+
+    private static boolean isWhitespaceOnlyChange(@NotNull List<String> beforeLines,
+                                                  @NotNull List<String> afterLines) {
+        if (beforeLines.size() != afterLines.size()) {
+            return false;
+        }
+        for (int i = 0; i < beforeLines.size(); i++) {
+            if (!normalizeLine(beforeLines.get(i)).equals(normalizeLine(afterLines.get(i)))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isImportOnlyChange(@NotNull List<String> beforeLines,
+                                              @NotNull List<String> afterLines) {
+        if (beforeLines.isEmpty() && afterLines.isEmpty()) {
+            return false;
+        }
+        for (String line : beforeLines) {
+            if (!isImportLine(line) && !isIgnorableLine(line)) {
+                return false;
+            }
+        }
+        for (String line : afterLines) {
+            if (!isImportLine(line) && !isIgnorableLine(line)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isImportLine(@NotNull String line) {
+        String trimmed = line.trim();
+        return trimmed.startsWith("import ");
+    }
+
+    private static boolean isIgnorableLine(@NotNull String line) {
+        String trimmed = line.trim();
+        return trimmed.isEmpty();
+    }
+
+    @NotNull
+    private static String normalizeLine(@NotNull String line) {
+        return line.replaceAll("\\s+", "");
+    }
+
+    @Nullable
+    private static String resolveJavaSymbolContext(@Nullable VirtualFile virtualFile,
+                                                   int preferredLine,
+                                                   int fallbackLine) {
+        if (virtualFile == null || !"java".equalsIgnoreCase(virtualFile.getExtension())) {
+            return null;
+        }
+        Project project = ProjectLocator.getInstance().guessProjectForFile(virtualFile);
+        if (project == null || project.isDisposed()) {
+            return null;
+        }
+        PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
+        if (!(psiFile instanceof PsiJavaFile)) {
+            return null;
+        }
+        Document document = FileDocumentManager.getInstance().getDocument(virtualFile);
+        if (document == null) {
+            return null;
+        }
+        int lineCount = document.getLineCount();
+        int line = preferredLine >= 0 && preferredLine < lineCount ? preferredLine : fallbackLine;
+        if (line < 0 || line >= lineCount) {
+            return null;
+        }
+        int offset = DocumentUtil.getLineStartOffset(line, document);
+        PsiElement element = psiFile.findElementAt(offset);
+        if (element == null) {
+            return null;
+        }
+        PsiMethod method = PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
+        PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class, false);
+        PsiField field = PsiTreeUtil.getParentOfType(element, PsiField.class, false);
+
+        String className = psiClass != null ? psiClass.getName() : null;
+        if (method != null) {
+            String methodSig = method.getName() + method.getParameterList().getText();
+            return className != null ? className + "#" + methodSig : methodSig;
+        }
+        if (field != null) {
+            return className != null ? className + "#" + field.getName() : field.getName();
+        }
+        return Objects.toString(className, null);
     }
 }
-
