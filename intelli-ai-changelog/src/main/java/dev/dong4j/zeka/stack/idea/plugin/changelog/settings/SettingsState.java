@@ -142,14 +142,15 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 提交消息 diff 生成方式
      * <p>控制提交消息生成时使用的 diff 方案，支持 CodeDiffUtil 与 IdeaTextPatchBuilder 两种方案。
      *
-     * <p>默认值: CODE_DIFF
+     * <p>默认值: AUTO
      */
-    public CommitMessageDiffProvider commitMessageDiffProvider = CommitMessageDiffProvider.CODE_DIFF;
+    public CommitMessageDiffProvider commitMessageDiffProvider = CommitMessageDiffProvider.AUTO;
 
     /**
      * 提交消息 diff 生成方式
      */
     public enum CommitMessageDiffProvider {
+        AUTO,
         CODE_DIFF,
         IDEA_PATCH
     }
@@ -428,16 +429,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultCommitMessageUserPrompt() {
         return """
-            请根据以下信息生成本次提交的 Git commit message。
+            请根据以下结构化上下文生成本次提交的 Git commit message。
 
-            【代码变更内容】
+            【结构化上下文（JSON）】
             {codeDiffs}
 
-            【用户补充说明（可选）】
-            {extraContext}
+            【IDEA 原生 patch（可选）】
+            {rawPatch}
 
-            【最近的提交记录（最多 3 条，仅用于风格和上下文参考）】
-            {recentCommits}
+            【降噪摘要（可选）】
+            {diffSummary}
             """;
     }
 
@@ -467,6 +468,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             2. 关注「设计意图」「行为变化」「约束变化」，而非实现细节
             3. 如果是重构，必须说明“为什么现在需要重构”
             4. 忽略无语义变更（格式化、空白、等价重排）
+            5. 上下文以结构化 JSON 提供：
+               - `changes[].full_diff_content` 是真实 diff，必须优先参考
+               - `statistics` 提供整体变更规模与 scope 提示
+               - `metadata.extra_context` 为用户补充说明，可谨慎参考
 
             **正文（body）书写规则（强制）：**
             - 如果需要正文，必须使用 Markdown 无序列表

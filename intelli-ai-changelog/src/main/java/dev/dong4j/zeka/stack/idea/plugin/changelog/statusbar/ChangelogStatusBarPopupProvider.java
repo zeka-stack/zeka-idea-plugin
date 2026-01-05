@@ -91,7 +91,14 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         List<AIProviderConfig> providers = AIProviderUtils.getProviders();
         group.add(new ProviderSelectionActionGroup(project, providers));
         group.add(Separator.create(ChangelogBundle.message("statusbar.quick.settings.title")));
+
+        // Commit message 设置分组：包含 diff provider 与“使用提交输入作为上下文”开关。
+        group.add(Separator.create(ChangelogBundle.message("statusbar.commit.message.settings.title")));
+        group.add(new CommitMessageDiffProviderActionGroup());
         group.add(new CommitMessageContextToggleAction(project));
+
+        group.add(Separator.create());
+        group.add(Separator.create(ChangelogBundle.message("statusbar.release.log.settings.title")));
         group.add(new ReleaseLogStartPointActionGroup());
         group.add(createReleaseLogProviderActionGroup());
         group.add(Separator.create());
@@ -116,7 +123,7 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
      * @date 2026.01.04
      * @since 1.0.0
      */
-    private static class CommitMessageContextToggleAction extends AnAction {
+    private static class CommitMessageContextToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
         private final Project project;
 
         CommitMessageContextToggleAction(@NotNull Project project) {
@@ -125,20 +132,84 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         }
 
         @Override
-        public void actionPerformed(@NotNull AnActionEvent e) {
-            SettingsState settings = SettingsState.getInstance();
-            settings.useCommitMessageInputAsContext = !settings.useCommitMessageInputAsContext;
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().useCommitMessageInputAsContext;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().useCommitMessageInputAsContext = state;
+        }
+    }
+
+    /**
+     * 提交消息 diff provider 选择分组
+     * <p> 类似 Start Point 的二级菜单，标题中展示当前选中的 provider。
+     */
+    private static class CommitMessageDiffProviderActionGroup extends DefaultActionGroup {
+        CommitMessageDiffProviderActionGroup() {
+            super(buildTitle(), true);
+            add(new CommitMessageDiffProviderAction(SettingsState.CommitMessageDiffProvider.AUTO));
+            add(new CommitMessageDiffProviderAction(SettingsState.CommitMessageDiffProvider.IDEA_PATCH));
+            add(new CommitMessageDiffProviderAction(SettingsState.CommitMessageDiffProvider.CODE_DIFF));
         }
 
         @Override
         public void update(@NotNull AnActionEvent e) {
-            boolean isSelected = SettingsState.getInstance().useCommitMessageInputAsContext;
+            e.getPresentation().setText(buildTitle());
+        }
+
+        private static @NotNull String buildTitle() {
+            SettingsState.CommitMessageDiffProvider provider = SettingsState.getInstance().commitMessageDiffProvider;
+            String label = switch (provider) {
+                case AUTO -> ChangelogBundle.message("statusbar.commit.message.diff.provider.auto");
+                case IDEA_PATCH -> ChangelogBundle.message("statusbar.commit.message.diff.provider.idea.patch");
+                case CODE_DIFF -> ChangelogBundle.message("statusbar.commit.message.diff.provider.code.diff");
+            };
+            return ChangelogBundle.message("statusbar.commit.message.diff.provider") + " (" + label + ")";
+        }
+    }
+
+    /**
+     * 提交消息 diff provider 切换动作
+     * <p> 在状态栏菜单中显示不同的 diff provider 选项，并通过选中状态提示当前值。
+     */
+    private static class CommitMessageDiffProviderAction extends AnAction {
+        private final SettingsState.CommitMessageDiffProvider provider;
+
+        CommitMessageDiffProviderAction(@NotNull SettingsState.CommitMessageDiffProvider provider) {
+            super(getDiffProviderText(provider));
+            this.provider = provider;
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            settings.commitMessageDiffProvider = provider;
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            boolean isSelected = SettingsState.getInstance().commitMessageDiffProvider == provider;
             e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
         }
 
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
+        }
+
+        private static @NotNull String getDiffProviderText(@NotNull SettingsState.CommitMessageDiffProvider provider) {
+            return switch (provider) {
+                case AUTO -> ChangelogBundle.message("statusbar.commit.message.diff.provider.auto");
+                case IDEA_PATCH -> ChangelogBundle.message("statusbar.commit.message.diff.provider.idea.patch");
+                case CODE_DIFF -> ChangelogBundle.message("statusbar.commit.message.diff.provider.code.diff");
+            };
         }
     }
 

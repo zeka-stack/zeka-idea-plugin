@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ui;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
@@ -257,7 +258,7 @@ public class ChangelogSettingsPanel {
 
         // 创建显示提交消息提示词复选框
         showCommitMessagePromptCheckBox = new JBCheckBox(ChangelogBundle.message("settings.commit.message.prompt.show"));
-        commitMessageDiffProviderComboBox = new JComboBox<>(SettingsState.CommitMessageDiffProvider.values());
+        commitMessageDiffProviderComboBox = new ComboBox<>(SettingsState.CommitMessageDiffProvider.values());
         commitMessageDiffProviderComboBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
             @Override
             public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list,
@@ -267,9 +268,11 @@ public class ChangelogSettingsPanel {
                                                                    boolean cellHasFocus) {
                 java.awt.Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof SettingsState.CommitMessageDiffProvider provider) {
-                    String key = provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH
-                                 ? "settings.commit.message.diff.provider.idea.patch"
-                                 : "settings.commit.message.diff.provider.code.diff";
+                    String key = switch (provider) {
+                        case AUTO -> "settings.commit.message.diff.provider.auto";
+                        case IDEA_PATCH -> "settings.commit.message.diff.provider.idea.patch";
+                        default -> "settings.commit.message.diff.provider.code.diff";
+                    };
                     setText(ChangelogBundle.message(key));
                 }
                 return component;
@@ -577,9 +580,9 @@ public class ChangelogSettingsPanel {
         commitMessagePromptCheckBoxPanel.add(showCommitMessagePromptCheckBox, BorderLayout.WEST);
 
         JPanel contentPanel = FormBuilder.createFormBuilder()
-            .addComponent(useCommitMessageInputAsContextCheckBox)
             .addLabeledComponent(ChangelogBundle.message("settings.commit.message.diff.provider.label"),
                                  commitMessageDiffProviderComboBox)
+            .addComponent(useCommitMessageInputAsContextCheckBox)
             .addComponent(commitMessagePromptCheckBoxPanel)
             .addComponent(commitMessagePromptPanel)
             .getPanel();
