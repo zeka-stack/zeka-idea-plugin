@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.context;
 
 import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.extensions.PluginId;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
@@ -100,6 +101,9 @@ public final class ContextResolverRegistry {
      */
     @Nullable
     public static String resolvePrimarySymbolName(@NotNull Project project, @NotNull VirtualFile file) {
+        if (project.isDisposed() || DumbService.isDumb(project)) {
+            return null;
+        }
         for (LanguageContextResolver resolver : getResolvers()) {
             if (resolver.supports(file)) {
                 String name = resolver.resolvePrimarySymbolName(project, file);
@@ -128,6 +132,9 @@ public final class ContextResolverRegistry {
                                                 @NotNull String beforeContent,
                                                 @NotNull String afterContent,
                                                 @NotNull List<com.intellij.diff.fragments.LineFragment> fragments) {
+        if (project.isDisposed() || DumbService.isDumb(project)) {
+            return null;
+        }
         for (LanguageContextResolver resolver : getResolvers()) {
             if (resolver.supports(file)) {
                 String summary = resolver.resolveSemanticSummary(project, file, beforeContent, afterContent, fragments);

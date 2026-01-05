@@ -5,6 +5,7 @@ import com.intellij.ide.highlighter.JavaFileType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectLocator;
 import com.intellij.openapi.util.Computable;
@@ -76,6 +77,9 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
             if (project == null || project.isDisposed()) {
                 return null;
             }
+            if (DumbService.isDumb(project)) {
+                return null;
+            }
             PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
             if (!(psiFile instanceof PsiJavaFile)) {
                 return null;
@@ -121,6 +125,9 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
     @Override
     public @Nullable String resolvePrimarySymbolName(@NotNull Project project, @NotNull VirtualFile file) {
         return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+            if (project.isDisposed() || DumbService.isDumb(project)) {
+                return null;
+            }
             PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
             if (!(psiFile instanceof PsiJavaFile)) {
                 return null;
@@ -155,6 +162,9 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
             if (project.isDisposed() || fragments.isEmpty()) {
                 return null;
             }
+            if (DumbService.isDumb(project)) {
+                return null;
+            }
             PsiJavaFile beforeFile = createPsiFile(project, file.getName(), beforeContent);
             PsiJavaFile afterFile = createPsiFile(project, file.getName(), afterContent);
             if (beforeFile == null || afterFile == null) {
@@ -180,7 +190,7 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
                         PsiField primaryField = afterField != null ? afterField : beforeField;
                         String fieldKey = buildFieldKey(primaryField);
                         if (processedFields.add(fieldKey)) {
-                            boolean isApi = primaryField != null && isPublicApi(primaryField);
+                            boolean isApi = isPublicApi(primaryField);
                             counters.fieldChanges++;
                             if (isApi) {
                                 counters.apiSignatureChanges++;
