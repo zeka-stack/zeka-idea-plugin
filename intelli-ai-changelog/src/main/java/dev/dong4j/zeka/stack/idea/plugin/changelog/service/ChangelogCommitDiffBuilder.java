@@ -2,9 +2,11 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 
 import com.intellij.openapi.diff.impl.patch.FilePatch;
 import com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder;
+import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.patch.PatchWriter;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import org.eclipse.jgit.diff.DiffEntry;
 import org.jetbrains.annotations.NotNull;
@@ -13,12 +15,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
@@ -27,6 +33,52 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 
 /** 提交消息 diff 构建器 */
 final class ChangelogCommitDiffBuilder {
+
+    /** 最大 diff 文件数量限制 */
+    private static final int MAX_DIFF_FILES = 50;
+    /** 超大文件阈值（20MB） */
+    private static final long MAX_FILE_SIZE_BYTES = 20L * 1024 * 1024;
+    /** 单行内容过长时判定为噪音 */
+    private static final int MAX_SINGLE_LINE_LENGTH = 300;
+    /** 默认忽略的文件/目录模式 */
+    private static final String[] DEFAULT_EXCLUDE_PATTERNS = {
+        "*.pb.go",
+        "*.pb.cc",
+        "*.pb.h",
+        "go.sum",
+        "go.mod",
+        "package-lock.json",
+        "yarn.lock",
+        "pnpm-lock.yaml",
+        "Cargo.lock",
+        "Pipfile.lock",
+        "poetry.lock",
+        "*.generated.*",
+        "*.gen.*",
+        "*_generated.*",
+        "*_gen.*",
+        "vendor/**",
+        "node_modules/**",
+        ".next/**",
+        "dist/**",
+        "build/**",
+        "target/**",
+        "*.min.js",
+        "*.min.css",
+        "*.bundle.*",
+        "*.chunk.*",
+        "coverage/**",
+        ".nyc_output/**",
+        "*.lcov",
+        "*.log",
+        "*.tmp",
+        "*.temp",
+        ".DS_Store",
+        "Thumbs.db",
+        "*.swp",
+        "*.swo",
+        "*~"
+    };
 
     /** 项目实例, 用于获取基础路径和执行相关操作 */
     private final Project project;
@@ -55,12 +107,14 @@ final class ChangelogCommitDiffBuilder {
      */
     @NotNull
     DiffPayload buildPayload(@NotNull Collection<Change> changes) {
+        // 过滤无关/噪音变更，避免生成 commit message 时引入无效上下文。
+        List<Change> filteredChanges = filterChanges(changes);
         SettingsState settings = SettingsState.getInstance();
         SettingsState.CommitMessageDiffProvider provider = settings.commitMessageDiffProvider;
         if (provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH) {
-            return buildIdeaPatchDiffPayload(changes);
+            return buildIdeaPatchDiffPayload(filteredChanges);
         }
-        return buildCodeDiffPayload(changes);
+        return buildCodeDiffPayload(filteredChanges);
     }
 
     /**
@@ -72,7 +126,7 @@ final class ChangelogCommitDiffBuilder {
      * @return 一个 DiffPayload 实例, 包含提取出的 CodeDiff 列表, 空的元数据映射和空的补丁文本
      */
     private @NotNull DiffPayload buildCodeDiffPayload(@NotNull Collection<Change> changes) {
-        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
+        List<CodeDiff> codeDiffs = filterCodeDiffs(CodeDiffUtil.extractCodeDiffs(changes));
         return new DiffPayload(codeDiffs, Map.of(), "");
     }
 
@@ -84,10 +138,117 @@ final class ChangelogCommitDiffBuilder {
      * @return 包含代码差异, 元数据和补丁文本的差异负载对象
      */
     private @NotNull DiffPayload buildIdeaPatchDiffPayload(@NotNull Collection<Change> changes) {
-        List<CodeDiff> codeDiffs = CodeDiffUtil.extractCodeDiffs(changes);
+        List<CodeDiff> codeDiffs = filterCodeDiffs(CodeDiffUtil.extractCodeDiffs(changes));
         Map<String, String> metadataByPath = buildPatchMetadataByPath(changes);
         String patchText = buildPatchText(changes);
         return new DiffPayload(codeDiffs, metadataByPath, patchText);
+    }
+
+    /**
+     * 过滤变更列表，剔除二进制、大文件和默认忽略规则命中的文件
+     * <p> 该过滤是 commit message 场景的降噪第一步，避免无意义内容进入 diff 构建。
+     */
+    @NotNull
+    private List<Change> filterChanges(@NotNull Collection<Change> changes) {
+        List<Change> filtered = new ArrayList<>();
+        for (Change change : changes) {
+            if (filtered.size() >= MAX_DIFF_FILES) {
+                break;
+            }
+            if (shouldExcludeChange(change)) {
+                continue;
+            }
+            filtered.add(change);
+        }
+        return filtered;
+    }
+
+    /**
+     * 判断是否应当忽略某个变更
+     */
+    private boolean shouldExcludeChange(@NotNull Change change) {
+        VirtualFile file = change.getVirtualFile();
+        if (file == null) {
+            return true;
+        }
+        FileType fileType = file.getFileType();
+        if (fileType != null && fileType.isBinary()) {
+            return true;
+        }
+        if (file.getLength() > MAX_FILE_SIZE_BYTES) {
+            return true;
+        }
+        return matchesIgnorePattern(file.getPath());
+    }
+
+    /**
+     * 针对默认忽略模式进行匹配
+     */
+    private boolean matchesIgnorePattern(@NotNull String filePath) {
+        String basePath = project.getBasePath();
+        Path candidatePath = Paths.get(filePath);
+        Path relativePath = candidatePath;
+        if (basePath != null) {
+            try {
+                Path base = Paths.get(basePath);
+                if (candidatePath.startsWith(base)) {
+                    relativePath = base.relativize(candidatePath);
+                }
+            } catch (Exception ignored) {
+                // 路径异常时直接使用原始路径
+            }
+        }
+        String normalized = relativePath.toString().replace('\\', '/');
+        Path normalizedPath = Paths.get(normalized);
+        String fileName = normalizedPath.getFileName() != null ? normalizedPath.getFileName().toString() : normalized;
+
+        for (String pattern : DEFAULT_EXCLUDE_PATTERNS) {
+            PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+            if (matcher.matches(normalizedPath) || matcher.matches(Paths.get(fileName))) {
+                return true;
+            }
+            // 兼容大小写差异
+            if (matcher.matches(Paths.get(normalized.toLowerCase(Locale.ROOT)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 对 CodeDiff 进行二次过滤，剔除明显噪音内容
+     */
+    @NotNull
+    private List<CodeDiff> filterCodeDiffs(@NotNull List<CodeDiff> codeDiffs) {
+        List<CodeDiff> filtered = new ArrayList<>();
+        for (CodeDiff diff : codeDiffs) {
+            if (filtered.size() >= MAX_DIFF_FILES) {
+                break;
+            }
+            if (shouldSkipDiffContent(diff)) {
+                continue;
+            }
+            filtered.add(diff);
+        }
+        return filtered;
+    }
+
+    /**
+     * 当 diff 内容包含超长单行时，视为噪音并过滤
+     */
+    private boolean shouldSkipDiffContent(@NotNull CodeDiff diff) {
+        if (diff.diffContent == null || diff.diffContent.isBlank()) {
+            return false;
+        }
+        String[] lines = diff.diffContent.split("\n");
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if ((trimmed.startsWith("+") || trimmed.startsWith("-"))
+                && trimmed.length() > MAX_SINGLE_LINE_LENGTH) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
