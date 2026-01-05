@@ -36,6 +36,8 @@ final class ChangelogCommitDiffBuilder {
 
     /** 最大 diff 文件数量限制 */
     private static final int MAX_DIFF_FILES = 50;
+    /** 自动模式下使用原生 patch 的文件数量上限 */
+    private static final int AUTO_PROVIDER_MAX_FILES = 10;
     /** 超大文件阈值（20MB） */
     private static final long MAX_FILE_SIZE_BYTES = 20L * 1024 * 1024;
     /** 单行内容过长时判定为噪音 */
@@ -111,6 +113,11 @@ final class ChangelogCommitDiffBuilder {
         List<Change> filteredChanges = filterChanges(changes);
         SettingsState settings = SettingsState.getInstance();
         SettingsState.CommitMessageDiffProvider provider = settings.commitMessageDiffProvider;
+        if (provider == SettingsState.CommitMessageDiffProvider.AUTO) {
+            provider = filteredChanges.size() > AUTO_PROVIDER_MAX_FILES
+                       ? SettingsState.CommitMessageDiffProvider.CODE_DIFF
+                       : SettingsState.CommitMessageDiffProvider.IDEA_PATCH;
+        }
         if (provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH) {
             return buildIdeaPatchDiffPayload(filteredChanges);
         }
