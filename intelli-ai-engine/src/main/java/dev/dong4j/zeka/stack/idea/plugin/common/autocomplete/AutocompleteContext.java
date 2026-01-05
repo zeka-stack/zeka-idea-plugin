@@ -4,8 +4,9 @@ import org.jetbrains.annotations.NotNull;
 
 public record AutocompleteContext(@NotNull String filePath,
                                   @NotNull String language,
-                                  @NotNull String prefix,
-                                  @NotNull String suffix,
+                                  @NotNull String documentText,
+                                  @NotNull String allowedOccurrences,
+                                  @NotNull EditRecord lastEdit,
                                   int line,
                                   int column) {
 }

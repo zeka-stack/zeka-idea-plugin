@@ -6,6 +6,7 @@ import com.intellij.util.concurrency.AppExecutorUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -19,16 +20,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 final class AutocompleteCompletionDispatcher {
     private final Project project;
     private final AutocompleteProviderResolver providerResolver = new AutocompleteProviderResolver();
-    private final AutocompleteResponseParser responseParser = new AutocompleteResponseParser();
+    private final NextEditResponseParser responseParser = new NextEditResponseParser();
     private final ScheduledExecutorService scheduler = AppExecutorUtil.getAppScheduledExecutorService();
 
     AutocompleteCompletionDispatcher(@NotNull Project project) {
         this.project = project;
     }
 
-    CompletableFuture<AutocompleteCompletionResponse> request(@NotNull AutocompleteCompletionRequest request) {
+    CompletableFuture<NextEditCompletionResponse> request(@NotNull AutocompleteCompletionRequest request) {
         AutocompleteSettings settings = AutocompleteSettings.getInstance();
-        CompletableFuture<AutocompleteCompletionResponse> future = CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<NextEditCompletionResponse> future = CompletableFuture.supplyAsync(() -> {
             AIProviderConfig config = providerResolver.resolvePrimary();
             AIConsoleLoggerUtil.printWithTimestamp(project, "=== Autocomplete 请求 ===");
             AIConsoleLoggerUtil.print(project, "触发模式: " + request.triggerMode());
@@ -37,11 +38,12 @@ final class AutocompleteCompletionDispatcher {
             String content = callProvider(config, request);
             if (content == null || content.isBlank()) {
                 AIConsoleLoggerUtil.printWarning(project, "Autocomplete 返回空响应");
-                return new AutocompleteCompletionResponse("", true);
+                return new NextEditCompletionResponse(List.of(), "");
             }
-            String parsed = responseParser.parse(content);
-            AIConsoleLoggerUtil.print(project, "Autocomplete 响应内容:\n" + parsed);
-            return new AutocompleteCompletionResponse(parsed, true);
+            List<NextEditAutocompletion> parsed = responseParser.parse(content);
+            AIConsoleLoggerUtil.print(project, "Autocomplete 响应条数: " + parsed.size());
+            AIConsoleLoggerUtil.print(project, "Autocomplete 原始响应:\n" + content);
+            return new NextEditCompletionResponse(parsed, content);
         }, AppExecutorUtil.getAppExecutorService());
 
         scheduleTimeout(future, settings.timeoutMs);
