@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -100,6 +101,10 @@ public final class AIProviderConfigUI {
     private JBTable availableProvidersTable;
     /** 可用提供者表格模型 */
     private AvailableProvidersTableModel availableProvidersTableModel;
+    /** Autocomplete 默认服务商下拉框 */
+    private ComboBox<AIProviderConfig> autocompleteProviderComboBox;
+    /** Autocomplete 服务商提示 */
+    private JBLabel autocompleteProviderHintLabel;
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
@@ -293,6 +298,7 @@ public final class AIProviderConfigUI {
         // 创建子面板
         JPanel connectionPanel = createConnectionPanel();
         JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
+        JPanel autocompleteProviderPanel = createAutocompleteProviderPanel();
         JPanel basicPanel = createBasicPanel();
         JPanel advancedPanel = createAdvancedPanel();
         // 个人信息面板（作者信息）
@@ -305,6 +311,8 @@ public final class AIProviderConfigUI {
             .addComponent(connectionPanel)
             .addSeparator(10)
             .addComponent(availableProvidersSectionPanel)
+            .addSeparator(10)
+            .addComponent(autocompleteProviderPanel)
             .addSeparator(10)
             .addComponent(basicPanel)
             .addSeparator(10)
@@ -396,6 +404,37 @@ public final class AIProviderConfigUI {
     @NotNull
     public AvailableProvidersTableModel getAvailableProvidersTableModel() {
         return availableProvidersTableModel;
+    }
+
+    @NotNull
+    public ComboBox<AIProviderConfig> getAutocompleteProviderComboBox() {
+        return autocompleteProviderComboBox;
+    }
+
+    public void setAutocompleteProviderItems(@NotNull List<AIProviderConfig> providers,
+                                             @Nullable String selectedCredentialId) {
+        DefaultComboBoxModel<AIProviderConfig> model = new DefaultComboBoxModel<>();
+        for (AIProviderConfig config : providers) {
+            model.addElement(config.copy());
+        }
+        autocompleteProviderComboBox.setModel(model);
+        autocompleteProviderComboBox.setEnabled(model.getSize() > 0);
+
+        AIProviderConfig selected = null;
+        if (selectedCredentialId != null) {
+            for (int i = 0; i < model.getSize(); i++) {
+                AIProviderConfig config = model.getElementAt(i);
+                if (selectedCredentialId.equals(config.credentialId)) {
+                    selected = config;
+                    break;
+                }
+            }
+        }
+        if (selected != null) {
+            autocompleteProviderComboBox.setSelectedItem(selected);
+        } else if (model.getSize() > 0) {
+            autocompleteProviderComboBox.setSelectedItem(null);
+        }
     }
 
     @NotNull
@@ -561,6 +600,45 @@ public final class AIProviderConfigUI {
             .getPanel();
 
         return createPanelWithTitledBorder(contentPanel, AICommonBundle.message("settings.show.available.providers"));
+    }
+
+    /**
+     * 创建 Autocomplete 默认服务商选择面板
+     */
+    private JPanel createAutocompleteProviderPanel() {
+        autocompleteProviderComboBox = new ComboBox<>();
+        autocompleteProviderComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JBLabel label = new JBLabel();
+            if (value != null) {
+                Icon icon = AICommonIcons.getProviderIcon(value.providerType);
+                label.setIcon(icon);
+                String modelName = value.modelName != null ? value.modelName : "";
+                label.setText(value.providerType.getDisplayName() + ":" + modelName);
+            } else {
+                label.setText(AICommonBundle.message("settings.autocomplete.provider.empty"));
+            }
+            if (isSelected) {
+                label.setBackground(list.getSelectionBackground());
+                label.setForeground(list.getSelectionForeground());
+            } else {
+                label.setBackground(list.getBackground());
+                label.setForeground(list.getForeground());
+            }
+            label.setOpaque(true);
+            return label;
+        });
+
+        autocompleteProviderHintLabel = new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.hint"));
+        autocompleteProviderHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        autocompleteProviderHintLabel.setFont(autocompleteProviderHintLabel.getFont().deriveFont(autocompleteProviderHintLabel.getFont().getSize() - 1f));
+
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.label")),
+                                 autocompleteProviderComboBox)
+            .addComponent(autocompleteProviderHintLabel)
+            .getPanel();
+
+        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.autocomplete.provider.selection"));
     }
 
     /**

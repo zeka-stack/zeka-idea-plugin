@@ -177,6 +177,7 @@ public final class AIProviderConfigController {
         if (descriptionLabel != null) {
             descriptionLabel.setVisible(showAvailableProviders);
         }
+        refreshAutocompleteProviderItems();
     }
 
     /**
@@ -218,6 +219,10 @@ public final class AIProviderConfigController {
         workingSettings.modelParameters = modelSnapshot.copy();
         workingSettings.intelliAgentSettings = ui.getAgentPanel().snapshotAgentSettings().copy();
 
+        AIProviderConfig selectedAutocompleteProvider = (AIProviderConfig) ui.getAutocompleteProviderComboBox().getSelectedItem();
+        workingSettings.autocompleteProviderCredentialId = selectedAutocompleteProvider != null
+                                                           ? selectedAutocompleteProvider.credentialId
+                                                           : null;
         workingSettings.aiProviderType = providerType;
 
         applyParametersToConfig(defaultConfig, modelSnapshot, runtimeSnapshot);
@@ -570,6 +575,7 @@ public final class AIProviderConfigController {
         ui.getAvailableProvidersTableModel().setData(workingSettings.availableProviders);
         ui.getShowAvailableProvidersCheckBox().setSelected(true);
         ui.getAvailableProvidersPanel().setVisible(true);
+        refreshAutocompleteProviderItems();
     }
 
     /**
@@ -616,6 +622,7 @@ public final class AIProviderConfigController {
         globalSettings.removeAvailableProvider(credentialId);
 
         ui.getAvailableProvidersTableModel().setData(workingSettings.availableProviders);
+        refreshAutocompleteProviderItems();
     }
 
     /**
@@ -666,7 +673,12 @@ public final class AIProviderConfigController {
             globalSettings.clearAvailableProviders();
 
             ui.getAvailableProvidersTableModel().setData(List.of());
+            refreshAutocompleteProviderItems();
         }
+    }
+
+    private void refreshAutocompleteProviderItems() {
+        ui.setAutocompleteProviderItems(workingSettings.availableProviders, workingSettings.autocompleteProviderCredentialId);
     }
 
     /**

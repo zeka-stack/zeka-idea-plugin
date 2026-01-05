@@ -37,11 +37,16 @@
         <!-- 应用级服务：全局 AI 配置（可用供应商列表） -->
         <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings"/>
+        <applicationService
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteSettings"/>
 
         <!-- 应用级服务：统一的 AI 服务入口 -->
         <applicationService
             serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService"
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl"/>
+        <projectService
+            serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteService"
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteServiceImpl"/>
 
         <applicationService
             serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewProviderService"
@@ -77,6 +82,7 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleStartupActivity"/>
         <!-- 项目启动时显示支持通知 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.support.SupportStartupActivity"/>
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteActionInstaller"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup displayType="BALLOON" id="IntelliAI Engine" isLogByDefault="false"/>
@@ -90,6 +96,7 @@
         <!-- 状态栏聚合入口 -->
         <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidgetFactory"
                                 order="first" id="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidget"/>
+        <editorFactoryListener implementation="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteEditorFactoryListener"/>
 
     </extensions>
 
@@ -98,11 +105,19 @@
             implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.InternalWhatsNewProvider"/>
     </extensions>
 
+    <projectListeners>
+        <listener topic="com.intellij.codeInsight.lookup.LookupManagerListener"
+                  class="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteLookupManagerListener"/>
+    </projectListeners>
+
     <actions>
         <group id="IntelliAIEngine.PluginsActionGroup"
                class="dev.dong4j.zeka.stack.idea.plugin.common.action.IntelliAIPluginsActionGroup"
                popup="true">
             <add-to-group group-id="HelpMenu" anchor="last"/>
         </group>
+        <action id="IntelliAIEngine.TriggerAutocompleteSuggestion"
+                class="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteTriggerAction"
+                text="Trigger Autocomplete Suggestion"/>
     </actions>
 </idea-plugin>
