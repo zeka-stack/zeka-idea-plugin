@@ -9,6 +9,10 @@ import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
@@ -239,6 +243,17 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @see #getDefaultReleaseLogUserPrompt()
      */
     public String aiReleaseLogPrompt = getDefaultReleaseLogUserPrompt();
+
+    /**
+     * 提交消息排除模式列表
+     * <p>用于配置在生成提交消息时应该忽略的文件/目录模式。
+     * 每行一个模式，支持 glob 模式匹配。
+     *
+     * <p>默认值: getDefaultExcludePatterns()
+     *
+     * @see #getDefaultExcludePatterns()
+     */
+    public List<String> excludePatterns = getDefaultExcludePatterns();
 
     /**
      * 获取 SettingsState 的单例实例
@@ -599,6 +614,56 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
             {commits}
             """;
+    }
+
+    /**
+     * 获取默认的排除模式列表
+     * <p>
+     * 返回用于过滤提交消息生成时应该忽略的文件/目录的默认模式列表。
+     * 这些模式使用 glob 语法，包括常见的生成文件、依赖锁定文件、构建产物等。
+     *
+     * @return 默认的排除模式列表
+     */
+    @NotNull
+    public static List<String> getDefaultExcludePatterns() {
+        return new ArrayList<>(Arrays.asList(
+            "*.pb.go",
+            "*.pb.cc",
+            "*.pb.h",
+            "go.sum",
+            "go.mod",
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml",
+            "Cargo.lock",
+            "Pipfile.lock",
+            "poetry.lock",
+            "*.generated.*",
+            "*.gen.*",
+            "*_generated.*",
+            "*_gen.*",
+            "vendor/**",
+            "node_modules/**",
+            ".next/**",
+            "dist/**",
+            "build/**",
+            "target/**",
+            "*.min.js",
+            "*.min.css",
+            "*.bundle.*",
+            "*.chunk.*",
+            "coverage/**",
+            ".nyc_output/**",
+            "*.lcov",
+            "*.log",
+            "*.tmp",
+            "*.temp",
+            ".DS_Store",
+            "Thumbs.db",
+            "*.swp",
+            "*.swo",
+            "*~"
+                                            ));
     }
 
 }
