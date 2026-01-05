@@ -196,7 +196,7 @@ final class ChangelogGitService {
             Iterable<RevCommit> logs = git.log().setMaxCount(limit).call();
             for (RevCommit commit : logs) {
                 String msg = commit.getShortMessage();
-                if (msg != null && !msg.trim().isEmpty()) {
+                if (msg != null && !msg.trim().isEmpty() && !msg.startsWith("Merge ")) {
                     commitMessages.add(msg);
                 }
             }
@@ -212,6 +212,43 @@ final class ChangelogGitService {
             result.append("- ").append(message).append("\n");
         }
         return result.toString().trim();
+    }
+
+    /**
+     * 获取当前仓库分支名
+     * <p>
+     * 直接读取 Git 仓库的当前分支名称, 失败时返回 null.
+     *
+     * @return 当前分支名或 null
+     */
+    @Nullable
+    String getCurrentBranch() {
+        Repository repository = getRepository();
+        if (repository == null) {
+            return null;
+        }
+        try (repository) {
+            return repository.getBranch();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 判断当前项目是否为 Git 仓库
+     *
+     * @return true 表示存在有效的 Git 仓库
+     */
+    boolean isGitRepository() {
+        Repository repository = getRepository();
+        if (repository == null) {
+            return false;
+        }
+        try (repository) {
+            return repository.getObjectDatabase().exists();
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     /**

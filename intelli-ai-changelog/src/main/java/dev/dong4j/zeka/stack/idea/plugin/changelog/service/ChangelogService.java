@@ -29,9 +29,9 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 public final class ChangelogService {
 
     /** 最近提交记录数量, 用于限制最近提交信息的读取范围 */
-    private static final int RECENT_COMMITS_LIMIT = 2;
-    /** 控制台提示词截断长度 */
-    private static final int PROMPT_LOG_MAX_LENGTH = 2000;
+    private static final int RECENT_COMMITS_LIMIT = 3;
+    /** 控制台提示词截断长度（设置为最大值以输出完整内容） */
+    private static final int PROMPT_LOG_MAX_LENGTH = Integer.MAX_VALUE;
 
     /** 项目对象, 用于表示当前操作所关联的项目信息 */
     private final Project project;
@@ -54,7 +54,7 @@ public final class ChangelogService {
     public ChangelogService(@NotNull Project project) {
         this.project = project;
         this.gitService = new ChangelogGitService(project);
-        this.promptBuilder = new ChangelogPromptBuilder(RECENT_COMMITS_LIMIT);
+        this.promptBuilder = new ChangelogPromptBuilder(project, RECENT_COMMITS_LIMIT);
         this.diffBuilder = new ChangelogCommitDiffBuilder(project);
         this.aiExecutor = new ChangelogAiExecutor(project, PROMPT_LOG_MAX_LENGTH);
     }
@@ -256,7 +256,9 @@ public final class ChangelogService {
         }
 
         String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
-        String prompt = promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext);
+        String branch = gitService.getCurrentBranch();
+        boolean isGitRepository = gitService.isGitRepository();
+        String prompt = promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
         return aiExecutor.callCommitMessage(prompt);
     }
 
@@ -296,7 +298,9 @@ public final class ChangelogService {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
         String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
-        String prompt = promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext);
+        String branch = gitService.getCurrentBranch();
+        boolean isGitRepository = gitService.isGitRepository();
+        String prompt = promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
         return aiExecutor.callCommitMessageStream(prompt, listener);
     }
 }
