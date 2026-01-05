@@ -4,7 +4,12 @@
       "Bash(./gradlew clean buildPlugin:*)",
       "Bash(java:*)",
       "WebSearch",
-      "WebFetch(domain:plugins.jetbrains.com)"
+      "WebFetch(domain:plugins.jetbrains.com)",
+      "mcp__jetbrains__list_directory_tree",
+      "mcp__jetbrains__find_files_by_name_keyword",
+      "mcp__jetbrains__execute_run_configuration",
+      "Bash(../gradlew compileJava:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []
