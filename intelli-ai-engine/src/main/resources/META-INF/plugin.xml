@@ -17,6 +17,8 @@
     <applicationListeners>
         <listener class="dev.dong4j.zeka.stack.idea.plugin.common.agent.PluginLifecycleListener"
                   topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+        <listener class="dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsServiceInitializer$ApplicationShutdownListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 
     <!-- 定义扩展点 -->
@@ -38,8 +40,6 @@
         <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings"/>
         <applicationService
-            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.autocomplete.AutocompleteSettings"/>
-        <applicationService
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditSettings"/>
 
         <!-- 应用级服务：统一的 AI 服务入口 -->
@@ -53,6 +53,10 @@
         <applicationService
             serviceInterface="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewProviderService"
             serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.InternalWhatsNewProviderService"/>
+
+        <!-- 统计服务 -->
+        <applicationService
+            serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings"/>
 
         <fileEditorProvider implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewHtmlEditorProvider"/>
 
@@ -85,6 +89,9 @@
         <!-- 项目启动时显示支持通知 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.support.SupportStartupActivity"/>
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditActionInstaller"/>
+        <!-- 项目启动时初始化统计服务 -->
+        <postStartupActivity
+            implementation="dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsServiceInitializer$StatisticsStartupActivity"/>
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup displayType="BALLOON" id="IntelliAI Engine" isLogByDefault="false"/>
