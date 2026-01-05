@@ -1,13 +1,13 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.autocomplete;
 
 final class AutocompleteSuggestionCache {
-    private String lastContent;
+    private String lastKey;
 
-    boolean isDuplicate(String content) {
-        return content != null && content.equals(lastContent);
+    boolean isDuplicate(String key) {
+        return key != null && key.equals(lastKey);
     }
 
-    void update(String content) {
-        this.lastContent = content;
+    void update(String key) {
+        this.lastKey = key;
     }
 }
