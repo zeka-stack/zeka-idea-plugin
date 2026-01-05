@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.context;
 
-import com.intellij.ide.plugins.PluginManagerCore;
-import com.intellij.openapi.extensions.PluginId;
+import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -9,24 +8,14 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ServiceLoader;
 
 /** 语言上下文解析器注册表, 用于管理并获取不同语言的上下文解析器 */
 public final class ContextResolverRegistry {
-    /** Java 插件的标识符, 用于检查插件是否已安装 */
-    private static final String JAVA_PLUGIN_ID = "com.intellij.java";
-    /**
-     * Java 语言上下文解析器的类名
-     * <p>
-     * 该字段用于存储 Java 语言上下文解析器的类名, 以便在需要时动态加载解析器.
-     *
-     * @see JavaPsiContextResolver
-     */
-    private static final String JAVA_RESOLVER_CLASS =
-        "dev.dong4j.zeka.stack.idea.plugin.changelog.context.JavaPsiContextResolver";
+    /** 语言上下文解析器扩展点 */
+    private static final ExtensionPointName<LanguageContextResolver> EP_NAME =
+        ExtensionPointName.create("dev.dong4j.zeka.stack.idea.plugin.changelog.languageContextResolver");
     /**
      * 上下文解析器列表
      * <p> 用于存储所有已注册的语言上下文解析器, 采用 volatile 保证多线程可见性 </p>
@@ -54,13 +43,7 @@ public final class ContextResolverRegistry {
         if (cached != null) {
             return cached;
         }
-        List<LanguageContextResolver> list = new ArrayList<>();
-        list.add(new XmlContextResolver());
-        LanguageContextResolver javaResolver = loadJavaResolverIfAvailable();
-        if (javaResolver != null) {
-            list.add(javaResolver);
-        }
-        loadResolversFromSpi(list);
+        List<LanguageContextResolver> list = EP_NAME.getExtensionList();
         resolvers = Collections.unmodifiableList(list);
         return resolvers;
     }
@@ -146,59 +129,5 @@ public final class ContextResolverRegistry {
         return null;
     }
 
-    /**
-     * 加载可用的 Java 上下文解析器
-     * <p> 检查是否安装了 Java 插件, 如果已安装则尝试加载并返回 Java 上下文解析器实例;
-     * 如果未安装或加载失败, 则返回 null
-     *
-     * @return Java 上下文解析器实例, 如果未安装 Java 插件或加载失败则返回 null
-     * @since 1.0
-     */
-    @Nullable
-    private static LanguageContextResolver loadJavaResolverIfAvailable() {
-        if (!PluginManagerCore.isPluginInstalled(PluginId.getId(JAVA_PLUGIN_ID))) {
-            return null;
-        }
-        try {
-            Class<?> resolverClass = Class.forName(JAVA_RESOLVER_CLASS);
-            Object instance = resolverClass.getDeclaredConstructor().newInstance();
-            if (instance instanceof LanguageContextResolver resolver) {
-                return resolver;
-            }
-        } catch (Throwable ignored) {
-            return null;
-        }
-        return null;
-    }
-
-    /**
-     * 通过 SPI 机制加载可用的上下文解析器
-     * <p> 允许外部模块通过 ServiceLoader 扩展语言解析能力。
-     */
-    private static void loadResolversFromSpi(@NotNull List<LanguageContextResolver> target) {
-        try {
-            ServiceLoader<LanguageContextResolver> loader = ServiceLoader.load(LanguageContextResolver.class,
-                                                                               ContextResolverRegistry.class.getClassLoader());
-            for (LanguageContextResolver resolver : loader) {
-                if (!containsResolver(target, resolver)) {
-                    target.add(resolver);
-                }
-            }
-        } catch (Throwable ignored) {
-            // SPI 加载失败时保持内置解析器可用
-        }
-    }
-
-    /**
-     * 判断是否已存在同类解析器，避免重复注册
-     */
-    private static boolean containsResolver(@NotNull List<LanguageContextResolver> target,
-                                            @NotNull LanguageContextResolver candidate) {
-        for (LanguageContextResolver resolver : target) {
-            if (resolver.getClass().getName().equals(candidate.getClass().getName())) {
-                return true;
-            }
-        }
-        return false;
-    }
+    // 解析器由可选依赖的 config-file 注册到扩展点中，无需手动加载。
 }

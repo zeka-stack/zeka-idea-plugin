@@ -1,6 +1,6 @@
 <idea-plugin>
     <depends>com.intellij.modules.lang</depends>
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.changelog">
-        <languageContextResolver implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.context.JavaPsiContextResolver"/>
+        <languageContextResolver implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.context.PythonPsiContextResolver"/>
     </extensions>
 </idea-plugin>

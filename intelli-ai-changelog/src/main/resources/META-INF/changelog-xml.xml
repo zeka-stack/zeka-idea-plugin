@@ -1,2 +1,5 @@
 <idea-plugin>
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.changelog">
+        <languageContextResolver implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.context.XmlContextResolver"/>
+    </extensions>
 </idea-plugin>
