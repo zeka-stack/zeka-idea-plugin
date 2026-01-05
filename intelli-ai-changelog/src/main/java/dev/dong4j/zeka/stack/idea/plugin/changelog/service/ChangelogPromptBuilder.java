@@ -161,13 +161,12 @@ final class ChangelogPromptBuilder {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.commitMessageTemplate;
         int maxFiles = MAX_COMMIT_MESSAGE_FILES;
-        int maxDiffChars = MAX_COMMIT_MESSAGE_DIFF_CHARS;
 
         // 1) 结构化 JSON 上下文：作为核心上下文，单独暴露为 {codeDiffs}。
         String contextJson = buildStructuredContext(payload, recentCommitsText, userContext, branch, isGitRepository, maxFiles);
 
         // 2) 原生 patch 与降噪摘要：分别提供为独立占位符，便于用户自行裁剪。
-        String diffSummary = buildDiffSummaryText(payload, maxFiles, maxDiffChars);
+        String diffSummary = buildDiffSummaryText(payload, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
         String rawPatch = payload.fullPatchText().trim();
 
         // 3) 仅做占位符替换，不做额外追加，避免模板中删除占位符后仍被强行拼接。
@@ -222,6 +221,7 @@ final class ChangelogPromptBuilder {
             String summary = buildFileSummary(diff);
             String diffSummary = buildDiffSummary(diff);
             String fullDiff = buildFileFullDiff(payload, diff);
+            String semanticSummary = diff.semanticSummary != null ? diff.semanticSummary : "";
 
             json.append("    {\n");
             json.append("      \"path\": \"").append(escapeJson(filePath)).append("\",\n");
@@ -232,6 +232,7 @@ final class ChangelogPromptBuilder {
             json.append("      \"lines_deleted\": ").append(diff.deletedLines).append(",\n");
             json.append("      \"summary\": \"").append(escapeJson(summary)).append("\",\n");
             json.append("      \"diff_summary\": \"").append(escapeJson(diffSummary)).append("\",\n");
+            json.append("      \"semantic_summary\": \"").append(escapeJson(semanticSummary)).append("\",\n");
             json.append("      \"full_diff_content\": \"").append(escapeJson(fullDiff)).append("\"\n");
             json.append("    }");
             if (i < limitedDiffs.size() - 1) {

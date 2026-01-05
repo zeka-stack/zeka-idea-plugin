@@ -471,13 +471,14 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             5. 上下文以结构化 JSON 提供：
                - `changes[].full_diff_content` 是真实 diff，必须优先参考
                - `statistics` 提供整体变更规模与 scope 提示
-               - `metadata.extra_context` 为用户补充说明，可谨慎参考
+               - `metadata.extra_context` 为用户补充说明，可参考
+               - `metadata.semantic_summary` 为变更总结性语义文本
 
             **正文（body）书写规则（强制）：**
             - 如果需要正文，必须使用 Markdown 无序列表
             - 每一行以 `- ` 开头
             - 每条只表达一个清晰观点，禁止长段落
-            - 建议 2～4 条，最多不超过 5 条
+            - 建议 3～5 条，最多不超过 8 条
             - 内容只能聚焦：
               - 变更动机（Why）
               - 行为或语义变化（What changed）

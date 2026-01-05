@@ -87,8 +87,10 @@ public final class CodeDiffUtil {
 
         String filePath = virtualFile.getPath();
         CodeDiff.ChangeType changeType = determineChangeType(change);
-        String diffContent = extractDiffContent(change);
+        DiffResult diffResult = extractDiffResult(change);
+        String diffContent = diffResult != null ? diffResult.diffContent() : null;
         String scopeHint = resolveScopeHint(virtualFile);
+        String semanticSummary = resolveSemanticSummary(virtualFile, diffResult);
 
         // 计算新增和删除的行数
         int addedLines = 0;
@@ -104,7 +106,7 @@ public final class CodeDiffUtil {
             }
         }
 
-        return new CodeDiff(filePath, changeType, addedLines, deletedLines, diffContent, scopeHint);
+        return new CodeDiff(filePath, changeType, addedLines, deletedLines, diffContent, scopeHint, semanticSummary);
     }
 
     /**
@@ -143,8 +145,8 @@ public final class CodeDiffUtil {
      */
     @SuppressWarnings("D")
     @Nullable
-    private static String extractDiffContent(@NotNull Change change) {
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+    private static DiffResult extractDiffResult(@NotNull Change change) {
+        return ApplicationManager.getApplication().runReadAction((Computable<DiffResult>) () -> {
             try {
                 ContentRevision beforeRevision = change.getBeforeRevision();
                 ContentRevision afterRevision = change.getAfterRevision();
@@ -168,6 +170,13 @@ public final class CodeDiffUtil {
                     return null;
                 }
 
+                List<LineFragment> fragments = ComparisonManager.getInstance()
+                    .compareLines(beforeContent, afterContent, ComparisonPolicy.DEFAULT,
+                                  ProgressIndicatorProvider.getGlobalProgressIndicator());
+                if (fragments.isEmpty()) {
+                    return null;
+                }
+
                 // 生成简单的 unified diff 格式
                 String diff = generateUnifiedDiff(
                     beforeRevision != null ? beforeRevision.getFile().getName() : "null",
@@ -176,7 +185,7 @@ public final class CodeDiffUtil {
                     afterContent,
                     change.getVirtualFile()
                                           );
-                return diff.isEmpty() ? null : diff;
+                return diff.isEmpty() ? null : new DiffResult(diff, beforeContent, afterContent, fragments);
             } catch (Exception e) {
                 // 忽略异常，返回 null
                 return null;
@@ -581,6 +590,31 @@ public final class CodeDiffUtil {
     }
 
     /**
+     * 解析 PSI 语义摘要
+     * <p> 基于 diff 片段尝试生成结构化语义说明，仅在 PSI 可用时启用。
+     *
+     * @param virtualFile  虚拟文件
+     * @param diffResult   diff 结果
+     * @return 语义摘要文本，无法解析时返回 null
+     */
+    @Nullable
+    private static String resolveSemanticSummary(@NotNull VirtualFile virtualFile,
+                                                 @Nullable DiffResult diffResult) {
+        if (diffResult == null || diffResult.fragments().isEmpty()) {
+            return null;
+        }
+        Project project = ProjectLocator.getInstance().guessProjectForFile(virtualFile);
+        if (project == null || project.isDisposed()) {
+            return null;
+        }
+        return ContextResolverRegistry.resolveSemanticSummary(project,
+                                                              virtualFile,
+                                                              diffResult.beforeContent(),
+                                                              diffResult.afterContent(),
+                                                              diffResult.fragments());
+    }
+
+    /**
      * 标准化作用域名称
      * <p> 将原始作用域名称转换为小写并使用连字符分隔的标准化格式
      * <p> 该方法会移除非字母数字字符, 将驼峰命名转换为连字符分隔, 并去除首尾连字符
@@ -625,5 +659,14 @@ public final class CodeDiffUtil {
             return null;
         }
         return ContextResolverRegistry.resolveContext(virtualFile, preferredLine, fallbackLine);
+    }
+
+    /**
+     * diff 结果数据结构
+     */
+    private record DiffResult(@NotNull String diffContent,
+                              @NotNull String beforeContent,
+                              @NotNull String afterContent,
+                              @NotNull List<LineFragment> fragments) {
     }
 }
