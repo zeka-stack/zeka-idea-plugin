@@ -164,13 +164,12 @@ public class GenerateJavadocForCommitAction extends AnAction {
     @NotNull
     private Collection<Change> getCommittedChanges(@NotNull Project project) {
         ChangeListManager changeListManager = ChangeListManager.getInstance(project);
-        List<Change> allChanges = new ArrayList<>();
 
         // 获取所有已跟踪的变更（包括已暂存和未暂存的）
-        allChanges.addAll(changeListManager.getAllChanges());
+        List<Change> allChanges = new ArrayList<>(changeListManager.getAllChanges());
 
         // 获取未版本控制的文件，并转换为 Change 对象
-        List<FilePath> unversionedFiles = changeListManager.getUnversionedFiles();
+        List<FilePath> unversionedFiles = changeListManager.getUnversionedFilesPaths();
         for (FilePath filePath : unversionedFiles) {
             // 为未版本控制的文件创建 Change 对象（只有 afterRevision，没有 beforeRevision）
             ContentRevision revision = new CurrentContentRevision(filePath);
@@ -245,4 +244,3 @@ public class GenerateJavadocForCommitAction extends AnAction {
         return fileIndex.isInProject(file);
     }
 }
-
