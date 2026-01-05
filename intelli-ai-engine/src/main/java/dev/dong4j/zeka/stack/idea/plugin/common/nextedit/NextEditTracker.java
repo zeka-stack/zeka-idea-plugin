@@ -41,6 +41,8 @@ final class NextEditTracker implements Disposable {
     private static final String DEBOUNCE_KEY = "nextedit";
     /** 最大候选建议数量, 用于限制每次计算的编辑建议上限 */
     private static final int MAX_CANDIDATES = 8;
+    /** 连续输入合并窗口, 用于将多次单字符输入合并为一次替换 */
+    private static final long MERGE_WINDOW_MS = 800;
 
     /** 项目实例, 用于获取项目相关资源和配置 */
     private final Project project;
@@ -96,6 +98,9 @@ final class NextEditTracker implements Disposable {
                 return;
             }
             if (lastEdit == null) {
+                return;
+            }
+            if (lastEdit.newText().isEmpty()) {
                 return;
             }
             scheduleTrigger();
@@ -189,7 +194,6 @@ final class NextEditTracker implements Disposable {
      * <p> 调用此方法时, 会拒绝当前建议并移除光标位置监听器, 确保资源被正确释放.
      *
      * @see #rejectSuggestion()
-     * @see com.intellij.openapi.editor.CaretListener
      */
     @Override
     public void dispose() {
@@ -216,17 +220,55 @@ final class NextEditTracker implements Disposable {
     private void trackEdit(@NotNull DocumentEvent event) {
         String oldText = event.getOldFragment().toString();
         String newText = event.getNewFragment().toString();
-        if (oldText.isBlank() || newText.isBlank()) {
+        int startOffset = event.getOffset();
+        int endOffset = startOffset + event.getNewLength();
+        long now = System.currentTimeMillis();
+        if (oldText.isEmpty() && !newText.isEmpty()) {
+            if (canMergeWithLastEdit(startOffset, now)) {
+                lastEdit = new NextEditRecord(lastEdit.startOffset(), endOffset,
+                                              lastEdit.oldText(), lastEdit.newText() + newText, now);
+                return;
+            }
             lastEdit = null;
+            return;
+        }
+        if (!oldText.isEmpty() && newText.isEmpty()) {
+            lastEdit = new NextEditRecord(startOffset, endOffset, oldText, "", now);
             return;
         }
         if (oldText.equals(newText)) {
             lastEdit = null;
             return;
         }
-        int startOffset = event.getOffset();
-        int endOffset = startOffset + event.getNewLength();
-        lastEdit = new NextEditRecord(startOffset, endOffset, oldText, newText, System.currentTimeMillis());
+        lastEdit = new NextEditRecord(startOffset, endOffset, oldText, newText, now);
+    }
+
+    /**
+     * 判断当前编辑操作是否可以与最近一次编辑操作合并
+     * <p> 该方法用于确定当前编辑操作是否可以在一定时间内与最近一次编辑操作合并, 以减少建议计算的频率.
+     * <p> 具体条件如下:
+     * <ul>
+     * <li> 最近一次编辑操作不为空 </li>
+     * <li> 最近一次编辑操作的旧文本不为空 </li>
+     * <li> 当前时间与最近一次编辑操作的时间差不超过 MERGE_WINDOW_MS 毫秒 </li>
+     * <li> 当前编辑操作的起始位置等于最近一次编辑操作的结束位置 </li>
+     * </ul>
+     *
+     * @param currentOffset 当前编辑操作的起始位置
+     * @param now           当前时间戳, 单位为毫秒
+     * @return 如果满足合并条件, 则返回 true; 否则返回 false
+     */
+    private boolean canMergeWithLastEdit(int currentOffset, long now) {
+        if (lastEdit == null) {
+            return false;
+        }
+        if (lastEdit.oldText().isEmpty()) {
+            return false;
+        }
+        if (now - lastEdit.timestamp() > MERGE_WINDOW_MS) {
+            return false;
+        }
+        return currentOffset == lastEdit.endOffset();
     }
 
     /**

@@ -46,6 +46,8 @@ final class NextEditSuggestion implements Disposable {
     private final String replacement;
     /** 用于编辑器操作的文本编辑器实例 */
     private final Editor editor;
+    /** 跳转提示管理器 */
+    private NextEditJumpHintManager jumpHintManager;
     /**
      * 用于存储高亮范围的标记器.
      * <p> 在显示编辑建议时, 使用此标记器来突出显示需要替换的文本范围.
@@ -62,6 +64,8 @@ final class NextEditSuggestion implements Disposable {
     private Inlay inlay;
     /** 是否已释放资源, 用于防止重复释放或在已释放状态下执行操作 */
     private boolean disposed;
+    /** 是否已经跳转到建议位置 */
+    private boolean jumped;
 
     /**
      * 构造一个编辑建议对象
@@ -89,8 +93,7 @@ final class NextEditSuggestion implements Disposable {
             return;
         }
         highlightRange();
-        addHintInlay();
-        scrollToSuggestion();
+        updateHint();
     }
 
     /**
@@ -100,6 +103,12 @@ final class NextEditSuggestion implements Disposable {
      */
     void accept() {
         if (disposed || editor.getProject() == null) {
+            return;
+        }
+        if (!jumped && !isLineVisible(startOffset)) {
+            jumpToSuggestion();
+            jumped = true;
+            updateHint();
             return;
         }
         WriteCommandAction.runWriteCommandAction(editor.getProject(), () -> {
@@ -171,6 +180,10 @@ final class NextEditSuggestion implements Disposable {
             inlay.dispose();
         }
         inlay = null;
+        if (jumpHintManager != null) {
+            jumpHintManager.dispose();
+        }
+        jumpHintManager = null;
     }
 
     /**
@@ -197,17 +210,64 @@ final class NextEditSuggestion implements Disposable {
         InlayProperties properties = new InlayProperties();
         properties.relatesToPrecedingText(true);
         properties.disableSoftWrapping(true);
-        NextEditSuggestionRenderer renderer = new NextEditSuggestionRenderer(editor, replacement);
+        String actionText = jumped ? " to apply" : " to replace";
+        boolean showReplacement = jumped;
+        if (!isLineVisible(startOffset)) {
+            actionText = " to jump";
+            showReplacement = false;
+        }
+        NextEditSuggestionRenderer renderer = new NextEditSuggestionRenderer(editor, replacement, actionText, showReplacement);
         inlay = editor.getInlayModel().addInlineElement(lineEndOffset, properties, renderer);
     }
 
     /**
-     * 将光标滚动到建议的位置
-     * <p> 根据起始偏移量获取所在行号, 并将编辑器滚动到该行的起始位置, 以便用户查看建议内容
+     * 更新提示信息
+     * <p> 根据当前光标位置是否可见, 决定是显示跳转提示还是内联提示. 如果当前行不可见, 则创建并显示跳转提示管理器; 否则移除跳转提示并添加内联提示.
      *
+     * @since 1.0
      */
-    private void scrollToSuggestion() {
+    private void updateHint() {
+        if (inlay != null) {
+            inlay.dispose();
+            inlay = null;
+        }
+        if (!isLineVisible(startOffset)) {
+            if (jumpHintManager == null) {
+                jumpHintManager = new NextEditJumpHintManager(editor, startOffset, this);
+            }
+            jumpHintManager.showIfNeeded();
+        } else if (jumpHintManager != null) {
+            jumpHintManager.dispose();
+            jumpHintManager = null;
+        }
+        addHintInlay();
+    }
+
+    /**
+     * 判断指定偏移量所在行是否在编辑器可视区域中
+     * <p> 通过计算该行的起始和结束 Y 坐标, 与编辑器可视区域的边界进行比较, 判断该行是否可见
+     * <p> 如果行的起始 Y 坐标小于等于可视区域底部, 且行的结束 Y 坐标大于等于可视区域顶部, 则认为该行可见
+     *
+     * @param offset 文本偏移量, 用于定位到具体行
+     * @return 如果该行在可视区域内则返回 true, 否则返回 false
+     */
+    private boolean isLineVisible(int offset) {
+        java.awt.Rectangle visibleArea = editor.getScrollingModel().getVisibleArea();
+        double lineStartY = editor.offsetToPoint2D(offset).getY();
+        int lineHeight = editor.getLineHeight();
+        double lineEndY = lineStartY + lineHeight;
+        return lineStartY <= visibleArea.y + visibleArea.height && lineEndY >= visibleArea.y;
+    }
+
+    /**
+     * 将光标跳转到建议位置并滚动到该位置以确保可见
+     * <p> 根据当前编辑建议的起始偏移量获取所在行号, 并将光标移动到该位置, 同时滚动编辑器以确保该位置在视图中可见.
+     *
+     * @since 1.0
+     */
+    private void jumpToSuggestion() {
         int lineNumber = editor.getDocument().getLineNumber(startOffset);
-        editor.getScrollingModel().scrollTo(new LogicalPosition(lineNumber, 0), ScrollType.MAKE_VISIBLE);
+        editor.getCaretModel().moveToOffset(startOffset);
+        editor.getScrollingModel().scrollTo(new LogicalPosition(lineNumber, 0), ScrollType.CENTER);
     }
 }

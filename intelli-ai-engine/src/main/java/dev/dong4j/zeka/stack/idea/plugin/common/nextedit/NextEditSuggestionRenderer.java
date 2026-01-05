@@ -44,6 +44,10 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
     private final Editor editor;
     /** 用于替换的文本内容 */
     private final String replacement;
+    /** 操作提示文本 */
+    private final String actionText;
+    /** 是否展示替换内容 */
+    private final boolean showReplacement;
 
     /**
      * 构造函数, 用于创建编辑建议渲染器实例
@@ -52,9 +56,14 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
      * @param editor      编辑器实例, 不能为 null
      * @param replacement 替换文本内容, 不能为 null
      */
-    NextEditSuggestionRenderer(@NotNull Editor editor, @NotNull String replacement) {
+    NextEditSuggestionRenderer(@NotNull Editor editor,
+                               @NotNull String replacement,
+                               @NotNull String actionText,
+                               boolean showReplacement) {
         this.editor = editor;
         this.replacement = replacement;
+        this.actionText = actionText;
+        this.showReplacement = showReplacement;
     }
 
     /**
@@ -69,8 +78,8 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
         Font font = editor.getColorsScheme().getFont(EditorFontType.PLAIN);
         FontMetrics fontMetrics = editor.getContentComponent().getFontMetrics(font);
         int tabWidth = fontMetrics.stringWidth(getTabText());
-        int actionWidth = fontMetrics.stringWidth(" to replace");
-        int hintWidth = fontMetrics.stringWidth(renderText());
+        int actionWidth = fontMetrics.stringWidth(actionText);
+        int hintWidth = showReplacement ? fontMetrics.stringWidth(renderText()) : 0;
         int horizontalPadding = 8;
         return tabWidth + actionWidth + hintWidth + horizontalPadding * 2 + 12;
     }
@@ -107,11 +116,10 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
         g2d.setFont(font);
         FontMetrics fm = g2d.getFontMetrics();
         String tabText = getTabText();
-        String actionText = " to replace";
         String hintText = renderText();
         int tabWidth = fm.stringWidth(tabText);
         int actionWidth = fm.stringWidth(actionText);
-        int hintWidth = fm.stringWidth(hintText);
+        int hintWidth = showReplacement ? fm.stringWidth(hintText) : 0;
         int tabHeight = fm.getHeight() - 2;
         int tabHorizontalPadding = 4;
         int py = 2;
@@ -135,8 +143,10 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
         int textY = tabY + tabHeight / 2 + fm.getAscent() / 2 - fm.getDescent() / 2;
         g2d.drawString(tabText, startX + tabHorizontalPadding, textY);
         g2d.drawString(actionText, startX + tabWidth + tabHorizontalPadding * 2 + 4, textY);
-        g2d.setColor(withAlpha(editor.getColorsScheme().getDefaultForeground(), 0.7f));
-        g2d.drawString(hintText, startX + tabWidth + actionWidth + tabHorizontalPadding * 2 + 6, textY);
+        if (showReplacement) {
+            g2d.setColor(withAlpha(editor.getColorsScheme().getDefaultForeground(), 0.7f));
+            g2d.drawString(hintText, startX + tabWidth + actionWidth + tabHorizontalPadding * 2 + 6, textY);
+        }
         g2d.dispose();
     }
 
@@ -151,6 +161,9 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
      * @return 格式化后的文本, 长度不超过 24 字符时完整显示, 否则截断并添加省略号
      */
     private String renderText() {
+        if (!showReplacement) {
+            return "";
+        }
         String text = replacement.replace("\n", "\\n");
         if (text.length() > 24) {
             return " \"" + text.substring(0, 21) + "...\"";
@@ -192,6 +205,7 @@ final class NextEditSuggestionRenderer implements EditorCustomElementRenderer {
      */
     private Color withAlpha(Color color, float alpha) {
         int a = Math.min(255, Math.max(0, Math.round(255 * alpha)));
-        return new JBColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), a), new Color());
+        return new JBColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), a), new Color(color.getRed(), color.getGreen(),
+                                                                                                      color.getBlue(), a));
     }
 }
