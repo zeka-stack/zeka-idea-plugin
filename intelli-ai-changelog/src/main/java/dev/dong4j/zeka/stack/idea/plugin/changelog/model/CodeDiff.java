@@ -32,6 +32,9 @@ public class CodeDiff {
     /** 建议 scope */
     @Nullable
     public String scopeHint;
+    /** 语义摘要（PSI 增强） */
+    @Nullable
+    public String semanticSummary;
 
     /**
      * 构造一个 CodeDiff 对象, 用于表示文件的修改差异信息
@@ -49,13 +52,15 @@ public class CodeDiff {
                     int addedLines,
                     int deletedLines,
                     @Nullable String diffContent,
-                    @Nullable String scopeHint) {
+                    @Nullable String scopeHint,
+                    @Nullable String semanticSummary) {
         this.filePath = filePath;
         this.changeType = changeType;
         this.addedLines = addedLines;
         this.deletedLines = deletedLines;
         this.diffContent = diffContent;
         this.scopeHint = scopeHint;
+        this.semanticSummary = semanticSummary;
     }
 
     /**

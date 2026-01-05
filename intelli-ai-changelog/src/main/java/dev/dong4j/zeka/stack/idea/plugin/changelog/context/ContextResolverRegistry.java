@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ServiceLoader;
 
 /** 语言上下文解析器注册表, 用于管理并获取不同语言的上下文解析器 */
 public final class ContextResolverRegistry {
@@ -58,6 +59,7 @@ public final class ContextResolverRegistry {
         if (javaResolver != null) {
             list.add(javaResolver);
         }
+        loadResolversFromSpi(list);
         resolvers = Collections.unmodifiableList(list);
         return resolvers;
     }
@@ -110,6 +112,34 @@ public final class ContextResolverRegistry {
     }
 
     /**
+     * 解析 PSI 语义摘要
+     * <p> 遍历注册的解析器，尝试生成结构化语义摘要，优先返回第一个有效结果。
+     *
+     * @param project       项目
+     * @param file          文件
+     * @param beforeContent 变更前内容
+     * @param afterContent  变更后内容
+     * @param fragments     diff 行片段
+     * @return 语义摘要文本，若无法解析则返回 null
+     */
+    @Nullable
+    public static String resolveSemanticSummary(@NotNull Project project,
+                                                @NotNull VirtualFile file,
+                                                @NotNull String beforeContent,
+                                                @NotNull String afterContent,
+                                                @NotNull List<com.intellij.diff.fragments.LineFragment> fragments) {
+        for (LanguageContextResolver resolver : getResolvers()) {
+            if (resolver.supports(file)) {
+                String summary = resolver.resolveSemanticSummary(project, file, beforeContent, afterContent, fragments);
+                if (summary != null && !summary.trim().isEmpty()) {
+                    return summary;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * 加载可用的 Java 上下文解析器
      * <p> 检查是否安装了 Java 插件, 如果已安装则尝试加载并返回 Java 上下文解析器实例;
      * 如果未安装或加载失败, 则返回 null
@@ -132,5 +162,36 @@ public final class ContextResolverRegistry {
             return null;
         }
         return null;
+    }
+
+    /**
+     * 通过 SPI 机制加载可用的上下文解析器
+     * <p> 允许外部模块通过 ServiceLoader 扩展语言解析能力。
+     */
+    private static void loadResolversFromSpi(@NotNull List<LanguageContextResolver> target) {
+        try {
+            ServiceLoader<LanguageContextResolver> loader = ServiceLoader.load(LanguageContextResolver.class,
+                                                                               ContextResolverRegistry.class.getClassLoader());
+            for (LanguageContextResolver resolver : loader) {
+                if (!containsResolver(target, resolver)) {
+                    target.add(resolver);
+                }
+            }
+        } catch (Throwable ignored) {
+            // SPI 加载失败时保持内置解析器可用
+        }
+    }
+
+    /**
+     * 判断是否已存在同类解析器，避免重复注册
+     */
+    private static boolean containsResolver(@NotNull List<LanguageContextResolver> target,
+                                            @NotNull LanguageContextResolver candidate) {
+        for (LanguageContextResolver resolver : target) {
+            if (resolver.getClass().getName().equals(candidate.getClass().getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
