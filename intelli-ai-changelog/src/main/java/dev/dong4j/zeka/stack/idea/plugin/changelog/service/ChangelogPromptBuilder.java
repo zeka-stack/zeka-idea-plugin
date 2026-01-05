@@ -163,27 +163,18 @@ final class ChangelogPromptBuilder {
         int maxFiles = MAX_COMMIT_MESSAGE_FILES;
         int maxDiffChars = MAX_COMMIT_MESSAGE_DIFF_CHARS;
 
-        // 1) 构建结构化 JSON 上下文，尽量在开头提供清晰的元信息与文件变更摘要。
+        // 1) 结构化 JSON 上下文：作为核心上下文，单独暴露为 {codeDiffs}。
         String contextJson = buildStructuredContext(payload, recentCommitsText, userContext, branch, isGitRepository, maxFiles);
 
-        // 2) 构建 diff 文本：先拼接 IDEA patch，再追加 CodeDiffUtil 的降噪摘要。
+        // 2) 原生 patch 与降噪摘要：分别提供为独立占位符，便于用户自行裁剪。
         String diffSummary = buildDiffSummaryText(payload, maxFiles, maxDiffChars);
-        String diffBlock = buildCombinedDiffBlock(payload, diffSummary, maxDiffChars);
+        String rawPatch = payload.fullPatchText().trim();
 
-        // 3) 组装 {codeDiffs} 内容，遵循“JSON → 原生 patch → 降噪摘要”的顺序。
-        String codeDiffsText = contextJson + "\n\n" + diffBlock;
-
-        String contextText = userContext != null ? userContext.trim() : "";
-        String prompt = template.replace("{codeDiffs}", codeDiffsText)
-            .replace("{recentCommits}", recentCommitsText)
-            .replace("{extraContext}", contextText);
-        if (!template.contains("{extraContext}") && !contextText.isEmpty()) {
-            prompt = prompt + "\n\n用户补充说明:\n" + contextText;
-        }
-        if (!template.contains("{recentCommits}") && !recentCommitsText.isEmpty()) {
-            prompt = prompt + "\n\n历史提交(最近" + recentCommitsLimit + "条):\n" + recentCommitsText;
-        }
-        return prompt;
+        // 3) 仅做占位符替换，不做额外追加，避免模板中删除占位符后仍被强行拼接。
+        return template
+            .replace("{codeDiffs}", contextJson)
+            .replace("{rawPatch}", rawPatch)
+            .replace("{diffSummary}", diffSummary);
     }
 
     /**
