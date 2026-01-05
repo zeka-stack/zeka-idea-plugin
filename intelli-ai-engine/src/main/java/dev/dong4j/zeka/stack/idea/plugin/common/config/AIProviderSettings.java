@@ -79,6 +79,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     public boolean showAdvancedSettings = false;
     /** 是否显示可用的服务提供商 */
     public boolean showAvailableProviders = false;
+    /** Autocomplete 默认服务商（从可用服务商列表中选择） */
+    public String autocompleteProviderCredentialId;
 
     /** 监听器列表（使用 CopyOnWriteArrayList 保证线程安全） */
     private final List<AIProviderSettingsListener> listeners = new CopyOnWriteArrayList<>();
@@ -231,6 +233,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         settings.showAvailableProviders = this.showAvailableProviders;
         settings.aiProviderType = this.aiProviderType;
         settings.responseLanguage = this.responseLanguage != null ? this.responseLanguage : ResponseLanguage.ZH;
+        settings.autocompleteProviderCredentialId = this.autocompleteProviderCredentialId;
         return settings;
     }
 
@@ -376,6 +379,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         this.showAvailableProviders = source.showAvailableProviders;
         this.aiProviderType = source.aiProviderType;
         this.responseLanguage = source.responseLanguage != null ? source.responseLanguage : ResponseLanguage.ZH;
+        this.autocompleteProviderCredentialId = source.autocompleteProviderCredentialId;
 
         // 如果可用提供商列表有变化，通知监听器并触发持久化
         if (availableProvidersChanged) {
@@ -460,6 +464,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
             return false;
         }
         if (responseLanguage != other.responseLanguage) {
+            return false;
+        }
+        if (!Objects.equals(autocompleteProviderCredentialId, other.autocompleteProviderCredentialId)) {
             return false;
         }
 
