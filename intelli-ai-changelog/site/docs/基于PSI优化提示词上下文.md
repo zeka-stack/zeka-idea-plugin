@@ -1,420 +1,500 @@
-changelog 插件生成 commit message 有没有必要使用特定语言的 psi 来构建 diff
-
-结论先给出：大多数情况下，Changelog 插件在生成 commit message 时，没有必要使用“特定语言的 PSI”来构建 diff。
-但在你已经做的 IntelliAI / Changelog 场景里，引入 PSI 是一种“可选的能力增强”，而不是基础必需品。
-
-下面我按 是否值得做 / 什么时候该做 / 怎么做才不踩坑 来拆解。
-
-⸻
-
-一、为什么「没必要」用特定语言 PSI 来构建 diff（核心原因）
-
-1️⃣ commit message 的本质是「变更意图摘要」，不是「语法级 diff」
-
-Git commit message 关注的是：
-• 做了什么（What）
-• 为什么做（Why）
-• 影响了什么（Impact）
-
-而不是：
-• AST 节点怎么变
-• 表达式如何重排
-• PSI 树发生了哪些精细变化
-
-👉 文本 diff（VCS diff）已经 80% 足够支撑高质量提交信息。
-
-⸻
-
-2️⃣ IntelliJ 本身已经给你「语言无关 + 成熟」的 diff 能力
-
-你现在用的路径本质是：
-
-Git → ChangeList → FilePath → Unified diff
-
-这条链路的优势是：
-• ✔ 覆盖所有语言（Java / Kotlin / XML / YAML / Markdown / 配置文件）
-• ✔ 与 Git 真实提交保持一致（和 git diff 语义一致）
-• ✔ 不依赖 PSI 是否可用（索引、Dumb Mode 也能跑）
-• ✔ 性能稳定、心智成本低
-
-👉 这正是 JetBrains 官方推荐的 VCS 扩展路径。
-
-⸻
-
-3️⃣ PSI diff 的维护成本 ≫ 实际收益（尤其是多语言）
-
-如果你走「特定语言 PSI diff」这条路，你会立刻面对：
-
-问题 说明
-语言爆炸 Java / Kotlin / Groovy / XML / SQL / Markdown …
-PSI 不稳定 索引中 / DumbMode / 文件不合法
-插件耦合 必须依赖对应语言插件
-性能风险 大量文件 PSI 构建成本极高
-Diff 语义复杂 AST diff ≠ 人类理解的“改了什么”
-
-👉 为了 20% 的语义提升，引入 200% 的复杂度，非常不划算。
-
-⸻
-
-二、那什么时候「值得」用 PSI？（非常重要）
-
-虽然不建议用 PSI 来“构建 diff”，但你可以用 PSI 来 “增强 diff 语义”。
-
-👉 关键区别在于：
-PSI ≠ Diff 来源，而是 Diff 的“解释器”
-
-✅ 推荐使用 PSI 的场景（加分项）
-
-1️⃣ 提炼「结构级语义标签」
-例如：
-• 新增了 @Transactional
-• 修改了 public API 方法签名
-• 删除了 Controller 接口
-• 重构：方法拆分 / 类职责变化
-
-这些可以通过 PSI 判断，但 不替代 diff。
-
-⸻
-
-2️⃣ 帮 AI 写得更像人
-你现在已经在做 AI commit message 生成，PSI 非常适合做这些事情：
-• 判断是「接口变更」还是「实现调整」
-• 判断是「重构」还是「行为变化」
-• 自动补充 Conventional Commit 的 type / scope
-
-例如最终 prompt 变成：
-
-- 文件：UserService.java
-- 类型：public 方法签名变更
-- 行为：参数从 UserDTO 改为 UserCommand
-- 影响：调用方需同步调整
-
-👉 这比单纯 diff 行更有价值。
-
-⸻
-
-3️⃣ 用于“统计 / 分析”，而不是 diff 本身
-结合你前面提到的 统计功能，PSI 非常适合：
-• 统计：
-• 新增类 / 方法 / 字段数量
-• public API 变更次数
-• 注解新增 / 删除
-• 给 engine 上报：
-• 结构级变更指标
-• 风险等级（API breaking change）
-
-这点非常符合你后面要做 H5 数据面板 的规划。
-
-⸻
-
-三、推荐的「最佳实践架构」（强烈建议）
-
-✅ 官方 & 工程上都更优的做法
-
-┌────────────┐
-│ Git Diff │ ← 唯一 diff 来源（文本）
-└─────┬──────┘
-│
-▼
-┌────────────┐
-│ 结构分析层 │ ← 可选（PSI / 语言无关）
-└─────┬──────┘
-│
-▼
-┌────────────┐
-│ Prompt 构建│
-└─────┬──────┘
-│
-▼
-┌────────────┐
-│ AI 生成 │
-└────────────┘
-
-❌ 不推荐的做法
-
-PSI diff → 自定义 AST diff → 再拼 commit message
-
-这是 高复杂度 + 低回报 的典型反模式。
-
-⸻
-
-四、结合你当前项目给一个明确建议
-
-对你现在的 Changelog 插件：
-
-我的结论是：
-• ❌ 不需要用特定语言 PSI 来「构建 diff」
-• ✅ 可以、也值得用 PSI 来：
-• 丰富 commit message 语义
-• 提升 AI 输出质量
-• 支撑统计 & 风险分析
-• 做高阶 Pro 功能区分
-
-一句话总结给你：
-
-Diff 用 Git，理解用 PSI，表达交给 AI。
-
-如果你愿意，下一步我可以直接帮你设计一套：
-• ChangeSemanticAnalyzer 抽象
-• Java / Kotlin PSI 最小实现
-• 与你现有 prompt 模板无缝融合的结构化输入格式
-
----
-
-如何用 psi 来判断具体的变更行为？ 比如你说的接口变更还是实现调整 重构还是行为变化等？ 我想可以添加一总结性的文本给到 ai，让生成的 commit
-message 更准确
-
-这个问题问得非常对位你现在这个插件阶段 👍
-我直接给你一套**“可落地、可扩展、不走偏”的 PSI 变更语义判断方法论**，而不是泛泛而谈。
-
-目标：
-把「文本 diff」升级为「结构语义 diff」，产出一段“总结性语义文本”喂给 AI
-而不是自己生成 commit message。
-
-⸻
-
-一、核心设计思想（先给结论）
-
-PSI 不做 diff，只做「变更归因」
-
-你已经有了 Git diff（这是事实来源），PSI 的职责只有三件事：
-
-1. 识别“改的是谁”（类 / 方法 / 字段 / 接口）
-2. 判断“改了什么层级”（签名 / 注解 / 可见性 / 方法体）
-3. 归类“这是哪一类变更”（接口变更 / 实现调整 / 重构 / 行为变化）
-
-最终产出：
-
-该变更包含：
-
-- 1 个 public API 方法签名变更（接口级变更）
-- 2 个方法内部实现调整（无签名变化）
-- 未发现行为分支变化（条件 / 返回值）
-
-这段话 不是给人看的，是给 AI 用的。
-
-⸻
-
-二、你需要的最小 PSI 输入是什么？
-
-⚠️ 重点：不需要完整 AST diff
-
-你只需要 4 个 PSI 快照：
-
-快照 来源
-旧文件 PSI git HEAD
-新文件 PSI 工作区
-变更行号 Git diff
-语言 IntelliJ 自动识别
-
-👉 通过 变更行号 → 定位 PSI 元素
-
-⸻
-
-三、第一步：用 diff 行号定位 PSI 元素（关键）
-
-1️⃣ 从 Git diff 拿到变更行号
-
-你现在已经有类似结构了：
-
-class DiffHunk {
-int oldStartLine;
-int oldLineCount;
-int newStartLine;
-int newLineCount;
+# 基于 PSI 优化提示词上下文
+
+## 一、背景
+
+### 1.1 问题提出
+
+在 AI 生成 Commit Message 的场景中，我们面临一个核心问题：**如何让 AI 更准确地理解代码变更的语义？**
+
+传统的文本 diff（Git diff）虽然能够完整地展示代码变更，但对于 AI 来说，存在以下局限性：
+
+- **缺乏结构语义**：AI 只能看到行级别的增删改，无法理解这是"接口变更"还是"实现调整"
+- **噪音干扰**：格式化、重命名等非语义变更会干扰 AI 的判断
+- **上下文缺失**：无法识别变更影响的范围（public API vs 内部实现）
+
+### 1.2 设计原则
+
+经过深入分析，我们确立了以下设计原则：
+
+> **Diff 用 Git，理解用 PSI，表达交给 AI。**
+
+这意味着：
+
+- ✅ **Git diff 作为唯一的事实来源**：保持与 Git 提交的一致性，不重复造轮子
+- ✅ **PSI 作为语义增强器**：不替代 diff，而是为 diff 添加结构级语义标签
+- ✅ **AI 负责最终表达**：将结构化的语义信息作为上下文提供给 AI，提升生成质量
+
+### 1.3 核心价值
+
+通过 PSI 语义分析，我们能够：
+
+1. **提升 AI 输出质量**：让 AI 理解"接口变更"与"实现调整"的区别
+2. **支持风险分析**：识别 breaking changes、API 变更等高风险变更
+3. **优化提示词结构**：将语义信息结构化，便于 AI 理解和处理
+4. **扩展性设计**：支持多语言（Java、Kotlin、XML 等）的语义分析
+
+## 二、方案设计
+
+### 2.1 架构概览
+
+```
+┌─────────────┐
+│  Git Diff   │ ← 唯一 diff 来源（文本级）
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ PSI 分析层  │ ← 语义增强（结构级）
+│ - 接口变更  │
+│ - 实现调整  │
+│ - 行为变化  │
+│ - 重构识别  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│ Prompt 构建 │ ← 结构化上下文
+│ - diff      │
+│ - semantic  │
+│ - metadata  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│  AI 生成    │ ← 高质量输出
+└─────────────┘
+```
+
+### 2.2 核心接口设计
+
+#### 2.2.1 LanguageContextResolver
+
+语言上下文解析器的核心接口，定义了多语言支持的统一规范：
+
+```java
+public interface LanguageContextResolver {
+    /**
+     * 判断是否支持该文件类型
+     */
+    boolean supports(@NotNull VirtualFile file);
+
+    /**
+     * 解析变更位置的上下文信息（类名、方法名等）
+     */
+    @Nullable
+    String resolveContext(@NotNull VirtualFile file,
+                         int preferredLine,
+                         int fallbackLine);
+
+    /**
+     * 解析文件的主要符号名称（如类名）
+     */
+    @Nullable
+    String resolvePrimarySymbolName(@NotNull Project project,
+                                   @NotNull VirtualFile file);
+
+    /**
+     * 解析基于 PSI 的语义摘要
+     * 核心方法：将 diff 升级为结构语义 diff
+     */
+    @Nullable
+    String resolveSemanticSummary(@NotNull Project project,
+                                 @NotNull VirtualFile file,
+                                 @NotNull String beforeContent,
+                                 @NotNull String afterContent,
+                                 @NotNull List<LineFragment> fragments);
 }
+```
 
-2️⃣ 用行号反查 PSI Element
+#### 2.2.2 ContextResolverRegistry
 
-PsiElement element =
-psiFile.findElementAt(document.getLineStartOffset(lineNumber));
+解析器注册表，负责管理和调度不同语言的解析器：
 
-然后向上找「有意义的结构节点」：
+- **内置解析器**：Java、XML
+- **动态加载**：通过反射检查 Java 插件是否安装
+- **SPI 扩展**：支持通过 ServiceLoader 扩展新的语言解析器
 
-PsiMethod method = PsiTreeUtil.getParentOfType(
-element,
-PsiMethod.class,
-false
-);
+### 2.3 语义分析模型
 
-⸻
+#### 2.3.1 变更类型分类
 
-四、核心判断模型（重点）
+我们将代码变更分为以下几个语义类别：
 
-下面是你真正关心的部分 👇
-我按你提到的几个判断目标来拆。
+| 类别       | 说明                          | 示例                    |
+|----------|-----------------------------|-----------------------|
+| **接口变更** | public API 签名变化             | 方法参数类型变化、返回值变化        |
+| **实现调整** | 方法体内部逻辑变化，但签名未变             | 优化算法、修复 bug           |
+| **行为变化** | 控制流变化（if/return/throw 数量变化） | 新增条件分支、异常处理           |
+| **重构**   | 结构性调整，无行为变化                 | 方法拆分、变量重命名            |
+| **类变更**  | 类签名、继承关系变化                  | extends/implements 变化 |
+| **字段变更** | 字段定义、默认值变化                  | public 字段新增/删除        |
+| **注解变更** | 类/方法注解变化                    | @RequestMapping 参数变化  |
 
-⸻
+#### 2.3.2 判断逻辑
 
-1️⃣ 接口变更 vs 实现调整（最重要）
+**接口变更 vs 实现调整**
 
-判断标准（非常清晰）
+```java
+// 接口变更判断
+boolean isPublicApi = method.hasModifierProperty(PsiModifier.PUBLIC)
+                   || method.hasModifierProperty(PsiModifier.PROTECTED);
 
-✅ 接口变更（Breaking / API Change）
-满足任一：
-• public / protected 方法
-• 方法名变化
-• 参数数量 / 类型变化
-• 返回值类型变化
-• throws 声明变化
-• public 类：
-• implements / extends 变化
-• public 字段变更
-• public 注解变化（如 @RequestMapping）
+boolean signatureChanged = !oldMethod.getSignature(PsiSubstitutor.EMPTY)
+                              .equals(newMethod.getSignature(PsiSubstitutor.EMPTY));
 
-👉 PSI 判断点
+// 实现调整判断
+boolean bodyChanged = !oldMethod.getBody().getText()
+                         .equals(newMethod.getBody().getText());
+```
 
-PsiMethod method;
+**重构 vs 行为变化**
 
-boolean isPublicApi =
-method.hasModifierProperty(PsiModifier.PUBLIC)
-|| method.hasModifierProperty(PsiModifier.PROTECTED);
-
-boolean signatureChanged =
-!oldMethod.getSignature(PsiSubstitutor.EMPTY)
-.equals(newMethod.getSignature(PsiSubstitutor.EMPTY));
-
-✅ 实现调整（Non-breaking）
-• 方法体（PsiCodeBlock）变化
-• 但 签名未变
-• 可见性未变
-
-boolean bodyChanged =
-!oldMethod.getBody().getText()
-.equals(newMethod.getBody().getText());
-
-⸻
-
-生成语义文本示例
-
-- public 方法 userLogin(UserDTO) → userLogin(UserCommand)，属于接口级变更
-- 方法 getUserInfo 内部实现调整，未影响方法签名
-
-⸻
-
-2️⃣ 重构 vs 行为变化（最容易混淆）
-
-🔑 本质区别
-
-类型 是否改变“对外可观察行为”
-重构 ❌ 不改变
-行为变化 ✅ 改变
-
-⸻
-
-✅ 重构（Refactor）的典型 PSI 特征
-• 方法：
-• 拆分 / 合并
-• 私有方法新增
-• 局部变量重命名
-• 提取方法
-• 控制流未变（if / return / throw 结构一致）
-
-简单可行的判断方式（够用了）
-
-boolean controlFlowUnchanged =
-oldBody.getText().replaceAll("\\s+", "")
-.equals(newBody.getText().replaceAll("\\s+", ""));
-
-或者更进阶：
-• if / for / while 数量一致
-• return 语句数量一致
-
-⸻
-
-❗ 行为变化（Behavior Change）
-
-任一出现即可判定：
-• 新增 / 删除：
-• if
-• return
-• throw
-• 修改条件表达式
-• 修改返回值构造逻辑
-• 异常类型变化
-
+```java
+// 行为变化判断：控制流结构变化
 int oldIfCount = PsiTreeUtil.findChildrenOfType(oldBody, PsiIfStatement.class).size();
 int newIfCount = PsiTreeUtil.findChildrenOfType(newBody, PsiIfStatement.class).size();
+boolean behaviorChanged = oldIfCount != newIfCount
+                      || oldReturnCount != newReturnCount
+                      || oldThrowCount != newThrowCount;
 
-boolean behaviorChanged = oldIfCount != newIfCount;
+// 重构判断：仅排版/命名变化
+String beforeText = beforeBody.getText().replaceAll("\\s+", "");
+String afterText = afterBody.getText().replaceAll("\\s+", "");
+boolean isRefactor = beforeText.equals(afterText);
+```
 
-⸻
+## 三、实现细节
 
-语义文本示例
+### 3.1 JavaPsiContextResolver 实现
 
-- 方法 checkPermission 增加新的条件分支，属于行为变化
-- UserService 内部方法拆分，仅为结构性重构
+#### 3.1.1 核心流程
 
-⸻
+```java
+@Override
+public @Nullable String resolveSemanticSummary(...) {
+    // 1. 创建变更前后的 PSI 文件快照
+    PsiJavaFile beforeFile = createPsiFile(project, fileName, beforeContent);
+    PsiJavaFile afterFile = createPsiFile(project, fileName, afterContent);
 
-3️⃣ 接口类 / 实现类的区分（很实用）
+    // 2. 遍历 diff 片段，定位变更位置
+    for (LineFragment fragment : fragments) {
+        // 3. 通过行号定位 PSI 元素（方法/字段/类）
+        PsiMethod beforeMethod = findMethodAtLine(beforeFile, beforeContent, fragment.getStartLine1());
+        PsiMethod afterMethod = findMethodAtLine(afterFile, afterContent, fragment.getStartLine2());
 
-判断是不是“接口层变更”
+        // 4. 分析变更类型并统计
+        if (isSignatureChanged(beforeMethod, afterMethod)) {
+            counters.apiSignatureChanges++;
+        } else if (isBehaviorChanged(beforeMethod.getBody(), afterMethod.getBody())) {
+            counters.behaviorChanges++;
+        } else if (isRefactorChange(...)) {
+            counters.refactorChanges++;
+        }
+    }
 
-PsiClass psiClass;
+    // 5. 生成结构化语义摘要
+    return buildSummary(counters, details);
+}
+```
 
-boolean isInterface = psiClass.isInterface();
+#### 3.1.2 行号定位 PSI 元素
 
-boolean isController =
-psiClass.hasAnnotation("org.springframework.web.bind.annotation.RestController");
+关键实现：通过 diff 行号反查 PSI 元素
 
-结合：
-• 接口 / Controller / FeignClient
-• public 方法签名变化
+```java
+private PsiMethod findMethodAtLine(PsiJavaFile psiFile, String content, int line) {
+    // 计算行号对应的文本偏移量
+    int offset = lineStartOffset(content, line);
 
-👉 可以直接提示 AI：
+    // 查找该位置的 PSI 元素
+    PsiElement element = psiFile.findElementAt(offset);
 
-该变更涉及对外接口层（Controller / API）调整
+    // 向上查找包含该元素的方法节点
+    return PsiTreeUtil.getParentOfType(element, PsiMethod.class, false);
+}
+```
 
-⸻
+#### 3.1.3 语义摘要输出格式
 
-五、最终：你应该产出什么给 AI？
+```text
+变更语义总结:
+- 接口层：1 个 public API 方法签名变更
+- 实现层：2 个方法内部实现调整
+- 行为：1 处行为变化
+- 重构：1 处结构调整（无明显行为变化）
+- 细节：
+  - public 方法签名变更: UserService#login(UserDTO)
+  - 实现调整: UserService#getUserInfo()
+  - 行为变化: UserService#checkPermission()
+```
 
-❌ 不要给
-• AST
-• PSI 结构
-• 细碎 diff
+### 3.2 ContextResolverRegistry 实现
 
-✅ 正确的“总结性文本格式”（建议）
+#### 3.2.1 解析器加载策略
 
-变更语义总结：
+```java
+private static List<LanguageContextResolver> getResolvers() {
+    List<LanguageContextResolver> list = new ArrayList<>();
 
-1. 接口层：
-    - 修改 1 个 public API 方法签名（参数类型变化）
-2. 实现层：
-    - 2 个方法内部实现调整，未影响对外接口
-3. 行为：
-    - 新增权限校验分支，存在行为变化
-4. 重构：
-    - 拆分 UserService 内部逻辑，无行为影响
+    // 1. 内置解析器（始终可用）
+    list.add(new XmlContextResolver());
 
-这段内容 直接拼进你的 user prompt，AI 的输出质量会明显上一个台阶。
+    // 2. 条件加载 Java 解析器（需要 Java 插件）
+    LanguageContextResolver javaResolver = loadJavaResolverIfAvailable();
+    if (javaResolver != null) {
+        list.add(javaResolver);
+    }
 
-⸻
+    // 3. SPI 扩展（支持外部插件扩展）
+    loadResolversFromSpi(list);
 
-六、架构建议（非常适合你现在做）
+    return Collections.unmodifiableList(list);
+}
+```
 
-建议你抽一个核心接口：
+#### 3.2.2 Java 解析器的条件加载
 
-interface ChangeSemanticAnalyzer {
-ChangeSemanticSummary analyze(PsiFile oldFile, PsiFile newFile, DiffHunk hunk);
+```java
+private static LanguageContextResolver loadJavaResolverIfAvailable() {
+    // 检查 Java 插件是否安装
+    if (!PluginManagerCore.isPluginInstalled(PluginId.getId("com.intellij.java"))) {
+        return null;
+    }
+
+    // 通过反射加载（避免编译时依赖）
+    try {
+        Class<?> resolverClass = Class.forName(JAVA_RESOLVER_CLASS);
+        Object instance = resolverClass.getDeclaredConstructor().newInstance();
+        if (instance instanceof LanguageContextResolver resolver) {
+            return resolver;
+        }
+    } catch (Throwable ignored) {
+        // 加载失败时静默处理，不影响其他功能
+    }
+    return null;
+}
+```
+
+### 3.3 集成到 Prompt 构建流程
+
+#### 3.3.1 在 CodeDiffUtil 中调用
+
+```java
+private static String resolveSemanticSummary(VirtualFile virtualFile, DiffResult diffResult) {
+    Project project = ProjectLocator.getInstance().guessProjectForFile(virtualFile);
+    if (project == null || project.isDisposed()) {
+        return null;
+    }
+
+    // 调用注册表解析语义摘要
+    return ContextResolverRegistry.resolveSemanticSummary(
+        project,
+        virtualFile,
+        diffResult.beforeContent(),
+        diffResult.afterContent(),
+        diffResult.fragments()
+    );
+}
+```
+
+#### 3.3.2 在 ChangelogPromptBuilder 中嵌入
+
+语义摘要作为 `semantic_summary` 字段嵌入到 JSON 上下文中：
+
+```json
+{
+  "changes": [
+    {
+      "path": "UserService.java",
+      "full_diff_content": "...",
+      "semantic_summary": "变更语义总结:\n- 接口层：1 个 public API 方法签名变更\n..."
+    }
+  ]
+}
+```
+
+### 3.4 线程安全与性能优化
+
+#### 3.4.1 ReadAction 保护
+
+所有 PSI 操作都在 `ReadAction` 中执行，确保线程安全：
+
+```java
+return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+    // PSI 操作
+    PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+    // ...
+});
+```
+
+#### 3.4.2 DumbMode 检查
+
+在索引未完成时（DumbMode），跳过 PSI 分析：
+
+```java
+if (DumbService.isDumb(project)) {
+    return null; // 降级为纯文本 diff
+}
+```
+
+#### 3.4.3 去重处理
+
+使用 `Set<String>` 避免重复分析同一个方法/字段：
+
+```java
+Set<String> processedMethods = new HashSet<>();
+String methodKey = buildMethodKey(method);
+if (!processedMethods.add(methodKey)) {
+    continue; // 已处理过，跳过
+}
+```
+
+## 四、使用示例
+
+### 4.1 典型场景
+
+**场景 1：接口变更**
+
+```java
+// 变更前
+public User login(UserDTO dto) { ... }
+
+// 变更后
+public User login(UserCommand command) { ... }
+```
+
+**语义摘要输出：**
+
+```
+变更语义总结:
+- 接口层：1 个 public API 方法签名变更
+- 细节：
+  - public 方法签名变更: UserService#login(UserDTO) → login(UserCommand)
+```
+
+**场景 2：行为变化**
+
+```java
+// 变更前
+public boolean checkPermission(User user) {
+    return user.isAdmin();
 }
 
-然后：
-• JavaPsiChangeAnalyzer
-• KotlinPsiChangeAnalyzer（后续）
+// 变更后
+public boolean checkPermission(User user) {
+    if (user.isAdmin()) {
+        return true;
+    }
+    return user.hasRole("editor"); // 新增条件分支
+}
+```
 
-⸻
+**语义摘要输出：**
 
-最后一句给你（项目方向判断）
+```
+变更语义总结:
+- 行为：1 处行为变化
+- 细节：
+  - 行为变化: UserService#checkPermission() 新增条件分支
+```
 
-你现在做的这一步：
+**场景 3：重构**
 
-“从 diff → 语义 → prompt”
+```java
+// 变更前
+public void process() {
+    // 长方法实现
+}
 
-是所有高质量 AI 编程插件的分水岭。
-JetBrains 官方 AI、Cursor、CodeWhisperer，本质都在干这件事。
+// 变更后
+public void process() {
+    validate();
+    execute();
+    cleanup();
+}
 
-如果你愿意，下一步我可以：
-• 给你一个 Java PSI Analyzer 的最小可用实现
-• 或直接 帮你设计一套 ChangeSemanticSummary 数据结构 + prompt 拼接模板
+private void validate() { ... }
+private void execute() { ... }
+private void cleanup() { ... }
+```
+
+**语义摘要输出：**
+
+```
+变更语义总结:
+- 重构：1 处结构调整（无明显行为变化）
+- 细节：
+  - 重构调整: UserService#process() 方法拆分
+```
+
+### 4.2 AI Prompt 增强效果
+
+**增强前（仅文本 diff）：**
+
+```
+文件: UserService.java
+变更内容:
+- public User login(UserDTO dto)
++ public User login(UserCommand command)
+```
+
+**增强后（包含语义摘要）：**
+
+```
+文件: UserService.java
+变更内容:
+- public User login(UserDTO dto)
++ public User login(UserCommand command)
+
+变更语义总结:
+- 接口层：1 个 public API 方法签名变更
+- 细节：
+  - public 方法签名变更: UserService#login(UserDTO) → login(UserCommand)
+```
+
+AI 能够更准确地识别这是一个 **breaking change**，需要更新调用方。
+
+## 五、扩展性设计
+
+### 5.1 添加新语言支持
+
+#### 5.1.1 实现 LanguageContextResolver
+
+以 Kotlin 为例：
+
+```java
+public class KotlinPsiContextResolver implements LanguageContextResolver {
+    @Override
+    public boolean supports(@NotNull VirtualFile file) {
+        return "kt".equalsIgnoreCase(file.getExtension());
+    }
+
+    @Override
+    public @Nullable String resolveSemanticSummary(...) {
+        // Kotlin 特定的 PSI 分析逻辑
+        // 使用 KtClass, KtFunction 等 Kotlin PSI API
+    }
+}
+```
+
+#### 5.1.2 通过 SPI 注册
+
+在 `META-INF/services/dev.dong4j.zeka.stack.idea.plugin.changelog.context.LanguageContextResolver` 文件中添加：
+
+```
+dev.dong4j.zeka.stack.idea.plugin.changelog.context.KotlinPsiContextResolver
+```
+
+### 5.2 自定义语义规则
+
+可以在 `JavaPsiContextResolver` 中扩展更细粒度的判断逻辑：
+
+```java
+// 示例：识别 Spring 注解变更
+private boolean isSpringAnnotationChanged(PsiClass beforeClass, PsiClass afterClass) {
+    String beforeMapping = extractRequestMapping(beforeClass);
+    String afterMapping = extractRequestMapping(afterClass);
+    return !beforeMapping.equals(afterMapping);
+}
+```
+
