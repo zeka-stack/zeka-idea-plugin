@@ -5,13 +5,16 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.ProjectLevelVcsManager;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,6 +132,14 @@ public class CommitMessageGenerator {
                             contextText = getCommitMessageText(commitMessageControl);
                         }
                         ChangelogService service = ChangelogService.getInstance(project);
+
+                        // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
+                        Map<String, List<Change>> changesByRoot = groupChangesByRoot(changes);
+                        if (changesByRoot.size() > 1) {
+                            handleMultiRepositoryChanges(service, changesByRoot, contextText, outputSession, commitMessageControl);
+                            return;
+                        }
+
                         StringBuilder buffer = new StringBuilder();
                         AtomicReference<Boolean> updated = new AtomicReference<>(false);
                         // 流式回调中实时写入提交面板，保证内容可见且可编辑
@@ -230,6 +241,78 @@ public class CommitMessageGenerator {
                 }
             }
                                          );
+    }
+
+    /**
+     * 按 VCS Root 对变更分组
+     * <p> 多仓库场景下用于拆分生成上下文，避免跨仓库混合导致的噪音。
+     *
+     * @param changes 变更集合
+     * @return key 为仓库根路径的分组 Map
+     */
+    @NotNull
+    private Map<String, List<Change>> groupChangesByRoot(@NotNull Collection<Change> changes) {
+        ProjectLevelVcsManager vcsManager = ProjectLevelVcsManager.getInstance(project);
+        Map<String, List<Change>> grouped = new LinkedHashMap<>();
+        for (Change change : changes) {
+            VirtualFile file = change.getVirtualFile();
+            VirtualFile root = file != null ? vcsManager.getVcsRootFor(file) : null;
+            String rootKey = root != null ? root.getPresentableUrl() : ChangelogBundle.message("commit.multi.repo.unknown");
+            grouped.computeIfAbsent(rootKey, key -> new java.util.ArrayList<>()).add(change);
+        }
+        return grouped;
+    }
+
+    /**
+     * 处理多仓库变更
+     * <p> 在工具窗口输出每个仓库的提交建议，并提示用户拆分提交。
+     *
+     * @param service       生成服务
+     * @param changesByRoot 按仓库分组的变更
+     * @param contextText   用户补充说明
+     * @param outputSession 可能存在的输出会话
+     * @throws Exception 生成失败时抛出
+     */
+    private void handleMultiRepositoryChanges(@NotNull ChangelogService service,
+                                              @NotNull Map<String, List<Change>> changesByRoot,
+                                              @Nullable String contextText,
+                                              @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                              @Nullable Object commitMessageControl) throws Exception {
+        String repoList = String.join(", ", changesByRoot.keySet());
+        NotificationUtil.showWarning(project,
+                                     ChangelogBundle.message("commit.multi.repo.detected",
+                                                             changesByRoot.size(),
+                                                             repoList));
+
+        // 多仓库场景：为每个仓库生成独立的 commit message，再合并输出。
+        List<String> commitMessages = new java.util.ArrayList<>();
+        for (Map.Entry<String, List<Change>> entry : changesByRoot.entrySet()) {
+            List<Change> rootChanges = entry.getValue();
+            if (rootChanges.isEmpty()) {
+                continue;
+            }
+            String commitMessage = service.generateCommitMessageFromDiff(rootChanges, contextText);
+            String formattedCommitMessage = MessageFormatter.format(commitMessage);
+            if (!formattedCommitMessage.isBlank()) {
+                commitMessages.add(formattedCommitMessage.trim());
+            }
+        }
+
+        // 合并输出，避免引入仓库标题，保持类似「多条 commit message」的展示格式。
+        String combined = String.join("\n\n", commitMessages);
+
+        if (!combined.isBlank()) {
+            // 输出到工具窗口，便于复制与审阅。
+            ChangelogToolWindowService.ChangelogOutputSession session = outputSession;
+            if (session == null) {
+                session = ChangelogToolWindowService.getInstance(project)
+                    .openSession(ChangelogBundle.message("commit.multi.repo.session.title"));
+            }
+            session.setText(combined);
+
+            // 若提交面板可用，同步写入多条 message，方便用户直接复制。
+            setCommitMessageText(combined, commitMessageControl);
+        }
     }
 
     /**
