@@ -104,6 +104,7 @@ final class NextEditCandidateFinder {
                 .append(",\"end_index\":").append(candidate.endIndex())
                 .append(",\"line\":").append(candidate.line())
                 .append(",\"score\":").append(String.format(Locale.US, "%.2f", candidate.score()))
+                .append(",\"source\":\"").append(candidate.source()).append("\"")
                 .append(",\"preview\":\"").append(escapeJson(candidate.preview())).append("\"}");
             builder.append('\n');
         }
@@ -139,7 +140,7 @@ final class NextEditCandidateFinder {
                 if (!candidateText.equals(newText)) {
                     int line = lineNumberAt(fullText, index);
                     String preview = previewAt(fullText, index);
-                    results.add(new NextEditCandidate(index, end, line, 1.0, preview));
+                    results.add(new NextEditCandidate(index, end, line, 1.0, preview, "exact"));
                     count++;
                 }
             }
@@ -175,20 +176,24 @@ final class NextEditCandidateFinder {
         int bestStart = -1;
         int bestEnd = -1;
         double bestScore = 0.0;
-        for (int i = 0; i + oldLen <= line.length(); i++) {
-            int end = i + oldLen;
-            String candidate = line.substring(i, end);
-            if (candidate.equals(newText)) {
-                continue;
-            }
-            double score = similarity(oldText, candidate);
-            if (score > bestScore) {
-                int globalStart = lineStartOffset + i;
-                int globalEnd = lineStartOffset + end;
-                if (!overlaps(globalStart, globalEnd, edit.startOffset(), edit.endOffset())) {
-                    bestScore = score;
-                    bestStart = globalStart;
-                    bestEnd = globalEnd;
+        int minLen = Math.max(1, oldLen - 2);
+        int maxLen = Math.min(line.length(), oldLen + 2);
+        for (int len = minLen; len <= maxLen; len++) {
+            for (int i = 0; i + len <= line.length(); i++) {
+                int end = i + len;
+                String candidate = line.substring(i, end);
+                if (candidate.equals(newText)) {
+                    continue;
+                }
+                double score = similarity(oldText, candidate);
+                if (score > bestScore) {
+                    int globalStart = lineStartOffset + i;
+                    int globalEnd = lineStartOffset + end;
+                    if (!overlaps(globalStart, globalEnd, edit.startOffset(), edit.endOffset())) {
+                        bestScore = score;
+                        bestStart = globalStart;
+                        bestEnd = globalEnd;
+                    }
                 }
             }
         }
@@ -199,7 +204,7 @@ final class NextEditCandidateFinder {
         if (preview.length() > 120) {
             preview = preview.substring(0, 120);
         }
-        return new NextEditCandidate(bestStart, bestEnd, lineNumber, bestScore, preview);
+        return new NextEditCandidate(bestStart, bestEnd, lineNumber, bestScore, preview, "text");
     }
 
     /**
