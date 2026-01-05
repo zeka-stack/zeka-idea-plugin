@@ -42,45 +42,6 @@ final class ChangelogCommitDiffBuilder {
     private static final long MAX_FILE_SIZE_BYTES = 20L * 1024 * 1024;
     /** 单行内容过长时判定为噪音 */
     private static final int MAX_SINGLE_LINE_LENGTH = 300;
-    /** 默认忽略的文件/目录模式 */
-    private static final String[] DEFAULT_EXCLUDE_PATTERNS = {
-        "*.pb.go",
-        "*.pb.cc",
-        "*.pb.h",
-        "go.sum",
-        "go.mod",
-        "package-lock.json",
-        "yarn.lock",
-        "pnpm-lock.yaml",
-        "Cargo.lock",
-        "Pipfile.lock",
-        "poetry.lock",
-        "*.generated.*",
-        "*.gen.*",
-        "*_generated.*",
-        "*_gen.*",
-        "vendor/**",
-        "node_modules/**",
-        ".next/**",
-        "dist/**",
-        "build/**",
-        "target/**",
-        "*.min.js",
-        "*.min.css",
-        "*.bundle.*",
-        "*.chunk.*",
-        "coverage/**",
-        ".nyc_output/**",
-        "*.lcov",
-        "*.log",
-        "*.tmp",
-        "*.temp",
-        ".DS_Store",
-        "Thumbs.db",
-        "*.swp",
-        "*.swo",
-        "*~"
-    };
 
     /** 项目实例, 用于获取基础路径和执行相关操作 */
     private final Project project;
@@ -179,7 +140,7 @@ final class ChangelogCommitDiffBuilder {
             return true;
         }
         FileType fileType = file.getFileType();
-        if (fileType != null && fileType.isBinary()) {
+        if (fileType.isBinary()) {
             return true;
         }
         if (file.getLength() > MAX_FILE_SIZE_BYTES) {
@@ -189,9 +150,14 @@ final class ChangelogCommitDiffBuilder {
     }
 
     /**
-     * 针对默认忽略模式进行匹配
+     * 针对配置的忽略模式进行匹配
      */
     private boolean matchesIgnorePattern(@NotNull String filePath) {
+        SettingsState settings = SettingsState.getInstance();
+        List<String> excludePatterns = settings.excludePatterns != null && !settings.excludePatterns.isEmpty()
+                                       ? settings.excludePatterns
+                                       : SettingsState.getDefaultExcludePatterns();
+
         String basePath = project.getBasePath();
         Path candidatePath = Paths.get(filePath);
         Path relativePath = candidatePath;
@@ -209,8 +175,11 @@ final class ChangelogCommitDiffBuilder {
         Path normalizedPath = Paths.get(normalized);
         String fileName = normalizedPath.getFileName() != null ? normalizedPath.getFileName().toString() : normalized;
 
-        for (String pattern : DEFAULT_EXCLUDE_PATTERNS) {
-            PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+        for (String pattern : excludePatterns) {
+            if (pattern == null || pattern.trim().isEmpty()) {
+                continue;
+            }
+            PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern.trim());
             if (matcher.matches(normalizedPath) || matcher.matches(Paths.get(fileName))) {
                 return true;
             }

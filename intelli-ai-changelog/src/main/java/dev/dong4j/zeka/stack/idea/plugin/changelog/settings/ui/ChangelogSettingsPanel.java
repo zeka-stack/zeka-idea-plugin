@@ -21,6 +21,9 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ItemEvent;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
@@ -134,6 +137,12 @@ public class ChangelogSettingsPanel {
     private final JComboBox<SettingsState.CommitMessageDiffProvider> commitMessageDiffProviderComboBox;
     /** 提交消息提示词容器面板（用于控制可见性） */
     private final JPanel commitMessagePromptPanel;
+    /** 是否显示排除模式设置 */
+    private final JBCheckBox showExcludePatternsCheckBox;
+    /** 排除模式容器面板（用于控制可见性） */
+    private final JPanel excludePatternsPanel;
+    /** 排除模式文本区域 */
+    private final JBTextArea excludePatternsTextArea;
 
     /**
      * 构造函数, 初始化变更日志设置面板.
@@ -287,6 +296,23 @@ public class ChangelogSettingsPanel {
         commitMessagePromptPanel.add(commitMessagePromptContent, BorderLayout.NORTH);
         commitMessagePromptPanel.setVisible(false); // 默认隐藏
 
+        // 创建显示排除模式设置复选框
+        showExcludePatternsCheckBox = new JBCheckBox(ChangelogBundle.message("settings.commit.exclude.patterns.show"));
+
+        // 创建排除模式容器面板
+        excludePatternsPanel = new JPanel(new BorderLayout());
+
+        // 创建排除模式文本区域
+        excludePatternsTextArea = new JBTextArea(15, 50);
+        excludePatternsTextArea.setLineWrap(true);
+        excludePatternsTextArea.setWrapStyleWord(true);
+        excludePatternsTextArea.setToolTipText(ChangelogBundle.message("settings.commit.exclude.patterns.tooltip"));
+
+        // 构建排除模式面板内容
+        JPanel excludePatternsContent = createExcludePatternsContentPanel();
+        excludePatternsPanel.add(excludePatternsContent, BorderLayout.NORTH);
+        excludePatternsPanel.setVisible(false); // 默认隐藏
+
         // 初始化反馈面板
         FeedbackPanel feedbackPanel = new FeedbackPanel(
             null, // 应用级设置，project 为 null
@@ -358,7 +384,8 @@ public class ChangelogSettingsPanel {
             || showGitCliffConfigCheckBox.isSelected() != settings.showGitCliffConfig
             || !gitCliffConfigTextArea.getText().equals(settings.gitCliffConfig)
             || showAiReleaseLogPromptCheckBox.isSelected() != settings.showAiReleaseLogPrompt
-            || !aiReleaseLogPromptTextArea.getText().equals(settings.aiReleaseLogPrompt)) {
+            || !aiReleaseLogPromptTextArea.getText().equals(settings.aiReleaseLogPrompt)
+            || !getExcludePatternsFromTextArea().equals(settings.excludePatterns)) {
             return true;
         }
         AIProviderConfig selectedConfig = aiProviderSelectionPanel != null ? aiProviderSelectionPanel.getSelectedProvider() : null;
@@ -395,6 +422,7 @@ public class ChangelogSettingsPanel {
         settings.gitCliffConfig = gitCliffConfigTextArea.getText();
         settings.showAiReleaseLogPrompt = showAiReleaseLogPromptCheckBox.isSelected();
         settings.aiReleaseLogPrompt = aiReleaseLogPromptTextArea.getText();
+        settings.excludePatterns = getExcludePatternsFromTextArea();
         // 注意：lastUsedTag 和 lastUsedHash 不需要在这里更新，它们应该在使用时更新
         if (aiProviderSelectionPanel != null) {
             AIProviderConfig selectedConfig = aiProviderSelectionPanel.getSelectedProvider();
@@ -423,6 +451,12 @@ public class ChangelogSettingsPanel {
         commitMessageDiffProviderComboBox.setSelectedItem(settings.commitMessageDiffProvider);
         showCommitMessagePromptCheckBox.setSelected(settings.showCommitMessagePrompt);
         commitMessagePromptPanel.setVisible(settings.showCommitMessagePrompt);
+        showExcludePatternsCheckBox.setSelected(false); // 不持久化，默认为 false
+        excludePatternsPanel.setVisible(false); // 默认隐藏
+        List<String> excludePatterns = settings.excludePatterns != null && !settings.excludePatterns.isEmpty()
+                                       ? settings.excludePatterns
+                                       : SettingsState.getDefaultExcludePatterns();
+        excludePatternsTextArea.setText(String.join("\n", excludePatterns));
         showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
         advancedSettingsPanel.setVisible(settings.showPromptSettings);
 
@@ -530,6 +564,11 @@ public class ChangelogSettingsPanel {
             commitMessagePromptPanel.setVisible(showCommitMessagePromptCheckBox.isSelected());
         });
 
+        // 显示排除模式复选框控制排除模式面板的显示/隐藏
+        showExcludePatternsCheckBox.addActionListener(e -> {
+            excludePatternsPanel.setVisible(showExcludePatternsCheckBox.isSelected());
+        });
+
         // 监听 AI 提供商选择变化，动态更新 AI 单选按钮文本
         setupAiProviderSelectionListener();
     }
@@ -579,12 +618,19 @@ public class ChangelogSettingsPanel {
         commitMessagePromptCheckBoxPanel.setBorder(JBUI.Borders.emptyLeft(0));
         commitMessagePromptCheckBoxPanel.add(showCommitMessagePromptCheckBox, BorderLayout.WEST);
 
+        // 创建带缩进的排除模式复选框面板
+        JPanel excludePatternsCheckBoxPanel = new JPanel(new BorderLayout());
+        excludePatternsCheckBoxPanel.setBorder(JBUI.Borders.emptyLeft(0));
+        excludePatternsCheckBoxPanel.add(showExcludePatternsCheckBox, BorderLayout.WEST);
+
         JPanel contentPanel = FormBuilder.createFormBuilder()
             .addLabeledComponent(ChangelogBundle.message("settings.commit.message.diff.provider.label"),
                                  commitMessageDiffProviderComboBox)
             .addComponent(useCommitMessageInputAsContextCheckBox)
             .addComponent(commitMessagePromptCheckBoxPanel)
             .addComponent(commitMessagePromptPanel)
+            .addComponent(excludePatternsCheckBoxPanel)
+            .addComponent(excludePatternsPanel)
             .getPanel();
 
         JPanel panel = new JPanel(new BorderLayout());
@@ -641,6 +687,88 @@ public class ChangelogSettingsPanel {
                                 createPromptTab(commitMessageTemplateTextArea, "commit.message"));
 
         return promptTabbedPane;
+    }
+
+    /**
+     * 创建排除模式内容面板
+     * <p>
+     * 创建包含排除模式文本区域和重置按钮的面板。
+     *
+     * @return 排除模式内容面板
+     */
+    private JPanel createExcludePatternsContentPanel() {
+        JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(new JBLabel("  " + ChangelogBundle.message("settings.commit.exclude.patterns.hint")))
+            .addComponent(createExcludePatternsTab())
+            .getPanel();
+
+        // 创建带边框的面板
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        // 添加无标题的边框
+        panel.setBorder(BorderFactory.createEtchedBorder());
+
+        return panel;
+    }
+
+    /**
+     * 创建排除模式 Tab 页面板
+     * <p>
+     * 创建一个包含文本区域和重置按钮的标签页面板。
+     *
+     * @return 包含文本区域和重置按钮的面板
+     */
+    private JPanel createExcludePatternsTab() {
+        JPanel tabPanel = new JPanel(new BorderLayout());
+
+        // 创建文本区域
+        excludePatternsTextArea.setLineWrap(true);
+        excludePatternsTextArea.setWrapStyleWord(true);
+
+        // 创建滚动面板，并添加边框以在四周留出空间
+        JBScrollPane scrollPane = new JBScrollPane(excludePatternsTextArea);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        // 添加边框，在四周留出10像素的空间
+        scrollPane.setBorder(JBUI.Borders.empty(10));
+
+        tabPanel.add(scrollPane, BorderLayout.CENTER);
+
+        // 创建重置按钮
+        JButton resetButton = new JButton(ChangelogBundle.message("settings.commit.exclude.patterns.reset"));
+        resetButton.addActionListener(e -> resetExcludePatternsToDefault());
+        tabPanel.add(resetButton, BorderLayout.SOUTH);
+
+        return tabPanel;
+    }
+
+    /**
+     * 重置排除模式为默认值
+     * <p>
+     * 将排除模式文本区域重置为默认的排除模式列表。
+     */
+    private void resetExcludePatternsToDefault() {
+        List<String> defaultPatterns = SettingsState.getDefaultExcludePatterns();
+        excludePatternsTextArea.setText(String.join("\n", defaultPatterns));
+    }
+
+    /**
+     * 从文本区域获取排除模式列表
+     * <p>
+     * 将文本区域的内容按行分割，过滤空行，返回排除模式列表。
+     *
+     * @return 排除模式列表
+     */
+    private List<String> getExcludePatternsFromTextArea() {
+        String text = excludePatternsTextArea.getText();
+        if (text == null || text.isBlank()) {
+            return SettingsState.getDefaultExcludePatterns();
+        }
+        return Arrays.stream(text.split("\n"))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
     }
 
     /**
