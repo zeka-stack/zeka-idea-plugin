@@ -14,8 +14,12 @@ import java.util.List;
 
 import javax.swing.Icon;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import icons.ChangelogIcons;
 
 /**
@@ -43,9 +47,115 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
         Project project = e.getProject();
         boolean enabled = project != null && resolveGitRoot(e) != null;
         e.getPresentation().setEnabled(enabled);
-        e.getPresentation().setText(ChangelogBundle.message("action.generate.release.log"));
+
+        // 动态设置文本：根据 provider 和最后使用的 tag/hash 构建文本
+        String baseText = ChangelogBundle.message("action.menu.generate.release.log");
+        String dynamicText = buildDynamicText();
+        String finalText = dynamicText != null && !dynamicText.isEmpty()
+                           ? baseText + " (" + dynamicText + ")"
+                           : baseText;
+        e.getPresentation().setText(finalText);
         e.getPresentation().setDescription(ChangelogBundle.message("action.generate.release.log.description"));
         e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
+    }
+
+    /**
+     * 构建动态文本
+     * <p>
+     * 根据当前配置构建动态文本：
+     * <ul>
+     *   <li>如果是 AI 模式，添加服务商和模型名称（冒号分隔）</li>
+     *   <li>如果是 git-cliff 模式，添加版本号</li>
+     *   <li>如果 tag 或 hash 有值，添加最后使用的 tag 或 hash（hash 使用前 6 位）</li>
+     * </ul>
+     * <p>
+     * 为了避免文本过长，AI 模式下如果总长度超过 50 字符，则省略模型名称。
+     *
+     * @return 动态文本，如果没有额外信息则返回 null
+     */
+    @Nullable
+    private String buildDynamicText() {
+        SettingsState settings = SettingsState.getInstance();
+        StringBuilder sb = new StringBuilder();
+        boolean hasContent = false;
+
+        // 1. 根据 provider 模式添加相应信息
+        if (settings.releaseLog == ReleaseLogProvider.AI) {
+            // AI 模式：添加服务商和模型名称
+            AIProviderConfig providerConfig = settings.providerConfig;
+            if (providerConfig != null && providerConfig.providerType != null) {
+                String providerName = providerConfig.providerType.getDisplayName();
+                String modelName = providerConfig.modelName != null && !providerConfig.modelName.isEmpty()
+                                   ? providerConfig.modelName : "";
+                if (!modelName.isEmpty()) {
+                    sb.append(providerName).append(":").append(modelName);
+                } else {
+                    sb.append(providerName);
+                }
+                hasContent = true;
+            }
+        } else if (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF) {
+            // git-cliff 模式：添加版本号
+            String version = GitCliffDownloadManager.getInstalledVersion();
+            if (version != null && !version.isEmpty()) {
+                sb.append(version);
+                hasContent = true;
+            }
+        }
+
+        // 2. 如果 tag 或 hash 有值，添加最后使用的 tag 或 hash
+        String rangeInfo = buildRangeInfo(settings);
+        if (rangeInfo != null && !rangeInfo.isEmpty()) {
+            if (hasContent) {
+                sb.append(" ");
+            }
+            sb.append(rangeInfo);
+            hasContent = true;
+        }
+
+        // 3. 如果文本过长（超过 50 字符），AI 模式下省略模型名称
+        String result = hasContent ? sb.toString() : null;
+        if (result != null && settings.releaseLog == ReleaseLogProvider.AI && result.length() > 15) {
+            // 重新构建，只使用服务商名称
+            StringBuilder shortSb = new StringBuilder();
+            AIProviderConfig providerConfig = settings.providerConfig;
+            if (providerConfig != null && providerConfig.providerType != null) {
+                String providerName = providerConfig.providerType.getDisplayName();
+                shortSb.append(providerName);
+                if (rangeInfo != null && !rangeInfo.isEmpty()) {
+                    shortSb.append(" ").append(rangeInfo);
+                }
+                return shortSb.toString();
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 构建范围信息（tag 或 hash）
+     * <p>
+     * 根据配置返回最后使用的 tag 或 hash。
+     * 如果是 hash，则只返回前 6 位。
+     *
+     * @param settings 设置状态
+     * @return 范围信息（tag 或 hash 的前 6 位），如果都没有则返回 null
+     */
+    @Nullable
+    private String buildRangeInfo(@NotNull SettingsState settings) {
+        if (settings.useTagAsStart) {
+            if (settings.lastUsedTag != null && !settings.lastUsedTag.isEmpty()) {
+                return settings.lastUsedTag;
+            }
+        } else {
+            if (settings.lastUsedHash != null && !settings.lastUsedHash.isEmpty()) {
+                // hash 使用前 6 位
+                return settings.lastUsedHash.length() >= 6
+                       ? settings.lastUsedHash.substring(0, 6)
+                       : settings.lastUsedHash;
+            }
+        }
+        return null;
     }
 
     /**
