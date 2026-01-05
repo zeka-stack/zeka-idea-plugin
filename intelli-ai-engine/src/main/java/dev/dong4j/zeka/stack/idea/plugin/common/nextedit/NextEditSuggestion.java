@@ -210,9 +210,10 @@ final class NextEditSuggestion implements Disposable {
         InlayProperties properties = new InlayProperties();
         properties.relatesToPrecedingText(true);
         properties.disableSoftWrapping(true);
+        boolean visible = isLineVisible(startOffset);
         String actionText = jumped ? " to apply" : " to replace";
-        boolean showReplacement = jumped;
-        if (!isLineVisible(startOffset)) {
+        boolean showReplacement = visible || jumped;
+        if (!visible) {
             actionText = " to jump";
             showReplacement = false;
         }

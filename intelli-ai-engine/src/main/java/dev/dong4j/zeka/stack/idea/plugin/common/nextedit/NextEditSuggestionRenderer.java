@@ -29,7 +29,7 @@ import java.awt.RenderingHints;
  * <p> 支持自定义字体, 颜色, 圆角边框和透明度效果, 适配暗色 / 亮色主题.
  * <p> 使用示例:
  * <pre>{@code
- * NextEditSuggestionRenderer renderer = new NextEditSuggestionRenderer(editor, "new content");
+ * NextEditSuggestionRenderer renderer = new NextEditSuggestionRenderer(editor, "new content", " to replace", true);
  * // 该渲染器将被注册到编辑器的内联元素中, 自动绘制提示
  * }</pre>
  *

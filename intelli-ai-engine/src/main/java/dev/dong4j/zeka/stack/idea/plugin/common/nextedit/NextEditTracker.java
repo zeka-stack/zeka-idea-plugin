@@ -60,6 +60,8 @@ final class NextEditTracker implements Disposable {
      * <p> 负责在给定的文本中查找可能的编辑建议.
      */
     private final NextEditCandidateFinder candidateFinder = new NextEditCandidateFinder();
+    /** PSI 候选查找器, 用于基于结构化语义分析 */
+    private final NextEditPsiCandidateFinder psiCandidateFinder = new NextEditPsiCandidateFinder();
     /**
      * 候选建议项队列, 用于存储待显示的编辑建议项
      *
@@ -296,11 +298,14 @@ final class NextEditTracker implements Disposable {
         }
         Document document = editor.getDocument();
         String fullText = document.getText();
-        List<NextEditCandidate> candidates = candidateFinder.findCandidates(fullText, lastEdit, MAX_CANDIDATES);
-        AIConsoleLoggerUtil.print(project, "NextEdit 候选数: " + candidates.size());
-        AIConsoleLoggerUtil.print(project, "NextEdit 候选列表:\n" + candidateFinder.toDebugString(candidates));
+        List<NextEditCandidate> psiCandidates = psiCandidateFinder.findCandidates(project, editor, lastEdit, MAX_CANDIDATES);
+        List<NextEditCandidate> textCandidates = candidateFinder.findCandidates(fullText, lastEdit, MAX_CANDIDATES);
+        List<NextEditCandidate> merged = mergeCandidates(psiCandidates, textCandidates, MAX_CANDIDATES);
+        AIConsoleLoggerUtil.print(project, "NextEdit PSI 候选数: " + psiCandidates.size());
+        AIConsoleLoggerUtil.print(project, "NextEdit 文本候选数: " + textCandidates.size());
+        AIConsoleLoggerUtil.print(project, "NextEdit 候选列表:\n" + candidateFinder.toDebugString(merged));
         suggestionQueue.clear();
-        for (NextEditCandidate candidate : sortCandidates(candidates)) {
+        for (NextEditCandidate candidate : sortCandidates(merged)) {
             suggestionQueue.add(new NextEditSuggestionItem(candidate.startIndex(), candidate.endIndex(),
                                                            lastEdit.newText(), candidate.score()));
         }
@@ -361,9 +366,74 @@ final class NextEditTracker implements Disposable {
     private List<NextEditCandidate> sortCandidates(@NotNull List<NextEditCandidate> candidates) {
         int anchor = lastEdit != null ? lastEdit.startOffset() : 0;
         List<NextEditCandidate> sorted = new java.util.ArrayList<>(candidates);
-        sorted.sort(Comparator.comparingDouble(NextEditCandidate::score).reversed()
+        sorted.sort(Comparator.comparingInt(this::sourcePriority).reversed()
+                        .thenComparingDouble(NextEditCandidate::score).reversed()
                         .thenComparingInt(candidate -> Math.abs(candidate.startIndex() - anchor)));
         return sorted;
+    }
+
+    /**
+     * 计算候选编辑建议的优先级
+     * <p> 根据候选编辑建议的来源类型返回不同的优先级分数
+     *
+     * @param candidate 候选编辑建议对象, 不能为 null
+     * @return 优先级分数, 范围为 1 到 3, 其中 3 表示最高优先级
+     *     <p> 具体优先级规则如下:
+     *     <ul>
+     *     <li> 如果来源为 "psi", 返回 3</li>
+     *     <li> 如果来源为 "exact", 返回 2</li>
+     *     <li> 其他来源, 返回 1</li>
+     *     </ul>
+     */
+    private int sourcePriority(@NotNull NextEditCandidate candidate) {
+        String source = candidate.source();
+        if ("psi".equals(source)) {
+            return 3;
+        }
+        if ("exact".equals(source)) {
+            return 2;
+        }
+        return 1;
+    }
+
+    /**
+     * 合并 PSI 和文本候选建议
+     * <p> 该方法用于合并来自 PSI 和文本候选查找器的候选建议, 确保每个建议项在结果集中唯一.
+     * <p> 首先将 PSI 候选建议放入合并映射中, 然后将文本候选建议补充到映射中, 确保不会重复.
+     * <p> 最后根据指定的限制返回合并后的候选建议列表.
+     *
+     * @param psiCandidates  来自 PSI 的候选建议列表, 不能为 null
+     * @param textCandidates 来自文本的候选建议列表, 不能为 null
+     * @param limit          返回的候选建议的最大数量
+     * @return 合并后的候选建议列表, 按照指定限制返回
+     * @since 1.0
+     */
+    private List<NextEditCandidate> mergeCandidates(@NotNull List<NextEditCandidate> psiCandidates,
+                                                    @NotNull List<NextEditCandidate> textCandidates,
+                                                    int limit) {
+        java.util.Map<String, NextEditCandidate> merged = new java.util.LinkedHashMap<>();
+        for (NextEditCandidate candidate : psiCandidates) {
+            merged.put(key(candidate), candidate);
+        }
+        for (NextEditCandidate candidate : textCandidates) {
+            merged.putIfAbsent(key(candidate), candidate);
+        }
+        List<NextEditCandidate> result = new java.util.ArrayList<>(merged.values());
+        if (result.size() > limit) {
+            return result.subList(0, limit);
+        }
+        return result;
+    }
+
+    /**
+     * 生成候选编辑建议的唯一键
+     * <p> 根据候选编辑建议的起始和结束索引生成一个唯一的键值, 用于标识候选建议
+     *
+     * @param candidate 候选编辑建议对象, 不能为 null
+     * @return 唯一键值, 格式为 "startIndex:endIndex"
+     */
+    private String key(@NotNull NextEditCandidate candidate) {
+        return candidate.startIndex() + ":" + candidate.endIndex();
     }
 
     /**

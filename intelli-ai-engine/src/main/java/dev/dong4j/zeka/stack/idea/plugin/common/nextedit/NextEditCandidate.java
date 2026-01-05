@@ -12,13 +12,14 @@ import org.jetbrains.annotations.NotNull;
  * @param line       编辑候选的行号
  * @param score      评分值, 用于衡量编辑候选的优先级或匹配度
  * @param preview    预览文本内容, 用于展示编辑建议的预览效果
+ * @param source     候选来源标识, 如 "psi" / "text" / "exact"
  * @author dong4j
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2026.01.05
  * @since 1.0.0
  */
-record NextEditCandidate(int startIndex, int endIndex, int line, double score, String preview) {
+record NextEditCandidate(int startIndex, int endIndex, int line, double score, String preview, String source) {
     /**
      * 初始化下一个编辑候选对象
      * <p> 用于封装编辑位置, 行号, 评分及预览内容等信息, 常用于代码编辑器中高亮或推荐修改位置
@@ -28,14 +29,16 @@ record NextEditCandidate(int startIndex, int endIndex, int line, double score, S
      * @param line       编辑所在的行号
      * @param score      评分, 用于排序或筛选候选项
      * @param preview    预览文本内容, 不能为空
+     * @param source     来源标识, 不能为空
      * @since 1.0
      */
-    NextEditCandidate(int startIndex, int endIndex, int line, double score, @NotNull String preview) {
+    NextEditCandidate(int startIndex, int endIndex, int line, double score, @NotNull String preview, @NotNull String source) {
         this.startIndex = startIndex;
         this.endIndex = endIndex;
         this.line = line;
         this.score = score;
         this.preview = preview;
+        this.source = source;
     }
 
     /**
@@ -92,5 +95,17 @@ record NextEditCandidate(int startIndex, int endIndex, int line, double score, S
     @NotNull
     public String preview() {
         return preview;
+    }
+
+    /**
+     * 获取候选来源标识
+     * <p> 返回该候选是由 PSI 分析还是文本相似度产生
+     *
+     * @return 来源标识, 如 "psi" 或 "text"
+     */
+    @Override
+    @NotNull
+    public String source() {
+        return source;
     }
 }
