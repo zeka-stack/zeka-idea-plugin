@@ -159,3 +159,28 @@ https://api-inference.modelscope.cn/v1/chat/completions
     - 支持配置云端同步（可选）
     - 多设备配置共享
     - 配置版本管理
+
+## 2026.01.05
+
+- [ ] 修复过时 API
+
+```
+1 使用计划移除 API
+IntelliAI Engine 2025.3.1使用的 API 计划在未来的版本中移除。
+
+计划采用移除方法（1 ）
+SystemInfo.getOsNameAndVersion() （1 ） （计划在 未来的版本中移除）
+此方法已弃用SystemInfo.getOsNameAndVersion()，FeedbackPanel.getOperatingSystem()将在未来的版本中移除。
+3 种已弃用的 API用法
+IntelliAI Engine 2025.3.1使用了已弃用的 API，该 API 可能会在未来的版本中被移除，从而导致二进制文件和源代码不兼容。
+
+已弃用的类用法（1 ）
+TipUIUtil （1 ）
+已弃用的类TipUIUtil在以下位置被引用WhatsNewPanel.<init>()
+已弃用的接口用法（1 ）
+EdtScheduledExecutorService （1 ）
+已弃用的接口EdtScheduledExecutorService在以下位置被引用：WhatsNewStartupActivity.execute(...)
+已弃用的方法用法（1 ）
+Presentation.putClientProperty(String, Object) （1 ）
+已弃用的方法Presentation.putClientProperty(String, Object)被调用AIStatusBarWidget.OutputLanguageAction.update(...)
+```
