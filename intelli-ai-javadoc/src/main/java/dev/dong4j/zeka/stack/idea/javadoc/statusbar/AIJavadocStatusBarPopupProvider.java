@@ -81,9 +81,8 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, JavadocBundle.message("settings.display.name"), JavadocBundle.message("settings.ai" +
-                                                                                                                          ".provider" +
-                                                                                                                          ".selection"))) {
+        if (!AIProviderUtils.hasAIProvider(project, JavadocBundle.message("settings.display.name"),
+                                           JavadocBundle.message("settings.ai.provider.selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
