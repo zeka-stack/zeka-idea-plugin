@@ -5,8 +5,11 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.HyperlinkLabel;
+import com.intellij.ui.TextFieldWithAutoCompletion;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -28,9 +31,11 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -42,8 +47,11 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
@@ -83,6 +91,14 @@ public final class AIProviderConfigUI {
     private HyperlinkLabel getApiKeyLink;
     /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
+    /** 模型智能搜索输入框 */
+    private TextFieldWithAutoCompletion<String> modelSearchField;
+    /** 模型下拉框的完整数据源 */
+    private final List<String> modelItems = new ArrayList<>();
+    /** 模型过滤更新标记 */
+    private boolean suppressModelFilter;
+    /** 模型过滤监听是否已安装 */
+    private boolean modelFilterInstalled;
     /** 基础 URL 输入框 */
     private JBTextField baseUrlField;
     /** API 密钥输入框 */
@@ -163,6 +179,12 @@ public final class AIProviderConfigUI {
 
         modelComboBox = new ComboBox<>();
         modelComboBox.setEditable(true);
+        SwingUtilities.invokeLater(this::installModelSearchFilter);
+        modelSearchField = TextFieldWithAutoCompletion.create(getDefaultProject(),
+                                                              modelItems,
+                                                              false,
+                                                              "");
+        modelSearchField.setVisible(false);
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
@@ -363,6 +385,156 @@ public final class AIProviderConfigUI {
         return modelComboBox;
     }
 
+    @NotNull
+    public TextFieldWithAutoCompletion<String> getModelSearchField() {
+        return modelSearchField;
+    }
+
+    public void triggerModelSearchPopup() {
+        if (modelSearchField == null) {
+            return;
+        }
+        modelSearchField.requestFocusInWindow();
+        if (invokeModelSearchPopup("showPopup")
+            || invokeModelSearchPopup("showCompletionPopup")
+            || invokeModelSearchPopup("showAutoPopup")) {
+            return;
+        }
+        String text = modelSearchField.getText();
+        modelSearchField.setText(text + " ");
+        modelSearchField.setCaretPosition(text.length());
+        modelSearchField.setText(text);
+        modelSearchField.setCaretPosition(text.length());
+    }
+
+    private boolean invokeModelSearchPopup(@NotNull String methodName) {
+        try {
+            java.lang.reflect.Method method = TextFieldWithAutoCompletion.class.getMethod(methodName);
+            method.setAccessible(true);
+            method.invoke(modelSearchField);
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
+    }
+
+
+    /**
+     * 更新模型下拉框选项并应用当前过滤
+     *
+     * @param items              完整模型列表
+     * @param preferredSelection 优先选中的模型
+     */
+    public void updateModelItems(@NotNull List<String> items, @Nullable String preferredSelection) {
+        modelItems.clear();
+        modelItems.addAll(items);
+        modelSearchField.setVariants(modelItems);
+        suppressModelFilter = true;
+        try {
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            for (String item : modelItems) {
+                model.addElement(item);
+            }
+            modelComboBox.setModel(model);
+            modelComboBox.setEditable(true);
+
+            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
+                if (model.getIndexOf(preferredSelection) >= 0) {
+                    modelComboBox.setSelectedItem(preferredSelection);
+                }
+            }
+
+            String filterText = getModelFilterText();
+            if (!filterText.isEmpty() && modelComboBox.getEditor() != null) {
+                modelComboBox.getEditor().setItem(filterText);
+            }
+        } finally {
+            suppressModelFilter = false;
+        }
+    }
+
+    private void installModelSearchFilter() {
+        if (modelFilterInstalled) {
+            return;
+        }
+        if (modelComboBox.getEditor() == null) {
+            return;
+        }
+        Object editorComponent = modelComboBox.getEditor().getEditorComponent();
+        if (editorComponent instanceof javax.swing.text.JTextComponent textComponent) {
+            textComponent.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    onModelFilterChanged();
+                }
+
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    onModelFilterChanged();
+                }
+
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    onModelFilterChanged();
+                }
+            });
+            modelFilterInstalled = true;
+        }
+    }
+
+
+    private void onModelFilterChanged() {
+        if (suppressModelFilter) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> applyModelFilter(getModelFilterText(), null));
+    }
+
+    @NotNull
+    private String getModelFilterText() {
+        if (modelComboBox.getEditor() == null) {
+            return "";
+        }
+        return Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
+    }
+
+    private void applyModelFilter(@NotNull String filterText, @Nullable String preferredSelection) {
+        suppressModelFilter = true;
+        try {
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            if (filterText.isEmpty()) {
+                for (String item : modelItems) {
+                    model.addElement(item);
+                }
+            } else {
+                String keyword = filterText.toLowerCase();
+                for (String item : modelItems) {
+                    if (item != null && item.toLowerCase().contains(keyword)) {
+                        model.addElement(item);
+                    }
+                }
+            }
+            modelComboBox.setModel(model);
+            modelComboBox.setEditable(true);
+
+            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
+                if (model.getIndexOf(preferredSelection) >= 0) {
+                    modelComboBox.setSelectedItem(preferredSelection);
+                }
+            }
+
+            if (modelComboBox.getEditor() != null) {
+                modelComboBox.getEditor().setItem(filterText);
+            }
+        } finally {
+            suppressModelFilter = false;
+        }
+    }
+
+    private static @NotNull Project getDefaultProject() {
+        return ProjectManager.getInstance().getDefaultProject();
+    }
+
     /**
      * 获取基础 URL 输入框组件
      * <p> 返回用于输入 AI 服务基础 URL 的文本字段组件
@@ -543,11 +715,16 @@ public final class AIProviderConfigUI {
         modelPanel.add(modelComboBox, BorderLayout.CENTER);
         modelPanel.add(testConnectionButton, BorderLayout.EAST);
 
+        JPanel modelSearchPanel = new JPanel(new BorderLayout(5, 0));
+        modelSearchPanel.add(modelSearchField, BorderLayout.CENTER);
+        modelSearchPanel.setVisible(false);
+
         JPanel panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.search.label")), modelSearchPanel)
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
@@ -906,7 +1083,7 @@ public final class AIProviderConfigUI {
 
                 // 如果输入的是 "auto" 的一部分（如 "a", "au", "aut"），允许输入
                 String lowerTrimmed = trimmed.toLowerCase();
-                if (lowerTrimmed.length() <= 4 && "auto".startsWith(lowerTrimmed)) {
+                if ("auto".startsWith(lowerTrimmed)) {
                     return true;
                 }
 
@@ -962,7 +1139,7 @@ public final class AIProviderConfigUI {
                         }
 
                         // 检查是否可能形成有效数字或 "auto" 的一部分
-                        if (testTrimmed.toLowerCase().length() <= 4 && "auto".startsWith(testTrimmed.toLowerCase())) {
+                        if ("auto".startsWith(testTrimmed.toLowerCase())) {
                             return true;
                         }
 

@@ -22,7 +22,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
@@ -55,7 +54,6 @@ public final class AIProviderConfigController {
 
     /** 负责管理 AI 身份凭证的工具类实例 */
     private final AICredentialManager credentialManager;
-    private final AIResponseListener responseListener;
     /** UI 界面组件, 用于展示和操作 AI 提供商配置信息 */
     private final AIProviderConfigUI ui;
     /** 配置是否已验证的标志, 用于标识当前配置是否通过验证 */
@@ -71,14 +69,11 @@ public final class AIProviderConfigController {
      * 通过传入的凭证管理器, 响应监听器和 UI 组件来初始化 AI 提供者配置控制器
      *
      * @param credentialManager 凭证管理器, 不能为空
-     * @param responseListener  响应监听器, 可以为空
      * @param ui                UI 组件, 不能为空
      */
     public AIProviderConfigController(@NotNull AICredentialManager credentialManager,
-                                      @Nullable AIResponseListener responseListener,
                                       @NotNull AIProviderConfigUI ui) {
         this.credentialManager = credentialManager;
-        this.responseListener = responseListener;
         this.ui = ui;
     }
 
@@ -135,8 +130,8 @@ public final class AIProviderConfigController {
         ui.getShowUpdateNotificationCheckBox().setSelected(workingSettings.showUpdateNotification);
         ui.getNextEditEnabledCheckBox().setSelected(NextEditSettings.getInstance().enabled);
         ResponseLanguage responseLanguage = workingSettings.responseLanguage != null
-                                          ? workingSettings.responseLanguage
-                                          : ResponseLanguage.ZH;
+                                            ? workingSettings.responseLanguage
+                                            : ResponseLanguage.ZH;
         ui.getLanguageComboBox().setSelectedItem(responseLanguage);
         ui.updateCheckBoxHintColors();
 
@@ -277,16 +272,10 @@ public final class AIProviderConfigController {
 
         String currentModel = (String) ui.getModelComboBox().getSelectedItem();
 
-        ui.getModelComboBox().removeAllItems();
-        for (String model : providerType.getSupportedModels()) {
-            ui.getModelComboBox().addItem(model);
-        }
-
-        if (currentModel != null && !currentModel.trim().isEmpty()) {
-            ui.getModelComboBox().setSelectedItem(currentModel);
-        } else {
-            ui.getModelComboBox().setSelectedItem(providerType.getDefaultModel());
-        }
+        String preferredSelection = (currentModel != null && !currentModel.trim().isEmpty())
+                                    ? currentModel
+                                    : providerType.getDefaultModel();
+        ui.updateModelItems(providerType.getSupportedModels(), preferredSelection);
 
         ui.getBaseUrlField().setText(providerType.getDefaultBaseUrl());
         ui.getApiKeyField().setEnabled(true);
@@ -506,25 +495,26 @@ public final class AIProviderConfigController {
                 List<String> models = provider.getAvailableModels(apiKey);
                 models.sort(String::compareToIgnoreCase);
                 SwingUtilities.invokeLater(() -> {
-                    ComboBox<String> modelComboBox = ui.getModelComboBox();
-                    modelComboBox.removeAllItems();
                     if (!models.isEmpty()) {
-                        models.forEach(modelComboBox::addItem);
                         String defaultModelName = refreshConfig.modelName;
+                        String preferredSelection = null;
                         if (defaultModelName != null && !defaultModelName.trim().isEmpty() && models.contains(defaultModelName)) {
-                            modelComboBox.setSelectedItem(defaultModelName);
+                            preferredSelection = defaultModelName;
                         } else if (!currentModelName.trim().isEmpty() && models.contains(currentModelName)) {
-                            modelComboBox.setSelectedItem(currentModelName);
+                            preferredSelection = currentModelName;
                         } else {
-                            modelComboBox.setSelectedItem(models.get(0));
+                            preferredSelection = models.get(0);
                         }
+                        ui.updateModelItems(models, preferredSelection);
                         refreshModelsSuccess = true;
                         JOptionPane.showMessageDialog(ui.getMainPanel(),
                                                       AICommonBundle.message("settings.refresh.models.success", models.size()),
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.INFORMATION_MESSAGE);
+                        SwingUtilities.invokeLater(ui::triggerModelSearchPopup);
                     } else {
                         refreshModelsSuccess = false;
+                        ui.updateModelItems(List.of(), null);
                         String errorMessage = AICommonBundle.message("settings.refresh.models.empty");
                         if (providerType.requiresApiKey() && apiKey.trim().isEmpty()) {
                             errorMessage = AICommonBundle.message("settings.error.api.key.missing");
@@ -940,7 +930,8 @@ public final class AIProviderConfigController {
                String.format("  最大 Token 数: %s\n", modelParams.maxTokens != null ? modelParams.maxTokens : "auto") +
                String.format("  Top P: %s\n", modelParams.topP != null ? modelParams.topP : "auto") +
                String.format("  Top K: %s\n", modelParams.topK != null ? modelParams.topK : "auto") +
-               String.format("  存在惩罚 (Presence Penalty): %s\n", modelParams.presencePenalty != null ? modelParams.presencePenalty : "auto") +
+               String.format("  存在惩罚 (Presence Penalty): %s\n", modelParams.presencePenalty != null ? modelParams.presencePenalty : "auto"
+                            ) +
                "\n" +
 
                // 说明文字
