@@ -11,10 +11,21 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
+import com.intellij.ui.RowIcon;
+import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.util.List;
+import java.util.Objects;
+
+import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable;
@@ -25,6 +36,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
 import icons.AICommonIcons;
@@ -49,6 +61,10 @@ import lombok.extern.slf4j.Slf4j;
 public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider {
     /** 用于标识菜单项是否被选中的状态键 */
     private static final Key<Boolean> SELECTED_KEY = Key.create("selected");
+    /** 菜单中选中状态的小绿点图标 */
+    private static final Icon SELECTED_DOT_ICON = new StatusDotIcon(JBUI.scale(13),
+                                                                    JBUI.scale(6),
+                                                                    StatusIndicatorButton.STATUS_SUCCESS);
 
     /**
      * 获取状态栏弹出菜单的组名称
@@ -236,28 +252,11 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         SettingsState settings = SettingsState.getInstance();
         String current;
         if (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF) {
-            String version = GitCliffDownloadManager.getInstalledVersion();
             String gitCliffText = ChangelogBundle.message("statusbar.release.log.provider.gitcliff");
-            if (version != null && !version.isEmpty()) {
-                current = "🪨 " + gitCliffText + " (" + version + ")";
-            } else {
-                current = "🪨 " + gitCliffText;
-            }
+            current = "🪨 " + gitCliffText;
         } else {
             String aiText = ChangelogBundle.message("statusbar.release.log.provider.ai");
-            AIProviderConfig providerConfig = settings.providerConfig;
-            if (providerConfig != null && providerConfig.providerType != null) {
-                String providerName = providerConfig.providerType.getDisplayName();
-                String modelName = providerConfig.modelName != null && !providerConfig.modelName.isEmpty()
-                                   ? providerConfig.modelName : "";
-                if (!modelName.isEmpty()) {
-                    current = "🤖 " + aiText + " (" + providerName + ":" + modelName + ")";
-                } else {
-                    current = "🤖 " + aiText + " (" + providerName + ")";
-                }
-            } else {
-                current = "🤖 " + aiText;
-            }
+            current = "🤖 " + aiText;
         }
         String title = ChangelogBundle.message("statusbar.release.log.provider") + " (" + current + ")";
         DefaultActionGroup group = new DefaultActionGroup(title, true);
@@ -304,17 +303,36 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         /**
          * 初始化 SwitchProviderAction 对象
          * <p> 用于创建一个切换默认 AI 服务提供商的 Action 实例, 设置项目和配置信息, 并根据配置类型设置图标
+         * <p> 显示文本格式为 "服务商名称: 模型名称"
          *
          * @param project 项目对象, 不能为 null
          * @param config  AI 服务提供商配置对象, 不能为 null
          */
         SwitchProviderAction(@NotNull Project project, @NotNull AIProviderConfig config) {
-            super(config.modelName);
+            super(buildDisplayText(config), null, getProviderIcon(config));
             this.project = project;
             this.config = config;
-            if (config.providerType != null) {
-                getTemplatePresentation().setIcon(AICommonIcons.getProviderIcon(config.providerType));
+        }
+
+        /**
+         * 构建显示文本
+         * <p> 格式为 "服务商名称: 模型名称"
+         *
+         * @param config AI 服务提供商配置对象
+         * @return 显示文本
+         */
+        @NotNull
+        private static String buildDisplayText(@NotNull AIProviderConfig config) {
+            String providerName = config.providerType != null
+                                  ? config.providerType.getDisplayName()
+                                  : "未知服务商";
+            String modelName = config.modelName != null && !config.modelName.isEmpty()
+                               ? config.modelName
+                               : "";
+            if (modelName.isEmpty()) {
+                return providerName;
             }
+            return providerName + ":" + modelName;
         }
 
         /**
@@ -332,7 +350,7 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
                 return;
             }
 
-            ApplicationManager.getApplication().invokeLater(() -> {
+            Runnable switchTask = () -> {
                 if (project.isDisposed()) {
                     return;
                 }
@@ -345,20 +363,63 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
                 } catch (Exception exception) {
                     log.error("切换默认服务商失败", exception);
                 }
-            }, ModalityState.defaultModalityState());
+            };
+
+            if (ApplicationManager.getApplication().isDispatchThread()) {
+                switchTask.run();
+            } else {
+                ApplicationManager.getApplication().invokeLater(switchTask, ModalityState.defaultModalityState());
+            }
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            SettingsState settings = SettingsState.getInstance();
+            boolean isSelected = isConfigSelected(settings.providerConfig, config);
+            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+            e.getPresentation().setText(buildDisplayText(config));
+            e.getPresentation().setIcon(buildMenuIcon(config, isSelected));
+        }
+
+        private static @Nullable Icon getProviderIcon(@NotNull AIProviderConfig config) {
+            if (config.providerType == null) {
+                return null;
+            }
+            return AICommonIcons.getProviderIcon(config.providerType);
+        }
+
+        private static @Nullable Icon buildMenuIcon(@NotNull AIProviderConfig config, boolean selected) {
+            Icon providerIcon = getProviderIcon(config);
+            if (!selected) {
+                return providerIcon;
+            }
+            RowIcon rowIcon = new RowIcon(2);
+            rowIcon.setIcon(SELECTED_DOT_ICON, 0);
+            rowIcon.setIcon(providerIcon, 1);
+            return rowIcon;
         }
 
         /**
-         * 更新动作的显示状态
-         * <p> 根据当前配置的提供者类型, 更新动作在 UI 中的选中状态
+         * 判断配置是否被选中
+         * <p> 比较服务商类型和模型名称是否都相同
          *
-         * @param e 动作事件, 包含当前动作的上下文信息
+         * @param currentConfig 当前配置
+         * @param targetConfig  目标配置
+         * @return 如果配置匹配则返回 true
          */
-        @Override
-        public void update(@NotNull AnActionEvent e) {
-            AIProviderType currentType = getCurrentProviderType();
-            boolean isSelected = config != null && config.providerType == currentType;
-            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+        private boolean isConfigSelected(@Nullable AIProviderConfig currentConfig,
+                                         @Nullable AIProviderConfig targetConfig) {
+            if (currentConfig == null || targetConfig == null) {
+                return false;
+            }
+
+            // 比较服务商类型
+            if (currentConfig.providerType != targetConfig.providerType) {
+                return false;
+            }
+
+            // 使用 Objects.equals 安全比较模型名称（处理 null 情况）
+            return Objects.equals(currentConfig.modelName, targetConfig.modelName);
         }
 
         /**
@@ -401,6 +462,37 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
             }
         }
     }
+
+    /**
+         * 菜单选中状态的圆点图标
+         */
+        private record StatusDotIcon(int iconSize, int dotSize, Color color) implements Icon {
+            private StatusDotIcon(int iconSize, int dotSize, @NotNull Color color) {
+                this.iconSize = iconSize;
+                this.dotSize = dotSize;
+                this.color = color;
+            }
+
+            @Override
+            public void paintIcon(Component c, Graphics g, int x, int y) {
+                int offset = Math.max(0, (iconSize - dotSize) / 2);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(color);
+                g2.fillOval(x + offset, y + offset, dotSize, dotSize);
+                g2.dispose();
+            }
+
+            @Override
+            public int getIconWidth() {
+                return iconSize;
+            }
+
+            @Override
+            public int getIconHeight() {
+                return iconSize;
+            }
+        }
 
     /**
      * 用于在状态栏中显示发布日志起始点选择的 ActionGroup
@@ -469,10 +561,43 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
          * @param useTag 是否使用标签作为起始点,true 表示使用标签,false 表示使用哈希值
          */
         ReleaseLogStartPointAction(boolean useTag) {
-            super(useTag
-                  ? ChangelogBundle.message("statusbar.release.log.start.point.tag")
-                  : ChangelogBundle.message("statusbar.release.log.start.point.hash"));
+            super(buildDisplayText(useTag));
             this.useTag = useTag;
+        }
+
+        /**
+         * 构建显示文本
+         * <p> 根据 useTag 参数和当前设置的值构建显示文本
+         * <p> 如果是 tag，显示格式为 "标签 (tag值)"
+         * <p> 如果是 hash，显示格式为 "哈希 (hash前6位)"
+         *
+         * @param useTag 是否使用标签
+         * @return 显示文本
+         */
+        @NotNull
+        private static String buildDisplayText(boolean useTag) {
+            SettingsState settings = SettingsState.getInstance();
+            if (useTag) {
+                String baseText = ChangelogBundle.message("statusbar.release.log.start.point.tag");
+                String tagValue = settings.lastUsedTag != null && !settings.lastUsedTag.isEmpty()
+                                  ? settings.lastUsedTag : null;
+                if (tagValue != null) {
+                    return baseText + " (" + tagValue + ")";
+                } else {
+                    return baseText;
+                }
+            } else {
+                String baseText = ChangelogBundle.message("statusbar.release.log.start.point.hash");
+                String hashValue = settings.lastUsedHash != null && !settings.lastUsedHash.isEmpty()
+                                   ? settings.lastUsedHash : null;
+                if (hashValue != null) {
+                    // 截取 hash 的前 6 位
+                    String shortHash = hashValue.length() > 6 ? hashValue.substring(0, 6) : hashValue;
+                    return baseText + " (" + shortHash + ")";
+                } else {
+                    return baseText;
+                }
+            }
         }
 
         /**
@@ -489,15 +614,18 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
 
         /**
          * 更新动作事件的呈现状态
-         * <p> 根据当前设置的状态更新动作事件的呈现, 设置选中状态
+         * <p> 根据当前设置的状态更新动作事件的呈现, 设置选中状态和显示文本
          *
          * @param e 动作事件对象, 不能为 null
          * @since 1.0
          */
         @Override
         public void update(@NotNull AnActionEvent e) {
-            boolean isSelected = SettingsState.getInstance().useTagAsStart == useTag;
+            SettingsState settings = SettingsState.getInstance();
+            boolean isSelected = settings.useTagAsStart == useTag;
             e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
+            // 更新显示文本，显示当前的 tag 或 hash 值
+            e.getPresentation().setText(buildDisplayText(useTag));
         }
 
         /**
