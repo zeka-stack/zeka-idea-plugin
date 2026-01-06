@@ -82,8 +82,8 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, ChangelogBundle.message("settings.display.name"), ChangelogBundle.message("settings" +
-                                                                                                                              ".ai.provider.selection"))) {
+        if (!AIProviderUtils.hasAIProvider(project, ChangelogBundle.message("settings.display.name"),
+                                           ChangelogBundle.message("settings.ai.provider.selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
