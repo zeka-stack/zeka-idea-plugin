@@ -98,6 +98,7 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
         group.add(new GenerationConfigActionGroup());
         group.add(createOverrideConfigActionGroup());
         group.add(new EnableGenerationContextToggleAction());
+        group.add(new GenerateOnSaveToggleAction());
         group.add(new EnableCodeCompressionToggleAction());
         group.add(new CompressSingleLineJavaDocToggleAction());
         group.add(new ReplaceChinesePunctuationToggleAction());
@@ -885,6 +886,62 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().showGenerateJavadocHint = state;
+        }
+    }
+
+    /**
+     * 保存时生成注释切换动作类
+     * <p> 该类继承自 ToggleAction, 用于控制是否在保存文件时自动生成 Javadoc 注释.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class GenerateOnSaveToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造函数, 初始化 GenerateOnSaveToggleAction 对象
+         * <p> 调用父类 ToggleAction 的构造函数, 并传入状态栏快速设置中的 "生成在保存时" 消息
+         *
+         * @since 2.8.0
+         */
+        GenerateOnSaveToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.generate.on.save"));
+        }
+
+        /**
+         * 获取操作更新线程
+         * <p> 此方法重写父类的实现, 返回后台线程 (BGT) 用于更新操作.
+         * <p> 后台线程用于在后台执行更新操作, 避免阻塞用户界面.
+         *
+         * @return 后台线程 (BGT)
+         */
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        /**
+         * 判断保存时自动生成注释的动作是否被选中
+         * <p> 此方法用于检查当前设置中是否启用了保存时自动生成 Javadoc 注释的功能
+         *
+         * @param e AnActionEvent 对象, 表示动作事件
+         * @return 布尔值, 表示是否启用了保存时自动生成注释功能
+         */
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().generateOnSave;
+        }
+
+        /**
+         * 设置是否在保存时自动生成注释的状态
+         * <p> 根据给定的状态更新设置, 以便在保存文件时决定是否自动生成 Javadoc 注释.
+         *
+         * @param e     事件对象, 包含上下文信息
+         * @param state 布尔值, 表示是否启用自动生成注释功能
+         */
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().generateOnSave = state;
         }
     }
 
