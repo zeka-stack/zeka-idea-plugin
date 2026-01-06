@@ -262,7 +262,7 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
         private static String getTitle() {
             AIProviderSettings settings = AIProviderSettings.getInstance();
             ResponseLanguage current = settings.responseLanguage != null ? settings.responseLanguage : ResponseLanguage.ZH;
-            return AICommonBundle.message("settings.comment.language", current.getFlagEmoji());
+            return AICommonBundle.message("statusbar.comment.language", current.getFlagEmoji());
         }
     }
 

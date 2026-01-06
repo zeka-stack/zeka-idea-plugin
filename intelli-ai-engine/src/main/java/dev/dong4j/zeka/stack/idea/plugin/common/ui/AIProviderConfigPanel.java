@@ -1,13 +1,11 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.ItemEvent;
 
 import javax.swing.JPanel;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
@@ -34,12 +32,10 @@ public final class AIProviderConfigPanel {
      * 初始化 AI 提供者配置面板
      *
      * @param credentialManager 凭证管理器，用于管理 AI 相关的凭证信息，不能为空
-     * @param responseListener  响应监听器，用于接收 AI 调用的响应事件，可以为 null
      */
-    public AIProviderConfigPanel(@NotNull AICredentialManager credentialManager,
-                                 @Nullable AIResponseListener responseListener) {
+    public AIProviderConfigPanel(@NotNull AICredentialManager credentialManager) {
         this.ui = new AIProviderConfigUI();
-        this.controller = new AIProviderConfigController(credentialManager, responseListener, ui);
+        this.controller = new AIProviderConfigController(credentialManager, ui);
 
         // 创建 UI，传入回调函数
         // 清除所有可用提供者的回调
