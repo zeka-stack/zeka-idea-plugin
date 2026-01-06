@@ -7,26 +7,20 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-
 import dev.dong4j.zeka.stack.idea.javadoc.settings.JavadocSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderSelectionActionGroupFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
-import icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -87,8 +81,19 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
             return group;
         }
 
-        List<AIProviderConfig> providers = AIProviderUtils.getProviders();
-        group.add(new ProviderSelectionActionGroup(project, providers));
+        group.add(AIProviderSelectionActionGroupFactory.createActionGroup(
+            project,
+            JavadocBundle.message("statusbar.provider.list.title"),
+            JavadocBundle.message("settings.display.name"),
+            JavadocBundle.message("settings.ai.provider.selection"),
+            () -> SettingsState.getInstance().providerConfig,
+            (providerType, config) -> {
+                SettingsState settings = SettingsState.getInstance();
+                settings.providerConfig = config;
+                AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+                globalSettings.updateDefaultProviderConfig(providerType, config);
+            }
+                                                                         ));
         group.add(Separator.create(JavadocBundle.message("statusbar.quick.settings.title")));
         group.add(new GenerationConfigActionGroup());
         group.add(createOverrideConfigActionGroup());
@@ -102,161 +107,6 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
         group.add(Separator.create());
         group.add(new OpenSettingsAction(project));
         return group;
-    }
-
-    /**
-     * 获取当前选中的 AI 提供商类型
-     * <p> 从全局设置中获取当前配置的 AI 提供商信息, 若未配置则返回默认值 QIANWEN
-     *
-     * @return 当前选中的 AI 提供商类型
-     */
-    @NotNull
-    private AIProviderType getCurrentProviderType() {
-        SettingsState settings = SettingsState.getInstance();
-        return settings.providerConfig != null ? settings.providerConfig.providerType : AIProviderType.QIANWEN;
-    }
-
-    /**
-     * 切换默认的 AI 服务提供商配置
-     * <p> 将指定的 AI 服务提供商配置设置为默认配置, 并更新全局设置中的默认提供商信息.
-     *
-     * @param providerType 服务提供商类型, 不能为空
-     * @param config       服务提供商配置对象, 不能为空
-     */
-    private void switchDefaultProvider(@NotNull AIProviderType providerType, @NotNull AIProviderConfig config) {
-        SettingsState settings = SettingsState.getInstance();
-        settings.providerConfig = config;
-        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-        globalSettings.updateDefaultProviderConfig(providerType, config);
-    }
-
-    /**
-     * 切换提供商的操作类
-     * <p> 用于在指定项目中切换 AI 提供商. 该类继承自 AnAction, 提供了切换提供商的具体逻辑.
-     * <p> 通过构造函数初始化项目和提供商配置, 并根据配置设置图标.
-     * <p> 在执行动作时, 检查当前项目是否存在指定的 AI 提供商, 如果不存在则不进行任何操作.
-     * <p> 如果存在, 则在事件调度线程中调用写入操作, 更新提供商类型.
-     * <p> 更新操作会复制当前配置, 并确保提供商类型正确切换.
-     * <p> 在更新动作时, 根据当前提供商类型和配置, 设置动作选择状态.
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.02
-     * @since 1.0.0
-     */
-    private class SwitchProviderAction extends AnAction {
-        /** 项目实例, 用于访问 IDE 的项目相关功能 */
-        private final Project project;
-        /** AI 服务提供商配置信息 */
-        private final AIProviderConfig config;
-
-        /**
-         * 初始化切换服务商动作
-         * <p> 用于创建一个可以切换默认 AI 服务商的动作对象, 设置项目和配置信息, 并根据配置类型设置图标
-         *
-         * @param project 项目对象, 不能为 null
-         * @param config  AI 服务商配置对象, 不能为 null
-         */
-        SwitchProviderAction(@NotNull Project project, @NotNull AIProviderConfig config) {
-            super(config.modelName);
-            this.project = project;
-            this.config = config;
-            if (config.providerType != null) {
-                getTemplatePresentation().setIcon(AICommonIcons.getProviderIcon(config.providerType));
-            }
-        }
-
-        /**
-         * 处理用户选择切换默认 AI 提供商的动作
-         * <p> 在用户触发动作时, 检查项目是否已废弃, 并尝试切换默认提供商
-         * <p> 如果当前项目没有启用 AI 提供商, 则直接返回不做任何操作
-         * <p> 切换操作会在事件调度线程中异步执行, 确保 UI 响应流畅
-         * <p> 如果切换过程中发生异常, 会记录错误日志
-         *
-         * @param e 表示用户动作的事件对象, 不能为 null
-         */
-        @Override
-        public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"), JavadocBundle.message(
-                "settings.ai.provider.selection"))) {
-                return;
-            }
-
-            ApplicationManager.getApplication().invokeLater(() -> {
-                if (project.isDisposed()) {
-                    return;
-                }
-
-                try {
-                    ApplicationManager.getApplication().runWriteAction(() -> {
-                        AIProviderConfig configCopy = config.copy();
-                        configCopy.providerType = config.providerType;
-                        switchDefaultProvider(config.providerType, configCopy);
-                    });
-                } catch (Exception exception) {
-                    log.error("切换默认服务商失败", exception);
-                }
-            }, ModalityState.defaultModalityState());
-        }
-
-        /**
-         * 更新动作呈现状态
-         * <p> 根据当前选择的服务提供商类型更新动作的选中状态
-         *
-         * @param e 动作事件对象, 不能为 null
-         * @since 1.0
-         */
-        @Override
-        public void update(@NotNull AnActionEvent e) {
-            AIProviderType currentType = getCurrentProviderType();
-            boolean isSelected = config != null && config.providerType == currentType;
-            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
-        }
-
-        /**
-         * 返回操作更新线程类型
-         * <p> 此方法重写自父类, 指定此动作的操作更新线程为后台线程 (BGT)
-         *
-         * @return 操作更新线程类型, 始终返回 ActionUpdateThread.BGT
-         */
-        @Override
-        public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.BGT;
-        }
-    }
-
-    /**
-     * 提供程序选择动作组
-     * <p> 用于在 IDE 状态栏中显示 AI 提供商选择菜单, 支持动态添加和切换不同的 AI 提供商配置
-     * <p> 该动作组继承自默认动作组, 用于构建上下文菜单项, 允许用户在多个 AI 提供商之间进行切换
-     * <p> 使用示例:
-     * <pre>{@code
-     * List<AIProviderConfig> providers = Arrays.asList(config1, config2);
-     * ProviderSelectionActionGroup group = new ProviderSelectionActionGroup(project, providers);
-     * }</pre>
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.02
-     * @since 1.0.0
-     */
-    private class ProviderSelectionActionGroup extends DefaultActionGroup {
-        /**
-         * 初始化提供者选择操作组
-         * <p> 创建一个包含指定 AI 提供者配置的操作组, 用于在状态栏中切换不同的 AI 提供者
-         * <p> 该操作组会为每个提供者配置添加一个切换动作, 允许用户在不同提供者之间进行切换
-         *
-         * @param project   当前项目实例, 用于传递给切换动作
-         * @param providers 提供者配置列表, 包含所有可用的 AI 提供者配置
-         */
-        ProviderSelectionActionGroup(@NotNull Project project, List<AIProviderConfig> providers) {
-            super(JavadocBundle.message("statusbar.provider.list.title"), true);
-            for (AIProviderConfig config : providers) {
-                add(new SwitchProviderAction(project, config));
-            }
-        }
     }
 
     /**

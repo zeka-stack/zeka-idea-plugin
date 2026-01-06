@@ -7,39 +7,22 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
-import com.intellij.ui.RowIcon;
-import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.util.List;
-import java.util.Objects;
-
-import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ChangelogSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderSelectionActionGroupFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
-import icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -61,10 +44,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider {
     /** 用于标识菜单项是否被选中的状态键 */
     private static final Key<Boolean> SELECTED_KEY = Key.create("selected");
-    /** 菜单中选中状态的小绿点图标 */
-    private static final Icon SELECTED_DOT_ICON = new StatusDotIcon(JBUI.scale(13),
-                                                                    JBUI.scale(6),
-                                                                    StatusIndicatorButton.STATUS_SUCCESS);
 
     /**
      * 获取状态栏弹出菜单的组名称
@@ -104,8 +83,19 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
             return group;
         }
 
-        List<AIProviderConfig> providers = AIProviderUtils.getProviders();
-        group.add(new ProviderSelectionActionGroup(project, providers));
+        group.add(AIProviderSelectionActionGroupFactory.createActionGroup(
+            project,
+            ChangelogBundle.message("statusbar.provider.selection.title"),
+            ChangelogBundle.message("settings.display.name"),
+            ChangelogBundle.message("settings.ai.provider.selection"),
+            () -> SettingsState.getInstance().providerConfig,
+            (providerType, config) -> {
+                SettingsState settings = SettingsState.getInstance();
+                settings.providerConfig = config;
+                AIProviderSettings globalSettings = AIProviderSettings.getInstance();
+                globalSettings.updateDefaultProviderConfig(providerType, config);
+            }
+                                                                         ));
         group.add(Separator.create(ChangelogBundle.message("statusbar.quick.settings.title")));
 
         // Commit message 设置分组：包含 diff provider 与“使用提交输入作为上下文”开关。
@@ -230,18 +220,6 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
     }
 
     /**
-     * 获取当前默认的 AI 服务商类型
-     * <p>根据全局设置获取当前配置的 AI 服务商类型, 如果未配置则返回默认的千问 (Qianwen) 类型
-     *
-     * @return 当前配置的 AI 服务商类型, 如果配置为空则返回 {@link AIProviderType#QIANWEN}
-     */
-    @NotNull
-    private AIProviderType getCurrentProviderType() {
-        SettingsState settings = SettingsState.getInstance();
-        return settings.providerConfig != null ? settings.providerConfig.providerType : AIProviderType.QIANWEN;
-    }
-
-    /**
      * 创建发布日志提供者操作组
      * <p> 根据当前配置生成包含 AI 和 GitCliff 两种日志提供者的操作组, 用于状态栏菜单选择
      *
@@ -264,235 +242,6 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         group.add(new ReleaseLogProviderAction(ReleaseLogProvider.GIT_CLIFF));
         return group;
     }
-
-    /**
-     * 切换默认的 AI 提供商配置
-     * <p> 更新当前项目的 AI 提供商配置, 并同步到全局设置
-     *
-     * @param project      当前项目
-     * @param providerType 提供商类型
-     * @param config       提供商配置
-     */
-    private void switchDefaultProvider(@NotNull Project project,
-                                       @NotNull AIProviderType providerType,
-                                       @NotNull AIProviderConfig config) {
-        SettingsState settings = SettingsState.getInstance();
-        settings.providerConfig = config;
-        AIProviderSettings globalSettings = AIProviderSettings.getInstance();
-        globalSettings.updateDefaultProviderConfig(providerType, config);
-    }
-
-    /**
-     * 切换提供者动作类
-     * <p> 该类继承自 AnAction, 用于在 IntelliJ IDEA 插件中实现切换 AI 提供者的功能.
-     * <p> 通过调用 `actionPerformed` 方法, 可以切换指定项目的默认 AI 提供者.
-     * <p> 在 `update` 方法中, 根据当前选择的提供者类型更新动作的呈现状态.
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.02
-     * @since 1.0.0
-     */
-    private class SwitchProviderAction extends AnAction {
-        /** 项目实例, 用于访问项目相关的资源和功能 */
-        private final Project project;
-        /** AI 服务提供商配置信息 */
-        private final AIProviderConfig config;
-
-        /**
-         * 初始化 SwitchProviderAction 对象
-         * <p> 用于创建一个切换默认 AI 服务提供商的 Action 实例, 设置项目和配置信息, 并根据配置类型设置图标
-         * <p> 显示文本格式为 "服务商名称: 模型名称"
-         *
-         * @param project 项目对象, 不能为 null
-         * @param config  AI 服务提供商配置对象, 不能为 null
-         */
-        SwitchProviderAction(@NotNull Project project, @NotNull AIProviderConfig config) {
-            super(buildDisplayText(config), null, getProviderIcon(config));
-            this.project = project;
-            this.config = config;
-        }
-
-        /**
-         * 构建显示文本
-         * <p> 格式为 "服务商名称: 模型名称"
-         *
-         * @param config AI 服务提供商配置对象
-         * @return 显示文本
-         */
-        @NotNull
-        private static String buildDisplayText(@NotNull AIProviderConfig config) {
-            String providerName = config.providerType != null
-                                  ? config.providerType.getDisplayName()
-                                  : "未知服务商";
-            String modelName = config.modelName != null && !config.modelName.isEmpty()
-                               ? config.modelName
-                               : "";
-            if (modelName.isEmpty()) {
-                return providerName;
-            }
-            return providerName + ":" + modelName;
-        }
-
-        /**
-         * 执行切换默认 AI 服务商的操作
-         * <p> 当用户触发该操作时, 首先检查项目中是否已配置对应的服务商, 若未配置则直接返回.
-         * <p> 如果配置有效, 则在后台线程中执行切换默认服务商的逻辑. 切换过程会复制当前配置并调用 switchDefaultProvider 方法完成切换.
-         * <p> 所有操作会在 UI 线程上异步执行, 并确保项目处于可用状态.
-         *
-         * @param e 动作事件对象, 提供上下文信息
-         */
-        @Override
-        public void actionPerformed(@NotNull AnActionEvent e) {
-            if (!AIProviderUtils.hasAIProvider(project, config, ChangelogBundle.message("settings.display.name"),
-                                               ChangelogBundle.message("settings.ai.provider.selection"))) {
-                return;
-            }
-
-            Runnable switchTask = () -> {
-                if (project.isDisposed()) {
-                    return;
-                }
-                try {
-                    ApplicationManager.getApplication().runWriteAction(() -> {
-                        AIProviderConfig configCopy = config.copy();
-                        configCopy.providerType = config.providerType;
-                        switchDefaultProvider(project, config.providerType, configCopy);
-                    });
-                } catch (Exception exception) {
-                    log.error("切换默认服务商失败", exception);
-                }
-            };
-
-            if (ApplicationManager.getApplication().isDispatchThread()) {
-                switchTask.run();
-            } else {
-                ApplicationManager.getApplication().invokeLater(switchTask, ModalityState.defaultModalityState());
-            }
-        }
-
-        @Override
-        public void update(@NotNull AnActionEvent e) {
-            SettingsState settings = SettingsState.getInstance();
-            boolean isSelected = isConfigSelected(settings.providerConfig, config);
-            e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
-            e.getPresentation().setText(buildDisplayText(config));
-            e.getPresentation().setIcon(buildMenuIcon(config, isSelected));
-        }
-
-        private static @Nullable Icon getProviderIcon(@NotNull AIProviderConfig config) {
-            if (config.providerType == null) {
-                return null;
-            }
-            return AICommonIcons.getProviderIcon(config.providerType);
-        }
-
-        private static @Nullable Icon buildMenuIcon(@NotNull AIProviderConfig config, boolean selected) {
-            Icon providerIcon = getProviderIcon(config);
-            if (!selected) {
-                return providerIcon;
-            }
-            RowIcon rowIcon = new RowIcon(2);
-            rowIcon.setIcon(SELECTED_DOT_ICON, 0);
-            rowIcon.setIcon(providerIcon, 1);
-            return rowIcon;
-        }
-
-        /**
-         * 判断配置是否被选中
-         * <p> 比较服务商类型和模型名称是否都相同
-         *
-         * @param currentConfig 当前配置
-         * @param targetConfig  目标配置
-         * @return 如果配置匹配则返回 true
-         */
-        private boolean isConfigSelected(@Nullable AIProviderConfig currentConfig,
-                                         @Nullable AIProviderConfig targetConfig) {
-            if (currentConfig == null || targetConfig == null) {
-                return false;
-            }
-
-            // 比较服务商类型
-            if (currentConfig.providerType != targetConfig.providerType) {
-                return false;
-            }
-
-            // 使用 Objects.equals 安全比较模型名称（处理 null 情况）
-            return Objects.equals(currentConfig.modelName, targetConfig.modelName);
-        }
-
-        /**
-         * 获取动作更新线程
-         * <p> 返回此动作更新应在哪个线程中执行. 此实现返回后台线程 (BGT), 表示动作更新应在后台线程中进行.
-         *
-         * @return 动作更新线程类型, 此处返回 {@link ActionUpdateThread#BGT}
-         */
-        @Override
-        public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.BGT;
-        }
-    }
-
-    /**
-     * 提供者选择动作组类
-     * <p> 用于在状态栏中创建一个动作组, 允许用户切换不同的 AI 提供者配置
-     * <p> 该类继承自 DefaultActionGroup, 并根据传入的 AI 提供者配置列表动态添加切换提供者动作
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.02
-     * @since 1.0.0
-     */
-    private class ProviderSelectionActionGroup extends DefaultActionGroup {
-        /**
-         * 构造函数, 用于创建一个包含 AI 提供商切换操作的 ActionGroup
-         * <p> 该分组会根据传入的 AIProviderConfig 列表生成对应的 SwitchProviderAction 操作项, 并添加到菜单中.
-         *
-         * @param project   当前项目对象, 不能为 null
-         * @param providers AI 提供商配置列表, 如果为 null 则不添加任何操作项
-         */
-        ProviderSelectionActionGroup(@NotNull Project project, List<AIProviderConfig> providers) {
-            super(ChangelogBundle.message("statusbar.provider.selection.title"), true);
-            if (providers != null) {
-                for (AIProviderConfig config : providers) {
-                    add(new SwitchProviderAction(project, config));
-                }
-            }
-        }
-    }
-
-    /**
-         * 菜单选中状态的圆点图标
-         */
-        private record StatusDotIcon(int iconSize, int dotSize, Color color) implements Icon {
-            private StatusDotIcon(int iconSize, int dotSize, @NotNull Color color) {
-                this.iconSize = iconSize;
-                this.dotSize = dotSize;
-                this.color = color;
-            }
-
-            @Override
-            public void paintIcon(Component c, Graphics g, int x, int y) {
-                int offset = Math.max(0, (iconSize - dotSize) / 2);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(color);
-                g2.fillOval(x + offset, y + offset, dotSize, dotSize);
-                g2.dispose();
-            }
-
-            @Override
-            public int getIconWidth() {
-                return iconSize;
-            }
-
-            @Override
-            public int getIconHeight() {
-                return iconSize;
-            }
-        }
 
     /**
      * 用于在状态栏中显示发布日志起始点选择的 ActionGroup
