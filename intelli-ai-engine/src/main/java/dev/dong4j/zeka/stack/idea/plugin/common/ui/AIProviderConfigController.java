@@ -33,6 +33,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
@@ -132,6 +133,7 @@ public final class AIProviderConfigController {
         ui.getVerboseLoggingCheckBox().setSelected(workingSettings.verboseLogging);
         ui.getLastUpdateCheckCheckBox().setSelected(workingSettings.lastUpdateCheck);
         ui.getShowUpdateNotificationCheckBox().setSelected(workingSettings.showUpdateNotification);
+        ui.getNextEditEnabledCheckBox().setSelected(NextEditSettings.getInstance().enabled);
         ResponseLanguage responseLanguage = workingSettings.responseLanguage != null
                                           ? workingSettings.responseLanguage
                                           : ResponseLanguage.ZH;
@@ -241,7 +243,14 @@ public final class AIProviderConfigController {
      */
     public boolean isModified(@NotNull AIProviderSettings baseline) {
         AIProviderSettings latest = getSettings();
-        return !latest.contentEquals(baseline);
+        if (!latest.contentEquals(baseline)) {
+            return true;
+        }
+        return ui.getNextEditEnabledCheckBox().isSelected() != NextEditSettings.getInstance().enabled;
+    }
+
+    public boolean isNextEditEnabled() {
+        return ui.getNextEditEnabledCheckBox().isSelected();
     }
 
     /**

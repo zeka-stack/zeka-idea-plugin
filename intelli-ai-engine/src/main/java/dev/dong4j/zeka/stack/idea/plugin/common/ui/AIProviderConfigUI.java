@@ -111,6 +111,8 @@ public final class AIProviderConfigUI {
     private JBCheckBox lastUpdateCheckCheckBox;
     /** 控制是否显示新版本通知的复选框 */
     private JBCheckBox showUpdateNotificationCheckBox;
+    /** 控制是否启用下一步建议 */
+    private JBCheckBox nextEditEnabledCheckBox;
     /** 注释语言选择下拉框 */
     private ComboBox<ResponseLanguage> languageComboBox;
     /** 控制是否显示高级设置内容的复选框 */
@@ -186,6 +188,7 @@ public final class AIProviderConfigUI {
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
         lastUpdateCheckCheckBox = new JBCheckBox(AICommonBundle.message("settings.auto.update"));
         showUpdateNotificationCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.update.notification"));
+        nextEditEnabledCheckBox = new JBCheckBox(AICommonBundle.message("settings.nextedit.enabled"));
         languageComboBox = new ComboBox<>(ResponseLanguage.values());
         languageComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -453,6 +456,11 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
+    public JBCheckBox getNextEditEnabledCheckBox() {
+        return nextEditEnabledCheckBox;
+    }
+
+    @NotNull
     public ComboBox<ResponseLanguage> getLanguageComboBox() {
         return languageComboBox;
     }
@@ -654,6 +662,7 @@ public final class AIProviderConfigUI {
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(lastUpdateCheckCheckBox, "settings.auto.update.hint"))
             .addComponent(createCheckBoxWithHint(showUpdateNotificationCheckBox, "settings.show.update.notification.hint"))
+            .addComponent(createCheckBoxWithHint(nextEditEnabledCheckBox, "settings.nextedit.enabled.hint"))
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));
