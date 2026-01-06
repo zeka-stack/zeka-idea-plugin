@@ -253,16 +253,16 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
 
         /**
          * 获取当前设置的注释语言标题
-         * <p> 根据当前 AI 提供商设置中的响应语言, 返回对应的注释语言标题, 格式为 "设置注释语言 (语言描述)".
+         * <p> 根据当前 AI 提供商设置中的响应语言, 返回对应的注释语言标题, 格式为 "设置注释语言 国旗".
          * <p> 如果未设置响应语言, 则默认使用中文 (ZH).
          *
-         * @return 当前配置的注释语言标题, 格式为 "设置注释语言 (语言描述)", 始终不为 null
+         * @return 当前配置的注释语言标题, 格式为 "设置注释语言 国旗", 始终不为 null
          */
         @NotNull
         private static String getTitle() {
             AIProviderSettings settings = AIProviderSettings.getInstance();
             ResponseLanguage current = settings.responseLanguage != null ? settings.responseLanguage : ResponseLanguage.ZH;
-            return AICommonBundle.message("settings.comment.language") + " (" + current.getDesc() + ")";
+            return AICommonBundle.message("settings.comment.language", current.getFlagEmoji());
         }
     }
 

@@ -150,6 +150,30 @@ public enum ResponseLanguage {
     }
 
     /**
+     * 获取语言对应的国旗表情符号
+     *
+     * <p>返回该语言对应的国旗 emoji，用于 UI 显示。
+     *
+     * @return 国旗 emoji 字符串
+     */
+    @NotNull
+    public String getFlagEmoji() {
+        return switch (this) {
+            case ZH -> "🇨🇳(简)";
+            case ZH_TRADITIONAL -> "🇨🇳(繁)";
+            case EN -> "🇺🇸";
+            case JA -> "🇯🇵";
+            case KO -> "🇰🇷";
+            case FR -> "🇫🇷";
+            case DE -> "🇩🇪";
+            case ES -> "🇪🇸";
+            case RU -> "🇷🇺";
+            case PT -> "🇵🇹";
+            case IT -> "🇮🇹";
+        };
+    }
+
+    /**
      * 根据语言代码值查找对应的枚举值
      *
      * @param value 语言代码值（如 "zh" 或 "en"）
