@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.javadoc.task;
 
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -25,7 +26,10 @@ import org.jetbrains.kotlin.psi.KtProperty;
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
@@ -252,6 +256,72 @@ public class TaskCollector {
     }
 
     /**
+     * 从 PSI 文件收集被修改元素的任务
+     *
+     * <p>只收集与改动范围有交集的元素（方法/字段），
+     * 支持 Java/Kotlin，适用于保存时按改动范围生成 Javadoc。
+     *
+     * @param psiFile                PSI 文件对象
+     * @param changedRanges          文档变更范围
+     * @param ignoreOverrideExisting 是否忽略 overrideExisting 配置（true=仅为缺失注释的元素生成）
+     * @return 文档生成任务列表
+     */
+    @NotNull
+    public List<DocumentationTask> collectFromModifiedElements(@NotNull PsiFile psiFile,
+                                                               @NotNull List<TextRange> changedRanges,
+                                                               boolean ignoreOverrideExisting) {
+        if (changedRanges.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<DocumentationTask> tasks = new ArrayList<>();
+        Set<PsiElement> targets = new LinkedHashSet<>();
+
+        if (psiFile instanceof PsiJavaFile) {
+            Collection<PsiElement> elements = PsiTreeUtil.findChildrenOfAnyType(psiFile, PsiMethod.class, PsiField.class);
+            for (PsiElement element : elements) {
+                if (isElementInChangedRanges(element, changedRanges)) {
+                    targets.add(element);
+                }
+            }
+        } else if (psiFile instanceof KtFile ktFile) {
+            if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
+                return tasks;
+            }
+            Collection<PsiElement> elements = PsiTreeUtil.findChildrenOfAnyType(ktFile, KtNamedFunction.class, KtProperty.class);
+            for (PsiElement element : elements) {
+                if (isElementInChangedRanges(element, changedRanges)) {
+                    targets.add(element);
+                }
+            }
+        }
+
+        for (PsiElement element : targets) {
+            if (!shouldGenerateForModifiedElement(element, ignoreOverrideExisting)) {
+                continue;
+            }
+
+            if (element instanceof PsiMethod method) {
+                DocumentationTask.TaskType type = isTestMethod(method)
+                                                  ? DocumentationTask.TaskType.TEST_METHOD
+                                                  : DocumentationTask.TaskType.METHOD;
+                tasks.add(createTask(method, type));
+            } else if (element instanceof PsiField field) {
+                tasks.add(createTask(field, DocumentationTask.TaskType.FIELD));
+            } else if (element instanceof KtNamedFunction function) {
+                DocumentationTask.TaskType type = isKotlinTestMethod(function)
+                                                  ? DocumentationTask.TaskType.TEST_METHOD
+                                                  : DocumentationTask.TaskType.METHOD;
+                tasks.add(createTask(function, type));
+            } else if (element instanceof KtProperty property) {
+                tasks.add(createTask(property, DocumentationTask.TaskType.FIELD));
+            }
+        }
+
+        return tasks;
+    }
+
+    /**
      * 从 PSI 文件收集缺失 Javadoc 的任务
      *
      * <p> 专门用于 Git 提交场景, 只收集没有 Javadoc 的元素,
@@ -359,18 +429,40 @@ public class TaskCollector {
             }
 
             ktFile.accept(new KtTreeVisitorVoid() {
+                /**
+                 * 访问类或对象元素
+                 * <p> 重写父类的 visitClassOrObject 方法, 用于处理 KtClassOrObject 元素
+                 * <p> 在访问该元素后, 调用 collectFromElement 方法收集符合条件的任务并将其添加到 tasks 列表中
+                 *
+                 * @param classOrObject 要访问的类或对象元素, 不能为 null
+                 */
                 @Override
                 public void visitClassOrObject(@NotNull KtClassOrObject classOrObject) {
                     super.visitClassOrObject(classOrObject);
                     tasks.addAll(collectFromElement(classOrObject, elementPredicate));
                 }
 
+                /**
+                 * 访问命名函数
+                 * <p> 重写此方法以在访问命名函数时执行自定义操作
+                 * <p> 该方法会被调用当一个命名函数被访问时
+                 *
+                 * @param function 被访问的命名函数, 不能为 null
+                 * @since 1.0
+                 */
                 @Override
                 public void visitNamedFunction(@NotNull KtNamedFunction function) {
                     super.visitNamedFunction(function);
                     tasks.addAll(collectFromElement(function, elementPredicate));
                 }
 
+                /**
+                 * 访问 Kotlin 属性节点
+                 * <p> 在访问到 Kotlin 属性节点时, 调用父类的 visitProperty 方法进行默认处理,
+                 * 然后将符合给定谓词的元素收集到任务列表中
+                 *
+                 * @param property 要访问的 Kotlin 属性节点, 不能为 null
+                 */
                 @Override
                 public void visitProperty(@NotNull KtProperty property) {
                     super.visitProperty(property);
@@ -718,6 +810,70 @@ public class TaskCollector {
     }
 
     /**
+     * 判断 PSI 元素是否在更改范围内
+     * <p> 检查给定的 PSI 元素的文本范围是否与任何提供的更改范围相交.
+     * 如果相交, 则认为该元素在更改范围内.
+     *
+     * @param element       要检查的 PSI 元素
+     * @param changedRanges 更改范围列表
+     * @return 如果元素在更改范围内, 返回 true; 否则返回 false
+     */
+    private boolean isElementInChangedRanges(@NotNull PsiElement element, @NotNull List<TextRange> changedRanges) {
+        TextRange elementRange = element.getTextRange();
+        if (elementRange == null) {
+            return false;
+        }
+
+        for (TextRange range : changedRanges) {
+            if (elementRange.intersects(range)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 判断是否应该为修改过的元素生成文档
+     * <p> 根据用户配置和元素类型决定是否为修改过的元素生成文档.
+     * <p> 具体逻辑如下:
+     * <ul>
+     * <li> 如果元素是方法或函数, 则根据配置 generateForMethod 决定是否生成文档.</li>
+     * <li> 如果元素是字段, 则根据配置 generateForField 决定是否生成文档.</li>
+     * <li> 对于其他类型的元素, 直接返回 false.</li>
+     * </ul>
+     * <p> 此外, 还考虑了是否忽略 overrideExisting 配置:
+     * <ul>
+     * <li> 如果未忽略 overrideExisting 配置且设置为 true, 则直接返回 true.</li>
+     * <li> 否则, 检查元素是否已有 Javadoc 注释, 只有在没有 Javadoc 注释的情况下才返回 true.</li>
+     * </ul>
+     *
+     * @param element                要检查的 PSI 元素
+     * @param ignoreOverrideExisting 是否忽略 overrideExisting 配置
+     * @return 是否应该为该元素生成文档
+     */
+    private boolean shouldGenerateForModifiedElement(@NotNull PsiElement element, boolean ignoreOverrideExisting) {
+        boolean needGenerate = false;
+        if (element instanceof PsiMethod || element instanceof KtNamedFunction) {
+            needGenerate = settings.generateForMethod;
+        } else if (element instanceof PsiField || element instanceof KtProperty) {
+            needGenerate = settings.generateForField;
+        } else {
+            return false;
+        }
+
+        if (!needGenerate) {
+            return false;
+        }
+
+        if (!ignoreOverrideExisting && settings.overrideExisting) {
+            return true;
+        }
+
+        return !PsiElementLocator.hasJavaDoc(element);
+    }
+
+    /**
      * 判断是否需要为指定的代码元素生成文档注释
      * <p>
      * 根据元素类型 (方法, 字段, 类) 和配置设置, 决定是否需要生成文档注释.
@@ -829,4 +985,3 @@ public class TaskCollector {
         return PluginContents.JAVA.equalsIgnoreCase(extension) || PluginContents.KOTLIN_EXTENSION.equalsIgnoreCase(extension);
     }
 }
-
