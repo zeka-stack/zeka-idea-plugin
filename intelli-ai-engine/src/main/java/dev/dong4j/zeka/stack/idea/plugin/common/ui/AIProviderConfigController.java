@@ -8,6 +8,8 @@ import com.intellij.ui.components.JBTextField;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.Component;
+import java.awt.Window;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -248,6 +250,12 @@ public final class AIProviderConfigController {
         return ui.getNextEditEnabledCheckBox().isSelected();
     }
 
+    @NotNull
+    private Component resolveDialogParent() {
+        Window window = SwingUtilities.getWindowAncestor(ui.getMainPanel());
+        return window != null ? window : ui.getMainPanel();
+    }
+
     /**
      * 获取当前用户的 API 密钥
      * <p>
@@ -380,7 +388,7 @@ public final class AIProviderConfigController {
         try {
             provider = AIServiceFactory.createProvider(testConfig);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(ui.getMainPanel(),
+            JOptionPane.showMessageDialog(resolveDialogParent(),
                                           AICommonBundle.message("settings.error.provider.create.failed"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.ERROR_MESSAGE);
@@ -402,7 +410,7 @@ public final class AIProviderConfigController {
                         addAvailableProvider(testConfig, providerType);
                         String message = buildSuccessMessage(result.getMessage(), testConfig);
                         javax.swing.Icon icon = AICommonIcons.getProviderIcon64(providerType);
-                        JOptionPane.showMessageDialog(ui.getMainPanel(),
+                        JOptionPane.showMessageDialog(resolveDialogParent(),
                                                       message,
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.INFORMATION_MESSAGE,
@@ -411,7 +419,7 @@ public final class AIProviderConfigController {
                         configurationVerified = false;
                         updateTestButtonState();
                         removeAvailableProvider(testConfig.credentialId);
-                        JOptionPane.showMessageDialog(ui.getMainPanel(),
+                        JOptionPane.showMessageDialog(resolveDialogParent(),
                                                       result.getFullErrorMessage(),
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.ERROR_MESSAGE);
@@ -422,7 +430,7 @@ public final class AIProviderConfigController {
                     configurationVerified = false;
                     updateTestButtonState();
                     removeAvailableProvider(testConfig.credentialId);
-                    JOptionPane.showMessageDialog(ui.getMainPanel(),
+                    JOptionPane.showMessageDialog(resolveDialogParent(),
                                                   AICommonBundle.message("settings.test.connection.error", e.getMessage()),
                                                   AICommonBundle.message("settings.test.result.title"),
                                                   JOptionPane.ERROR_MESSAGE);
@@ -459,7 +467,7 @@ public final class AIProviderConfigController {
         try {
             provider = AIServiceFactory.createProvider(refreshConfig);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(ui.getMainPanel(),
+            JOptionPane.showMessageDialog(resolveDialogParent(),
                                           AICommonBundle.message("settings.error.provider.create.failed.details"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.ERROR_MESSAGE);
@@ -468,7 +476,7 @@ public final class AIProviderConfigController {
 
         String baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText());
         if (baseUrl.isEmpty()) {
-            JOptionPane.showMessageDialog(ui.getMainPanel(),
+            JOptionPane.showMessageDialog(resolveDialogParent(),
                                           AICommonBundle.message("settings.error.base.url.missing"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.ERROR_MESSAGE);
@@ -477,7 +485,7 @@ public final class AIProviderConfigController {
 
         String apiKey = getCurrentApiKey();
         if (providerType.requiresApiKey() && apiKey.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(ui.getMainPanel(),
+            JOptionPane.showMessageDialog(resolveDialogParent(),
                                           AICommonBundle.message("settings.error.api.key.missing"),
                                           AICommonBundle.message("settings.error.title"),
                                           JOptionPane.ERROR_MESSAGE);
@@ -507,7 +515,7 @@ public final class AIProviderConfigController {
                         }
                         ui.updateModelItems(models, preferredSelection);
                         refreshModelsSuccess = true;
-                        JOptionPane.showMessageDialog(ui.getMainPanel(),
+                        JOptionPane.showMessageDialog(resolveDialogParent(),
                                                       AICommonBundle.message("settings.refresh.models.success", models.size()),
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.INFORMATION_MESSAGE);
@@ -519,7 +527,7 @@ public final class AIProviderConfigController {
                         if (providerType.requiresApiKey() && apiKey.trim().isEmpty()) {
                             errorMessage = AICommonBundle.message("settings.error.api.key.missing");
                         }
-                        JOptionPane.showMessageDialog(ui.getMainPanel(),
+                        JOptionPane.showMessageDialog(resolveDialogParent(),
                                                       errorMessage,
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.WARNING_MESSAGE);
@@ -534,7 +542,7 @@ public final class AIProviderConfigController {
                     if (errorMessage == null || errorMessage.trim().isEmpty()) {
                         errorMessage = e.getClass().getSimpleName();
                     }
-                    JOptionPane.showMessageDialog(ui.getMainPanel(),
+                    JOptionPane.showMessageDialog(resolveDialogParent(),
                                                   AICommonBundle.message("settings.refresh.models.failed", errorMessage),
                                                   AICommonBundle.message("settings.error.title"),
                                                   JOptionPane.ERROR_MESSAGE);
