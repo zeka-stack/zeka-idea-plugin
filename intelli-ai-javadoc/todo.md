@@ -184,4 +184,19 @@
 
 ## 2026.01.05
 
-- [ ]git 提交面板点击生成 javadoc 时, 错误的扫描到了非项目文件
+- [ ] git 提交面板点击生成 javadoc 时, 错误的扫描到了非项目文件
+
+## 2026.01.06
+
+- [ ] 替换 git-cliff 中的 github 链接地址
+
+```
+commit_preprocessors = [
+    # 将问题编号替换为链接模板，在 `changelog.postprocessors` 中更新
+    #{ pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
+    # 使用 https://github.com/crate-ci/typos 检查提交消息的拼写
+    # 如果拼写不正确，将自动修复
+    #{ pattern = '.*', replace_command = 'typos --write-changes -' },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/zeka-stack/zeka-idea-plugin/issues/${2}))" },
+]
+```
