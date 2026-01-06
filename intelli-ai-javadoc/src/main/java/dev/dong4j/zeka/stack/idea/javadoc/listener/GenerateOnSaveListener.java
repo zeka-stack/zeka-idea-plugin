@@ -1,14 +1,21 @@
 package dev.dong4j.zeka.stack.idea.javadoc.listener;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.editor.RangeMarker;
+import com.intellij.openapi.editor.event.DocumentEvent;
+import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileDocumentManagerListener;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
@@ -18,7 +25,11 @@ import com.intellij.util.concurrency.AppExecutorUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.psi.KtFile;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -45,8 +56,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GenerateOnSaveListener implements FileDocumentManagerListener {
 
-    private static final Logger LOG = Logger.getInstance(GenerateOnSaveListener.class);
-
     /**
      * 防止重复触发的标志
      * <p>
@@ -55,16 +64,46 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
      */
     private static final AtomicBoolean isGenerating = new AtomicBoolean(false);
 
+    /** 记录文档改动范围，用于保存时只处理修改过的元素 */
+    private static final ConcurrentMap<Document, List<RangeMarker>> changedRangesByDocument = new ConcurrentHashMap<>();
+
+    /**
+     * 表示文档监听器是否已注册的标志
+     * <p>
+     * 使用 AtomicBoolean 确保在多线程环境下的线程安全性.
+     * 当文档监听器首次被注册时, 该标志会被设置为 true, 以避免重复注册.
+     */
+    private static final AtomicBoolean changeListenerRegistered = new AtomicBoolean(false);
+
+    /**
+     * 构造函数
+     * <p> 初始化 GenerateOnSaveListener 对象, 并注册文档监听器.
+     * <p> 确保文档监听器只被注册一次, 避免重复注册.
+     *
+     * @since 2.8.0
+     */
+    public GenerateOnSaveListener() {
+        if (changeListenerRegistered.compareAndSet(false, true)) {
+            EditorFactory.getInstance().getEventMulticaster().addDocumentListener(new SaveDocumentChangeTracker(),
+                                                                                  ApplicationManager.getApplication());
+        }
+    }
+
     /**
      * 在文档保存之后触发
      * <p>
-     * 当文件保存完成后，检查是否启用了"保存时生成注释"功能，如果启用则触发 Javadoc 生成。
-     * 使用延迟执行确保在保存完成后再生成，避免在保存过程中修改文档导致循环保存。
+     * 当文件保存完成后, 检查是否启用了 "保存时生成注释" 功能, 如果启用则触发 Javadoc 生成.
+     * 使用延迟执行确保在保存完成后再生成, 避免在保存过程中修改文档导致循环保存.
      *
      * @param document 已保存的文档对象
+     * @param explicit 是否显式保存
      */
     @Override
-    public void beforeDocumentSaving(@NotNull Document document) {
+    public void beforeAnyDocumentSaving(@NotNull Document document, boolean explicit) {
+        if (!explicit) {
+            return;
+        }
+
         // 检查是否启用了保存时生成注释功能
         SettingsState settings = SettingsState.getInstance();
         if (!settings.generateOnSave) {
@@ -93,6 +132,10 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
             return;
         }
 
+        if (!isCurrentEditorFile(project, document, virtualFile)) {
+            return;
+        }
+
         // 检查项目是否处于 Dumb Mode（索引模式）
         if (DumbService.isDumb(project)) {
             return;
@@ -102,6 +145,11 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
         AIProviderConfig config = settings.providerConfig;
         if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"), JavadocBundle.message(
             "settings.ai.provider.selection"))) {
+            return;
+        }
+
+        List<TextRange> changedRanges = consumeChangedRanges(document);
+        if (changedRanges.isEmpty()) {
             return;
         }
 
@@ -140,7 +188,7 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
 
                     // 收集任务
                     TaskCollector collector = new TaskCollector(project);
-                    List<DocumentationTask> tasks = collector.collectFromFile(psiFile);
+                    List<DocumentationTask> tasks = collector.collectFromModifiedElements(psiFile, changedRanges, true);
 
                     // 如果没有任务，直接返回
                     if (tasks.isEmpty()) {
@@ -226,16 +274,119 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
     }
 
     /**
-         * 生成上下文
-         * <p>
-         * 用于在后台线程和 UI 线程之间传递生成任务的相关信息。
-         */
-        private record GenerationContext(Project project, List<DocumentationTask> tasks, String fileName) {
-            private GenerationContext(@NotNull Project project, @NotNull List<DocumentationTask> tasks, @NotNull String fileName) {
-                this.project = project;
-                this.tasks = tasks;
-                this.fileName = fileName;
+     * 判断保存的文档是否属于当前编辑器中的文件
+     *
+     * @param project     当前项目
+     * @param document    保存的文档
+     * @param virtualFile 保存的文件
+     * @return 当前编辑器文件则返回 true，否则返回 false
+     */
+    private boolean isCurrentEditorFile(@NotNull Project project, @NotNull Document document, @NotNull VirtualFile virtualFile) {
+        FileEditorManager editorManager = FileEditorManager.getInstance(project);
+        Editor editor = editorManager.getSelectedTextEditor();
+        if (editor == null) {
+            return false;
+        }
+
+        if (!document.equals(editor.getDocument())) {
+            return false;
+        }
+
+        VirtualFile selectedFile = FileDocumentManager.getInstance().getFile(editor.getDocument());
+        return virtualFile.equals(selectedFile);
+    }
+
+    /**
+     * 消费并转换文档中的更改范围
+     * <p> 从已移除的范围标记列表中提取有效的文本范围, 并将其转换为 TextRange 对象列表.
+     * 如果没有有效的范围标记, 则返回一个空的不可变列表.
+     *
+     * @param document 文档对象
+     * @return 包含有效更改范围的 TextRange 对象列表, 如果没有有效的范围则返回空列表
+     */
+    private List<TextRange> consumeChangedRanges(@NotNull Document document) {
+        List<RangeMarker> markers = changedRangesByDocument.remove(document);
+        if (markers == null || markers.isEmpty()) {
+            return List.of();
+        }
+
+        int textLength = document.getTextLength();
+        List<TextRange> ranges = new ArrayList<>();
+        for (RangeMarker marker : markers) {
+            if (!marker.isValid()) {
+                continue;
+            }
+            int start = marker.getStartOffset();
+            int end = marker.getEndOffset();
+            if (start == end && textLength > 0) {
+                end = Math.min(textLength, start + 1);
+            }
+            if (start <= end) {
+                ranges.add(new TextRange(start, end));
             }
         }
-}
 
+        return ranges;
+    }
+
+    /**
+     * 生成上下文
+     * <p>
+     * 用于在后台线程和 UI 线程之间传递生成任务的相关信息。
+     */
+    private record GenerationContext(Project project, List<DocumentationTask> tasks, String fileName) {
+        /**
+         * 初始化生成上下文对象
+         * <p> 构造函数用于创建一个生成上下文对象, 包含项目, 文档任务列表和文件名
+         *
+         * @param project  项目对象, 不能为空
+         * @param tasks    文档任务列表, 不能为空
+         * @param fileName 文件名, 不能为空
+         */
+        private GenerationContext(@NotNull Project project, @NotNull List<DocumentationTask> tasks, @NotNull String fileName) {
+            this.project = project;
+            this.tasks = tasks;
+            this.fileName = fileName;
+        }
+    }
+
+    /**
+     * 保存文档更改跟踪器类
+     * <p> 实现了 DocumentListener 接口, 用于监听文档的变化事件, 并记录文档中发生更改的范围
+     * <p> 该类通过维护一个 Map, 将每个文档与其对应的更改范围列表关联起来, 以便后续处理
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.07
+     * @since 1.0.0
+     */
+    private static final class SaveDocumentChangeTracker implements DocumentListener {
+        /**
+         * 处理文档更改事件
+         * <p> 当文档发生更改时, 记录更改的范围
+         * <p> 具体步骤包括:
+         * <ul>
+         * <li> 获取更改事件对应的文档对象 </li>
+         * <li> 根据文档对象从缓存中获取或创建范围标记列表 </li>
+         * <li> 计算更改事件的起始和结束位置 </li>
+         * <li> 在文档中创建范围标记并设置贪婪模式 </li>
+         * <li> 将范围标记添加到范围标记列表中 </li>
+         * </ul>
+         *
+         * @param event 文档更改事件对象, 不能为 null
+         */
+        @Override
+        public void documentChanged(@NotNull DocumentEvent event) {
+            Document document = event.getDocument();
+            List<RangeMarker> ranges = changedRangesByDocument.computeIfAbsent(document,
+                                                                               ignored -> new CopyOnWriteArrayList<>());
+            int start = event.getOffset();
+            int end = event.getOffset() + event.getNewLength();
+            RangeMarker marker = document.createRangeMarker(start, end);
+            marker.setGreedyToLeft(true);
+            marker.setGreedyToRight(true);
+            ranges.add(marker);
+        }
+    }
+}
