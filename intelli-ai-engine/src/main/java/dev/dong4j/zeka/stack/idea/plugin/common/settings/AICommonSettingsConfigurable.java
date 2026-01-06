@@ -13,6 +13,7 @@ import javax.swing.JComponent;
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentUpdateChecker;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditSettings;
 
 /**
  * AI 通用设置配置类
@@ -117,6 +118,7 @@ public class AICommonSettingsConfigurable implements SearchableConfigurable {
         AIProviderSettings currentSettings = AIProviderSettings.getInstance();
         AIProviderSettings panelSettings = settingsPanel.getSettings();
         currentSettings.applyFrom(panelSettings);
+        NextEditSettings.getInstance().enabled = settingsPanel.isNextEditEnabled();
 
         // 重新启动更新检查器（根据新的配置）
         IntelliAgentUpdateChecker updateChecker = IntelliAgentUpdateChecker.getInstance();
@@ -145,4 +147,3 @@ public class AICommonSettingsConfigurable implements SearchableConfigurable {
         settingsPanel = null;
     }
 }
-

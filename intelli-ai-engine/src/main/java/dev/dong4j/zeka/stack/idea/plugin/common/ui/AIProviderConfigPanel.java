@@ -99,6 +99,10 @@ public final class AIProviderConfigPanel {
         return controller.isModified(baseline);
     }
 
+    public boolean isNextEditEnabled() {
+        return controller.isNextEditEnabled();
+    }
+
     /**
      * 初始化各种监听器，用于响应用户界面组件的事件
      */

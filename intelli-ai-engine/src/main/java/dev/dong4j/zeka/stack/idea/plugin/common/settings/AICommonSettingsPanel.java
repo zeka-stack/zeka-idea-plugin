@@ -61,5 +61,8 @@ public class AICommonSettingsPanel {
     public boolean isModified(@NotNull AIProviderSettings currentSettings) {
         return configPanel.isModified(currentSettings);
     }
-}
 
+    public boolean isNextEditEnabled() {
+        return configPanel.isNextEditEnabled();
+    }
+}

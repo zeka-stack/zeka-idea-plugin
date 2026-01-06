@@ -26,9 +26,9 @@ import org.jetbrains.annotations.NotNull;
 public final class NextEditSettings implements PersistentStateComponent<NextEditSettings> {
     /**
      * 是否启用功能
-     * <p> 默认值为 true, 表示功能处于启用状态.</p>
+     * <p> 默认值为 false, 表示功能处于关闭状态.</p>
      */
-    public boolean enabled = true;
+    public boolean enabled = false;
     /** 延迟触发的时间间隔, 单位为毫秒 */
     public long debounceMs = 300;
 
