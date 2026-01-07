@@ -120,6 +120,15 @@ public class Pangu {
         "([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])"
                                                            );
 
+    /** 匹配数字或中日韩字符与连字符之间的格式, 用于标准化范围表达式如 "1-10" 或 "一 - 十" 的空格处理 */
+    private static final Pattern CJK_HYPHEN_CJK_OR_DIGIT = Pattern.compile(
+        "([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])\\s*-\\s*" +
+        "([\\d\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])"
+                                                                          );
+    private static final Pattern DIGIT_HYPHEN_CJK = Pattern.compile(
+        "([\\d])\\s*-\\s*([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])"
+                                                                   );
+
     /**
      * 对文本进行格式化处理，包括替换引号、括号和符号的空格格式
      * <p>
@@ -169,6 +178,12 @@ public class Pangu {
 
         Matcher acMatcher = ANS_CJK.matcher(text);
         text = acMatcher.replaceAll("$1 $2");
+
+        Matcher cjkHyphenMatcher = CJK_HYPHEN_CJK_OR_DIGIT.matcher(text);
+        text = cjkHyphenMatcher.replaceAll("$1 - $2");
+
+        Matcher digitCjkHyphenMatcher = DIGIT_HYPHEN_CJK.matcher(text);
+        text = digitCjkHyphenMatcher.replaceAll("$1 - $2");
 
         return text;
     }
