@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
  * @since 1.0.0
  */
 @State(
-    name = "NextEditSettings",
+    name = "IntelliAINextEditSettings",
     storages = @Storage("zeka.stack.intelliai.engine.xml")
 )
 public final class NextEditSettings implements PersistentStateComponent<NextEditSettings> {
