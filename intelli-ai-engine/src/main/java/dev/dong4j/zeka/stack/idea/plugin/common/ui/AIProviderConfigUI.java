@@ -156,12 +156,28 @@ public final class AIProviderConfigUI {
 
         modelComboBox = new ComboBox<>();
         modelComboBox.setEditable(true);
+        // 设置固定宽度，防止输入超长模型名称时拉宽整个 UI
+        Dimension modelComboBoxSize = new Dimension(400, modelComboBox.getPreferredSize().height);
+        modelComboBox.setPreferredSize(modelComboBoxSize);
+        modelComboBox.setMaximumSize(modelComboBoxSize);
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
+        // 设置固定宽度，防止输入超长 URL 时拉宽整个 UI
+        baseUrlField.setColumns(40);
+        Dimension baseUrlFieldSize = new Dimension(400, baseUrlField.getPreferredSize().height);
+        baseUrlField.setPreferredSize(baseUrlFieldSize);
+        baseUrlField.setMaximumSize(baseUrlFieldSize);
 
         apiKeyField = new JBPasswordField();
         apiKeyField.setToolTipText(AICommonBundle.message("settings.api.key.tooltip"));
+        // 设置固定宽度，防止输入超长 key 时拉宽整个 UI
+        // 使用 setColumns 设置可见字符数，大约 40 个字符宽度
+        apiKeyField.setColumns(40);
+        // 设置最大宽度，防止布局被拉宽
+        Dimension apiKeyFieldSize = new Dimension(400, apiKeyField.getPreferredSize().height);
+        apiKeyField.setPreferredSize(apiKeyFieldSize);
+        apiKeyField.setMaximumSize(apiKeyFieldSize);
 
         testConnectionButton = new StatusIndicatorButton(AICommonBundle.message("settings.test.connection"));
         refreshModelsButton = new StatusIndicatorButton(AICommonBundle.message("settings.refresh.models"));
