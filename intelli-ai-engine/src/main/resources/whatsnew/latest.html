@@ -416,7 +416,7 @@
         glance.</p>
     <div class="meta">
         <span class="tag">Aggregated Changelog</span>
-        <span>Generated at: 2026-01-03 23:22</span>
+        <span>Generated at: 2026-01-07 22:03</span>
     </div>
 </section>
 <main>
@@ -436,19 +436,38 @@
             </div>
         </div>
         <div class="card-body" id="preview-0">
-            <h3>2025.3.1</h3>
+            <h3>2025.3.11</h3>
             <ul>
-                <li><b>🔧 版本统一</b>：统一版本号为 2025.3.1，包括所有子插件，便于维护与版本管理</li>
-                <li><b>✨ 新增</b>：在状态栏聚合所有子插件的快捷设置菜单，统一维护所有快捷设置，且提供扩展点方便第三方插件集成</li>
-                <li><b>✨ 新增</b>：新增 What's New 页面，将会调用第三方接口用于获取最新版本，页面可下载最新离线安装包（因审核时间差，此页面的插件将比市场的插件版本更新），状态栏快捷菜单入口
-                </li>
-                <li><b>✨ 新增</b>：IDEA 帮助菜单新增新功能介绍，可查看历史版本更新说明</li>
-                <li><b>✨ 新增</b>：新增 SSE 支持，目前用于 Changelog 插件，提供扩展点方便第三方插件集成</li>
+                <li><b>🐛 修复 </b>: 修正插件下载地址与版本提取逻辑, 修复配置比较中空指针异常风险, 修复启动活动中调度器的使用</li>
+                <li><b>🔧 优化 </b>: 优化输入框和下拉框宽度防止布局被拉宽</li>
+                <li><b>🔧 优化 </b>: 优化日志窗口内容写入流程, 修复线程调度问题, 提升稳定性</li>
+                <li><b>🐛 修复 </b>: 修复插件下载地址与版本提取逻辑, 确保版本信息准确</li>
+                <li><b>🐛 修复 </b>: 修复启动活动中调度器使用问题, 提升程序稳定性</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-0" style="display:none;">
+        <h3>2025.3.11</h3>
+        <h4>本次更新主要聚焦于稳定性提升, 包括:</h4>
+        <ul>
+            <li><b>🐛 修复 </b>: 修正插件下载地址与版本提取逻辑, 修复配置比较中空指针异常风险, 修复启动活动中调度器的使用</li>
+            <li><b>🔧 优化 </b>: 优化输入框和下拉框宽度防止布局被拉宽</li>
+            <li><b>🔧 优化 </b>: 优化日志窗口内容写入流程, 修复线程调度问题, 提升稳定性</li>
+            <li><b>🐛 修复 </b>: 修复插件下载地址与版本提取逻辑, 确保版本信息准确</li>
+            <li><b>🐛 修复 </b>: 修复启动活动中调度器使用问题, 提升程序稳定性</li>
+        </ul>
+        <h3>2025.3.11</h3>
+        <ul>
+            <li><b>🐛 Fixed</b>: Fixed plugin download URL and version extraction logic, fixed null pointer exception risk in configuration
+                comparison, fixed scheduler usage in startup activity
+            </li>
+            <li><b>🔧 Optimized</b>: Optimized input field and dropdown width to prevent layout stretching</li>
+            <li><b>🔧 Optimized</b>: Optimized log window content writing process, fixed thread scheduling issues, improved stability</li>
+            <li><b>🐛 Fixed</b>: Fixed plugin download URL and version extraction logic, ensuring accurate version information</li>
+            <li><b>🐛 Fixed</b>: Fixed scheduler usage issues in startup activity, improved program stability</li>
+        </ul>
+
         <h3>2025.3.1</h3>
         <h4>本次更新主要聚焦于易用性和交互升级, 包括:</h4>
         <ul>
@@ -688,23 +707,33 @@
                     主页</a>
                 <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/javadoc/docs.html'); return false;" class="card-button card-button-docs">📚
                     文档</a>
-                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/engine/intelli-ai-javadoc.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
+                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/javadoc/intelli-ai-javadoc.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
                     离线安装</a>
             </div>
         </div>
         <div class="card-body" id="preview-1">
-            <h3>2025.3.1</h3>
+            <h3>2025.3.11</h3>
             <ul>
-                <li><b>🔧 版本统一</b>：版本号与 Engine 保持一致，统一为 2025.3.1，便于维护与版本管理</li>
-                <li><b>✨ 新增</b>：集成 Engine 状态栏扩展，可通过状态栏快速修改配置，提升操作便捷性</li>
-                <li><b>✨ 新增</b>：集成 Engine 版本更新检查功能，及时获取最新版本信息</li>
-                <li><b>🔧 优化</b>：合并设置菜单到 Engine 一级菜单下，统一管理配置入口</li>
-                <li><b>🔧 优化</b>：迁移输出语言到 Engine，由 Engine 统一控制输出语言，所有子插件共享此配置</li>
+                <li><b>✨ 新增 </b>: 实现保存时自动生成 Javadoc 注释功能, 新增保存时自动生成注释选项</li>
+                <li><b>🐛 修复</b>：修正配置比较中空指针异常风险</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-1" style="display:none;">
+        <h3>2025.3.11</h3>
+        <h4>本次更新主要聚焦于易用性, 包括:</h4>
+        <ul>
+            <li><b>✨ 新增 </b>: 实现保存时自动生成 Javadoc 注释功能, 新增保存时自动生成注释选项</li>
+            <li><b>🐛 修复</b>：修正配置比较中空指针异常风险</li>
+        </ul>
+        <h3>2025.3.11</h3>
+        <h4>This update focuses on usability improvements, including:</h4>
+        <ul>
+            <li><b>✨ Added</b>: Implemented auto-generate Javadoc comments on save feature, added auto-generate comments on save option</li>
+            <li><b>🐛 Fixed</b>: Fixed null pointer exception risk in configuration comparison</li>
+        </ul>
+
         <h3>2025.3.1</h3>
         <h4>本次更新主要聚焦于易用性与稳定性提升, 包括:</h4>
         <ul>
@@ -1220,27 +1249,61 @@
                     主页</a>
                 <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/changelog/docs.html'); return false;" class="card-button card-button-docs">📚
                     文档</a>
-                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/engine/intelli-ai-changelog.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
+                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/changelog/intelli-ai-changelog.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
                     离线安装</a>
             </div>
         </div>
         <div class="card-body" id="preview-2">
-            <h3>2025.3.1</h3>
+            <h3>2025.3.11</h3>
             <ul>
-                <li><b>🔧 版本统一</b>：版本号与 Engine 保持一致，统一为 2025.3.1，便于维护与版本管理</li>
-                <li><b>✨ 新增</b>：集成 Engine 状态栏扩展，可通过状态栏快速修改配置，提升操作便捷性</li>
-                <li><b>✨ 新增</b>：集成 Engine 版本更新检查功能，及时获取最新版本信息</li>
-                <li><b>✨ 新增</b>：新增 Release Log 生成功能，提供 AI 和 GitCliff 两种生成方式，支持项目树右键和 Git Log 面板右键入口，生成后自动记录最后一次的
-                    hash 或 tag，便于重复生成
-                </li>
-                <li><b>✨ 新增</b>：Release Log 配置支持项目级隔离，优先使用项目中的 release.prompt 或 cliff.toml
-                    配置文件（需至少存在一条提交记录），设置页面配置作为备选方案
-                </li>
+                <li><b>✨ 新增 </b>: 支持基于 PSI 的语义变更摘要能力, 优化提交消息 diff 方案配置与状态栏交互</li>
+                <li><b>✨ 新增 </b>: 引入提交差异生成方式切换功能, 动态显示生成发布日志动作的详细信息</li>
+                <li><b>✨ 新增 </b>: 支持读取提交消息输入框文本作为生成上下文, 优化代码差异提取及上下文解析功能</li>
+                <li><b>✨ 优化 </b>: 增强历史记录列表功能, 支持过滤, 统计与悬停高亮效果</li>
+                <li><b>🔧 优化 </b>: 优化提交信息生成逻辑与提示词模板, 重构提交信息相关文档并制定最终上下文构建方案</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-2" style="display:none;">
+        <h3>2025.3.11</h3>
+        <h4>本次更新主要聚焦于功能性和易用性的升级, 包括:</h4>
+        <ul>
+            <li><b>✨ 新增 </b>: 支持基于 PSI 的语义变更摘要能力, 优化提交消息 diff 方案配置与状态栏交互</li>
+            <li><b>✨ 新增 </b>: 引入提交差异生成方式切换功能, 动态显示生成发布日志动作的详细信息</li>
+            <li><b>✨ 新增 </b>: 支持读取提交消息输入框文本作为生成上下文, 优化代码差异提取及上下文解析功能</li>
+            <li><b>✨ 优化 </b>: 增强历史记录列表功能, 支持过滤, 统计与悬停高亮效果</li>
+            <li><b>🔧 优化 </b>: 优化提交信息生成逻辑与提示词模板, 重构提交信息相关文档并制定最终上下文构建方案</li>
+            <li><b>🔧 优化 </b>: 新增 MiniMax 流式响应格式适配 感谢 <a href="https://github.com/danny-su">@danny-su</a> 提交的反馈</li>
+            <li><b>🔧 优化 </b>: 重构获取选中 Git 提交逻辑, 增强变更日志请求日志记录</li>
+        </ul>
+        <h3>2025.3.11</h3>
+        <h4>This update focuses on functionality and usability improvements, including:</h4>
+        <ul>
+            <li><b>✨ Added</b>: Support PSI-based semantic change summarization capability, optimized commit message diff scheme
+                configuration and
+                status bar interaction
+            </li>
+            <li><b>✨ Added</b>: Introduced commit diff generation method switching feature, dynamically displays detailed information of
+                generate
+                release log action
+            </li>
+            <li><b>✨ Added</b>: Support reading commit message input field text as generation context, optimized code diff extraction and
+                context
+                parsing functionality
+            </li>
+            <li><b>✨ Optimized</b>: Enhanced history record list functionality, supports filtering, statistics, and hover highlight effects
+            </li>
+            <li><b>🔧 Optimized</b>: Optimized commit message generation logic and prompt templates, refactored commit message related
+                documentation
+                and established final context construction scheme
+            </li>
+            <li><b>🔧 Optimized</b>: Added MiniMax streaming response format adaptation, thanks to
+                <a href="https://github.com/danny-su">@danny-su</a> for the feedback
+            </li>
+            <li><b>🔧 Optimized</b>: Refactored logic for getting selected Git commits, enhanced changelog request logging</li>
+        </ul>
+
         <h3>2025.3.1</h3>
         <h4>本次更新主要聚焦于功能性和易用性的升级, 包括:</h4>
         <ul>
@@ -1509,23 +1572,30 @@
                     主页</a>
                 <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/nacos/docs.html'); return false;" class="card-button card-button-docs">📚
                     文档</a>
-                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/engine/intelli-ai-nacos.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
+                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/nacos/intelli-ai-nacos.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
                     离线安装</a>
             </div>
         </div>
         <div class="card-body" id="preview-3">
-            <h3>2025.3.1</h3>
+            <h3>2025.3.11</h3>
             <ul>
-                <li><b>🔧 版本统一</b>：版本号与 Engine 保持一致，统一为 2025.3.1，便于维护与版本管理</li>
-                <li><b>✨ 新增</b>：集成 Engine 状态栏扩展，可通过状态栏快速修改配置，提升操作便捷性</li>
-                <li><b>✨ 新增</b>：集成 Engine 版本更新检查功能，及时获取最新版本信息</li>
-                <li><b>🔧 优化</b>：合并设置菜单到 Engine 一级菜单下，统一管理配置入口</li>
+                <li><b>🔧 其他 </b>: 常规升级, 保持版本统一</li>
                 <li><b>ℹ️ 说明</b>：此插件功能还不完善，正在持续迭代中</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-3" style="display:none;">
+        <h3>2025.3.11</h3>
+        <ul>
+            <li><b>🔧 其他 </b>: 常规升级, 保持版本统一</li>
+            <li><b>ℹ️ 说明</b>：此插件功能还不完善，正在持续迭代中</li>
+        </ul>
+        <h3>2025.3.11</h3>
+        <ul>
+            <li><b>🔧 Other</b>: Regular upgrade, maintaining version consistency</li>
+            <li><b>ℹ️ Notice</b>: This plugin's features are not yet complete and are under continuous iteration</li>
+        </ul>
         <h3>2025.3.1</h3>
         <h4>本次更新主要聚焦于易用性与稳定性提升, 包括:</h4>
         <ul>
@@ -1739,23 +1809,30 @@
                     主页</a>
                 <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/tracer/docs.html'); return false;" class="card-button card-button-docs">📚
                     文档</a>
-                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/engine/intelli-ai-tracer.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
+                <a href="#" onclick="openLink('https://ideaplugin.dong4j.site/tracer/intelli-ai-tracer.zip'); return false;" class="card-button card-button-download" title="因插件市场审核延迟, 可下载最新版本手动安装">⬇️
                     离线安装</a>
             </div>
         </div>
         <div class="card-body" id="preview-4">
-            <h3>2025.3.1</h3>
+            <h3>2025.3.11</h3>
             <ul>
-                <li><b>🔧 版本统一</b>：版本号与 Engine 保持一致，统一为 2025.3.1，便于维护与版本管理</li>
-                <li><b>✨ 新增</b>：集成 Engine 状态栏扩展，可通过状态栏快速修改配置，提升操作便捷性</li>
-                <li><b>✨ 新增</b>：集成 Engine 版本更新检查功能，及时获取最新版本信息</li>
-                <li><b>🔧 优化</b>：合并设置菜单到 Engine 一级菜单下，统一管理配置入口</li>
+                <li><b>🔧 其他 </b>: 常规升级, 保持版本统一</li>
                 <li><b>ℹ️ 说明</b>：此插件功能还不完善，正在持续迭代中</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-4" style="display:none;">
+        <h3>2025.3.11</h3>
+        <ul>
+            <li><b>🔧 其他 </b>: 常规升级, 保持版本统一</li>
+            <li><b>ℹ️ 说明</b>：此插件功能还不完善，正在持续迭代中</li>
+        </ul>
+        <h3>2025.3.11</h3>
+        <ul>
+            <li><b>🔧 Other</b>: Regular upgrade, maintaining version consistency</li>
+            <li><b>ℹ️ Notice</b>: This plugin's features are not yet complete and are under continuous iteration</li>
+        </ul>
         <h3>2025.3.1</h3>
         <h4>本次更新主要聚焦于易用性与稳定性提升, 包括:</h4>
         <ul>
