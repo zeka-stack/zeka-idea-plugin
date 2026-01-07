@@ -19,6 +19,7 @@ import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
@@ -31,6 +32,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AI 兼容性提供者抽象类
@@ -45,6 +47,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 public abstract class AICompatibleProvider implements AIServiceProvider {
 
     /**
@@ -531,6 +534,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
     private void readStreamResponse(HttpURLConnection connection,
                                     @NotNull AIStreamResponseListener listener) throws IOException {
         StringBuilder fullText = new StringBuilder();
+        StreamChunkParser parser = selectStreamChunkParser();
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
         try (BufferedReader reader = new BufferedReader(
@@ -543,6 +547,12 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 if (line.isBlank()) {
                     continue;
                 }
+
+                // 输出原始内容
+                // AIConsoleLoggerUtil.printStreamPlain(project, line);
+
+                log.debug("{}", line);
+
                 if (line.startsWith("data: ")) {
                     String data = line.substring(6).trim();
                     if ("[DONE]".equals(data)) {
@@ -551,8 +561,16 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     if (!data.startsWith("{")) {
                         continue;
                     }
-                    StreamChunk chunk = parseStreamChunk(data);
+                    JsonObject json = parseSseJson(data);
+                    if (json == null) {
+                        continue;
+                    }
+                    boolean done = parser.isDone(json);
+                    StreamChunk chunk = parser.parse(json);
                     if (chunk == null) {
+                        if (done) {
+                            break;
+                        }
                         continue;
                     }
                     if (chunk.thinking != null && !chunk.thinking.isEmpty()) {
@@ -571,6 +589,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                         AIConsoleLoggerUtil.printStreamPlain(project, chunk.content);
                         listener.onChunk(chunk.content);
                     }
+                    if (done) {
+                        break;
+                    }
                 }
             }
         }
@@ -578,36 +599,10 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         listener.onComplete(fullText.toString());
     }
 
-    /**
-     * 解析流块 JSON 数据
-     * <p> 从传入的 JSON 数据中提取内容和思考信息, 并返回一个包含这些信息的 StreamChunk 对象.
-     * 如果 JSON 数据无效或没有有效的内容, 则返回 null.
-     *
-     * @param jsonData 包含流块信息的 JSON 字符串
-     * @return 包含内容和思考信息的 StreamChunk 对象, 如果解析失败则返回 null
-     */
     @Nullable
-    private StreamChunk parseStreamChunk(String jsonData) {
+    private static JsonObject parseSseJson(@NotNull String jsonData) {
         try {
-            JsonObject json = JsonParser.parseString(jsonData).getAsJsonObject();
-            JsonArray choices = json.getAsJsonArray("choices");
-            if (choices == null || choices.isEmpty()) {
-                return null;
-            }
-            JsonObject choice = choices.get(0).getAsJsonObject();
-            JsonObject delta = choice.getAsJsonObject("delta");
-            if (delta == null) {
-                return null;
-            }
-            String content = readStringValue(delta, "content");
-            String thinking = readStringValue(delta, "reasoning_content");
-            if (thinking == null || thinking.isEmpty()) {
-                thinking = readStringValue(delta, "reasoning");
-            }
-            if ((content == null || content.isEmpty()) && (thinking == null || thinking.isEmpty())) {
-                return null;
-            }
-            return new StreamChunk(content, thinking);
+            return JsonParser.parseString(jsonData).getAsJsonObject();
         } catch (Exception e) {
             LOG.warn("Failed to parse stream chunk JSON", e);
             return null;
@@ -625,8 +620,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @param thinkPrefixPrinted 标志位数组, 用于标识是否已经打印过 "[think]" 前缀
      */
     private void printThinking(@NotNull String thinking,
-                               @NotNull boolean[] inThinking,
-                               @NotNull boolean[] thinkPrefixPrinted) {
+                               boolean @NotNull [] inThinking,
+                               boolean @NotNull [] thinkPrefixPrinted) {
         if (!inThinking[0]) {
             inThinking[0] = true;
         }
@@ -670,6 +665,197 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @since 1.0.0
      */
     private record StreamChunk(@Nullable String content, @Nullable String thinking) {
+    }
+
+    private interface StreamChunkParser {
+        @Nullable
+        StreamChunk parse(@NotNull JsonObject json);
+
+        default boolean isDone(@NotNull JsonObject json) {
+            JsonObject choice = readFirstChoice(json);
+            if (choice == null) {
+                return false;
+            }
+            String finishReason = readStringValue(choice, "finish_reason");
+            return "stop".equalsIgnoreCase(finishReason);
+        }
+    }
+
+    private StreamChunkParser selectStreamChunkParser() {
+        List<StreamParserRule> rules = new ArrayList<>();
+        rules.add(new StreamParserRule("https://dashscope.aliyuncs.com", AIProviderType.QIANWEN, "qwen",
+                                       new DashscopeStreamChunkParser()));
+        rules.add(new StreamParserRule("http://localhost:11434", AIProviderType.OLLAMA, null,
+                                       new OllamaStreamChunkParser()));
+        rules.add(new StreamParserRule("minimax", null, "minimax", new MiniMaxStreamChunkParser()));
+
+        String baseUrl = config.baseUrl == null ? "" : config.baseUrl;
+        String modelName = config.modelName == null ? "" : config.modelName;
+        AIProviderType providerType = config.providerType;
+        for (StreamParserRule rule : rules) {
+            if (rule.matches(baseUrl, providerType, modelName)) {
+                return rule.parser;
+            }
+        }
+        return new OpenAiStreamChunkParser();
+    }
+
+    private record StreamParserRule(String urlPrefix, AIProviderType providerType, String modelPrefix, StreamChunkParser parser) {
+            private StreamParserRule(@Nullable String urlPrefix,
+                                     @Nullable AIProviderType providerType,
+                                     @Nullable String modelPrefix,
+                                     @NotNull StreamChunkParser parser) {
+                this.urlPrefix = urlPrefix;
+                this.providerType = providerType;
+                this.modelPrefix = modelPrefix;
+                this.parser = parser;
+            }
+
+            private boolean matches(@NotNull String baseUrl,
+                                    @NotNull AIProviderType provider,
+                                    @NotNull String modelName) {
+                return matchesUrl(baseUrl, urlPrefix)
+                       && matchesProvider(provider, providerType)
+                       && matchesModel(modelName, modelPrefix);
+            }
+
+            private static boolean matchesUrl(@NotNull String baseUrl, @Nullable String prefix) {
+                if (prefix == null || prefix.isBlank()) {
+                    return true;
+                }
+                String normalizedBase = baseUrl.toLowerCase(Locale.ROOT);
+                String normalizedPrefix = prefix.toLowerCase(Locale.ROOT);
+                if (normalizedPrefix.contains("://")) {
+                    return normalizedBase.startsWith(normalizedPrefix);
+                }
+                return normalizedBase.contains(normalizedPrefix);
+            }
+
+            private static boolean matchesProvider(@NotNull AIProviderType actual, @Nullable AIProviderType expected) {
+                return expected == null || expected == actual;
+            }
+
+            private static boolean matchesModel(@NotNull String modelName, @Nullable String prefix) {
+                if (prefix == null || prefix.isBlank()) {
+                    return true;
+                }
+                return modelName.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT));
+            }
+        }
+
+    private static final class OpenAiStreamChunkParser implements StreamChunkParser {
+        @Override
+        public StreamChunk parse(@NotNull JsonObject json) {
+            JsonObject delta = readFirstDelta(json);
+            if (delta == null) {
+                return null;
+            }
+            String content = readStringValue(delta, "content");
+            if (content == null || content.isEmpty()) {
+                return null;
+            }
+            return new StreamChunk(content, null);
+        }
+    }
+
+    private static final class DashscopeStreamChunkParser implements StreamChunkParser {
+        @Override
+        public StreamChunk parse(@NotNull JsonObject json) {
+            JsonObject delta = readFirstDelta(json);
+            if (delta == null) {
+                return null;
+            }
+            String content = readStringValue(delta, "content");
+            String thinking = readStringValue(delta, "reasoning_content");
+            if ((content == null || content.isEmpty()) && (thinking == null || thinking.isEmpty())) {
+                return null;
+            }
+            return new StreamChunk(content, thinking);
+        }
+    }
+
+    private static final class OllamaStreamChunkParser implements StreamChunkParser {
+        @Override
+        public StreamChunk parse(@NotNull JsonObject json) {
+            JsonObject delta = readFirstDelta(json);
+            if (delta == null) {
+                return null;
+            }
+            String content = readStringValue(delta, "content");
+            String thinking = readStringValue(delta, "reasoning");
+            if ((content == null || content.isEmpty()) && (thinking == null || thinking.isEmpty())) {
+                return null;
+            }
+            return new StreamChunk(content, thinking);
+        }
+    }
+
+    private static final class MiniMaxStreamChunkParser implements StreamChunkParser {
+        private static final String THINK_START = "<think>";
+        private static final String THINK_END = "</think>";
+        private boolean inThinking;
+
+        @Override
+        public StreamChunk parse(@NotNull JsonObject json) {
+            JsonObject delta = readFirstDelta(json);
+            if (delta == null) {
+                return null;
+            }
+            String content = readStringValue(delta, "content");
+            if (content == null || content.isEmpty()) {
+                return null;
+            }
+            StringBuilder thinking = new StringBuilder();
+            StringBuilder answer = new StringBuilder();
+            int index = 0;
+            while (index < content.length()) {
+                if (inThinking) {
+                    int endIndex = content.indexOf(THINK_END, index);
+                    if (endIndex == -1) {
+                        thinking.append(content.substring(index));
+                        index = content.length();
+                        continue;
+                    }
+                    thinking.append(content, index, endIndex);
+                    index = endIndex + THINK_END.length();
+                    inThinking = false;
+                    continue;
+                }
+                int startIndex = content.indexOf(THINK_START, index);
+                if (startIndex == -1) {
+                    answer.append(content.substring(index));
+                    index = content.length();
+                    continue;
+                }
+                answer.append(content, index, startIndex);
+                index = startIndex + THINK_START.length();
+                inThinking = true;
+            }
+            String thinkingText = !thinking.isEmpty() ? thinking.toString() : null;
+            String answerText = !answer.isEmpty() ? answer.toString() : null;
+            if (thinkingText == null && answerText == null) {
+                return null;
+            }
+            return new StreamChunk(answerText, thinkingText);
+        }
+    }
+
+    @Nullable
+    private static JsonObject readFirstChoice(@NotNull JsonObject json) {
+        JsonArray choices = json.getAsJsonArray("choices");
+        if (choices == null || choices.isEmpty()) {
+            return null;
+        }
+        return choices.get(0).getAsJsonObject();
+    }
+
+    @Nullable
+    private static JsonObject readFirstDelta(@NotNull JsonObject json) {
+        JsonObject choice = readFirstChoice(json);
+        if (choice == null) {
+            return null;
+        }
+        return choice.getAsJsonObject("delta");
     }
 
     /**
