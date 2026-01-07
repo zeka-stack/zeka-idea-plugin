@@ -119,8 +119,6 @@ public final class AIProviderConfigUI {
     private AvailableProvidersTableModel availableProvidersTableModel;
     /** Autocomplete 默认服务商下拉框 */
     private ComboBox<AIProviderConfig> autocompleteProviderComboBox;
-    /** Autocomplete 服务商提示 */
-    private JBLabel autocompleteProviderHintLabel;
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
@@ -179,6 +177,10 @@ public final class AIProviderConfigUI {
 
         modelComboBox = new ComboBox<>();
         modelComboBox.setEditable(true);
+        // 设置固定宽度，防止输入超长模型名称时拉宽整个 UI
+        Dimension modelComboBoxSize = new Dimension(400, modelComboBox.getPreferredSize().height);
+        modelComboBox.setPreferredSize(modelComboBoxSize);
+        modelComboBox.setMaximumSize(modelComboBoxSize);
         SwingUtilities.invokeLater(this::installModelSearchFilter);
         modelSearchField = TextFieldWithAutoCompletion.create(getDefaultProject(),
                                                               modelItems,
@@ -188,9 +190,21 @@ public final class AIProviderConfigUI {
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
+        // 设置固定宽度，防止输入超长 URL 时拉宽整个 UI
+        baseUrlField.setColumns(40);
+        Dimension baseUrlFieldSize = new Dimension(400, baseUrlField.getPreferredSize().height);
+        baseUrlField.setPreferredSize(baseUrlFieldSize);
+        baseUrlField.setMaximumSize(baseUrlFieldSize);
 
         apiKeyField = new JBPasswordField();
         apiKeyField.setToolTipText(AICommonBundle.message("settings.api.key.tooltip"));
+        // 设置固定宽度，防止输入超长 key 时拉宽整个 UI
+        // 使用 setColumns 设置可见字符数，大约 40 个字符宽度
+        apiKeyField.setColumns(40);
+        // 设置最大宽度，防止布局被拉宽
+        Dimension apiKeyFieldSize = new Dimension(400, apiKeyField.getPreferredSize().height);
+        apiKeyField.setPreferredSize(apiKeyFieldSize);
+        apiKeyField.setMaximumSize(apiKeyFieldSize);
 
         testConnectionButton = new StatusIndicatorButton(AICommonBundle.message("settings.test.connection"));
         refreshModelsButton = new StatusIndicatorButton(AICommonBundle.message("settings.refresh.models"));
@@ -724,7 +738,8 @@ public final class AIProviderConfigUI {
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.search.label")), modelSearchPanel)
+            // todo-dong4j : (2026.01.7 16:11) [暂时隐藏, 还需要完善]
+            // .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.search.label")), modelSearchPanel)
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
@@ -813,7 +828,8 @@ public final class AIProviderConfigUI {
             return label;
         });
 
-        autocompleteProviderHintLabel = new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.hint"));
+        // Autocomplete 服务商提示
+        JBLabel autocompleteProviderHintLabel = new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.hint"));
         autocompleteProviderHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         autocompleteProviderHintLabel.setFont(autocompleteProviderHintLabel.getFont().deriveFont(autocompleteProviderHintLabel.getFont().getSize() - 1f));
 
