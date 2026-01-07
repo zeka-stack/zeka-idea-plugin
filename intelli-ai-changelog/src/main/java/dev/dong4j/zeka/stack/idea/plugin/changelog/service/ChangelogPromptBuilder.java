@@ -655,7 +655,37 @@ final class ChangelogPromptBuilder {
             commitsText.append("### ").append(dateStr).append("\n\n");
 
             for (ChangelogCommitModels.CommitInfo commit : dateCommits) {
+                // 输出短消息作为主标题
                 commitsText.append("- ").append(commit.shortMessage()).append("\n");
+
+                // 处理完整消息，提取详细描述
+                String fullMessage = commit.fullMessage();
+                String shortMessage = commit.shortMessage();
+
+                // 如果完整消息包含更多内容，提取详细描述部分
+                if (fullMessage != null && !fullMessage.trim().isEmpty()
+                    && !fullMessage.trim().equals(shortMessage.trim())) {
+                    // 移除第一行（通常是 shortMessage）和可能的空行
+                    String[] lines = fullMessage.split("\n");
+
+                    for (int i = 0; i < lines.length; i++) {
+                        String line = lines[i].trim();
+                        // 跳过第一行（shortMessage）和空行
+                        if (i == 0 && line.equals(shortMessage.trim())) {
+                            continue;
+                        }
+                        if (line.isEmpty()) {
+                            continue;
+                        }
+                        // 处理详细描述内容
+                        // 如果行已经以 "- " 开头，只加缩进；否则加缩进和 "- "
+                        if (line.startsWith("- ")) {
+                            commitsText.append("  ").append(line).append("\n");
+                        } else {
+                            commitsText.append("  - ").append(line).append("\n");
+                        }
+                    }
+                }
             }
 
             commitsText.append("\n");
