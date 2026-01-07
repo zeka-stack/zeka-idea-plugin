@@ -35,10 +35,32 @@ import java.util.List;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 
 /**
- * 从指定的提交哈希列表中读取提交信息.
+ * Git 变更日志服务类
+ * <p>用于从 Git 仓库中读取提交记录, 生成变更差异文本, 获取最近提交消息列表等操作, 支持按提交哈希, 提交范围, 分支等条件查询变更信息.
+ * <p>主要功能包括:
+ * <ul>
+ *   <li>根据提交哈希列表读取提交信息(含作者, 时间, 消息等)</li>
+ *   <li>根据提交范围 (如 "a..b") 读取指定范围内的提交信息</li>
+ *   <li>生成每个提交的变更差异文本(含文件增删改内容)</li>
+ *   <li>获取最近指定数量的提交消息摘要</li>
+ *   <li>检测当前项目是否为 Git 仓库</li>
+ *   <li>获取当前分支名称</li>
+ * </ul>
+ * <p>支持通过项目路径或指定 Git 根目录初始化服务, 内部使用 JGit 库进行 Git 操作.
+ * <p>使用示例:
+ * <pre>{@code
+ * ChangelogGitService service = new ChangelogGitService(project);
+ * List<ChangelogCommitModels.CommitInfo> commits = service.readCommits(commitHashes);
+ * List<ChangelogCommitModels.DiffCommitInfo> diffs = service.readCommitDiffs(commitHashes);
+ * String recentMessages = service.buildRecentCommitMessagesText(10);
+ * String currentBranch = service.getCurrentBranch();
+ * }</pre>
  *
- * @param commitHashes 提交哈希列表
- * @return 提交信息列表
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.07
+ * @since 1.0.0
  */
 final class ChangelogGitService {
 

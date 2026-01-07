@@ -41,14 +41,60 @@ AI 服务提供商通常支持两种流式输出方式：
 
 #### 1.1 Server-Sent Events (SSE)
 
-OpenAI 兼容 API 使用 SSE 格式：
+dashscope(openai 兼容流式格式)：
+
+若 reasoning_content 不为 "" 或者 null，content 为 ""或者 null，则当前处于思考阶段；
+若 reasoning_content 为 "" 或者 null，content 不为 "" 或者 null，则当前处于回复阶段；
+
+结束后会有一个 "finish_reason":"stop" 然后是 data: [DONE]
 
 ```
-data: {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1234567890,"model":"gpt-3.5-turbo","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
-
-data: {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1234567890,"model":"gpt-3.5-turbo","choices":[{"index":0,"delta":{"content":" World"},"finish_reason":null}]}
-
+data: {"choices":[{"delta":{"content":null,"role":"assistant","reasoning_content":""},"index":0,"logprobs":null,"finish_reason":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"finish_reason":null,"logprobs":null,"delta":{"content":null,"reasoning_content":"好的"},"index":0}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"delta":{"content":null,"reasoning_content":"，"},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"delta":{"content":null,"reasoning_content":"我"},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"delta":{"content":null,"reasoning_content":"需要根据用户提供的结构化上下文"},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"delta":{"content":"回归测试，属于纯文档增强类","reasoning_content":null},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"delta":{"content":"提交","reasoning_content":null},"finish_reason":null,"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
+data: {"choices":[{"finish_reason":"stop","delta":{"content":"","reasoning_content":null},"index":0,"logprobs":null}],"object":"chat.completion.chunk","usage":null,"created":1767778406,"system_fingerprint":null,"model":"qwen3-14b","id":"chatcmpl-47edd5a2-9762-9dcb-8b83-2341c20487fa"}
 data: [DONE]
+```
+
+---
+
+ollama
+
+若 reasoning 不为 ""，content 为 ""，则当前处于思考阶段；
+若 reasoning 为 ""，content 不为 ""，则当前处于回复阶段；
+
+结束后会有一个 "finish_reason":"stop" 然后是 data: [DONE]
+
+```
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777678,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning":"We"},"finish_reason":null}]}
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777678,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning":" need"},"finish_reason":null}]}
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777684,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"行为"},"finish_reason":null}]}
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777684,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"或"},"finish_reason":null}]}
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777684,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"兼"},"finish_reason":null}]}
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777684,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+data: {"id":"chatcmpl-510","object":"chat.completion.chunk","created":1767777684,"model":"gpt-oss:20b-cloud","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":"stop"}]}
+data: [DONE]
+```
+
+---
+
+minimax
+
+思考和正文内容都在 content 字段中, 思考内容使用 <thingk> </think>
+结束后会有一个 "finish_reason":"stop"
+
+```
+data: {"id":"05ad5391d0c739c7454be80fb1c38232","choices":[{"index":0,"delta":{"content":"<think>\n让我分析","role":"assistant","name":"MiniMax AI","audio_content":""}}],"created":1767776401,"model":"MiniMax-M2.1","object":"chat.completion.chunk","usage":null,"input_sensitive":false,"output_sensitive":false,"input_sensitive_type":0,"output_sensitive_type":0,"output_sensitive_int":0}
+data: {"id":"05ad5391d0c739c7454be80fb1c38232","choices":[{"index":0,"delta":{"content":"要点。将使用无序列表，清晰列出变更的关键文档优化点：\n\n- ","role":"assistant","name":"MiniMax AI","audio_content":""}}],"created":1767776401,"model":"MiniMax-M2.1","object":"chat.completion.chunk","usage":null,"input_sensitive":false,"output_sensitive":false,"input_sensitive_type":0,"output_sensitive_type":0,"output_sensitive_int":0}
+data: {"id":"05ad5391d0c739c7454be80fb1c38232","choices":[{"index":0,"delta":{"content":"完善类的 JavaDoc 描述\n- 更新作者和版本信息\n- 为私有字段添加详细注释\n- 补充方法参数和返回值说明","role":"assistant","name":"MiniMax AI","audio_content":""}}],"created":1767776401,"model":"MiniMax-M2.1","object":"chat.completion.chunk","usage":null,"input_sensitive":false,"output_sensitive":false,"input_sensitive_type":0,"output_sensitive_type":0,"output_sensitive_int":0}
+data: {"id":"05ad5391d0c739c7454be80fb1c38232","choices":[{"index":0,"delta":{"content":"\n</think>\n\ndocs(sctelcp-gateway-service): 完善 BearerTokenExtractor 类的 JavaDoc 文档\n\n- 补充类描述，明确 Bearer Token 提取器的职责","role":"assistant","name":"MiniMax AI","audio_content":""}}],"created":1767776401,"model":"MiniMax-M2.1","object":"chat.completion.chunk","usage":null,"input_sensitive":false,"output_sensitive":false,"input_sensitive_type":0,"output_sensitive_type":0,"output_sensitive_int":0}
+data: {"id":"05ad5391d0c739c7454be80fb1c38232","choices":[{"index":0,"delta":{"content":"与使用场景\n- 更新作者信息、版本号及日期等元数据\n- 为 `authorizationPattern`、`bearerTokenHeaderName` 等字段添加","role":"assistant","name":"MiniMax AI","audio_content":""}}],"created":1767776401,"model":"MiniMax-M2.1","object":"chat.completion.chunk","usage":null,"input_sensitive":false,"output_sensitive":false,"input_sensitive_type":0,"output_sensitive_type":0,"output_sensitive_int":0}
+data: {"id":"05ad5391d0c739c7454be80fb1c38232","choices":[{"finish_reason":"stop","index":0,"delta":{"content":"注释说明\n- 为构造方法和 `resolveFromAuthorizationHeader` 方法补充完整的参数与返回值文档","role":"assistant","name":"MiniMax AI","audio_content":""}}],"created":1767776401,"model":"MiniMax-M2.1","object":"chat.completion.chunk","usage":null,"input_sensitive":false,"output_sensitive":false,"input_sensitive_type":0,"output_sensitive_type":0,"output_sensitive_int":0}
+
 ```
 
 #### 1.2 流式 JSON Lines
