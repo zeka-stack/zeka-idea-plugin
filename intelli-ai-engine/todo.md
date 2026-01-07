@@ -184,3 +184,7 @@ EdtScheduledExecutorService （1 ）
 Presentation.putClientProperty(String, Object) （1 ）
 已弃用的方法Presentation.putClientProperty(String, Object)被调用AIStatusBarWidget.OutputLanguageAction.update(...)
 ```
+
+## 2026.01.07
+
+- [x] 适配 minimax 流式输出格式
