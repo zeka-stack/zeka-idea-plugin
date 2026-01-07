@@ -31,10 +31,8 @@ public final class ChangelogService {
     /** 最近提交记录数量, 用于限制最近提交信息的读取范围 */
     private static final int RECENT_COMMITS_LIMIT = 3;
     /** 控制台提示词截断长度（设置为最大值以输出完整内容） */
-    private static final int PROMPT_LOG_MAX_LENGTH = Integer.MAX_VALUE;
+    private static final int PROMPT_LOG_MAX_LENGTH = 3000;
 
-    /** 项目对象, 用于表示当前操作所关联的项目信息 */
-    private final Project project;
     /** Git 服务实例, 用于读取提交记录和处理 Git 相关操作 */
     private final ChangelogGitService gitService;
     /** 提交日志提示词构建器, 用于生成 AI 调用所需的提示文本 */
@@ -52,9 +50,8 @@ public final class ChangelogService {
      * @param project 项目对象, 不能为空
      */
     public ChangelogService(@NotNull Project project) {
-        this.project = project;
         this.gitService = new ChangelogGitService(project);
-        this.promptBuilder = new ChangelogPromptBuilder(project, RECENT_COMMITS_LIMIT);
+        this.promptBuilder = new ChangelogPromptBuilder(project);
         this.diffBuilder = new ChangelogCommitDiffBuilder(project);
         this.aiExecutor = new ChangelogAiExecutor(project, PROMPT_LOG_MAX_LENGTH);
     }

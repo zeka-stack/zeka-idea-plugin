@@ -20,7 +20,31 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 
-/** Changelog 提示词构建器 */
+/**
+ * 用于构建各类变更日志, 提交信息, 发布说明及每日 / 每周报告的提示词生成器
+ * <p> 该类封装了从提交记录中提取变更内容, 生成结构化上下文, 构建摘要文本, 拼接完整 diff 内容等功能, 适用于 AI 驱动的自动化发布日志生成场景.
+ * <p> 支持多种模板替换, 包括版本号, 提交内容, 日期, 变更统计, 文件摘要, 上下文 JSON 等, 可灵活适配不同输出格式.
+ * <p> 内部通过限制文件数量, 字符长度, 摘要降噪等策略, 确保生成内容在合理长度内, 避免超出模型上下文限制.
+ * <p> 主要用途:
+ * <ul>
+ *   <li> 生成标准格式的变更日志 (Changelog)</li>
+ *   <li> 构建提交消息提示词 (用于 AI 生成 commit message)</li>
+ *   <li> 生成每日 / 每周项目报告 </li>
+ *   <li> 构建包含结构化变更数据的 JSON 上下文 </li>
+ * </ul>
+ * <p> 设计模式:Builder 模式, 通过构造函数注入项目上下文, 提供多个 build 方法以适配不同场景.
+ * <p> 使用示例:
+ * <pre>{@code
+ * ChangelogPromptBuilder builder = new ChangelogPromptBuilder(project);
+ * String prompt = builder.buildChangelogPrompt(commits);
+ * }</pre>
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.07
+ * @since 1.0.0
+ */
 final class ChangelogPromptBuilder {
 
     /** 提交消息中差异内容的最大字符数限制 */
@@ -28,20 +52,17 @@ final class ChangelogPromptBuilder {
     /** 最大提交消息中包含的文件数量限制 */
     private static final int MAX_COMMIT_MESSAGE_FILES = 50;
 
-    /** 最近提交数量限制 */
-    private final int recentCommitsLimit;
     /** 当前项目对象 */
     private final Project project;
 
     /**
      * 初始化 Changelog 提示词构建器
-     * <p> 创建一个新的 Changelog 提示词构建器实例, 并设置最近提交的限制数量
+     * <p> 创建一个新的 Changelog 提示词构建器实例, 并设置项目对象
      *
-     * @param recentCommitsLimit 最近提交的限制数量, 用于控制历史提交信息的范围
+     * @param project 项目对象, 不能为空
      */
-    ChangelogPromptBuilder(@NotNull Project project, int recentCommitsLimit) {
+    ChangelogPromptBuilder(@NotNull Project project) {
         this.project = project;
-        this.recentCommitsLimit = recentCommitsLimit;
     }
 
     /**
@@ -57,6 +78,7 @@ final class ChangelogPromptBuilder {
         String template = settings.changelogTemplate;
         String commitsText = buildCommitsText(commits);
 
+        // todo-dong4j 版本替代
         return template
             .replace("{version}", "v1.0.0")
             .replace("{commits}", commitsText);
