@@ -23,7 +23,25 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
-/** AI 调用执行器 */
+/**
+ * AI 变更日志执行器类
+ * <p> 用于通过 AI 服务生成项目变更日志和提交信息, 支持同步与流式响应模式.
+ * <p> 该类封装了与 AI 服务交互的完整流程, 包括系统提示词构建, 请求参数配置, 流式响应监听, 日志记录与错误处理.
+ * <p> 支持根据用户输入生成变更日志或提交信息, 并可选择是否启用详细日志输出.
+ * <p> 内部使用工具方法处理提示词占位符替换, 文本截断, 请求日志打印等辅助功能.
+ * <p> 主要使用场景: 集成 AI 能力到版本控制或发布流程中, 自动生成符合语境的变更说明.
+ * <p> 使用示例:
+ * <pre>{@code
+ * ChangelogAiExecutor executor = new ChangelogAiExecutor(project, 1000);
+ * String changelog = executor.callChangelog("请生成最近一次提交的变更日志");
+ * }</pre>
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.07
+ * @since 1.0.0
+ */
 final class ChangelogAiExecutor {
 
     /** 当前项目上下文, 用于标识和操作当前 IDE 中的项目 */

@@ -31,7 +31,28 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 
-/** 提交消息 diff 构建器 */
+/**
+ * 变更日志提交差异构建器类
+ * <p> 用于构建提交变更的差异内容, 支持根据配置自动选择差异生成策略 (IDEA 补丁或代码差异), 并过滤不符合条件的文件和内容.
+ * <p> 主要功能包括:
+ * <ul>
+ *   <li> 限制最大差异文件数量 (默认 50 个)</li>
+ *   <li> 根据文件大小, 二进制类型, 忽略模式等条件过滤变更文件 </li>
+ *   <li> 根据配置自动选择差异生成方式 (IDEA 补丁或代码差异)</li>
+ *   <li> 构建包含代码差异, 元数据和完整补丁文本的负载对象 </li>
+ * </ul>
+ * <p> 使用示例:
+ * <pre>{@code
+ * ChangelogCommitDiffBuilder builder = new ChangelogCommitDiffBuilder(project);
+ * DiffPayload payload = builder.buildPayload(changes);
+ * }</pre>
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.07
+ * @since 1.0.0
+ */
 final class ChangelogCommitDiffBuilder {
 
     /** 最大 diff 文件数量限制 */
