@@ -1,10 +1,16 @@
-# git-cliff 配置文件
+# git-cliff ~ configuration file
 # https://git-cliff.org/docs/configuration
-
+#
+# Lines starting with "#" are comments.
+# Configuration options are organized into tables and keys.
+# See documentation for more information on available options.
 
 [changelog]
 # 用于在变更日志中为每个版本渲染的 Tera 模板
 # 参见 https://keats.github.io/tera/docs/#introduction
+header = """
+# Changelog\n
+"""
 body = """
 {% if version %}\
     ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
@@ -32,7 +38,11 @@ postprocessors = [
 # 即使没有要处理的版本也渲染正文
 # render_always = true
 # 输出文件路径
-output = "release.md"
+#output = "release.md"
+
+# changelog footer
+footer = """
+"""
 
 [git]
 # 根据约定式提交规范解析提交
@@ -52,6 +62,7 @@ commit_preprocessors = [
     # 使用 https://github.com/crate-ci/typos 检查提交消息的拼写
     # 如果拼写不正确，将自动修复
     #{ pattern = '.*', replace_command = 'typos --write-changes -' },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/zeka-stack/zeka-idea-plugin/issues/${2}))" },
 ]
 # 防止破坏性提交被提交解析器排除
 protect_breaking_commits = false
