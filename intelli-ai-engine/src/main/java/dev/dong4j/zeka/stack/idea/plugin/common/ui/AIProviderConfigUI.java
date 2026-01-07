@@ -5,11 +5,8 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.HyperlinkLabel;
-import com.intellij.ui.TextFieldWithAutoCompletion;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -31,14 +28,11 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -47,11 +41,8 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
@@ -91,14 +82,6 @@ public final class AIProviderConfigUI {
     private HyperlinkLabel getApiKeyLink;
     /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
-    /** 模型智能搜索输入框 */
-    private TextFieldWithAutoCompletion<String> modelSearchField;
-    /** 模型下拉框的完整数据源 */
-    private final List<String> modelItems = new ArrayList<>();
-    /** 模型过滤更新标记 */
-    private boolean suppressModelFilter;
-    /** 模型过滤监听是否已安装 */
-    private boolean modelFilterInstalled;
     /** 基础 URL 输入框 */
     private JBTextField baseUrlField;
     /** API 密钥输入框 */
@@ -117,16 +100,12 @@ public final class AIProviderConfigUI {
     private JBTable availableProvidersTable;
     /** 可用提供者表格模型 */
     private AvailableProvidersTableModel availableProvidersTableModel;
-    /** Autocomplete 默认服务商下拉框 */
-    private ComboBox<AIProviderConfig> autocompleteProviderComboBox;
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
     private JBCheckBox lastUpdateCheckCheckBox;
     /** 控制是否显示新版本通知的复选框 */
     private JBCheckBox showUpdateNotificationCheckBox;
-    /** 控制是否启用下一步建议 */
-    private JBCheckBox nextEditEnabledCheckBox;
     /** 注释语言选择下拉框 */
     private ComboBox<ResponseLanguage> languageComboBox;
     /** 控制是否显示高级设置内容的复选框 */
@@ -181,12 +160,6 @@ public final class AIProviderConfigUI {
         Dimension modelComboBoxSize = new Dimension(400, modelComboBox.getPreferredSize().height);
         modelComboBox.setPreferredSize(modelComboBoxSize);
         modelComboBox.setMaximumSize(modelComboBoxSize);
-        SwingUtilities.invokeLater(this::installModelSearchFilter);
-        modelSearchField = TextFieldWithAutoCompletion.create(getDefaultProject(),
-                                                              modelItems,
-                                                              false,
-                                                              "");
-        modelSearchField.setVisible(false);
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
@@ -224,7 +197,6 @@ public final class AIProviderConfigUI {
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
         lastUpdateCheckCheckBox = new JBCheckBox(AICommonBundle.message("settings.auto.update"));
         showUpdateNotificationCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.update.notification"));
-        nextEditEnabledCheckBox = new JBCheckBox(AICommonBundle.message("settings.nextedit.enabled"));
         languageComboBox = new ComboBox<>(ResponseLanguage.values());
         languageComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -337,7 +309,6 @@ public final class AIProviderConfigUI {
         // 创建子面板
         JPanel connectionPanel = createConnectionPanel();
         JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
-        JPanel autocompleteProviderPanel = createAutocompleteProviderPanel();
         JPanel basicPanel = createBasicPanel();
         JPanel advancedPanel = createAdvancedPanel();
         // 个人信息面板（作者信息）
@@ -350,8 +321,6 @@ public final class AIProviderConfigUI {
             .addComponent(connectionPanel)
             .addSeparator(10)
             .addComponent(availableProvidersSectionPanel)
-            .addSeparator(10)
-            .addComponent(autocompleteProviderPanel)
             .addSeparator(10)
             .addComponent(basicPanel)
             .addSeparator(10)
@@ -397,156 +366,6 @@ public final class AIProviderConfigUI {
     @NotNull
     public ComboBox<String> getModelComboBox() {
         return modelComboBox;
-    }
-
-    @NotNull
-    public TextFieldWithAutoCompletion<String> getModelSearchField() {
-        return modelSearchField;
-    }
-
-    public void triggerModelSearchPopup() {
-        if (modelSearchField == null) {
-            return;
-        }
-        modelSearchField.requestFocusInWindow();
-        if (invokeModelSearchPopup("showPopup")
-            || invokeModelSearchPopup("showCompletionPopup")
-            || invokeModelSearchPopup("showAutoPopup")) {
-            return;
-        }
-        String text = modelSearchField.getText();
-        modelSearchField.setText(text + " ");
-        modelSearchField.setCaretPosition(text.length());
-        modelSearchField.setText(text);
-        modelSearchField.setCaretPosition(text.length());
-    }
-
-    private boolean invokeModelSearchPopup(@NotNull String methodName) {
-        try {
-            java.lang.reflect.Method method = TextFieldWithAutoCompletion.class.getMethod(methodName);
-            method.setAccessible(true);
-            method.invoke(modelSearchField);
-            return true;
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
-    }
-
-
-    /**
-     * 更新模型下拉框选项并应用当前过滤
-     *
-     * @param items              完整模型列表
-     * @param preferredSelection 优先选中的模型
-     */
-    public void updateModelItems(@NotNull List<String> items, @Nullable String preferredSelection) {
-        modelItems.clear();
-        modelItems.addAll(items);
-        modelSearchField.setVariants(modelItems);
-        suppressModelFilter = true;
-        try {
-            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-            for (String item : modelItems) {
-                model.addElement(item);
-            }
-            modelComboBox.setModel(model);
-            modelComboBox.setEditable(true);
-
-            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
-                if (model.getIndexOf(preferredSelection) >= 0) {
-                    modelComboBox.setSelectedItem(preferredSelection);
-                }
-            }
-
-            String filterText = getModelFilterText();
-            if (!filterText.isEmpty() && modelComboBox.getEditor() != null) {
-                modelComboBox.getEditor().setItem(filterText);
-            }
-        } finally {
-            suppressModelFilter = false;
-        }
-    }
-
-    private void installModelSearchFilter() {
-        if (modelFilterInstalled) {
-            return;
-        }
-        if (modelComboBox.getEditor() == null) {
-            return;
-        }
-        Object editorComponent = modelComboBox.getEditor().getEditorComponent();
-        if (editorComponent instanceof javax.swing.text.JTextComponent textComponent) {
-            textComponent.getDocument().addDocumentListener(new DocumentListener() {
-                @Override
-                public void insertUpdate(DocumentEvent e) {
-                    onModelFilterChanged();
-                }
-
-                @Override
-                public void removeUpdate(DocumentEvent e) {
-                    onModelFilterChanged();
-                }
-
-                @Override
-                public void changedUpdate(DocumentEvent e) {
-                    onModelFilterChanged();
-                }
-            });
-            modelFilterInstalled = true;
-        }
-    }
-
-
-    private void onModelFilterChanged() {
-        if (suppressModelFilter) {
-            return;
-        }
-        SwingUtilities.invokeLater(() -> applyModelFilter(getModelFilterText(), null));
-    }
-
-    @NotNull
-    private String getModelFilterText() {
-        if (modelComboBox.getEditor() == null) {
-            return "";
-        }
-        return Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
-    }
-
-    private void applyModelFilter(@NotNull String filterText, @Nullable String preferredSelection) {
-        suppressModelFilter = true;
-        try {
-            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-            if (filterText.isEmpty()) {
-                for (String item : modelItems) {
-                    model.addElement(item);
-                }
-            } else {
-                String keyword = filterText.toLowerCase();
-                for (String item : modelItems) {
-                    if (item != null && item.toLowerCase().contains(keyword)) {
-                        model.addElement(item);
-                    }
-                }
-            }
-            modelComboBox.setModel(model);
-            modelComboBox.setEditable(true);
-
-            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
-                if (model.getIndexOf(preferredSelection) >= 0) {
-                    modelComboBox.setSelectedItem(preferredSelection);
-                }
-            }
-
-            if (modelComboBox.getEditor() != null) {
-                modelComboBox.getEditor().setItem(filterText);
-            }
-        } finally {
-            suppressModelFilter = false;
-        }
-    }
-
-    private static @NotNull Project getDefaultProject() {
-        return ProjectManager.getInstance().getDefaultProject();
     }
 
     /**
@@ -596,37 +415,6 @@ public final class AIProviderConfigUI {
     }
 
     @NotNull
-    public ComboBox<AIProviderConfig> getAutocompleteProviderComboBox() {
-        return autocompleteProviderComboBox;
-    }
-
-    public void setAutocompleteProviderItems(@NotNull List<AIProviderConfig> providers,
-                                             @Nullable String selectedCredentialId) {
-        DefaultComboBoxModel<AIProviderConfig> model = new DefaultComboBoxModel<>();
-        for (AIProviderConfig config : providers) {
-            model.addElement(config.copy());
-        }
-        autocompleteProviderComboBox.setModel(model);
-        autocompleteProviderComboBox.setEnabled(model.getSize() > 0);
-
-        AIProviderConfig selected = null;
-        if (selectedCredentialId != null) {
-            for (int i = 0; i < model.getSize(); i++) {
-                AIProviderConfig config = model.getElementAt(i);
-                if (selectedCredentialId.equals(config.credentialId)) {
-                    selected = config;
-                    break;
-                }
-            }
-        }
-        if (selected != null) {
-            autocompleteProviderComboBox.setSelectedItem(selected);
-        } else if (model.getSize() > 0) {
-            autocompleteProviderComboBox.setSelectedItem(null);
-        }
-    }
-
-    @NotNull
     public JBCheckBox getVerboseLoggingCheckBox() {
         return verboseLoggingCheckBox;
     }
@@ -639,11 +427,6 @@ public final class AIProviderConfigUI {
     @NotNull
     public JBCheckBox getShowUpdateNotificationCheckBox() {
         return showUpdateNotificationCheckBox;
-    }
-
-    @NotNull
-    public JBCheckBox getNextEditEnabledCheckBox() {
-        return nextEditEnabledCheckBox;
     }
 
     @NotNull
@@ -729,17 +512,11 @@ public final class AIProviderConfigUI {
         modelPanel.add(modelComboBox, BorderLayout.CENTER);
         modelPanel.add(testConnectionButton, BorderLayout.EAST);
 
-        JPanel modelSearchPanel = new JPanel(new BorderLayout(5, 0));
-        modelSearchPanel.add(modelSearchField, BorderLayout.CENTER);
-        modelSearchPanel.setVisible(false);
-
         JPanel panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
-            // todo-dong4j : (2026.01.7 16:11) [暂时隐藏, 还需要完善]
-            // .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.search.label")), modelSearchPanel)
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
@@ -803,46 +580,6 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 创建 Autocomplete 默认服务商选择面板
-     */
-    private JPanel createAutocompleteProviderPanel() {
-        autocompleteProviderComboBox = new ComboBox<>();
-        autocompleteProviderComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
-            JBLabel label = new JBLabel();
-            if (value != null) {
-                Icon icon = AICommonIcons.getProviderIcon(value.providerType);
-                label.setIcon(icon);
-                String modelName = value.modelName != null ? value.modelName : "";
-                label.setText(value.providerType.getDisplayName() + ":" + modelName);
-            } else {
-                label.setText(AICommonBundle.message("settings.autocomplete.provider.empty"));
-            }
-            if (isSelected) {
-                label.setBackground(list.getSelectionBackground());
-                label.setForeground(list.getSelectionForeground());
-            } else {
-                label.setBackground(list.getBackground());
-                label.setForeground(list.getForeground());
-            }
-            label.setOpaque(true);
-            return label;
-        });
-
-        // Autocomplete 服务商提示
-        JBLabel autocompleteProviderHintLabel = new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.hint"));
-        autocompleteProviderHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        autocompleteProviderHintLabel.setFont(autocompleteProviderHintLabel.getFont().deriveFont(autocompleteProviderHintLabel.getFont().getSize() - 1f));
-
-        JPanel panel = FormBuilder.createFormBuilder()
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.label")),
-                                 autocompleteProviderComboBox)
-            .addComponent(autocompleteProviderHintLabel)
-            .getPanel();
-
-        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.autocomplete.provider.selection"));
-    }
-
-    /**
      * 创建基础配置面板
      * <p>
      * 用于生成包含日志详细设置选项的基础配置面板, 包含一个复选框用于控制日志详细级别.
@@ -855,7 +592,6 @@ public final class AIProviderConfigUI {
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(lastUpdateCheckCheckBox, "settings.auto.update.hint"))
             .addComponent(createCheckBoxWithHint(showUpdateNotificationCheckBox, "settings.show.update.notification.hint"))
-            .addComponent(createCheckBoxWithHint(nextEditEnabledCheckBox, "settings.nextedit.enabled.hint"))
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));
@@ -1099,7 +835,7 @@ public final class AIProviderConfigUI {
 
                 // 如果输入的是 "auto" 的一部分（如 "a", "au", "aut"），允许输入
                 String lowerTrimmed = trimmed.toLowerCase();
-                if ("auto".startsWith(lowerTrimmed)) {
+                if (lowerTrimmed.length() <= 4 && "auto".startsWith(lowerTrimmed)) {
                     return true;
                 }
 
@@ -1155,7 +891,7 @@ public final class AIProviderConfigUI {
                         }
 
                         // 检查是否可能形成有效数字或 "auto" 的一部分
-                        if ("auto".startsWith(testTrimmed.toLowerCase())) {
+                        if (testTrimmed.toLowerCase().length() <= 4 && "auto".startsWith(testTrimmed.toLowerCase())) {
                             return true;
                         }
 
