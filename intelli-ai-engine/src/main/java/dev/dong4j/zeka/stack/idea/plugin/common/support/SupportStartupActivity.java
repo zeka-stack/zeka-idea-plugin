@@ -67,7 +67,7 @@ public class SupportStartupActivity implements ProjectActivity {
             if (!project.isDisposed()) {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     // 是应用第一次启动时执行, 后续启动时不执行(也就是只执行一次, 通过 id 进行唯一约束)
-                    RunOnceUtil.runOnceForApp("intelli-ai-engine.2025.3.1", () -> {
+                    RunOnceUtil.runOnceForApp("intelli-ai-engine.2025.3.11", () -> {
                         // 在应用启动时执行的初始化逻辑
                         if (!project.isDisposed()) {
                             Notifications.showWelcomeNotification(project);
