@@ -101,8 +101,6 @@ public final class ChangelogToolWindowService {
     private static String getHistoryContentTitle() {
         return ChangelogBundle.message("toolwindow.history.title");
     }
-    /** 历史记录文件标题前缀, 用于标识文件中的标题信息 */
-    private static final String HISTORY_FILE_TITLE_PREFIX = "Title: ";
     /** 历史记录存储目录名称 */
     private static final String HISTORY_DIR_NAME = "IntelliAI Changelog";
     /** 历史记录文件的扩展名, 用于标识历史记录文件的格式 */
@@ -1289,22 +1287,8 @@ public final class ChangelogToolWindowService {
             FrontMatterData frontMatter = parseFrontMatter(text);
             String title = file.getNameWithoutExtension();
             String strippedText = frontMatter.body;
-            String body = strippedText;
-            if (strippedText.startsWith(HISTORY_FILE_TITLE_PREFIX)) {
-                int lineEnd = strippedText.indexOf('\n');
-                if (lineEnd > 0) {
-                    title = strippedText.substring(HISTORY_FILE_TITLE_PREFIX.length(), lineEnd).trim();
-                    body = strippedText.substring(lineEnd + 1);
-                    if (body.startsWith("\n")) {
-                        body = body.substring(1);
-                    }
-                } else {
-                    title = strippedText.substring(HISTORY_FILE_TITLE_PREFIX.length()).trim();
-                    body = "";
-                }
-            }
-            String heading = extractFirstHeading(body);
-            return new HistoryContent(title, body, frontMatter.dateText, heading);
+            String heading = extractFirstHeading(strippedText);
+            return new HistoryContent(title, strippedText, frontMatter.dateText, heading);
         } catch (Exception ignored) {
             return null;
         }
@@ -1401,7 +1385,7 @@ public final class ChangelogToolWindowService {
                                                     @NotNull String endPoint,
                                                     @NotNull String provider) {
         String frontMatter = buildFrontMatter(title, startPoint, endPoint, provider);
-        return frontMatter + "\n" + HISTORY_FILE_TITLE_PREFIX + title + "\n\n" + content;
+        return frontMatter + "\n" + content;
     }
 
     /**
