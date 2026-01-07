@@ -208,6 +208,8 @@ fi
 # 设置路径配置
 REMOTE_HOST="aliyun"
 REMOTE_ROOT_DIR="/var/www/zeka-idea-plugin"
+# 文件服务器目录
+REMOTE_DATA_DIR="/var/www/data/intelli-ai-plugin"
 REMOTE_BASE_DIR="$REMOTE_ROOT_DIR/$PLUGIN_DIR_NAME"
 if [ "$USE_SITE_DIR" = true ]; then
     REMOTE_DIR="$REMOTE_BASE_DIR/site"
@@ -382,6 +384,13 @@ if $do_zip; then
     rsync -avz --progress \
         "$ZIP_FILE" \
         "$REMOTE_HOST:$REMOTE_BASE_DIR/$DEST_ZIP_NAME"
+
+    # 上传到文件服务器
+    echo "正在上传 ZIP 到 $REMOTE_HOST:$REMOTE_DATA_DIR(文件服务器目录) ..."
+        ssh "$REMOTE_HOST" "mkdir -p $REMOTE_DATA_DIR"
+        rsync -avz --progress \
+            "$ZIP_FILE" \
+            "$REMOTE_HOST:$REMOTE_DATA_DIR/"
 
     echo "设置 ZIP 文件权限..."
     ssh "$REMOTE_HOST" "chmod 644 $REMOTE_BASE_DIR/$DEST_ZIP_NAME"
