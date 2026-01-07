@@ -101,11 +101,11 @@ get_plugin_download_url() {
   local plugin_name="$1"
   case "$plugin_name" in
     "intelli-ai-engine") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-engine.zip" ;;
-    "intelli-ai-javadoc") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-javadoc.zip" ;;
-    "intelli-ai-changelog") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-changelog.zip" ;;
-    "intelli-ai-nacos") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-nacos.zip" ;;
-    "intelli-ai-swagger") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-swagger.zip" ;;
-    "intelli-ai-tracer") echo "https://ideaplugin.dong4j.site/engine/intelli-ai-tracer.zip" ;;
+    "intelli-ai-javadoc") echo "https://ideaplugin.dong4j.site/javadoc/intelli-ai-javadoc.zip" ;;
+    "intelli-ai-changelog") echo "https://ideaplugin.dong4j.site/changelog/intelli-ai-changelog.zip" ;;
+    "intelli-ai-nacos") echo "https://ideaplugin.dong4j.site/nacos/intelli-ai-nacos.zip" ;;
+    "intelli-ai-swagger") echo "https://ideaplugin.dong4j.site/swagger/intelli-ai-swagger.zip" ;;
+    "intelli-ai-tracer") echo "https://ideaplugin.dong4j.site/tracer/intelli-ai-tracer.zip" ;;
     *) echo "" ;;
   esac
 }
@@ -788,17 +788,17 @@ ENGINE_CHANGES_FILE="$ENGINE_DIR/includes/pluginChanges.html"
 if [ -f "$ENGINE_CHANGES_FILE" ]; then
     echo ""
     echo "解析 Engine 插件最新版本..."
-    
+
     # 提取第一个 <h3> 标签中的版本号（去除 HTML 标签）
     LATEST_VERSION=$(grep -m 1 "<h3>" "$ENGINE_CHANGES_FILE" | sed 's/<[^>]*>//g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    
+
     if [ -n "$LATEST_VERSION" ]; then
         echo "  最新版本: $LATEST_VERSION"
-        
+
         # 将版本号转换为文件名格式（如 2025.3.1 -> 2025_3_1）
         VERSION_FILE_NAME=$(echo "$LATEST_VERSION" | sed 's/\./_/g')
         VERSION_HTML_FILE="$TARGET_DIR/${VERSION_FILE_NAME}.html"
-        
+
         # 提取第一个版本块的内容（从第一个版本号到下一个不同版本号之前）
         # 使用兼容 BSD awk 和 GNU awk 的方法提取包含中英文两个版本块的完整内容
         awk -v latest_version="$LATEST_VERSION" '
@@ -815,7 +815,7 @@ if [ -f "$ENGINE_CHANGES_FILE" ]; then
                     gsub(/<[^>]+>/, "", matched)
                     current_version = matched
                     gsub(/^[[:space:]]+|[[:space:]]+$/, "", current_version)
-                    
+
                     if (!version_started) {
                         # 找到第一个版本号，开始提取
                         if (current_version == latest_version) {
@@ -839,18 +839,18 @@ if [ -f "$ENGINE_CHANGES_FILE" ]; then
                 }
             }
         ' "$ENGINE_CHANGES_FILE" > "$VERSION_HTML_FILE"
-        
+
         if [ -s "$VERSION_HTML_FILE" ]; then
             echo "  覆盖版本文件: $VERSION_HTML_FILE"
         else
             echo "  警告: 版本文件内容为空，可能提取失败"
         fi
-        
+
         # 更新 InternalWhatsNewProvider.java 文件
         PROVIDER_JAVA_FILE="$ENGINE_DIR/src/main/java/dev/dong4j/zeka/stack/idea/plugin/common/whatsnew/InternalWhatsNewProvider.java"
         if [ -f "$PROVIDER_JAVA_FILE" ]; then
             echo "  更新 InternalWhatsNewProvider.java..."
-            
+
             # 检查是否已存在该版本的映射
             if grep -q "\"$LATEST_VERSION\"" "$PROVIDER_JAVA_FILE"; then
                 echo "    版本 $LATEST_VERSION 已存在，跳过添加"
