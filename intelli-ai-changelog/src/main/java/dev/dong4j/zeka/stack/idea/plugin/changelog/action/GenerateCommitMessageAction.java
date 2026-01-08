@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
@@ -129,7 +130,7 @@ public class GenerateCommitMessageAction extends AnAction {
         log.debug("Git 提交页面：找到 {} 个文件变更", changes.size());
 
         // 读取提交面板的提交信息控件，用于直接写入提交记录
-        Object commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);
+        CommitMessageI commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);
         // 使用生成器生成提交记录
         CommitMessageGenerator generator = new CommitMessageGenerator(project);
         generator.generateForChanges(changes, commitMessageControl, null);

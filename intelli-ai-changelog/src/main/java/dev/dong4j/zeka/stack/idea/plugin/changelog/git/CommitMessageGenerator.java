@@ -1,10 +1,13 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.ProjectLevelVcsManager;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -83,7 +86,7 @@ public class CommitMessageGenerator {
      * @since 1.0.0
      */
     public void generateForChanges(@NotNull Collection<Change> changes,
-                                   @Nullable Object commitMessageControl) {
+                                   @Nullable CommitMessageI commitMessageControl) {
         generateForChanges(changes, commitMessageControl, null);
     }
 
@@ -97,7 +100,7 @@ public class CommitMessageGenerator {
      * @since 1.0.0
      */
     public void generateForChanges(@NotNull Collection<Change> changes,
-                                   @Nullable Object commitMessageControl,
+                                   @Nullable CommitMessageI commitMessageControl,
                                    @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
         if (changes.isEmpty()) {
             log.trace("Git 提交页面：没有代码变更需要处理");
@@ -321,7 +324,7 @@ public class CommitMessageGenerator {
                                               @NotNull Map<String, List<Change>> changesByRoot,
                                               @Nullable String contextText,
                                               @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
-                                              @Nullable Object commitMessageControl,
+                                              @Nullable CommitMessageI commitMessageControl,
                                               @NotNull TypingIndicator typingIndicator) throws Exception {
         String repoList = String.join(", ", changesByRoot.keySet());
         NotificationUtil.showWarning(project,
@@ -369,7 +372,7 @@ public class CommitMessageGenerator {
      * @param commitMessageControl 提交面板的控制对象
      * @return 如果成功设置提交消息文本, 则返回 true; 否则返回 false
      */
-    private boolean setCommitMessageText(@NotNull String commitMessage, @Nullable Object commitMessageControl) {
+    private boolean setCommitMessageText(@NotNull String commitMessage, @Nullable CommitMessageI commitMessageControl) {
         if (commitMessageControl == null) {
             return false;
         }
@@ -396,7 +399,7 @@ public class CommitMessageGenerator {
      * @return 读取到的提交消息文本, 若读取失败则返回 null
      */
     @Nullable
-    private String getCommitMessageText(@Nullable Object commitMessageControl) {
+    private String getCommitMessageText(@Nullable CommitMessageI commitMessageControl) {
         if (commitMessageControl == null) {
             return null;
         }
@@ -531,9 +534,10 @@ public class CommitMessageGenerator {
      * @param outputSession        工具窗口的输出会话, 可以为 null
      * @return 创建的 TypingIndicator 实例
      */
-    private TypingIndicator startTypingIndicator(@Nullable Object commitMessageControl,
+    private TypingIndicator startTypingIndicator(@Nullable CommitMessageI commitMessageControl,
                                                  @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
-        TypingIndicator indicator = new TypingIndicator(commitMessageControl, outputSession, project);
+        Disposable parentDisposable = commitMessageControl instanceof Disposable disposable ? disposable : null;
+        TypingIndicator indicator = new TypingIndicator(commitMessageControl, outputSession, parentDisposable);
         if (commitMessageControl != null || outputSession != null) {
             indicator.start();
         }
@@ -571,12 +575,15 @@ public class CommitMessageGenerator {
         private final AtomicBoolean stopped = new AtomicBoolean(false);
         /** 提交信息控制对象, 用于在提交消息输入框中显示或更新内容, 可能为 null */
         @Nullable
-        private final Object commitMessageControl;
+        private final CommitMessageI commitMessageControl;
         /** ChangeLog 工具窗口输出会话, 用于在界面中显示实时生成的提交信息 */
         @Nullable
         private final ChangelogToolWindowService.ChangelogOutputSession outputSession;
         /** 当前正在显示的点号索引, 用于控制 typing 指示器的动画效果 */
         private int dotIndex = 0;
+        /** 是否由父级管理该定时器的生命周期 */
+        private final boolean disposableManagedByParent;
+
         /**
          * 提交生成时的打字指示文本基础内容
          * <p> 该字符串用于在提交消息中显示打字指示符
@@ -591,14 +598,20 @@ public class CommitMessageGenerator {
          *
          * @param commitMessageControl 提交消息控件对象, 可为 null
          * @param outputSession        输出会话对象, 用于在变更日志工具窗口中显示文本, 可为 null
-         * @param project              所属项目对象, 不能为空
+         * @param parentDisposable     所属项目对象, 不能为空
          */
-        TypingIndicator(@Nullable Object commitMessageControl,
+        TypingIndicator(@Nullable CommitMessageI commitMessageControl,
                         @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
-                        @NotNull Project project) {
+                        @Nullable Disposable parentDisposable) {
             this.commitMessageControl = commitMessageControl;
             this.outputSession = outputSession;
-            this.alarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, project);
+            if (parentDisposable != null) {
+                this.alarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, parentDisposable);
+                this.disposableManagedByParent = true;
+            } else {
+                this.alarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD);
+                this.disposableManagedByParent = false;
+            }
         }
 
         /**
@@ -625,6 +638,9 @@ public class CommitMessageGenerator {
         void stop() {
             if (stopped.compareAndSet(false, true)) {
                 alarm.cancelAllRequests();
+                if (!disposableManagedByParent) {
+                    Disposer.dispose(alarm);
+                }
             }
         }
 
@@ -647,7 +663,6 @@ public class CommitMessageGenerator {
          * 安排下一次输入指示器的更新任务
          * <p> 此方法通过 Alarm 在指定延迟后执行, 用于周期性地更新提交消息控件和输出会话中的文本, 显示动态的“正在生成...”效果
          * <p> 每次调用时会根据当前的 dotIndex 生成不同数量的点符号 (最多 4 个), 并更新到界面上. 当停止标志为 true 时, 将不再继续调度
-         *
          */
         private void scheduleNext() {
             alarm.addRequest(() -> {
@@ -664,5 +679,6 @@ public class CommitMessageGenerator {
                 scheduleNext();
             }, TYPING_INDICATOR_DELAY_MS);
         }
+
     }
 }
