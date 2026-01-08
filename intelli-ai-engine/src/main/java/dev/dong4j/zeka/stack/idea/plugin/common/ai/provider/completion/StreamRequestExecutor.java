@@ -15,28 +15,22 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 import java.util.function.BiConsumer;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.DashscopeStreamChunkParser;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.MiniMaxStreamChunkParser;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.OllamaStreamChunkParser;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.OpenAiStreamChunkParser;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamChunk;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamChunkParser;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.ParseContext;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.RawStreamChunk;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamChunkType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamParseEngine;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * AI 流式请求执行器类
  * <p>用于向 AI 服务发送流式请求并处理服务器发送的流式响应数据, 支持多种 AI 提供商 (如 OpenAI,Dashscope,Ollama,MiniMax 等) 的适配解析.
- * <p>该类通过配置的 AI 服务提供者配置 (AIProviderConfig) 和项目上下文 (Project) 来构建 HTTP 请求, 支持动态选择不同的流式响应解析器(StreamChunkParser).
+ * <p>该类通过配置的 AI 服务提供者配置 (AIProviderConfig) 和项目上下文 (Project) 来构建 HTTP 请求, 使用责任链策略解析流式响应.
  * <p>支持在流式响应中识别并输出“思考内容”(thinking)和“正文内容”, 并提供回调监听器 (AIStreamResponseListener) 以处理每一块数据, 错误和完整响应.
  * <p>使用示例:
  * <pre>{@code
@@ -165,8 +159,8 @@ public class StreamRequestExecutor {
                                     @NotNull AIStreamResponseListener listener,
                                     @Nullable StreamCancellationToken cancellationToken) throws IOException {
         StringBuilder fullText = new StringBuilder();
-        StreamChunkParser parser = selectStreamChunkParser();
-        LOG.trace("流式响应解析器: " + parser.getClass().getName());
+        StreamParseEngine parseEngine = StreamParseEngine.createDefault();
+        ParseContext parseContext = new ParseContext();
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
         try (BufferedReader reader = new BufferedReader(
@@ -195,34 +189,34 @@ public class StreamRequestExecutor {
                     if (json == null) {
                         continue;
                     }
-                    boolean done = parser.isDone(json);
-                    StreamChunk chunk = parser.parse(json);
-                    if (chunk == null) {
-                        if (done) {
-                            break;
-                        }
-                        continue;
-                    }
+                    RawStreamChunk rawChunk = RawStreamChunk.fromJson(json);
+                    boolean done = rawChunk.isDone();
                     if (isCancelled(cancellationToken)) {
                         connection.disconnect();
                         break;
                     }
-                    if (chunk.thinking() != null && !chunk.thinking().isEmpty()) {
-                        printThinking(chunk.thinking(), inThinking, thinkPrefixPrinted);
-                        listener.onThinkingChunk(chunk.thinking());
-                    }
-                    if (chunk.content() != null && !chunk.content().isEmpty()) {
-                        if (inThinking[0]) {
-                            AIConsoleLoggerUtil.printStreamPlain(
-                                project,
-                                "\n\n══════════════════════════════ 正文内容 ══════════════════════════════\n\n");
-                            inThinking[0] = false;
-                            thinkPrefixPrinted[0] = false;
+                    parseEngine.parse(parseContext, rawChunk, chunk -> {
+                        if (chunk.text().isEmpty()) {
+                            return;
                         }
-                        fullText.append(chunk.content());
-                        AIConsoleLoggerUtil.printStreamPlain(project, chunk.content());
-                        listener.onChunk(chunk.content());
-                    }
+                        if (chunk.type() == StreamChunkType.THINKING) {
+                            printThinking(chunk.text(), inThinking, thinkPrefixPrinted);
+                            listener.onThinkingChunk(chunk.text());
+                            return;
+                        }
+                        if (chunk.type() == StreamChunkType.CONTENT) {
+                            if (inThinking[0]) {
+                                AIConsoleLoggerUtil.printStreamPlain(
+                                    project,
+                                    "\n══════════════════════════════ 正文内容 ══════════════════════════════\n");
+                                inThinking[0] = false;
+                                thinkPrefixPrinted[0] = false;
+                            }
+                            fullText.append(chunk.text());
+                            AIConsoleLoggerUtil.printStreamPlain(project, chunk.text());
+                            listener.onChunk(chunk.text());
+                        }
+                    });
                     if (done) {
                         break;
                     }
@@ -289,147 +283,4 @@ public class StreamRequestExecutor {
         AIConsoleLoggerUtil.printStreamPlain(project, thinking);
     }
 
-    /**
-     * 根据配置选择合适的流式响应解析器
-     * <p> 根据当前配置的基地址, 模型名称和提供者类型, 从预定义的解析器规则中匹配并返回对应的解析器实例.
-     * <p> 支持的解析器包括: 通义千问 (Dashscope),Ollama,MiniMax 和 OpenAI 格式.
-     * <p> 匹配优先级按规则列表顺序, 若未匹配到则默认返回 OpenAI 解析器.
-     * <p> 使用示例:
-     * <pre>{@code
-     * StreamChunkParser parser = selectStreamChunkParser();
-     * }</pre>
-     *
-     * @return 匹配到的流式响应解析器, 若未匹配到则返回默认的 OpenAI 解析器
-     */
-    private StreamChunkParser selectStreamChunkParser() {
-        List<StreamParserRule> rules = new ArrayList<>();
-        rules.add(new StreamParserRule("https://dashscope.aliyuncs.com",
-                                       AIProviderType.QIANWEN,
-                                       "qwen",
-                                       new DashscopeStreamChunkParser()));
-
-        rules.add(new StreamParserRule("http://localhost:11434",
-                                       AIProviderType.OLLAMA,
-                                       null,
-                                       new OllamaStreamChunkParser()));
-
-        rules.add(new StreamParserRule("minimax",
-                                       null,
-                                       "minimax",
-                                       new MiniMaxStreamChunkParser()));
-
-        String baseUrl = config.baseUrl == null ? "" : config.baseUrl;
-        String modelName = config.modelName == null ? "" : config.modelName;
-        AIProviderType providerType = config.providerType;
-        for (StreamParserRule rule : rules) {
-            if (rule.matches(baseUrl, providerType, modelName)) {
-                return rule.parser;
-            }
-        }
-        return new OpenAiStreamChunkParser();
-    }
-
-    /**
-     * 流解析规则记录类
-     * <p> 用于定义流式响应内容的匹配规则, 支持根据 URL 前缀,AI 提供商类型, 模型前缀等条件匹配特定的流分块解析器.
-     * <p> 该类为不可变数据记录 (record), 封装了匹配条件与对应的解析器实例, 适用于动态路由或插件式流解析场景.
-     * <p> 使用示例:
-     * <pre>{@code
-     * StreamParserRule rule = new StreamParserRule("https://api.openai.com", AIProviderType.OPENAI, "gpt-", parser);
-     * boolean matched = rule.matches("https://api.openai.com/v1/chat/completions", AIProviderType.OPENAI, "gpt-4");
-     * }</pre>
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private record StreamParserRule(String urlPrefix, AIProviderType providerType, String modelPrefix, StreamChunkParser parser) {
-        /**
-         * 构造一个 StreamParserRule 实例
-         * <p> 用于定义解析流数据的规则, 根据 URL 前缀,AI 提供商类型和模型前缀来匹配对应的解析器
-         *
-         * @param urlPrefix    URL 前缀, 可以为 null 或空字符串, 表示不匹配 URL 前缀
-         * @param providerType AI 提供商类型, 可以为 null, 表示不匹配提供商类型
-         * @param modelPrefix  模型前缀, 可以为 null 或空字符串, 表示不匹配模型前缀
-         * @param parser       流数据解析器, 不能为 null
-         */
-        private StreamParserRule(@Nullable String urlPrefix,
-                                 @Nullable AIProviderType providerType,
-                                 @Nullable String modelPrefix,
-                                 @NotNull StreamChunkParser parser) {
-            this.urlPrefix = urlPrefix;
-            this.providerType = providerType;
-            this.modelPrefix = modelPrefix;
-            this.parser = parser;
-        }
-
-        /**
-         * 判断给定的基础 URL,AI 提供商类型和模型名称是否与当前解析规则匹配
-         * <p> 此方法会检查基础 URL 是否以指定的 URL 前缀开头,AI 提供商类型是否与指定类型匹配,
-         * 以及模型名称是否以指定的模型前缀开头.
-         *
-         * @param baseUrl   基础 URL, 不能为空
-         * @param provider  AI 提供商类型, 不能为空
-         * @param modelName 模型名称, 不能为空
-         * @return 如果所有条件都匹配, 则返回 true; 否则返回 false
-         */
-        private boolean matches(@NotNull String baseUrl,
-                                @NotNull AIProviderType provider,
-                                @NotNull String modelName) {
-            return matchesUrl(baseUrl, urlPrefix)
-                   && matchesProvider(provider, providerType)
-                   && matchesModel(modelName, modelPrefix);
-        }
-
-        /**
-         * 判断给定的 URL 是否匹配指定的前缀
-         * <p> 该方法将 URL 和前缀都转换为小写后进行匹配, 如果前缀为 null 或空字符串, 则认为匹配成功.
-         * <p> 如果前缀包含 "://", 则检查 URL 是否以该前缀开头; 否则检查 URL 是否包含该前缀.
-         *
-         * @param baseUrl 要匹配的完整 URL, 不能为 null
-         * @param prefix  匹配前缀, 可以为 null 或空字符串, 表示无限制匹配
-         * @return 如果匹配成功返回 true, 否则返回 false
-         */
-        private static boolean matchesUrl(@NotNull String baseUrl, @Nullable String prefix) {
-            if (prefix == null || prefix.isBlank()) {
-                return true;
-            }
-            String normalizedBase = baseUrl.toLowerCase(Locale.ROOT);
-            String normalizedPrefix = prefix.toLowerCase(Locale.ROOT);
-            if (normalizedPrefix.contains("://")) {
-                return normalizedBase.startsWith(normalizedPrefix);
-            }
-            return normalizedBase.contains(normalizedPrefix);
-        }
-
-        /**
-         * 检查实际的 AI 服务提供商类型是否与预期的提供商类型匹配
-         * <p> 如果预期的提供商类型为 null, 则认为匹配; 否则, 只有当实际类型与预期类型相同时才匹配
-         *
-         * @param actual   实际的 AI 服务提供商类型, 不能为 null
-         * @param expected 预期的 AI 服务提供商类型, 可以为 null
-         * @return 如果实际类型与预期类型匹配, 返回 true; 否则返回 false
-         */
-        private static boolean matchesProvider(@NotNull AIProviderType actual, @Nullable AIProviderType expected) {
-            return expected == null || expected == actual;
-        }
-
-        /**
-         * 判断模型名称是否匹配指定前缀
-         * <p> 如果前缀为 null 或空字符串, 则始终返回 true. 否则, 将模型名称和前缀都转换为小写后进行比较,
-         * 检查模型名称是否以给定的前缀开头 (不区分大小写).
-         *
-         * @param modelName 要检查的模型名称, 不允许为 null
-         * @param prefix    匹配前缀, 可以为 null 或空字符串
-         * @return 如果模型名称匹配前缀或前缀为空时返回 true, 否则返回 false
-         */
-        private static boolean matchesModel(@NotNull String modelName, @Nullable String prefix) {
-            if (prefix == null || prefix.isBlank()) {
-                return true;
-            }
-            return modelName.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT));
-        }
-    }
 }

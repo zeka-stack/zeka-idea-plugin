@@ -1,11 +1,10 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser;
 
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * 流式数据块记录类
- * <p> 用于表示流式传输中的一个数据片段, 通常用于异步通信或分段处理场景中.
- * <p> 该记录类包含两个字段:content 表示实际内容,thinking 表示附加的思考信息 (如 AI 推理过程).
+ * <p> 用于表示流式传输中的数据块, 包含数据类型和文本内容两个核心属性
  *
  * @author dong4j
  * @version 1.0.0
@@ -13,5 +12,5 @@ import org.jetbrains.annotations.Nullable;
  * @date 2026.01.08
  * @since 1.0.0
  */
-public record StreamChunk(@Nullable String content, @Nullable String thinking) {
+public record StreamChunk(@NotNull StreamChunkType type, @NotNull String text) {
 }
