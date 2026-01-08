@@ -702,8 +702,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
                     welcomeMessageShow = true;
                 }
                 console.print(message, contentType);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -779,8 +779,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
                 // 输出带超链接的消息
                 console.printHyperlink(message, hyperlinkInfo);
                 console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -815,8 +815,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
                 // 输出带超链接的消息
                 console.printHyperlink(message, hyperlinkInfo);
                 console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -842,8 +842,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
                     welcomeMessageShow = true;
                 }
                 console.print(chunk, ConsoleViewContentType.NORMAL_OUTPUT);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -865,8 +865,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
                     welcomeMessageShow = true;
                 }
                 console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -895,8 +895,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
             ConsoleView console = ensureConsoleView();
             if (console != null) {
                 console.print(chunk, ConsoleViewContentType.NORMAL_OUTPUT);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -916,8 +916,8 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
             ConsoleView console = ensureConsoleView();
             if (console != null) {
                 console.print("\n", ConsoleViewContentType.NORMAL_OUTPUT);
-                scrollToEndIfNeeded();
-                showToolWindow();
+                // scrollToEndIfNeeded();
+                // showToolWindow();
             }
         });
     }
@@ -944,8 +944,6 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * <pre>{@code
      * aiConsoleView.scrollToEnd();
      * }</pre>
-     *
-     * @see ConsoleView#scrollToEnd()
      */
     public void scrollToEnd() {
         ConsoleView console = getConsoleView();
