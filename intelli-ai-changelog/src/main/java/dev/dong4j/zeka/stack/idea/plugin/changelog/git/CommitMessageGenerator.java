@@ -617,12 +617,7 @@ public class CommitMessageGenerator {
         /** 是否由父级管理该定时器的生命周期 */
         private final boolean disposableManagedByParent;
 
-        /**
-         * 提交生成时的提示文本
-         * <p> 这些字符串用于在提交消息中展示阶段提示
-         *
-         * @see ChangelogBundle
-         */
+        /** 分析阶段的提示文本, 用于在提交消息中显示“正在分析...”等阶段提示 */
         private final String analyzingText = ChangelogBundle.message("commit.generating.step.analyzing");
         /** 思考阶段的提示文本, 用于在提交消息中显示“正在思考...”等阶段提示 */
         private final String thinkingText = ChangelogBundle.message("commit.generating.step.thinking");
@@ -708,6 +703,7 @@ public class CommitMessageGenerator {
                 return;
             }
             if (analyzingLineCompleted.get()) {
+                alarm.cancelAllRequests();
                 scheduleThinkingLine();
             }
         }
@@ -722,6 +718,22 @@ public class CommitMessageGenerator {
          * </ul>
          * <p> 每次执行后增加 dotIndex 并递归调度下一次闪烁, 形成循环动画.
          * 如果当前状态已停止, 则不执行任何操作.
+         *
+         * @since 1.0
+         */
+        private void startCursorBlink() {
+            dotIndex = 0;
+            scheduleCursorBlink();
+        }
+
+        /**
+         * 调度光标闪烁动画
+         * <p> 通过定时器周期性更新文本内容, 实现光标闪烁效果. 当已显示提示文本时, 根据 dotIndex 的奇偶性决定是否显示光标:
+         * <ul>
+         * <li> 偶数索引: 显示光标文本 </li>
+         * <li> 奇数索引: 不显示光标 </li>
+         * </ul>
+         * 每次执行后增加 dotIndex 并递归调度下一次闪烁, 形成循环动画. 如果当前状态已停止, 则不执行任何操作.
          *
          * @since 1.0
          */
@@ -781,7 +793,9 @@ public class CommitMessageGenerator {
                 analyzingLineCompleted.set(true);
                 if (thinkingStageStarted.get()) {
                     scheduleThinkingLine();
+                    return;
                 }
+                startCursorBlink();
             });
         }
 
@@ -801,7 +815,7 @@ public class CommitMessageGenerator {
          *
          */
         private void scheduleDraftingLine() {
-            alarm.addRequest(() -> typeLine(draftingText, this::scheduleCursorBlink), TYPING_LINE_PAUSE_MS);
+            alarm.addRequest(() -> typeLine(draftingText, this::startCursorBlink), TYPING_LINE_PAUSE_MS);
         }
 
         /**
