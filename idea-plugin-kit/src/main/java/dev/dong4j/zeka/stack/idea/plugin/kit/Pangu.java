@@ -122,11 +122,12 @@ public class Pangu {
 
     /** 匹配数字或中日韩字符与连字符之间的格式, 用于标准化范围表达式如 "1-10" 或 "一 - 十" 的空格处理 */
     private static final Pattern CJK_HYPHEN_CJK_OR_DIGIT = Pattern.compile(
-        "([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])\\s*-\\s*" +
+        "([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])[ \\t]*-[ \\t]*" +
         "([\\d\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])"
                                                                           );
     private static final Pattern DIGIT_HYPHEN_CJK = Pattern.compile(
-        "([\\d])\\s*-\\s*([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs}])"
+        "([\\d])[ \\t]*-[ \\t]*([\\p{InHiragana}\\p{InKatakana}\\p{InBopomofo}\\p{InCJKCompatibilityIdeographs}\\p{InCJKUnifiedIdeographs" +
+        "}])"
                                                                    );
 
     /**
