@@ -23,6 +23,7 @@ import java.util.function.BiConsumer;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.DashscopeStreamChunkParser;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.MiniMaxStreamChunkParser;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.OllamaStreamChunkParser;
@@ -97,6 +98,7 @@ public class StreamRequestExecutor {
 
         String url = config.baseUrl + "/chat/completions";
         String requestBody = body.toString();
+        StreamCancellationToken cancellationToken = listener.cancellationToken();
 
         try {
             listener.onStart();
@@ -113,7 +115,14 @@ public class StreamRequestExecutor {
                 .connect(request -> {
                     request.write(requestBody);
                     HttpURLConnection connection = (HttpURLConnection) request.getConnection();
-                    readStreamResponse(connection, listener);
+                    if (cancellationToken != null) {
+                        cancellationToken.bindConnection(connection);
+                        if (cancellationToken.isCancelled()) {
+                            connection.disconnect();
+                            return null;
+                        }
+                    }
+                    readStreamResponse(connection, listener, cancellationToken);
                     return null;
                 });
         } catch (HttpRequests.HttpStatusException e) {
@@ -126,6 +135,10 @@ public class StreamRequestExecutor {
             listener.onError("HTTP error: " + e.getMessage(), e);
             throw new AIServiceException("HTTP error: " + e.getMessage(), code, e);
         } catch (IOException e) {
+            if (cancellationToken != null && cancellationToken.isCancelled()) {
+                listener.onComplete("");
+                return;
+            }
             listener.onError("网络错误: " + e.getMessage(), e);
             throw new AIServiceException("网络错误: " + e.getMessage(),
                                          AIServiceException.ErrorCode.NETWORK_ERROR, e);
@@ -149,7 +162,8 @@ public class StreamRequestExecutor {
      * @throws IOException 当读取连接或解析流式数据时发生 I/O 错误
      */
     private void readStreamResponse(HttpURLConnection connection,
-                                    @NotNull AIStreamResponseListener listener) throws IOException {
+                                    @NotNull AIStreamResponseListener listener,
+                                    @Nullable StreamCancellationToken cancellationToken) throws IOException {
         StringBuilder fullText = new StringBuilder();
         StreamChunkParser parser = selectStreamChunkParser();
         LOG.trace("流式响应解析器: " + parser.getClass().getName());
@@ -159,7 +173,8 @@ public class StreamRequestExecutor {
             new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (Thread.currentThread().isInterrupted()) {
+                if (Thread.currentThread().isInterrupted() || isCancelled(cancellationToken)) {
+                    connection.disconnect();
                     break;
                 }
                 if (line.isBlank()) {
@@ -188,6 +203,10 @@ public class StreamRequestExecutor {
                         }
                         continue;
                     }
+                    if (isCancelled(cancellationToken)) {
+                        connection.disconnect();
+                        break;
+                    }
                     if (chunk.thinking() != null && !chunk.thinking().isEmpty()) {
                         printThinking(chunk.thinking(), inThinking, thinkPrefixPrinted);
                     }
@@ -211,6 +230,17 @@ public class StreamRequestExecutor {
         }
         AIConsoleLoggerUtil.completeStreamPlain(project);
         listener.onComplete(fullText.toString());
+    }
+
+    /**
+     * 判断是否已取消流式请求
+     * <p> 检查传入的取消令牌是否不为 null 且已被标记为取消状态
+     *
+     * @param cancellationToken 可选的取消令牌对象, 用于跟踪请求是否被取消
+     * @return 如果令牌不为 null 且已被取消, 则返回 true; 否则返回 false
+     */
+    private boolean isCancelled(@Nullable StreamCancellationToken cancellationToken) {
+        return cancellationToken != null && cancellationToken.isCancelled();
     }
 
     /**
