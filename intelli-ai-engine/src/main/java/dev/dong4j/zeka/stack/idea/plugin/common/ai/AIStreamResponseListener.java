@@ -40,4 +40,13 @@ public interface AIStreamResponseListener {
      * @param exception 异常对象
      */
     default void onError(@NotNull String error, @Nullable Throwable exception) {}
+
+    /**
+     * 获取流式取消令牌
+     *
+     * @return 取消令牌, 若不支持取消则返回 null
+     */
+    default @Nullable StreamCancellationToken cancellationToken() {
+        return null;
+    }
 }

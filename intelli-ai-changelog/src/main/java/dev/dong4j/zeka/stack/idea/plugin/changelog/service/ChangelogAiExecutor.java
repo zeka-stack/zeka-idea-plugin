@@ -16,6 +16,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -372,6 +373,17 @@ final class ChangelogAiExecutor {
                 errorRef.set(new Exception(error, exception));
                 externalListener.onError(error, exception);
                 latch.countDown();
+            }
+
+            /**
+             * 获取流式取消令牌
+             * <p> 委托给外部监听器的 cancellationToken 方法, 返回当前流式操作的取消令牌, 可能为 null
+             *
+             * @return 流式取消令牌, 如果外部监听器未提供则返回 null
+             */
+            @Override
+            public @Nullable StreamCancellationToken cancellationToken() {
+                return externalListener.cancellationToken();
             }
         };
 
