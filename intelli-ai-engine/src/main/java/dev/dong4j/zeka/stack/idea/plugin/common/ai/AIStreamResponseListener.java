@@ -42,6 +42,13 @@ public interface AIStreamResponseListener {
     default void onError(@NotNull String error, @Nullable Throwable exception) {}
 
     /**
+     * 接收思考内容块
+     *
+     * @param chunk 思考内容块
+     */
+    default void onThinkingChunk(@NotNull String chunk) {}
+
+    /**
      * 获取流式取消令牌
      *
      * @return 取消令牌, 若不支持取消则返回 null
