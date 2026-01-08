@@ -149,3 +149,4 @@ https://github.com/Blarc/ai-commits-intellij-plugin
 ## 2026.01.09
 
 - [ ] 提交输入作为上下文有问题, 不会生成 scope
+- [ ] scope 不是每次都会生成, 这个需要检查一下
