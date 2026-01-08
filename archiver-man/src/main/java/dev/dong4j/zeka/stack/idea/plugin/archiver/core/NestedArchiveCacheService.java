@@ -46,7 +46,7 @@ public final class NestedArchiveCacheService {
         try {
             Files.createDirectories(cacheRoot);
         } catch (IOException e) {
-            LOG.warn("Failed to create cache directory: " + cacheRoot, e);
+            LOG.debug("Failed to create cache directory: " + cacheRoot, e);
         }
     }
 
@@ -72,7 +72,7 @@ public final class NestedArchiveCacheService {
             Path cached = ensureCached(file);
             return localFileSystem.refreshAndFindFileByNioFile(cached);
         } catch (IOException ex) {
-            LOG.warn("Failed to cache nested archive: " + file.getPath(), ex);
+            LOG.debug("Failed to cache nested archive: " + file.getPath(), ex);
             return null;
         }
     }

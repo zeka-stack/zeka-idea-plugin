@@ -38,7 +38,7 @@ public class FeedbackController {
      */
     @PostMapping
     public ResponseEntity<FeedbackResponse> submitFeedback(@Valid @RequestBody FeedbackRequest request) {
-        log.info("Received feedback submission: type={}, title={}, githubUsername={}",
+        log.debug("Received feedback submission: type={}, title={}, githubUsername={}",
                  request.getType(), request.getTitle(),
                  request.getUserInfo() != null ? request.getUserInfo().getGithubUsername() : "N/A");
 

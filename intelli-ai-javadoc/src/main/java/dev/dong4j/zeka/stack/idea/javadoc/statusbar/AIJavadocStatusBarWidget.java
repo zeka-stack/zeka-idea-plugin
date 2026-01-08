@@ -364,7 +364,7 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
                         switchDefaultProvider(config.providerType, configCopy);
                     });
                 } catch (Exception exception) {
-                    log.error("切换默认服务商失败", exception);
+                    log.debug("切换默认服务商失败", exception);
                 } finally {
                     StatusBar currentStatusBar = statusBar;
                     if (currentStatusBar != null) {

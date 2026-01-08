@@ -66,7 +66,7 @@ public class NonceCache {
 
         if (existing != null) {
             // nonce 已存在，可能是重放攻击
-            log.warn("Duplicate nonce detected: {}", nonce);
+            log.debug("Duplicate nonce detected: {}", nonce);
             return false;
         }
 

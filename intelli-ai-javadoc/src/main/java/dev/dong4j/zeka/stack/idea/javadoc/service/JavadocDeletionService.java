@@ -52,7 +52,7 @@ public class JavadocDeletionService {
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         if (!settings.allowDeleteJavadoc) {
-            log.info("删除 Javadoc 功能未启用");
+            log.debug("删除 Javadoc 功能未启用");
             return false;
         }
 
@@ -64,10 +64,10 @@ public class JavadocDeletionService {
 
         try {
             WriteCommandAction.runWriteCommandAction(project, comment::delete);
-            log.info("成功删除元素的文档注释");
+            log.debug("成功删除元素的文档注释");
             return true;
         } catch (Exception e) {
-            log.warn("删除文档注释失败", e);
+            log.debug("删除文档注释失败", e);
             return false;
         }
     }
@@ -85,7 +85,7 @@ public class JavadocDeletionService {
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         if (!settings.allowDeleteJavadoc) {
-            log.info("删除 Javadoc 功能未启用");
+            log.debug("删除 Javadoc 功能未启用");
             return 0;
         }
 
@@ -125,14 +125,14 @@ public class JavadocDeletionService {
                         comment.delete();
                         count++;
                     } catch (Exception e) {
-                        log.warn("删除元素文档注释失败", e);
+                        log.debug("删除元素文档注释失败", e);
                     }
                 }
             }
             return count;
         });
 
-        log.info("从文件 {} 中删除了 {} 个文档注释", psiFile.getName(), deletedCount);
+        log.debug("从文件 {} 中删除了 {} 个文档注释", psiFile.getName(), deletedCount);
         return deletedCount;
     }
 

@@ -63,7 +63,7 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
                 updateChecker.start();
             }
         } catch (Exception e) {
-            LOG.warn("自动启动 IntelliAI Agent 失败", e);
+            LOG.debug("自动启动 IntelliAI Agent 失败", e);
         }
         return Unit.INSTANCE;
     }
@@ -75,7 +75,7 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
     @Override
     public void appClosing() {
         try {
-            LOG.info("dispose() 方法被调用：停止 IntelliAI Agent 和更新检查器");
+            LOG.debug("dispose() 方法被调用：停止 IntelliAI Agent 和更新检查器");
 
             // 停止更新检查器
             IntelliAgentUpdateChecker updateChecker = IntelliAgentUpdateChecker.getInstance();
@@ -84,14 +84,14 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
             // 停止 Agent
             IntelliAgentManager manager = IntelliAgentManager.getInstance();
             if (manager.isRunning()) {
-                LOG.info("检测到 IntelliAI Agent 正在运行，执行停止操作");
+                LOG.debug("检测到 IntelliAI Agent 正在运行，执行停止操作");
                 manager.stopAgent();
-                LOG.info("IntelliAI Agent 已停止");
+                LOG.debug("IntelliAI Agent 已停止");
             } else {
-                LOG.info("IntelliAI Agent 未运行，无需停止");
+                LOG.debug("IntelliAI Agent 未运行，无需停止");
             }
         } catch (Exception e) {
-            LOG.warn("停止 IntelliAI Agent 失败", e);
+            LOG.debug("停止 IntelliAI Agent 失败", e);
         }
     }
 }

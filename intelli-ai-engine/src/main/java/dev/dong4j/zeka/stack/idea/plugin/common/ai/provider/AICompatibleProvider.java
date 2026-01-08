@@ -195,7 +195,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     break;
                 }
                 long waitTime = (long) (runtime.waitDuration * Math.pow(2, attempts - 1));
-                LOG.info("AI request failed, retry in " + waitTime + "ms: " + e.getMessage());
+                LOG.debug("AI request failed, retry in " + waitTime + "ms: " + e.getMessage());
                 AIConsoleLoggerUtil.print(project, "等待 " + waitTime + "ms 后重试...");
                 try {
                     TimeUnit.MILLISECONDS.sleep(waitTime);
@@ -298,11 +298,11 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             AIConsoleLoggerUtil.printWarning(project, "服务返回空响应");
             return new ArrayList<>();
         } catch (IOException e) {
-            LOG.info("Network error while fetching models", e);
+            LOG.debug("Network error while fetching models", e);
             AIConsoleLoggerUtil.printError(project, "网络错误: " + e.getMessage());
             return new ArrayList<>();
         } catch (Exception e) {
-            LOG.info("Unexpected error while fetching models", e);
+            LOG.debug("Unexpected error while fetching models", e);
             AIConsoleLoggerUtil.printError(project, "获取模型列表失败: " + e.getMessage());
             return new ArrayList<>();
         }
@@ -513,7 +513,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 }
             }
         } catch (Exception e) {
-            LOG.info("Failed to parse models response", e);
+            LOG.debug("Failed to parse models response", e);
         }
         return models;
     }

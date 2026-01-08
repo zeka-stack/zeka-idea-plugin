@@ -68,7 +68,7 @@ public class UniformCodeStyleSchemeProvider {
             // 检查是否已经存在该方案
             CodeStyleScheme existingScheme = codeStyleSchemes.findSchemeByName(CODE_STYLE_NAME);
             if (existingScheme != null) {
-                log.info("Code style '{}' already exists, setting as current", CODE_STYLE_NAME);
+                log.debug("Code style '{}' already exists, setting as current", CODE_STYLE_NAME);
                 codeStyleSchemes.setCurrentScheme(existingScheme);
                 return;
             }
@@ -87,7 +87,7 @@ public class UniformCodeStyleSchemeProvider {
                 VirtualFile vFile = LocalFileSystem.getInstance().findFileByPath(localFile.toString());
                 if (vFile != null) {
                     importScheme(project, vFile, useGlobalScheme);
-                    log.info("Code style '{}' loaded from local file: {}", CODE_STYLE_NAME, localFile);
+                    log.debug("Code style '{}' loaded from local file: {}", CODE_STYLE_NAME, localFile);
                     return;
                 }
             }
@@ -98,15 +98,15 @@ public class UniformCodeStyleSchemeProvider {
                 VirtualFile vFile = VfsUtil.findFileByURL(resource);
                 if (vFile != null) {
                     importScheme(project, vFile, useGlobalScheme);
-                    log.info("Code style '{}' loaded from plugin resource", CODE_STYLE_NAME);
+                    log.debug("Code style '{}' loaded from plugin resource", CODE_STYLE_NAME);
                     return;
                 }
             }
 
-            log.error("Code style file not found: {}", CODE_STYLE_FILE);
+            log.debug("Code style file not found: {}", CODE_STYLE_FILE);
 
         } catch (Exception e) {
-            log.error("Failed to provide uniform code style scheme", e);
+            log.debug("Failed to provide uniform code style scheme", e);
         }
     }
 
@@ -138,10 +138,10 @@ public class UniformCodeStyleSchemeProvider {
         if (useGlobalScheme) {
             // 设置为 IDE 的当前方案（全局方案，所有项目默认使用）
             CodeStyleSchemesImpl.getSchemeManager().setCurrent(derivedScheme);
-            log.info("Code style '{}' added as global scheme (IDE level, default for all projects)", CODE_STYLE_NAME);
+            log.debug("Code style '{}' added as global scheme (IDE level, default for all projects)", CODE_STYLE_NAME);
         } else {
             // 不设置为全局当前方案，仅项目级别使用
-            log.info("Code style '{}' added to IDE level but not set as global default (project-level only)", CODE_STYLE_NAME);
+            log.debug("Code style '{}' added to IDE level but not set as global default (project-level only)", CODE_STYLE_NAME);
         }
 
         // 设置为项目的首选代码样式（项目级别）
@@ -246,7 +246,7 @@ public class UniformCodeStyleSchemeProvider {
             return false;
 
         } catch (Exception e) {
-            log.warn("Failed to check code style scheme status", e);
+            log.debug("Failed to check code style scheme status", e);
             return false;
         }
     }

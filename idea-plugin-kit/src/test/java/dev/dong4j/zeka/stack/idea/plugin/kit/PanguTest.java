@@ -25,7 +25,7 @@ class PanguTest {
         String input = "2026年01月05日-2026年01月11日 工作周报";
         String expected = "2026 年 01 月 05 日 - 2026 年 01 月 11 日 工作周报";
         String actual = pangu.spacingText(input);
-        log.info("{}", actual);
+        log.debug("{}", actual);
         assertThat(actual).isEqualTo(expected);
 
     }

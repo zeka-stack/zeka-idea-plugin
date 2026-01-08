@@ -228,12 +228,12 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
                                                       stats -> {
                                                           // 生成完成后重置标志
                                                           isGenerating.set(false);
-                                                          log.info("保存时自动生成 Javadoc 完成: {}", stats);
+                                                          log.debug("保存时自动生成 Javadoc 完成: {}", stats);
                                                       });
                     } catch (Exception e) {
                         // 发生异常时重置标志
                         isGenerating.set(false);
-                        log.error("保存时自动生成 Javadoc 失败", e);
+                        log.debug("保存时自动生成 Javadoc 失败", e);
                     }
                 })
                 .submit(AppExecutorUtil.getAppExecutorService());

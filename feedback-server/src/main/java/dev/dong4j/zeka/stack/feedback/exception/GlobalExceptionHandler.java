@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
         });
 
         String errorMessage = "参数验证失败: " + String.join(", ", errors.values());
-        log.warn("Validation failed: {}", errors);
+        log.debug("Validation failed: {}", errors);
 
         FeedbackResponse response = FeedbackResponse.builder()
             .success(false)
@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<FeedbackResponse> handleGenericException(Exception ex) {
-        log.error("Unexpected error", ex);
+        log.debug("Unexpected error", ex);
 
         FeedbackResponse response = FeedbackResponse.builder()
             .success(false)

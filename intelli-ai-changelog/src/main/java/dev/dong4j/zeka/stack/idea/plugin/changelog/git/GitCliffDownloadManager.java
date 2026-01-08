@@ -131,7 +131,7 @@ public final class GitCliffDownloadManager {
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
             return json.get("tag_name").getAsString();
         } catch (Exception e) {
-            LOG.warn("获取 git-cliff 最新版本失败", e);
+            LOG.debug("获取 git-cliff 最新版本失败", e);
             return null;
         }
     }
@@ -393,7 +393,7 @@ public final class GitCliffDownloadManager {
             // 如果精确匹配不存在，尝试查找任何匹配的压缩包
             return findAnyMatchingPackage(distsDir);
         } catch (Exception e) {
-            LOG.warn("查找本地压缩包失败", e);
+            LOG.debug("查找本地压缩包失败", e);
             return null;
         }
     }
@@ -435,7 +435,7 @@ public final class GitCliffDownloadManager {
                     .orElse(null);
             }
         } catch (Exception e) {
-            LOG.warn("查找匹配的压缩包失败", e);
+            LOG.debug("查找匹配的压缩包失败", e);
             return null;
         }
     }
@@ -547,7 +547,7 @@ public final class GitCliffDownloadManager {
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                LOG.warn("获取 git-cliff 版本失败，退出码: " + exitCode);
+                LOG.debug("获取 git-cliff 版本失败，退出码: " + exitCode);
                 return null;
             }
 
@@ -560,10 +560,10 @@ public final class GitCliffDownloadManager {
                 return matcher.group(1);
             }
 
-            LOG.warn("无法从输出中解析版本号: " + versionOutput);
+            LOG.debug("无法从输出中解析版本号: " + versionOutput);
             return null;
         } catch (Exception e) {
-            LOG.warn("获取 git-cliff 版本失败", e);
+            LOG.debug("获取 git-cliff 版本失败", e);
             return null;
         }
     }
@@ -582,7 +582,7 @@ public final class GitCliffDownloadManager {
                         try {
                             Files.delete(path);
                         } catch (IOException e) {
-                            LOG.warn("删除文件失败: " + path, e);
+                            LOG.debug("删除文件失败: " + path, e);
                         }
                     });
             }

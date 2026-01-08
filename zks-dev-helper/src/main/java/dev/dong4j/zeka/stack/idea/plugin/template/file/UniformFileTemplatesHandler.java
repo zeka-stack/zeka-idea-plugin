@@ -71,7 +71,7 @@ public class UniformFileTemplatesHandler implements ProjectActivity {
                 // 检查是否启用文件模板功能
                 CodeStyleSettingsState settings = CodeStyleSettingsState.getInstance();
                 if (!settings.isEnableFileTemplates()) {
-                    log.info("File templates disabled, skipping configuration");
+                    log.debug("File templates disabled, skipping configuration");
                     return Unit.INSTANCE;
                 }
 
@@ -97,7 +97,7 @@ public class UniformFileTemplatesHandler implements ProjectActivity {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to configure uniform code style for project: {}", project.getName(), e);
+            log.debug("Failed to configure uniform code style for project: {}", project.getName(), e);
         }
         return Unit.INSTANCE;
     }

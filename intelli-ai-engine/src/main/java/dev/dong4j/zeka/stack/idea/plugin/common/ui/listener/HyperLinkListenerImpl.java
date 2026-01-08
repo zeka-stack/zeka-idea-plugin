@@ -77,7 +77,7 @@ public class HyperLinkListenerImpl extends HyperlinkAdapter {
         try {
             Desktop.getDesktop().mail(new URI(url));
         } catch (Exception ex) {
-            LOG.error("Failed to open email", ex);
+            LOG.debug("Failed to open email", ex);
         }
     }
 

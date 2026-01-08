@@ -123,7 +123,7 @@ public class ProviderManager {
      */
     public void markProviderRateLimited(@NotNull AIProviderConfig provider) {
         String providerId = getProviderId(provider);
-        log.warn("服务商 {} 出现限流错误（429），标记为不可用", providerId);
+        log.debug("服务商 {} 出现限流错误（429），标记为不可用", providerId);
 
         providerStatuses.put(providerId, ProviderStatus.RATE_LIMITED);
 
@@ -131,7 +131,7 @@ public class ProviderManager {
         ExecutorService executor = providerExecutors.get(providerId);
         if (executor != null) {
             executor.shutdownNow();
-            log.info("已销毁服务商 {} 的所有线程", providerId);
+            log.debug("已销毁服务商 {} 的所有线程", providerId);
         }
     }
 
@@ -143,7 +143,7 @@ public class ProviderManager {
     public void markProviderError(@NotNull AIProviderConfig provider) {
         String providerId = getProviderId(provider);
         providerStatuses.put(providerId, ProviderStatus.ERROR);
-        log.warn("服务商 {} 出现错误", providerId);
+        log.debug("服务商 {} 出现错误", providerId);
     }
 
     /**
@@ -181,7 +181,7 @@ public class ProviderManager {
         providerExecutors.clear();
         providerStatuses.clear();
         requestExecutor.shutdownNow();
-        log.info("已关闭所有服务商执行器");
+        log.debug("已关闭所有服务商执行器");
     }
 
     /**

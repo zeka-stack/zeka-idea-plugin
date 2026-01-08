@@ -119,12 +119,12 @@ public class ParallelTaskExecutor {
     public boolean execute(@NotNull List<DocumentationTask> tasks,
                            @NotNull List<AIProviderConfig> providers) {
         if (tasks.isEmpty()) {
-            log.warn("任务列表为空");
+            log.debug("任务列表为空");
             return false;
         }
 
         if (providers.isEmpty()) {
-            log.warn("没有可用的服务商");
+            log.debug("没有可用的服务商");
             return false;
         }
 
@@ -137,7 +137,7 @@ public class ParallelTaskExecutor {
         // 从 ProgressManager 获取 providerStats（确保使用同一个实例）
         Map<String, ProviderStatistics> statsMap = progressManager.getProviderStats();
         if (statsMap == null) {
-            log.error("ProgressManager 未初始化 providerStats，无法继续执行");
+            log.debug("ProgressManager 未初始化 providerStats，无法继续执行");
             return false;
         }
         this.providerStats = statsMap;
@@ -156,7 +156,7 @@ public class ParallelTaskExecutor {
         // 计算总线程数
         int totalThreads = calculateTotalThreads(tasks.size(), providers.size());
 
-        log.info("开始并行处理: {} 个任务, {} 个服务商, {} 个线程",
+        log.debug("开始并行处理: {} 个任务, {} 个服务商, {} 个线程",
                  tasks.size(), providers.size(), totalThreads);
 
         // Console 日志：任务开始
@@ -231,7 +231,7 @@ public class ParallelTaskExecutor {
             return true;
 
         } catch (Exception e) {
-            log.error("并行任务处理失败", e);
+            log.debug("并行任务处理失败", e);
             return false;
         } finally {
             // 关闭所有执行器
@@ -307,11 +307,11 @@ public class ParallelTaskExecutor {
                     executor.shutdown();
                     // 等待最多 60 秒让所有任务完成
                     if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                        log.warn("线程池未在 60 秒内完成，强制关闭");
+                        log.debug("线程池未在 60 秒内完成，强制关闭");
                         executor.shutdownNow();
                         // 再等待 10 秒确保线程退出
                         if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                            log.error("线程池强制关闭后仍有线程未退出");
+                            log.debug("线程池强制关闭后仍有线程未退出");
                         }
                     }
                 } catch (InterruptedException e) {
@@ -359,7 +359,7 @@ public class ParallelTaskExecutor {
         }
 
         if (waitCount >= maxWaitTime) {
-            log.warn("等待队列为空超时（30秒），可能仍有任务在处理中");
+            log.debug("等待队列为空超时（30秒），可能仍有任务在处理中");
         }
     }
 
@@ -377,7 +377,7 @@ public class ParallelTaskExecutor {
             totalSkipped += stats.getSkippedCount();
         }
 
-        log.info("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
+        log.debug("并行任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                  totalCompleted, totalFailed, totalSkipped);
 
         // Console 日志：任务完成统计

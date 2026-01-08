@@ -113,11 +113,11 @@ public class SignatureVerifier {
         try {
             t = Long.parseLong(timestamp);
         } catch (NumberFormatException e) {
-            log.warn("Invalid timestamp format: {}", timestamp);
+            log.debug("Invalid timestamp format: {}", timestamp);
             return false;
         }
         if (Math.abs(now - t) > TIMESTAMP_TOLERANCE) {
-            log.warn("Timestamp out of tolerance: now={}, request={}, diff={}", now, t, Math.abs(now - t));
+            log.debug("Timestamp out of tolerance: now={}, request={}, diff={}", now, t, Math.abs(now - t));
             return false;
         }
 
@@ -125,7 +125,7 @@ public class SignatureVerifier {
         if (bodySha256 != null && !bodySha256.isEmpty()) {
             String computedBodySha = sha256Hex(body == null ? new byte[0] : body);
             if (!computedBodySha.equalsIgnoreCase(bodySha256)) {
-                log.warn("Body SHA256 mismatch: expected={}, computed={}", bodySha256, computedBodySha);
+                log.debug("Body SHA256 mismatch: expected={}, computed={}", bodySha256, computedBodySha);
                 return false;
             }
         }
@@ -143,7 +143,7 @@ public class SignatureVerifier {
         // 4. 常量时间比较签名
         boolean isValid = constantTimeEquals(expected, signature);
         if (!isValid) {
-            log.warn("Signature mismatch for client");
+            log.debug("Signature mismatch for client");
         }
         return isValid;
     }

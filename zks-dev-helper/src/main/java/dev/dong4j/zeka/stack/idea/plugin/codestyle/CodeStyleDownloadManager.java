@@ -93,7 +93,7 @@ public final class CodeStyleDownloadManager {
                 }))
                 .orElse(null);
         } catch (IOException e) {
-            LOG.warn("Failed to list code style directory", e);
+            LOG.debug("Failed to list code style directory", e);
             return null;
         }
     }
@@ -166,7 +166,7 @@ public final class CodeStyleDownloadManager {
                 .readString();
             return fileName.trim();
         } catch (Exception e) {
-            log.warn("Failed to fetch latest code style file name from: {}", versionEndpoint, e);
+            log.debug("Failed to fetch latest code style file name from: {}", versionEndpoint, e);
             return null;
         }
     }
@@ -259,7 +259,7 @@ public final class CodeStyleDownloadManager {
                 return null;
             });
 
-        log.info("Code style file downloaded successfully: {}", targetFile);
+        log.debug("Code style file downloaded successfully: {}", targetFile);
         return targetFile;
     }
 
@@ -282,7 +282,7 @@ public final class CodeStyleDownloadManager {
                                          @Nullable DownloadProgressListener progressListener) throws IOException {
         // 获取本地版本
         String localVersion = getLocalVersion();
-        log.info("Local code style version: {}", localVersion);
+        log.debug("Local code style version: {}", localVersion);
 
         // 获取远程文件名
         indicator.setText("正在检查远程版本...");
@@ -290,14 +290,14 @@ public final class CodeStyleDownloadManager {
         if (remoteFileName == null || remoteFileName.isEmpty()) {
             throw new IOException("无法获取远程代码样式文件名，请检查下载地址是否正确");
         }
-        log.info("Remote code style file name: {}", remoteFileName);
+        log.debug("Remote code style file name: {}", remoteFileName);
 
         // 从远程文件名中提取版本号
         String remoteVersion = extractVersionFromFileName(remoteFileName);
         if (remoteVersion == null) {
             throw new IOException("无法从远程文件名中提取版本号: " + remoteFileName);
         }
-        log.info("Remote code style version: {}", remoteVersion);
+        log.debug("Remote code style version: {}", remoteVersion);
 
         // 比较版本
         if (localVersion == null || !localVersion.equals(remoteVersion)) {
@@ -309,7 +309,7 @@ public final class CodeStyleDownloadManager {
                 String existingVersion = extractVersionFromFileName(existingFile.getFileName().toString());
                 if (remoteVersion.equals(existingVersion)) {
                     // 文件已存在且版本匹配，无需重新下载
-                    log.info("File already exists with correct version: {}", existingFile);
+                    log.debug("File already exists with correct version: {}", existingFile);
                     needDownload = false;
                 }
             }
@@ -324,10 +324,10 @@ public final class CodeStyleDownloadManager {
             // 更新代码样式配置
             indicator.setText("正在更新代码样式配置...");
             UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);
-            log.info("Code style updated from version {} to {}", localVersion, remoteVersion);
+            log.debug("Code style updated from version {} to {}", localVersion, remoteVersion);
             return true;
         } else {
-            log.info("Code style is already up to date (version: {})", localVersion);
+            log.debug("Code style is already up to date (version: {})", localVersion);
             // 即使版本相同，如果项目不为 null，也更新一下配置
             if (project != null) {
                 UniformCodeStyleSchemeProvider.provideUniformCodeStyleScheme(project);

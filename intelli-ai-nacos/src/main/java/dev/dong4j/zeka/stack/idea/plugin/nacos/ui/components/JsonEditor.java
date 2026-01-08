@@ -150,7 +150,7 @@ public class JsonEditor extends JPanel {
             };
             setContent(formatted);
         } catch (Exception ex) {
-            LOG.warn("Format content failed", ex);
+            LOG.debug("Format content failed", ex);
         }
     }
 

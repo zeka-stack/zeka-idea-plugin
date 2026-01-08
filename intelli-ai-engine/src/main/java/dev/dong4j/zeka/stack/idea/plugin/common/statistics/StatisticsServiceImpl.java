@@ -96,7 +96,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         if (!eventQueue.offer(event)) {
-            LOG.warn("Statistics queue is full, dropping event: " + event);
+            LOG.debug("Statistics queue is full, dropping event: " + event);
         }
     }
 
@@ -145,7 +145,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 addFileToSnapshot(snapshot, date);
             }
         } catch (Exception e) {
-            LOG.error("Failed to get snapshot for date: " + date, e);
+            LOG.debug("Failed to get snapshot for date: " + date, e);
         }
 
         return snapshot;
@@ -166,7 +166,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                     snapshot.addRecord(record);
                 }
             } catch (Exception e) {
-                LOG.error("Failed to read data file for date: " + dateStr, e);
+                LOG.debug("Failed to read data file for date: " + dateStr, e);
             }
         }
     }
@@ -263,7 +263,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             TimeUnit.MILLISECONDS
                                                   );
 
-        LOG.info("Statistics service started");
+        LOG.debug("Statistics service started");
     }
 
     /** 停止服务 */
@@ -286,7 +286,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 最后一次写入
         flushToFile();
 
-        LOG.info("Statistics service stopped");
+        LOG.debug("Statistics service stopped");
     }
 
     /**
@@ -314,7 +314,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             writer.writeRecords(records);
             LOG.debug("Flushed " + records.size() + " records to file");
         } catch (Exception e) {
-            LOG.error("Failed to flush statistics to file", e);
+            LOG.debug("Failed to flush statistics to file", e);
             // 如果写入失败，将事件重新放回队列
             for (StatisticsEvent event : events) {
                 eventQueue.offer(event);

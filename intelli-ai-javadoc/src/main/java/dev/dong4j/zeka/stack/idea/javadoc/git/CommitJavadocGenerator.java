@@ -66,7 +66,7 @@ public class CommitJavadocGenerator {
     public void generateForChanges(@NotNull Collection<Change> changes,
                                    @NotNull List<VirtualFile> javaFiles) {
         if (javaFiles.isEmpty()) {
-            log.warn("Git 提交页面：没有 Java 文件需要处理");
+            log.debug("Git 提交页面：没有 Java 文件需要处理");
             return;
         }
 
@@ -164,7 +164,7 @@ public class CommitJavadocGenerator {
             tasks.addAll(fileTasks);
         }
 
-        log.info("Git 提交页面：检测到 {} 个缺少 Javadoc 的元素", tasks.size());
+        log.debug("Git 提交页面：检测到 {} 个缺少 Javadoc 的元素", tasks.size());
         return tasks;
     }
 
@@ -187,7 +187,7 @@ public class CommitJavadocGenerator {
                                                                                   stats.failed(),
                                                                                   stats.skipped());
 
-                                          log.info("Git 提交页面：文档生成完成 - {}", stats);
+                                          log.debug("Git 提交页面：文档生成完成 - {}", stats);
                                       });
     }
 

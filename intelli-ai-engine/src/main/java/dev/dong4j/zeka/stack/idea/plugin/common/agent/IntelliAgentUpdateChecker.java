@@ -70,17 +70,17 @@ public final class IntelliAgentUpdateChecker {
         IntelliAgentSettings agentSettings = settings.intelliAgentSettings;
 
         if (agentSettings == null || !agentSettings.autoUpdate) {
-            LOG.info("自动更新检查未启用，跳过启动");
+            LOG.debug("自动更新检查未启用，跳过启动");
             return;
         }
 
         String downloadUrl = agentSettings.downloadUrl != null ? agentSettings.downloadUrl.trim() : "";
         if (downloadUrl.isEmpty() || (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://"))) {
-            LOG.info("下载地址未配置或为本地路径，跳过自动更新检查");
+            LOG.debug("下载地址未配置或为本地路径，跳过自动更新检查");
             return;
         }
 
-        LOG.info("启动 IntelliAI Agent 自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
+        LOG.debug("启动 IntelliAI Agent 自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
 
         timer = new Timer("IntelliAgentUpdateChecker", true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -99,7 +99,7 @@ public final class IntelliAgentUpdateChecker {
             timer.cancel();
             timer = null;
             lastNotifiedVersion = null; // 清除已通知版本记录
-            LOG.info("停止 IntelliAI Agent 自动更新检查器");
+            LOG.debug("停止 IntelliAI Agent 自动更新检查器");
         }
     }
 
@@ -142,7 +142,7 @@ public final class IntelliAgentUpdateChecker {
             if (localJarName == null || !localJarName.equals(latestJarName)) {
                 // 避免重复通知同一版本
                 if (!latestJarName.equals(lastNotifiedVersion)) {
-                    LOG.info("发现新版本 Agent JAR: " + latestJarName + " (当前版本: " + (localJarName != null ? localJarName : "无") + ")");
+                    LOG.debug("发现新版本 Agent JAR: " + latestJarName + " (当前版本: " + (localJarName != null ? localJarName : "无") + ")");
                     showUpdateNotification(latestJarName, localJarName, agentSettings);
                     lastNotifiedVersion = latestJarName;
                 } else {
@@ -154,7 +154,7 @@ public final class IntelliAgentUpdateChecker {
                 lastNotifiedVersion = null;
             }
         } catch (Exception e) {
-            LOG.warn("检查 Agent 更新失败", e);
+            LOG.debug("检查 Agent 更新失败", e);
         }
     }
 
@@ -252,9 +252,9 @@ public final class IntelliAgentUpdateChecker {
                     });
                 }
 
-                LOG.info("Agent JAR 更新成功: " + latestJarName);
+                LOG.debug("Agent JAR 更新成功: " + latestJarName);
             } catch (Exception e) {
-                LOG.warn("下载 Agent JAR 失败: " + latestJarName, e);
+                LOG.debug("下载 Agent JAR 失败: " + latestJarName, e);
                 if (project != null) {
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showError(project,

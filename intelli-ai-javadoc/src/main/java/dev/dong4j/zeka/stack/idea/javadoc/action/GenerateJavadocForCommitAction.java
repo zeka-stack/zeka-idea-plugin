@@ -111,25 +111,25 @@ public class GenerateJavadocForCommitAction extends AnAction {
             return;
         }
 
-        log.info("Git 提交页面：开始检测缺少 Javadoc 的代码");
+        log.debug("Git 提交页面：开始检测缺少 Javadoc 的代码");
 
         // 在 ReadAction 中获取提交的文件变更和过滤 Java 文件
         Collection<Change> changes = ApplicationManager.getApplication().runReadAction(
             (Computable<Collection<Change>>) () -> getCommittedChanges(project)
                                                                                       );
         if (changes.isEmpty()) {
-            log.warn("Git 提交页面：没有找到文件变更");
+            log.debug("Git 提交页面：没有找到文件变更");
             return;
         }
 
         // 在 ReadAction 中过滤 Java 文件
         List<VirtualFile> javaFiles = filterJavaFiles(project, changes);
         if (javaFiles.isEmpty()) {
-            log.warn("Git 提交页面：没有找到 Java 文件");
+            log.debug("Git 提交页面：没有找到 Java 文件");
             return;
         }
 
-        log.info("Git 提交页面：找到 {} 个 Java 文件", javaFiles.size());
+        log.debug("Git 提交页面：找到 {} 个 Java 文件", javaFiles.size());
 
         // 使用生成器检测和生成文档
         CommitJavadocGenerator generator = new CommitJavadocGenerator(project);

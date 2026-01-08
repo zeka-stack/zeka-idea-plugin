@@ -448,7 +448,7 @@ public class FeedbackPanel {
         try {
             signedHeaders = RequestSigner.sign(pluginId, secret, "POST", pathWithQuery, bodyBytes);
         } catch (Exception e) {
-            log.error("生成请求签名失败", e);
+            log.debug("生成请求签名失败", e);
             throw new IOException("生成请求签名失败: " + e.getMessage(), e);
         }
 
@@ -510,7 +510,7 @@ public class FeedbackPanel {
                 return pluginDescriptor.getVersion();
             }
         } catch (Exception e) {
-            LOG.warn("获取插件版本失败", e);
+            LOG.debug("获取插件版本失败", e);
         }
         return null;
     }
@@ -526,7 +526,7 @@ public class FeedbackPanel {
             ApplicationInfo info = ApplicationInfo.getInstance();
             return info.getFullVersion();
         } catch (Exception e) {
-            LOG.warn("获取 IDEA 版本失败", e);
+            LOG.debug("获取 IDEA 版本失败", e);
             return "未知";
         }
     }

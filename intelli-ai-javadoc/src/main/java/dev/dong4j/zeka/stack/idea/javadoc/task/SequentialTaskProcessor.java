@@ -148,7 +148,7 @@ public class SequentialTaskProcessor {
 
         // 使用进度管理器获取统计信息
         TaskStatistics statistics = progressManager != null ? progressManager.getStatistics() : new TaskStatistics(0, 0, 0);
-        log.info("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
+        log.debug("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
                  statistics.completed(), statistics.failed(), statistics.skipped());
 
         // Console 日志：任务完成统计
@@ -257,7 +257,7 @@ public class SequentialTaskProcessor {
 
         } catch (AIServiceException e) {
             String errorMessage = AIServiceException.build(e);
-            log.info("AI 服务调用失败: {} - {}", task, errorMessage, e);
+            log.debug("AI 服务调用失败: {} - {}", task, errorMessage, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(errorMessage);
             if (progressManager != null) {
@@ -266,7 +266,7 @@ public class SequentialTaskProcessor {
             AIConsoleLoggerUtil.printError(project, "✗ 任务失败: " + errorMessage);
             AIConsoleLoggerUtil.print(project, "");
         } catch (Exception e) {
-            log.info("处理任务失败: {}", task, e);
+            log.debug("处理任务失败: {}", task, e);
             task.setStatus(DocumentationTask.TaskStatus.FAILED);
             task.setErrorMessage(e.getMessage());
             if (progressManager != null) {

@@ -140,7 +140,7 @@ public final class IntelliAgentManager {
             String version = HttpRequests.request(versionEndpoint).productNameAsUserAgent().readString();
             return version.trim();
         } catch (Exception e) {
-            LOG.warn("获取 IntelliAI Agent 最新版本失败", e);
+            LOG.debug("获取 IntelliAI Agent 最新版本失败", e);
         }
         return "";
     }
@@ -162,7 +162,7 @@ public final class IntelliAgentManager {
                 return length > 0 ? length : 0;
             });
         } catch (Exception e) {
-            LOG.warn("获取远端 jar 大小失败: " + url, e);
+            LOG.debug("获取远端 jar 大小失败: " + url, e);
             return 0;
         }
     }
@@ -272,12 +272,12 @@ public final class IntelliAgentManager {
     public long startAgent(@NotNull IntelliAgentSettings settings) throws IOException {
         // 先检查默认端口是否已有 IntelliAI Agent 服务运行
         if (isIntelliAgentRunningOnPort()) {
-            LOG.info("检测到端口 " + DEFAULT_PORT + " 上已有 IntelliAI Agent 服务运行, 直接使用该服务");
+            LOG.debug("检测到端口 " + DEFAULT_PORT + " 上已有 IntelliAI Agent 服务运行, 直接使用该服务");
             return 0; // 返回 0 表示使用已有服务
         }
 
         // 端口未被占用或不是 IntelliAI Agent 服务, 启动新服务
-        LOG.info("端口 " + DEFAULT_PORT + " 上未检测到 IntelliAI Agent 服务, 启动新服务");
+        LOG.debug("端口 " + DEFAULT_PORT + " 上未检测到 IntelliAI Agent 服务, 启动新服务");
         Path jarPath = resolveJarPath(settings);
         if (Files.notExists(jarPath)) {
             throw new IOException("Jar 不存在: " + jarPath);
@@ -378,7 +378,7 @@ public final class IntelliAgentManager {
             try {
                 handlerToDestroy.destroyProcess();
             } catch (Exception e) {
-                LOG.warn("停止 IntelliAI Agent 失败", e);
+                LOG.debug("停止 IntelliAI Agent 失败", e);
             }
         }
         // 尝试停止外部进程（通过 PID 文件）
@@ -541,7 +541,7 @@ public final class IntelliAgentManager {
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
-            LOG.warn("创建 IntelliAI Agent 目录失败: " + dir, e);
+            LOG.debug("创建 IntelliAI Agent 目录失败: " + dir, e);
         }
         return dir;
     }
@@ -622,7 +622,7 @@ public final class IntelliAgentManager {
             // 响应格式: {"status":"ok"}
             boolean isIntelliAgent = response.contains("\"status\"") && response.contains("\"ok\"");
             if (isIntelliAgent) {
-                LOG.info("检测到端口 " + IntelliAgentManager.DEFAULT_PORT + " 上运行的是 IntelliAI Agent 服务");
+                LOG.debug("检测到端口 " + IntelliAgentManager.DEFAULT_PORT + " 上运行的是 IntelliAI Agent 服务");
             }
             return isIntelliAgent;
         } catch (Exception e) {
@@ -653,9 +653,9 @@ public final class IntelliAgentManager {
             try (Writer writer = new OutputStreamWriter(Files.newOutputStream(pidFile), StandardCharsets.UTF_8)) {
                 writer.write(String.valueOf(pid));
             }
-            LOG.info("创建 PID 文件: " + pidFile + ", PID: " + pid);
+            LOG.debug("创建 PID 文件: " + pidFile + ", PID: " + pid);
         } catch (IOException e) {
-            LOG.warn("创建 PID 文件失败: " + pidFile, e);
+            LOG.debug("创建 PID 文件失败: " + pidFile, e);
         }
     }
 
@@ -668,10 +668,10 @@ public final class IntelliAgentManager {
         try {
             if (Files.exists(pidFile)) {
                 Files.delete(pidFile);
-                LOG.info("删除 PID 文件: " + pidFile);
+                LOG.debug("删除 PID 文件: " + pidFile);
             }
         } catch (IOException e) {
-            LOG.warn("删除 PID 文件失败: " + pidFile, e);
+            LOG.debug("删除 PID 文件失败: " + pidFile, e);
         }
     }
 
@@ -755,16 +755,16 @@ public final class IntelliAgentManager {
             if (pid != null) {
                 // 验证进程是否真的存在
                 if (isProcessAlive(pid)) {
-                    LOG.info("检测到外部 IntelliAI Agent 进程运行, PID: " + pid);
+                    LOG.debug("检测到外部 IntelliAI Agent 进程运行, PID: " + pid);
                     return true;
                 } else {
                     // PID 文件存在但进程不存在, 清理 PID 文件
-                    LOG.warn("PID 文件存在但进程不存在, 清理 PID 文件, PID: " + pid);
+                    LOG.debug("PID 文件存在但进程不存在, 清理 PID 文件, PID: " + pid);
                     deletePidFile();
                 }
             } else {
                 // 端口上有服务但没有 PID 文件, 可能是外部启动的, 仍然返回 true
-                LOG.info("检测到端口 " + DEFAULT_PORT + " 上有 IntelliAI Agent 服务运行, 但没有 PID 文件");
+                LOG.debug("检测到端口 " + DEFAULT_PORT + " 上有 IntelliAI Agent 服务运行, 但没有 PID 文件");
                 return true;
             }
         }
@@ -774,11 +774,11 @@ public final class IntelliAgentManager {
         if (pid != null) {
             // 验证进程是否真的存在
             if (isProcessAlive(pid)) {
-                LOG.info("检测到外部 IntelliAI Agent 进程运行, PID: " + pid);
+                LOG.debug("检测到外部 IntelliAI Agent 进程运行, PID: " + pid);
                 return true;
             } else {
                 // PID 文件存在但进程不存在, 清理 PID 文件
-                LOG.warn("PID 文件存在但进程不存在, 清理 PID 文件, PID: " + pid);
+                LOG.debug("PID 文件存在但进程不存在, 清理 PID 文件, PID: " + pid);
                 deletePidFile();
             }
         }
@@ -803,12 +803,12 @@ public final class IntelliAgentManager {
                 Process process = pb.start();
                 int exitCode = process.waitFor();
                 if (exitCode == 0) {
-                    LOG.info("成功停止外部 IntelliAI Agent 进程, PID: " + pid);
+                    LOG.debug("成功停止外部 IntelliAI Agent 进程, PID: " + pid);
                 } else {
-                    LOG.warn("停止外部 IntelliAI Agent 进程失败, PID: " + pid + ", 退出码: " + exitCode);
+                    LOG.debug("停止外部 IntelliAI Agent 进程失败, PID: " + pid + ", 退出码: " + exitCode);
                 }
             } catch (Exception e) {
-                LOG.warn("停止外部 IntelliAI Agent 进程时发生异常, PID: " + pid, e);
+                LOG.debug("停止外部 IntelliAI Agent 进程时发生异常, PID: " + pid, e);
             }
         }
     }

@@ -43,7 +43,7 @@ public class UniformCodeStyleHandler implements ProjectActivity {
             if (hasRun.compareAndSet(false, true) && !ApplicationManager.getApplication().isUnitTestMode()) {
                 CodeStyleSettingsState settings = CodeStyleSettingsState.getInstance();
                 if (!settings.isEnableCodeStyle()) {
-                    log.info("Code style disabled, skipping configuration");
+                    log.debug("Code style disabled, skipping configuration");
                     return Unit.INSTANCE;
                 }
 
@@ -63,7 +63,7 @@ public class UniformCodeStyleHandler implements ProjectActivity {
                                 null // 启动时不需要显示进度
                                                                    );
                         } catch (Exception e) {
-                            log.error("Failed to check and update code style", e);
+                            log.debug("Failed to check and update code style", e);
                         }
                     });
                 } else {
@@ -75,7 +75,7 @@ public class UniformCodeStyleHandler implements ProjectActivity {
                 // StatisticsUtil.reportCodeStyleUsage();
             }
         } catch (Exception e) {
-            log.error("Failed to configure uniform code style for project: {}", project.getName(), e);
+            log.debug("Failed to configure uniform code style for project: {}", project.getName(), e);
         }
         return Unit.INSTANCE;
     }

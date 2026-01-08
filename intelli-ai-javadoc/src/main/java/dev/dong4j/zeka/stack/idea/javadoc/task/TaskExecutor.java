@@ -101,7 +101,7 @@ public class TaskExecutor {
         indicator.setIndeterminate(false);
         int totalTasks = tasks.size();
 
-        log.info("开始处理 {} 个文档生成任务", totalTasks);
+        log.debug("开始处理 {} 个文档生成任务", totalTasks);
 
         // 检查是否启用性能模式且任务数量大于5个
         if (SettingsState.getInstance().performanceMode && totalTasks > 10) {

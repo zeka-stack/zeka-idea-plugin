@@ -61,7 +61,7 @@ public class UpdateStartupActivity implements ProjectActivity {
         // 检查是否启用自动更新
         AIProviderSettings settings = AIProviderSettings.getInstance();
         if (!settings.lastUpdateCheck) {
-            LOG.info("自动更新检查已禁用，跳过启动时的更新检查");
+            LOG.debug("自动更新检查已禁用，跳过启动时的更新检查");
             return Unit.INSTANCE;
         }
 

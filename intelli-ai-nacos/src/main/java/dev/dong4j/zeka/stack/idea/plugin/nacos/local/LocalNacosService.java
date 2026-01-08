@@ -62,7 +62,7 @@ public final class LocalNacosService {
             } catch (UserCancelException e) {
                 NotificationUtil.showWarning(null, NacosBundle.message("notification.local.nacos.start.cancel"));
             } catch (Exception e) {
-                LOG.warn("Failed to start local Nacos", e);
+                LOG.debug("Failed to start local Nacos", e);
                 NotificationUtil.showError(null,
                                            NacosBundle.message("notification.local.nacos.start.failed", e.getMessage()));
             }
@@ -92,7 +92,7 @@ public final class LocalNacosService {
                 LocalRegistryManager.stopRegistry(LocalRegistry.NACOS);
                 NotificationUtil.showInfo(null, NacosBundle.message("notification.local.nacos.stop.success"));
             } catch (Exception e) {
-                LOG.warn("Failed to stop local Nacos", e);
+                LOG.debug("Failed to stop local Nacos", e);
                 NotificationUtil.showError(null,
                                            NacosBundle.message("notification.local.nacos.stop.failed", e.getMessage()));
             }

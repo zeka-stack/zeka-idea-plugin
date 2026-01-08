@@ -446,7 +446,7 @@ public class NacosSettingsPanel {
                     passwordField.setText(password != null ? password : "");
                 }, ModalityState.any());
             } catch (Exception e) {
-                LOG.warn("Failed to get password", e);
+                LOG.debug("Failed to get password", e);
                 cachedStoredPassword = null;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     passwordField.setText("");
@@ -609,7 +609,7 @@ public class NacosSettingsPanel {
                 setLocalOperationInProgress(false);
                 refreshLocalStatus();
                 if (throwable != null) {
-                    LOG.warn("Local Nacos operation failed", throwable);
+                    LOG.debug("Local Nacos operation failed", throwable);
                 }
             }
         }, ModalityState.any()));
@@ -709,7 +709,7 @@ public class NacosSettingsPanel {
             Desktop.getDesktop().open(dir);
         } catch (Exception ex) {
             NotificationUtil.showError(null, NacosBundle.message("notification.local.nacos.open.dir.failed", ex.getMessage()));
-            LOG.warn("Failed to open local Nacos directory", ex);
+            LOG.debug("Failed to open local Nacos directory", ex);
         }
     }
 
@@ -735,7 +735,7 @@ public class NacosSettingsPanel {
     private void deleteOldVersionZipFiles(String currentVersion) {
         int deletedCount = LocalRegistryManager.deleteOldVersionZipFiles(currentVersion);
         if (deletedCount > 0) {
-            LOG.info("Deleted " + deletedCount + " old version zip file(s)");
+            LOG.debug("Deleted " + deletedCount + " old version zip file(s)");
         }
     }
 

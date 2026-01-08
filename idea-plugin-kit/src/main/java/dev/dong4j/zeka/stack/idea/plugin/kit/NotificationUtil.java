@@ -128,7 +128,7 @@ public class NotificationUtil {
         String notificationGroupId = getGroupId(pluginName);
         NotificationGroup notificationGroup = NotificationGroupManager.getInstance().getNotificationGroup(notificationGroupId);
         if (notificationGroup == null) {
-            log.error("Notification group not found: {}", notificationGroupId);
+            log.debug("Notification group not found: {}", notificationGroupId);
             return null; // or throw an exception, depending on your use case
         }
         return notificationGroup;

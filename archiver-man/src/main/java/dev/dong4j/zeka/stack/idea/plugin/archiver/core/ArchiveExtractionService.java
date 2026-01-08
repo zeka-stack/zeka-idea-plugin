@@ -55,7 +55,7 @@ public final class ArchiveExtractionService {
         try {
             Files.createDirectories(extractionRoot);
         } catch (IOException e) {
-            LOG.warn("Failed to create extraction root: " + extractionRoot, e);
+            LOG.debug("Failed to create extraction root: " + extractionRoot, e);
         }
     }
 
@@ -94,7 +94,7 @@ public final class ArchiveExtractionService {
             indexExtractedEntries(targetDir, archivePath, format);
             return localFileSystem.refreshAndFindFileByNioFile(targetDir);
         } catch (IOException ex) {
-            LOG.warn("Failed to extract archive: " + file.getPath(), ex);
+            LOG.debug("Failed to extract archive: " + file.getPath(), ex);
             return null;
         }
     }
