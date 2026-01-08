@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author zeka.stack.team
  * @version 1.0.0
- * @email "mailto:zeka.stack@gmail.com"
+ * @email mailto:zeka.stack@gmail.com
  * @date 2025.12.11
  * @since 1.0.0
  */
@@ -39,7 +39,6 @@ public final class PluginDisposable implements Disposable {
      *
      * @param project 项目对象, 不能为空
      * @return 与项目关联的 Disposable 实例, 不会为 null
-     * @throws NullPointerException 如果 project 参数为 null
      */
     public static @NotNull Disposable getInstance(@NotNull Project project) {
         return project.getService(PluginDisposable.class);
@@ -48,9 +47,10 @@ public final class PluginDisposable implements Disposable {
     /**
      * 释放资源
      * <p>
-     * 用于清理或释放对象占用的资源, 通常在对象不再使用时调用
+     * 用于清理或释放对象占用的资源, 通常在对象不再使用时调用.
+     * <p>
+     * 本方法在对象生命周期结束时被调用, 用于释放相关资源.
      *
-     * @throws UnsupportedOperationException 如果当前对象不支持释放操作
      */
     @Override
     public void dispose() {

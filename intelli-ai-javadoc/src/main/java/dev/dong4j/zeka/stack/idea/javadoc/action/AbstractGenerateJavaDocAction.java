@@ -116,12 +116,11 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         String targetDescription = psiFile.getName();
 
         // 如果为 null, 就为整个文件生成 Javadoc
+        String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
         if (editor == null) {
-            String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
             log.debug("为文件生成文档: {} ({})", psiFile.getName(), fileType);
             tasks = collector.collectFromFile(psiFile);
         } else {
-            String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
             log.debug("为正在编辑的 {} 文件生成文档: {}", fileType, psiFile.getName());
             // 定位元素
             PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
