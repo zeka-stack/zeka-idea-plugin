@@ -1,21 +1,31 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.ide.HelpTooltip;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.actionSystem.impl.ActionButton;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.MessageType;
+import com.intellij.openapi.ui.popup.Balloon;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vcs.changes.CurrentContentRevision;
+import com.intellij.openapi.wm.WindowManager;
+import com.intellij.ui.awt.RelativePoint;
 import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.Component;
+import java.awt.Point;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
@@ -61,11 +71,19 @@ public class GenerateCommitMessageAction extends AnAction {
 
         // 设置按钮文本和图标
         if (CommitMessageGenerator.isRunning(project)) {
-            e.getPresentation().setText(ChangelogBundle.message("commit.action.stop.text"));
+            String text = ChangelogBundle.message("commit.action.stop.text");
+            e.getPresentation().setText(text);
+            e.getPresentation().setDescription(text);
             e.getPresentation().setIcon(AllIcons.Process.Stop);
+            e.getPresentation().putClientProperty(ActionButton.CUSTOM_HELP_TOOLTIP, null);
         } else {
-            e.getPresentation().setText(ChangelogBundle.message("commit.action.text"));
+            String title = ChangelogBundle.message("commit.action.text");
+            String description = ChangelogBundle.message("commit.action.description");
+            e.getPresentation().setText("");
+            e.getPresentation().setDescription(description);
             e.getPresentation().setIcon(ChangelogIcons.CHANGELOG_16);
+            e.getPresentation().putClientProperty(ActionButton.CUSTOM_HELP_TOOLTIP,
+                                                  new HelpTooltip().setTitle(title).setDescription(description));
         }
 
         e.getPresentation().setEnabled(true);
@@ -123,7 +141,7 @@ public class GenerateCommitMessageAction extends AnAction {
         Collection<Change> changes = getSelectedChanges(commitWorkflowHandler);
         if (changes.isEmpty()) {
             log.debug("Git 提交页面：未选择任何文件变更");
-            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
+            showActionTip(e, ChangelogBundle.message("commit.no.selected.changes"));
             return;
         }
 
@@ -170,6 +188,40 @@ public class GenerateCommitMessageAction extends AnAction {
     }
 
     /**
+     * 显示操作提示气泡
+     * <p> 根据当前动作事件获取合适的组件作为气泡显示的参考点, 然后创建并显示一个带有警告信息的 HTML 气泡提示.
+     * <p> 优先从事件输入中获取组件, 若失败则从上下文组件数据中获取, 若仍失败则尝试获取项目对应的窗口框架.
+     * <p> 如果最终无法获取有效组件, 则直接返回, 不显示气泡.
+     *
+     * @param e       动作事件, 不能为 null
+     * @param message 提示消息内容, 不能为 null
+     */
+    private void showActionTip(@NotNull AnActionEvent e, @NotNull String message) {
+        Component component = null;
+        if (e.getInputEvent() != null) {
+            component = e.getInputEvent().getComponent();
+        }
+        if (component == null) {
+            component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT);
+        }
+        if (component == null) {
+            Project project = e.getProject();
+            if (project != null) {
+                component = WindowManager.getInstance().getFrame(project);
+            }
+        }
+        if (component == null) {
+            return;
+        }
+
+        JBPopupFactory.getInstance()
+            .createHtmlTextBalloonBuilder(message, MessageType.WARNING, null)
+            .setFadeoutTime(2500)
+            .createBalloon()
+            .show(new RelativePoint(component, new Point(component.getWidth(), component.getHeight())), Balloon.Position.below);
+    }
+
+    /**
      * 调用目标对象的指定方法
      * <p> 通过反射机制获取目标对象的指定方法并调用, 如果目标对象为 null 或者方法调用失败, 则返回 null.
      *
@@ -189,4 +241,5 @@ public class GenerateCommitMessageAction extends AnAction {
             return null;
         }
     }
+
 }
