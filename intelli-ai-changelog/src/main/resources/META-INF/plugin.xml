@@ -110,7 +110,7 @@
         <!-- Git 提交工具栏操作 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction">
-            <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
+            <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
 
         <!--suppress PluginXmlI18n -->
