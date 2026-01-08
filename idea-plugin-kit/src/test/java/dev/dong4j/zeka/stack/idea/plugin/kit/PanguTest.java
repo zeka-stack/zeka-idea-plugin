@@ -53,4 +53,23 @@ class PanguTest {
         assertThat(pangu.spacingText(input)).isEqualTo(expected);
     }
 
+
+    @Test
+    void hyphenBetweenDigitsAndCjk1() {
+        Pangu pangu = new Pangu();
+        String input = """
+            xxxx
+            - 123213
+            - 你好
+            - hello
+            """;
+        String expected = """
+            xxxx
+            - 123213
+            - 你好
+            - hello
+            """;
+        assertThat(pangu.spacingText(input)).isEqualTo(expected);
+    }
+
 }
