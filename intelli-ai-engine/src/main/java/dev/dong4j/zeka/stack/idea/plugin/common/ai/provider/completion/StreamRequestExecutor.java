@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -25,6 +23,12 @@ import java.util.function.BiConsumer;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.DashscopeStreamChunkParser;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.MiniMaxStreamChunkParser;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.OllamaStreamChunkParser;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.OpenAiStreamChunkParser;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamChunk;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamChunkParser;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
@@ -183,10 +187,10 @@ public class StreamRequestExecutor {
                         }
                         continue;
                     }
-                    if (chunk.thinking != null && !chunk.thinking.isEmpty()) {
-                        printThinking(chunk.thinking, inThinking, thinkPrefixPrinted);
+                    if (chunk.thinking() != null && !chunk.thinking().isEmpty()) {
+                        printThinking(chunk.thinking(), inThinking, thinkPrefixPrinted);
                     }
-                    if (chunk.content != null && !chunk.content.isEmpty()) {
+                    if (chunk.content() != null && !chunk.content().isEmpty()) {
                         if (inThinking[0]) {
                             AIConsoleLoggerUtil.printStreamPlain(
                                 project,
@@ -194,9 +198,9 @@ public class StreamRequestExecutor {
                             inThinking[0] = false;
                             thinkPrefixPrinted[0] = false;
                         }
-                        fullText.append(chunk.content);
-                        AIConsoleLoggerUtil.printStreamPlain(project, chunk.content);
-                        listener.onChunk(chunk.content);
+                        fullText.append(chunk.content());
+                        AIConsoleLoggerUtil.printStreamPlain(project, chunk.content());
+                        listener.onChunk(chunk.content());
                     }
                     if (done) {
                         break;
@@ -251,82 +255,6 @@ public class StreamRequestExecutor {
             return;
         }
         AIConsoleLoggerUtil.printStreamPlain(project, thinking);
-    }
-
-    /**
-     * 从 JSON 对象中安全地读取字符串值.
-     * <p>
-     * 该方法会检查指定键是否存在以及对应的 JSON 元素是否为 null 或 JsonNull,
-     * 只有在所有检查都通过的情况下, 才会返回元素的字符串值.
-     * </p>
-     *
-     * @param delta JSON 对象, 包含要读取的键值对
-     * @param key   要读取的键名
-     * @return 如果键存在且对应的值为非空字符串, 则返回该字符串值; 否则返回 null
-     */
-    @Nullable
-    private static String readStringValue(@NotNull JsonObject delta, @NotNull String key) {
-        if (!delta.has(key)) {
-            return null;
-        }
-        JsonElement element = delta.get(key);
-        if (element == null || element.isJsonNull()) {
-            return null;
-        }
-        return element.getAsString();
-    }
-
-    /**
-     * 流式数据块记录类
-     * <p> 用于表示流式传输中的一个数据片段, 通常用于异步通信或分段处理场景中.
-     * <p> 该记录类包含两个字段:content 表示实际内容,thinking 表示附加的思考信息 (如 AI 推理过程).
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private record StreamChunk(@Nullable String content, @Nullable String thinking) {
-    }
-
-    /**
-     * 流式数据解析器接口
-     * <p> 用于解析流式传输的 JSON 数据块, 支持从 JSON 对象中提取并构建 StreamChunk 对象.
-     * <p> 提供默认方法 isDone, 用于判断当前 JSON 数据是否表示流式处理已完成.
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private interface StreamChunkParser {
-        /**
-         * 解析 JSON 数据并返回对应的流块对象
-         * <p> 该方法用于将传入的 JSON 对象解析为一个 {@code StreamChunk} 实例, 可能返回 null 表示解析失败或无结果
-         *
-         * @param json 需要解析的 JSON 对象, 不能为 null
-         * @return 解析得到的流块对象, 如果解析失败或无效则返回 null
-         */
-        @Nullable
-        StreamChunk parse(@NotNull JsonObject json);
-
-        /**
-         * 判断解析是否完成
-         * <p> 检查给定的 JSON 对象是否表示解析已经完成. 通过读取第一个 choice 并检查 finish_reason 字段是否为 "stop" 来判断.
-         *
-         * @param json 要检查的 JSON 对象, 不能为 null
-         * @return 如果解析完成返回 true, 否则返回 false
-         */
-        default boolean isDone(@NotNull JsonObject json) {
-            JsonObject choice = readFirstChoice(json);
-            if (choice == null) {
-                return false;
-            }
-            String finishReason = readStringValue(choice, "finish_reason");
-            return "stop".equalsIgnoreCase(finishReason);
-        }
     }
 
     /**
@@ -462,231 +390,5 @@ public class StreamRequestExecutor {
             }
             return modelName.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT));
         }
-    }
-
-    /**
-     * OpenAI 流解析器内部类
-     * <p> 实现了一个用于解析 OpenAI API 返回的流数据的解析器
-     * <p> 该类继承自 StreamChunkParser 接口, 负责将 JSON 对象解析为 StreamChunk 对象
-     * <p> 具体解析逻辑如下:
-     * <ul>
-     * <li> 读取 JSON 对象中的第一个 delta 字段 </li>
-     * <li> 从 delta 中提取 content 字符串 </li>
-     * <li> 如果 content 存在且不为空, 则返回一个新的 StreamChunk 对象, 否则返回 null</li>
-     * </ul>
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private static final class OpenAiStreamChunkParser implements StreamChunkParser {
-        /**
-         * 解析 OpenAI 流式响应中的 JSON 数据块
-         * <p> 从流式响应的 JSON 数据中提取 delta 内容, 并将其封装为 StreamChunk 对象返回
-         * <p> 该方法会读取 JSON 中的第一个 delta 节点, 如果 delta 存在且包含非空的 content 字段,
-         * 则返回包含该内容的 StreamChunk; 否则返回 null
-         *
-         * @param json 流式响应的 JSON 数据, 不能为 null
-         * @return StreamChunk 对象, 包含解析出的内容; 如果 delta 不存在或 content 为空则返回 null
-         */
-        @Override
-        public StreamChunk parse(@NotNull JsonObject json) {
-            JsonObject delta = readFirstDelta(json);
-            if (delta == null) {
-                return null;
-            }
-            String content = readStringValue(delta, "content");
-            if (content == null || content.isEmpty()) {
-                return null;
-            }
-            return new StreamChunk(content, null);
-        }
-    }
-
-    /**
-     * Dashscope 流式响应块解析器
-     * <p>用于解析 Dashscope API 返回的流式响应数据, 提取内容字段 (content) 和思考内容字段(reasoning_content), 并封装为 StreamChunk 对象.
-     * <p>该解析器适用于处理带有增量内容的流式响应, 当内容或思考内容为空时, 返回 null 表示无有效数据.
-     * <p>使用示例:
-     * <pre>{@code
-     * DashscopeStreamChunkParser parser = new DashscopeStreamChunkParser();
-     * StreamChunk chunk = parser.parse(json);
-     * }</pre>
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private static final class DashscopeStreamChunkParser implements StreamChunkParser {
-        /**
-         * 解析 JSON 数据并返回对应的流块对象
-         * <p> 该方法从指定的 JSON 对象中读取 "delta" 字段, 并从中提取 "content" 和 "reasoning_content" 的值.
-         * 如果这两个字段都为空或未提供, 则返回 null. 否则, 使用这些值构造一个新的 StreamChunk 对象并返回.
-         *
-         * @param json 包含 delta 信息的 JSON 对象, 不能为 null
-         * @return 解析后的 StreamChunk 对象, 如果 content 和 reasoning_content 都为空则返回 null
-         */
-        @Override
-        public StreamChunk parse(@NotNull JsonObject json) {
-            JsonObject delta = readFirstDelta(json);
-            if (delta == null) {
-                return null;
-            }
-            String content = readStringValue(delta, "content");
-            String thinking = readStringValue(delta, "reasoning_content");
-            if ((content == null || content.isEmpty()) && (thinking == null || thinking.isEmpty())) {
-                return null;
-            }
-            return new StreamChunk(content, thinking);
-        }
-    }
-
-    /**
-     * Ollama 流式数据解析器
-     * <p> 用于解析 Ollama 模型返回的流式数据, 提取内容和推理信息
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private static final class OllamaStreamChunkParser implements StreamChunkParser {
-        /**
-         * 解析 JSON 数据为 StreamChunk 对象
-         * <p> 该方法接收一个 JsonObject 参数, 解析其中的 delta 数据, 提取 content 和 thinking 字段, 若两者均为空则返回 null, 否则创建并返回 StreamChunk 实例.
-         *
-         * @param json 输入的 JSON 对象, 不能为 null
-         * @return 解析后的 StreamChunk 实例, 若内容为空则返回 null
-         */
-        @Override
-        public StreamChunk parse(@NotNull JsonObject json) {
-            JsonObject delta = readFirstDelta(json);
-            if (delta == null) {
-                return null;
-            }
-            String content = readStringValue(delta, "content");
-            String thinking = readStringValue(delta, "reasoning");
-            if ((content == null || content.isEmpty()) && (thinking == null || thinking.isEmpty())) {
-                return null;
-            }
-            return new StreamChunk(content, thinking);
-        }
-    }
-
-    /**
-     * MiniMax 流式分块解析器
-     * <p>用于解析 MiniMax API 返回的流式响应内容, 识别并分离思考过程 (think) 与最终答案 (answer) 部分.
-     * <p>支持通过特定起始符 {@code THINK_START} 和结束符 {@code THINK_END} 来标记思考内容区域.
-     * <p>解析结果封装为 {@code StreamChunk} 对象, 包含思考文本和答案文本两个字段.
-     * <p>使用示例:
-     * <pre>{@code
-     * MiniMaxStreamChunkParser parser = new MiniMaxStreamChunkParser();
-     * StreamChunk chunk = parser.parse(json);
-     * }</pre>
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.08
-     * @since 1.0.0
-     */
-    private static final class MiniMaxStreamChunkParser implements StreamChunkParser {
-        /**
-         * 表示思考模式开始的标记
-         * <p> 在解析内容时, 遇到此标记表示进入思考模式
-         */
-        private static final String THINK_START = "<think>";
-        /**  */
-        private static final String THINK_END = "</think>";
-        private boolean inThinking;
-
-        /**
-         * 解析 JSON 数据流中的内容, 提取思考部分和回答部分
-         * <p> 该方法用于解析包含思考标记和回答标记的 JSON 数据流, 将内容分割为思考文本和回答文本, 并返回一个 StreamChunk 对象.
-         *
-         * @param json 包含数据流的 JSON 对象, 不能为 null
-         * @return 包含解析后的回答文本和思考文本的 StreamChunk 对象, 如果两者都为空则返回 null
-         */
-        @Override
-        public StreamChunk parse(@NotNull JsonObject json) {
-            JsonObject delta = readFirstDelta(json);
-            if (delta == null) {
-                return null;
-            }
-            String content = readStringValue(delta, "content");
-            if (content == null || content.isEmpty()) {
-                return null;
-            }
-            StringBuilder thinking = new StringBuilder();
-            StringBuilder answer = new StringBuilder();
-            int index = 0;
-            while (index < content.length()) {
-                if (inThinking) {
-                    int endIndex = content.indexOf(THINK_END, index);
-                    if (endIndex == -1) {
-                        thinking.append(content.substring(index));
-                        index = content.length();
-                        continue;
-                    }
-                    thinking.append(content, index, endIndex);
-                    index = endIndex + THINK_END.length();
-                    inThinking = false;
-                    continue;
-                }
-                int startIndex = content.indexOf(THINK_START, index);
-                if (startIndex == -1) {
-                    answer.append(content.substring(index));
-                    index = content.length();
-                    continue;
-                }
-                answer.append(content, index, startIndex);
-                index = startIndex + THINK_START.length();
-                inThinking = true;
-            }
-            String thinkingText = !thinking.isEmpty() ? thinking.toString() : null;
-            String answerText = !answer.isEmpty() ? answer.toString() : null;
-            if (thinkingText == null && answerText == null) {
-                return null;
-            }
-            return new StreamChunk(answerText, thinkingText);
-        }
-    }
-
-    /**
-     * 从 JSON 对象中读取第一个选择项 (choice)
-     * <p> 该方法用于解析响应中的 choices 数组, 返回第一个 choice 对象. 如果 choices 不存在或为空, 则返回 null.
-     *
-     * @param json 包含 choices 数组的 JSON 对象, 不能为 null
-     * @return 第一个 choice 对象, 如果不存在或为空则返回 null
-     */
-    @Nullable
-    private static JsonObject readFirstChoice(@NotNull JsonObject json) {
-        JsonArray choices = json.getAsJsonArray("choices");
-        if (choices == null || choices.isEmpty()) {
-            return null;
-        }
-        return choices.get(0).getAsJsonObject();
-    }
-
-    /**
-     * 从指定的 JSON 对象中读取第一个 "delta" 字段内容
-     * <p> 该方法首先调用 {@link #readFirstChoice(JsonObject)} 方法获取第一个 "choices" 数组中的对象,
-     * 然后从中提取名为 "delta" 的子对象. 如果找不到或为 null, 则返回 null.
-     *
-     * @param json 包含 AI 流式响应数据的 JSON 对象, 不能为 null
-     * @return 第一个 "delta" 字段对应的 JSON 对象, 如果未找到或解析失败则返回 null
-     */
-    @Nullable
-    private static JsonObject readFirstDelta(@NotNull JsonObject json) {
-        JsonObject choice = readFirstChoice(json);
-        if (choice == null) {
-            return null;
-        }
-        return choice.getAsJsonObject("delta");
     }
 }
