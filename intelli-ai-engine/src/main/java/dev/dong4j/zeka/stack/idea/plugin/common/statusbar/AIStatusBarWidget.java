@@ -9,6 +9,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.ui.popup.ListPopup;
+import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.StatusBarWidget;
 import com.intellij.openapi.wm.impl.status.EditorBasedStatusBarPopup;
@@ -129,9 +130,6 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
                 continue;
             }
             ActionGroup group = provider.createActionGroup(getProject(), context);
-            if (group == null) {
-                continue;
-            }
             DefaultActionGroup submenu = new DefaultActionGroup(provider.getGroupName(), true);
             if (group instanceof DefaultActionGroup) {
                 for (com.intellij.openapi.actionSystem.AnAction action
@@ -322,8 +320,7 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
         public void update(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
             AIProviderSettings settings = AIProviderSettings.getInstance();
             boolean isSelected = settings.responseLanguage == language;
-            e.getPresentation().putClientProperty(
-                com.intellij.openapi.actionSystem.Toggleable.SELECTED_PROPERTY, isSelected);
+            e.getPresentation().putClientProperty(Key.create("selected"), isSelected);
         }
 
         /**
