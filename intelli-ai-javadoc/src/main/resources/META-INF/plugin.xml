@@ -127,6 +127,7 @@
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForFilesAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForFilesAction"
                 icon="/icons/aij_16.svg">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl D"/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
 
