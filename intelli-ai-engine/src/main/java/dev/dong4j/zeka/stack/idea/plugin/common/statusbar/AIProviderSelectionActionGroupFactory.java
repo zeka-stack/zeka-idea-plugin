@@ -161,7 +161,7 @@ public final class AIProviderSelectionActionGroupFactory {
                         configUpdater.accept(config.providerType, configCopy);
                     });
                 } catch (Exception exception) {
-                    log.error("切换默认服务商失败", exception);
+                    log.debug("切换默认服务商失败", exception);
                 }
             };
 

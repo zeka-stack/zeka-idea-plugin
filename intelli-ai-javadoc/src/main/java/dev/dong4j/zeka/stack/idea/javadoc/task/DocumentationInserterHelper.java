@@ -109,7 +109,7 @@ public class DocumentationInserterHelper {
                         // 1. 清理 javadoc（去掉多余代码/Markdown 包裹，并做合法性校验）
                         String javadoc = cleanJavadoc(documentation.trim());
                         if (javadoc.isEmpty()) {
-                            log.info("清理后的 Javadoc 为空，插入文档失败");
+                            log.debug("清理后的 Javadoc 为空，插入文档失败");
                             return;
                         }
 
@@ -171,7 +171,7 @@ public class DocumentationInserterHelper {
                         AIConsoleLoggerUtil.print(project, "");
 
                     } catch (Exception e) {
-                        log.info("插入文档失败", e);
+                        log.debug("插入文档失败", e);
                     }
                 }),
                 "Insert Javadoc",
@@ -248,7 +248,7 @@ public class DocumentationInserterHelper {
             oldComment.delete();
 
         } catch (Exception e) {
-            log.warn("删除旧注释失败", e);
+            log.debug("删除旧注释失败", e);
         }
     }
 

@@ -99,7 +99,7 @@ public class CommitMessageGenerator {
                                    @Nullable Object commitMessageControl,
                                    @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
         if (changes.isEmpty()) {
-            log.warn("Git 提交页面：没有代码变更需要处理");
+            log.trace("Git 提交页面：没有代码变更需要处理");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.changes"));
             return;
         }
@@ -215,16 +215,16 @@ public class CommitMessageGenerator {
                             boolean applied = !state.cancelled.get()
                                               && setCommitMessageText(formattedCommitMessage, commitMessageControl);
                             if (!applied && !updated.get()) {
-                                log.warn("Git 提交页面：提交面板不可用，无法写入提交记录");
+                                log.trace("Git 提交页面：提交面板不可用，无法写入提交记录");
                             }
                             if (outputSession != null) {
                                 outputSession.setText(formattedCommitMessage);
                             }
                         });
 
-                        log.info("Git 提交页面：提交记录生成成功");
+                        log.trace("Git 提交页面：提交记录生成成功");
                     } catch (Exception e) {
-                        log.error("Git 提交页面：生成提交记录失败", e);
+                        log.trace("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
                             String errorMessage = e.getMessage();
                             if (errorMessage != null && !errorMessage.isEmpty()) {
@@ -335,7 +335,7 @@ public class CommitMessageGenerator {
                     method.invoke(commitMessageControl, commitMessage);
                     return true;
                 } catch (Exception e) {
-                    log.warn("Git 提交页面：调用提交面板方法失败: {}", methodName, e);
+                    log.trace("Git 提交页面：调用提交面板方法失败: {}", methodName, e);
                 }
             }
         }
@@ -364,7 +364,7 @@ public class CommitMessageGenerator {
                         return trimmed.isEmpty() ? null : trimmed;
                     }
                 } catch (Exception e) {
-                    log.warn("Git 提交页面：读取提交消息失败: {}", methodName, e);
+                    log.trace("Git 提交页面：读取提交消息失败: {}", methodName, e);
                 }
             }
         }

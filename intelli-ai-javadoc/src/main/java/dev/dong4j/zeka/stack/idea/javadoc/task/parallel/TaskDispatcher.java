@@ -80,7 +80,7 @@ public class TaskDispatcher {
 
         this.filePaths = List.copyOf(fileQueues.keySet());
 
-        log.info("任务分发器初始化完成: {} 个文件, {} 个任务",
+        log.debug("任务分发器初始化完成: {} 个文件, {} 个任务",
                  fileQueues.size(), tasks.size());
     }
 

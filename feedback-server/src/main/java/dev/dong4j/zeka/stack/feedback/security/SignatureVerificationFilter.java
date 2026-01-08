@@ -82,21 +82,21 @@ public class SignatureVerificationFilter implements Filter {
 
             // 验证必需的签名头
             if (clientId == null || timestamp == null || nonce == null || signature == null) {
-                log.warn("Missing required signature headers");
+                log.debug("Missing required signature headers");
                 sendErrorResponse(httpResponse, "Missing required signature headers");
                 return;
             }
 
             // 验证客户端 ID 是否存在
             if (!signatureProperties.hasClient(clientId)) {
-                log.warn("Unknown client ID: {}", clientId);
+                log.debug("Unknown client ID: {}", clientId);
                 sendErrorResponse(httpResponse, "Unknown client ID");
                 return;
             }
 
             // 验证 nonce（防止重放攻击）
             if (!nonceCache.checkAndStore(nonce)) {
-                log.warn("Duplicate or invalid nonce: {}", nonce);
+                log.debug("Duplicate or invalid nonce: {}", nonce);
                 sendErrorResponse(httpResponse, "Invalid or duplicate nonce");
                 return;
             }
@@ -104,7 +104,7 @@ public class SignatureVerificationFilter implements Filter {
             // 获取客户端的 Secret
             String secret = signatureProperties.getSecret(clientId);
             if (secret == null || secret.isEmpty()) {
-                log.error("Secret not configured for client: {}", clientId);
+                log.debug("Secret not configured for client: {}", clientId);
                 sendErrorResponse(httpResponse, "Server configuration error");
                 return;
             }
@@ -125,7 +125,7 @@ public class SignatureVerificationFilter implements Filter {
                                                       );
 
             if (!isValid) {
-                log.warn("Signature verification failed for client: {}", clientId);
+                log.debug("Signature verification failed for client: {}", clientId);
                 sendErrorResponse(httpResponse, "Invalid signature");
                 return;
             }
@@ -136,7 +136,7 @@ public class SignatureVerificationFilter implements Filter {
             chain.doFilter(cachedRequest, response);
 
         } catch (Exception e) {
-            log.error("Error during signature verification", e);
+            log.debug("Error during signature verification", e);
             sendErrorResponse(httpResponse, "Signature verification error: " + e.getMessage());
         }
     }

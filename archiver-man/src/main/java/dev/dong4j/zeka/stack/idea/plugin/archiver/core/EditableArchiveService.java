@@ -171,7 +171,7 @@ public final class EditableArchiveService {
                         statusBar.setInfo("Failed to save archive: " + ex.getMessage());
                     }
                     NotificationUtil.showError(save.project(), "Failed to save archive: " + ex.getMessage());
-                    LOG.error("Unexpected error during archive save", ex);
+                    LOG.debug("Unexpected error during archive save", ex);
                 }
             });
         }

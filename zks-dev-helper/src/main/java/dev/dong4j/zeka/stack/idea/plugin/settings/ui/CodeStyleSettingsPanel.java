@@ -198,7 +198,7 @@ public class CodeStyleSettingsPanel {
     private void triggerCodeStyleDownload(@NotNull String downloadUrl) {
         // 防止重复下载
         if (!isDownloading.compareAndSet(false, true)) {
-            log.warn("Download already in progress, skipping");
+            log.debug("Download already in progress, skipping");
             return;
         }
 
@@ -256,7 +256,7 @@ public class CodeStyleSettingsPanel {
                     downloadButton.setEnabled(autoUpdateCodeStyleCheckBox.isSelected());
                 });
             } catch (Exception e) {
-                log.error("Failed to download code style", e);
+                log.debug("Failed to download code style", e);
                 // 下载失败
                 SwingUtilities.invokeLater(() -> {
                     downloadProgressBar.setVisible(false);

@@ -104,7 +104,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
 
                 // 比较版本
                 if (compareVersion(localVersion, latestVersion) < 0) {
-                    LOG.info("发现新版本: " + latestVersion + " (当前版本: " + localVersion + ")");
+                    LOG.debug("发现新版本: " + latestVersion + " (当前版本: " + localVersion + ")");
                     ApplicationManager.getApplication().invokeLater(() -> {
                         if (!project.isDisposed()) {
                             showUpdateNotification(project, latestVersion, localVersion);
@@ -114,7 +114,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                     LOG.debug("插件已是最新版本: " + localVersion);
                 }
             } catch (Exception e) {
-                LOG.warn("检查新版本失败", e);
+                LOG.debug("检查新版本失败", e);
             }
         });
     }
@@ -130,7 +130,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
             String version = HttpRequests.request(VERSION_URL).productNameAsUserAgent().readString();
             return version != null ? version.trim() : null;
         } catch (Exception e) {
-            LOG.warn("获取远程版本失败", e);
+            LOG.debug("获取远程版本失败", e);
             return null;
         }
     }
@@ -148,7 +148,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                 return pluginDescriptor.getVersion();
             }
         } catch (Exception e) {
-            LOG.warn("获取插件版本失败", e);
+            LOG.debug("获取插件版本失败", e);
         }
         return null;
     }

@@ -66,7 +66,7 @@ public class GenerateJavadocForFilesAction extends AnAction {
             return;
         }
 
-        log.info("为 {} 个文件/目录生成 Javadoc", files.length);
+        log.debug("为 {} 个文件/目录生成 Javadoc", files.length);
 
         // 收集任务
         TaskCollector collector = new TaskCollector(project);

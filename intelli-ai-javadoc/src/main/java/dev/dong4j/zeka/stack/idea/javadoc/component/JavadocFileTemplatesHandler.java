@@ -101,7 +101,7 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
                 SettingsState settings = SettingsState.getInstance();
                 applyTemplateConfiguration(project, settings);
             } catch (Exception e) {
-                log.error("配置文件模板失败", e);
+                log.debug("配置文件模板失败", e);
             }
         });
         return Unit.INSTANCE;
@@ -212,14 +212,14 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
                 // 重新获取模板列表（删除后）
                 FileTemplate[] updatedTemplates = templateManager.getTemplates(FileTemplateManager.INCLUDES_TEMPLATES_CATEGORY);
                 createNewIncludeTemplate(templateManager, project, updatedTemplates, templateContent);
-                log.info("已更新文件模板: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
+                log.debug("已更新文件模板: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
             } else {
                 log.debug("文件模板已是最新: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
             }
         } else {
             // 创建新模板
             createNewIncludeTemplate(templateManager, project, existingTemplates, templateContent);
-            log.info("已创建文件模板: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
+            log.debug("已创建文件模板: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
         }
     }
 
@@ -276,7 +276,7 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
         // 删除旧模板
         removeTemplate(templateManager, javaClassTemplate, JAVA_CLASS_CODE_TEMPLATE, project);
 
-        log.info("已更新 '{}' 代码模板", JAVA_CLASS_TEMPLATE_NAME);
+        log.debug("已更新 '{}' 代码模板", JAVA_CLASS_TEMPLATE_NAME);
     }
 
 
@@ -304,7 +304,7 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
 
         if (headerTemplate != null) {
             templateManager.removeTemplate(headerTemplate);
-            log.info("已删除文件模板: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
+            log.debug("已删除文件模板: {}", JAVA_CLASS_HEADER_TEMPLATE_NAME);
         }
 
         // 2. 恢复 "Java Class" 代码模板为默认配置
@@ -333,12 +333,12 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
                 FileTemplateConfigurable configurable = new FileTemplateConfigurable(project);
                 setTemplates(templateManager, configurable, restoredTemplate, templateManagerImpl);
 
-                log.info("已恢复 '{}' 代码模板为默认配置", JAVA_CLASS_TEMPLATE_NAME);
+                log.debug("已恢复 '{}' 代码模板为默认配置", JAVA_CLASS_TEMPLATE_NAME);
             } else {
                 log.debug("'{}' 模板不是我们设置的模板，无需恢复", JAVA_CLASS_TEMPLATE_NAME);
             }
         } catch (Exception e) {
-            log.warn("恢复 '{}' 代码模板失败，尝试使用硬编码的默认模板", JAVA_CLASS_TEMPLATE_NAME, e);
+            log.debug("恢复 '{}' 代码模板失败，尝试使用硬编码的默认模板", JAVA_CLASS_TEMPLATE_NAME, e);
             // 如果获取默认模板失败，使用硬编码的默认模板
             restoreJavaClassTemplateWithHardcodedDefault(templateManager, project);
         }
@@ -359,7 +359,7 @@ public class JavadocFileTemplatesHandler implements ProjectActivity, ProjectMana
         if (currentText.trim().equals(JAVA_CLASS_CODE_TEMPLATE.trim())) {
             removeTemplate(templateManager, javaClassTemplate, DEFAULT_JAVA_CLASS_JAVADOC_TEMPLATE, project);
 
-            log.info("已使用硬编码默认模板恢复 'Java Class' 代码模板");
+            log.debug("已使用硬编码默认模板恢复 'Java Class' 代码模板");
         }
     }
 

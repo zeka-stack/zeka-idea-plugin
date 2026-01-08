@@ -28,8 +28,8 @@ class NotificationUtilTest {
      */
     @Test
     void test() throws Exception {
-        log.info("{}", NotificationUtil.cleanPluginName("IntelliAI Stack"));
-        log.info("{}", NotificationUtil.cleanPluginName("IntelliAI Stack"));
+        log.debug("{}", NotificationUtil.cleanPluginName("IntelliAI Stack"));
+        log.debug("{}", NotificationUtil.cleanPluginName("IntelliAI Stack"));
     }
 
 }

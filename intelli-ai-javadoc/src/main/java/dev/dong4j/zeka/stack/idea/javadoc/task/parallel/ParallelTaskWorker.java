@@ -171,7 +171,7 @@ public class ParallelTaskWorker implements Runnable {
                 // 处理任务（带超时）
                 processTaskWithTimeout(task, taskWrapper, isRetryTask);
             } catch (Exception e) {
-                log.error("工作线程 {} 处理任务时发生异常", threadName, e);
+                log.debug("工作线程 {} 处理任务时发生异常", threadName, e);
                 handleTaskFailure(task, taskWrapper, e.getMessage(), isRetryTask);
             } finally {
                 // 释放文件队列锁
@@ -221,7 +221,7 @@ public class ParallelTaskWorker implements Runnable {
         } catch (TimeoutException e) {
             // 超时处理
             future.cancel(true);
-            log.warn("任务执行超时（{}秒）: {}", DEFAULT_TIMEOUT_SECONDS, task.getFilePath());
+            log.debug("任务执行超时（{}秒）: {}", DEFAULT_TIMEOUT_SECONDS, task.getFilePath());
             handleTaskFailure(task, taskWrapper, "任务执行超时（" + DEFAULT_TIMEOUT_SECONDS + "秒）", isRetryTask);
 
         } catch (Exception e) {
@@ -406,7 +406,7 @@ public class ParallelTaskWorker implements Runnable {
 
         if (errorCode == AIServiceException.ErrorCode.RATE_LIMIT) {
             // 429 错误：标记服务商不可用，销毁所有线程
-            log.error("服务商 {} 出现限流错误（429），销毁所有线程", provider.providerType.getDisplayName());
+            log.debug("服务商 {} 出现限流错误（429），销毁所有线程", provider.providerType.getDisplayName());
             providerManager.markProviderRateLimited(provider);
             // 将任务重新分配给其他可用服务商（如果存在）
             if (providerManager.getAvailableProviderCount() > 0) {

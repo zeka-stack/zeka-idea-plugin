@@ -138,7 +138,7 @@ public class GitHubGraphQLClient {
                 .title(discussionNode.get("title").asText())
                 .build();
 
-            log.info("Successfully created discussion: {}", discussionInfo.getUrl());
+            log.debug("Successfully created discussion: {}", discussionInfo.getUrl());
             return discussionInfo;
         }
     }

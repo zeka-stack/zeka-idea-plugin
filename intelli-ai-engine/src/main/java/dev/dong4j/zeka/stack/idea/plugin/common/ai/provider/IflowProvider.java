@@ -111,11 +111,11 @@ public class IflowProvider extends AICompatibleProvider {
             AIConsoleLoggerUtil.printWarning(project, "服务返回空响应，返回默认模型列表");
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         } catch (IOException e) {
-            LOG.info("IFlow 获取模型列表网络错误", e);
+            LOG.debug("IFlow 获取模型列表网络错误", e);
             AIConsoleLoggerUtil.printError(project, "网络错误: " + e.getMessage());
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         } catch (Exception e) {
-            LOG.info("IFlow 获取模型列表失败", e);
+            LOG.debug("IFlow 获取模型列表失败", e);
             AIConsoleLoggerUtil.printError(project, "获取模型列表失败: " + e.getMessage());
 
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
@@ -142,13 +142,13 @@ public class IflowProvider extends AICompatibleProvider {
             // 检查响应是否成功
             if (json.has("success") && !json.get("success").getAsBoolean()) {
                 String errorMessage = json.has("message") ? json.get("message").getAsString() : "未知错误";
-                LOG.info("IFlow API 返回失败: " + errorMessage);
+                LOG.debug("IFlow API 返回失败: " + errorMessage);
                 return new ArrayList<>();
             }
 
             // 获取 data 对象
             if (!json.has("data") || !json.get("data").isJsonObject()) {
-                LOG.info("IFlow 响应中没有 data 对象");
+                LOG.debug("IFlow 响应中没有 data 对象");
                 return new ArrayList<>();
             }
 
@@ -175,7 +175,7 @@ public class IflowProvider extends AICompatibleProvider {
                 }
             }
         } catch (Exception e) {
-            LOG.info("IFlow 解析模型响应失败", e);
+            LOG.debug("IFlow 解析模型响应失败", e);
         }
         return new ArrayList<>(models);
     }

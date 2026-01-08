@@ -55,7 +55,7 @@ public final class GitCliffBinaryResolver {
             try {
                 binary.toFile().setExecutable(true);
             } catch (Exception e) {
-                log.warn("Git-cliff 二进制设置可执行权限失败: " + binary, e);
+                log.debug("Git-cliff 二进制设置可执行权限失败: " + binary, e);
             }
         }
         return binary;

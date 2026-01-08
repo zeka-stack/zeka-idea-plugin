@@ -68,20 +68,20 @@ final class UpdaterChecker {
 
             return result;
         } catch (NoSuchMethodException e) {
-            LOG.warn("无法找到更新检查方法，可能是不支持的 IntelliJ 版本", e);
+            LOG.debug("无法找到更新检查方法，可能是不支持的 IntelliJ 版本", e);
             return Collections.emptyList();
         } catch (IllegalAccessException e) {
-            LOG.warn("无法访问更新检查方法，可能是权限问题", e);
+            LOG.debug("无法访问更新检查方法，可能是权限问题", e);
             return Collections.emptyList();
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
-            LOG.warn("调用更新检查方法时发生异常", Objects.requireNonNullElse(cause, e));
+            LOG.debug("调用更新检查方法时发生异常", Objects.requireNonNullElse(cause, e));
             return Collections.emptyList();
         } catch (ClassCastException e) {
-            LOG.warn("返回类型转换失败，可能是不支持的 IntelliJ 版本", e);
+            LOG.debug("返回类型转换失败，可能是不支持的 IntelliJ 版本", e);
             return Collections.emptyList();
         } catch (Exception e) {
-            LOG.warn("检查插件更新时发生未知异常", e);
+            LOG.debug("检查插件更新时发生未知异常", e);
             return Collections.emptyList();
         }
     }

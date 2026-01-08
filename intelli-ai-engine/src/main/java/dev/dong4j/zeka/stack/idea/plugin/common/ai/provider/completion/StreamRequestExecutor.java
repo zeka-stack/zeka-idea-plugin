@@ -152,6 +152,7 @@ public class StreamRequestExecutor {
                                     @NotNull AIStreamResponseListener listener) throws IOException {
         StringBuilder fullText = new StringBuilder();
         StreamChunkParser parser = selectStreamChunkParser();
+        LOG.trace("流式响应解析器: " + parser.getClass().getName());
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
         try (BufferedReader reader = new BufferedReader(
@@ -228,7 +229,7 @@ public class StreamRequestExecutor {
         try {
             return JsonParser.parseString(jsonData).getAsJsonObject();
         } catch (Exception e) {
-            LOG.warn("Failed to parse stream chunk JSON", e);
+            LOG.debug("Failed to parse stream chunk JSON", e);
             return null;
         }
     }
@@ -271,11 +272,20 @@ public class StreamRequestExecutor {
      */
     private StreamChunkParser selectStreamChunkParser() {
         List<StreamParserRule> rules = new ArrayList<>();
-        rules.add(new StreamParserRule("https://dashscope.aliyuncs.com", AIProviderType.QIANWEN, "qwen",
+        rules.add(new StreamParserRule("https://dashscope.aliyuncs.com",
+                                       AIProviderType.QIANWEN,
+                                       "qwen",
                                        new DashscopeStreamChunkParser()));
-        rules.add(new StreamParserRule("http://localhost:11434", AIProviderType.OLLAMA, null,
+
+        rules.add(new StreamParserRule("http://localhost:11434",
+                                       AIProviderType.OLLAMA,
+                                       null,
                                        new OllamaStreamChunkParser()));
-        rules.add(new StreamParserRule("minimax", null, "minimax", new MiniMaxStreamChunkParser()));
+
+        rules.add(new StreamParserRule("minimax",
+                                       null,
+                                       "minimax",
+                                       new MiniMaxStreamChunkParser()));
 
         String baseUrl = config.baseUrl == null ? "" : config.baseUrl;
         String modelName = config.modelName == null ? "" : config.modelName;

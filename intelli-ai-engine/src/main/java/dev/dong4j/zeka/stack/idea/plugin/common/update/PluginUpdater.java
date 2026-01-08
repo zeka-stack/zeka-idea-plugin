@@ -89,7 +89,7 @@ public class PluginUpdater {
         // 检查是否启用自动更新
         AIProviderSettings settings = AIProviderSettings.getInstance();
         if (!settings.lastUpdateCheck) {
-            LOG.info("自动更新检查已禁用，跳过更新检查");
+            LOG.debug("自动更新检查已禁用，跳过更新检查");
             return;
         }
 
@@ -106,7 +106,7 @@ public class PluginUpdater {
                 });
             }
         } catch (Exception e) {
-            LOG.warn("检查插件更新失败", e);
+            LOG.debug("检查插件更新失败", e);
         }
     }
 
@@ -144,7 +144,7 @@ public class PluginUpdater {
                     pluginIds.add(pluginId);
                     LOG.debug("注册插件更新检查: " + pluginId.getIdString());
                 } catch (Exception e) {
-                    LOG.warn("获取插件更新信息失败", e);
+                    LOG.debug("获取插件更新信息失败", e);
                 }
             }
         } catch (Exception e) {
@@ -223,7 +223,7 @@ public class PluginUpdater {
 
                 UpdateChecker.updateAndShowResult(project, settingsCopy);
             } catch (Exception e) {
-                LOG.error("安装插件更新失败", e);
+                LOG.debug("安装插件更新失败", e);
                 ApplicationManager.getApplication().invokeLater(() -> {
                     NotificationUtil.showError(project, AICommonBundle.message("plugin.update.install.failed", e.getMessage()));
                 });

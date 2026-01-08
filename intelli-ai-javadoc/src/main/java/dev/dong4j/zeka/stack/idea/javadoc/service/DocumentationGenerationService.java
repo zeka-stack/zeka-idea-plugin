@@ -49,11 +49,11 @@ public class DocumentationGenerationService {
                                       @NotNull Consumer<TaskStatistics> onComplete) {
 
         if (tasks.isEmpty()) {
-            log.warn("任务列表为空，跳过生成");
+            log.debug("任务列表为空，跳过生成");
             return;
         }
 
-        log.info("开始生成文档，任务数量: {}, 目标: {}", tasks.size(), targetDescription);
+        log.debug("开始生成文档，任务数量: {}, 目标: {}", tasks.size(), targetDescription);
 
         // 在后台任务中处理
         ProgressManager.getInstance().run(
@@ -75,14 +75,14 @@ public class DocumentationGenerationService {
 
                     if (success) {
                         TaskStatistics stats = executor.getStatistics();
-                        log.info("文档生成完成: {}", stats);
+                        log.debug("文档生成完成: {}", stats);
 
                         // 在 EDT 中调用完成回调
                         ApplicationManager.getApplication().invokeLater(() -> {
                             onComplete.accept(stats);
                         });
                     } else {
-                        log.warn("文档生成失败");
+                        log.debug("文档生成失败");
                     }
                 }
             }

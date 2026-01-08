@@ -64,14 +64,14 @@ public class AgentServerLifecycleListener implements ProjectActivity, AppLifecyc
                 IntelliAgentManager manager = IntelliAgentManager.getInstance();
                 // 检查 jar 文件是否存在
                 if (Files.exists(manager.resolveJarPath(intelliAgentSettings))) {
-                    LOG.info("自动启动 IntelliAI Agent（应用启动时）");
+                    LOG.debug("自动启动 IntelliAI Agent（应用启动时）");
                     manager.startAgent(intelliAgentSettings);
                 } else {
-                    LOG.warn("IntelliAI Agent jar 文件不存在，跳过自动启动");
+                    LOG.debug("IntelliAI Agent jar 文件不存在，跳过自动启动");
                 }
             }
         } catch (Exception e) {
-            LOG.warn("自动启动 IntelliAI Agent 失败", e);
+            LOG.debug("自动启动 IntelliAI Agent 失败", e);
         }
         return Unit.INSTANCE;
     }

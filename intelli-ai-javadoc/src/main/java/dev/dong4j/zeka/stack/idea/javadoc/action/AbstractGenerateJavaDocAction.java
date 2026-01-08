@@ -106,7 +106,7 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
 
         if (needEditor && editor == null) {
             // 没有编辑器, 直接退出逻辑
-            log.info("[编辑器右键菜单] 没有编辑器对象, 退出逻辑");
+            log.debug("[编辑器右键菜单] 没有编辑器对象, 退出逻辑");
             return;
         }
 
@@ -118,21 +118,21 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         // 如果为 null, 就为整个文件生成 Javadoc
         if (editor == null) {
             String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
-            log.info("为文件生成文档: {} ({})", psiFile.getName(), fileType);
+            log.debug("为文件生成文档: {} ({})", psiFile.getName(), fileType);
             tasks = collector.collectFromFile(psiFile);
         } else {
             String fileType = psiFile instanceof KtFile ? PluginContents.KOTLIN : PluginContents.JAVA;
-            log.info("为正在编辑的 {} 文件生成文档: {}", fileType, psiFile.getName());
+            log.debug("为正在编辑的 {} 文件生成文档: {}", fileType, psiFile.getName());
             // 定位元素
             PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElement(editor, psiFile);
             if (locateResult == null) {
                 // 无法定位，直接退出逻辑
-                log.info("[编辑器] 无法定位，退出逻辑");
+                log.debug("[编辑器] 无法定位，退出逻辑");
                 onLocateFailed(project);
                 return;
             }
             targetDescription = PsiElementLocator.getElementDescription(locateResult.element());
-            log.info("智能定位到: {}", targetDescription);
+            log.debug("智能定位到: {}", targetDescription);
             tasks = collector.collectFromElement(locateResult.element());
         }
         // 生成文档

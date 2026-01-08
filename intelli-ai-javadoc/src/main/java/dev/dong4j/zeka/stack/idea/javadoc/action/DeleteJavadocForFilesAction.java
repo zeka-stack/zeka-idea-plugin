@@ -70,7 +70,7 @@ public class DeleteJavadocForFilesAction extends AnAction {
             return;
         }
 
-        log.info("为 {} 个文件/目录删除 Javadoc", files.length);
+        log.debug("为 {} 个文件/目录删除 Javadoc", files.length);
 
         // 在后台线程中收集文件（使用 ReadAction 保护 PSI 访问）
         ReadAction.nonBlocking(() -> {

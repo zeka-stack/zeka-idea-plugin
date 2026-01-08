@@ -88,7 +88,7 @@ public class FeedbackService {
                 .build();
 
         } catch (IOException e) {
-            log.error("Failed to submit feedback", e);
+            log.debug("Failed to submit feedback", e);
             return FeedbackResponse.builder()
                 .success(false)
                 .error("提交反馈失败: " + e.getMessage())
@@ -186,7 +186,7 @@ public class FeedbackService {
         String categoryId = gitHubProperties.getCategory().get(categoryKey);
 
         if (!StringUtils.hasText(categoryId)) {
-            log.warn("Category ID not found for category: {}, using GENERAL", categoryKey);
+            log.debug("Category ID not found for category: {}, using GENERAL", categoryKey);
             categoryId = gitHubProperties.getCategory().get("general");
         }
 

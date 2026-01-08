@@ -103,7 +103,7 @@ public class ParallelTaskProcessor {
         final List<AIProviderConfig> aiProviderTypes = getAiProviderTypes();
 
         if (aiProviderTypes.isEmpty()) {
-            log.warn("性能模式启用但无可用提供商");
+            log.debug("性能模式启用但无可用提供商");
             return false;
         }
 

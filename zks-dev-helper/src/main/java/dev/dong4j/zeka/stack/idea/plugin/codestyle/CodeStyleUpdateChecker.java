@@ -62,17 +62,17 @@ public final class CodeStyleUpdateChecker {
         CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings = settings.getCodeStyleUpdateSettings();
 
         if (updateSettings == null || !updateSettings.isAutoUpdate()) {
-            LOG.info("代码样式自动更新检查未启用，跳过启动");
+            LOG.debug("代码样式自动更新检查未启用，跳过启动");
             return;
         }
 
         String downloadUrl = updateSettings.getDownloadUrl() != null ? updateSettings.getDownloadUrl().trim() : "";
         if (downloadUrl.isEmpty() || (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://"))) {
-            LOG.info("下载地址未配置或为本地路径，跳过自动更新检查");
+            LOG.debug("下载地址未配置或为本地路径，跳过自动更新检查");
             return;
         }
 
-        LOG.info("启动代码样式自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
+        LOG.debug("启动代码样式自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
 
         timer = new Timer("CodeStyleUpdateChecker", true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -91,7 +91,7 @@ public final class CodeStyleUpdateChecker {
             timer.cancel();
             timer = null;
             lastNotifiedVersion = null; // 清除已通知版本记录
-            LOG.info("停止代码样式自动更新检查器");
+            LOG.debug("停止代码样式自动更新检查器");
         }
     }
 
@@ -140,7 +140,7 @@ public final class CodeStyleUpdateChecker {
             if (localVersion == null || !localVersion.equals(latestVersion)) {
                 // 避免重复通知同一版本
                 if (!latestVersion.equals(lastNotifiedVersion)) {
-                    LOG.info("发现新版本代码样式: " + latestVersion + " (当前版本: " + (localVersion != null ? localVersion : "无") + ")");
+                    LOG.debug("发现新版本代码样式: " + latestVersion + " (当前版本: " + (localVersion != null ? localVersion : "无") + ")");
                     showUpdateNotification(latestVersion, localVersion, updateSettings);
                     lastNotifiedVersion = latestVersion;
                 } else {
@@ -152,7 +152,7 @@ public final class CodeStyleUpdateChecker {
                 lastNotifiedVersion = null;
             }
         } catch (Exception e) {
-            LOG.warn("检查代码样式更新失败", e);
+            LOG.debug("检查代码样式更新失败", e);
         }
     }
 
@@ -253,9 +253,9 @@ public final class CodeStyleUpdateChecker {
                     });
                 }
 
-                LOG.info("代码样式更新成功");
+                LOG.debug("代码样式更新成功");
             } catch (IOException e) {
-                LOG.warn("下载代码样式失败", e);
+                LOG.debug("下载代码样式失败", e);
                 if (project != null) {
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showError(project,

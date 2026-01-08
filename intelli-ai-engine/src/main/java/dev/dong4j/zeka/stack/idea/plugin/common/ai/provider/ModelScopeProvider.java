@@ -86,7 +86,7 @@ public class ModelScopeProvider extends AICompatibleProvider {
                     try {
                         return fetchModelsPage(page, apiKey);
                     } catch (Exception e) {
-                        LOG.info("ModelScope 获取第 " + page + " 页失败", e);
+                        LOG.debug("ModelScope 获取第 " + page + " 页失败", e);
                         AIConsoleLoggerUtil.printWarning(project, "第 " + page + " 页请求失败: " + e.getMessage());
                         return new ArrayList<>();
                     }
@@ -101,7 +101,7 @@ public class ModelScopeProvider extends AICompatibleProvider {
                     List<String> pageModels = future.get();
                     allModels.addAll(pageModels);
                 } catch (Exception e) {
-                    LOG.info("ModelScope 合并结果失败", e);
+                    LOG.debug("ModelScope 合并结果失败", e);
                     AIConsoleLoggerUtil.printWarning(project, "合并结果时出错: " + e.getMessage());
                 }
             }

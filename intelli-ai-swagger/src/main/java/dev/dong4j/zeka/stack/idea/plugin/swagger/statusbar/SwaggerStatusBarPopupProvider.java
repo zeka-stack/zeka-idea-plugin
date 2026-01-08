@@ -201,7 +201,7 @@ public class SwaggerStatusBarPopupProvider implements AIStatusBarPopupProvider {
                         switchDefaultProvider(config.providerType, copy);
                     });
                 } catch (Exception exception) {
-                    log.error("切换默认服务商失败", exception);
+                    log.debug("切换默认服务商失败", exception);
                 }
             }, ModalityState.defaultModalityState());
         }

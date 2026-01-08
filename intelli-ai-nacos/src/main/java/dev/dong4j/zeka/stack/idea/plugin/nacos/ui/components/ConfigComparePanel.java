@@ -285,14 +285,14 @@ public class ConfigComparePanel extends JPanel {
                     }
                     return client.getConfigHistoryList(namespace, group, dataId, 1, 100);
                 } catch (Exception e) {
-                    LOG.error("Failed to load history versions", e);
+                    LOG.debug("Failed to load history versions", e);
                     throw new RuntimeException(e);
                 }
             }, AppExecutorUtil.getAppExecutorService())
             .whenComplete((items, throwable) -> {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     if (throwable != null) {
-                        LOG.error("Failed to load history versions", throwable);
+                        LOG.debug("Failed to load history versions", throwable);
                         if (historyVersionComboBox != null) {
                             historyVersionComboBox.removeAllItems();
                         }
@@ -346,14 +346,14 @@ public class ConfigComparePanel extends JPanel {
                     ConfigHistoryItem historyItem = client.getConfigHistory(namespace, group, dataId, nid);
                     return historyItem.getContent();
                 } catch (Exception e) {
-                    LOG.error("Failed to load history version", e);
+                    LOG.debug("Failed to load history version", e);
                     throw new RuntimeException(e);
                 }
             }, AppExecutorUtil.getAppExecutorService())
             .whenComplete((content, throwable) -> {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     if (throwable != null) {
-                        LOG.error("Failed to load history version", throwable);
+                        LOG.debug("Failed to load history version", throwable);
                         if (historyEditor != null) {
                             historyEditor.setContent(NacosBundle.message("compare.error.history.load", throwable.getMessage()));
                         }
@@ -385,7 +385,7 @@ public class ConfigComparePanel extends JPanel {
      */
     private void saveLocalFile() {
         if (localFile == null) {
-            LOG.warn("Local file is null, cannot save");
+            LOG.debug("Local file is null, cannot save");
             return;
         }
 
@@ -406,7 +406,7 @@ public class ConfigComparePanel extends JPanel {
                         }
                     }
                 } catch (Exception e) {
-                    LOG.error("Failed to save local file", e);
+                    LOG.debug("Failed to save local file", e);
                 }
             });
         });

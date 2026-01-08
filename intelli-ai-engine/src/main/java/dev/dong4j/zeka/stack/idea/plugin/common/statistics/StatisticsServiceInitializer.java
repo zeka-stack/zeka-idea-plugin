@@ -62,14 +62,14 @@ public final class StatisticsServiceInitializer {
     public static void startService() {
         StatisticsService service = getService();
         service.start();
-        LOG.info("Statistics service started");
+        LOG.debug("Statistics service started");
     }
 
     /** 停止统计服务 */
     public static void stopService() {
         if (serviceInstance != null) {
             serviceInstance.stop();
-            LOG.info("Statistics service stopped");
+            LOG.debug("Statistics service stopped");
         }
     }
 

@@ -60,7 +60,7 @@ public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecy
                 updateChecker.start();
             }
         } catch (Exception e) {
-            LOG.warn("自动启动代码样式更新检查器失败", e);
+            LOG.debug("自动启动代码样式更新检查器失败", e);
         }
         return Unit.INSTANCE;
     }
@@ -73,15 +73,15 @@ public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecy
     @Override
     public void appClosing() {
         try {
-            LOG.info("appClosing() 方法被调用：停止代码样式更新检查器");
+            LOG.debug("appClosing() 方法被调用：停止代码样式更新检查器");
 
             // 停止更新检查器
             CodeStyleUpdateChecker updateChecker = CodeStyleUpdateChecker.getInstance();
             updateChecker.stop();
 
-            LOG.info("代码样式更新检查器已停止");
+            LOG.debug("代码样式更新检查器已停止");
         } catch (Exception e) {
-            LOG.warn("停止代码样式更新检查器失败", e);
+            LOG.debug("停止代码样式更新检查器失败", e);
         }
     }
 }

@@ -80,7 +80,7 @@ public final class ArchiveTreeStructureProvider implements TreeStructureProvider
             }
             return new java.util.ArrayList<>(nodes);
         } catch (Exception ex) {
-            LOG.warn("Failed to build project view nodes for archive: " + localFile.getPath(), ex);
+            LOG.debug("Failed to build project view nodes for archive: " + localFile.getPath(), ex);
             return originalSnapshot;
         }
     }

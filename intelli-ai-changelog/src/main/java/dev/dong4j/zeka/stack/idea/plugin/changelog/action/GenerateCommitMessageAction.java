@@ -117,16 +117,16 @@ public class GenerateCommitMessageAction extends AnAction {
             return;
         }
 
-        log.info("Git 提交页面：开始生成提交记录");
+        log.debug("Git 提交页面：开始生成提交记录");
         // 获取提交的文件变更
         Collection<Change> changes = getSelectedChanges(commitWorkflowHandler);
         if (changes.isEmpty()) {
-            log.warn("Git 提交页面：未选择任何文件变更");
+            log.debug("Git 提交页面：未选择任何文件变更");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
             return;
         }
 
-        log.info("Git 提交页面：找到 {} 个文件变更", changes.size());
+        log.debug("Git 提交页面：找到 {} 个文件变更", changes.size());
 
         // 读取提交面板的提交信息控件，用于直接写入提交记录
         Object commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);

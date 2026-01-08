@@ -550,7 +550,7 @@ public final class IntelliAgentPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
             // 可以显示一个提示，但这里暂时不显示，避免干扰
         } catch (Exception e) {
-            LOG.warn("复制到剪贴板失败: " + text, e);
+            LOG.debug("复制到剪贴板失败: " + text, e);
         }
     }
 
@@ -720,7 +720,7 @@ public final class IntelliAgentPanel {
                     }
                 }
             } catch (Exception e) {
-                LOG.warn("获取 IntelliAI Agent 最新版本失败", e);
+                LOG.debug("获取 IntelliAI Agent 最新版本失败", e);
             }
             IntelliAgentManager.JarInfo jarInfo = intelliAgentManager.resolveLocalJarInfo(settings);
             boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
@@ -866,7 +866,7 @@ public final class IntelliAgentPanel {
                         localSize = Files.size(savedPath);
                     }
                 } catch (Exception sizeException) {
-                    LOG.warn("读取 IntelliAI Agent jar 大小失败: " + savedPath, sizeException);
+                    LOG.debug("读取 IntelliAI Agent jar 大小失败: " + savedPath, sizeException);
                 }
                 long finalLocalSize = localSize;
                 // 下载完成，强制更新进度条到 100%

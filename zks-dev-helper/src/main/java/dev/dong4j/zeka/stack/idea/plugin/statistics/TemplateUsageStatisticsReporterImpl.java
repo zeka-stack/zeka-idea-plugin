@@ -52,12 +52,12 @@ public class TemplateUsageStatisticsReporterImpl implements TemplateUsageStatist
                     // 比如发送到服务器、写入本地文件等
                     logUsageStatistics(usageModel);
                 } catch (Exception e) {
-                    LOG.warn("Failed to report usage statistics", e);
+                    LOG.debug("Failed to report usage statistics", e);
                 }
             });
 
         } catch (Exception e) {
-            LOG.warn("Failed to create usage model", e);
+            LOG.debug("Failed to create usage model", e);
         }
     }
 
@@ -70,7 +70,7 @@ public class TemplateUsageStatisticsReporterImpl implements TemplateUsageStatist
      */
     private void logUsageStatistics(UsageModel usageModel) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        LOG.info("Template usage statistics: template=" + usageModel.getTemplateName() +
+        LOG.debug("Template usage statistics: template=" + usageModel.getTemplateName() +
                  ", timestamp=" + timestamp +
                  ", ide=" + usageModel.getIde() +
                  ", ideVersion=" + usageModel.getIdeVersion() +

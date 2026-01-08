@@ -81,7 +81,7 @@ public class OpenAiApiServer {
         // 启动服务器
         httpServer.start();
 
-        log.info("OpenAI API Server started on http://127.0.0.1:{}", port);
+        log.debug("OpenAI API Server started on http://127.0.0.1:{}", port);
     }
 
     /**
@@ -91,7 +91,7 @@ public class OpenAiApiServer {
         if (httpServer != null) {
             httpServer.stop(0);
             httpServer = null;
-            log.info("OpenAI API Server stopped");
+            log.debug("OpenAI API Server stopped");
         }
     }
 
@@ -304,7 +304,7 @@ public class OpenAiApiServer {
                 os.flush();
             } catch (IOException e) {
                 // 处理错误
-                log.error("Failed to write SSE data", e);
+                log.debug("Failed to write SSE data", e);
             }
         }
 

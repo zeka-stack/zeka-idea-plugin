@@ -90,7 +90,7 @@ public class StatisticsUploader {
 
             return true;
         } catch (Exception e) {
-            LOG.error("Failed to upload statistics", e);
+            LOG.debug("Failed to upload statistics", e);
             return false;
         }
     }
@@ -119,7 +119,7 @@ public class StatisticsUploader {
                 }
             }
         } catch (Exception e) {
-            LOG.error("Failed to upload file: " + dataFile.getName(), e);
+            LOG.debug("Failed to upload file: " + dataFile.getName(), e);
         }
     }
 
@@ -150,7 +150,7 @@ public class StatisticsUploader {
         int retryCount = uploadRetryCount.getOrDefault(batchKey, new AtomicInteger(0)).get();
 
         if (retryCount >= 3) {
-            LOG.warn("Batch exceeded max retry count, skipping: " + batchKey);
+            LOG.debug("Batch exceeded max retry count, skipping: " + batchKey);
             return true; // 跳过，继续上报其他批次
         }
 
@@ -169,7 +169,7 @@ public class StatisticsUploader {
                 return false;
             }
         } catch (Exception e) {
-            LOG.error("Failed to upload batch", e);
+            LOG.debug("Failed to upload batch", e);
             uploadRetryCount.computeIfAbsent(batchKey, k -> new AtomicInteger(0)).incrementAndGet();
             return false;
         }
@@ -279,7 +279,7 @@ public class StatisticsUploader {
             Files.write(indexFile, (count + "\n").getBytes(), java.nio.file.StandardOpenOption.CREATE,
                         java.nio.file.StandardOpenOption.APPEND);
         } catch (IOException e) {
-            LOG.error("Failed to mark as uploaded", e);
+            LOG.debug("Failed to mark as uploaded", e);
         }
     }
 
