@@ -157,17 +157,7 @@ public class PsiElementLocator {
      * @since 1.0.0
      */
     public enum LocateType {
-        /**
-         * 方法级别的定位类型
-         * <p>
-         * 用于标识方法级别的代码元素定位
-         *
-         * @author zeka.stack.team
-         * @version 1.0.0
-         * @email mailto:zeka.stack@gmail.com
-         * @date 2025.11.30
-         * @since 1.0.0
-         */
+        /** 方法级别的定位类型 */
         METHOD,
         /** 字段 (成员变量) */
         FIELD,
@@ -240,8 +230,6 @@ public class PsiElementLocator {
         else if (psiFile instanceof KtFile) {
             return locateKotlinElement((KtFile) psiFile, offset);
         }
-
-        log.debug("Not a supported file type: {}", psiFile.getName());
         return null;
     }
 
@@ -253,23 +241,18 @@ public class PsiElementLocator {
         // 获取光标位置的元素
         PsiElement elementAtCaret = psiFile.findElementAt(offset);
         if (elementAtCaret == null) {
-            log.debug("No element at offset: {}", offset);
             return new LocateResult(psiFile, LocateType.FILE, true);
         }
-
-        log.debug("Element at caret: {} ({})", elementAtCaret.getText(), elementAtCaret.getClass().getSimpleName());
 
         // 1. 优先查找方法
         PsiMethod method = PsiTreeUtil.getParentOfType(elementAtCaret, PsiMethod.class);
         if (method != null) {
-            log.info("Located method: {}", method.getName());
             return new LocateResult(method, LocateType.METHOD, false);
         }
 
         // 2. 查找字段（成员变量）
         PsiField field = PsiTreeUtil.getParentOfType(elementAtCaret, PsiField.class);
         if (field != null) {
-            log.info("Located field: {}", field.getName());
             return new LocateResult(field, LocateType.FIELD, false);
         }
 
@@ -278,17 +261,14 @@ public class PsiElementLocator {
         if (psiClass != null) {
             // 检查是否在类声明行（类名附近）
             if (isOnClassDeclaration(elementAtCaret, psiClass)) {
-                log.info("Located class (on declaration): {}", psiClass.getName());
                 return new LocateResult(psiClass, LocateType.CLASS, false);
             } else {
                 // 光标在类内部但不在特定成员上，为整个类生成
-                log.info("Located class (inside class body): {}", psiClass.getName());
                 return new LocateResult(psiClass, LocateType.CLASS, true);
             }
         }
 
         // 4. 默认为整个文件生成
-        log.info("No specific element found, using whole file");
         return new LocateResult(psiFile, LocateType.FILE, true);
     }
 
@@ -300,23 +280,18 @@ public class PsiElementLocator {
         // 获取光标位置的元素
         PsiElement elementAtCaret = ktFile.findElementAt(offset);
         if (elementAtCaret == null) {
-            log.debug("No element at offset: {}", offset);
             return new LocateResult(ktFile, LocateType.FILE, true);
         }
-
-        log.debug("Element at caret: {} ({})", elementAtCaret.getText(), elementAtCaret.getClass().getSimpleName());
 
         // 1. 优先查找函数
         KtNamedFunction function = PsiTreeUtil.getParentOfType(elementAtCaret, KtNamedFunction.class);
         if (function != null) {
-            log.info("Located function: {}", function.getName());
             return new LocateResult(function, LocateType.METHOD, false);
         }
 
         // 2. 查找属性
         KtProperty property = PsiTreeUtil.getParentOfType(elementAtCaret, KtProperty.class);
         if (property != null) {
-            log.info("Located property: {}", property.getName());
             return new LocateResult(property, LocateType.FIELD, false);
         }
 
@@ -325,17 +300,14 @@ public class PsiElementLocator {
         if (ktClass != null) {
             // 检查是否在类声明行（类名附近）
             if (isOnKotlinClassDeclaration(elementAtCaret, ktClass)) {
-                log.info("Located class (on declaration): {}", ktClass.getName());
                 return new LocateResult(ktClass, LocateType.CLASS, false);
             } else {
                 // 光标在类内部但不在特定成员上，为整个类生成
-                log.info("Located class (inside class body): {}", ktClass.getName());
                 return new LocateResult(ktClass, LocateType.CLASS, true);
             }
         }
 
         // 4. 默认为整个文件生成
-        log.info("No specific element found, using whole file");
         return new LocateResult(ktFile, LocateType.FILE, true);
     }
 
