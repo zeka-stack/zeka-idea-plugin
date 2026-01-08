@@ -30,7 +30,7 @@ public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction
      * 首先尝试获取当前编辑器, 如果存在编辑器, 则调用父类的 process 方法处理当前文件.
      * 如果没有编辑器, 则尝试获取选中的文件或目录, 并委托给 GenerateJavadocForFilesAction 处理.
      *
-     * @param e 动作事件对象
+     * @param e 动作事件对象, 不能为空
      */
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {

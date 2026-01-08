@@ -1,23 +1,37 @@
 package dev.dong4j.zeka.stack.idea.javadoc.action;
 
+import com.intellij.ide.HelpTooltip;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.actionSystem.Shortcut;
+import com.intellij.openapi.actionSystem.impl.ActionButton;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
+import com.intellij.openapi.ui.MessageType;
+import com.intellij.openapi.ui.popup.Balloon;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.FilePath;
+import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
-import com.intellij.openapi.vcs.changes.ChangeListManager;
 import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vcs.changes.CurrentContentRevision;
 import com.intellij.openapi.vfs.JarFileSystem;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.wm.WindowManager;
+import com.intellij.ui.awt.RelativePoint;
+import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.awt.Component;
+import java.awt.Point;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +41,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
 import dev.dong4j.zeka.stack.idea.javadoc.git.CommitJavadocGenerator;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import icons.AIJicons;
@@ -66,15 +81,18 @@ public class GenerateJavadocForCommitAction extends AnAction {
         }
 
         // 设置按钮文本和图标
-        e.getPresentation().setText(JavadocBundle.message("commit.action.text"));
+        String description = JavadocBundle.message("commit.action.description");
+        e.getPresentation().setText("");
+        e.getPresentation().setDescription(description);
         e.getPresentation().setIcon(AIJicons.AIJ_16);
+        e.getPresentation().putClientProperty(ActionButton.CUSTOM_HELP_TOOLTIP,
+                                              new HelpTooltip()
+                                                  .setDescription(description)
+                                                  .setShortcut(getFirstShortcut())
+                                                  .setTitle(JavadocBundle.message("commit.action.text")));
 
-        // 检查是否有 Java 文件变更（需要在 read-action 中访问 VCS 数据）
-        boolean hasJavaFiles = ApplicationManager.getApplication().runReadAction(
-            (Computable<Boolean>) () -> hasJavaFileChanges(project)
-                                                                                );
-        e.getPresentation().setEnabled(hasJavaFiles);
-        e.getPresentation().setVisible(hasJavaFiles);
+        e.getPresentation().setEnabled(true);
+        e.getPresentation().setVisible(true);
     }
 
     /**
@@ -90,17 +108,45 @@ public class GenerateJavadocForCommitAction extends AnAction {
     }
 
     /**
-     * 执行动作
+     * 获取快捷键集合中的第一个快捷键
+     * <p> 从当前动作的快捷键集合中返回第一个快捷键, 如果集合为空则返回 null.
      *
-     * <p> 当用户点击按钮时, 检测提交的 Java 文件中缺少 Javadoc 的元素,
-     * 并批量生成文档注释.
+     * @return 第一个快捷键, 如果无快捷键则返回 null
+     */
+    private Shortcut getFirstShortcut() {
+        Shortcut[] shortcuts = getShortcutSet().getShortcuts();
+        return shortcuts.length > 0 ? shortcuts[0] : null;
+    }
+
+    /**
+     * 执行动作: 在 Git 提交页面检测并生成缺失的 Javadoc 注释
+     * <p> 当用户点击按钮时, 该方法会检测当前提交的 Java 文件中缺少 Javadoc 的元素, 并调用文档生成器批量生成注释.
+     * <p> 执行流程如下:
+     * <ul>
+     *   <li> 检查项目是否有效且未被释放 </li>
+     *   <li> 获取当前提交工作流处理器, 若未找到则提示用户未选择变更 </li>
+     *   <li> 验证是否配置了有效的 AI 提供商, 若未配置则直接返回 </li>
+     *   <li> 记录调试日志, 开始检测缺少 Javadoc 的代码 </li>
+     *   <li> 获取用户选择的文件变更列表 </li>
+     *   <li> 若无变更, 则提示用户未选择任何文件 </li>
+     *   <li> 过滤出符合条件的 Java 或 Kotlin 文件 </li>
+     *   <li> 若未找到任何 Java/Kotlin 文件, 则直接返回 </li>
+     *   <li> 记录找到的文件数量 </li>
+     *   <li> 创建文档生成器并调用其生成方法, 对变更和文件进行批量注释生成 </li>
+     * </ul>
      *
-     * @param e 动作事件
+     * @param e 动作事件, 用于获取项目上下文和提交工作流处理器
      */
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
+        if (commitWorkflowHandler == null) {
+            NotificationUtil.showWarning(project, JavadocBundle.message("commit.no.selected.changes"));
             return;
         }
 
@@ -114,11 +160,10 @@ public class GenerateJavadocForCommitAction extends AnAction {
         log.debug("Git 提交页面：开始检测缺少 Javadoc 的代码");
 
         // 在 ReadAction 中获取提交的文件变更和过滤 Java 文件
-        Collection<Change> changes = ApplicationManager.getApplication().runReadAction(
-            (Computable<Collection<Change>>) () -> getCommittedChanges(project)
-                                                                                      );
+        Collection<Change> changes = getSelectedChanges(commitWorkflowHandler);
         if (changes.isEmpty()) {
-            log.debug("Git 提交页面：没有找到文件变更");
+            log.debug("Git 提交页面：未选择任何文件变更");
+            showActionTip(e, JavadocBundle.message("commit.no.selected.changes"));
             return;
         }
 
@@ -137,57 +182,47 @@ public class GenerateJavadocForCommitAction extends AnAction {
     }
 
     /**
-     * 检查是否有 Java 文件变更
-     * <p> 获取项目的提交变更列表, 并从中筛选出 Java 文件变更. 如果存在 Java 文件变更, 则返回 true; 否则返回 false.
-     *
-     * @param project 项目对象
-     * @return 如果有 Java 文件变更返回 true, 否则返回 false
-     */
-    private boolean hasJavaFileChanges(@NotNull Project project) {
-        Collection<Change> changes = getCommittedChanges(project);
-        return !filterJavaFiles(project, changes).isEmpty();
-    }
-
-    /**
      * 获取提交的文件变更
-     * <p>
-     * 获取所有类型的文件变更，包括：
-     * <ul>
-     *   <li>已暂存的变更（staged changes）</li>
-     *   <li>未暂存的变更（unstaged changes）</li>
-     *   <li>未版本控制的文件（unversioned files）</li>
-     * </ul>
+     * <p> 从给定的 CommitWorkflowHandler 中提取已选择的变更, 并返回变更列表. 如果未选择任何变更, 则返回空列表.
      *
-     * @param project 项目对象
-     * @return 文件变更列表，包括所有类型的变更
+     * @param commitWorkflowHandler 包含 VCS 数据的 CommitWorkflowHandler 对象
+     * @return 文件变更列表, 如果未选择任何变更则返回空列表
      */
     @NotNull
-    private Collection<Change> getCommittedChanges(@NotNull Project project) {
-        ChangeListManager changeListManager = ChangeListManager.getInstance(project);
-
-        // 获取所有已跟踪的变更（包括已暂存和未暂存的）
-        List<Change> allChanges = new ArrayList<>(changeListManager.getAllChanges());
-
-        // 获取未版本控制的文件，并转换为 Change 对象
-        List<FilePath> unversionedFiles = changeListManager.getUnversionedFilesPaths();
-        for (FilePath filePath : unversionedFiles) {
-            // 为未版本控制的文件创建 Change 对象（只有 afterRevision，没有 beforeRevision）
-            ContentRevision revision = new CurrentContentRevision(filePath);
-            allChanges.add(new Change(null, revision));
+    private Collection<Change> getSelectedChanges(@NotNull CommitWorkflowHandler commitWorkflowHandler) {
+        Object ui = invoke(commitWorkflowHandler, "getUi");
+        Object changes = invoke(ui, "getIncludedChanges");
+        List<Change> result = new java.util.ArrayList<>();
+        if (changes instanceof Collection<?> items) {
+            for (Object item : items) {
+                if (item instanceof Change change) {
+                    result.add(change);
+                }
+            }
         }
 
-        return allChanges;
+        Object unversioned = invoke(ui, "getIncludedUnversionedFiles");
+        if (unversioned instanceof Collection<?> items) {
+            for (Object item : items) {
+                if (item instanceof FilePath filePath) {
+                    ContentRevision revision = new CurrentContentRevision(filePath);
+                    result.add(new Change(null, revision));
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
-     * 过滤 Java 文件
+     * 过滤文件变更列表中的 Java 和 Kotlin 文件
      * <p>
-     * 从文件变更列表中筛选出扩展名为 ".java" 的虚拟文件, 并返回这些文件的列表.
-     * 同时会检查文件是否在项目范围内，排除非项目文件和 jar 中的文件.
+     * 从传入的文件变更列表中筛选出扩展名为 ".java" 或 ".kt" 的虚拟文件, 并确保这些文件位于项目范围内, 排除 jar 包中的源码文件.
+     * 该方法必须在 ReadAction 中执行, 以确保安全访问项目文件索引.
      *
-     * @param project 项目对象
-     * @param changes 文件变更列表
-     * @return 包含所有符合条件的 Java 文件的虚拟文件列表
+     * @param project 项目对象, 用于获取项目文件索引和判断文件是否在项目范围内
+     * @param changes 文件变更列表, 包含所有待筛选的文件变更对象
+     * @return 包含所有符合条件的 Java 或 Kotlin 文件的虚拟文件列表, 如果无符合条件的文件则返回空列表
      */
     @NotNull
     private List<VirtualFile> filterJavaFiles(@NotNull Project project,
@@ -202,7 +237,8 @@ public class GenerateJavadocForCommitAction extends AnAction {
                 return changes.stream()
                     .map(Change::getVirtualFile)
                     .filter(file -> file != null
-                                    && PluginContents.JAVA.equalsIgnoreCase(file.getExtension())
+                                    && (PluginContents.JAVA.equalsIgnoreCase(file.getExtension())
+                                        || PluginContents.KOTLIN_EXTENSION.equalsIgnoreCase(file.getExtension()))
                                     && isFileInProject(project, file, fileIndex))
                     .collect(Collectors.toList());
             }
@@ -243,4 +279,60 @@ public class GenerateJavadocForCommitAction extends AnAction {
         // 检查文件是否在项目的源码根目录或资源根目录中
         return fileIndex.isInProject(file);
     }
+
+    /**
+     * 显示动作提示气泡
+     * <p> 在指定组件下方显示一个带警告样式的 HTML 气泡提示, 用于向用户展示提示信息.
+     * <p> 该方法会尝试从动作事件中获取组件上下文, 若失败则尝试从项目窗口获取框架组件作为显示位置.
+     * <p> 气泡提示将在 2500 毫秒后自动淡出.
+     *
+     * @param e       动作事件, 用于获取上下文组件或项目框架
+     * @param message 提示内容的文本, 支持 HTML 格式
+     */
+    private void showActionTip(@NotNull AnActionEvent e, @NotNull String message) {
+        Component component = null;
+        if (e.getInputEvent() != null) {
+            component = e.getInputEvent().getComponent();
+        }
+        if (component == null) {
+            component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT);
+        }
+        if (component == null) {
+            Project project = e.getProject();
+            if (project != null) {
+                component = WindowManager.getInstance().getFrame(project);
+            }
+        }
+        if (component == null) {
+            return;
+        }
+
+        JBPopupFactory.getInstance()
+            .createHtmlTextBalloonBuilder(message, MessageType.WARNING, null)
+            .setFadeoutTime(2500)
+            .createBalloon()
+            .show(new RelativePoint(component, new Point(component.getWidth(), component.getHeight())), Balloon.Position.below);
+    }
+
+    /**
+     * 调用目标对象的指定方法
+     * <p> 通过反射机制获取目标对象的指定方法并调用, 如果目标对象为 null 或者方法调用失败, 则返回 null.
+     *
+     * @param target     目标对象
+     * @param methodName 方法名
+     * @return 方法调用的结果, 如果目标对象为 null 或者方法调用失败, 则返回 null
+     */
+    @Nullable
+    private static Object invoke(@Nullable Object target, @NotNull String methodName) {
+        if (target == null) {
+            return null;
+        }
+        try {
+            Method method = target.getClass().getMethod(methodName);
+            return method.invoke(target);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
 }
