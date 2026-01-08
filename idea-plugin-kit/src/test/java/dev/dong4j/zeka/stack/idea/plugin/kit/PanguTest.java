@@ -72,4 +72,37 @@ class PanguTest {
         assertThat(pangu.spacingText(input)).isEqualTo(expected);
     }
 
+    @Test
+    void hyphenBetweenDigitsAndCjk2() {
+        Pangu pangu = new Pangu();
+        String input = """
+            feat(ai-provider): 添加 AI 请求的阻塞与流式执行器
+
+            - 新增 BlockingRequestExecutor，支持发送阻塞式 HTTP 请求至 AI 服务
+            - 支持基于配置自动校验 API 密钥和处理多种HTTP状态异常
+            - 实现请求与响应日志记录与监听器回调机制
+            - 解析 AI JSON 响应，提取内容和使用的 token 信息，支持验证模式响应解析
+            - 新增 StreamRequestExecutor，支持流式请求发送并处理 SSE 流响应数据
+            - 支持多种 AI 服务提供商的流解析器（OpenAI, Dashscope, Ollama, MiniMax）
+            - 流式响应中区分思考内容和正文内容，支持动态选择对应解析策略
+            - 完善异常处理，网络错误和响应错误通过监听器回调反馈
+            - 提供详细注释说明类与方法用途，便于后续维护和扩展
+            """;
+        String expected = """
+            feat(ai-provider): 添加 AI 请求的阻塞与流式执行器
+
+            - 新增 BlockingRequestExecutor，支持发送阻塞式 HTTP 请求至 AI 服务
+            - 支持基于配置自动校验 API 密钥和处理多种 HTTP 状态异常
+            - 实现请求与响应日志记录与监听器回调机制
+            - 解析 AI JSON 响应，提取内容和使用的 token 信息，支持验证模式响应解析
+            - 新增 StreamRequestExecutor，支持流式请求发送并处理 SSE 流响应数据
+            - 支持多种 AI 服务提供商的流解析器（OpenAI, Dashscope, Ollama, MiniMax）
+            - 流式响应中区分思考内容和正文内容，支持动态选择对应解析策略
+            - 完善异常处理，网络错误和响应错误通过监听器回调反馈
+            - 提供详细注释说明类与方法用途，便于后续维护和扩展
+            """;
+        assertThat(pangu.spacingText(input)).isEqualTo(expected);
+    }
+
+
 }
