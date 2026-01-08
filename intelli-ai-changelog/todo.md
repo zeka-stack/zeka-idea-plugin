@@ -145,3 +145,7 @@ https://github.com/Blarc/ai-commits-intellij-plugin
 ## 2026.01.04
 
 - [x] commit message 生成时, 允许读取消息框中的文本作为上下文以提高准确率(使用用户输入的自然语言 + code diff + 提示词来重写commit message)
+
+## 2026.01.09
+
+- [ ] 提交输入作为上下文有问题, 不会生成 scope
