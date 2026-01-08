@@ -345,6 +345,21 @@ final class ChangelogAiExecutor {
             }
 
             /**
+             * 处理 AI 思考过程中的文本块数据
+             * <p> 当接收到 AI 思考阶段的文本块时, 检查当前线程是否被中断, 若被中断则直接返回.
+             * 否则将该文本块传递给外部监听器进行处理.
+             *
+             * @param chunk AI 思考阶段生成的文本块内容, 不能为空
+             */
+            @Override
+            public void onThinkingChunk(@NotNull String chunk) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                externalListener.onThinkingChunk(chunk);
+            }
+
+            /**
              * 处理完整文本的完成事件
              * <p> 当 AI 流式响应完成时调用此方法, 将完整文本设置到结果引用中, 并通知外部监听器
              * <p> 如果当前线程被中断, 则仅触发计数器减一并返回, 不执行其他操作

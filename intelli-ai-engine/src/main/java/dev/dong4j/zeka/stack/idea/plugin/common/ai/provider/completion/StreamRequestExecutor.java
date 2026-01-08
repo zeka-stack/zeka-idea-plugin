@@ -209,6 +209,7 @@ public class StreamRequestExecutor {
                     }
                     if (chunk.thinking() != null && !chunk.thinking().isEmpty()) {
                         printThinking(chunk.thinking(), inThinking, thinkPrefixPrinted);
+                        listener.onThinkingChunk(chunk.thinking());
                     }
                     if (chunk.content() != null && !chunk.content().isEmpty()) {
                         if (inThinking[0]) {

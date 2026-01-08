@@ -87,15 +87,35 @@ public final class AIProviderSelectionActionGroupFactory {
         return group;
     }
 
+
     /**
-     * 切换服务商动作
+     * 切换 AI 服务商动作类
+     * <p> 用于在 IDE 或应用程序中提供切换当前 AI 服务商配置的功能, 支持动态更新界面显示状态和配置信息.
+     * <p> 该类继承自 {@link AnAction}, 实现用户界面中“切换服务商”操作的逻辑, 包括配置校验, 写入线程执行,UI 线程更新等.
+     * <p> 主要职责:
+     * <ul>
+     *   <li> 初始化切换动作的显示名称, 图标和配置信息 </li>
+     *   <li> 在用户点击时检查配置有效性并执行切换逻辑 </li>
+     *   <li> 在动作更新时动态调整界面显示状态 (如选中状态, 文本, 图标)</li>
+     *   <li> 确保在后台线程中执行配置写入, 避免阻塞 UI 线程 </li>
+     * </ul>
+     * <p> 使用示例:
+     * <pre>{@code
+     * SwitchProviderAction action = new SwitchProviderAction(
+     *     project,
+     *     "AI 设置",
+     *     "切换服务商",
+     *     currentConfig,
+     *     () -> currentConfigSupplier,
+     *     (type, config) -> configUpdater.accept(type, config)
+     * );
+     * }</pre>
      *
-     * @param project               项目对象
-     * @param settingsDisplayName   设置显示名称
-     * @param selectionActionName   选择操作名称
-     * @param config                配置对象
-     * @param currentConfigSupplier 当前配置提供者
-     * @param configUpdater         配置更新消费者
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.08
+     * @since 1.0.0
      */
     private static final class SwitchProviderAction extends AnAction {
         /** 当前操作所在的项目实例 */

@@ -52,8 +52,12 @@ public class CommitMessageGenerator {
     private final Project project;
     /** 全局生成状态映射表, 用于跟踪各项目中提交记录生成任务的运行状态 */
     private static final Map<Project, GenerationState> GENERATION_STATES = new ConcurrentHashMap<>();
-    /** 输入提示动画的延迟时间 (毫秒), 用于控制打字机效果的节奏 */
-    private static final int TYPING_INDICATOR_DELAY_MS = 200;
+    /** 输入提示动画的文本间隔 (毫秒), 用于控制逐字输出速度 */
+    private static final int TYPING_TEXT_DELAY_MS = 45;
+    /** 行与行之间的停顿时间 (毫秒) */
+    private static final int TYPING_LINE_PAUSE_MS = 1000;
+    /** 光标闪烁间隔 (毫秒) */
+    private static final int TYPING_CURSOR_DELAY_MS = 500;
 
     /**
      * 初始化 CommitMessageGenerator 实例
@@ -230,6 +234,13 @@ public class CommitMessageGenerator {
                             buffer.setLength(0);
                         }
 
+                        /**
+                         * 获取与此监听器关联的流取消令牌
+                         * <p> 返回用于控制流操作取消行为的令牌对象, 如果未设置则返回 null
+                         *
+                         * @return 流取消令牌, 可能为 null
+                         * @since 1.0
+                         */
                         @Override
                         public @Nullable StreamCancellationToken cancellationToken() {
                             return cancellationToken;
@@ -257,6 +268,22 @@ public class CommitMessageGenerator {
                             });
                             if (outputSession != null) {
                                 outputSession.append(chunk);
+                            }
+                        }
+
+                        /**
+                         * 处理接收到的思考阶段文本块
+                         * <p> 当接收到思考阶段的文本块时, 若未取消操作且文本非空, 则启动思考状态指示器
+                         *
+                         * @param chunk 接收到的文本块
+                         */
+                        @Override
+                        public void onThinkingChunk(@NotNull String chunk) {
+                            if (state.cancelled.get()) {
+                                return;
+                            }
+                            if (!chunk.isBlank()) {
+                                typingIndicator.startThinkingStage();
                             }
                         }
 
@@ -579,18 +606,30 @@ public class CommitMessageGenerator {
         /** ChangeLog 工具窗口输出会话, 用于在界面中显示实时生成的提交信息 */
         @Nullable
         private final ChangelogToolWindowService.ChangelogOutputSession outputSession;
-        /** 当前正在显示的点号索引, 用于控制 typing 指示器的动画效果 */
+        /** 当前正在显示的点号索引, 用于控制光标闪烁 */
         private int dotIndex = 0;
+        /** 已输出的提示内容 */
+        private final StringBuilder typedHint = new StringBuilder();
+        /** 是否已触发思考阶段 */
+        private final AtomicBoolean thinkingStageStarted = new AtomicBoolean(false);
+        /** 第一行是否已完成 */
+        private final AtomicBoolean analyzingLineCompleted = new AtomicBoolean(false);
         /** 是否由父级管理该定时器的生命周期 */
         private final boolean disposableManagedByParent;
 
         /**
-         * 提交生成时的打字指示文本基础内容
-         * <p> 该字符串用于在提交消息中显示打字指示符
+         * 提交生成时的提示文本
+         * <p> 这些字符串用于在提交消息中展示阶段提示
          *
          * @see ChangelogBundle
          */
-        private final String baseText = ChangelogBundle.message("commit.generating.typing");
+        private final String analyzingText = ChangelogBundle.message("commit.generating.step.analyzing");
+        /** 思考阶段的提示文本, 用于在提交消息中显示“正在思考...”等阶段提示 */
+        private final String thinkingText = ChangelogBundle.message("commit.generating.step.thinking");
+        /** 生成草稿阶段的提示文本 */
+        private final String draftingText = ChangelogBundle.message("commit.generating.step.drafting");
+        /** 光标闪烁时显示的文本 */
+        private final String cursorText = ChangelogBundle.message("commit.generating.cursor");
 
         /**
          * 初始化打字指示器
@@ -620,13 +659,14 @@ public class CommitMessageGenerator {
          *
          */
         void start() {
+            resetState();
             ApplicationManager.getApplication().invokeLater(() -> {
                 setCommitMessageText("", commitMessageControl);
                 if (outputSession != null) {
                     outputSession.setText("");
                 }
             });
-            scheduleNext();
+            startAnalyzingLine();
         }
 
         /**
@@ -660,24 +700,148 @@ public class CommitMessageGenerator {
         }
 
         /**
-         * 安排下一次输入指示器的更新任务
-         * <p> 此方法通过 Alarm 在指定延迟后执行, 用于周期性地更新提交消息控件和输出会话中的文本, 显示动态的“正在生成...”效果
-         * <p> 每次调用时会根据当前的 dotIndex 生成不同数量的点符号 (最多 4 个), 并更新到界面上. 当停止标志为 true 时, 将不再继续调度
+         * 进入思考阶段
+         * <p> 当检测到思考内容输出时, 逐字输出阶段提示, 完成后进入光标闪烁状态
          */
-        private void scheduleNext() {
+        void startThinkingStage() {
+            if (!thinkingStageStarted.compareAndSet(false, true)) {
+                return;
+            }
+            if (analyzingLineCompleted.get()) {
+                scheduleThinkingLine();
+            }
+        }
+
+        /**
+         * 调度光标闪烁动画
+         * <p> 通过定时器周期性更新文本内容, 实现光标闪烁效果.
+         * 当已显示提示文本时, 根据 dotIndex 的奇偶性决定是否显示光标:
+         * <ul>
+         * <li> 偶数索引: 显示光标文本 </li>
+         * <li> 奇数索引: 不显示光标 </li>
+         * </ul>
+         * <p> 每次执行后增加 dotIndex 并递归调度下一次闪烁, 形成循环动画.
+         * 如果当前状态已停止, 则不执行任何操作.
+         *
+         * @since 1.0
+         */
+        private void scheduleCursorBlink() {
             alarm.addRequest(() -> {
                 if (stopped.get()) {
                     return;
                 }
-                String dots = ".".repeat(dotIndex);
-                String text = baseText + " " + dots;
+                String base = typedHint.toString();
+                String text = dotIndex % 2 == 0 ? base + cursorText : base;
                 setCommitMessageText(text, commitMessageControl);
                 if (outputSession != null) {
                     outputSession.setText(text);
                 }
-                dotIndex = (dotIndex + 1) % 5;
-                scheduleNext();
-            }, TYPING_INDICATOR_DELAY_MS);
+                dotIndex++;
+                scheduleCursorBlink();
+            }, TYPING_CURSOR_DELAY_MS);
+        }
+
+        /**
+         * 更新提示文本内容
+         * <p>将当前已生成的提示文本 (typedHint) 显示在提交消息控件和输出会话中, 保持界面同步
+         * <p>如果存在提交消息控件, 则更新其内容; 如果存在输出会话, 则同步更新其内容
+         *
+         * @since 1.0
+         */
+        private void updateHintText() {
+            String text = typedHint.toString();
+            setCommitMessageText(text, commitMessageControl);
+            if (outputSession != null) {
+                outputSession.setText(text);
+            }
+        }
+
+        /**
+         * 重置打字指示器状态
+         * <p> 取消所有计划的定时任务, 清空当前显示的提示文本, 重置思考阶段和分析行完成状态
+         *
+         * @since 1.0
+         */
+        private void resetState() {
+            alarm.cancelAllRequests();
+            dotIndex = 0;
+            typedHint.setLength(0);
+            thinkingStageStarted.set(false);
+            analyzingLineCompleted.set(false);
+        }
+
+        /**
+         * 开始分析阶段
+         * <p> 用于启动分析阶段的文本输出, 当检测到分析内容输出时, 逐字输出分析提示文本, 完成后进入思考阶段.
+         *
+         * @since 1.0
+         */
+        private void startAnalyzingLine() {
+            typeLine(analyzingText, () -> {
+                analyzingLineCompleted.set(true);
+                if (thinkingStageStarted.get()) {
+                    scheduleThinkingLine();
+                }
+            });
+        }
+
+        /**
+         * 调度思考阶段文本的显示
+         * <p> 在分析阶段完成后, 使用定时器逐字显示“思考中”提示文本, 并在显示完成后进入草稿阶段
+         *
+         * @since 1.0.0
+         */
+        private void scheduleThinkingLine() {
+            alarm.addRequest(() -> typeLine(thinkingText, this::scheduleDraftingLine), TYPING_LINE_PAUSE_MS);
+        }
+
+        /**
+         * 安排起草阶段的文本输出
+         * <p> 在 Swing 线程中调度一个请求, 用于逐字输出起草阶段提示文本, 并在完成后启动光标闪烁动画.
+         *
+         */
+        private void scheduleDraftingLine() {
+            alarm.addRequest(() -> typeLine(draftingText, this::scheduleCursorBlink), TYPING_LINE_PAUSE_MS);
+        }
+
+        /**
+         * 逐字输出指定的提示文本行
+         * <p> 该方法用于在提交消息区域或变更日志工具窗口中模拟打字效果, 逐字符显示传入的字符串.
+         * <p> 当所有字符输出完成后, 执行给定的回调操作. 如果当前状态已停止, 则不会继续执行任何动作.
+         *
+         * @param line       要逐字输出的提示文本内容
+         * @param onComplete 所有字符输出完成后的回调操作, 不可为 null
+         * @since 1.0.0
+         */
+        private void typeLine(@NotNull String line, @NotNull Runnable onComplete) {
+            int[] index = {0};
+            alarm.addRequest(new Runnable() {
+                /**
+                 * 模拟打字效果的运行逻辑
+                 * <p> 该方法用于逐字符显示文本内容, 每次执行一个字符并更新显示, 直到文本全部显示完毕后执行完成回调
+                 * <p> 当文本未完全显示时, 会延迟后再次请求执行自身; 当文本显示完毕后, 调用 onComplete 回调
+                 *
+                 * @since 1.0
+                 */
+                @Override
+                public void run() {
+                    if (stopped.get()) {
+                        return;
+                    }
+                    if (index[0] == 0 && !typedHint.isEmpty()) {
+                        typedHint.append('\n');
+                    }
+                    if (index[0] < line.length()) {
+                        typedHint.append(line.charAt(index[0]));
+                        index[0]++;
+                        updateHintText();
+                        alarm.addRequest(this, TYPING_TEXT_DELAY_MS);
+                    } else {
+                        updateHintText();
+                        onComplete.run();
+                    }
+                }
+            }, TYPING_TEXT_DELAY_MS);
         }
 
     }
