@@ -49,7 +49,7 @@ public enum AIProviderType {
         "qwen3-8b",
         true,
         false,
-        Arrays.asList("qwen3-32b", "qwen3-14b", "qwen3-8b", "qwen3-4b")
+        Arrays.asList("qwen3-omni-flash-2025-12-01", "qwen3-32b", "qwen3-14b", "qwen3-8b")
     ),
     /**
      * 硅基流动模型配置
