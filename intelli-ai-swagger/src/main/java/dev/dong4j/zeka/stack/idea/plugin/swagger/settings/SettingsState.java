@@ -47,13 +47,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public boolean showAdvancedSettings = false;
 
-    /**
-     * 系统提示词模板
-     * <p>
-     * 用于设定 AI 角色和行为准则的系统提示词. 该提示词会作为 system 消息发送给 AI 服务, 用于建立 AI 的基本角色和响应风格.
-     * <p>
-     * 默认值: getDefaultSystemPrompt()
-     */
+    /** 默认系统提示词, 用于初始化 AI 角色和行为准则, 作为 system 消息发送给 AI 服务. */
     public String systemPrompt = getDefaultSystemPrompt();
 
     /**

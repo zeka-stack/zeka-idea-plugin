@@ -18,6 +18,7 @@
     <depends>org.jetbrains.idea.maven</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
+    <resource-bundle>messages.AIJBundle</resource-bundle>
 
     <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
@@ -104,8 +105,11 @@
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
         </action>
         <!-- 快捷键入口 (Ctrl+Shift+D / Cmd+Shift+D) -->
+        <!--suppress PluginXmlI18n -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocShortcutAction"
-                class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocShortcutAction">
+                class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocShortcutAction"
+                text="Generate Javadoc with AI"
+                description="Generate Javadoc using AI">
             <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl D"/>
         </action>
 

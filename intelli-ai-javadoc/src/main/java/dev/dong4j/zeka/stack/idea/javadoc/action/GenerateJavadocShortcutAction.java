@@ -4,9 +4,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.psi.PsiFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -23,6 +25,30 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction {
+
+    /**
+     * 更新动作的可见性和启用状态
+     * <p> 根据当前编辑器或文件上下文判断是否支持生成 Javadoc, 设置动作的启用状态和可见性.
+     * <p> 如果当前文件是 Java 文件或 Kotlin 文件, 且在 Kotlin 语言支持开启时, 将动作设为可用.
+     * <p> 同时设置动作的显示文本和描述信息, 用于 UI 展示.
+     *
+     * @param e 动作事件对象, 不能为空, 用于获取当前上下文信息
+     */
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+        boolean isSupportedFile = false;
+        PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
+        VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
+        if (psiFile != null || (files != null && files.length > 0)) {
+            isSupportedFile = true;
+        }
+
+        e.getPresentation().setEnabled(isSupportedFile);
+        e.getPresentation().setVisible(isSupportedFile);
+        e.getPresentation().setText(JavadocBundle.message("action.generate.javadoc"));
+        e.getPresentation().setDescription(JavadocBundle.message("action.generate.javadoc.description"));
+    }
+
     /**
      * 处理动作事件
      * <p>
