@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.javadoc.util;
 
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.psi.PsiAnonymousClass;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiElement;
@@ -256,9 +257,9 @@ public class PsiElementLocator {
             return new LocateResult(field, LocateType.FIELD, false);
         }
 
-        // 3. 查找类
+        // 3. 查找类（排除匿名类）
         PsiClass psiClass = PsiTreeUtil.getParentOfType(elementAtCaret, PsiClass.class);
-        if (psiClass != null) {
+        if (psiClass != null && !(psiClass instanceof PsiAnonymousClass)) {
             // 检查是否在类声明行（类名附近）
             if (isOnClassDeclaration(elementAtCaret, psiClass)) {
                 return new LocateResult(psiClass, LocateType.CLASS, false);
@@ -496,6 +497,41 @@ public class PsiElementLocator {
             case CLASS -> "类";
             case FILE -> "文件";
         };
+    }
+
+    /**
+     * 根据编辑器光标位置获取选中的 PSI 元素
+     * <p> 通过调用定位方法获取当前光标位置对应的代码元素, 若定位结果为文件级别或未定位到有效元素, 则返回 null.
+     * <p> 定位流程:
+     * <ul>
+     * <li> 获取光标偏移量 </li>
+     * <li> 调用 locateElementAtOffset 方法进行元素定位 </li>
+     * <li> 若结果为文件级别或为空, 则返回 null</li>
+     * <li> 否则返回定位到的 PSI 元素 </li>
+     * </ul>
+     *
+     * @param editor 编辑器对象, 用于获取光标位置
+     * @param file   PSI 文件对象, 用于在其中定位元素
+     * @return 选中的 PSI 元素, 若未定位到有效元素则返回 null
+     * @see PsiElementLocator#locateElementAtOffset(PsiFile, int)
+     * @see Editor#getCaretModel()
+     */
+    @Nullable
+    public static PsiElement getSelectPsiElement(Editor editor, PsiFile file) {
+        PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElementAtOffset(
+            file, editor.getCaretModel().getOffset());
+
+        if (locateResult == null) {
+            return null;
+        }
+
+        // 3. 如果是整个文件，不在 Intention 中显示
+        if (locateResult.type() == PsiElementLocator.LocateType.FILE) {
+            return null;
+        }
+
+        // 4. 检查元素是否有文档注释
+        return locateResult.element();
     }
 }
 
