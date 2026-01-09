@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.actionSystem.Shortcut;
 import com.intellij.openapi.actionSystem.impl.ActionButton;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.ui.MessageType;
@@ -80,6 +81,13 @@ public class GenerateJavadocForCommitAction extends AnAction {
             return;
         }
 
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            e.getPresentation().setVisible(true);
+            return;
+        }
+
         // 设置按钮文本和图标
         String description = JavadocBundle.message("commit.action.description");
         e.getPresentation().setText("");
@@ -144,6 +152,12 @@ public class GenerateJavadocForCommitAction extends AnAction {
             return;
         }
 
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            NotificationUtil.notifyIndexing(project);
+            return;
+        }
+
         CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
         if (commitWorkflowHandler == null) {
             NotificationUtil.showWarning(project, JavadocBundle.message("commit.no.selected.changes"));
@@ -171,6 +185,7 @@ public class GenerateJavadocForCommitAction extends AnAction {
         List<VirtualFile> javaFiles = filterJavaFiles(project, changes);
         if (javaFiles.isEmpty()) {
             log.debug("Git 提交页面：没有找到 Java 文件");
+            showActionTip(e, JavadocBundle.message("commit.no.java.files"));
             return;
         }
 
@@ -178,7 +193,7 @@ public class GenerateJavadocForCommitAction extends AnAction {
 
         // 使用生成器检测和生成文档
         CommitJavadocGenerator generator = new CommitJavadocGenerator(project);
-        generator.generateForChanges(changes, javaFiles);
+        generator.generateForChanges(javaFiles);
     }
 
     /**

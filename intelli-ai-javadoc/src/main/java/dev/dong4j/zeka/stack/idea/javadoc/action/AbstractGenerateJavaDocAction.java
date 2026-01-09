@@ -181,6 +181,15 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
      */
     @Override
     public void update(@NotNull AnActionEvent e) {
+        Project project = e.getProject();
+        
+        // 检查项目是否处于索引模式
+        if (project != null && DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            e.getPresentation().setVisible(true);
+            return;
+        }
+        
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         boolean isSupportedFile = psiFile instanceof PsiJavaFile || psiFile instanceof KtFile;
 

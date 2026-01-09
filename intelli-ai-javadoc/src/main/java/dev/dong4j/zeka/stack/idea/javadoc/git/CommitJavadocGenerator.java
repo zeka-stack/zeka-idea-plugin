@@ -7,7 +7,6 @@ import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiJavaFile;
@@ -16,7 +15,6 @@ import com.intellij.psi.PsiManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.javadoc.service.DocumentationGenerationService;
@@ -60,11 +58,9 @@ public class CommitJavadocGenerator {
      * 该方法用于处理提交的代码变更, 检查是否有需要生成 Javadoc 的任务.
      * 如果存在任务, 会提示用户确认是否生成, 并执行生成操作.
      *
-     * @param changes   变更集合
      * @param javaFiles Java 文件列表
      */
-    public void generateForChanges(@NotNull Collection<Change> changes,
-                                   @NotNull List<VirtualFile> javaFiles) {
+    public void generateForChanges(@NotNull List<VirtualFile> javaFiles) {
         if (javaFiles.isEmpty()) {
             log.debug("Git 提交页面：没有 Java 文件需要处理");
             return;

@@ -20,11 +20,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
 import dev.dong4j.zeka.stack.idea.javadoc.service.JavadocDeletionService;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.javadoc.util.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -77,16 +77,7 @@ public class DeleteJavadocForFilesAction extends AnAction {
             List<PsiFile> psiFiles = new ArrayList<>();
             PsiManager psiManager = PsiManager.getInstance(project);
 
-            for (VirtualFile file : files) {
-                if (file.isDirectory()) {
-                    collectFilesFromDirectory(file, psiManager, psiFiles);
-                } else if (isSupportedFile(file)) {
-                    PsiFile psiFile = psiManager.findFile(file);
-                    if (psiFile != null) {
-                        psiFiles.add(psiFile);
-                    }
-                }
-            }
+            collect(files, psiFiles, psiManager);
 
             return psiFiles;
         }).finishOnUiThread(ModalityState.current(), psiFiles -> {
@@ -122,6 +113,28 @@ public class DeleteJavadocForFilesAction extends AnAction {
     }
 
     /**
+     * 递归遍历文件数组, 收集支持的文件并添加到结果列表中
+     * <p>遍历传入的虚拟文件数组, 若为目录则递归收集其下的支持文件, 若为文件则检查是否支持并添加到结果列表中
+     * <p>支持的文件类型包括 Java 文件 (.java) 和 Kotlin 文件(.kt),Kotlin 文件需在设置中启用支持
+     *
+     * @param files      虚拟文件数组, 包含待处理的文件或目录
+     * @param psiFiles   用于存储收集到的 PSI 文件的列表, 不能为 null
+     * @param psiManager PSI 管理器, 用于根据虚拟文件查找对应的 PSI 文件, 不能为 null
+     */
+    private void collect(VirtualFile[] files, List<PsiFile> psiFiles, PsiManager psiManager) {
+        for (VirtualFile file : files) {
+            if (file.isDirectory()) {
+                collectFilesFromDirectory(file, psiManager, psiFiles);
+            } else if (PluginUtil.isSupportedFile(file)) {
+                PsiFile psiFile = psiManager.findFile(file);
+                if (psiFile != null) {
+                    psiFiles.add(psiFile);
+                }
+            }
+        }
+    }
+
+    /**
      * 递归收集目录中的所有支持的文件
      *
      * @param directory  目录
@@ -136,43 +149,7 @@ public class DeleteJavadocForFilesAction extends AnAction {
             return;
         }
 
-        for (VirtualFile child : children) {
-            if (child.isDirectory()) {
-                collectFilesFromDirectory(child, psiManager, results);
-            } else if (isSupportedFile(child)) {
-                PsiFile psiFile = psiManager.findFile(child);
-                if (psiFile != null) {
-                    results.add(psiFile);
-                }
-            }
-        }
-    }
-
-    /**
-     * 判断给定文件是否为支持的文件类型
-     *
-     * @param file 文件
-     * @return 如果是支持的文件类型返回 true
-     */
-    private boolean isSupportedFile(@NotNull VirtualFile file) {
-        String extension = file.getExtension();
-        if (extension == null) {
-            return false;
-        }
-        String extLower = extension.toLowerCase();
-
-        // 检查是否为 Java 文件
-        if (PluginContents.JAVA.equals(extLower)) {
-            return true;
-        }
-
-        // 检查是否为 Kotlin 文件
-        if ("kt".equals(extLower)) {
-            SettingsState settings = SettingsState.getInstance();
-            return settings.isLanguageSupported(PluginContents.KOTLIN);
-        }
-
-        return false;
+        collect(children, results, psiManager);
     }
 
     /**
@@ -195,7 +172,13 @@ public class DeleteJavadocForFilesAction extends AnAction {
         Project project = e.getProject();
 
         // 检查项目状态
-        if (project == null || project.isDisposed() || DumbService.isDumb(project)) {
+        if (project == null || project.isDisposed()) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+
+        // 检查项目是否处于索引模式
+        if (AbstractDeleteJavadocAction.isIndexing(project)) {
             e.getPresentation().setEnabled(false);
             return;
         }

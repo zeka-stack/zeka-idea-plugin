@@ -47,6 +47,11 @@ public class DeleteJavadocForEditorAction extends AbstractDeleteJavadocAction {
             return;
         }
 
+        // 检查项目是否处于索引模式
+        if (AbstractDeleteJavadocAction.checkAndHandleIndexing(project)) {
+            return;
+        }
+
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         if (!settings.allowDeleteJavadoc) {
@@ -103,6 +108,12 @@ public class DeleteJavadocForEditorAction extends AbstractDeleteJavadocAction {
             return;
         }
 
+        // 检查项目是否处于索引模式
+        if (AbstractDeleteJavadocAction.isIndexing(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         boolean enabled = settings.allowDeleteJavadoc && editor != null && psiFile != null;
@@ -113,7 +124,7 @@ public class DeleteJavadocForEditorAction extends AbstractDeleteJavadocAction {
             if (psiFile instanceof KtFile) {
                 isSupportedFile = settings.isLanguageSupported(PluginContents.KOTLIN);
             }
-            enabled = enabled && isSupportedFile;
+            enabled = isSupportedFile;
         }
 
         e.getPresentation().setEnabled(enabled);
