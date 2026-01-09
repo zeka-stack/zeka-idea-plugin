@@ -14,13 +14,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
 import dev.dong4j.zeka.stack.idea.javadoc.service.DocumentationGenerationService;
-import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.javadoc.util.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -75,7 +74,7 @@ public class GenerateJavadocForFilesAction extends AnAction {
         for (VirtualFile file : files) {
             if (file.isDirectory()) {
                 tasks.addAll(collector.collectFromDirectory(file));
-            } else if (isJavaFile(file)) {
+            } else if (PluginUtil.isSupportedFile(file)) {
                 tasks.addAll(collector.collectFromVirtualFile(file));
             }
         }
@@ -130,41 +129,19 @@ public class GenerateJavadocForFilesAction extends AnAction {
         Project project = e.getProject();
 
         // 检查项目状态
-        if (project == null || project.isDisposed() || DumbService.isDumb(project)) {
+        if (project == null || project.isDisposed()) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
             return;
         }
 
         e.getPresentation().setText(JavadocBundle.message("action.generate.javadoc"));
         e.getPresentation().setDescription(JavadocBundle.message("action.generate.javadoc.selection.description"));
-    }
-
-    /**
-     * 判断给定文件是否为 Java 或 Kotlin 文件
-     * <p>
-     * 通过检查文件的扩展名是否为 "java" 或 "kt"(不区分大小写) 来判断文件类型
-     *
-     * @param file 要判断的文件对象
-     * @return 如果文件是 Java 或 Kotlin 文件, 返回 true; 否则返回 false
-     */
-    private boolean isJavaFile(VirtualFile file) {
-        String extension = file.getExtension();
-        if (extension == null) {
-            return false;
-        }
-        String extLower = extension.toLowerCase();
-
-        // 检查是否为 Java 文件
-        if (PluginContents.JAVA.equals(extLower)) {
-            return true;
-        }
-
-        // 检查是否为 Kotlin 文件
-        if ("kt".equals(extLower)) {
-            SettingsState settings = SettingsState.getInstance();
-            return settings.isLanguageSupported(PluginContents.KOTLIN);
-        }
-
-        return false;
     }
 
 }

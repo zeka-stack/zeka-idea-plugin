@@ -4,6 +4,7 @@ import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInsight.intention.preview.IntentionPreviewUtils;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Iconable;
 import com.intellij.psi.PsiDocCommentOwner;
@@ -40,14 +41,18 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionAction implements Iconable {
-    /** 用于执行 Javadoc 生成操作的基础动作对象 */
+    /**
+     * 基础生成 Javadoc 动作实例
+     * <p> 用于封装并委托实际的 Javadoc 生成逻辑, 包含动作执行和定位失败处理回调.
+     *
+     * @see AbstractGenerateJavaDocAction
+     */
     private final AbstractGenerateJavaDocAction baseAction = new AbstractGenerateJavaDocAction() {
         /**
-         * 处理用户操作事件
-         * <p>
-         * 当用户执行某个操作时触发此方法, 用于处理相应的动作事件.
+         * 处理动作点击事件
+         * <p> 当用户点击菜单项或工具栏按钮时触发此方法, 用于执行对应的操作逻辑
          *
-         * @param e 操作事件对象, 包含与动作相关的信息
+         * @param e 动作事件对象, 包含触发事件的上下文信息, 不能为 null
          */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
@@ -55,11 +60,10 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
         }
 
         /**
-         * 当定位失败时通知用户没有任务位置
-         * <p>
-         * 该方法在定位失败时被调用, 通过通知工具提示用户当前项目没有任务位置信息
+         * 处理定位失败的回调方法
+         * <p> 当任务定位失败时调用此方法, 向用户显示警告通知, 提示未找到相关任务位置.
          *
-         * @param project 项目对象, 用于标识当前处理的项目
+         * @param project 当前项目对象, 用于显示通知
          */
         @Override
         protected void onLocateFailed(@NotNull Project project) {
@@ -127,6 +131,11 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
             return false;
         }
 
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            return false;
+        }
+
         PsiFile file = element.getContainingFile();
 
         // 1. 必须是 Java 或 Kotlin 文件
@@ -143,20 +152,10 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
         }
 
         // 2. 定位元素
-        PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElementAtOffset(file, editor.getCaretModel().getOffset());
-
-        if (locateResult == null) {
+        PsiElement locatedElement = PsiElementLocator.getSelectPsiElement(editor, file);
+        if (locatedElement == null) {
             return false;
         }
-
-        // 3. 如果是整个文件，不在 Intention 中显示（避免重复）
-        if (locateResult.type() == PsiElementLocator.LocateType.FILE) {
-            return false;
-        }
-
-        // 4. 检查元素是否为拥有文档注释的元素（如类、方法、字段等）
-        PsiElement locatedElement = locateResult.element();
-
         // 检查 Java 元素的文档注释
         if (locatedElement instanceof PsiDocCommentOwner docOwner) {
             // 5. 获取配置：是否允许覆盖现有文档

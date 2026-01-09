@@ -3,6 +3,8 @@ package dev.dong4j.zeka.stack.idea.javadoc.action;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.project.DumbService;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 
@@ -36,6 +38,15 @@ public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction
      */
     @Override
     public void update(@NotNull AnActionEvent e) {
+        Project project = e.getProject();
+        
+        // 检查项目是否处于索引模式
+        if (project != null && DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            e.getPresentation().setVisible(true);
+            return;
+        }
+        
         boolean isSupportedFile = false;
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);

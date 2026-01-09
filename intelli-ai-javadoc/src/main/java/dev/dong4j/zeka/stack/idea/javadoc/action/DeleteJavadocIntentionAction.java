@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.javadoc.action;
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.codeInsight.intention.preview.IntentionPreviewUtils;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Iconable;
 import com.intellij.psi.PsiDocCommentOwner;
@@ -100,6 +101,11 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
             return false;
         }
 
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            return false;
+        }
+
         // 检查配置是否允许删除
         SettingsState settings = SettingsState.getInstance();
         if (!settings.allowDeleteJavadoc) {
@@ -121,20 +127,10 @@ public class DeleteJavadocIntentionAction extends PsiElementBaseIntentionAction 
         }
 
         // 2. 定位元素
-        PsiElementLocator.LocateResult locateResult = PsiElementLocator.locateElementAtOffset(
-            file, editor.getCaretModel().getOffset());
-
-        if (locateResult == null) {
+        final PsiElement locatedElement = PsiElementLocator.getSelectPsiElement(editor, file);
+        if (locatedElement == null) {
             return false;
         }
-
-        // 3. 如果是整个文件，不在 Intention 中显示
-        if (locateResult.type() == PsiElementLocator.LocateType.FILE) {
-            return false;
-        }
-
-        // 4. 检查元素是否有文档注释
-        PsiElement locatedElement = locateResult.element();
 
         // 检查 Java 元素的文档注释
         if (locatedElement instanceof PsiDocCommentOwner docOwner) {
