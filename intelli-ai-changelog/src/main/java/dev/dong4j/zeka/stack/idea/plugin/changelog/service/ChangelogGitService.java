@@ -100,11 +100,7 @@ final class ChangelogGitService {
                         continue;
                     }
                     RevCommit commit = revWalk.parseCommit(commitId);
-                    String shortMessage = commit.getShortMessage();
-                    String fullMessage = commit.getFullMessage();
-                    String author = commit.getAuthorIdent().getName();
-                    Date date = new Date(commit.getCommitTime() * 1000L);
-                    commits.add(new ChangelogCommitModels.CommitInfo(commit.getName(), shortMessage, fullMessage, date, author));
+                    convert(commits, commit);
                 } catch (Exception ignored) {
                     // 忽略单条提交解析失败
                 }
@@ -138,16 +134,28 @@ final class ChangelogGitService {
                                              : git.log().addRange(repository.resolve(range.split("\\.\\.")[0]),
                                                                   repository.resolve(range.split("\\.\\.")[1])).call();
             for (RevCommit commit : gitCommits) {
-                String shortMessage = commit.getShortMessage();
-                String fullMessage = commit.getFullMessage();
-                String author = commit.getAuthorIdent().getName();
-                Date date = new Date(commit.getCommitTime() * 1000L);
-                commits.add(new ChangelogCommitModels.CommitInfo(commit.getName(), shortMessage, fullMessage, date, author));
+                convert(commits, commit);
             }
         } catch (Exception ignored) {
             // 忽略异常，返回已有结果
         }
         return commits;
+    }
+
+    /**
+     * 将 Git 提交对象转换为提交信息对象并添加到列表中
+     * <p> 根据指定的提交对象, 提取其简要消息, 完整消息, 作者, 提交时间等信息, 并封装为 CommitInfo 对象后添加到传入的集合中.
+     * <p> 该方法用于在遍历提交时统一处理每个提交的信息提取与封装.
+     *
+     * @param commits 用于存储提交信息的列表, 不能为 null
+     * @param commit  当前处理的提交对象, 不能为 null
+     */
+    private void convert(List<ChangelogCommitModels.CommitInfo> commits, RevCommit commit) {
+        String shortMessage = commit.getShortMessage();
+        String fullMessage = commit.getFullMessage();
+        String author = commit.getAuthorIdent().getName();
+        Date date = new Date(commit.getCommitTime() * 1000L);
+        commits.add(new ChangelogCommitModels.CommitInfo(commit.getName(), shortMessage, fullMessage, date, author));
     }
 
     /**

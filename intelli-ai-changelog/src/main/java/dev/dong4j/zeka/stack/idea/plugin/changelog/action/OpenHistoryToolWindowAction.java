@@ -3,12 +3,14 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import icons.ChangelogIcons;
 
 /**
@@ -47,6 +49,13 @@ public class OpenHistoryToolWindowAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
+        
+        // 检查项目是否处于索引模式
+        if (project != null && DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+        
         boolean enabled = project != null && !project.isDisposed();
         e.getPresentation().setEnabled(enabled);
         e.getPresentation().setText(ChangelogBundle.message("action.open.history"));
@@ -67,6 +76,13 @@ public class OpenHistoryToolWindowAction extends AnAction {
         if (project == null || project.isDisposed()) {
             return;
         }
+
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.indexing.warning"));
+            return;
+        }
+
         ChangelogToolWindowService.getInstance(project).showHistoryContent();
     }
 

@@ -598,6 +598,12 @@ public final class ChangelogToolWindowService {
         historyTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         historyTree.setCellRenderer(new HistoryTreeCellRenderer());
         historyTree.addMouseMotionListener(new MouseAdapter() {
+            /**
+             * 处理鼠标移动事件, 用于在历史记录树中高亮显示鼠标悬停的行
+             * <p> 当鼠标在历史记录树上移动时, 根据鼠标的坐标计算出当前悬停的行, 并更新高亮状态, 触发重绘
+             *
+             * @param e 鼠标事件对象, 包含鼠标位置等信息
+             */
             @Override
             public void mouseMoved(MouseEvent e) {
                 if (historyTree == null) {
@@ -614,6 +620,12 @@ public final class ChangelogToolWindowService {
                 }
             }
 
+            /**
+             * 鼠标离开时的处理逻辑
+             * <p> 当鼠标离开组件时, 重置历史悬停行状态, 并重新绘制历史树组件
+             *
+             * @param e 鼠标事件对象
+             */
             @Override
             public void mouseExited(MouseEvent e) {
                 if (historyHoverRow != -1) {
@@ -674,11 +686,23 @@ public final class ChangelogToolWindowService {
                 }
             }
 
+            /**
+             * 处理鼠标按下事件
+             * <p> 当鼠标在组件上按下时调用此方法, 用于判断是否需要显示历史记录弹出菜单
+             *
+             * @param e 鼠标事件对象, 包含鼠标按下时的相关信息
+             */
             @Override
             public void mousePressed(MouseEvent e) {
                 showHistoryPopupIfNeeded(e);
             }
 
+            /**
+             * 鼠标释放事件处理方法
+             * <p> 当鼠标在组件上释放时调用此方法, 用于判断是否需要显示历史记录弹出窗口
+             *
+             * @param e 鼠标事件对象, 包含鼠标释放时的相关信息
+             */
             @Override
             public void mouseReleased(MouseEvent e) {
                 showHistoryPopupIfNeeded(e);
@@ -779,21 +803,44 @@ public final class ChangelogToolWindowService {
         historyFilterField = new JBTextField();
         historyFilterField.getEmptyText().setText(ChangelogBundle.message("toolwindow.history.filter.placeholder"));
         historyFilterField.getDocument().addDocumentListener(new DocumentListener() {
+            /**
+             * 当文档内容被插入或更新时触发, 用于更新过滤文本
+             * <p> 此方法在文档内容发生变化时被调用, 会自动触发过滤文本的更新操作
+             *
+             * @param e 事件对象, 包含文档变化的相关信息
+             */
             @Override
             public void insertUpdate(DocumentEvent e) {
                 updateFilterText();
             }
 
+            /**
+             * 当文档内容发生变化时更新过滤文本
+             * <p> 此方法在文档内容被修改时被调用, 用于触发过滤文本的更新操作
+             *
+             * @param e 包含文档更新事件的 DocumentEvent 对象
+             */
             @Override
             public void removeUpdate(DocumentEvent e) {
                 updateFilterText();
             }
 
+            /**
+             * 当文档内容发生变化时更新过滤文本
+             * <p> 此方法在文档内容发生更改时被调用, 用于触发过滤文本的更新操作
+             *
+             * @param e 文档事件对象, 包含更改的详细信息
+             */
             @Override
             public void changedUpdate(DocumentEvent e) {
                 updateFilterText();
             }
 
+            /**
+             * 更新过滤文本并刷新历史记录列表
+             * <p> 该方法用于获取历史过滤字段的文本内容, 并调用刷新历史记录列表的方法
+             *
+             */
             private void updateFilterText() {
                 if (historyFilterField == null) {
                     return;
@@ -1027,11 +1074,23 @@ public final class ChangelogToolWindowService {
         item.setBackground(normalBg);
         item.addActionListener(event -> action.run());
         item.addMouseListener(new MouseAdapter() {
+            /**
+             * 鼠标进入时改变该项的背景颜色
+             * <p> 当鼠标进入该项时, 将其背景颜色设置为悬停状态的颜色
+             *
+             * @param e 鼠标事件对象
+             */
             @Override
             public void mouseEntered(MouseEvent e) {
                 item.setBackground(hoverBg);
             }
 
+            /**
+             * 鼠标移出时恢复项目背景颜色为正常状态
+             * <p> 当鼠标指针离开项目区域时, 将该项目的背景颜色设置为默认的正常背景色.
+             *
+             * @param e 鼠标事件对象, 包含鼠标移出的相关信息
+             */
             @Override
             public void mouseExited(MouseEvent e) {
                 item.setBackground(normalBg);
@@ -1462,7 +1521,9 @@ public final class ChangelogToolWindowService {
          * <p> 用于标识当前输出会话的标题
          */
         private final @NotNull String sessionTitle;
+        /** 起点坐标 */
         private final @NotNull String startPoint;
+        /** 服务端点地址, 用于指定服务通信的目标地址 */
         private final @NotNull String endPoint;
         /** 使用的服务商信息 */
         private final @NotNull String provider;
@@ -1538,6 +1599,22 @@ public final class ChangelogToolWindowService {
             }
             ApplicationManager.getApplication().invokeLater(() -> {
                 textArea.setText(text);
+                textArea.setCaretPosition(textArea.getDocument().getLength());
+            });
+        }
+
+        /**
+         * 设置文本区域的内容
+         * <p> 将指定的文本设置到文本区域中, 并将光标移动到文本末尾. 如果文本区域为空, 则不执行任何操作.
+         *
+         * @param text 要设置的文本, 不能为 null
+         */
+        public void setPlaceholder(@NotNull String text) {
+            if (textArea == null) {
+                return;
+            }
+            ApplicationManager.getApplication().invokeLater(() -> {
+                textArea.getEmptyText().setText(text);
                 textArea.setCaretPosition(textArea.getDocument().getLength());
             });
         }
@@ -1647,12 +1724,22 @@ public final class ChangelogToolWindowService {
      * @since 1.0.0
      */
     private final class HistoryTreeCellRenderer extends JPanel implements TreeCellRenderer {
+        /** 时间戳标签, 用于显示或展示时间戳信息 */
         private final JBLabel timestampLabel;
+        /** 标题标签, 用于显示界面标题 */
         private final JBLabel titleLabel;
+        /** 删除标签 */
         private final JBLabel deleteLabel;
+        /** 组标签 */
         private final JBLabel groupLabel;
+        /** 内容面板, 用于显示主界面内容 */
         private final JPanel contentPanel;
 
+        /**
+         * 初始化 HistoryTreeCellRenderer 的布局和组件
+         * <p> 设置边框, 字体样式以及各个标签的布局, 包括时间戳标签, 标题标签, 删除图标标签和分组标签.
+         *
+         */
         private HistoryTreeCellRenderer() {
             super(new BorderLayout(JBUI.scale(2), 0));
             setBorder(JBUI.Borders.empty(2, 4));
@@ -1677,6 +1764,20 @@ public final class ChangelogToolWindowService {
             contentPanel.add(titleLabel, BorderLayout.CENTER);
         }
 
+        /**
+         * 自定义树形组件的单元格渲染器, 用于显示历史记录信息
+         * <p>该方法负责渲染 JTree 中的每个节点, 根据节点类型 (HistoryGroup 或 HistoryItem) 展示不同的内容和样式.
+         * <p>支持高亮选中项, 悬停效果, 并可显示删除图标和相关数据.
+         *
+         * @param tree     树组件
+         * @param value    当前节点的值
+         * @param selected 是否为选中状态
+         * @param expanded 是否为展开状态
+         * @param leaf     是否为叶子节点
+         * @param row      当前行号
+         * @param hasFocus 是否具有焦点
+         * @return 返回当前渲染的组件
+         */
         @Override
         public Component getTreeCellRendererComponent(JTree tree,
                                                       Object value,
@@ -1723,10 +1824,24 @@ public final class ChangelogToolWindowService {
             return this;
         }
 
+        /**
+         * 获取树控件悬停状态下的背景颜色
+         * <p> 根据传入的树控件对象, 返回其在悬停状态下的背景颜色.
+         *
+         * @param tree 树控件对象, 不能为空
+         * @return 树控件悬停状态下的背景颜色
+         */
         private Color getHoverBackground(@NotNull JTree tree) {
             return UIUtil.getTreeSelectionBackground(false);
         }
 
+        /**
+         * 根据历史项格式化时间戳
+         * <p> 尝试使用不同的格式解析历史项中的日期文本, 如果解析失败则降级处理, 最终返回格式化后的时间字符串或原始字符串
+         *
+         * @param item 历史项对象, 不能为 null
+         * @return 格式化后的时间字符串, 如果解析失败则返回原始字符串
+         */
         private String formatTimestamp(@NotNull HistoryItem item) {
             if (item.dateText != null) {
                 try {
@@ -1748,6 +1863,14 @@ public final class ChangelogToolWindowService {
             return raw;
         }
 
+        /**
+         * 计算表格列标题的宽度
+         * <p> 根据给定的树组件和时间戳标签计算标题区域的可用宽度, 用于布局调整
+         *
+         * @param tree      树组件, 用于获取可视区域信息
+         * @param timestamp 时间戳标签, 用于获取其占用的宽度
+         * @return 可用的标题区域宽度, 如果计算结果为负数则返回 0
+         */
         private int calculateHeadingWidth(@NotNull JTree tree, @NotNull JBLabel timestamp) {
             Rectangle visible = tree.getVisibleRect();
             if (visible.width <= 0) {
@@ -1759,6 +1882,15 @@ public final class ChangelogToolWindowService {
             return Math.max(0, visible.width - deleteWidth - timestampWidth - gaps);
         }
 
+        /**
+         * 构建标题文本, 根据指定的最大宽度进行适配
+         * <p> 该方法用于处理标题字符串, 如果标题为空或仅包含空白字符, 则返回空字符串. 若最大宽度小于等于 0, 也返回空字符串. 否则, 会将标题适配到指定宽度, 并在前面添加前缀“ - ”.
+         *
+         * @param heading  标题字符串, 可以为 null 或空白字符串
+         * @param metrics  字体度量信息, 用于计算字符串宽度, 不能为空
+         * @param maxWidth 标题文本的最大宽度, 必须大于 0
+         * @return 适配后的标题文本, 若适配失败则返回空字符串
+         */
         private String buildHeadingTitle(@Nullable String heading, @NotNull FontMetrics metrics, int maxWidth) {
             if (heading == null || heading.isBlank()) {
                 return "";
@@ -1776,6 +1908,13 @@ public final class ChangelogToolWindowService {
             return fitted.isEmpty() ? "" : prefix + fitted;
         }
 
+        /**
+         * 从标题字符串中提取显示标题
+         * <p> 该方法用于从标题中查找冒号 ":" 的位置, 并返回冒号后的内容作为显示标题. 如果标题中没有符合条件的冒号, 则直接返回原始标题.
+         *
+         * @param title 标题字符串, 不能为 null
+         * @return 提取后的显示标题
+         */
         private String extractDisplayTitle(@NotNull String title) {
             int index = title.indexOf(':');
             if (index > 0 && index < title.length() - 1) {
@@ -1784,6 +1923,15 @@ public final class ChangelogToolWindowService {
             return title;
         }
 
+        /**
+         * 将文本截断以适应指定的最大宽度
+         * <p>该方法用于将给定的文本根据字体度量信息截断, 使其宽度不超过指定的最大宽度. 如果文本本身宽度已经小于等于最大宽度, 则直接返回原文本. 否则, 会在文本末尾添加省略号 (...) 以表示文本被截断.
+         *
+         * @param text     要截断的文本, 不能为 null
+         * @param metrics  字体度量信息, 用于计算文本宽度, 不能为 null
+         * @param maxWidth 文本允许的最大宽度
+         * @return 截断后的文本, 如果文本宽度超过最大宽度则在末尾添加省略号, 否则返回原文本
+         */
         private String fitToWidth(@NotNull String text, @NotNull FontMetrics metrics, int maxWidth) {
             if (metrics.stringWidth(text) <= maxWidth) {
                 return text;

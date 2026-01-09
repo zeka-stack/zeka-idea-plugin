@@ -247,16 +247,7 @@ public final class ChangelogService {
     @NotNull
     public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes,
                                                 @Nullable String userContext) throws Exception {
-        ChangelogCommitDiffBuilder.DiffPayload payload = diffBuilder.buildPayload(changes);
-        if (payload.codeDiffs().isEmpty()) {
-            throw new Exception(ChangelogBundle.message("commit.no.changes"));
-        }
-
-        String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
-        String branch = gitService.getCurrentBranch();
-        boolean isGitRepository = gitService.isGitRepository();
-        String prompt = promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
-        return aiExecutor.callCommitMessage(prompt);
+        return aiExecutor.callCommitMessage(buildPrompt(changes, userContext));
     }
 
     /**
@@ -290,6 +281,20 @@ public final class ChangelogService {
     public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
                                                       @NotNull AIStreamResponseListener listener,
                                                       @Nullable String userContext) throws Exception {
+        return aiExecutor.callCommitMessageStream(buildPrompt(changes, userContext), listener);
+    }
+
+    /**
+     * 构建基于代码变更的提交消息提示词
+     * <p>
+     * 根据提供的代码变更集合和可选的用户上下文, 构建用于 AI 生成提交消息的提示词.
+     * 首先验证是否存在实际代码变更, 若无则抛出异常. 随后获取最近提交信息, 当前分支和 Git 仓库状态, 最终组合成完整的提示词.
+     *
+     * @param changes     代码变更集合, 不能为空
+     * @param userContext 用户输入的上下文说明, 可为空
+     * @throws Exception 当代码变更集合中无实际代码变更时抛出, 提示用户未进行有效修改
+     */
+    private @NotNull String buildPrompt(@NotNull Collection<Change> changes, @Nullable String userContext) throws Exception {
         ChangelogCommitDiffBuilder.DiffPayload payload = diffBuilder.buildPayload(changes);
         if (payload.codeDiffs().isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
@@ -297,7 +302,6 @@ public final class ChangelogService {
         String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
         String branch = gitService.getCurrentBranch();
         boolean isGitRepository = gitService.isGitRepository();
-        String prompt = promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
-        return aiExecutor.callCommitMessageStream(prompt, listener);
+        return promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
     }
 }

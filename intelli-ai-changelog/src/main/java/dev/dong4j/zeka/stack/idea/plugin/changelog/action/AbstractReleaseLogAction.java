@@ -12,6 +12,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.vcs.log.VcsFullCommitDetails;
@@ -85,6 +86,42 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         return null;
     }
 
+    /**
+     * 检查项目是否处于索引模式
+     * <p> 在索引期间，某些操作可能不可用。子类应该在 update 和 actionPerformed 方法中调用此方法进行检查。
+     *
+     * @param project 项目对象
+     * @return 如果项目正在索引则返回 true，否则返回 false
+     */
+    protected static boolean isIndexing(@Nullable Project project) {
+        return project != null && DumbService.isDumb(project);
+    }
+
+    /**
+     * 检查并处理索引模式
+     * <p> 如果项目正在索引，显示警告通知并返回 true。子类应该在 actionPerformed 方法开始时调用此方法。
+     *
+     * @param project 项目对象
+     * @return 如果项目正在索引则返回 true，否则返回 false
+     */
+    protected static boolean checkAndHandleIndexing(@NotNull Project project) {
+        if (isIndexing(project)) {
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.indexing.warning"));
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 生成发布日志信息
+     * <p> 根据指定的项目,Git 根目录, 选定的提交记录以及是否更新最后使用的范围, 生成发布日志.
+     * 如果使用 Git Cliff 作为日志提供者且未找到二进制文件, 则显示下载通知并返回.
+     *
+     * @param project             项目对象, 不能为 null
+     * @param gitRoot             Git 根目录路径, 不能为 null
+     * @param selectedCommits     选定的提交记录列表, 不能为 null
+     * @param updateLastUsedRange 是否更新最后使用的范围
+     */
     protected void generate(@NotNull Project project,
                             @NotNull Path gitRoot,
                             @NotNull List<VcsFullCommitDetails> selectedCommits,
@@ -127,6 +164,13 @@ public abstract class AbstractReleaseLogAction extends AnAction {
 
         ProgressManager.getInstance().run(new Task.Backgroundable(
             project, ChangelogBundle.message("action.generate.release.log.progress.title"), true) {
+            /**
+             * 执行生成发布日志的逻辑
+             * <p> 此方法负责根据选择的提交记录和设置配置, 调用相应的工具或 AI 服务来生成发布日志.
+             * <p> 如果使用 git-cliff 工具, 则构建相关参数并执行; 否则, 通过 AI 服务流式生成日志内容.
+             *
+             * @param indicator 进度指示器, 用于显示操作进度和状态信息
+             */
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(true);
@@ -151,6 +195,11 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                         ChangelogService service = ChangelogService.getInstance(project);
                         String promptTemplate = readReleasePrompt(gitRoot);
                         AIStreamResponseListener listener = new AIStreamResponseListener() {
+                            /**
+                             * 在组件启动时执行的操作
+                             * <p> 检查输出会话是否已取消, 如果已取消则中断当前线程并返回. 否则, 清空输出会话中的文本内容.
+                             *
+                             */
                             @Override
                             public void onStart() {
                                 if (outputSession.isCancelled()) {
@@ -160,6 +209,12 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                 outputSession.setText("");
                             }
 
+                            /**
+                             * 处理接收到的文本块数据
+                             * <p> 当接收到文本块时, 检查输出会话是否已取消, 若已取消则中断当前线程; 否则将文本块追加到输出会话中.
+                             *
+                             * @param chunk 接收的文本块数据, 不能为空
+                             */
                             @Override
                             public void onChunk(@NotNull String chunk) {
                                 if (outputSession.isCancelled()) {
@@ -169,6 +224,12 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                 outputSession.append(chunk);
                             }
 
+                            /**
+                             * 处理完成事件, 将格式化后的文本传递给输出会话
+                             * <p> 当操作完成时调用此方法, 首先检查输出会话是否已被取消, 若未取消则对输入的完整文本进行格式化, 并将其传递给输出会话完成.
+                             *
+                             * @param fullText 完整的文本内容, 不能为 null
+                             */
                             @Override
                             public void onComplete(@NotNull String fullText) {
                                 if (outputSession.isCancelled()) {
@@ -178,6 +239,13 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                 outputSession.complete(formattedText);
                             }
 
+                            /**
+                             * 处理错误事件
+                             * <p> 当发生错误时调用此方法, 若输出会话未被取消, 则显示错误通知
+                             *
+                             * @param error     错误信息字符串
+                             * @param exception 可能的异常对象, 可以为 null
+                             */
                             @Override
                             public void onError(@NotNull String error, @Nullable Throwable exception) {
                                 if (!outputSession.isCancelled()) {
@@ -548,6 +616,13 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         // 添加下载操作
         notification.addAction(new NotificationAction(
             ChangelogBundle.message("gitcliff.download.action")) {
+            /**
+             * 处理动作事件, 执行下载并安装 GitCliff 的操作
+             * <p> 当用户触发该动作时, 会清除通知并调用下载和安装 GitCliff 的方法
+             *
+             * @param e            动作事件对象, 不能为 null
+             * @param notification 通知对象, 用于显示信息或提示, 不能为 null
+             */
             @Override
             public void actionPerformed(@NotNull AnActionEvent e,
                                         @NotNull Notification notification) {
@@ -573,6 +648,12 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                             boolean updateLastUsedRange) {
         ProgressManager.getInstance().run(new Task.Backgroundable(
             project, ChangelogBundle.message("gitcliff.download.progress.title"), true) {
+            /**
+             * 执行 GitCliff 下载和安装操作, 并继续执行生成变更日志的逻辑
+             * <p> 此方法在运行时被调用, 用于下载并安装 GitCliff 工具, 设置其为默认的发布日志提供者, 并在完成后触发生成变更日志的操作.
+             *
+             * @param indicator 进度指示器, 用于显示下载进度
+             */
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
