@@ -13,23 +13,17 @@ import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.popup.Balloon;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vcs.CommitMessageI;
-import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
-import com.intellij.openapi.vcs.changes.ContentRevision;
-import com.intellij.openapi.vcs.changes.CurrentContentRevision;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.awt.Component;
 import java.awt.Point;
-import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -152,7 +146,7 @@ public class GenerateCommitMessageAction extends AnAction {
 
         log.debug("Git 提交页面：开始生成提交记录");
         // 获取提交的文件变更
-        Collection<Change> changes = getSelectedChanges(commitWorkflowHandler);
+        Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
         if (changes.isEmpty()) {
             log.debug("Git 提交页面：未选择任何文件变更");
             showActionTip(e, ChangelogBundle.message("commit.no.selected.changes"));
@@ -166,39 +160,6 @@ public class GenerateCommitMessageAction extends AnAction {
         // 使用生成器生成提交记录
         CommitMessageGenerator generator = new CommitMessageGenerator(project);
         generator.generateForChanges(changes, commitMessageControl, null);
-    }
-
-    /**
-     * 获取提交的文件变更
-     * <p> 从给定的 CommitWorkflowHandler 中提取已选择的变更, 并返回变更列表. 如果未选择任何变更, 则返回空列表.
-     *
-     * @param commitWorkflowHandler 包含 VCS 数据的 CommitWorkflowHandler 对象
-     * @return 文件变更列表, 如果未选择任何变更则返回空列表
-     */
-    @NotNull
-    private Collection<Change> getSelectedChanges(@NotNull CommitWorkflowHandler commitWorkflowHandler) {
-        Object ui = invoke(commitWorkflowHandler, "getUi");
-        Object changes = invoke(ui, "getIncludedChanges");
-        List<Change> result = new java.util.ArrayList<>();
-        if (changes instanceof Collection<?> items) {
-            for (Object item : items) {
-                if (item instanceof Change change) {
-                    result.add(change);
-                }
-            }
-        }
-
-        Object unversioned = invoke(ui, "getIncludedUnversionedFiles");
-        if (unversioned instanceof Collection<?> items) {
-            for (Object item : items) {
-                if (item instanceof FilePath filePath) {
-                    ContentRevision revision = new CurrentContentRevision(filePath);
-                    result.add(new Change(null, revision));
-                }
-            }
-        }
-
-        return result;
     }
 
     /**
@@ -233,27 +194,6 @@ public class GenerateCommitMessageAction extends AnAction {
             .setFadeoutTime(2500)
             .createBalloon()
             .show(new RelativePoint(component, new Point(component.getWidth(), component.getHeight())), Balloon.Position.below);
-    }
-
-    /**
-     * 调用目标对象的指定方法
-     * <p> 通过反射机制获取目标对象的指定方法并调用, 如果目标对象为 null 或者方法调用失败, 则返回 null.
-     *
-     * @param target     目标对象
-     * @param methodName 方法名
-     * @return 方法调用的结果, 如果目标对象为 null 或者方法调用失败, 则返回 null
-     */
-    @Nullable
-    private static Object invoke(@Nullable Object target, @NotNull String methodName) {
-        if (target == null) {
-            return null;
-        }
-        try {
-            Method method = target.getClass().getMethod(methodName);
-            return method.invoke(target);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
     }
 
 }
