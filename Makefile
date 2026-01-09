@@ -125,7 +125,7 @@ deploy-sub: deploy-javadoc deploy-changelog deploy-tracer deploy-nacos
 version:
 	@echo "插件版本:"
 	@for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(TRACER_DIR) $(NACOS_DIR); do \
-		version=$$(cd $$dir && ./gradlew properties -q | grep "^version:" | awk -F: '{print $$2}' | xargs); \
+		version=$$(cd $$dir && ./gradlew properties -q | grep "pluginVersion" | awk -F: '{print $$2}' | xargs); \
 		printf "  %-25s %s\n" "$$dir:" "$$version"; \
 	done
 
@@ -143,56 +143,17 @@ quick-deploy:
 	@echo "正在快速部署插件..."
 	$(MAKE) -j4 deploy-sub
 
-# 拷贝构建产物到指定目录
+# 拷贝构建产物到指定目录（带版本号）
 # 用法: make copy-zips [TARGET_DIR=/path/to/dir]
 copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer
-	@TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
-	echo "正在拷贝构建产物到 $$TARGET..."; \
-	mkdir -p $$TARGET; \
-	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
-		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
-		if [ -n "$$zip_file" ]; then \
-			echo "  拷贝 $$zip_file -> $$TARGET/$$(basename $$zip_file)"; \
-			cp -f $$zip_file $$TARGET/; \
-		else \
-			echo "  警告: 未找到 $$dir 的构建产物"; \
-		fi; \
-	done; \
-	echo "✓ 构建产物拷贝完成"
-
-# 拷贝构建产物到 IDEA 插件目录（解压后拷贝目录）
-install-plugins:  build-engine build-javadoc build-changelog
-	@TARGET=$(IDEA_PLUGINS_DIR); \
-	echo "正在安装插件到 $$TARGET..."; \
-	mkdir -p $$TARGET; \
-	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR); do \
-		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
-		if [ -n "$$zip_file" ]; then \
-			temp_dir=$$(mktemp -d); \
-			echo "  解压 $$zip_file..."; \
-			unzip -q -o $$zip_file -d $$temp_dir; \
-			plugin_dir=$$(find $$temp_dir -maxdepth 1 -type d ! -path $$temp_dir | head -n1); \
-			if [ -n "$$plugin_dir" ] && [ -d $$plugin_dir ]; then \
-				plugin_name=$$(basename $$plugin_dir); \
-				target_plugin_dir=$$TARGET/$$plugin_name; \
-				echo "  拷贝 $$plugin_dir -> $$target_plugin_dir"; \
-				rm -rf $$target_plugin_dir; \
-				mv $$plugin_dir $$target_plugin_dir; \
-			else \
-				echo "  警告: 解压后未找到插件目录"; \
-			fi; \
-			rm -rf $$temp_dir; \
-		else \
-			echo "  警告: 未找到 $$dir 的构建产物"; \
-		fi; \
-	done; \
-	echo "✓ 插件安装完成,请重启 IDEA 以应用更改"
-
-# 拷贝构建产物到指定目录，然后安装到 IDEA 插件目录
-# 用法: make copy-and-install [TARGET_DIR=/path/to/dir]
-copy-and-install: build-engine build-javadoc build-changelog build-nacos build-tracer
-	@TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
-	echo "正在拷贝构建产物到 $$TARGET..."; \
+	@BASE_TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
+	version=$$(cd $(ENGINE_DIR) && ./gradlew properties -q | grep "pluginVersion" | awk -F: '{print $$2}' | xargs); \
+	if [ -z "$$version" ]; then \
+		echo "错误: 无法读取版本号"; \
+		exit 1; \
+	fi; \
+	TARGET=$$BASE_TARGET/$$version; \
+	echo "正在拷贝构建产物到 $$TARGET (版本: $$version)..."; \
 	mkdir -p $$TARGET; \
 	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
 		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
@@ -204,29 +165,39 @@ copy-and-install: build-engine build-javadoc build-changelog build-nacos build-t
 		fi; \
 	done; \
 	echo "✓ 构建产物拷贝完成"; \
-	echo ""; \
-	TARGET_IDEA=$(IDEA_PLUGINS_DIR); \
-	echo "正在安装插件到 $$TARGET_IDEA..."; \
-	mkdir -p $$TARGET_IDEA; \
-	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR); do \
-		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
-		if [ -n "$$zip_file" ]; then \
+	echo "正在 Finder 中打开 $$TARGET..."; \
+	open $$TARGET
+
+# 拷贝构建产物到 IDEA 插件目录（解压后拷贝目录）
+# 复用 copy-zips 的结果，从目标目录读取所有 zip 文件并安装
+# 用法: make install-plugins [TARGET_DIR=/path/to/dir]
+install-plugins: copy-zips
+	@BASE_SOURCE_DIR=$${TARGET_DIR:-$(DIST_DIR)}; \
+	version=$$(cd $(ENGINE_DIR) && ./gradlew properties -q | grep "^version:" | awk -F: '{print $$2}' | xargs); \
+	if [ -z "$$version" ]; then \
+		echo "错误: 无法读取版本号"; \
+		exit 1; \
+	fi; \
+	SOURCE_DIR=$$BASE_SOURCE_DIR/$$version; \
+	TARGET=$(IDEA_PLUGINS_DIR); \
+	echo "正在从 $$SOURCE_DIR 安装插件到 $$TARGET (版本: $$version)..."; \
+	mkdir -p $$TARGET; \
+	for zip_file in $$SOURCE_DIR/*.zip; do \
+		if [ -f "$$zip_file" ]; then \
 			temp_dir=$$(mktemp -d); \
-			echo "  解压 $$zip_file..."; \
+			echo "  解压 $$(basename $$zip_file)..."; \
 			unzip -q -o $$zip_file -d $$temp_dir; \
 			plugin_dir=$$(find $$temp_dir -maxdepth 1 -type d ! -path $$temp_dir | head -n1); \
 			if [ -n "$$plugin_dir" ] && [ -d $$plugin_dir ]; then \
 				plugin_name=$$(basename $$plugin_dir); \
-				target_plugin_dir=$$TARGET_IDEA/$$plugin_name; \
-				echo "  拷贝 $$plugin_dir -> $$target_plugin_dir"; \
+				target_plugin_dir=$$TARGET/$$plugin_name; \
+				echo "  安装 $$plugin_name -> $$target_plugin_dir"; \
 				rm -rf $$target_plugin_dir; \
 				mv $$plugin_dir $$target_plugin_dir; \
 			else \
-				echo "  警告: 解压后未找到插件目录"; \
+				echo "  警告: 解压后未找到插件目录 ($$zip_file)"; \
 			fi; \
 			rm -rf $$temp_dir; \
-		else \
-			echo "  警告: 未找到 $$dir 的构建产物"; \
 		fi; \
 	done; \
 	echo "✓ 插件安装完成,请重启 IDEA 以应用更改"
@@ -237,24 +208,28 @@ ALIYUN_PLUGIN_DIR := /var/www/data/intelli-ai-plugin
 
 # 拷贝构建产物到指定目录，安装到 IDEA 插件目录，然后上传到阿里云
 # 用法: make copy-install-upload [TARGET_DIR=/path/to/dir]
-copy-install-upload: copy-and-install
-	@echo ""; \
+copy-install-upload: install-plugins
+	@BASE_TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
+	version=$$(cd $(ENGINE_DIR) && ./gradlew properties -q | grep "^version:" | awk -F: '{print $$2}' | xargs); \
+	if [ -z "$$version" ]; then \
+		echo "错误: 无法读取版本号"; \
+		exit 1; \
+	fi; \
+	TARGET=$$BASE_TARGET/$$version; \
+	echo ""; \
 	echo "正在上传构建产物到阿里云服务器..."; \
 	echo "目标服务器: $(ALIYUN_HOST)"; \
 	echo "目标目录: $(ALIYUN_PLUGIN_DIR)"; \
-	TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
+	echo "版本: $$version"; \
 	if [ ! -d "$$TARGET" ]; then \
 		echo "错误: 目标目录不存在: $$TARGET"; \
 		exit 1; \
 	fi; \
 	ssh $(ALIYUN_HOST) "mkdir -p $(ALIYUN_PLUGIN_DIR)"; \
-	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR); do \
-		zip_file=$$(ls -t $$TARGET/$$dir-*.zip 2>/dev/null | head -n1); \
-		if [ -n "$$zip_file" ] && [ -f "$$zip_file" ]; then \
+	for zip_file in $$TARGET/*.zip; do \
+		if [ -f "$$zip_file" ]; then \
 			echo "  上传 $$(basename $$zip_file) -> $(ALIYUN_HOST):$(ALIYUN_PLUGIN_DIR)/"; \
 			rsync -avz --progress "$$zip_file" "$(ALIYUN_HOST):$(ALIYUN_PLUGIN_DIR)/"; \
-		else \
-			echo "  警告: 未找到 $$dir 的构建产物"; \
 		fi; \
 	done; \
 	echo "✓ 构建产物上传完成"
