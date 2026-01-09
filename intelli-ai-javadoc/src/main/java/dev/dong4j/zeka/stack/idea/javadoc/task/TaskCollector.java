@@ -8,6 +8,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileVisitor;
 import com.intellij.psi.JavaRecursiveElementVisitor;
 import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiAnonymousClass;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
@@ -389,12 +390,17 @@ public class TaskCollector {
             psiFile.accept(new JavaRecursiveElementVisitor() {
                 /**
                  * 访问类元素并根据配置和判断条件决定是否生成文档任务
+                 * <p> 排除匿名类，因为匿名类不应该生成 Javadoc
                  *
                  * @param aClass 被访问的类元素
                  */
                 @Override
                 public void visitClass(@NotNull PsiClass aClass) {
                     super.visitClass(aClass);
+                    // 排除匿名类（匿名类不应该生成 Javadoc）
+                    if (aClass instanceof PsiAnonymousClass) {
+                        return;
+                    }
                     tasks.addAll(collectFromElement(aClass, elementPredicate));
                 }
 
@@ -853,7 +859,7 @@ public class TaskCollector {
      * @return 是否应该为该元素生成文档
      */
     private boolean shouldGenerateForModifiedElement(@NotNull PsiElement element, boolean ignoreOverrideExisting) {
-        boolean needGenerate = false;
+        boolean needGenerate;
         if (element instanceof PsiMethod || element instanceof KtNamedFunction) {
             needGenerate = settings.generateForMethod;
         } else if (element instanceof PsiField || element instanceof KtProperty) {
