@@ -190,18 +190,12 @@ public final class AIProviderConfigUI {
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
-        // 设置固定宽度，防止输入超长 URL 时拉宽整个 UI
-        baseUrlField.setColumns(40);
         Dimension baseUrlFieldSize = new Dimension(400, baseUrlField.getPreferredSize().height);
         baseUrlField.setPreferredSize(baseUrlFieldSize);
         baseUrlField.setMaximumSize(baseUrlFieldSize);
 
         apiKeyField = new JBPasswordField();
         apiKeyField.setToolTipText(AICommonBundle.message("settings.api.key.tooltip"));
-        // 设置固定宽度，防止输入超长 key 时拉宽整个 UI
-        // 使用 setColumns 设置可见字符数，大约 40 个字符宽度
-        apiKeyField.setColumns(40);
-        // 设置最大宽度，防止布局被拉宽
         Dimension apiKeyFieldSize = new Dimension(400, apiKeyField.getPreferredSize().height);
         apiKeyField.setPreferredSize(apiKeyFieldSize);
         apiKeyField.setMaximumSize(apiKeyFieldSize);
@@ -362,6 +356,8 @@ public final class AIProviderConfigUI {
             .addComponent(personalInfoPanel.getContent())
             .getPanel();
         mainPanel.setBorder(JBUI.Borders.empty(8));
+        // 设置最小宽度为 800
+        mainPanel.setMinimumSize(new Dimension(1200, mainPanel.getMinimumSize().height));
     }
 
     /**
@@ -711,14 +707,15 @@ public final class AIProviderConfigUI {
      * @return 包含连接配置组件的面板
      */
     private JPanel createConnectionPanel() {
-        Dimension providerComboBoxSize = new Dimension(300, providerComboBox.getPreferredSize().height);
-        providerComboBox.setPreferredSize(providerComboBoxSize);
-        providerComboBox.setMaximumSize(providerComboBoxSize);
+        // 只设置高度，宽度动态拉伸
+        int preferredHeight = providerComboBox.getPreferredSize().height;
+        providerComboBox.setPreferredSize(new Dimension(0, preferredHeight));
+        providerComboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, preferredHeight));
 
         // 创建包含下拉框和超链接的面板（同一行）
-        // 下拉框在左边，超链接在右边对齐
+        // 下拉框在中间动态拉伸，超链接在右边对齐
         JPanel providerPanel = new JPanel(new BorderLayout(5, 0));
-        providerPanel.add(providerComboBox, BorderLayout.WEST);
+        providerPanel.add(providerComboBox, BorderLayout.CENTER);
         providerPanel.add(getApiKeyLink, BorderLayout.EAST);
 
         JPanel apiKeyPanel = new JPanel(new BorderLayout(5, 0));
