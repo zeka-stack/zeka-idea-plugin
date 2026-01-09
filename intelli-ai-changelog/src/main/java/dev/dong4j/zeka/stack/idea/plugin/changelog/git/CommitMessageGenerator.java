@@ -196,14 +196,19 @@ public class CommitMessageGenerator {
 
                         // 在 EDT 中显示结果
                         ApplicationManager.getApplication().invokeLater(() -> {
+                            // 检查项目是否已销毁
+                            if (project.isDisposed() || state.cancelled.get()) {
+                                log.trace("项目已销毁或任务已取消，跳过设置提交消息");
+                                return;
+                            }
+
                             // 直接写入提交面板，避免弹窗打断提交流程
-                            boolean applied = !state.cancelled.get()
-                                              && setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
+                            boolean applied = setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
                             if (!applied && !updated.get()) {
                                 log.trace("Git 提交页面：提交面板不可用，无法写入提交记录");
                             }
 
-                            if (outputSession != null) {
+                            if (outputSession != null && !project.isDisposed()) {
                                 outputSession.setText(formattedCommitMessage);
                             }
                         });
@@ -212,6 +217,10 @@ public class CommitMessageGenerator {
                     } catch (Exception e) {
                         log.trace("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
+                            // 检查项目是否已销毁
+                            if (project.isDisposed() || state.cancelled.get()) {
+                                return;
+                            }
                             typingIndicator.generateFailure();
                             String errorMessage = e.getMessage();
                             if (errorMessage != null && !errorMessage.isEmpty()) {
@@ -292,6 +301,10 @@ public class CommitMessageGenerator {
                             }
                             buffer.append(chunk);
                             ApplicationManager.getApplication().invokeLater(() -> {
+                                // 检查项目是否已销毁
+                                if (project.isDisposed() || state.cancelled.get()) {
+                                    return;
+                                }
                                 if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
                                     updated.set(true);
                                 }
@@ -334,6 +347,10 @@ public class CommitMessageGenerator {
                                 typingIndicator.stop();
                             }
                             ApplicationManager.getApplication().invokeLater(() -> {
+                                // 检查项目是否已销毁
+                                if (project.isDisposed() || state.cancelled.get()) {
+                                    return;
+                                }
                                 if (setCommitMessageText(fullText, commitMessageControl, true)) {
                                     updated.set(true);
                                 }
@@ -664,6 +681,10 @@ public class CommitMessageGenerator {
             // 若提交面板可用，同步写入多条 message，方便用户直接复制。
             // 必须在 EDT 中执行 UI 操作
             ApplicationManager.getApplication().invokeLater(() -> {
+                // 检查项目是否已销毁
+                if (project.isDisposed()) {
+                    return;
+                }
                 setCommitMessagePlaceholder(ChangelogBundle.message("commit.multi.repo.placeholder",
                                                                     changesByRoot.size()), commitMessageControl);
             });
@@ -724,14 +745,31 @@ public class CommitMessageGenerator {
         if (commitMessageControl == null) {
             return false;
         }
-        commitMessageControl.setCommitMessage(commitMessage);
 
-        // 只有在最终完成时才通知 CommitMessageHintManager
-        if (isComplete) {
-            notifyGenerationCompleted(commitMessageControl);
+        // 检查项目是否已销毁
+        if (project.isDisposed()) {
+            log.trace("项目已销毁，跳过设置提交消息文本");
+            return false;
         }
 
-        return true;
+        try {
+            commitMessageControl.setCommitMessage(commitMessage);
+
+            // 只有在最终完成时才通知 CommitMessageHintManager
+            if (isComplete) {
+                notifyGenerationCompleted(commitMessageControl);
+            }
+
+            return true;
+        } catch (Exception e) {
+            // 捕获可能的异常（如项目已销毁）
+            if (project.isDisposed()) {
+                log.trace("项目已销毁，无法设置提交消息文本", e);
+            } else {
+                log.trace("设置提交消息文本失败", e);
+            }
+            return false;
+        }
     }
 
     /**
@@ -742,6 +780,12 @@ public class CommitMessageGenerator {
      * @param commitMessageControl 提交面板的控制对象，不能为 null
      */
     private void notifyGenerationCompleted(@NotNull CommitMessageI commitMessageControl) {
+        // 检查项目是否已销毁
+        if (project.isDisposed()) {
+            log.trace("项目已销毁，跳过通知生成完成状态");
+            return;
+        }
+
         try {
             // 获取 EditorTextField
             EditorTextField editorField = getEditorTextField(commitMessageControl);
@@ -755,14 +799,14 @@ public class CommitMessageGenerator {
                 return;
             }
 
-            // 获取项目
-            Project project = editor.getProject();
-            if (project == null || project.isDisposed()) {
+            // 获取项目（从 Editor 获取，可能与当前项目不同）
+            Project editorProject = editor.getProject();
+            if (editorProject == null || editorProject.isDisposed()) {
                 return;
             }
 
-            // 获取 CommitMessageHintService
-            CommitMessageHintService hintService = project.getService(CommitMessageHintService.class);
+            // 获取 CommitMessageHintService（使用 Editor 的项目）
+            CommitMessageHintService hintService = editorProject.getService(CommitMessageHintService.class);
             if (hintService == null) {
                 return;
             }
@@ -793,6 +837,10 @@ public class CommitMessageGenerator {
         editorField.setPlaceholder(text);
         // 刷新 EditorTextField 以显示更新的 placeholder
         ApplicationManager.getApplication().invokeLater(() -> {
+            // 检查项目是否已销毁
+            if (project.isDisposed()) {
+                return;
+            }
             editorField.revalidate();
             editorField.repaint();
         });
@@ -1090,6 +1138,10 @@ public class CommitMessageGenerator {
         void start(boolean canClear) {
             resetState();
             ApplicationManager.getApplication().invokeLater(() -> {
+                // 检查项目是否已销毁
+                if (project.isDisposed()) {
+                    return;
+                }
                 if (canClear) {
                     setCommitMessageText("", commitMessageControl);
                 } else {
@@ -1132,6 +1184,10 @@ public class CommitMessageGenerator {
         void generateFailure() {
             stop();
             ApplicationManager.getApplication().invokeLater(() -> {
+                // 检查项目是否已销毁
+                if (project.isDisposed()) {
+                    return;
+                }
                 resetCommitMessagePlaceholder(
                     ChangelogBundle.message("commit.message.placeholder.reset.error.message"), commitMessageControl);
                 if (outputSession != null) {
