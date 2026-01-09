@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.actionSystem.impl.ActionButton;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.popup.Balloon;
@@ -69,6 +70,13 @@ public class GenerateCommitMessageAction extends AnAction {
             return;
         }
 
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            e.getPresentation().setVisible(true);
+            return;
+        }
+
         // 设置按钮文本和图标
         if (CommitMessageGenerator.isRunning(project)) {
             String text = ChangelogBundle.message("commit.action.stop.text");
@@ -113,6 +121,12 @@ public class GenerateCommitMessageAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.indexing.warning"));
             return;
         }
 

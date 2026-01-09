@@ -7,6 +7,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.vcs.log.VcsFullCommitDetails;
 import com.intellij.vcs.log.VcsLogCommitSelection;
@@ -157,6 +158,12 @@ public abstract class AbstractGitLogAction extends AnAction {
         e.getPresentation().setDescription(ChangelogBundle.message(getDescriptionKey()));
         e.getPresentation().setIcon(getIcon());
 
+        // 检查项目是否处于索引模式
+        if (project != null && DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+
         // 只有在 Git Log 工具窗口中有选中提交时才启用
         boolean enabled = project != null && selection != null;
         if (enabled) {
@@ -181,6 +188,12 @@ public abstract class AbstractGitLogAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        // 检查项目是否处于索引模式
+        if (DumbService.isDumb(project)) {
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.indexing.warning"));
             return;
         }
 
@@ -237,16 +250,34 @@ public abstract class AbstractGitLogAction extends AnAction {
                 try {
                     ChangelogService service = ChangelogService.getInstance(project);
                     AIStreamResponseListener listener = new AIStreamResponseListener() {
+                        /**
+                         * 在活动开始时清空输出会话文本
+                         * <p> 该方法在活动启动时被调用, 用于重置或清空输出会话中的文本内容, 确保用户界面显示最新状态.
+                         *
+                         * @since 1.0
+                         */
                         @Override
                         public void onStart() {
                             outputSession.setText("");
                         }
 
+                        /**
+                         * 处理接收到的文本块数据
+                         * <p> 当接收到一个文本块时, 将其追加到输出会话中
+                         *
+                         * @param chunk 要追加的文本块, 不能为 null
+                         */
                         @Override
                         public void onChunk(@NotNull String chunk) {
                             outputSession.append(chunk);
                         }
 
+                        /**
+                         * 处理完整的文本内容并完成输出会话
+                         * <p> 当接收到完整的文本内容时, 对其进行格式化处理, 并将结果传递给输出会话以完成当前会话.
+                         *
+                         * @param fullText 完整的文本内容, 不能为空
+                         */
                         @Override
                         public void onComplete(@NotNull String fullText) {
                             String formattedText = MessageFormatter.format(fullText);

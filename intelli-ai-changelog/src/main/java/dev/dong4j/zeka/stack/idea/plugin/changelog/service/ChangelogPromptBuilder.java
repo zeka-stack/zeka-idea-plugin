@@ -408,15 +408,7 @@ final class ChangelogPromptBuilder {
             String key = diff.changeType.name();
             counters.put(key, counters.getOrDefault(key, 0) + 1);
         }
-        String primary = "MODIFY";
-        int max = 0;
-        for (Map.Entry<String, Integer> entry : counters.entrySet()) {
-            if (entry.getValue() > max) {
-                max = entry.getValue();
-                primary = entry.getKey();
-            }
-        }
-        return primary;
+        return infer(counters, "MODIFY");
     }
 
     /**
@@ -434,7 +426,19 @@ final class ChangelogPromptBuilder {
         if (counters.isEmpty()) {
             return "core";
         }
-        String primary = "core";
+        return infer(counters, "core");
+    }
+
+    /**
+     * 从变更类型计数器中推断主要变更类型
+     * <p> 遍历计数器, 选择出现次数最多的变更类型作为主要类型; 若无有效计数, 则默认返回指定的默认类型.
+     *
+     * @param counters 变更类型计数映射, 键为变更类型名称, 值为出现次数, 不能为 null
+     * @param modify   默认变更类型, 当计数器为空或无有效计数时返回该值, 不能为 null
+     * @return 出现次数最多的变更类型名称, 若无有效计数则返回默认值
+     */
+    private String infer(Map<String, Integer> counters, String modify) {
+        String primary = modify;
         int max = 0;
         for (Map.Entry<String, Integer> entry : counters.entrySet()) {
             if (entry.getValue() > max) {
@@ -613,11 +617,10 @@ final class ChangelogPromptBuilder {
      */
     @NotNull
     private String escapeJson(@NotNull String value) {
-        String escaped = value.replace("\\", "\\\\")
+        return value.replace("\\", "\\\\")
             .replace("\"", "\\\"")
             .replace("\r", "\\r")
             .replace("\n", "\\n");
-        return escaped;
     }
 
     /**

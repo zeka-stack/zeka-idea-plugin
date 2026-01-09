@@ -41,6 +41,13 @@ public class GenerateReleaseLogFromGitLogAction extends AbstractReleaseLogAction
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
+        
+        // 检查项目是否处于索引模式
+        if (AbstractReleaseLogAction.isIndexing(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+        
         VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
         boolean enabled = project != null && log != null && !log.getSelectedDetails().isEmpty();
         e.getPresentation().setEnabled(enabled);
@@ -72,6 +79,11 @@ public class GenerateReleaseLogFromGitLogAction extends AbstractReleaseLogAction
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        // 检查项目是否处于索引模式
+        if (AbstractReleaseLogAction.checkAndHandleIndexing(project)) {
             return;
         }
 

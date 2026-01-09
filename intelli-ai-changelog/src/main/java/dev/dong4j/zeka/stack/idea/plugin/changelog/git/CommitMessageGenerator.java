@@ -6,16 +6,27 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.MessageType;
+import com.intellij.openapi.ui.popup.Balloon;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vcs.CommitMessageI;
+import com.intellij.openapi.vcs.FileStatus;
 import com.intellij.openapi.vcs.ProjectLevelVcsManager;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vcs.changes.ContentRevision;
+import com.intellij.openapi.vcs.ui.CommitMessage;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.EditorTextField;
+import com.intellij.ui.HyperlinkAdapter;
+import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.Alarm;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.Point;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -24,6 +35,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import javax.swing.JComponent;
+import javax.swing.event.HyperlinkEvent;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -130,7 +144,14 @@ public class CommitMessageGenerator {
                     indicator.setText(ChangelogBundle.message("commit.analyzing.changes"));
                     state.indicator.set(indicator);
                     state.thread.set(Thread.currentThread());
-                    TypingIndicator typingIndicator = startTypingIndicator(commitMessageControl, outputSession);
+
+                    String contextText = null;
+                    if (SettingsState.getInstance().useCommitMessageInputAsContext) {
+                        contextText = getCommitMessageText(commitMessageControl);
+                    }
+
+                    // 如果 contextText 不为 null, 则不能清空
+                    TypingIndicator typingIndicator = startTypingIndicator(commitMessageControl, outputSession, contextText == null);
                     state.typingIndicator.set(typingIndicator);
                     StreamCancellationToken cancellationToken = new StreamCancellationToken();
                     state.cancellationToken.set(cancellationToken);
@@ -139,10 +160,7 @@ public class CommitMessageGenerator {
                         if (state.cancelled.get()) {
                             return;
                         }
-                        String contextText = null;
-                        if (SettingsState.getInstance().useCommitMessageInputAsContext) {
-                            contextText = getCommitMessageText(commitMessageControl);
-                        }
+
                         ChangelogService service = ChangelogService.getInstance(project);
 
                         // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
@@ -176,6 +194,7 @@ public class CommitMessageGenerator {
                             if (!applied && !updated.get()) {
                                 log.trace("Git 提交页面：提交面板不可用，无法写入提交记录");
                             }
+
                             if (outputSession != null) {
                                 outputSession.setText(formattedCommitMessage);
                             }
@@ -185,17 +204,20 @@ public class CommitMessageGenerator {
                     } catch (Exception e) {
                         log.trace("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
-                            typingIndicator.stopAndClear();
+                            typingIndicator.generateFailure();
                             String errorMessage = e.getMessage();
                             if (errorMessage != null && !errorMessage.isEmpty()) {
                                 NotificationUtil.showError(project, errorMessage);
                             } else {
-                                NotificationUtil.showError(project,
-                                                           ChangelogBundle.message("commit.generation.error",
-                                                                                   ChangelogBundle.message("error.ai.service.unknown")));
+                                NotificationUtil.showError(
+                                    project,
+                                    ChangelogBundle.message("commit.generation.error",
+                                                            ChangelogBundle.message("error.ai.service.unknown")));
                             }
                         });
                     } finally {
+                        // 重设提示语
+                        resetCommitMessagePlaceholder(commitMessageControl);
                         typingIndicator.stop();
                         GENERATION_STATES.remove(project);
                     }
@@ -317,9 +339,64 @@ public class CommitMessageGenerator {
             });
     }
 
+
+    /**
+     * 显示操作提示气泡
+     * <p> 在指定组件的下方显示一个包含 HTML 格式提示信息的气泡提示框, 提示用户当前上下文功能已启用.
+     * <p> 气泡中包含一个"关闭"超链接, 点击后将禁用上下文功能并持久化设置.
+     * <p> 示例:
+     * <pre>{@code
+     * showActionTip(myComponent);
+     * }</pre>
+     *
+     * @param component 显示气泡的组件, 不能为 null
+     */
+    private void showActionTip(@NotNull JComponent component) {
+        // 创建超链接监听器, 处理"关闭"链接的点击事件
+        HyperlinkAdapter linkListener = new HyperlinkAdapter() {
+            /**
+             * 处理超链接激活事件
+             * <p> 当用户点击超链接时触发, 若链接描述为 "action:close", 则关闭提交信息输入框作为上下文功能, 并保存设置
+             * <p> 示例:
+             * <pre>{@code
+             * // 当用户点击关闭按钮时, 将设置 useCommitMessageInputAsContext 置为 false 并保存
+             * hyperlinkActivated(event); // event.getDescription() 返回 "action:close"
+             * }</pre>
+             *
+             * @param e 超链接事件对象, 不能为 null
+             */
+            @Override
+            protected void hyperlinkActivated(@NotNull HyperlinkEvent e) {
+                String url = e.getDescription();
+                // 处理 action:close 链接
+                if ("action:close".equals(url)) {
+                    // 关闭"使用提交输入作为上下文"设置并持久化
+                    SettingsState settings = SettingsState.getInstance();
+                    settings.useCommitMessageInputAsContext = false;
+                    ApplicationManager.getApplication().saveSettings();
+                }
+            }
+        };
+
+        final Balloon balloon = JBPopupFactory.getInstance()
+            .createHtmlTextBalloonBuilder(
+                ChangelogBundle.message("commit.context.tip.enabled"),
+                MessageType.INFO,
+                linkListener)
+            .setFadeoutTime(5000)
+            .setLayer(Balloon.Layer.normal)
+            .setHideOnLinkClick(true)
+            .createBalloon();
+
+        balloon.show(new RelativePoint(component,
+                                       new Point(component.getWidth() / 2, component.getHeight())),
+                     Balloon.Position.below);
+    }
+
     /**
      * 按 VCS Root 对变更分组
-     * <p> 多仓库场景下用于拆分生成上下文，避免跨仓库混合导致的噪音。
+     * <p> 多仓库场景下用于拆分生成上下文，避免跨仓库混合导致的噪音.
+     * <p> 对于删除的文件, 会从 ContentRevision 获取文件路径来查找 VCS root, 确保正确分组.
      *
      * @param changes 变更集合
      * @return key 为仓库根路径的分组 Map
@@ -329,12 +406,142 @@ public class CommitMessageGenerator {
         ProjectLevelVcsManager vcsManager = ProjectLevelVcsManager.getInstance(project);
         Map<String, List<Change>> grouped = new LinkedHashMap<>();
         for (Change change : changes) {
-            VirtualFile file = change.getVirtualFile();
-            VirtualFile root = file != null ? vcsManager.getVcsRootFor(file) : null;
-            String rootKey = root != null ? root.getPresentableUrl() : ChangelogBundle.message("commit.multi.repo.unknown");
+            VirtualFile root = findVcsRootForChange(change, vcsManager);
+            if (root == null) {
+                // 无法确定 VCS root, 跳过该变更并记录日志
+                String filePath = getChangeFilePath(change);
+                log.warn("无法确定变更文件的 VCS root, 跳过该文件: {}", filePath);
+                continue;
+            }
+            String rootKey = root.getPresentableUrl();
             grouped.computeIfAbsent(rootKey, key -> new java.util.ArrayList<>()).add(change);
         }
         return grouped;
+    }
+
+    /**
+     * 获取变更对象的文件路径
+     * <p> 用于日志输出, 优先从 VirtualFile 获取, 否则从 ContentRevision 获取.
+     *
+     * @param change 变更对象, 不能为 null
+     * @return 文件路径, 如果无法获取则返回 "unknown"
+     */
+    @NotNull
+    private String getChangeFilePath(@NotNull Change change) {
+        VirtualFile file = change.getVirtualFile();
+        if (file != null) {
+            return file.getPath();
+        }
+        ContentRevision revision = getContentRevision(change);
+        if (revision != null) {
+            String path = revision.getFile().getPath();
+            return !path.isEmpty() ? path : "unknown";
+        }
+        return "unknown";
+    }
+
+    /**
+     * 查找变更对应的 VCS root
+     * <p> 对于正常文件, 直接从 VirtualFile 获取 VCS root.
+     * <p> 如果 VirtualFile 为 null, 则从 ContentRevision 获取文件路径:
+     * <ul>
+     *   <li>删除的文件: 使用 beforeRevision 获取路径</li>
+     *   <li>新增的文件: 使用 afterRevision 获取路径</li>
+     *   <li>重命名/移动的文件: 优先使用 afterRevision 获取新路径</li>
+     *   <li>其他情况: 优先使用 afterRevision, 否则使用 beforeRevision</li>
+     * </ul>
+     * 然后通过路径查找 VirtualFile 并获取 VCS root.
+     *
+     * @param change     变更对象, 不能为 null
+     * @param vcsManager VCS 管理器, 不能为 null
+     * @return VCS root, 如果无法确定则返回 null
+     */
+    @Nullable
+    private VirtualFile findVcsRootForChange(@NotNull Change change, @NotNull ProjectLevelVcsManager vcsManager) {
+        // 首先尝试从 VirtualFile 获取 (适用于大多数情况)
+        VirtualFile file = change.getVirtualFile();
+        if (file != null) {
+            return vcsManager.getVcsRootFor(file);
+        }
+
+        // 如果 VirtualFile 为 null, 从 ContentRevision 获取文件路径
+        final ContentRevision revision = getContentRevision(change);
+
+        if (revision == null) {
+            return null;
+        }
+
+        // 从 ContentRevision 获取文件路径
+        String filePath = revision.getFile().getPath();
+        if (filePath.isEmpty()) {
+            return null;
+        }
+
+        // 尝试通过路径查找 VirtualFile (即使文件已删除, 父目录可能还存在)
+        LocalFileSystem localFileSystem = LocalFileSystem.getInstance();
+        VirtualFile virtualFile = localFileSystem.findFileByPath(filePath);
+        if (virtualFile != null) {
+            return vcsManager.getVcsRootFor(virtualFile);
+        }
+
+        // 如果文件不存在, 尝试向上查找父目录, 直到找到存在的目录或项目根目录
+        java.io.File ioFile = new java.io.File(filePath);
+        java.io.File currentDir = ioFile.getParentFile();
+        String projectBasePath = project.getBasePath();
+
+        while (currentDir != null) {
+            // 如果已经超出项目根目录, 停止查找
+            if (projectBasePath != null && !currentDir.getPath().startsWith(projectBasePath)) {
+                break;
+            }
+
+            VirtualFile dirVirtualFile = localFileSystem.findFileByPath(currentDir.getPath());
+            if (dirVirtualFile != null) {
+                VirtualFile root = vcsManager.getVcsRootFor(dirVirtualFile);
+                if (root != null) {
+                    return root;
+                }
+            }
+
+            currentDir = currentDir.getParentFile();
+        }
+
+        return null;
+    }
+
+    /**
+     * 根据变更对象获取对应的 ContentRevision
+     * <p> 根据文件状态判断应使用哪个修订版本:
+     * <ul>
+     * <li> 若文件已删除, 则使用 beforeRevision</li>
+     * <li> 若存在 afterRevision, 则使用 afterRevision</li>
+     * <li> 若不存在 afterRevision 但存在 beforeRevision, 则使用 beforeRevision</li>
+     * </ul>
+     * <p> 若所有修订版本均不存在, 则返回 null.
+     *
+     * @param change 变更对象, 不能为 null
+     * @return 对应的 ContentRevision, 若无法确定则返回 null
+     */
+    private static @Nullable ContentRevision getContentRevision(@NotNull Change change) {
+        ContentRevision beforeRevision = change.getBeforeRevision();
+        ContentRevision afterRevision = change.getAfterRevision();
+
+        // 确定使用哪个 ContentRevision 获取路径
+        ContentRevision revision = null;
+        FileStatus fileStatus = change.getFileStatus();
+        boolean isDeleted = fileStatus == FileStatus.DELETED || fileStatus == FileStatus.DELETED_FROM_FS;
+
+        if (isDeleted) {
+            // 删除的文件: 使用 beforeRevision
+            revision = beforeRevision;
+        } else if (afterRevision != null) {
+            // 新增、修改、重命名等: 优先使用 afterRevision (新路径更可能存在于文件系统)
+            revision = afterRevision;
+        } else if (beforeRevision != null) {
+            // 如果 afterRevision 为 null, 使用 beforeRevision
+            revision = beforeRevision;
+        }
+        return revision;
     }
 
     /**
@@ -353,7 +560,11 @@ public class CommitMessageGenerator {
                                               @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
                                               @Nullable CommitMessageI commitMessageControl,
                                               @NotNull TypingIndicator typingIndicator) throws Exception {
-        String repoList = String.join(", ", changesByRoot.keySet());
+        // 提取每个仓库路径的最后一级目录名，兼容 Windows 和 Unix 系统
+        String repoList = changesByRoot.keySet().stream()
+            .map(path -> new java.io.File(path).getName())
+            .collect(java.util.stream.Collectors.joining(", "));
+
         NotificationUtil.showWarning(project,
                                      ChangelogBundle.message("commit.multi.repo.detected",
                                                              changesByRoot.size(),
@@ -387,7 +598,11 @@ public class CommitMessageGenerator {
             session.setText(combined);
 
             // 若提交面板可用，同步写入多条 message，方便用户直接复制。
-            setCommitMessageText(combined, commitMessageControl);
+            // 必须在 EDT 中执行 UI 操作
+            ApplicationManager.getApplication().invokeLater(() -> {
+                setCommitMessagePlaceholder(ChangelogBundle.message("commit.multi.repo.placeholder",
+                                                             changesByRoot.size()), commitMessageControl);
+            });
         }
     }
 
@@ -399,7 +614,7 @@ public class CommitMessageGenerator {
      * @param commitMessageControl 提交面板的控制对象
      * @return 如果成功设置提交消息文本, 则返回 true; 否则返回 false
      */
-    private boolean setCommitMessageText(@NotNull String commitMessage, @Nullable CommitMessageI commitMessageControl) {
+    private boolean setCommitMessageText1(@NotNull String commitMessage, @Nullable CommitMessageI commitMessageControl) {
         if (commitMessageControl == null) {
             return false;
         }
@@ -419,6 +634,79 @@ public class CommitMessageGenerator {
     }
 
     /**
+     * 设置提交消息文本
+     * <p> 直接调用提交面板控制对象的 setCommitMessage 方法设置提交消息文本.
+     * <p> 此方法为简化版本, 不尝试通过反射查找方法, 直接调用已知方法名.
+     *
+     * @param commitMessage        提交消息文本, 不能为 null
+     * @param commitMessageControl 提交面板的控制对象, 可以为 null
+     * @return 如果成功调用 setCommitMessage 方法并设置文本, 则返回 true; 否则返回 false
+     */
+    private boolean setCommitMessageText(@NotNull String commitMessage, @Nullable CommitMessageI commitMessageControl) {
+        if (commitMessageControl == null) {
+            return false;
+        }
+        commitMessageControl.setCommitMessage(commitMessage);
+        return true;
+    }
+
+    /**
+     * 设置提交消息文本的占位符内容
+     * <p> 尝试将指定的占位符文本设置到提交面板的编辑器字段中. 如果提交面板控制对象为 null, 则直接返回.
+     *
+     * @param text                 占位符文本内容, 不能为 null
+     * @param commitMessageControl 提交面板的控制对象, 可以为 null
+     */
+    private void setCommitMessagePlaceholder(@NotNull String text, @Nullable CommitMessageI commitMessageControl) {
+        final EditorTextField editorField = getEditorTextField(commitMessageControl);
+        if (editorField == null) {
+            return;
+        }
+        editorField.setPlaceholder(text);
+        // 刷新 EditorTextField 以显示更新的 placeholder
+        ApplicationManager.getApplication().invokeLater(() -> {
+            editorField.revalidate();
+            editorField.repaint();
+        });
+    }
+
+    /**
+     * 获取提交面板的编辑器字段
+     * <p> 根据提交面板控制对象获取其内部的编辑器字段对象. 如果控制对象为 null, 则直接返回 null.
+     *
+     * @param commitMessageControl 提交面板的控制对象, 可以为 null
+     * @return 编辑器字段对象, 如果控制对象为 null 则返回 null
+     */
+    private EditorTextField getEditorTextField(@Nullable CommitMessageI commitMessageControl) {
+        if (commitMessageControl == null) {
+            return null;
+        }
+        return ((CommitMessage) commitMessageControl).getEditorField();
+    }
+
+    /**
+     * 重置提交消息的占位符内容
+     * <p> 将提交面板编辑器字段的占位符内容设置为空字符串, 用于清除当前显示的占位符文本.
+     * todo-dong4j : (2026.01.9 18:57) [无法换行输出]
+     *
+     * @param commitMessageControl 提交面板的控制对象, 可以为 null
+     */
+    private void resetCommitMessagePlaceholder(@Nullable CommitMessageI commitMessageControl) {
+        setCommitMessagePlaceholder(ChangelogBundle.message("commit.message.placeholder.reset"), commitMessageControl);
+    }
+
+    /**
+     * 重置提交消息的占位符内容
+     * <p> 将指定的占位符文本设置到提交面板编辑器字段中, 用于清除当前显示的占位符文本.
+     *
+     * @param text                 占位符文本内容, 不能为 null
+     * @param commitMessageControl 提交面板的控制对象, 可以为 null
+     */
+    private void resetCommitMessagePlaceholder(@NotNull String text, @Nullable CommitMessageI commitMessageControl) {
+        setCommitMessagePlaceholder(text, commitMessageControl);
+    }
+
+    /**
      * 读取提交消息文本
      * <p> 尝试通过反射调用提交面板对象的方法来读取提交消息文本. 支持的方法名包括 "getCommitMessage","getCommitMessageText" 和 "getText".
      *
@@ -426,7 +714,7 @@ public class CommitMessageGenerator {
      * @return 读取到的提交消息文本, 若读取失败则返回 null
      */
     @Nullable
-    private String getCommitMessageText(@Nullable CommitMessageI commitMessageControl) {
+    private String getCommitMessageText1(@Nullable CommitMessageI commitMessageControl) {
         if (commitMessageControl == null) {
             return null;
         }
@@ -445,6 +733,24 @@ public class CommitMessageGenerator {
             }
         }
         return null;
+    }
+
+    /**
+     * 读取提交消息文本
+     * <p> 从提交面板的编辑器字段中获取当前输入的提交消息文本. 如果提交面板控制对象为 null, 则返回 null; 如果文本为空或仅包含空白字符, 则返回 null.
+     *
+     * @param commitMessageControl 提交面板的控制对象, 可以为 null
+     * @return 读取到的提交消息文本, 若读取失败或文本为空则返回 null
+     */
+    @Nullable
+    private String getCommitMessageText(@Nullable CommitMessageI commitMessageControl) {
+        if (commitMessageControl == null) {
+            return null;
+        }
+        final EditorTextField editorField = ((CommitMessage) commitMessageControl).getEditorField();
+        final String text = editorField.getText();
+        String trimmed = text.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     /**
@@ -562,11 +868,12 @@ public class CommitMessageGenerator {
      * @return 创建的 TypingIndicator 实例
      */
     private TypingIndicator startTypingIndicator(@Nullable CommitMessageI commitMessageControl,
-                                                 @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+                                                 @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                                 boolean canClear) {
         Disposable parentDisposable = commitMessageControl instanceof Disposable disposable ? disposable : null;
         TypingIndicator indicator = new TypingIndicator(commitMessageControl, outputSession, parentDisposable);
         if (commitMessageControl != null || outputSession != null) {
-            indicator.start();
+            indicator.start(canClear);
         }
         return indicator;
     }
@@ -651,14 +958,24 @@ public class CommitMessageGenerator {
         /**
          * 启动打字指示器
          * <p> 在 Swing 线程中执行, 清空提交消息文本并设置为空字符串, 如果存在输出会话则也清空其内容, 然后调度下一次打字指示器更新
-         *
          */
-        void start() {
+        void start(boolean canClear) {
             resetState();
             ApplicationManager.getApplication().invokeLater(() -> {
-                setCommitMessageText("", commitMessageControl);
+                if (canClear) {
+                    setCommitMessageText("", commitMessageControl);
+                } else {
+                    final EditorTextField editorField = getEditorTextField(commitMessageControl);
+                    if (editorField != null) {
+                        showActionTip(editorField.getComponent());
+                    }
+                }
+                setCommitMessagePlaceholder("", commitMessageControl);
                 if (outputSession != null) {
-                    outputSession.setText("");
+                    outputSession.setPlaceholder("");
+                    if (canClear) {
+                        outputSession.setText("");
+                    }
                 }
             });
             startAnalyzingLine();
@@ -684,12 +1001,13 @@ public class CommitMessageGenerator {
          * <p> 调用 stop 方法停止提示, 并清空与提交消息相关的文本内容
          *
          */
-        void stopAndClear() {
+        void generateFailure() {
             stop();
             ApplicationManager.getApplication().invokeLater(() -> {
-                setCommitMessageText("", commitMessageControl);
+                resetCommitMessagePlaceholder(
+                    ChangelogBundle.message("commit.message.placeholder.reset.error.message"), commitMessageControl);
                 if (outputSession != null) {
-                    outputSession.setText("");
+                    outputSession.setText(ChangelogBundle.message("commit.message.placeholder.reset.error.message"));
                 }
             });
         }
@@ -744,9 +1062,9 @@ public class CommitMessageGenerator {
                 }
                 String base = typedHint.toString();
                 String text = dotIndex % 2 == 0 ? base + cursorText : base;
-                setCommitMessageText(text, commitMessageControl);
+                setCommitMessagePlaceholder(text, commitMessageControl);
                 if (outputSession != null) {
-                    outputSession.setText(text);
+                    outputSession.setPlaceholder(text);
                 }
                 dotIndex++;
                 scheduleCursorBlink();
@@ -762,9 +1080,9 @@ public class CommitMessageGenerator {
          */
         private void updateHintText() {
             String text = typedHint.toString();
-            setCommitMessageText(text, commitMessageControl);
+            setCommitMessagePlaceholder(text, commitMessageControl);
             if (outputSession != null) {
-                outputSession.setText(text);
+                outputSession.setPlaceholder(text);
             }
         }
 

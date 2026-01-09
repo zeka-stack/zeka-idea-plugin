@@ -45,6 +45,13 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
+        
+        // 检查项目是否处于索引模式
+        if (AbstractReleaseLogAction.isIndexing(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+        
         boolean enabled = project != null && resolveGitRoot(e) != null;
         e.getPresentation().setEnabled(enabled);
 
@@ -181,6 +188,11 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         if (project == null || project.isDisposed()) {
+            return;
+        }
+
+        // 检查项目是否处于索引模式
+        if (AbstractReleaseLogAction.checkAndHandleIndexing(project)) {
             return;
         }
 
