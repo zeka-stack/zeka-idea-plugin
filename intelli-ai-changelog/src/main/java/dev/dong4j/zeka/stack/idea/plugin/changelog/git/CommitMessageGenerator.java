@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -39,6 +40,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JComponent;
 import javax.swing.event.HyperlinkEvent;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintManager;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService;
@@ -190,7 +193,7 @@ public class CommitMessageGenerator {
                         ApplicationManager.getApplication().invokeLater(() -> {
                             // 直接写入提交面板，避免弹窗打断提交流程
                             boolean applied = !state.cancelled.get()
-                                              && setCommitMessageText(formattedCommitMessage, commitMessageControl);
+                                              && setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
                             if (!applied && !updated.get()) {
                                 log.trace("Git 提交页面：提交面板不可用，无法写入提交记录");
                             }
@@ -326,7 +329,7 @@ public class CommitMessageGenerator {
                                 typingIndicator.stop();
                             }
                             ApplicationManager.getApplication().invokeLater(() -> {
-                                if (setCommitMessageText(fullText, commitMessageControl)) {
+                                if (setCommitMessageText(fullText, commitMessageControl, true)) {
                                     updated.set(true);
                                 }
                             });
@@ -344,6 +347,7 @@ public class CommitMessageGenerator {
      * 显示操作提示气泡
      * <p> 在指定组件的下方显示一个包含 HTML 格式提示信息的气泡提示框, 提示用户当前上下文功能已启用.
      * <p> 气泡中包含一个"关闭"超链接, 点击后将禁用上下文功能并持久化设置.
+     * <p> 注意：每个项目只会显示一次此提示，避免重复打扰用户。
      * <p> 示例:
      * <pre>{@code
      * showActionTip(myComponent);
@@ -643,11 +647,75 @@ public class CommitMessageGenerator {
      * @return 如果成功调用 setCommitMessage 方法并设置文本, 则返回 true; 否则返回 false
      */
     private boolean setCommitMessageText(@NotNull String commitMessage, @Nullable CommitMessageI commitMessageControl) {
+        return setCommitMessageText(commitMessage, commitMessageControl, false);
+    }
+
+    /**
+     * 设置提交消息文本
+     *
+     * @param commitMessage        提交消息文本，不能为 null
+     * @param commitMessageControl 提交面板的控制对象，可以为 null
+     * @param isComplete           是否为最终完成（true 表示生成完成，false 表示流式输出中的中间状态）
+     * @return 如果成功设置文本返回 true，否则返回 false
+     */
+    private boolean setCommitMessageText(@NotNull String commitMessage,
+                                         @Nullable CommitMessageI commitMessageControl,
+                                         boolean isComplete) {
         if (commitMessageControl == null) {
             return false;
         }
         commitMessageControl.setCommitMessage(commitMessage);
+
+        // 只有在最终完成时才通知 CommitMessageHintManager
+        if (isComplete) {
+            notifyGenerationCompleted(commitMessageControl);
+        }
+
         return true;
+    }
+
+    /**
+     * 通知 CommitMessageHintManager 生成完成
+     * <p>
+     * 当提交消息生成完成后，通知对应的 Hint Manager 设置生成完成状态。
+     *
+     * @param commitMessageControl 提交面板的控制对象，不能为 null
+     */
+    private void notifyGenerationCompleted(@NotNull CommitMessageI commitMessageControl) {
+        try {
+            // 获取 EditorTextField
+            EditorTextField editorField = getEditorTextField(commitMessageControl);
+            if (editorField == null) {
+                return;
+            }
+
+            // 获取 Editor
+            Editor editor = editorField.getEditor();
+            if (editor == null) {
+                return;
+            }
+
+            // 获取项目
+            Project project = editor.getProject();
+            if (project == null || project.isDisposed()) {
+                return;
+            }
+
+            // 获取 CommitMessageHintService
+            CommitMessageHintService hintService = project.getService(CommitMessageHintService.class);
+            if (hintService == null) {
+                return;
+            }
+
+            // 获取 Hint Manager 并标记生成完成
+            CommitMessageHintManager hintManager = hintService.getHintManager(editor);
+            if (hintManager != null) {
+                hintManager.markGenerationCompleted(true);
+            }
+        } catch (Exception e) {
+            // 静默处理异常，避免影响主流程
+            log.trace("通知生成完成状态失败", e);
+        }
     }
 
     /**
