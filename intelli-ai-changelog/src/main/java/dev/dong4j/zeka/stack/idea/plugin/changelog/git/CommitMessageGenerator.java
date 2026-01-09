@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
+import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
@@ -356,6 +357,16 @@ public class CommitMessageGenerator {
      * @param component 显示气泡的组件, 不能为 null
      */
     private void showActionTip(@NotNull JComponent component) {
+        // 检查是否已经显示过提示（每个项目只显示一次）
+        PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(project);
+        String key = "changelog.commit.context.tip.shown";
+        if (propertiesComponent.getBoolean(key, false)) {
+            log.trace("提交上下文提示已显示过，跳过");
+            return;
+        }
+
+        // 标记为已显示
+        propertiesComponent.setValue(key, true);
         // 创建超链接监听器, 处理"关闭"链接的点击事件
         HyperlinkAdapter linkListener = new HyperlinkAdapter() {
             /**
@@ -605,7 +616,7 @@ public class CommitMessageGenerator {
             // 必须在 EDT 中执行 UI 操作
             ApplicationManager.getApplication().invokeLater(() -> {
                 setCommitMessagePlaceholder(ChangelogBundle.message("commit.multi.repo.placeholder",
-                                                             changesByRoot.size()), commitMessageControl);
+                                                                    changesByRoot.size()), commitMessageControl);
             });
         }
     }
