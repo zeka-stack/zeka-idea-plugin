@@ -25,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.Ra
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamChunkType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.StreamParseEngine;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
@@ -86,7 +87,7 @@ public class StreamRequestExecutor {
                                   @Nullable String apiKey,
                                   @NotNull AIStreamResponseListener listener) throws AIServiceException {
         if (config.providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
-            throw new AIServiceException("需要 API 密钥但未进行配置",
+            throw new AIServiceException(AICommonBundle.message("error.ai.service.api.key.required"),
                                          AIServiceException.ErrorCode.CONFIGURATION_ERROR);
         }
 
@@ -126,16 +127,17 @@ public class StreamRequestExecutor {
                 case 500, 502, 503, 504 -> AIServiceException.ErrorCode.SERVICE_UNAVAILABLE;
                 default -> AIServiceException.ErrorCode.INVALID_RESPONSE;
             };
-            listener.onError("HTTP error: " + e.getMessage(), e);
-            throw new AIServiceException("HTTP error: " + e.getMessage(), code, e);
+            String errorMessage = AICommonBundle.message("error.ai.service.http.error", e.getMessage());
+            listener.onError(errorMessage, e);
+            throw new AIServiceException(errorMessage, code, e);
         } catch (IOException e) {
             if (cancellationToken != null && cancellationToken.isCancelled()) {
                 listener.onComplete("");
                 return;
             }
-            listener.onError("网络错误: " + e.getMessage(), e);
-            throw new AIServiceException("网络错误: " + e.getMessage(),
-                                         AIServiceException.ErrorCode.NETWORK_ERROR, e);
+            String errorMessage = AICommonBundle.message("error.ai.service.network.error");
+            listener.onError(errorMessage, e);
+            throw new AIServiceException(errorMessage, AIServiceException.ErrorCode.NETWORK_ERROR, e);
         }
     }
 
@@ -163,6 +165,7 @@ public class StreamRequestExecutor {
         ParseContext parseContext = new ParseContext();
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
+        boolean[] contentStarted = {false};
         try (BufferedReader reader = new BufferedReader(
             new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
@@ -208,13 +211,17 @@ public class StreamRequestExecutor {
                             if (inThinking[0]) {
                                 AIConsoleLoggerUtil.printStreamPlain(
                                     project,
-                                    "\n══════════════════════════════ 正文内容 ══════════════════════════════\n");
+                                    AICommonBundle.message("stream.response.content.body.divider"));
                                 inThinking[0] = false;
                                 thinkPrefixPrinted[0] = false;
                             }
-                            fullText.append(chunk.text());
-                            AIConsoleLoggerUtil.printStreamPlain(project, chunk.text());
-                            listener.onChunk(chunk.text());
+                            String content = trimLeadingNewlines(chunk.text(), contentStarted);
+                            if (content.isEmpty()) {
+                                return;
+                            }
+                            fullText.append(content);
+                            AIConsoleLoggerUtil.printStreamPlain(project, content);
+                            listener.onChunk(content);
                         }
                     });
                     if (done) {
@@ -262,7 +269,7 @@ public class StreamRequestExecutor {
     /**
      * 打印思考内容到控制台.
      * <p>
-     * 该方法用于输出流式响应中的思考过程文本, 支持自动添加 "[think]" 前缀标记.
+     * 该方法用于输出流式响应中的思考过程文本, 支持自动添加 "[🤔thinking]" 前缀标记.
      * 首次调用时会打印带前缀的思考内容, 后续调用仅打印纯文本内容.
      *
      * @param thinking           待打印的思考内容, 不能为 null
@@ -276,11 +283,39 @@ public class StreamRequestExecutor {
             inThinking[0] = true;
         }
         if (!thinkPrefixPrinted[0]) {
-            AIConsoleLoggerUtil.printStreamPlain(project, "[think] " + thinking);
+            AIConsoleLoggerUtil.printStreamPlain(project, AICommonBundle.message("stream.response.thinking.prefix") + " " + thinking);
             thinkPrefixPrinted[0] = true;
             return;
         }
         AIConsoleLoggerUtil.printStreamPlain(project, thinking);
+    }
+
+    /**
+     * 去除正文开头多余的换行, 仅在首次输出正文时生效.
+     *
+     * @param text           原始正文片段
+     * @param contentStarted 是否已开始输出正文
+     * @return 处理后的正文片段
+     */
+    @NotNull
+    private String trimLeadingNewlines(@NotNull String text, boolean @NotNull [] contentStarted) {
+        if (contentStarted[0]) {
+            return text;
+        }
+        int index = 0;
+        int length = text.length();
+        while (index < length) {
+            char ch = text.charAt(index);
+            if (ch != '\n' && ch != '\r') {
+                break;
+            }
+            index++;
+        }
+        if (index >= length) {
+            return "";
+        }
+        contentStarted[0] = true;
+        return text.substring(index);
     }
 
 }
