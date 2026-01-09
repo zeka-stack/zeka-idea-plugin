@@ -459,6 +459,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     /**
      * 获取默认的提交消息系统提示词
+     * todo-dong4j : (2026.01.9 11:12) [提示词优化, 方向是 scope 不准确, 考虑使用自定义映射]
      *
      * <p>返回用于生成提交消息的默认系统提示词。
      * 这个提示词会作为 system 消息发送给 AI 服务，

@@ -36,26 +36,64 @@ import java.util.Set;
 public class KotlinPsiContextResolver implements LanguageContextResolver {
     /** Kotlin 文件扩展名 */
     private static final String KOTLIN_EXT = "kt";
+    /** Kotlin 脚本文件扩展名 */
     private static final String KOTLIN_SCRIPT_EXT = "kts";
 
     /** Kotlin PSI 关键类名 */
     private static final String KT_FILE = "org.jetbrains.kotlin.psi.KtFile";
     /** Kotlin */
     private static final String KT_FUNCTION = "org.jetbrains.kotlin.psi.KtNamedFunction";
+    /** Kotlin 属性节点的 PSI 类名 */
     private static final String KT_PROPERTY = "org.jetbrains.kotlin.psi.KtProperty";
+    /** Kotlin 类或对象 PSI 元素类名 */
     private static final String KT_CLASS = "org.jetbrains.kotlin.psi.KtClassOrObject";
+    /** Kotlin 中的 if 表达式节点类名 */
     private static final String KT_IF = "org.jetbrains.kotlin.psi.KtIfExpression";
+    /**
+     * KtWhenExpression 的类名常量
+     * <p> 表示 Kotlin 语言中的 when 表达式对应的 PSI 元素类名
+     */
     private static final String KT_WHEN = "org.jetbrains.kotlin.psi.KtWhenExpression";
+    /**
+     * Kotlin 返回表达式的 PSI 类名称
+     * <p> 用于在 PSI 树中查找和识别 Kotlin 返回语句
+     */
     private static final String KT_RETURN = "org.jetbrains.kotlin.psi.KtReturnExpression";
+    /** KtThrowExpression 类名字符串常量 */
     private static final String KT_THROW = "org.jetbrains.kotlin.psi.KtThrowExpression";
+    /** KtCallExpression 类名字符串, 用于反射访问 Kotlin 调用表达式节点 */
     private static final String KT_CALL = "org.jetbrains.kotlin.psi.KtCallExpression";
 
+    /**
+     * 判断是否支持给定的虚拟文件
+     * <p>检查文件扩展名是否为 Kotlin 文件(.kt 或 .kts), 以确定是否支持解析该文件
+     *
+     * @param file 虚拟文件对象, 不能为 null
+     * @return 如果是 Kotlin 文件 (扩展名为 .kt 或 .kts) 则返回 true, 否则返回 false
+     */
     @Override
     public boolean supports(@NotNull VirtualFile file) {
         String ext = file.getExtension();
         return KOTLIN_EXT.equalsIgnoreCase(ext) || KOTLIN_SCRIPT_EXT.equalsIgnoreCase(ext);
     }
 
+    /**
+     * 解析并返回指定 Kotlin 文件的代码上下文标识
+     * <p> 在读取操作中定位指定行号的 PSI 元素, 查找其所属的函数, 属性或类,
+     * 并返回相应的上下文标识字符串
+     * <p> 返回格式:
+     * <ul>
+     *   <li> 函数:{@code 类名 #方法签名}</li>
+     *   <li> 属性:{@code 类名 #属性名}</li>
+     *   <li> 类:{@code 类名}</li>
+     * </ul>
+     *
+     * @param file          目标虚拟文件, 不能为 null
+     * @param preferredLine 首选行号 (0 索引), 超出范围时使用 fallbackLine
+     * @param fallbackLine  备用行号, 当 preferredLine 无效时使用
+     * @return 代码上下文标识字符串, 无法解析时返回 null
+     * @see LanguageContextResolver#resolveContext
+     */
     @Override
     public @Nullable String resolveContext(@NotNull VirtualFile file, int preferredLine, int fallbackLine) {
         return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
@@ -99,6 +137,15 @@ public class KotlinPsiContextResolver implements LanguageContextResolver {
         });
     }
 
+    /**
+     * 根据项目和文件解析主符号名称
+     * <p>在读取操作中, 通过查找文件中的第一个声明节点 (类, 函数或属性) 并提取其名称作为主符号名.
+     * <p>仅在 Kotlin 文件中有效, 且项目未被销毁, 非哑状态时执行.
+     *
+     * @param project 项目对象, 不能为 null
+     * @param file    文件对象, 不能为 null
+     * @return 主符号名称, 如果未找到有效声明或名称为空则返回 null
+     */
     @Override
     public @Nullable String resolvePrimarySymbolName(@NotNull Project project, @NotNull VirtualFile file) {
         return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
@@ -118,6 +165,22 @@ public class KotlinPsiContextResolver implements LanguageContextResolver {
         });
     }
 
+    /**
+     * 根据前后代码内容和行片段分析语义变更摘要
+     * <p> 通过对比前后代码内容, 结合行片段信息, 识别并统计 Kotlin 代码中类, 方法, 属性等元素的语义变更情况.
+     * <p> 支持的变更类型包括: 类签名变更, 注解变更, 方法签名变更, 可见性变更, 返回值类型变更, 方法体行为变化, 重构调整, 属性默认值变化等.
+     * <p> 示例:
+     * <pre>{@code
+     * String summary = resolveSemanticSummary(project, file, beforeContent, afterContent, fragments);
+     * }</pre>
+     *
+     * @param project       项目对象, 用于获取 PSI 文件和执行读取操作
+     * @param file          文件对象, 用于获取文件名和上下文
+     * @param beforeContent 对比前的代码内容
+     * @param afterContent  对比后的代码内容
+     * @param fragments     行片段列表, 每个片段包含前后行号, 用于定位变更位置
+     * @return 语义变更摘要字符串, 包含变更类型和详细描述; 若无变更或不支持语言则返回 null
+     */
     @Override
     public @Nullable String resolveSemanticSummary(@NotNull Project project,
                                                    @NotNull VirtualFile file,
@@ -681,14 +744,30 @@ public class KotlinPsiContextResolver implements LanguageContextResolver {
      * 语义统计计数器
      */
     private static class SemanticCounters {
+        /** API 签名变更计数器, 记录接口签名相关的语义变化次数 */
         int apiSignatureChanges;
+        /** 实现层面的变更计数 */
         int implementationChanges;
+        /** 表示行为变更的计数器 */
         int behaviorChanges;
+        /** 重构变更计数, 记录代码结构上的修改次数 */
         int refactorChanges;
+        /** 类变更计数器, 用于统计类级别的代码变更数量 */
         int classChanges;
+        /**
+         * 字段变更计数
+         * <p> 表示在语义分析中检测到的字段变更次数
+         */
         int fieldChanges;
+        /** 注解变更数量 */
         int annotationChanges;
 
+        /**
+         * 判断当前对象是否为空
+         * <p> 检查所有计数器是否均为 0, 若全部为 0 则返回 true, 表示没有发生任何变化
+         *
+         * @return 如果所有计数器均为 0, 则返回 true, 否则返回 false
+         */
         boolean isEmpty() {
             return apiSignatureChanges == 0
                    && implementationChanges == 0

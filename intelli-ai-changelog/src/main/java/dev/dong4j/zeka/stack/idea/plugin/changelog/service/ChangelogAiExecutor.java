@@ -313,7 +313,59 @@ final class ChangelogAiExecutor {
 
         logChangelogRequest("stream", config, request);
 
-        AIStreamResponseListener listener = new AIStreamResponseListener() {
+        final AIStreamResponseListener listener = buildStreamResponseListener(externalListener, buffer, latch, resultRef, errorRef);
+
+        try {
+            aiService.generateContentStream(project, request, config, listener);
+        } catch (AIServiceException e) {
+            throw new Exception(ChangelogBundle.message("error.ai.service.failed", e.getMessage()));
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new Exception(ChangelogBundle.message("error.ai.service.failed", "Interrupted"));
+        }
+
+        if (errorRef.get() != null) {
+            throw errorRef.get();
+        }
+
+        String result = resultRef.get();
+        if (result == null || result.isEmpty()) {
+            result = buffer.toString();
+        }
+        return result;
+    }
+
+    /**
+     * 构建流式响应监听器代理
+     * <p> 创建一个包装外部监听器的代理监听器, 用于在流式响应过程中缓冲数据, 处理中断, 同步完成状态, 并将事件转发给外部监听器.
+     * <p> 该代理监听器会监听以下事件:
+     * <ul>
+     *   <li> 启动事件 (onStart)</li>
+     *   <li> 数据块接收事件 (onChunk)</li>
+     *   <li> 思考阶段数据块事件 (onThinkingChunk)</li>
+     *   <li> 完整响应完成事件 (onComplete)</li>
+     *   <li> 错误事件 (onError)</li>
+     *   <li> 取消令牌获取 (cancellationToken)</li>
+     * </ul>
+     * <p> 在处理过程中, 会检查当前线程是否被中断, 若被中断则跳过后续操作并通知计数器.
+     *
+     * @param externalListener 外部流式响应监听器, 用于接收最终事件, 不能为 null
+     * @param buffer           数据缓冲区, 用于累积接收到的文本块, 不能为 null
+     * @param latch            同步计数器, 用于等待流式响应完成, 不能为 null
+     * @param resultRef        结果引用, 用于存储完整响应文本, 不能为 null
+     * @param errorRef         错误引用, 用于存储异常信息, 不能为 null
+     * @return 包装后的 AIStreamResponseListener 代理实例
+     */
+    private static @NotNull AIStreamResponseListener buildStreamResponseListener(@NotNull AIStreamResponseListener externalListener,
+                                                                                 StringBuilder buffer,
+                                                                                 CountDownLatch latch,
+                                                                                 AtomicReference<String> resultRef,
+                                                                                 AtomicReference<Exception> errorRef) {
+        return new AIStreamResponseListener() {
             /**
              * 启动监听器
              * <p> 在监听器启动时调用此方法, 检查当前线程是否中断, 若中断则直接返回,
@@ -401,29 +453,6 @@ final class ChangelogAiExecutor {
                 return externalListener.cancellationToken();
             }
         };
-
-        try {
-            aiService.generateContentStream(project, request, config, listener);
-        } catch (AIServiceException e) {
-            throw new Exception(ChangelogBundle.message("error.ai.service.failed", e.getMessage()));
-        }
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new Exception(ChangelogBundle.message("error.ai.service.failed", "Interrupted"));
-        }
-
-        if (errorRef.get() != null) {
-            throw errorRef.get();
-        }
-
-        String result = resultRef.get();
-        if (result == null || result.isEmpty()) {
-            result = buffer.toString();
-        }
-        return result;
     }
 
     /**
