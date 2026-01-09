@@ -72,13 +72,12 @@ public final class AIServiceImpl implements AIService {
      * @param request  AI 聊天请求
      * @param config   AI 提供者配置
      * @param listener AI 流式响应监听器
-     * @throws AIServiceException 当 AI 服务调用过程中发生错误时抛出
      */
     @Override
     public void generateContentStream(@NotNull Project project,
                                       @NotNull AIChatRequest request,
                                       @NotNull AIProviderConfig config,
-                                      @NotNull AIStreamResponseListener listener) throws AIServiceException {
+                                      @NotNull AIStreamResponseListener listener) {
         AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
         String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
