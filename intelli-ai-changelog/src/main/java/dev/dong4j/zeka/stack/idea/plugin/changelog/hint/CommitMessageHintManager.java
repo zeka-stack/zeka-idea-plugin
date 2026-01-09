@@ -1,6 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.hint;
 
+import com.intellij.ide.DataManager;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.CaretModel;
@@ -14,10 +16,15 @@ import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.vcs.VcsDataKeys;
+import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.util.concurrency.AppExecutorUtil;
+import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -119,11 +126,17 @@ public class CommitMessageHintManager implements Disposable {
                         return shouldShowHintInReadAction();
                     })
                     .finishOnUiThread(ModalityState.any(), shouldShow -> {
-                        if (shouldShow != null && shouldShow && !editor.isDisposed()) {
-                            updateHintInEdt();
-                        } else {
+                        if (shouldShow == null || !shouldShow || editor.isDisposed()) {
                             hideHint();
+                            return;
                         }
+                        // 在 EDT 中检查是否有选中的文件
+                        if (!hasSelectedChanges(editor.getProject())) {
+                            hideHint();
+                            return;
+                        }
+                        // 所有检查通过，更新提示
+                        updateHintInEdt();
                     })
                     .submit(AppExecutorUtil.getAppExecutorService());
             }
@@ -147,7 +160,7 @@ public class CommitMessageHintManager implements Disposable {
                 if (editor.isDisposed()) {
                     return null;
                 }
-                // 在 read-action 中检查条件并获取偏移量
+                // 在 read-action 中检查基本条件并获取偏移量
                 boolean shouldShow = shouldShowHintInReadAction();
                 if (!shouldShow) {
                     return null;
@@ -155,11 +168,17 @@ public class CommitMessageHintManager implements Disposable {
                 return editor.getCaretModel().getOffset();
             })
             .finishOnUiThread(ModalityState.any(), offset -> {
-                if (offset != null && !editor.isDisposed()) {
-                    updateHintInEdt(offset);
-                } else {
+                if (offset == null || editor.isDisposed()) {
                     hideHint();
+                    return;
                 }
+                // 在 EDT 中检查是否有选中的文件
+                if (!hasSelectedChanges(editor.getProject())) {
+                    hideHint();
+                    return;
+                }
+                // 所有检查通过，显示提示
+                updateHintInEdt(offset);
             })
             .submit(AppExecutorUtil.getAppExecutorService());
     }
@@ -256,6 +275,14 @@ public class CommitMessageHintManager implements Disposable {
             return false;
         }
 
+        // 检查文档内容是否只包含空白字符（空格、制表符等）
+        // Document.getText() 需要在 read-action 中调用
+        String text = editor.getDocument().getText();
+        if (text.trim().isEmpty()) {
+            log.trace("Commit Message Hint: 文档内容只包含空白字符");
+            return false;
+        }
+
         // 检查是否有选中文本
         // SelectionModel.hasSelection() 需要 read-action
         if (editor.getSelectionModel().hasSelection()) {
@@ -271,8 +298,55 @@ public class CommitMessageHintManager implements Disposable {
             return false;
         }
 
-        log.trace("Commit Message Hint: 可以显示提示");
+        // 注意：检查是否有选中的文件需要在 EDT 中执行（获取 DataContext）
+        // 这部分检查在 finishOnUiThread 回调中进行
+
+        log.trace("Commit Message Hint: 基本条件满足");
         return true;
+    }
+
+    /**
+     * 检查是否有选中的提交文件
+     * <p>
+     * 通过 DataContext 获取 CommitWorkflowHandler，然后检查是否有选中的变更。
+     * 此方法必须在 EDT 中调用，因为获取 DataContext 需要在 EDT 中执行。
+     *
+     * @param project 项目实例，可能为 null
+     * @return 如果有选中的文件返回 true，否则返回 false
+     */
+    private boolean hasSelectedChanges(@Nullable Project project) {
+        if (project == null || project.isDisposed()) {
+            return false;
+        }
+
+        // 确保在 EDT 中执行
+        if (!com.intellij.openapi.application.ApplicationManager.getApplication().isDispatchThread()) {
+            log.trace("Commit Message Hint: 不在 EDT 中，无法检查选中的文件");
+            // 不在 EDT 中，无法安全获取 DataContext
+            // 返回 true，让提示显示，后续在 Tab 键触发时会再次检查
+            return true;
+        }
+
+        try {
+            // 在 EDT 中获取 DataContext
+            DataContext dataContext = DataManager.getInstance()
+                .getDataContext(editor.getContentComponent());
+            CommitWorkflowHandler commitWorkflowHandler = dataContext.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
+            if (commitWorkflowHandler == null) {
+                log.trace("Commit Message Hint: 无法获取 CommitWorkflowHandler");
+                return false;
+            }
+
+            // 检查是否有选中的变更
+            Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
+            boolean hasChanges = !changes.isEmpty();
+            log.trace("Commit Message Hint: 选中的文件数量: {}", changes.size());
+            return hasChanges;
+        } catch (Exception e) {
+            log.trace("获取提交变更失败", e);
+            // 如果获取失败，返回 true，避免误判（让提示显示，后续会再次检查）
+            return true;
+        }
     }
 
     /**
@@ -280,8 +354,8 @@ public class CommitMessageHintManager implements Disposable {
      *
      * @return 如果有活跃提示返回 true，否则返回 false
      */
-    public boolean hasActiveHint() {
-        return currentInlay != null;
+    public boolean noActiveHint() {
+        return currentInlay == null;
     }
 
     /**

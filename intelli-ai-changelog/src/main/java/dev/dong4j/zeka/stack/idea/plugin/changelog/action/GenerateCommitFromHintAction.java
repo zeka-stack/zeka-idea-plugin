@@ -82,7 +82,7 @@ public class GenerateCommitFromHintAction extends AnAction {
         }
 
         var hintManager = service.getHintManager(editor);
-        if (hintManager == null || !hintManager.hasActiveHint()) {
+        if (hintManager == null || hintManager.noActiveHint()) {
             e.getPresentation().setEnabled(false);
             return;
         }
@@ -129,7 +129,7 @@ public class GenerateCommitFromHintAction extends AnAction {
         }
 
         var hintManager = service.getHintManager(editor);
-        if (hintManager == null || !hintManager.hasActiveHint()) {
+        if (hintManager == null || hintManager.noActiveHint()) {
             return;
         }
 

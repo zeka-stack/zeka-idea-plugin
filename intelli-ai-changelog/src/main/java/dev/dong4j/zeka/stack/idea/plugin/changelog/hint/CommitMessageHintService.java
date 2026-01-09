@@ -103,8 +103,7 @@ public class CommitMessageHintService implements Disposable {
         // 方法1：检查 EditorTextField
         // EditorTextField.getEditor() 可以获取其内部的 Editor
         // 我们需要反向查找：从 Editor 的 contentComponent 向上查找 EditorTextField
-        java.awt.Component contentComponent = editor.getContentComponent();
-        java.awt.Component component = contentComponent;
+        java.awt.Component component = editor.getContentComponent();
 
         // 向上遍历查找 EditorTextField 或 CommitMessage 组件
         int depth = 0;
