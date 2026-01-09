@@ -45,6 +45,12 @@
         <!-- 配置持久化 -->
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState"/>
 
+        <!-- Commit Message Hint 服务 -->
+        <projectService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintService"/>
+
+        <!-- Commit Message Hint 编辑器工厂监听器 -->
+        <editorFactoryListener implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintEditorFactoryListener"/>
+
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
         <applicationConfigurable
@@ -111,6 +117,14 @@
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
+        </action>
+
+        <!-- Commit Message Hint Tab 触发 Action -->
+        <!--suppress PluginXmlI18n -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitFromHintAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitFromHintAction"
+                text="Generate Commit Message from Hint">
+            <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
         </action>
 
         <!--suppress PluginXmlI18n -->

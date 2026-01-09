@@ -63,6 +63,20 @@ public class CommitMessageHintManager implements Disposable {
      */
     @Nullable
     private DocumentListener documentListener;
+    /**
+     * 生成完成状态标志
+     * <p>
+     * 当提交消息生成完成后，设置为 true。
+     * 如果用户对生成的提交消息做了任何修改，则清除此状态（设置为 false）。
+     */
+    private volatile boolean generationCompleted = false;
+    /**
+     * 程序化修改标志
+     * <p>
+     * 用于区分是程序生成的文本还是用户手动修改的文本。
+     * 当程序设置文本时，临时设置为 true，设置完成后立即清除。
+     */
+    private volatile boolean isProgrammaticChange = false;
 
     /**
      * 构造函数
@@ -116,6 +130,18 @@ public class CommitMessageHintManager implements Disposable {
              */
             @Override
             public void documentChanged(@NotNull DocumentEvent event) {
+                // 如果这是程序生成的修改，不处理（等待生成完成后设置状态）
+                if (isProgrammaticChange) {
+                    log.trace("Commit Message Hint: 检测到程序化修改，跳过处理");
+                    return;
+                }
+
+                // 如果是用户修改，清除生成完成状态
+                if (generationCompleted) {
+                    log.trace("Commit Message Hint: 检测到用户修改，清除生成完成状态");
+                    generationCompleted = false;
+                }
+
                 // 延迟更新，避免频繁刷新
                 // 使用 ReadAction.nonBlocking 确保线程安全
                 ReadAction.nonBlocking(() -> {
@@ -298,6 +324,13 @@ public class CommitMessageHintManager implements Disposable {
             return false;
         }
 
+        // 检查是否处于生成完成状态
+        // 如果生成已完成且用户未修改，不显示提示
+        if (generationCompleted) {
+            log.trace("Commit Message Hint: 生成已完成，用户未修改，不显示提示");
+            return false;
+        }
+
         // 注意：检查是否有选中的文件需要在 EDT 中执行（获取 DataContext）
         // 这部分检查在 finishOnUiThread 回调中进行
 
@@ -356,6 +389,44 @@ public class CommitMessageHintManager implements Disposable {
      */
     public boolean noActiveHint() {
         return currentInlay == null;
+    }
+
+    /**
+     * 标记生成完成状态
+     * <p>
+     * 当提交消息生成完成后调用此方法，设置生成完成状态。
+     * 在此状态下，Tab 提示将不会显示，直到用户对生成的提交消息做了任何修改。
+     *
+     * @param isProgrammatic 是否为程序化修改（true 表示程序生成的，false 表示用户修改）
+     */
+    public void markGenerationCompleted(boolean isProgrammatic) {
+        if (isProgrammatic) {
+            // 程序生成的修改：先设置标志，然后设置完成状态
+            this.isProgrammaticChange = true;
+            try {
+                // 延迟设置完成状态，确保文档修改事件已处理
+                com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
+                    if (!editor.isDisposed()) {
+                        generationCompleted = true;
+                        log.trace("Commit Message Hint: 标记生成完成状态");
+                        // 清除程序化修改标志
+                        this.isProgrammaticChange = false;
+                        // 隐藏提示
+                        hideHint();
+                    }
+                }, ModalityState.any());
+            } catch (Exception e) {
+                // 确保即使出错也清除标志
+                this.isProgrammaticChange = false;
+                log.trace("标记生成完成状态失败", e);
+            }
+        } else {
+            // 用户修改：清除完成状态
+            if (generationCompleted) {
+                generationCompleted = false;
+                log.trace("Commit Message Hint: 清除生成完成状态（用户修改）");
+            }
+        }
     }
 
     /**
