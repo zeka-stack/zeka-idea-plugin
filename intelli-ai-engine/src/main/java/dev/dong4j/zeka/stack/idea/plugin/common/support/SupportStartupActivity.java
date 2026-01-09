@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.Notifications;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.Urls;
 import kotlin.Unit;
@@ -66,8 +67,9 @@ public class SupportStartupActivity implements ProjectActivity {
         AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
             if (!project.isDisposed()) {
                 ApplicationManager.getApplication().invokeLater(() -> {
+                    String version = dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil.getVersion(EngineContents.PLUGIN_ID);
                     // 是应用第一次启动时执行, 后续启动时不执行(也就是只执行一次, 通过 id 进行唯一约束)
-                    RunOnceUtil.runOnceForApp("intelli-ai-engine.2025.3.11", () -> {
+                    RunOnceUtil.runOnceForApp("intelli-ai-engine-" + version, () -> {
                         // 在应用启动时执行的初始化逻辑
                         if (!project.isDisposed()) {
                             Notifications.showWelcomeNotification(project);
