@@ -147,11 +147,12 @@ public class StreamRequestExecutor {
      * <p>支持处理包含思考内容 (thinking) 和正文内容 (content) 的流式响应, 根据内容类型切换输出样式.
      * <p>示例处理流程:
      * <pre>{@code
-     * // 读取流式响应时, 遇到 "data: {" 开头的行, 解析 JSON 数据块
+     * // 读取流式响应时, 遇到 "data: " 开头的行, 解析 JSON 数据块
      * // 若包含 "thinking" 字段, 则打印思考过程
      * // 若包含 "content" 字段, 则打印正文内容, 并调用 listener.onChunk
      * // 遇到 "[DONE]" 标记时结束读取
-     * }</pre>
+     * }
+     * </pre>
      *
      * @param connection HTTP 连接对象, 用于读取响应流
      * @param listener   流式响应监听器, 用于接收分块内容和完成通知
