@@ -1,9 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
+import com.intellij.ide.plugins.IdeaPluginDescriptor;
+import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -41,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.swing.JComponent;
 import javax.swing.event.HyperlinkEvent;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
@@ -357,16 +361,40 @@ public class CommitMessageGenerator {
      * @param component 显示气泡的组件, 不能为 null
      */
     private void showActionTip(@NotNull JComponent component) {
-        // 检查是否已经显示过提示（每个项目只显示一次）
         PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(project);
-        String key = "changelog.commit.context.tip.shown";
-        if (propertiesComponent.getBoolean(key, false)) {
-            log.trace("提交上下文提示已显示过，跳过");
-            return;
-        }
+        String shownKey = "changelog.commit.context.tip.shown";
+        String versionKey = "changelog.commit.context.tip.version";
 
-        // 标记为已显示
-        propertiesComponent.setValue(key, true);
+        // 获取当前插件版本号
+        String currentVersion = dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil.getVersion(PluginContents.PLUGIN_ID);
+        if (currentVersion == null) {
+            log.trace("无法获取插件版本号，跳过版本检查");
+            // 如果无法获取版本号，使用原有逻辑（每个项目只显示一次）
+            if (propertiesComponent.getBoolean(shownKey, false)) {
+                log.trace("提交上下文提示已显示过，跳过");
+                return;
+            }
+            propertiesComponent.setValue(shownKey, true);
+        } else {
+            // 获取存储的版本号
+            String storedVersion = propertiesComponent.getValue(versionKey);
+
+            // 如果版本号不一致（说明是升级），重置已显示标记
+            if (storedVersion != null && !storedVersion.equals(currentVersion)) {
+                log.trace("检测到插件版本升级：{} -> {}，重置提示状态", storedVersion, currentVersion);
+                propertiesComponent.unsetValue(shownKey);
+            }
+
+            // 检查是否已经显示过提示（每个版本只显示一次）
+            if (propertiesComponent.getBoolean(shownKey, false)) {
+                log.trace("提交上下文提示已显示过（版本：{}），跳过", currentVersion);
+                return;
+            }
+
+            // 标记为已显示，并保存当前版本号
+            propertiesComponent.setValue(shownKey, true);
+            propertiesComponent.setValue(versionKey, currentVersion);
+        }
         // 创建超链接监听器, 处理"关闭"链接的点击事件
         HyperlinkAdapter linkListener = new HyperlinkAdapter() {
             /**
@@ -406,6 +434,27 @@ public class CommitMessageGenerator {
         balloon.show(new RelativePoint(component,
                                        new Point(component.getWidth() / 2, component.getHeight())),
                      Balloon.Position.below);
+    }
+
+    /**
+     * 获取当前插件版本号
+     * <p>
+     * 通过 PluginManagerCore 获取插件的版本信息。
+     *
+     * @return 插件版本号，如果获取失败则返回 null
+     */
+    @Nullable
+    private String getCurrentPluginVersion() {
+        try {
+            PluginId pluginId = PluginId.getId(PluginContents.PLUGIN_ID);
+            IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginId);
+            if (pluginDescriptor != null) {
+                return pluginDescriptor.getVersion();
+            }
+        } catch (Exception e) {
+            log.trace("获取插件版本号失败", e);
+        }
+        return null;
     }
 
     /**
