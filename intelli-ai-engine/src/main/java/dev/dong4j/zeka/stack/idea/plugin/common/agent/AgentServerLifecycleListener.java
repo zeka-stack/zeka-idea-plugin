@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
@@ -16,6 +15,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 本地 Agent 应用生命周期监听器
@@ -29,12 +29,12 @@ import kotlin.coroutines.Continuation;
  * @date 2025.12.11
  * @since 1.0.0
  */
+@Slf4j
 public class AgentServerLifecycleListener implements ProjectActivity, AppLifecycleListener {
     /**
      * 用于记录日志的 Logger 对象
      * <p> 该 Logger 对象被初始化为 AgentServerLifecycleListener 类的实例, 用于在项目生命周期中记录相关日志信息.
      */
-    private static final Logger LOG = Logger.getInstance(AgentServerLifecycleListener.class);
     private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
     /**
@@ -64,14 +64,14 @@ public class AgentServerLifecycleListener implements ProjectActivity, AppLifecyc
                 IntelliAgentManager manager = IntelliAgentManager.getInstance();
                 // 检查 jar 文件是否存在
                 if (Files.exists(manager.resolveJarPath(intelliAgentSettings))) {
-                    LOG.debug("自动启动 IntelliAI Agent（应用启动时）");
+                    log.debug("自动启动 IntelliAI Agent（应用启动时）");
                     manager.startAgent(intelliAgentSettings);
                 } else {
-                    LOG.debug("IntelliAI Agent jar 文件不存在，跳过自动启动");
+                    log.debug("IntelliAI Agent jar 文件不存在，跳过自动启动");
                 }
             }
         } catch (Exception e) {
-            LOG.debug("自动启动 IntelliAI Agent 失败", e);
+            log.debug("自动启动 IntelliAI Agent 失败", e);
         }
         return Unit.INSTANCE;
     }

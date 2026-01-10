@@ -15,6 +15,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,10 +38,10 @@ import java.util.stream.Stream;
  * @author dong4j
  * @since 0.3.0
  */
+@Slf4j
 @Service(Service.Level.APP)
 public final class ArchiveExtractionService {
 
-    private static final Logger LOG = Logger.getInstance(ArchiveExtractionService.class);
     private static final String EXTRACT_DIR_NAME = "archiver-man";
     private static final String EXTRACT_SUB_DIR = "extracted";
     static final String MARKER_FILE_NAME = ".completed";
@@ -55,7 +56,7 @@ public final class ArchiveExtractionService {
         try {
             Files.createDirectories(extractionRoot);
         } catch (IOException e) {
-            LOG.debug("Failed to create extraction root: " + extractionRoot, e);
+            log.debug("Failed to create extraction root: " + extractionRoot, e);
         }
     }
 
@@ -94,7 +95,7 @@ public final class ArchiveExtractionService {
             indexExtractedEntries(targetDir, archivePath, format);
             return localFileSystem.refreshAndFindFileByNioFile(targetDir);
         } catch (IOException ex) {
-            LOG.debug("Failed to extract archive: " + file.getPath(), ex);
+            log.debug("Failed to extract archive: " + file.getPath(), ex);
             return null;
         }
     }

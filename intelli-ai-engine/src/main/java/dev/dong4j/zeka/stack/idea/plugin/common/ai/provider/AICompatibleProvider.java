@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -47,11 +46,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class AICompatibleProvider implements AIServiceProvider {
-
-    /**
-     * 日志记录器, 用于记录 AI 兼容提供者相关的日志信息
-     */
-    private static final Logger LOG = Logger.getInstance(AICompatibleProvider.class);
 
     /**
      * 当前操作的项目对象
@@ -195,7 +189,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     break;
                 }
                 long waitTime = (long) (runtime.waitDuration * Math.pow(2, attempts - 1));
-                LOG.debug("AI request failed, retry in " + waitTime + "ms: " + e.getMessage());
+                log.debug("AI request failed, retry in " + waitTime + "ms: " + e.getMessage());
                 AIConsoleLoggerUtil.print(project, "等待 " + waitTime + "ms 后重试...");
                 try {
                     TimeUnit.MILLISECONDS.sleep(waitTime);
@@ -298,11 +292,11 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             AIConsoleLoggerUtil.printWarning(project, "服务返回空响应");
             return new ArrayList<>();
         } catch (IOException e) {
-            LOG.debug("Network error while fetching models", e);
+            log.debug("Network error while fetching models", e);
             AIConsoleLoggerUtil.printError(project, "网络错误: " + e.getMessage());
             return new ArrayList<>();
         } catch (Exception e) {
-            LOG.debug("Unexpected error while fetching models", e);
+            log.debug("Unexpected error while fetching models", e);
             AIConsoleLoggerUtil.printError(project, "获取模型列表失败: " + e.getMessage());
             return new ArrayList<>();
         }
@@ -513,7 +507,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                 }
             }
         } catch (Exception e) {
-            LOG.debug("Failed to parse models response", e);
+            log.debug("Failed to parse models response", e);
         }
         return models;
     }

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.intellij.lang.Language;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.EditorTextField;
@@ -31,6 +30,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.YamlUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Nacos JSON 编辑器组件
@@ -39,8 +39,8 @@ import lombok.Getter;
  * @author dong4j
  * @since 1.0.0
  */
+@Slf4j
 public class JsonEditor extends JPanel {
-    private static final Logger LOG = Logger.getInstance(JsonEditor.class);
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
     private final Project project;
@@ -150,7 +150,7 @@ public class JsonEditor extends JPanel {
             };
             setContent(formatted);
         } catch (Exception ex) {
-            LOG.debug("Format content failed", ex);
+            log.debug("Format content failed", ex);
         }
     }
 

@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.util.io.HttpRequests;
@@ -24,6 +23,8 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Git-cliff 下载管理器
  * <p>
@@ -33,8 +34,8 @@ import java.util.zip.ZipInputStream;
  * @version 1.0.0
  * @since 1.0.0
  */
+@Slf4j
 public final class GitCliffDownloadManager {
-    private static final Logger LOG = Logger.getInstance(GitCliffDownloadManager.class);
     private static final String GITHUB_API_URL = "https://api.github.com/repos/orhun/git-cliff/releases/latest";
     private static final String GITHUB_DOWNLOAD_BASE_URL = "https://github.com/orhun/git-cliff/releases/download";
     private static final String PLUGIN_DIR_NAME = "changelog";
@@ -131,7 +132,7 @@ public final class GitCliffDownloadManager {
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
             return json.get("tag_name").getAsString();
         } catch (Exception e) {
-            LOG.debug("获取 git-cliff 最新版本失败", e);
+            log.debug("获取 git-cliff 最新版本失败", e);
             return null;
         }
     }
@@ -393,7 +394,7 @@ public final class GitCliffDownloadManager {
             // 如果精确匹配不存在，尝试查找任何匹配的压缩包
             return findAnyMatchingPackage(distsDir);
         } catch (Exception e) {
-            LOG.debug("查找本地压缩包失败", e);
+            log.debug("查找本地压缩包失败", e);
             return null;
         }
     }
@@ -435,7 +436,7 @@ public final class GitCliffDownloadManager {
                     .orElse(null);
             }
         } catch (Exception e) {
-            LOG.debug("查找匹配的压缩包失败", e);
+            log.debug("查找匹配的压缩包失败", e);
             return null;
         }
     }
@@ -547,7 +548,7 @@ public final class GitCliffDownloadManager {
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                LOG.debug("获取 git-cliff 版本失败，退出码: " + exitCode);
+                log.debug("获取 git-cliff 版本失败，退出码: " + exitCode);
                 return null;
             }
 
@@ -560,10 +561,10 @@ public final class GitCliffDownloadManager {
                 return matcher.group(1);
             }
 
-            LOG.debug("无法从输出中解析版本号: " + versionOutput);
+            log.debug("无法从输出中解析版本号: " + versionOutput);
             return null;
         } catch (Exception e) {
-            LOG.debug("获取 git-cliff 版本失败", e);
+            log.debug("获取 git-cliff 版本失败", e);
             return null;
         }
     }
@@ -582,7 +583,7 @@ public final class GitCliffDownloadManager {
                         try {
                             Files.delete(path);
                         } catch (IOException e) {
-                            LOG.debug("删除文件失败: " + path, e);
+                            log.debug("删除文件失败: " + path, e);
                         }
                     });
             }

@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.update;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.util.concurrency.AppExecutorUtil;
@@ -17,6 +16,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.ApplicationUtil;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 更新启动活动类
@@ -28,13 +28,8 @@ import kotlin.coroutines.Continuation;
  * @date 2025.12.27
  * @since 1.0.0
  */
+@Slf4j
 public class UpdateStartupActivity implements ProjectActivity {
-    /**
-     * 记录插件更新检查活动的日志
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(UpdateStartupActivity.class);
     /**
      * 表示插件更新检查是否已经运行过的标志
      * <p>
@@ -61,7 +56,7 @@ public class UpdateStartupActivity implements ProjectActivity {
         // 检查是否启用自动更新
         AIProviderSettings settings = AIProviderSettings.getInstance();
         if (!settings.lastUpdateCheck) {
-            LOG.debug("自动更新检查已禁用，跳过启动时的更新检查");
+            log.debug("自动更新检查已禁用，跳过启动时的更新检查");
             return Unit.INSTANCE;
         }
 

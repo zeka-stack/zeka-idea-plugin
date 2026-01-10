@@ -1,13 +1,10 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.client;
 
 import com.alibaba.nacos.api.PropertyKeyConst;
-import com.alibaba.nacos.client.utils.LogUtils;
 import com.alibaba.nacos.common.http.HttpRestResult;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryConstants;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Nacos 安全代理
@@ -24,9 +22,9 @@ import lombok.Getter;
  * @author dong4j
  * @since 1.0.0
  */
+@Slf4j
 @SuppressWarnings("D")
 public class ConsumSecurityProxy {
-    private static final Logger LOGGER = LogUtils.logger(ConsumSecurityProxy.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Getter
@@ -65,7 +63,7 @@ public class ConsumSecurityProxy {
         try {
             if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
                 // 使用 AccessKey 和 SecretKey 登录（如需签名可在此扩展）
-                LOGGER.info("Login with AccessKey and SecretKey: {}", accessKey);
+                log.info("Login with AccessKey and SecretKey: {}", accessKey);
                 return true;
             }
 
@@ -88,7 +86,7 @@ public class ConsumSecurityProxy {
                 if (node.has("code")) {
                     int apiCode = node.path("code").asInt(0);
                     if (apiCode != 0) {
-                        LOGGER.debug("Login failed, apiCode: {}, msg: {}", apiCode, node.path("message").asText());
+                        log.debug("Login failed, apiCode: {}, msg: {}", apiCode, node.path("message").asText());
                         return false;
                     }
                     node = node.path("data");
@@ -98,13 +96,13 @@ public class ConsumSecurityProxy {
                 if (StringUtils.isNotBlank(token)) {
                     accessToken.set(token);
                     tokenExpireAt = System.currentTimeMillis() + ttl * 1000L - 5_000L;
-                    LOGGER.debug("Login success, token ttl {}s", ttl);
+                    log.debug("Login success, token ttl {}s", ttl);
                     return true;
                 }
             }
-            LOGGER.debug("Login failed, code: {}, msg: {}", result.getCode(), result.getMessage());
+            log.debug("Login failed, code: {}, msg: {}", result.getCode(), result.getMessage());
         } catch (Exception e) {
-            LOGGER.debug("Login failed: {}", e.getMessage(), e);
+            log.debug("Login failed: {}", e.getMessage(), e);
         }
         accessToken.set("");
         tokenExpireAt = -1L;

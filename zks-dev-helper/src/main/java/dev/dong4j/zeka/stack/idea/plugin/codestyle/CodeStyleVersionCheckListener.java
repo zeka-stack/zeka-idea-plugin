@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.codestyle;
 
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
@@ -14,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Code Style Version Check Listener
@@ -23,13 +23,8 @@ import kotlin.coroutines.Continuation;
  * @date 2026-01-02 18:30:17
  * @since hello.world
  */
+@Slf4j
 public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecycleListener {
-    /**
-     * 记录日志的 Logger 实例
-     * <p>
-     * 用于记录 CodeStyleVersionCheckListener 类中的各种日志信息, 帮助调试和监控.
-     */
-    private static final Logger LOG = Logger.getInstance(CodeStyleVersionCheckListener.class);
     private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
     /**
@@ -60,7 +55,7 @@ public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecy
                 updateChecker.start();
             }
         } catch (Exception e) {
-            LOG.debug("自动启动代码样式更新检查器失败", e);
+            log.debug("自动启动代码样式更新检查器失败", e);
         }
         return Unit.INSTANCE;
     }
@@ -73,15 +68,15 @@ public class CodeStyleVersionCheckListener implements ProjectActivity, AppLifecy
     @Override
     public void appClosing() {
         try {
-            LOG.debug("appClosing() 方法被调用：停止代码样式更新检查器");
+            log.debug("appClosing() 方法被调用：停止代码样式更新检查器");
 
             // 停止更新检查器
             CodeStyleUpdateChecker updateChecker = CodeStyleUpdateChecker.getInstance();
             updateChecker.stop();
 
-            LOG.debug("代码样式更新检查器已停止");
+            log.debug("代码样式更新检查器已停止");
         } catch (Exception e) {
-            LOG.debug("停止代码样式更新检查器失败", e);
+            log.debug("停止代码样式更新检查器失败", e);
         }
     }
 }

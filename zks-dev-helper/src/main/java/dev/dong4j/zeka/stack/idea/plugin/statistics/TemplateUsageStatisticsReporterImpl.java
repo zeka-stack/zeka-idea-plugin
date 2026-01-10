@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.statistics;
 
 import com.intellij.openapi.application.ApplicationInfo;
-import com.intellij.openapi.diagnostic.Logger;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,10 +22,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TemplateUsageStatisticsReporterImpl implements TemplateUsageStatisticReporter {
-
-    /** 日志记录器，用于记录模板使用统计报告相关的日志信息 */
-    private static final Logger LOG = Logger.getInstance(TemplateUsageStatisticsReporterImpl.class);
-
     /**
      * 异步上报使用统计数据
      * <p>
@@ -52,12 +47,12 @@ public class TemplateUsageStatisticsReporterImpl implements TemplateUsageStatist
                     // 比如发送到服务器、写入本地文件等
                     logUsageStatistics(usageModel);
                 } catch (Exception e) {
-                    LOG.debug("Failed to report usage statistics", e);
+                    log.debug("Failed to report usage statistics", e);
                 }
             });
 
         } catch (Exception e) {
-            LOG.debug("Failed to create usage model", e);
+            log.debug("Failed to create usage model", e);
         }
     }
 
@@ -70,7 +65,7 @@ public class TemplateUsageStatisticsReporterImpl implements TemplateUsageStatist
      */
     private void logUsageStatistics(UsageModel usageModel) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        LOG.debug("Template usage statistics: template=" + usageModel.getTemplateName() +
+        log.debug("Template usage statistics: template=" + usageModel.getTemplateName() +
                  ", timestamp=" + timestamp +
                  ", ide=" + usageModel.getIde() +
                  ", ideVersion=" + usageModel.getIdeVersion() +

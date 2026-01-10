@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.intellij.openapi.diagnostic.Logger;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -22,6 +21,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * <p>Description  : 统计数据显示.</p>
  *
@@ -30,10 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @email "mailto:dong4j@gmail.com"
  * @date 2025.01.05
  */
+@Slf4j
 public class StatisticsUploader {
-
-    /** 应用日志记录器, 用于统计上报过程中的日志输出 */
-    private static final Logger LOG = Logger.getInstance(StatisticsUploader.class);
     /** 统计数据上报的 API 地址 */
     private static final String UPLOAD_URL = "https://api.intellai.com/v1/statistics/upload";
 
@@ -90,7 +89,7 @@ public class StatisticsUploader {
 
             return true;
         } catch (Exception e) {
-            LOG.debug("Failed to upload statistics", e);
+            log.debug("Failed to upload statistics", e);
             return false;
         }
     }
@@ -119,7 +118,7 @@ public class StatisticsUploader {
                 }
             }
         } catch (Exception e) {
-            LOG.debug("Failed to upload file: " + dataFile.getName(), e);
+            log.debug("Failed to upload file: " + dataFile.getName(), e);
         }
     }
 
@@ -150,7 +149,7 @@ public class StatisticsUploader {
         int retryCount = uploadRetryCount.getOrDefault(batchKey, new AtomicInteger(0)).get();
 
         if (retryCount >= 3) {
-            LOG.debug("Batch exceeded max retry count, skipping: " + batchKey);
+            log.debug("Batch exceeded max retry count, skipping: " + batchKey);
             return true; // 跳过，继续上报其他批次
         }
 
@@ -169,7 +168,7 @@ public class StatisticsUploader {
                 return false;
             }
         } catch (Exception e) {
-            LOG.debug("Failed to upload batch", e);
+            log.debug("Failed to upload batch", e);
             uploadRetryCount.computeIfAbsent(batchKey, k -> new AtomicInteger(0)).incrementAndGet();
             return false;
         }
@@ -279,7 +278,7 @@ public class StatisticsUploader {
             Files.write(indexFile, (count + "\n").getBytes(), java.nio.file.StandardOpenOption.CREATE,
                         java.nio.file.StandardOpenOption.APPEND);
         } catch (IOException e) {
-            LOG.debug("Failed to mark as uploaded", e);
+            log.debug("Failed to mark as uploaded", e);
         }
     }
 

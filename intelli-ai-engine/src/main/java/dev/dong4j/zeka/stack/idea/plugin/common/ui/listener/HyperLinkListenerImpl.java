@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui.listener;
 
 import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.ui.popup.Balloon;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.ui.HyperlinkAdapter;
@@ -21,6 +20,7 @@ import javax.swing.event.HyperlinkEvent;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.PlatformUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.UrlType;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 超链接监听器实现类
@@ -38,16 +38,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.UrlType;
  * @date 2026.01.04
  * @since 1.0.0
  */
+@Slf4j
 public class HyperLinkListenerImpl extends HyperlinkAdapter {
-
-    /**
-     * 静态常量, 用于记录日志
-     * <p> 获取一个与 HyperLinkListenerImpl 类相关的 Logger 实例
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(HyperLinkListenerImpl.class);
-
     /**
      * 处理超链接激活事件
      * <p> 根据超链接的描述判断其类型, 并执行相应的操作. 支持分享链接, 邮件链接以及其他普通链接的打开.
@@ -77,7 +69,7 @@ public class HyperLinkListenerImpl extends HyperlinkAdapter {
         try {
             Desktop.getDesktop().mail(new URI(url));
         } catch (Exception ex) {
-            LOG.debug("Failed to open email", ex);
+            log.debug("Failed to open email", ex);
         }
     }
 

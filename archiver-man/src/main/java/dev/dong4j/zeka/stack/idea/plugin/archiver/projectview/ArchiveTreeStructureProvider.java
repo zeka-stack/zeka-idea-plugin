@@ -12,6 +12,7 @@ import com.intellij.psi.PsiFileSystemItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 
 import dev.dong4j.zeka.stack.idea.plugin.archiver.core.NestedArchiveCacheService;
 import dev.dong4j.zeka.stack.idea.plugin.archiver.projectview.provider.ArchiveFormatProvider;
@@ -24,9 +25,9 @@ import dev.dong4j.zeka.stack.idea.plugin.archiver.util.ArchiverFeatureToggles;
  * @author dong4j
  * @since 0.2.0
  */
+@Slf4j
 public final class ArchiveTreeStructureProvider implements TreeStructureProvider {
 
-    private static final Logger LOG = Logger.getInstance(ArchiveTreeStructureProvider.class);
     private final ArchiveFormatRegistry registry = ArchiveFormatRegistry.getInstance();
     private final NestedArchiveCacheService cacheService = NestedArchiveCacheService.getInstance();
 
@@ -80,7 +81,7 @@ public final class ArchiveTreeStructureProvider implements TreeStructureProvider
             }
             return new java.util.ArrayList<>(nodes);
         } catch (Exception ex) {
-            LOG.debug("Failed to build project view nodes for archive: " + localFile.getPath(), ex);
+            log.debug("Failed to build project view nodes for archive: " + localFile.getPath(), ex);
             return originalSnapshot;
         }
     }

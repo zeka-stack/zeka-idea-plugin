@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -26,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ModelScope 提供商实现类
@@ -40,8 +40,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 public class ModelScopeProvider extends AICompatibleProvider {
-    private static final Logger LOG = Logger.getInstance(ModelScopeProvider.class);
     /** ModelScope 模型列表接口地址（固定） */
     private static final String MODELS_LIST_URL = "https://modelscope.cn/api/v1/dolphin/models";
     /** 最大页数，每页最多 30 条 */
@@ -86,7 +86,7 @@ public class ModelScopeProvider extends AICompatibleProvider {
                     try {
                         return fetchModelsPage(page, apiKey);
                     } catch (Exception e) {
-                        LOG.debug("ModelScope 获取第 " + page + " 页失败", e);
+                        log.debug("ModelScope 获取第 " + page + " 页失败", e);
                         AIConsoleLoggerUtil.printWarning(project, "第 " + page + " 页请求失败: " + e.getMessage());
                         return new ArrayList<>();
                     }
@@ -101,7 +101,7 @@ public class ModelScopeProvider extends AICompatibleProvider {
                     List<String> pageModels = future.get();
                     allModels.addAll(pageModels);
                 } catch (Exception e) {
-                    LOG.debug("ModelScope 合并结果失败", e);
+                    log.debug("ModelScope 合并结果失败", e);
                     AIConsoleLoggerUtil.printWarning(project, "合并结果时出错: " + e.getMessage());
                 }
             }
