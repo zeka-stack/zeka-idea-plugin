@@ -51,8 +51,10 @@ public class FallbackTextStrategy implements StreamParseStrategy {
     }
 
     /**
-     * 解析原始流数据并发出内容类型的流块
-     * <p> 该方法为兜底策略, 当其他解析策略不适用时使用. 如果数据内容非空, 则将其作为 CONTENT 类型的流块发出.
+     * 解析原始流数据并发出内容类型的流块.
+     * <p> 该方法为兜底策略, 当其他解析策略不适用时使用. 如果数据内容非空, 则将其作为 CONTENT 类型的流块发出,
+     * 并标记兜底策略已实际输出内容 (fallbackUsed). 当流结束时, 仅在兜底策略曾输出过内容且未输出过提示时,
+     * 追加一次兜底警告 (fallbackWarningEmitted) 以提醒用户当前使用的是兜底解析.
      *
      * @param context 解析上下文, 提供当前解析所需的环境信息
      * @param chunk   待解析的原始流数据块
@@ -64,9 +66,11 @@ public class FallbackTextStrategy implements StreamParseStrategy {
                       @NotNull StreamChunkEmitter emitter) {
         String content = chunk.content();
         if (content != null && !content.isEmpty()) {
+            context.markFallbackUsed();
             emitter.emit(new StreamChunk(StreamChunkType.CONTENT, content));
         }
-        if (chunk.isDone() && !context.isFallbackWarningEmitted()) {
+        // 如果是最后一行数据, 且使用过此策略输出过内容的, 如果没有警告过那就输出一行警告, 因为只要走了这个策略那就意味着有部分特殊的响应体没有覆盖到, 所以需要反馈
+        if (chunk.isDone() && context.isFallbackUsed() && !context.isFallbackWarningEmitted()) {
             context.markFallbackWarningEmitted();
             emitter.emit(new StreamChunk(StreamChunkType.CONTENT, "\n" + FALLBACK_WARNING));
         }

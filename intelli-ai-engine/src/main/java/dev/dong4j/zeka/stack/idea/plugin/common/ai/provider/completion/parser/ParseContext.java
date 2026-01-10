@@ -32,6 +32,11 @@ public class ParseContext {
     /** 兜底提示是否已输出 */
     @Getter
     private boolean fallbackWarningEmitted = false;
+    /**
+     * 是否已使用兜底策略输出内容
+     */
+    @Getter
+    private boolean fallbackUsed = false;
 
     /**
      * 进入思考状态
@@ -134,5 +139,14 @@ public class ParseContext {
      */
     public void markFallbackWarningEmitted() {
         fallbackWarningEmitted = true;
+    }
+
+    /**
+     * 标记已使用兜底策略输出内容
+     *
+     * @since 1.0
+     */
+    public void markFallbackUsed() {
+        fallbackUsed = true;
     }
 }
