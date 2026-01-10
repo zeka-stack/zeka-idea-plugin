@@ -7,7 +7,6 @@ import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
@@ -26,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 新特性启动活动类
@@ -38,8 +38,8 @@ import kotlin.coroutines.Continuation;
  * @date 2025.12.31
  * @since 1.0.0
  */
+@Slf4j
 public class WhatsNewStartupActivity implements ProjectActivity {
-    private static final Logger LOG = Logger.getInstance(WhatsNewStartupActivity.class);
     private static final String VERSION_URL = "https://ideaplugin.dong4j.site/version";
     private static final PluginId PLUGIN_ID = PluginId.getId(EngineContents.PLUGIN_ID);
 
@@ -84,37 +84,37 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                 // 获取远程最新版本
                 String latestVersion = fetchLatestVersion();
                 if (latestVersion == null || latestVersion.isBlank()) {
-                    LOG.debug("无法获取远程版本信息");
+                    log.debug("无法获取远程版本信息");
                     return;
                 }
 
                 // 获取本地插件版本
                 String localVersion = getPluginVersion();
                 if (localVersion == null) {
-                    LOG.debug("无法获取本地插件版本");
+                    log.debug("无法获取本地插件版本");
                     return;
                 }
 
                 // 检查是否启用新版本通知
                 AIProviderSettings settings = AIProviderSettings.getInstance();
                 if (!settings.showUpdateNotification) {
-                    LOG.debug("新版本通知已禁用，跳过显示");
+                    log.debug("新版本通知已禁用，跳过显示");
                     return;
                 }
 
                 // 比较版本
                 if (compareVersion(localVersion, latestVersion) < 0) {
-                    LOG.debug("发现新版本: " + latestVersion + " (当前版本: " + localVersion + ")");
+                    log.debug("发现新版本: " + latestVersion + " (当前版本: " + localVersion + ")");
                     ApplicationManager.getApplication().invokeLater(() -> {
                         if (!project.isDisposed()) {
                             showUpdateNotification(project, latestVersion, localVersion);
                         }
                     });
                 } else {
-                    LOG.debug("插件已是最新版本: " + localVersion);
+                    log.debug("插件已是最新版本: " + localVersion);
                 }
             } catch (Exception e) {
-                LOG.debug("检查新版本失败", e);
+                log.debug("检查新版本失败", e);
             }
         });
     }
@@ -128,9 +128,9 @@ public class WhatsNewStartupActivity implements ProjectActivity {
     private String fetchLatestVersion() {
         try {
             String version = HttpRequests.request(VERSION_URL).productNameAsUserAgent().readString();
-            return version != null ? version.trim() : null;
+            return version.trim();
         } catch (Exception e) {
-            LOG.debug("获取远程版本失败", e);
+            log.debug("获取远程版本失败", e);
             return null;
         }
     }
@@ -148,7 +148,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                 return pluginDescriptor.getVersion();
             }
         } catch (Exception e) {
-            LOG.debug("获取插件版本失败", e);
+            log.debug("获取插件版本失败", e);
         }
         return null;
     }

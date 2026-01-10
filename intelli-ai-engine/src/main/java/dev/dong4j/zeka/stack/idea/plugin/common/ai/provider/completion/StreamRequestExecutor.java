@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -27,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.parser.St
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AI 流式请求执行器类
@@ -45,9 +45,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @date 2026.01.08
  * @since 1.0.0
  */
+@Slf4j
 public class StreamRequestExecutor {
-    /** 应用日志记录器, 用于输出调试和运行时信息 */
-    private static final Logger LOG = Logger.getInstance(StreamRequestExecutor.class);
 
     /** 当前项目上下文, 用于日志记录和控制台输出 */
     private final Project project;
@@ -179,7 +178,7 @@ public class StreamRequestExecutor {
                     continue;
                 }
 
-                LOG.debug(line);
+                log.debug(line);
 
                 if (line.startsWith("data: ")) {
                     String data = line.substring(6).trim();
@@ -262,7 +261,7 @@ public class StreamRequestExecutor {
         try {
             return JsonParser.parseString(jsonData).getAsJsonObject();
         } catch (Exception e) {
-            LOG.debug("Failed to parse stream chunk JSON", e);
+            log.debug("Failed to parse stream chunk JSON", e);
             return null;
         }
     }

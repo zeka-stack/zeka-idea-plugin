@@ -3,13 +3,14 @@ package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.ide.util.RunOnceUtil;
 import com.intellij.openapi.application.ApplicationActivationListener;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.wm.IdeFrame;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.Window;
 import java.util.List;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 插件生命周期监听器类
@@ -29,14 +30,8 @@ import java.util.List;
  * @date 2025.12.25
  * @since 1.0.0
  */
+@Slf4j
 public final class PluginLifecycleListener implements AppLifecycleListener, ApplicationActivationListener {
-    /**
-     * 记录插件生命周期监听器中的日志信息
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(PluginLifecycleListener.class);
-
     /**
      * 在应用程序框架创建时调用
      * <p> 当应用程序框架创建时, 执行一次初始化逻辑, 记录日志信息
@@ -49,7 +44,7 @@ public final class PluginLifecycleListener implements AppLifecycleListener, Appl
         // 是应用第一次启动时执行, 后续启动时不执行(也就是只执行一次, 通过 id 进行唯一约束)
         RunOnceUtil.runOnceForApp("plugin-lifecycle-listener", () -> {
             // 在应用启动时执行的初始化逻辑
-            LOG.debug("应用启动时执行的初始化逻辑");
+            log.debug("应用启动时执行的初始化逻辑");
         });
     }
 
@@ -63,7 +58,7 @@ public final class PluginLifecycleListener implements AppLifecycleListener, Appl
     public void welcomeScreenDisplayed() {
         RunOnceUtil.runOnceForApp("plugin-lifecycle-listener", () -> {
             // 在欢迎屏幕显示时执行的初始化逻辑
-            LOG.debug("在欢迎屏幕显示时执行的初始化逻辑");
+            log.debug("在欢迎屏幕显示时执行的初始化逻辑");
         });
     }
 
@@ -77,7 +72,7 @@ public final class PluginLifecycleListener implements AppLifecycleListener, Appl
     public void projectFrameClosed() {
         RunOnceUtil.runOnceForApp("plugin-lifecycle-listener", () -> {
             // 在项目框架关闭时执行的清理逻辑
-            LOG.debug("在项目框架关闭时执行的清理逻辑");
+            log.debug("在项目框架关闭时执行的清理逻辑");
         });
     }
 
@@ -91,7 +86,7 @@ public final class PluginLifecycleListener implements AppLifecycleListener, Appl
     public void projectOpenFailed() {
         RunOnceUtil.runOnceForApp("plugin-lifecycle-listener", () -> {
             // 在项目打开失败时执行的清理逻辑
-            LOG.debug("在项目打开失败时执行的清理逻辑");
+            log.debug("在项目打开失败时执行的清理逻辑");
         });
     }
 
@@ -105,7 +100,7 @@ public final class PluginLifecycleListener implements AppLifecycleListener, Appl
     public void appClosing() {
         RunOnceUtil.runOnceForApp("plugin-lifecycle-listener", () -> {
             // 在应用关闭时执行的清理逻辑
-            LOG.debug("在应用关闭时执行的清理逻辑");
+            log.debug("在应用关闭时执行的清理逻辑");
         });
     }
 
@@ -119,7 +114,7 @@ public final class PluginLifecycleListener implements AppLifecycleListener, Appl
     public void appWillBeClosed(boolean isRestart) {
         RunOnceUtil.runOnceForApp("plugin-lifecycle-listener", () -> {
             // 在应用即将关闭时执行的清理逻辑
-            LOG.debug("在应用即将关闭时执行的清理逻辑");
+            log.debug("在应用即将关闭时执行的清理逻辑");
         });
     }
 

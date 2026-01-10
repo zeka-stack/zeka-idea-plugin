@@ -6,7 +6,6 @@ import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
@@ -24,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * IntelliAgent 更新检查器
@@ -42,9 +42,9 @@ import dev.dong4j.zeka.stack.idea.plugin.kit.SettingsUtil;
  * @date 2025.12.25
  * @since 1.0.0
  */
+@Slf4j
 @Service(Service.Level.APP)
 public final class IntelliAgentUpdateChecker {
-    private static final Logger LOG = Logger.getInstance(IntelliAgentUpdateChecker.class);
 
     /** 首次检查延迟时间：1 分钟 */
     private static final long INITIAL_DELAY_MS = TimeUnit.MINUTES.toMillis(1);
@@ -70,17 +70,17 @@ public final class IntelliAgentUpdateChecker {
         IntelliAgentSettings agentSettings = settings.intelliAgentSettings;
 
         if (agentSettings == null || !agentSettings.autoUpdate) {
-            LOG.debug("自动更新检查未启用，跳过启动");
+            log.debug("自动更新检查未启用，跳过启动");
             return;
         }
 
         String downloadUrl = agentSettings.downloadUrl != null ? agentSettings.downloadUrl.trim() : "";
         if (downloadUrl.isEmpty() || (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://"))) {
-            LOG.debug("下载地址未配置或为本地路径，跳过自动更新检查");
+            log.debug("下载地址未配置或为本地路径，跳过自动更新检查");
             return;
         }
 
-        LOG.debug("启动 IntelliAI Agent 自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
+        log.debug("启动 IntelliAI Agent 自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
 
         timer = new Timer("IntelliAgentUpdateChecker", true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -99,7 +99,7 @@ public final class IntelliAgentUpdateChecker {
             timer.cancel();
             timer = null;
             lastNotifiedVersion = null; // 清除已通知版本记录
-            LOG.debug("停止 IntelliAI Agent 自动更新检查器");
+            log.debug("停止 IntelliAI Agent 自动更新检查器");
         }
     }
 
@@ -130,7 +130,7 @@ public final class IntelliAgentUpdateChecker {
             // 获取最新版本名称
             String latestJarName = agentManager.fetchLatestJarName(downloadUrl);
             if (latestJarName.isEmpty()) {
-                LOG.debug("无法获取最新版本信息");
+                log.debug("无法获取最新版本信息");
                 return;
             }
 
@@ -142,19 +142,19 @@ public final class IntelliAgentUpdateChecker {
             if (localJarName == null || !localJarName.equals(latestJarName)) {
                 // 避免重复通知同一版本
                 if (!latestJarName.equals(lastNotifiedVersion)) {
-                    LOG.debug("发现新版本 Agent JAR: " + latestJarName + " (当前版本: " + (localJarName != null ? localJarName : "无") + ")");
+                    log.debug("发现新版本 Agent JAR: " + latestJarName + " (当前版本: " + (localJarName != null ? localJarName : "无") + ")");
                     showUpdateNotification(latestJarName, localJarName, agentSettings);
                     lastNotifiedVersion = latestJarName;
                 } else {
-                    LOG.debug("已通知过该版本，跳过: " + latestJarName);
+                    log.debug("已通知过该版本，跳过: " + latestJarName);
                 }
             } else {
-                LOG.debug("Agent JAR 已是最新版本: " + latestJarName);
+                log.debug("Agent JAR 已是最新版本: " + latestJarName);
                 // 如果本地已更新到最新版本，清除已通知版本记录
                 lastNotifiedVersion = null;
             }
         } catch (Exception e) {
-            LOG.debug("检查 Agent 更新失败", e);
+            log.debug("检查 Agent 更新失败", e);
         }
     }
 
@@ -252,9 +252,9 @@ public final class IntelliAgentUpdateChecker {
                     });
                 }
 
-                LOG.debug("Agent JAR 更新成功: " + latestJarName);
+                log.debug("Agent JAR 更新成功: " + latestJarName);
             } catch (Exception e) {
-                LOG.debug("下载 Agent JAR 失败: " + latestJarName, e);
+                log.debug("下载 Agent JAR 失败: " + latestJarName, e);
                 if (project != null) {
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showError(project,

@@ -5,7 +5,6 @@ import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
@@ -29,6 +28,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 插件更新器类
@@ -46,15 +46,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
  * @date 2025.12.27
  * @since 1.0.0
  */
+@Slf4j
 public class PluginUpdater {
-    /**
-     * 记录插件更新检查过程中的日志信息
-     * <p>
-     * 使用 Logger 类来记录调试, 错误等日志信息, 帮助开发者追踪插件更新检查的行为和问题
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(PluginUpdater.class);
     /**
      * 插件的唯一标识符
      * <p>
@@ -89,7 +82,7 @@ public class PluginUpdater {
         // 检查是否启用自动更新
         AIProviderSettings settings = AIProviderSettings.getInstance();
         if (!settings.lastUpdateCheck) {
-            LOG.debug("自动更新检查已禁用，跳过更新检查");
+            log.debug("自动更新检查已禁用，跳过更新检查");
             return;
         }
 
@@ -106,7 +99,7 @@ public class PluginUpdater {
                 });
             }
         } catch (Exception e) {
-            LOG.debug("检查插件更新失败", e);
+            log.debug("检查插件更新失败", e);
         }
     }
 
@@ -142,14 +135,14 @@ public class PluginUpdater {
                 try {
                     PluginId pluginId = provider.getPluginId();
                     pluginIds.add(pluginId);
-                    LOG.debug("注册插件更新检查: " + pluginId.getIdString());
+                    log.debug("注册插件更新检查: " + pluginId.getIdString());
                 } catch (Exception e) {
-                    LOG.debug("获取插件更新信息失败", e);
+                    log.debug("获取插件更新信息失败", e);
                 }
             }
         } catch (Exception e) {
             // 如果扩展点不可用（例如在插件加载早期），只记录警告，不影响基本功能
-            LOG.debug("扩展点不可用，仅检查 engine 插件更新: " + e.getMessage());
+            log.debug("扩展点不可用，仅检查 engine 插件更新: " + e.getMessage());
         }
         return pluginIds;
     }
@@ -223,7 +216,7 @@ public class PluginUpdater {
 
                 UpdateChecker.updateAndShowResult(project, settingsCopy);
             } catch (Exception e) {
-                LOG.debug("安装插件更新失败", e);
+                log.debug("安装插件更新失败", e);
                 ApplicationManager.getApplication().invokeLater(() -> {
                     NotificationUtil.showError(project, AICommonBundle.message("plugin.update.install.failed", e.getMessage()));
                 });

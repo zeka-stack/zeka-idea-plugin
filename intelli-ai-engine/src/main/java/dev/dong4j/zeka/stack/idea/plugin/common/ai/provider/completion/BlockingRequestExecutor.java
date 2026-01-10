@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -18,6 +17,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AI 请求阻塞执行器类
@@ -38,9 +38,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @date 2026.01.08
  * @since 1.0.0
  */
+@Slf4j
 public class BlockingRequestExecutor {
-    /** 应用日志记录器, 用于输出 AI 请求执行过程中的调试和错误信息 */
-    private static final Logger LOG = Logger.getInstance(BlockingRequestExecutor.class);
 
     /**
      * 当前项目实例
@@ -119,7 +118,7 @@ public class BlockingRequestExecutor {
 
             if (!responseBody.trim().isEmpty()) {
                 String result = validation ? parseValidationResponse(responseBody) : parseResponse(responseBody, listener);
-                LOG.debug("AI response length: " + result.length());
+                log.debug("AI response length: " + result.length());
                 return result;
             }
 

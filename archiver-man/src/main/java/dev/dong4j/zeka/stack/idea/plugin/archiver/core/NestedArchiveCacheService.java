@@ -11,6 +11,8 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -30,10 +32,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author dong4j
  * @since 0.3.0
  */
+@Slf4j
 @Service(Service.Level.APP)
 public final class NestedArchiveCacheService {
 
-    private static final Logger LOG = Logger.getInstance(NestedArchiveCacheService.class);
     private static final String CACHE_DIR_NAME = "archiver-man";
     private static final String NESTED_DIR_NAME = "nested";
 
@@ -46,7 +48,7 @@ public final class NestedArchiveCacheService {
         try {
             Files.createDirectories(cacheRoot);
         } catch (IOException e) {
-            LOG.debug("Failed to create cache directory: " + cacheRoot, e);
+            log.debug("Failed to create cache directory: " + cacheRoot, e);
         }
     }
 
@@ -72,7 +74,7 @@ public final class NestedArchiveCacheService {
             Path cached = ensureCached(file);
             return localFileSystem.refreshAndFindFileByNioFile(cached);
         } catch (IOException ex) {
-            LOG.debug("Failed to cache nested archive: " + file.getPath(), ex);
+            log.debug("Failed to cache nested archive: " + file.getPath(), ex);
             return null;
         }
     }

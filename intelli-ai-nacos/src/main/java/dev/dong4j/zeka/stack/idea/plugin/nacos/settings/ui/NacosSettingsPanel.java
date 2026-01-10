@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.settings.ui;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -75,8 +74,8 @@ import lombok.Getter;
  * @author dong4j
  * @since 1.0.0
  */
+@Slf4j
 public class NacosSettingsPanel {
-    private static final Logger LOG = Logger.getInstance(NacosSettingsPanel.class);
     private static final JBColor DOT_COLOR_GREEN = new JBColor(new Color(52, 199, 89), new Color(48, 209, 88));
     private static final JBColor DOT_COLOR_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
     private static final JBColor DOT_COLOR_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 214, 10));
@@ -446,7 +445,7 @@ public class NacosSettingsPanel {
                     passwordField.setText(password != null ? password : "");
                 }, ModalityState.any());
             } catch (Exception e) {
-                LOG.debug("Failed to get password", e);
+                log.debug("Failed to get password", e);
                 cachedStoredPassword = null;
                 ApplicationManager.getApplication().invokeLater(() -> {
                     passwordField.setText("");
@@ -609,7 +608,7 @@ public class NacosSettingsPanel {
                 setLocalOperationInProgress(false);
                 refreshLocalStatus();
                 if (throwable != null) {
-                    LOG.debug("Local Nacos operation failed", throwable);
+                    log.debug("Local Nacos operation failed", throwable);
                 }
             }
         }, ModalityState.any()));
@@ -709,7 +708,7 @@ public class NacosSettingsPanel {
             Desktop.getDesktop().open(dir);
         } catch (Exception ex) {
             NotificationUtil.showError(null, NacosBundle.message("notification.local.nacos.open.dir.failed", ex.getMessage()));
-            LOG.debug("Failed to open local Nacos directory", ex);
+            log.debug("Failed to open local Nacos directory", ex);
         }
     }
 
@@ -735,7 +734,7 @@ public class NacosSettingsPanel {
     private void deleteOldVersionZipFiles(String currentVersion) {
         int deletedCount = LocalRegistryManager.deleteOldVersionZipFiles(currentVersion);
         if (deletedCount > 0) {
-            LOG.debug("Deleted " + deletedCount + " old version zip file(s)");
+            log.debug("Deleted " + deletedCount + " old version zip file(s)");
         }
     }
 

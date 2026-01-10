@@ -45,7 +45,7 @@ public class PluginUtil {
                 return pluginDescriptor.getVersion();
             }
         } catch (Exception e) {
-            log.trace("获取插件版本号失败", e);
+            log.debug("获取插件版本号失败", e);
         }
         return null;
     }

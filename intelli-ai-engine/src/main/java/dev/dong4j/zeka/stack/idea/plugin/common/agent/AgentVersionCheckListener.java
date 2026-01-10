@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.agent;
 
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
@@ -15,6 +14,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 代理版本检查监听器类
@@ -27,13 +27,13 @@ import kotlin.coroutines.Continuation;
  * @date 2025.12.25
  * @since 1.0.0
  */
+@Slf4j
 public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleListener {
     /**
      * 记录日志的 Logger 实例
      * <p>
      * 用于记录 AgentVersionCheckListener 类中的各种日志信息, 帮助调试和监控.
      */
-    private static final Logger LOG = Logger.getInstance(AgentVersionCheckListener.class);
     private final AtomicBoolean hasRun = new AtomicBoolean(false);
 
     /**
@@ -63,7 +63,7 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
                 updateChecker.start();
             }
         } catch (Exception e) {
-            LOG.debug("自动启动 IntelliAI Agent 失败", e);
+            log.debug("自动启动 IntelliAI Agent 失败", e);
         }
         return Unit.INSTANCE;
     }
@@ -75,7 +75,7 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
     @Override
     public void appClosing() {
         try {
-            LOG.debug("dispose() 方法被调用：停止 IntelliAI Agent 和更新检查器");
+            log.debug("dispose() 方法被调用：停止 IntelliAI Agent 和更新检查器");
 
             // 停止更新检查器
             IntelliAgentUpdateChecker updateChecker = IntelliAgentUpdateChecker.getInstance();
@@ -84,14 +84,14 @@ public class AgentVersionCheckListener implements ProjectActivity, AppLifecycleL
             // 停止 Agent
             IntelliAgentManager manager = IntelliAgentManager.getInstance();
             if (manager.isRunning()) {
-                LOG.debug("检测到 IntelliAI Agent 正在运行，执行停止操作");
+                log.debug("检测到 IntelliAI Agent 正在运行，执行停止操作");
                 manager.stopAgent();
-                LOG.debug("IntelliAI Agent 已停止");
+                log.debug("IntelliAI Agent 已停止");
             } else {
-                LOG.debug("IntelliAI Agent 未运行，无需停止");
+                log.debug("IntelliAI Agent 未运行，无需停止");
             }
         } catch (Exception e) {
-            LOG.debug("停止 IntelliAI Agent 失败", e);
+            log.debug("停止 IntelliAI Agent 失败", e);
         }
     }
 }

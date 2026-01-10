@@ -5,7 +5,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -24,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Iflow AI 服务提供商实现类
@@ -39,8 +39,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 public class IflowProvider extends AICompatibleProvider {
-    private static final Logger LOG = Logger.getInstance(IflowProvider.class);
     /** IFlow 模型列表接口地址 */
     private static final String MODELS_LIST_URL = "https://iflow.cn/api/platform/models/list";
 
@@ -111,11 +111,11 @@ public class IflowProvider extends AICompatibleProvider {
             AIConsoleLoggerUtil.printWarning(project, "服务返回空响应，返回默认模型列表");
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         } catch (IOException e) {
-            LOG.debug("IFlow 获取模型列表网络错误", e);
+            log.debug("IFlow 获取模型列表网络错误", e);
             AIConsoleLoggerUtil.printError(project, "网络错误: " + e.getMessage());
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
         } catch (Exception e) {
-            LOG.debug("IFlow 获取模型列表失败", e);
+            log.debug("IFlow 获取模型列表失败", e);
             AIConsoleLoggerUtil.printError(project, "获取模型列表失败: " + e.getMessage());
 
             return new ArrayList<>(AIProviderType.IFLOW.getSupportedModels());
@@ -142,13 +142,13 @@ public class IflowProvider extends AICompatibleProvider {
             // 检查响应是否成功
             if (json.has("success") && !json.get("success").getAsBoolean()) {
                 String errorMessage = json.has("message") ? json.get("message").getAsString() : "未知错误";
-                LOG.debug("IFlow API 返回失败: " + errorMessage);
+                log.debug("IFlow API 返回失败: " + errorMessage);
                 return new ArrayList<>();
             }
 
             // 获取 data 对象
             if (!json.has("data") || !json.get("data").isJsonObject()) {
-                LOG.debug("IFlow 响应中没有 data 对象");
+                log.debug("IFlow 响应中没有 data 对象");
                 return new ArrayList<>();
             }
 
@@ -175,7 +175,7 @@ public class IflowProvider extends AICompatibleProvider {
                 }
             }
         } catch (Exception e) {
-            LOG.debug("IFlow 解析模型响应失败", e);
+            log.debug("IFlow 解析模型响应失败", e);
         }
         return new ArrayList<>(models);
     }

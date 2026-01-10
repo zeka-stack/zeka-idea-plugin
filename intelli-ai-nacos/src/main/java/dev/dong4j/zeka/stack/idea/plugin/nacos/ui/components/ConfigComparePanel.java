@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.ui.components;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.WriteCommandAction;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
@@ -32,6 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClient;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.NacosClientUtils;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.client.model.ConfigHistoryItem;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 配置对比面板
@@ -40,8 +40,8 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
  * @author dong4j
  * @since 1.0.0
  */
+@Slf4j
 public class ConfigComparePanel extends JPanel {
-    private static final Logger LOG = Logger.getInstance(ConfigComparePanel.class);
 
     private final Project project;
     private final boolean includeHistory;
@@ -285,14 +285,14 @@ public class ConfigComparePanel extends JPanel {
                     }
                     return client.getConfigHistoryList(namespace, group, dataId, 1, 100);
                 } catch (Exception e) {
-                    LOG.debug("Failed to load history versions", e);
+                    log.debug("Failed to load history versions", e);
                     throw new RuntimeException(e);
                 }
             }, AppExecutorUtil.getAppExecutorService())
             .whenComplete((items, throwable) -> {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     if (throwable != null) {
-                        LOG.debug("Failed to load history versions", throwable);
+                        log.debug("Failed to load history versions", throwable);
                         if (historyVersionComboBox != null) {
                             historyVersionComboBox.removeAllItems();
                         }
@@ -346,14 +346,14 @@ public class ConfigComparePanel extends JPanel {
                     ConfigHistoryItem historyItem = client.getConfigHistory(namespace, group, dataId, nid);
                     return historyItem.getContent();
                 } catch (Exception e) {
-                    LOG.debug("Failed to load history version", e);
+                    log.debug("Failed to load history version", e);
                     throw new RuntimeException(e);
                 }
             }, AppExecutorUtil.getAppExecutorService())
             .whenComplete((content, throwable) -> {
                 ApplicationManager.getApplication().invokeLater(() -> {
                     if (throwable != null) {
-                        LOG.debug("Failed to load history version", throwable);
+                        log.debug("Failed to load history version", throwable);
                         if (historyEditor != null) {
                             historyEditor.setContent(NacosBundle.message("compare.error.history.load", throwable.getMessage()));
                         }
@@ -385,7 +385,7 @@ public class ConfigComparePanel extends JPanel {
      */
     private void saveLocalFile() {
         if (localFile == null) {
-            LOG.debug("Local file is null, cannot save");
+            log.debug("Local file is null, cannot save");
             return;
         }
 
@@ -406,7 +406,7 @@ public class ConfigComparePanel extends JPanel {
                         }
                     }
                 } catch (Exception e) {
-                    LOG.debug("Failed to save local file", e);
+                    log.debug("Failed to save local file", e);
                 }
             });
         });

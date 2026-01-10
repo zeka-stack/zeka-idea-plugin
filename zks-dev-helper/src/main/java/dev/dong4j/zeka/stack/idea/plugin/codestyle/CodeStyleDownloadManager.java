@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.codestyle;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
@@ -32,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public final class CodeStyleDownloadManager {
-    private static final Logger LOG = Logger.getInstance(CodeStyleDownloadManager.class);
     private static final String PLUGIN_DIR_NAME = "helper";
     private static final String CODE_STYLE_FILE_PREFIX = "zeka-stack-codestyle-";
     private static final String CODE_STYLE_FILE_SUFFIX = ".xml";
@@ -93,7 +91,7 @@ public final class CodeStyleDownloadManager {
                 }))
                 .orElse(null);
         } catch (IOException e) {
-            LOG.debug("Failed to list code style directory", e);
+            log.debug("Failed to list code style directory", e);
             return null;
         }
     }

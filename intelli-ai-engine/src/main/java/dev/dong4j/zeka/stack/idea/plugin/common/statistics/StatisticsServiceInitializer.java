@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
 import com.intellij.ide.AppLifecycleListener;
 import com.intellij.openapi.components.Service;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 
@@ -11,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p> 描述: 统计服务启动器.</p>
@@ -20,15 +20,9 @@ import kotlin.coroutines.Continuation;
  * @email "mailto:dong4j@gmail.com"
  * @date 2025.01.05
  */
+@Slf4j
 @Service
 public final class StatisticsServiceInitializer {
-
-    /**
-     * 记录统计服务初始化器中的日志信息
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(StatisticsServiceInitializer.class);
     /**
      * 统计服务的单例实现实例
      * <p> 用于延迟初始化并保证线程安全的访问
@@ -62,14 +56,14 @@ public final class StatisticsServiceInitializer {
     public static void startService() {
         StatisticsService service = getService();
         service.start();
-        LOG.debug("Statistics service started");
+        log.debug("Statistics service started");
     }
 
     /** 停止统计服务 */
     public static void stopService() {
         if (serviceInstance != null) {
             serviceInstance.stop();
-            LOG.debug("Statistics service stopped");
+            log.debug("Statistics service stopped");
         }
     }
 

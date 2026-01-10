@@ -129,7 +129,7 @@ public class CommitMessageGenerator {
                                    @Nullable CommitMessageI commitMessageControl,
                                    @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
         if (changes.isEmpty()) {
-            log.trace("Git 提交页面：没有代码变更需要处理");
+            log.debug("Git 提交页面：没有代码变更需要处理");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.changes"));
             return;
         }
@@ -198,14 +198,14 @@ public class CommitMessageGenerator {
                         ApplicationManager.getApplication().invokeLater(() -> {
                             // 检查项目是否已销毁
                             if (project.isDisposed() || state.cancelled.get()) {
-                                log.trace("项目已销毁或任务已取消，跳过设置提交消息");
+                                log.debug("项目已销毁或任务已取消，跳过设置提交消息");
                                 return;
                             }
 
                             // 直接写入提交面板，避免弹窗打断提交流程
                             boolean applied = setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
                             if (!applied && !updated.get()) {
-                                log.trace("Git 提交页面：提交面板不可用，无法写入提交记录");
+                                log.debug("Git 提交页面：提交面板不可用，无法写入提交记录");
                             }
 
                             if (outputSession != null && !project.isDisposed()) {
@@ -213,9 +213,9 @@ public class CommitMessageGenerator {
                             }
                         });
 
-                        log.trace("Git 提交页面：提交记录生成成功");
+                        log.debug("Git 提交页面：提交记录生成成功");
                     } catch (Exception e) {
-                        log.trace("Git 提交页面：生成提交记录失败", e);
+                        log.debug("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
                             // 检查项目是否已销毁
                             if (project.isDisposed() || state.cancelled.get()) {
@@ -385,10 +385,10 @@ public class CommitMessageGenerator {
         // 获取当前插件版本号
         String currentVersion = dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil.getVersion(PluginContents.PLUGIN_ID);
         if (currentVersion == null) {
-            log.trace("无法获取插件版本号，跳过版本检查");
+            log.debug("无法获取插件版本号，跳过版本检查");
             // 如果无法获取版本号，使用原有逻辑（每个项目只显示一次）
             if (propertiesComponent.getBoolean(shownKey, false)) {
-                log.trace("提交上下文提示已显示过，跳过");
+                log.debug("提交上下文提示已显示过，跳过");
                 return;
             }
             propertiesComponent.setValue(shownKey, true);
@@ -398,13 +398,13 @@ public class CommitMessageGenerator {
 
             // 如果版本号不一致（说明是升级），重置已显示标记
             if (storedVersion != null && !storedVersion.equals(currentVersion)) {
-                log.trace("检测到插件版本升级：{} -> {}，重置提示状态", storedVersion, currentVersion);
+                log.debug("检测到插件版本升级：{} -> {}，重置提示状态", storedVersion, currentVersion);
                 propertiesComponent.unsetValue(shownKey);
             }
 
             // 检查是否已经显示过提示（每个版本只显示一次）
             if (propertiesComponent.getBoolean(shownKey, false)) {
-                log.trace("提交上下文提示已显示过（版本：{}），跳过", currentVersion);
+                log.debug("提交上下文提示已显示过（版本：{}），跳过", currentVersion);
                 return;
             }
 
@@ -469,7 +469,7 @@ public class CommitMessageGenerator {
                 return pluginDescriptor.getVersion();
             }
         } catch (Exception e) {
-            log.trace("获取插件版本号失败", e);
+            log.debug("获取插件版本号失败", e);
         }
         return null;
     }
@@ -711,7 +711,7 @@ public class CommitMessageGenerator {
                     method.invoke(commitMessageControl, commitMessage);
                     return true;
                 } catch (Exception e) {
-                    log.trace("Git 提交页面：调用提交面板方法失败: {}", methodName, e);
+                    log.debug("Git 提交页面：调用提交面板方法失败: {}", methodName, e);
                 }
             }
         }
@@ -748,7 +748,7 @@ public class CommitMessageGenerator {
 
         // 检查项目是否已销毁
         if (project.isDisposed()) {
-            log.trace("项目已销毁，跳过设置提交消息文本");
+            log.debug("项目已销毁，跳过设置提交消息文本");
             return false;
         }
 
@@ -764,9 +764,9 @@ public class CommitMessageGenerator {
         } catch (Exception e) {
             // 捕获可能的异常（如项目已销毁）
             if (project.isDisposed()) {
-                log.trace("项目已销毁，无法设置提交消息文本", e);
+                log.debug("项目已销毁，无法设置提交消息文本", e);
             } else {
-                log.trace("设置提交消息文本失败", e);
+                log.debug("设置提交消息文本失败", e);
             }
             return false;
         }
@@ -782,7 +782,7 @@ public class CommitMessageGenerator {
     private void notifyGenerationCompleted(@NotNull CommitMessageI commitMessageControl) {
         // 检查项目是否已销毁
         if (project.isDisposed()) {
-            log.trace("项目已销毁，跳过通知生成完成状态");
+            log.debug("项目已销毁，跳过通知生成完成状态");
             return;
         }
 
@@ -818,7 +818,7 @@ public class CommitMessageGenerator {
             }
         } catch (Exception e) {
             // 静默处理异常，避免影响主流程
-            log.trace("通知生成完成状态失败", e);
+            log.debug("通知生成完成状态失败", e);
         }
     }
 
@@ -904,7 +904,7 @@ public class CommitMessageGenerator {
                         return trimmed.isEmpty() ? null : trimmed;
                     }
                 } catch (Exception e) {
-                    log.trace("Git 提交页面：读取提交消息失败: {}", methodName, e);
+                    log.debug("Git 提交页面：读取提交消息失败: {}", methodName, e);
                 }
             }
         }

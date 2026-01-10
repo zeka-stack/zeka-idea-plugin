@@ -23,6 +23,8 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -53,9 +55,9 @@ import dev.dong4j.zeka.stack.idea.plugin.archiver.util.NotificationUtil;
 /**
  * 归档条目编辑服务。
  */
+@Slf4j
 @Service(Service.Level.APP)
 public final class EditableArchiveService {
-    private static final Logger LOG = Logger.getInstance(EditableArchiveService.class);
     private static final DateTimeFormatter BACKUP_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final Map<Path, Object> archiveLocks = new ConcurrentHashMap<>();
@@ -171,7 +173,7 @@ public final class EditableArchiveService {
                         statusBar.setInfo("Failed to save archive: " + ex.getMessage());
                     }
                     NotificationUtil.showError(save.project(), "Failed to save archive: " + ex.getMessage());
-                    LOG.debug("Unexpected error during archive save", ex);
+                    log.debug("Unexpected error during archive save", ex);
                 }
             });
         }

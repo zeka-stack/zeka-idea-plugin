@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 
@@ -18,6 +17,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * 统计服务实现类, 用于处理统计事件的收集, 存储和上传.
  *
@@ -26,16 +27,8 @@ import java.util.concurrent.TimeUnit;
  * @email "mailto:dong4j@gmail.com"
  * @date 2025.01.05
  */
+@Slf4j
 public class StatisticsServiceImpl implements StatisticsService {
-
-    /**
-     * 日志记录器实例
-     * <p> 用于记录统计服务中的日志信息
-     *
-     * @see Logger
-     */
-    private static final Logger LOG = Logger.getInstance(StatisticsServiceImpl.class);
-
     /** 写入间隔:5 分钟 (以毫秒为单位) */
     private static final long WRITE_INTERVAL_MS = 5 * 60 * 1000;
     /** 上报间隔:30 分钟 */
@@ -96,7 +89,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         if (!eventQueue.offer(event)) {
-            LOG.debug("Statistics queue is full, dropping event: " + event);
+            log.debug("Statistics queue is full, dropping event: " + event);
         }
     }
 
@@ -145,7 +138,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 addFileToSnapshot(snapshot, date);
             }
         } catch (Exception e) {
-            LOG.debug("Failed to get snapshot for date: " + date, e);
+            log.debug("Failed to get snapshot for date: " + date, e);
         }
 
         return snapshot;
@@ -166,7 +159,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                     snapshot.addRecord(record);
                 }
             } catch (Exception e) {
-                LOG.debug("Failed to read data file for date: " + dateStr, e);
+                log.debug("Failed to read data file for date: " + dateStr, e);
             }
         }
     }
@@ -263,7 +256,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             TimeUnit.MILLISECONDS
                                                   );
 
-        LOG.debug("Statistics service started");
+        log.debug("Statistics service started");
     }
 
     /** 停止服务 */
@@ -286,7 +279,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         // 最后一次写入
         flushToFile();
 
-        LOG.debug("Statistics service stopped");
+        log.debug("Statistics service stopped");
     }
 
     /**
@@ -312,9 +305,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                 records.add(event.toRecord());
             }
             writer.writeRecords(records);
-            LOG.debug("Flushed " + records.size() + " records to file");
+            log.debug("Flushed " + records.size() + " records to file");
         } catch (Exception e) {
-            LOG.debug("Failed to flush statistics to file", e);
+            log.debug("Failed to flush statistics to file", e);
             // 如果写入失败，将事件重新放回队列
             for (StatisticsEvent event : events) {
                 eventQueue.offer(event);

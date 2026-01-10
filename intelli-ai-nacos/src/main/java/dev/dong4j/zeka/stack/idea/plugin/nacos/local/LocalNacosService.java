@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.local;
 
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.concurrency.AppExecutorUtil;
 
 import java.util.concurrent.CompletableFuture;
@@ -12,6 +11,7 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.model.LocalRegistryContext;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.service.manager.LocalRegistryManager;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 本地 Nacos 注册中心服务
@@ -21,8 +21,8 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
  * @author dong4j
  * @since 1.2.0
  */
+@Slf4j
 public final class LocalNacosService {
-    private static final Logger LOG = Logger.getInstance(LocalNacosService.class);
     private static final LocalNacosService INSTANCE = new LocalNacosService();
 
     private LocalNacosService() {
@@ -62,7 +62,7 @@ public final class LocalNacosService {
             } catch (UserCancelException e) {
                 NotificationUtil.showWarning(null, NacosBundle.message("notification.local.nacos.start.cancel"));
             } catch (Exception e) {
-                LOG.debug("Failed to start local Nacos", e);
+                log.debug("Failed to start local Nacos", e);
                 NotificationUtil.showError(null,
                                            NacosBundle.message("notification.local.nacos.start.failed", e.getMessage()));
             }
@@ -92,7 +92,7 @@ public final class LocalNacosService {
                 LocalRegistryManager.stopRegistry(LocalRegistry.NACOS);
                 NotificationUtil.showInfo(null, NacosBundle.message("notification.local.nacos.stop.success"));
             } catch (Exception e) {
-                LOG.debug("Failed to stop local Nacos", e);
+                log.debug("Failed to stop local Nacos", e);
                 NotificationUtil.showError(null,
                                            NacosBundle.message("notification.local.nacos.stop.failed", e.getMessage()));
             }

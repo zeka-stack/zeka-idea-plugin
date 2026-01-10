@@ -6,7 +6,6 @@ import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
@@ -25,6 +24,7 @@ import dev.dong4j.zeka.stack.idea.plugin.codestyle.CodeStyleDownloadManager.Down
 import dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.settings.state.CodeStyleSettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.util.HelperBundle;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Code Style Update Checker
@@ -34,9 +34,9 @@ import dev.dong4j.zeka.stack.idea.plugin.util.HelperBundle;
  * @date 2026-01-02 18:30:17
  * @since hello.world
  */
+@Slf4j
 @Service(Service.Level.APP)
 public final class CodeStyleUpdateChecker {
-    private static final Logger LOG = Logger.getInstance(CodeStyleUpdateChecker.class);
 
     /** 首次检查延迟时间：1 分钟 */
     private static final long INITIAL_DELAY_MS = TimeUnit.MINUTES.toMillis(10);
@@ -62,17 +62,17 @@ public final class CodeStyleUpdateChecker {
         CodeStyleSettingsState.CodeStyleUpdateSettings updateSettings = settings.getCodeStyleUpdateSettings();
 
         if (updateSettings == null || !updateSettings.isAutoUpdate()) {
-            LOG.debug("代码样式自动更新检查未启用，跳过启动");
+            log.debug("代码样式自动更新检查未启用，跳过启动");
             return;
         }
 
         String downloadUrl = updateSettings.getDownloadUrl() != null ? updateSettings.getDownloadUrl().trim() : "";
         if (downloadUrl.isEmpty() || (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://"))) {
-            LOG.debug("下载地址未配置或为本地路径，跳过自动更新检查");
+            log.debug("下载地址未配置或为本地路径，跳过自动更新检查");
             return;
         }
 
-        LOG.debug("启动代码样式自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
+        log.debug("启动代码样式自动更新检查器，首次检查将在 1 分钟后执行，之后每 1 小时检查一次");
 
         timer = new Timer("CodeStyleUpdateChecker", true);
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -91,7 +91,7 @@ public final class CodeStyleUpdateChecker {
             timer.cancel();
             timer = null;
             lastNotifiedVersion = null; // 清除已通知版本记录
-            LOG.debug("停止代码样式自动更新检查器");
+            log.debug("停止代码样式自动更新检查器");
         }
     }
 
@@ -122,14 +122,14 @@ public final class CodeStyleUpdateChecker {
             // 获取最新版本文件名
             String latestFileName = CodeStyleDownloadManager.fetchLatestFileName(downloadUrl);
             if (latestFileName == null || latestFileName.isEmpty()) {
-                LOG.debug("无法获取最新版本信息");
+                log.debug("无法获取最新版本信息");
                 return;
             }
 
             // 从文件名中提取版本号
             String latestVersion = CodeStyleDownloadManager.extractVersionFromFileName(latestFileName);
             if (latestVersion == null) {
-                LOG.debug("无法从文件名中提取版本号: " + latestFileName);
+                log.debug("无法从文件名中提取版本号: " + latestFileName);
                 return;
             }
 
@@ -140,19 +140,19 @@ public final class CodeStyleUpdateChecker {
             if (localVersion == null || !localVersion.equals(latestVersion)) {
                 // 避免重复通知同一版本
                 if (!latestVersion.equals(lastNotifiedVersion)) {
-                    LOG.debug("发现新版本代码样式: " + latestVersion + " (当前版本: " + (localVersion != null ? localVersion : "无") + ")");
+                    log.debug("发现新版本代码样式: " + latestVersion + " (当前版本: " + (localVersion != null ? localVersion : "无") + ")");
                     showUpdateNotification(latestVersion, localVersion, updateSettings);
                     lastNotifiedVersion = latestVersion;
                 } else {
-                    LOG.debug("已通知过该版本，跳过: " + latestVersion);
+                    log.debug("已通知过该版本，跳过: " + latestVersion);
                 }
             } else {
-                LOG.debug("代码样式已是最新版本: " + latestVersion);
+                log.debug("代码样式已是最新版本: " + latestVersion);
                 // 如果本地已更新到最新版本，清除已通知版本记录
                 lastNotifiedVersion = null;
             }
         } catch (Exception e) {
-            LOG.debug("检查代码样式更新失败", e);
+            log.debug("检查代码样式更新失败", e);
         }
     }
 
@@ -253,9 +253,9 @@ public final class CodeStyleUpdateChecker {
                     });
                 }
 
-                LOG.debug("代码样式更新成功");
+                log.debug("代码样式更新成功");
             } catch (IOException e) {
-                LOG.debug("下载代码样式失败", e);
+                log.debug("下载代码样式失败", e);
                 if (project != null) {
                     ApplicationManager.getApplication().invokeLater(() -> {
                         NotificationUtil.showError(project,

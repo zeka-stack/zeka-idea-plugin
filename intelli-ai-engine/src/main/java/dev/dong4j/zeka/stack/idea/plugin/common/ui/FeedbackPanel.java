@@ -6,7 +6,6 @@ import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
@@ -64,7 +63,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("all")
 public class FeedbackPanel {
-    private static final Logger LOG = Logger.getInstance(FeedbackPanel.class);
     /**
      * 反馈 API 的 URL 地址
      * <p> todo-dong4j 需要让插件传过来
@@ -352,12 +350,12 @@ public class FeedbackPanel {
                         }
                     } else {
                         String error = (String) responseMap.getOrDefault("error", "");
-                        log.trace("提交反馈失败", error);
+                        log.debug("提交反馈失败", error);
                         showStatus(AICommonBundle.message("settings.feedback.error"), true);
                     }
                 });
             } catch (Exception e) {
-                log.trace("提交反馈失败: {}", e.getMessage());
+                log.debug("提交反馈失败: {}", e.getMessage());
                 ApplicationManager.getApplication().executeOnPooledThread(() -> {
                     submitButton.setEnabled(true);
                     showStatus(AICommonBundle.message("settings.feedback.error"), true);
@@ -510,7 +508,7 @@ public class FeedbackPanel {
                 return pluginDescriptor.getVersion();
             }
         } catch (Exception e) {
-            LOG.debug("获取插件版本失败", e);
+            log.debug("获取插件版本失败", e);
         }
         return null;
     }
@@ -526,7 +524,7 @@ public class FeedbackPanel {
             ApplicationInfo info = ApplicationInfo.getInstance();
             return info.getFullVersion();
         } catch (Exception e) {
-            LOG.debug("获取 IDEA 版本失败", e);
+            log.debug("获取 IDEA 版本失败", e);
             return "未知";
         }
     }

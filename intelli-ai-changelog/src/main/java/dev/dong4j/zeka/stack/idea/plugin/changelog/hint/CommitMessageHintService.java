@@ -110,7 +110,7 @@ public class CommitMessageHintService implements Disposable {
         while (component != null && depth < 15) { // 限制深度避免无限循环
             // 如果找到 CommitMessage 组件，直接返回 true
             if (component instanceof CommitMessage) {
-                log.trace("找到 CommitMessage 组件: {}", component.getClass().getName());
+                log.debug("找到 CommitMessage 组件: {}", component.getClass().getName());
                 return true;
             }
 
@@ -119,7 +119,7 @@ public class CommitMessageHintService implements Disposable {
                 // 检查这个 EditorTextField 是否属于 CommitMessage
                 CommitMessageI commitMessage = getCommitMessageFromEditor(editorField);
                 if (commitMessage != null) {
-                    log.trace("找到 CommitMessageI: {}", commitMessage.getClass().getName());
+                    log.debug("找到 CommitMessageI: {}", commitMessage.getClass().getName());
                     return true;
                 }
 
@@ -131,7 +131,7 @@ public class CommitMessageHintService implements Disposable {
                         java.awt.Component parent = editorField.getParent();
                         while (parent != null && depth < 15) {
                             if (parent instanceof CommitMessage) {
-                                log.trace("在 EditorTextField 父组件中找到 CommitMessage");
+                                log.debug("在 EditorTextField 父组件中找到 CommitMessage");
                                 return true;
                             }
                             parent = parent.getParent();
@@ -139,7 +139,7 @@ public class CommitMessageHintService implements Disposable {
                         }
                     }
                 } catch (Exception e) {
-                    log.trace("无法获取 EditorTextField 的 Editor", e);
+                    log.debug("无法获取 EditorTextField 的 Editor", e);
                 }
             }
 
@@ -147,7 +147,7 @@ public class CommitMessageHintService implements Disposable {
             depth++;
         }
 
-        log.trace("未识别为 Commit Message Editor，组件树深度: {}", depth);
+        log.debug("未识别为 Commit Message Editor，组件树深度: {}", depth);
         return false;
     }
 

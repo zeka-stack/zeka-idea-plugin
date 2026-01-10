@@ -132,13 +132,13 @@ public class CommitMessageHintManager implements Disposable {
             public void documentChanged(@NotNull DocumentEvent event) {
                 // 如果这是程序生成的修改，不处理（等待生成完成后设置状态）
                 if (isProgrammaticChange) {
-                    log.trace("Commit Message Hint: 检测到程序化修改，跳过处理");
+                    log.debug("Commit Message Hint: 检测到程序化修改，跳过处理");
                     return;
                 }
 
                 // 如果是用户修改，清除生成完成状态
                 if (generationCompleted) {
-                    log.trace("Commit Message Hint: 检测到用户修改，清除生成完成状态");
+                    log.debug("Commit Message Hint: 检测到用户修改，清除生成完成状态");
                     generationCompleted = false;
                 }
 
@@ -290,14 +290,14 @@ public class CommitMessageHintManager implements Disposable {
         // 检查是否启用了"使用提交消息输入作为上下文"设置
         // 这个检查不需要 read-action，因为 SettingsState 是线程安全的
         if (!SettingsState.getInstance().useCommitMessageInputAsContext) {
-            log.trace("Commit Message Hint: 设置未启用");
+            log.debug("Commit Message Hint: 设置未启用");
             return false;
         }
 
         // 检查文档是否有内容
         // Document.getTextLength() 是线程安全的，不需要 read-action
         if (editor.getDocument().getTextLength() == 0) {
-            log.trace("Commit Message Hint: 文档为空");
+            log.debug("Commit Message Hint: 文档为空");
             return false;
         }
 
@@ -305,14 +305,14 @@ public class CommitMessageHintManager implements Disposable {
         // Document.getText() 需要在 read-action 中调用
         String text = editor.getDocument().getText();
         if (text.trim().isEmpty()) {
-            log.trace("Commit Message Hint: 文档内容只包含空白字符");
+            log.debug("Commit Message Hint: 文档内容只包含空白字符");
             return false;
         }
 
         // 检查是否有选中文本
         // SelectionModel.hasSelection() 需要 read-action
         if (editor.getSelectionModel().hasSelection()) {
-            log.trace("Commit Message Hint: 有选中文本");
+            log.debug("Commit Message Hint: 有选中文本");
             return false;
         }
 
@@ -320,21 +320,21 @@ public class CommitMessageHintManager implements Disposable {
         // CommitMessageGenerator.isRunning() 是线程安全的
         Project project = editor.getProject();
         if (project != null && CommitMessageGenerator.isRunning(project)) {
-            log.trace("Commit Message Hint: 正在生成中");
+            log.debug("Commit Message Hint: 正在生成中");
             return false;
         }
 
         // 检查是否处于生成完成状态
         // 如果生成已完成且用户未修改，不显示提示
         if (generationCompleted) {
-            log.trace("Commit Message Hint: 生成已完成，用户未修改，不显示提示");
+            log.debug("Commit Message Hint: 生成已完成，用户未修改，不显示提示");
             return false;
         }
 
         // 注意：检查是否有选中的文件需要在 EDT 中执行（获取 DataContext）
         // 这部分检查在 finishOnUiThread 回调中进行
 
-        log.trace("Commit Message Hint: 基本条件满足");
+        log.debug("Commit Message Hint: 基本条件满足");
         return true;
     }
 
@@ -354,7 +354,7 @@ public class CommitMessageHintManager implements Disposable {
 
         // 确保在 EDT 中执行
         if (!com.intellij.openapi.application.ApplicationManager.getApplication().isDispatchThread()) {
-            log.trace("Commit Message Hint: 不在 EDT 中，无法检查选中的文件");
+            log.debug("Commit Message Hint: 不在 EDT 中，无法检查选中的文件");
             // 不在 EDT 中，无法安全获取 DataContext
             // 返回 true，让提示显示，后续在 Tab 键触发时会再次检查
             return true;
@@ -366,17 +366,17 @@ public class CommitMessageHintManager implements Disposable {
                 .getDataContext(editor.getContentComponent());
             CommitWorkflowHandler commitWorkflowHandler = dataContext.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
             if (commitWorkflowHandler == null) {
-                log.trace("Commit Message Hint: 无法获取 CommitWorkflowHandler");
+                log.debug("Commit Message Hint: 无法获取 CommitWorkflowHandler");
                 return false;
             }
 
             // 检查是否有选中的变更
             Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
             boolean hasChanges = !changes.isEmpty();
-            log.trace("Commit Message Hint: 选中的文件数量: {}", changes.size());
+            log.debug("Commit Message Hint: 选中的文件数量: {}", changes.size());
             return hasChanges;
         } catch (Exception e) {
-            log.trace("获取提交变更失败", e);
+            log.debug("获取提交变更失败", e);
             // 如果获取失败，返回 true，避免误判（让提示显示，后续会再次检查）
             return true;
         }
@@ -408,7 +408,7 @@ public class CommitMessageHintManager implements Disposable {
                 com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
                     if (!editor.isDisposed()) {
                         generationCompleted = true;
-                        log.trace("Commit Message Hint: 标记生成完成状态");
+                        log.debug("Commit Message Hint: 标记生成完成状态");
                         // 清除程序化修改标志
                         this.isProgrammaticChange = false;
                         // 隐藏提示
@@ -418,13 +418,13 @@ public class CommitMessageHintManager implements Disposable {
             } catch (Exception e) {
                 // 确保即使出错也清除标志
                 this.isProgrammaticChange = false;
-                log.trace("标记生成完成状态失败", e);
+                log.debug("标记生成完成状态失败", e);
             }
         } else {
             // 用户修改：清除完成状态
             if (generationCompleted) {
                 generationCompleted = false;
-                log.trace("Commit Message Hint: 清除生成完成状态（用户修改）");
+                log.debug("Commit Message Hint: 清除生成完成状态（用户修改）");
             }
         }
     }
@@ -438,7 +438,7 @@ public class CommitMessageHintManager implements Disposable {
 
         // 检查 editor 是否已销毁
         if (editor.isDisposed()) {
-            log.trace("Editor 已销毁，跳过移除监听器");
+            log.debug("Editor 已销毁，跳过移除监听器");
             caretListener = null;
             documentListener = null;
             return;
@@ -449,7 +449,7 @@ public class CommitMessageHintManager implements Disposable {
             try {
                 editor.getCaretModel().removeCaretListener(caretListener);
             } catch (Exception e) {
-                log.trace("移除光标监听器失败", e);
+                log.debug("移除光标监听器失败", e);
             }
             caretListener = null;
         }
@@ -464,7 +464,7 @@ public class CommitMessageHintManager implements Disposable {
                 }
             } catch (Exception e) {
                 // 监听器可能已经被移除，或者文档已销毁
-                log.trace("移除文档监听器失败（可能已被移除或文档已销毁）", e);
+                log.debug("移除文档监听器失败（可能已被移除或文档已销毁）", e);
             }
             documentListener = null;
         }

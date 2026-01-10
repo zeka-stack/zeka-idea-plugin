@@ -2,7 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.ui.DocumentAdapter;
@@ -48,6 +47,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.BreathingDotIcon;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Agent 代理配置面板
@@ -59,10 +59,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
  * @version 1.0.0
  * @since 1.0.0
  */
+@Slf4j
 public final class IntelliAgentPanel {
-    /** 日志记录器 */
-    private static final Logger LOG = Logger.getInstance(IntelliAgentPanel.class);
-
     /**
      * 开发者手册的链接地址
      * <p> 指向 Agent 代理开发相关的非标准化 AI 服务集成 jar 文件开发指南的 Markdown 文档.
@@ -550,7 +548,7 @@ public final class IntelliAgentPanel {
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
             // 可以显示一个提示，但这里暂时不显示，避免干扰
         } catch (Exception e) {
-            LOG.debug("复制到剪贴板失败: " + text, e);
+            log.debug("复制到剪贴板失败: " + text, e);
         }
     }
 
@@ -720,7 +718,7 @@ public final class IntelliAgentPanel {
                     }
                 }
             } catch (Exception e) {
-                LOG.debug("获取 IntelliAI Agent 最新版本失败", e);
+                log.debug("获取 IntelliAI Agent 最新版本失败", e);
             }
             IntelliAgentManager.JarInfo jarInfo = intelliAgentManager.resolveLocalJarInfo(settings);
             boolean jarReady = jarInfo != null && Files.exists(jarInfo.path());
@@ -866,7 +864,7 @@ public final class IntelliAgentPanel {
                         localSize = Files.size(savedPath);
                     }
                 } catch (Exception sizeException) {
-                    LOG.debug("读取 IntelliAI Agent jar 大小失败: " + savedPath, sizeException);
+                    log.debug("读取 IntelliAI Agent jar 大小失败: " + savedPath, sizeException);
                 }
                 long finalLocalSize = localSize;
                 // 下载完成，强制更新进度条到 100%

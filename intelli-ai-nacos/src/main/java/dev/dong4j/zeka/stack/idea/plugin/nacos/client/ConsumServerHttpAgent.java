@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.client;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.impl.ConfigHttpClientManager;
-import com.alibaba.nacos.client.utils.LogUtils;
 import com.alibaba.nacos.common.http.HttpClientConfig;
 import com.alibaba.nacos.common.http.HttpRestResult;
 import com.alibaba.nacos.common.http.client.NacosRestTemplate;
@@ -12,13 +11,12 @@ import com.alibaba.nacos.common.http.param.Query;
 import com.alibaba.nacos.common.utils.ConvertUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 
-import org.slf4j.Logger;
-
 import java.util.Map;
 import java.util.Properties;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Nacos 服务器 HTTP 代理
@@ -27,9 +25,8 @@ import lombok.Setter;
  * @author dong4j
  * @since 1.0.0
  */
+@Slf4j
 public class ConsumServerHttpAgent {
-    private static final Logger LOGGER = LogUtils.logger(ConsumServerHttpAgent.class);
-
     private static final String HTTPS = "https://";
     private static final String HTTP = "http://";
 
