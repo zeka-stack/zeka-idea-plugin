@@ -203,6 +203,9 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
         // 2.3 添加上下文
         group.add(new EnableGenerationContextToggleAction());
 
+        // 2.3.1 添加语义上下文
+        group.add(new EnableSemanticContextToggleAction());
+
         // 2.4 允许代码压缩
         group.add(new EnableCodeCompressionToggleAction());
 
@@ -416,6 +419,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class GenerationConfigActionGroup extends DefaultActionGroup {
+        /**
+         * 构造函数, 初始化生成配置动作组
+         * <p> 该构造函数创建一个用于在状态栏弹出菜单中显示的子菜单, 包含为类, 方法和字段生成配置的选项, 并支持多选功能.
+         *
+         * @since 2.8.0
+         */
         GenerationConfigActionGroup() {
             super(JavadocBundle.message("statusbar.quick.settings.generate.config"), true);
             add(new GenerateForClassToggleAction());
@@ -437,20 +446,47 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 1.0.0
      */
     private static class GenerateForClassToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造函数, 初始化生成类级别 Javadoc 的开关动作
+         * <p> 该动作用于控制是否为类生成 Javadoc 注释的开关状态.
+         * <p> 通过调用父类构造函数, 设置动作的显示名称为 "statusbar.quick.settings.generate.for.class", 该名称由 JavadocBundle 提供.
+         *
+         * @since 1.0.0
+         */
         GenerateForClassToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.generate.for.class"));
         }
 
+        /**
+         * 获取动作更新线程的执行上下文
+         * <p>返回该动作在后台线程 (BGT) 中更新, 确保界面响应不被阻塞
+         *
+         * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断是否启用了类级别的 Javadoc 注释生成
+         * <p> 该方法用于获取当前类级别 Javadoc 生成功能的开关状态
+         *
+         * @param e 动作事件对象, 包含动作的上下文信息, 不能为 null
+         * @return 是否启用了类级别 Javadoc 生成的开关状态,true 表示启用,false 表示禁用
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().generateForClass;
         }
 
+        /**
+         * 设置是否为类生成 Javadoc 注释的状态
+         * <p> 根据传入的事件和状态, 更新保存在 SettingsState 中的类级别 Javadoc 生成开关状态.
+         *
+         * @param e     事件对象, 包含动作执行上下文信息
+         * @param state 新的状态值, 用于更新生成开关状态
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().generateForClass = state;
@@ -470,20 +506,48 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 1.0.0
      */
     private static class GenerateForMethodToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造函数
+         * <p> 初始化 GenerateForMethodToggleAction 对象
+         * <p> 调用父类构造函数并传入状态栏快速设置选项的文本信息
+         *
+         * @since 1.0.0
+         */
         GenerateForMethodToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.generate.for.method"));
         }
 
+        /**
+         * 获取该操作的更新线程
+         * <p> 用于指定此操作在哪个线程上执行更新逻辑, 以保证 UI 响应性
+         *
+         * @return 返回后台线程对象 {@link ActionUpdateThread#BGT}
+         * @since 1.0.0
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 检查是否为方法生成 Javadoc 的功能开关是否被选中
+         * <p> 根据当前设置状态返回 true 表示已选中,false 表示未选中
+         *
+         * @param e AnActionEvent 事件对象
+         * @return 当前设置是否为方法生成 Javadoc 开关已选中的布尔值
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().generateForMethod;
         }
 
+        /**
+         * 设置是否为方法生成 Javadoc 的开关状态
+         * <p> 根据传入的事件和状态更新配置项, 控制是否为方法生成 Javadoc 的功能开关.
+         *
+         * @param e     事件对象, 用于获取当前操作上下文
+         * @param state 开关状态,true 表示开启,false 表示关闭
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().generateForMethod = state;
@@ -504,20 +568,46 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 1.0.0
      */
     private static class GenerateForFieldToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 字段生成开关动作的构造函数
+         * <p> 初始化字段生成开关动作, 设置其显示名称为从资源文件中获取的字符串.
+         *
+         */
         GenerateForFieldToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.generate.for.field"));
         }
 
+        /**
+         * 返回动作更新线程
+         * <p> 此方法重写父类的实现, 指定当前动作的更新线程为后台线程 (BGT).
+         * <p> 后台线程用于在不影响用户界面响应的情况下执行耗时操作.
+         *
+         * @return 动作更新线程类型, 固定为 BGT
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断字段生成功能是否处于启用状态
+         * <p> 根据 SettingsState 中的 generateForField 属性返回当前字段生成功能的启用状态.
+         *
+         * @param e 动作事件, 包含当前操作上下文信息
+         * @return 如果字段生成功能已启用, 返回 true; 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().generateForField;
         }
 
+        /**
+         * 设置字段生成功能的启用状态
+         * <p> 根据传入的布尔值更新 SettingsState 中的 generateForField 属性, 以控制是否启用字段生成功能
+         *
+         * @param e     动作事件对象, 包含调用此方法的上下文信息
+         * @param state 要设置的状态,true 表示启用字段生成,false 表示禁用
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().generateForField = state;
@@ -570,20 +660,45 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class EnableOverrideToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化启用覆写切换动作
+         * <p> 调用父类构造函数, 传入覆写配置的显示文本资源键
+         *
+         */
         EnableOverrideToggleAction() {
             super(JavadocBundle.message("settings.override.existing"));
         }
 
+        /**
+         * 获取动作更新线程的执行上下文
+         * <p>返回该动作在后台线程 (BGT) 中更新, 确保界面响应不被阻塞
+         *
+         * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断当前是否启用覆写已有注释的功能
+         * <p> 根据设置状态返回是否启用覆写已有注释的标志位
+         *
+         * @param e 动作事件对象, 包含当前动作执行上下文信息
+         * @return 如果启用覆写已有注释则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().overrideExisting;
         }
 
+        /**
+         * 设置覆写已有注释的状态
+         * <p> 根据传入的布尔值状态, 更新设置以控制是否启用覆写已有注释的功能.
+         *
+         * @param e     AnActionEvent 对象, 提供上下文信息
+         * @param state 布尔值, 指示是否启用覆写已有注释的功能
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState settings = SettingsState.getInstance();
@@ -606,10 +721,21 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class OverrideModeFixAction extends AnAction {
+        /**
+         * 构造函数, 用于初始化“仅修复错误注释”覆写模式的动作
+         * <p> 设置动作的显示名称为指定的国际化消息.
+         *
+         */
         OverrideModeFixAction() {
             super(JavadocBundle.message("statusbar.quick.settings.override.mode.fix"));
         }
 
+        /**
+         * 处理动作事件, 启用覆写模式并设置为“仅修复”模式
+         * <p> 当用户选择“仅修复错误注释”模式时, 该方法被调用以自动启用覆写功能并设置覆写模式为 FIX.
+         *
+         * @param e 动作事件对象, 包含当前操作的上下文信息, 不能为 null
+         */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             SettingsState settings = SettingsState.getInstance();
@@ -617,6 +743,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             settings.overrideMode = OverrideMode.FIX;
         }
 
+        /**
+         * 更新动作项的显示状态, 根据当前设置决定是否选中
+         * <p> 此方法用于根据设置状态更新动作项的选中状态, 当覆写模式为 FIX 且已启用覆写时, 该动作项将被选中.
+         *
+         * @param e 动作事件对象, 包含当前动作上下文信息
+         */
         @Override
         public void update(@NotNull AnActionEvent e) {
             SettingsState settings = SettingsState.getInstance();
@@ -624,6 +756,13 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
         }
 
+        /**
+         * 返回操作更新线程
+         * <p> 此方法重写自父类, 用于指定操作更新线程的类型.
+         * <p> 在本实现中, 返回 BGT (Background Thread), 表示操作将在后台线程中更新.
+         *
+         * @return 操作更新线程类型, 固定为 BGT
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
@@ -641,10 +780,21 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class OverrideModeReplaceAction extends AnAction {
+        /**
+         * 构造函数, 用于初始化覆写模式为“删除并替换”的动作
+         * <p> 该构造函数调用父类构造函数, 并设置动作的显示名称为指定的资源消息
+         *
+         */
         OverrideModeReplaceAction() {
             super(JavadocBundle.message("statusbar.quick.settings.override.mode.replace"));
         }
 
+        /**
+         * 处理用户动作事件
+         * <p> 当用户选择“删除原注释并重新生成”模式时, 设置覆写状态为启用, 并将覆写模式设置为替换模式
+         *
+         * @param e 动作事件对象, 不能为 null
+         */
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
             SettingsState settings = SettingsState.getInstance();
@@ -652,6 +802,14 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             settings.overrideMode = OverrideMode.REPLACE;
         }
 
+        /**
+         * 更新动作状态显示
+         * <p> 根据当前设置判断是否选中“替换模式”, 并设置动作呈现的选中状态
+         * <p> 当用户启用覆写功能且当前模式为 REPLACE 时, 该动作将显示为选中状态
+         *
+         * @param e 动作事件对象, 包含当前上下文和呈现信息
+         * @since 2.8.0
+         */
         @Override
         public void update(@NotNull AnActionEvent e) {
             SettingsState settings = SettingsState.getInstance();
@@ -659,6 +817,12 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
             e.getPresentation().putClientProperty(SELECTED_KEY, isSelected);
         }
 
+        /**
+         * 获取动作更新线程的执行上下文
+         * <p>返回当前动作更新操作应在后台线程 (BGT) 中执行
+         *
+         * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
@@ -675,23 +839,103 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class EnableGenerationContextToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造函数, 初始化启用生成上下文切换动作
+         * <p> 设置该切换动作的显示名称为从资源文件中获取的 "statusbar.quick.settings.enable.generation.context" 消息内容
+         */
         EnableGenerationContextToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.enable.generation.context"));
         }
 
+        /**
+         * 获取动作更新线程的执行上下文
+         * <p>返回该动作在后台线程 (BGT) 中更新, 确保界面响应不阻塞
+         *
+         * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断当前动作是否被选中
+         * <p> 返回 {@code enableGenerationContext} 配置项的当前状态, 用于控制是否启用生成上下文功能
+         *
+         * @param e 动作事件对象, 不可为 null
+         * @return 如果启用了生成上下文功能则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().enableGenerationContext;
         }
 
+        /**
+         * 设置是否启用生成上下文功能
+         * <p> 根据传入的状态更新设置, 决定是否为文档生成提供类级别上下文信息
+         *
+         * @param e     表示动作事件的对象
+         * @param state 是否启用生成上下文的布尔值
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().enableGenerationContext = state;
+        }
+    }
+
+    /**
+     * 启用语义上下文切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否为类级别的 Javadoc 生成添加语义上下文信息.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class EnableSemanticContextToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化语义上下文切换动作
+         * <p> 用于设置语义上下文切换动作的初始状态和标签文本
+         *
+         */
+        EnableSemanticContextToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.enable.semantic.context"));
+        }
+
+        /**
+         * 获取此操作的更新线程
+         * <p>该方法用于指定在哪个线程上执行操作的更新逻辑, 返回后台线程 (BGT) 以避免阻塞 UI
+         *
+         * @return 返回 {@link ActionUpdateThread#BGT} 表示在后台线程中更新
+         */
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        /**
+         * 判断语义上下文切换动作是否选中
+         * <p> 根据设置状态返回当前语义上下文功能是否启用
+         *
+         * @param e 动作事件, 包含当前操作上下文信息
+         * @return 如果语义上下文功能已启用, 返回 true; 否则返回 false
+         */
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableSemanticContext;
+        }
+
+        /**
+         * 设置语义上下文启用状态
+         * <p> 根据指定的事件和状态值, 更新全局设置中的语义上下文启用标志
+         * <p> 当用户在界面中切换相关选项时, 该方法被调用以持久化设置
+         *
+         * @param e     事件对象, 不能为 null, 包含当前操作的上下文信息
+         * @param state 是否启用语义上下文的布尔值
+         */
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableSemanticContext = state;
         }
     }
 
@@ -705,20 +949,45 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class EnableCodeCompressionToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造方法
+         * <p> 创建代码压缩切换操作的实例, 并调用父类构造函数设置操作显示名称
+         * <p> 操作名称通过 {@code JavadocBundle.message("statusbar.quick.settings.enable.code.compression")} 获取
+         */
         EnableCodeCompressionToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.enable.code.compression"));
         }
 
+        /**
+         * 获取该动作的更新线程
+         * <p> 指定此动作在执行更新操作时应使用的线程类型, 确保在适当的线程上执行动作更新逻辑
+         *
+         * @return 动作更新线程, 当前实现返回后台线程 (ActionUpdateThread.BGT)
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断当前代码压缩功能是否已启用
+         * <p> 根据设置状态返回当前是否启用了代码压缩功能
+         *
+         * @param e 动作事件对象, 包含当前动作执行上下文信息
+         * @return 如果代码压缩功能已启用则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().enableCodeCompression;
         }
 
+        /**
+         * 设置代码压缩功能的状态
+         * <p> 根据传入的布尔值状态, 更新设置中的代码压缩功能启用状态
+         *
+         * @param e     AnActionEvent 对象, 表示当前的动作事件
+         * @param state 布尔值, 指示是否启用代码压缩功能
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().enableCodeCompression = state;
@@ -735,20 +1004,45 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class CompressSingleLineJavaDocToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化压缩成一行 Javadoc 切换动作
+         * <p> 构造函数用于初始化压缩成一行 Javadoc 的切换动作, 设置其显示名称.
+         *
+         */
         CompressSingleLineJavaDocToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.compress.single.line.javadoc"));
         }
 
+        /**
+         * 获取动作更新线程的类型
+         * <p> 返回该动作在哪个线程中进行更新, 此处返回后台线程 (BGT)
+         *
+         * @return 动作更新线程类型, 固定为 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断当前是否选中压缩单行 Javadoc 的设置
+         * <p> 该方法用于在动作更新时检查是否启用单行 Javadoc 压缩功能
+         *
+         * @param e 动作事件对象, 包含当前上下文信息, 不能为 null
+         * @return 如果启用单行 Javadoc 压缩则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().compressSingleLineJavaDoc;
         }
 
+        /**
+         * 设置是否启用将 Javadoc 压缩成一行的功能
+         * <p> 根据传入的状态更新设置, 影响后续 Javadoc 的显示方式
+         *
+         * @param e     表示当前操作事件的对象
+         * @param state 是否启用压缩成一行的布尔值
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().compressSingleLineJavaDoc = state;
@@ -765,20 +1059,46 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class ReplaceChinesePunctuationToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造函数, 初始化替换中文标点符号的切换动作
+         * <p> 调用父类构造函数并设置动作名称
+         *
+         * @since 2.8.0
+         */
         ReplaceChinesePunctuationToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.replace.chinese.punctuation"));
         }
 
+        /**
+         * 获取该动作的线程更新策略
+         * <p> 返回用于更新此动作状态的线程类型, 此处指定为 BGT(Background Thread).
+         *
+         * @return 返回 ActionUpdateThread 类型的线程策略, 值为 BGT
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断是否选中了替换中文标点符号的设置
+         * <p> 根据当前设置状态判断是否启用将中文标点符号转换为英文标点符号的功能
+         *
+         * @param e 动作事件对象, 不能为 null
+         * @return 如果启用了替换中文标点符号功能返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().replaceChinesePunctuation;
         }
 
+        /**
+         * 设置是否启用中文标点符号替换为英文标点符号功能
+         * <p> 根据给定的状态更新设置, 决定是否进行中文标点符号到英文标点符号的替换.
+         *
+         * @param e     表示操作事件的对象
+         * @param state 布尔值, 指示是否启用替换功能
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().replaceChinesePunctuation = state;
@@ -799,20 +1119,46 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 1.0.0
      */
     private static class PerformanceModeToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 构造性能模式切换动作
+         * <p> 初始化切换动作, 使用指定的文本显示在界面上
+         * <p> 该构造函数调用父类构造器, 传入性能模式设置的本地化文本
+         *
+         */
         PerformanceModeToggleAction() {
             super(JavadocBundle.message("settings.performance.mode"));
         }
 
+        /**
+         * 获取该动作的更新线程
+         * <p>指定此动作的更新操作应在哪个线程上执行, 此处设置为后台线程 (BGT) 以确保线程安全.
+         *
+         * @return 返回 ActionUpdateThread.BGT, 表示在后台线程上执行更新操作
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断当前性能模式是否处于选中状态
+         * <p> 根据 SettingsState 中存储的 performanceMode 值返回当前性能模式的选中状态
+         *
+         * @param e 动作事件, 包含当前操作上下文信息
+         * @return 如果当前处于性能模式则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().performanceMode;
         }
 
+        /**
+         * 设置性能模式的启用状态
+         * <p> 将性能模式的状态保存到 SettingsState 中, 用于持久化当前设置
+         *
+         * @param e     动作事件对象, 包含上下文信息
+         * @param state 表示是否启用性能模式的布尔值
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().performanceMode = state;
@@ -830,20 +1176,46 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.6.0
      */
     private static class ShowGenerateJavadocHintToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化显示生成 Javadoc 提示切换动作
+         * <p> 构造函数用于初始化显示生成 Javadoc 提示的切换动作, 设置动作的显示名称.
+         *
+         */
         ShowGenerateJavadocHintToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.show.generate.javadoc.hint"));
         }
 
+        /**
+         * 获取动作更新线程的执行上下文
+         * <p>返回该动作在后台线程 (BGT) 中更新, 确保界面响应不被阻塞
+         *
+         * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 获取当前是否启用生成 Javadoc 的 Code Vision 提示功能
+         * <p> 该方法用于判断在指定的事件上下文中, 是否启动生成 Javadoc 提示功能.
+         * 状态值从 {@link SettingsState} 中获取.
+         *
+         * @param e Action 事件对象, 提供上下文信息
+         * @return 如果提示功能已启用则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().showGenerateJavadocHint;
         }
 
+        /**
+         * 设置是否显示生成 Javadoc 的提示状态
+         * <p> 该方法用于更新用户设置中的 showGenerateJavadocHint 标志, 控制是否在界面中显示生成 Javadoc 的 Code Vision 提示.
+         *
+         * @param e     动作事件对象, 包含上下文信息, 通常不直接使用其中的数据
+         * @param state 新的状态值,true 表示启用提示,false 表示禁用提示
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().showGenerateJavadocHint = state;
@@ -861,20 +1233,46 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.8.0
      */
     private static class GenerateOnSaveToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化生成保存时注释切换动作
+         * <p> 调用父类构造函数, 设置动作显示文本为“保存时生成注释”状态栏快捷设置提示
+         *
+         */
         GenerateOnSaveToggleAction() {
             super(JavadocBundle.message("statusbar.quick.settings.generate.on.save"));
         }
 
+        /**
+         * 获取该操作的更新线程类型
+         * <p> 此方法返回 {@link ActionUpdateThread#BGT}, 表示该动作的更新将在后台线程中执行,
+         * 以避免阻塞用户界面.
+         *
+         * @return 后台线程对象 BGT(Background Thread)
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断保存时是否自动生成注释
+         * <p> 根据 SettingsState 中的配置判断当前是否启用了保存时自动生成注释的功能
+         *
+         * @param e AnActionEvent 对象, 表示动作事件
+         * @return 当前是否启用了保存时自动生成注释的功能
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().generateOnSave;
         }
 
+        /**
+         * 设置保存时是否生成注释的开关状态
+         * <p> 根据传入的状态更新保存时生成注释的开关, 并将状态信息保存到 SettingsState 中
+         *
+         * @param e     表示操作事件的对象, 不能为 null
+         * @param state 新的开关状态,true 表示启用,false 表示禁用
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().generateOnSave = state;
@@ -892,20 +1290,45 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.7.0
      */
     private static class AllowDeleteJavadocToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化允许删除 Javadoc 切换动作
+         * <p> 使用指定的文本创建一个允许删除 Javadoc 的切换动作, 用于控制是否允许删除已存在的 Javadoc 注释.
+         *
+         */
         AllowDeleteJavadocToggleAction() {
             super(JavadocBundle.message("settings.allow.delete.javadoc"));
         }
 
+        /**
+         * 获取动作更新线程的执行上下文
+         * <p>返回该动作在后台线程 (BGT) 中更新, 确保界面操作不阻塞主线程
+         *
+         * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+         */
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断是否允许删除 Javadoc
+         * <p> 根据当前设置状态返回是否允许删除 Javadoc 注释
+         *
+         * @param e 表示动作事件的对象
+         * @return 当前是否允许删除 Javadoc 注释
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().allowDeleteJavadoc;
         }
 
+        /**
+         * 设置是否允许删除 Javadoc 注释的状态
+         * <p> 根据传入的布尔值更新是否允许删除 Javadoc 注释的开关状态, 该状态存储在 SettingsState 中.
+         *
+         * @param e     事件对象, 包含操作上下文信息
+         * @param state 新的状态值,true 表示允许删除,false 表示不允许删除
+         */
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().allowDeleteJavadoc = state;
@@ -923,6 +1346,14 @@ public class AIJavadocStatusBarWidget extends EditorBasedStatusBarPopup {
      * @since 2.6.0
      */
     private class ProviderSelectionActionGroup extends DefaultActionGroup {
+        /**
+         * 初始化 AI 服务提供商选择动作组
+         * <p> 创建一个包含多个服务提供商切换动作的菜单组, 用于在状态栏弹出菜单中展示
+         * <p> 每个服务提供商配置对应一个切换动作, 用户可从中选择不同的 AI 服务提供商
+         *
+         * @param providers 服务提供商配置列表, 不能为 null
+         * @since 2.6.0
+         */
         ProviderSelectionActionGroup(List<AIProviderConfig> providers) {
             super(JavadocBundle.message("statusbar.provider.list.title"), true);
 

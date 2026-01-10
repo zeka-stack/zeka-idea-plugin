@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
+import dev.dong4j.zeka.stack.idea.javadoc.semantics.ClassSemanticAnalyzer;
+import dev.dong4j.zeka.stack.idea.javadoc.semantics.SemanticPromptBuilder;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.AiCodePreprocessor;
@@ -599,10 +601,21 @@ public class TaskCollector {
         // 获取代码，包含已有的 Javadoc 注释
         String code = getCodeWithComment(element);
 
-        // 构建上下文信息（当前仅提供类级别代码片段，后续可扩展）
-        GenerationContext context = settings.enableGenerationContext
-                                    ? buildGenerationContext(element)
-                                    : GenerationContext.empty();
+        // 构建上下文信息
+        GenerationContext context;
+        // 如果是类类型且启用了语义上下文，构建语义上下文
+        if ((type == DocumentationTask.TaskType.CLASS
+             || type == DocumentationTask.TaskType.INTERFACE
+             || type == DocumentationTask.TaskType.ENUM)
+            && settings.enableSemanticContext) {
+            context = buildSemanticContextForClass(element);
+        }
+        // 如果启用了类上下文（用于方法/字段注释），构建类代码上下文
+        else if (settings.enableGenerationContext) {
+            context = buildClassCodeContext(element);
+        } else {
+            context = GenerationContext.empty();
+        }
 
         // 获取文件路径，处理 VirtualFile 为 null 的情况（例如 Scratch 文件）
         PsiFile containingFile = element.getContainingFile();
@@ -619,30 +632,79 @@ public class TaskCollector {
     }
 
     /**
-     * 基于 PSI 元素构建文档生成上下文。
-     * <p>
-     * 当前实现：
-     * <ul>
-     *   <li>如果元素本身是 Java {@link PsiClass} 或 Kotlin {@link KtClassOrObject}，则使用其自身代码作为上下文</li>
-     *   <li>否则查找最近的 Java {@link PsiClass} 或 Kotlin {@link KtClassOrObject} 作为所属类</li>
-     *   <li>截取该类/对象代码的前 500 行作为类级别上下文片段</li>
-     *   <li>如果找不到所属类，则返回 null</li>
-     * </ul>
+     * 为指定 PSI 元素构建语义上下文
+     * <p> 根据元素类型判断是否为类元素, 若是则返回空的语义上下文; 否则也返回空上下文.
+     * 该方法目前仅处理类相关元素, 其他类型元素将直接返回空上下文.
      *
-     * @param element 当前任务对应的 PSI 元素
-     * @return 上下文对象，如果无法构建则返回 null
+     * @param element 要构建语义上下文的 PSI 元素, 不能为空
+     * @return 语义上下文对象, 当前仅对类元素返回空上下文, 其他元素也返回空上下文
      */
     @NotNull
-    private GenerationContext buildGenerationContext(@NotNull PsiElement element) {
-        // 元素本身就是 Java 类
-        if (element instanceof PsiClass) {
+    private GenerationContext buildSemanticContextForClass(@NotNull PsiElement element) {
+        // Java 类：执行语义分析
+        if (element instanceof PsiClass psiClass) {
+            return buildContextForClass(psiClass);
+        }
+        // Kotlin 类/对象：暂不支持语义分析，返回空上下文
+        else if (element instanceof KtClassOrObject) {
+            return GenerationContext.empty();
+        } else {
+            // todo-dong4j : (2026.01.10 10:18) [添加 Scala 支持]
             return GenerationContext.empty();
         }
-        // 元素本身就是 Kotlin 类/对象
-        if (element instanceof KtClassOrObject) {
+    }
+
+    /**
+     * 为类元素构建语义上下文
+     * <p>
+     * 如果启用了语义上下文功能，会通过 PSI 分析类的语义信息并添加到上下文中。
+     * 该方法专门用于为类/接口/枚举生成注释时提供语义上下文。
+     *
+     * @param psiClass 要分析的类
+     * @return 包含语义上下文的上下文对象
+     */
+    @NotNull
+    private GenerationContext buildContextForClass(@NotNull PsiClass psiClass) {
+        // 如果未启用语义上下文，返回空上下文
+        if (!settings.enableSemanticContext) {
             return GenerationContext.empty();
         }
 
+        try {
+            // 执行语义分析
+            ClassSemanticAnalyzer analyzer = new ClassSemanticAnalyzer();
+            var semanticModel = analyzer.analyze(psiClass, project);
+
+            // 构建语义上下文 Prompt
+            SemanticPromptBuilder promptBuilder = new SemanticPromptBuilder();
+            String semanticContext = promptBuilder.buildClassSemanticPrompt(semanticModel);
+
+            // 返回包含语义上下文的上下文对象
+            return GenerationContext.ofClassCodeWithSemantic(null, semanticContext);
+        } catch (Exception e) {
+            // 如果语义分析失败，返回空上下文，不影响正常功能
+            // 可以记录日志，但不要抛出异常
+            return GenerationContext.empty();
+        }
+    }
+
+    /**
+     * 为非类元素构建类代码上下文
+     * <p>
+     * 该方法用于为方法、字段等非类元素生成注释时，查找其所属的类并提供类代码片段作为上下文。
+     * 当前实现：
+     * <ul>
+     *   <li>优先查找最近的 Java {@link PsiClass}</li>
+     *   <li>如果找不到，再查找最近的 Kotlin {@link KtClassOrObject}</li>
+     *   <li>截取该类/对象代码的前若干行作为类级别上下文片段</li>
+     *   <li>如果找不到所属类，则返回空上下文</li>
+     * </ul>
+     *
+     * @param element 当前任务对应的 PSI 元素（方法、字段等）
+     * @return 包含类代码片段的上下文对象
+     */
+    @NotNull
+    private GenerationContext buildClassCodeContext(@NotNull PsiElement element) {
         // 优先查找最近的 Java 类
         PsiClass psiClass = PsiTreeUtil.getParentOfType(element, PsiClass.class);
         if (psiClass != null) {

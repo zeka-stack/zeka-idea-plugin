@@ -11,18 +11,24 @@ import org.jetbrains.annotations.Nullable;
  *                         <p>
  *                         通常为当前元素所在类 (或 Kotlin 类 / 对象) 的前若干行代码, 包含类注释, 字段, 方法签名等信息,
  *                         用于在为字段 / 方法生成注释时提供更完整的语义环境.
+ * @param semanticContext 语义上下文信息
+ *                        <p>
+ *                        通过 PSI 分析得到的类的语义信息, 包括架构位置、职责、使用场景、依赖关系等,
+ *                        用于在生成类注释时提供更准确的语义上下文.
  * @author dong4j
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2025.12.15
  * @since 1.0.0
  */
-public record GenerationContext(@Nullable String classCodeSnippet) {
+public record GenerationContext(@Nullable String classCodeSnippet,
+                                @Nullable String semanticContext) {
 
     /**
-     * 使用类级别代码片段构造上下文对象.
+     * 使用类级别代码片段和语义上下文构造上下文对象.
      *
      * @param classCodeSnippet 类代码片段 (可以为 null)
+     * @param semanticContext  语义上下文信息 (可以为 null)
      */
     public GenerationContext {
     }
@@ -35,7 +41,21 @@ public record GenerationContext(@Nullable String classCodeSnippet) {
      */
     @NotNull
     public static GenerationContext ofClassCode(@Nullable String classCodeSnippet) {
-        return new GenerationContext(classCodeSnippet);
+        return new GenerationContext(classCodeSnippet, null);
+    }
+
+    /**
+     * 创建包含类代码片段和语义上下文的上下文对象.
+     *
+     * @param classCodeSnippet 类代码片段
+     * @param semanticContext  语义上下文信息
+     * @return 上下文对象
+     * @since 2.8.0
+     */
+    @NotNull
+    public static GenerationContext ofClassCodeWithSemantic(@Nullable String classCodeSnippet,
+                                                            @Nullable String semanticContext) {
+        return new GenerationContext(classCodeSnippet, semanticContext);
     }
 
     /**
@@ -46,7 +66,7 @@ public record GenerationContext(@Nullable String classCodeSnippet) {
      * @return 新创建的空 GenerationContext 实例
      */
     public static GenerationContext empty() {
-        return new GenerationContext("");
+        return new GenerationContext("", null);
     }
 }
 

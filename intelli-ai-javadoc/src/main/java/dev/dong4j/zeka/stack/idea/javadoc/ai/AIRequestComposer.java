@@ -20,6 +20,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.util.TokenCounter;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AI 请求构建器
@@ -34,6 +35,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 public final class AIRequestComposer {
 
     /**
@@ -73,6 +75,8 @@ public final class AIRequestComposer {
         systemPrompt = replaceLanguagePlaceholder(systemPrompt, languageText);
         userPrompt = replaceLanguagePlaceholder(userPrompt, languageText);
 
+        log.debug("systemPrompt: {}", systemPrompt);
+        log.debug("userPrompt: {}", userPrompt);
         int tokenEstimate = TokenCounter.estimateTokens(systemPrompt) + TokenCounter.estimateTokens(userPrompt);
         return new AIChatRequest(systemPrompt, userPrompt, tokenEstimate);
     }
@@ -136,8 +140,14 @@ public final class AIRequestComposer {
 
         // 否则使用正常的提示词模板
         String template = switch (task.getType()) {
-            case CLASS, INTERFACE, ENUM -> resolveClassTemplate(task, settings.classPromptTemplate,
-                                                                SettingsState.getDefaultClassPromptTemplate());
+            case CLASS, INTERFACE, ENUM -> {
+                // 解析类模板
+                String classTemplate = resolveClassTemplate(task, settings.classPromptTemplate,
+                                                            SettingsState.getDefaultClassPromptTemplate());
+
+                // 合并语义上下文、类代码上下文和代码，并替换模板中的占位符
+                yield mergeContextAndCode(classTemplate, task.getContext(), task.getCode());
+            }
             case FIELD -> resolveTemplate(settings.fieldPromptTemplate,
                                           SettingsState.getDefaultFieldPromptTemplate());
             case TEST_METHOD -> resolveTemplate(settings.testPromptTemplate,
@@ -145,8 +155,16 @@ public final class AIRequestComposer {
             default -> resolveTemplate(settings.methodPromptTemplate,
                                        SettingsState.getDefaultMethodPromptTemplate());
         };
-        String codeWithContext = mergeContextAndCode(task.getContext(), task.getCode());
-        return String.format(template, codeWithContext);
+
+        // 对于非类类型，使用原有逻辑
+        if (task.getType() != DocumentationTask.TaskType.CLASS
+            && task.getType() != DocumentationTask.TaskType.INTERFACE
+            && task.getType() != DocumentationTask.TaskType.ENUM) {
+            String codeWithContext = mergeContextAndCode(task.getContext(), task.getCode());
+            return String.format(template, codeWithContext);
+        }
+
+        return template;
     }
 
     /**
@@ -162,20 +180,71 @@ public final class AIRequestComposer {
     @NotNull
     private static String mergeContextAndCode(@NotNull GenerationContext context,
                                               @NotNull String code) {
+        String semanticContext = context.semanticContext();
         String classSnippet = context.classCodeSnippet();
-        if (classSnippet == null || classSnippet.isBlank()) {
+
+        // 如果没有任何上下文，直接返回代码
+        boolean hasSemanticContext = semanticContext != null && !semanticContext.isBlank();
+        boolean hasClassSnippet = classSnippet != null && !classSnippet.isBlank();
+
+        if (!hasSemanticContext && !hasClassSnippet) {
             return code;
         }
 
-        return """
-            # 类级上下文（仅供参考，不直接生成注释）
-            <CLASS_CONTEXT_START>
-            %s
-            <CLASS_CONTEXT_END>
+        // 构建完整的上下文和代码
+        if (hasSemanticContext && hasClassSnippet) {
+            // 同时有语义上下文和类代码上下文
+            return """
+                %s
+                ### 类级上下文（仅供参考，不直接生成注释）
+                <CLASS_CONTEXT_START>
+                %s
+                <CLASS_CONTEXT_END>
 
-            # 待处理的代码片段
-            %s
-            """.formatted(classSnippet, code);
+                ### 最终需要生成注释的代码片段
+                %s
+                """.formatted(semanticContext, classSnippet, code);
+        } else if (hasSemanticContext) {
+            // 只有语义上下文
+            return """
+                %s
+                ### 最终需要生成注释的代码片段
+                %s
+                """.formatted(semanticContext, code);
+        } else {
+            // 只有类代码上下文
+            return """
+                ### 类级上下文（仅供参考，不直接生成注释）
+                <CLASS_CONTEXT_START>
+                %s
+                <CLASS_CONTEXT_END>
+
+                ### 最终需要生成注释的代码片段
+                %s
+                """.formatted(classSnippet, code);
+        }
+    }
+
+    /**
+     * 合并语义上下文、类代码上下文和代码到模板中
+     * <p>
+     * 该方法专门用于类注释生成，会将语义上下文、类代码上下文和代码合并为一个字符串，
+     * 然后整体作为模板的 %s 占位符的值。
+     *
+     * @param template 类注释模板，包含 %s 占位符
+     * @param context  上下文信息，包含语义上下文和类代码上下文
+     * @param code     当前元素代码
+     * @return 替换占位符后的完整提示词
+     */
+    @NotNull
+    private static String mergeContextAndCode(@NotNull String template,
+                                              @NotNull GenerationContext context,
+                                              @NotNull String code) {
+        // 合并语义上下文、类代码上下文和代码
+        String codeWithContext = mergeContextAndCode(context, code);
+
+        // 使用 %s 占位符替换代码
+        return String.format(template, codeWithContext);
     }
 
     /**

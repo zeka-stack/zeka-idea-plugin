@@ -98,6 +98,7 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
         group.add(new GenerationConfigActionGroup());
         group.add(createOverrideConfigActionGroup());
         group.add(new EnableGenerationContextToggleAction());
+        group.add(new EnableSemanticContextToggleAction());
         group.add(new GenerateOnSaveToggleAction());
         group.add(new EnableCodeCompressionToggleAction());
         group.add(new CompressSingleLineJavaDocToggleAction());
@@ -600,6 +601,61 @@ public class AIJavadocStatusBarPopupProvider implements AIStatusBarPopupProvider
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().enableGenerationContext = state;
+        }
+    }
+
+    /**
+     * 启用语义上下文切换动作类
+     * <p>
+     * 该类继承自 ToggleAction, 用于控制是否为类级别的 Javadoc 生成添加语义上下文信息.
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @since 2.8.0
+     */
+    private static class EnableSemanticContextToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        /**
+         * 初始化启用语义上下文切换操作
+         * <p> 创建一个切换动作, 用于控制是否启用语义上下文功能
+         * <p> 该动作会绑定到状态设置中的 enableSemanticContext 标志位
+         */
+        EnableSemanticContextToggleAction() {
+            super(JavadocBundle.message("statusbar.quick.settings.enable.semantic.context"));
+        }
+
+        /**
+         * 返回操作更新线程类型
+         * <p> 此方法重写自父类, 用于指定该动作在后台线程中进行更新
+         *
+         * @return 操作更新线程类型, 始终返回 BGT (Background Thread)
+         */
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        /**
+         * 判断是否选中
+         * <p> 检查当前设置状态, 返回是否启用语义上下文功能
+         *
+         * @param e 操作事件, 包含当前操作的上下文信息, 不能为 null
+         * @return 如果启用语义上下文功能则返回 true, 否则返回 false
+         */
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableSemanticContext;
+        }
+
+        /**
+         * 设置语义上下文功能的启用状态
+         * <p> 根据传入的布尔值设置是否启用语义上下文的功能, 该状态保存在 SettingsState 中
+         *
+         * @param e     动作事件对象, 用于获取当前上下文信息
+         * @param state true 表示启用语义上下文功能,false 表示禁用
+         */
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableSemanticContext = state;
         }
     }
 
