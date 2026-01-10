@@ -154,8 +154,11 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * 提交消息 diff 生成方式
      */
     public enum CommitMessageDiffProvider {
+        /** 自动检测并生成提交消息 diff 的方式 */
         AUTO,
+        /** 表示使用代码差异生成提交消息的方式 */
         CODE_DIFF,
+        /** 使用 IntelliJ IDEA 生成的补丁格式提交消息 */
         IDEA_PATCH
     }
 
@@ -308,7 +311,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             你总是输出格式良好的 Markdown，包含一致的章节结构。
 
             重要要求：
-            - **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            - **必须使用 ${language} 编写所有内容**，这是强制要求，不能使用其他语言
             - 输出的 markdown 内容不要使用 markdown 代码块包裹（如 ```markdown）
             - 直接输出 markdown 格式的内容，不要添加任何代码块标记
             """;
@@ -324,10 +327,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultChangelogUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成发布变更日志（${language}）。
+            请根据以下 Git 提交记录生成发布变更日志（**${language}**）。
 
             要求：
-            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            1. **必须使用 ${language} 编写所有内容**，这是强制要求，不能使用其他语言
             2. 提交记录已经按照提交日期进行了分组，每个日期分组使用三级标题（### 日期）标识。
             3. 将每个日期分组内的提交记录分类到以下类别：
                - ⭐ 新功能
@@ -361,10 +364,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultDailyReportUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成工作日报（${language}）。
+            请根据以下 Git 提交记录生成工作日报（**${language}**）。
 
             要求：
-            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            1. **必须使用 ${language} 编写所有内容**，这是强制要求，不能使用其他语言
             2. 按照时间顺序整理提交记录
             3. 将工作内容分类为：
                - 💻 开发工作
@@ -401,10 +404,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultWeeklyReportUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成工作周报（${language}）。
+            请根据以下 Git 提交记录生成工作周报（**${language}**）。
 
             要求：
-            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            1. **必须使用 ${language} 编写所有内容**，这是强制要求，不能使用其他语言
             2. 按周统计提交记录
             3. 将工作内容分类为：
                - 🎯 主要功能开发
@@ -502,7 +505,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
               - 风险或注意事项（Note）
 
             其他强制要求：
-            - **提交消息内容必须使用 ${language}**
+            - **提交消息内容必须使用  ${language} **
             - 只输出最终提交记录，不解释、不附加说明
             - subject 使用祈使语气，不要句号
             - type / scope 使用通用英文约定（feat、fix、refactor、perf、test、docs 等）
@@ -583,10 +586,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultReleaseLogUserPrompt() {
         return """
-            请根据以下 Git 提交记录生成项目 Release Log（${language}）。
+            请根据以下 Git 提交记录生成项目 Release Log（**${language}**）。
 
             要求：
-            1. **必须使用${language}编写所有内容**，这是强制要求，不能使用其他语言
+            1. **必须使用 ${language} 编写所有内容**，这是强制要求，不能使用其他语言
             2. 将提交记录分类到以下类别（使用二级标题，格式与 git-cliff 保持一致）：
                - ## ✨ Features（新功能）
                - ## 🐛 Bug Fixes（问题修复）
