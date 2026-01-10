@@ -275,6 +275,18 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean allowDeleteJavadoc = false;
 
     /**
+     * 是否在提交时执行 Javadoc 缺失检查
+     *
+     * <p>控制提交消息检查中是否启用 Javadoc 缺失检查。
+     * 启用后，在提交前会对已勾选的变更文件进行缺失检测并给出警告提示。
+     *
+     * <p>默认值: true（默认启用）
+     *
+     * @since 2.8.0
+     */
+    public boolean enableCommitJavadocCheck = true;
+
+    /**
      * 是否显示自定义 Javadoc 标签配置面板
      *
      * <p>控制设置页面中自定义 Javadoc 标签配置表格的显示/隐藏。

@@ -44,6 +44,9 @@
                            displayType="BALLOON"
                            isLogByDefault="true"/>
 
+        <!-- Commit 检查 -->
+        <checkinHandlerFactory implementation="dev.dong4j.zeka.stack.idea.javadoc.git.CommitJavadocCheckinHandlerFactory"/>
+
         <!-- 自动注册自定义 Javadoc 标签 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.javadoc.component.CustomJavadocTagRegistrar"/>
 

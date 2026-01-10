@@ -7,18 +7,13 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.actionSystem.Shortcut;
 import com.intellij.openapi.actionSystem.impl.ActionButton;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.popup.Balloon;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
-import com.intellij.openapi.vfs.JarFileSystem;
-import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.ui.awt.RelativePoint;
@@ -28,12 +23,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.Component;
 import java.awt.Point;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
+import dev.dong4j.zeka.stack.idea.javadoc.git.CommitJavadocChecker;
 import dev.dong4j.zeka.stack.idea.javadoc.git.CommitJavadocGenerator;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
@@ -177,7 +170,7 @@ public class GenerateJavadocForCommitAction extends AnAction {
         }
 
         // 在 ReadAction 中过滤 Java 文件
-        List<VirtualFile> javaFiles = filterJavaFiles(project, changes);
+        List<VirtualFile> javaFiles = CommitJavadocChecker.filterJavaFiles(project, changes);
         if (javaFiles.isEmpty()) {
             log.debug("Git 提交页面：没有找到 Java 文件");
             showActionTip(e, JavadocBundle.message("commit.no.java.files"));
@@ -189,72 +182,6 @@ public class GenerateJavadocForCommitAction extends AnAction {
         // 使用生成器检测和生成文档
         CommitJavadocGenerator generator = new CommitJavadocGenerator(project);
         generator.generateForChanges(javaFiles);
-    }
-
-    /**
-     * 过滤文件变更列表中的 Java 和 Kotlin 文件
-     * <p>
-     * 从传入的文件变更列表中筛选出扩展名为 ".java" 或 ".kt" 的虚拟文件, 并确保这些文件位于项目范围内, 排除 jar 包中的源码文件.
-     * 该方法必须在 ReadAction 中执行, 以确保安全访问项目文件索引.
-     *
-     * @param project 项目对象, 用于获取项目文件索引和判断文件是否在项目范围内
-     * @param changes 文件变更列表, 包含所有待筛选的文件变更对象
-     * @return 包含所有符合条件的 Java 或 Kotlin 文件的虚拟文件列表, 如果无符合条件的文件则返回空列表
-     */
-    @NotNull
-    private List<VirtualFile> filterJavaFiles(@NotNull Project project,
-                                              @NotNull Collection<Change> changes) {
-        if (project.isDisposed()) {
-            return new ArrayList<>();
-        }
-
-        return ApplicationManager.getApplication().runReadAction(
-            (Computable<List<VirtualFile>>) () -> {
-                ProjectFileIndex fileIndex = ProjectFileIndex.getInstance(project);
-                return changes.stream()
-                    .map(Change::getVirtualFile)
-                    .filter(file -> file != null
-                                    && (PluginContents.JAVA.equalsIgnoreCase(file.getExtension())
-                                        || PluginContents.KOTLIN_EXTENSION.equalsIgnoreCase(file.getExtension()))
-                                    && isFileInProject(project, file, fileIndex))
-                    .collect(Collectors.toList());
-            }
-                                                                );
-    }
-
-    /**
-     * 检查文件是否在项目范围内
-     * <p>
-     * 该方法检查以下条件：
-     * <ol>
-     *   <li>文件是否在 JarFileSystem 中（jar 中的源码应该排除）</li>
-     *   <li>文件是否在本地文件系统中（不是 jar 中的文件）</li>
-     *   <li>文件是否在项目的源码根目录或资源根目录中</li>
-     * </ol>
-     * <p>
-     * <b>重要：</b>该方法必须在 ReadAction 中调用，因为 {@link ProjectFileIndex#isInProject(VirtualFile)}
-     * 需要访问项目文件索引，必须在 ReadAction 中执行。
-     *
-     * @param project   项目对象
-     * @param file      虚拟文件
-     * @param fileIndex 项目文件索引（已在 ReadAction 中获取）
-     * @return 如果文件在项目内且不是 jar 中的源码，返回 true；否则返回 false
-     */
-    private boolean isFileInProject(@NotNull Project project,
-                                    @NotNull VirtualFile file,
-                                    @NotNull ProjectFileIndex fileIndex) {
-        // 检查文件是否在 jar 中（jar 中的源码不应该处理）
-        if (file.getFileSystem() instanceof JarFileSystem) {
-            return false;
-        }
-
-        // 检查文件是否在本地文件系统中
-        if (!(file.getFileSystem() instanceof LocalFileSystem)) {
-            return false;
-        }
-
-        // 检查文件是否在项目的源码根目录或资源根目录中
-        return fileIndex.isInProject(file);
     }
 
     /**
