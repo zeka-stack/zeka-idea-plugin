@@ -187,40 +187,40 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
      * @date 2026.01.11
      * @since 1.0.0
      */
-        private record JavadocCommitProblem(String text) implements CommitProblem {
-            /**
-             * 初始化 JavadocCommitProblem 实例
-             * <p> 构造函数, 用于创建一个包含指定文本的 JavadocCommitProblem 对象
-             *
-             * @param text 问题描述文本, 不能为空
-             */
-            private JavadocCommitProblem(@NotNull String text) {
-                this.text = text;
-            }
-
-            /**
-             * 获取文本内容
-             * <p> 返回该实例存储的文本信息.
-             *
-             * @return 文本内容, 保证不为 null
-             */
-            @Override
-            public @NotNull String text() {
-                return text;
-            }
-
-            /**
-             * 显示解决方案对话框并返回处理结果
-             * <p> 此方法被调用时, 会显示一个解决方案对话框. 当前实现总是返回取消操作的结果.
-             *
-             * @param project    当前项目对象
-             * @param commitInfo 提交信息对象
-             * @return 操作结果, 当前总是返回 {@code CheckinHandler.ReturnResult.CANCEL}
-             */
-            @Override
-            public @NotNull CheckinHandler.ReturnResult showModalSolution(@NotNull Project project,
-                                                                          @NotNull CommitInfo commitInfo) {
-                return CheckinHandler.ReturnResult.CANCEL;
-            }
+    private record JavadocCommitProblem(String text) implements CommitProblem {
+        /**
+         * 初始化 JavadocCommitProblem 实例
+         * <p> 构造函数, 用于创建一个包含指定文本的 JavadocCommitProblem 对象
+         *
+         * @param text 问题描述文本, 不能为空
+         */
+        private JavadocCommitProblem(@NotNull String text) {
+            this.text = text;
         }
+
+        /**
+         * 获取文本内容
+         * <p> 返回该实例存储的文本信息.
+         *
+         * @return 文本内容, 保证不为 null
+         */
+        @Override
+        public @NotNull String getText() {
+            return text;
+        }
+
+        /**
+         * 显示解决方案对话框并返回处理结果
+         * <p> 此方法被调用时, 会显示一个解决方案对话框. 当前实现总是返回取消操作的结果.
+         *
+         * @param project    当前项目对象
+         * @param commitInfo 提交信息对象
+         * @return 操作结果, 当前总是返回 {@code CheckinHandler.ReturnResult.CANCEL}
+         */
+        @Override
+        public @NotNull CheckinHandler.ReturnResult showModalSolution(@NotNull Project project,
+                                                                      @NotNull CommitInfo commitInfo) {
+            return CheckinHandler.ReturnResult.CANCEL;
+        }
+    }
 }
