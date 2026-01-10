@@ -96,12 +96,16 @@ public class GenerationRulesPanel {
     /** 启用类级上下文的复选框 */
     private JBCheckBox enableGenerationContextCheckBox;
 
+    /** 启用语义上下文的复选框 */
+    private JBCheckBox enableSemanticContextCheckBox;
+
     /** 启用代码压缩的复选框 */
     private JBCheckBox enableCodeCompressionCheckBox;
 
     /** 在中英文间添加空格复选框 */
     private JBCheckBox compressSingleLineJavaDocCheckBox;
 
+    /** 在中英文之间添加空格的复选框 */
     private JBCheckBox addSpaceBetweenChineseAndEnglishCheckBox;
 
     /** 将中文标点符号转为英文标点符号复选框 */
@@ -145,6 +149,7 @@ public class GenerationRulesPanel {
         generateForFieldCheckBox = new JBCheckBox(JavadocBundle.message("settings.generate.for.field"));
         overrideExistingCheckBox = new JBCheckBox(JavadocBundle.message("settings.override.existing"));
         enableGenerationContextCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.generation.context"));
+        enableSemanticContextCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.semantic.context"));
         enableCodeCompressionCheckBox = new JBCheckBox(JavadocBundle.message("settings.enable.code.compression"));
         maxClassCodeLinesSpinner = new JSpinner(new SpinnerNumberModel(1000, 100, 300000, 100));
         compressSingleLineJavaDocCheckBox = new JBCheckBox(JavadocBundle.message("settings.compress.single.line.javadoc"));
@@ -162,6 +167,7 @@ public class GenerationRulesPanel {
             .addComponent(createCheckBoxWithHint(overrideExistingCheckBox, "settings.override.existing.hint"))
             .addComponent(createOverrideModeSubConfigPanel())
             .addComponent(createCheckBoxWithHint(enableGenerationContextCheckBox, "settings.enable.generation.context.hint"))
+            .addComponent(createCheckBoxWithHint(enableSemanticContextCheckBox, "settings.enable.semantic.context.hint"))
             .addComponent(createCheckBoxWithHint(enableCodeCompressionCheckBox, "settings.enable.code.compression.hint"))
             .addComponent(createCodeCompressionSubConfigPanel())
             .addComponent(
@@ -219,6 +225,7 @@ public class GenerationRulesPanel {
         }
         settings.fixJavadocPromptTemplate = fixJavadocPromptTextArea.getText().trim();
         settings.enableGenerationContext = enableGenerationContextCheckBox.isSelected();
+        settings.enableSemanticContext = enableSemanticContextCheckBox.isSelected();
         settings.enableCodeCompression = enableCodeCompressionCheckBox.isSelected();
         settings.maxClassCodeLines = (Integer) maxClassCodeLinesSpinner.getValue();
         settings.compressSingleLineJavaDoc = compressSingleLineJavaDocCheckBox.isSelected();
@@ -247,6 +254,7 @@ public class GenerationRulesPanel {
         }
         fixJavadocPromptTextArea.setText(settings.fixJavadocPromptTemplate);
         enableGenerationContextCheckBox.setSelected(settings.enableGenerationContext);
+        enableSemanticContextCheckBox.setSelected(settings.enableSemanticContext);
         enableCodeCompressionCheckBox.setSelected(settings.enableCodeCompression);
         maxClassCodeLinesSpinner.setValue(settings.maxClassCodeLines);
         compressSingleLineJavaDocCheckBox.setSelected(settings.compressSingleLineJavaDoc);
@@ -542,16 +550,35 @@ public class GenerationRulesPanel {
 
         // 添加文档监听器，根据内容自动调整大小
         fixJavadocPromptTextArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            /**
+             * 插入文本时调整文本区域大小
+             * <p> 当文档内容插入时, 自动调整指定文本区域的大小以适应内容变化
+             *
+             * @param e 文档事件对象, 包含插入操作的相关信息
+             */
             @Override
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(fixJavadocPromptTextArea);
             }
 
+            /**
+             * 文档内容删除事件处理方法
+             * <p> 当文档内容被删除时, 此方法会被调用, 用于调整文本区域的大小以适应新的内容
+             *
+             * @param e 文档事件对象, 包含文档变化的详细信息, 不能为 null
+             */
             @Override
             public void removeUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(fixJavadocPromptTextArea);
             }
 
+            /**
+             * 文档结构发生更改时调用
+             * <p> 当文档的 Attributes(如字体, 颜色等属性) 发生更改时, 此方法会被触发.
+             * 此实现通过调用 adjustTextAreaSize 方法来调整文本区域的大小, 以适应文档内容的变化.</p>
+             *
+             * @param e 文档事件对象, 包含文档更改的详细信息, 不能为 null
+             */
             @Override
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
                 adjustTextAreaSize(fixJavadocPromptTextArea);
@@ -604,6 +631,12 @@ public class GenerationRulesPanel {
 
         // 为容器添加点击事件（整个容器都可以点击）
         container.addMouseListener(new MouseAdapter() {
+            /**
+             * 当鼠标点击事件发生时触发, 用于处理修复模式下的提示面板切换逻辑
+             * <p> 如果当前未处于修复模式, 则直接返回; 否则调用 toggleFixJavadocPromptPanel 方法切换提示面板的状态
+             *
+             * @param e 鼠标事件对象, 包含点击事件的相关信息
+             */
             @Override
             public void mouseClicked(MouseEvent e) {
                 // 只有在选择"仅修复错误注释"时才能展开

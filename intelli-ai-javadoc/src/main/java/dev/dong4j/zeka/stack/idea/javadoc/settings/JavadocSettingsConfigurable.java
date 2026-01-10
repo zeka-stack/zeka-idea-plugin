@@ -177,6 +177,9 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         if (currentSettings.enableGenerationContext != panelSettings.enableGenerationContext) {
             return true;
         }
+        if (currentSettings.enableSemanticContext != panelSettings.enableSemanticContext) {
+            return true;
+        }
         if (currentSettings.enableCodeCompression != panelSettings.enableCodeCompression) {
             return true;
         }
