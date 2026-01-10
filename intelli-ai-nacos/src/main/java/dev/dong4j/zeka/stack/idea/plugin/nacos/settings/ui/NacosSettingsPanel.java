@@ -67,6 +67,7 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Nacos 插件设置面板 UI
@@ -76,11 +77,25 @@ import lombok.Getter;
  */
 @Slf4j
 public class NacosSettingsPanel {
+    /** 本地注册中心启动指示器的绿色颜色值 */
     private static final JBColor DOT_COLOR_GREEN = new JBColor(new Color(52, 199, 89), new Color(48, 209, 88));
+    /** 本地注册中心运行状态指示的红色颜色常量 */
     private static final JBColor DOT_COLOR_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
+    /** Nacos 连接测试按钮的呼吸指示器颜色 */
     private static final JBColor DOT_COLOR_YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 214, 10));
+    /** 停止操作的超时时间 (毫秒) */
     private static final long STOP_TIMEOUT_MILLIS = 5000L;
+    /**
+     * 第一次检查本地注册中心是否停止的延迟时间 (毫秒)
+     * <p> 在停止本地注册中心的过程中, 首次检查的延迟时间为 3000 毫秒.
+     */
     private static final long STOP_FIRST_CHECK_DELAY = 3000L;
+    /**
+     * 停止本地注册中心后的第二次检查延迟时间 (以毫秒为单位)
+     * <p> 在停止本地注册中心的过程中, 如果第一次检查未能成功停止, 则等待一段时间后再次检查
+     *
+     * @see #STOP_FIRST_CHECK_DELAY
+     */
     private static final long STOP_SECOND_CHECK_DELAY = 2000L;
 
     /**
@@ -138,6 +153,7 @@ public class NacosSettingsPanel {
 
     /** JVM 环境变量配置表 */
     private final JBTable jvmOptionTable;
+    /** JVM 环境变量配置表模型 */
     private final JvmOptionTableModel jvmOptionTableModel;
 
     /** 是否处于本地 Nacos 操作中 */
@@ -336,6 +352,23 @@ public class NacosSettingsPanel {
 
         // 在后台线程中执行连接测试
         new Task.Backgroundable(null, "Testing Nacos Connection", false) {
+            /**
+             * 执行连接 Nacos 服务器的后台任务
+             * <p> 该方法在后台线程中执行, 负责连接到指定的 Nacos 服务器并更新界面状态.
+             * <p> 连接过程包括: 移除旧客户端, 创建新客户端, 登录验证, 保存认证信息 (成功时).
+             * <p> 最终通过 UI 线程更新连接状态标签颜色和按钮指示器颜色.
+             * <p> 使用示例:
+             * <pre>{@code
+             * new Task.Backgroundable(null, "Testing Nacos Connection", false) {
+             *     @Override
+             *     public void run(@NotNull ProgressIndicator indicator) {
+             *         // 连接逻辑在此处执行
+             *     }
+             * };
+             * }</pre>
+             *
+             * @param indicator 进度指示器, 用于更新连接状态文本
+             */
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setText("Connecting to Nacos server...");
@@ -516,6 +549,16 @@ public class NacosSettingsPanel {
         gitHubProxyUrlField.setEnabled(proxyEnabled);
     }
 
+    /**
+     * 启动本地 Nacos 注册中心
+     * <p> 异步启动本地 Nacos 服务. 方法首先检查是否已有操作正在进行,
+     * 然后获取用户选择的 Nacos 版本, 如果版本为空则使用默认版本.
+     * 接着异步检查本地注册中心是否已启动, 如果已启动则显示提示信息并更新状态;
+     * 否则调用 LocalNacosService 启动本地注册中心
+     * <p> 注意: 此方法为异步操作, 不会阻塞当前线程
+     *
+     * @since 1.0.0
+     */
     private void startLocalNacos() {
         if (localOperationInProgress) {
             return;
@@ -548,10 +591,25 @@ public class NacosSettingsPanel {
             }, ModalityState.any()));
     }
 
+    /**
+     * 停止本地 Nacos 注册中心
+     * <p> 调用内部方法执行停止本地 Nacos 注册中心的操作, 并指定更新按钮标签 </p>
+     */
     private void stopLocalNacos() {
         stopLocalNacosInternal(true);
     }
 
+    /**
+     * 停止本地 Nacos 服务的内部方法
+     * <p> 该方法用于停止正在运行的本地 Nacos 服务, 支持更新按钮文本状态, 并在操作完成后刷新服务状态.
+     * <p> 使用示例:
+     * <pre>{@code
+     * stopLocalNacosInternal(true); // 停止服务并更新按钮文本为“停止中”
+     * stopLocalNacosInternal(false); // 停止服务但不更新按钮文本
+     * }</pre>
+     *
+     * @param updateButtonLabel 是否更新停止按钮的文本为“停止中”或“停止”
+     */
     private void stopLocalNacosInternal(boolean updateButtonLabel) {
         if (localOperationInProgress) {
             return;
@@ -563,8 +621,17 @@ public class NacosSettingsPanel {
         ProgressManager.getInstance().run(new Task.Backgroundable(null,
                                                                   NacosBundle.message("settings.nacos.local.stopping"),
                                                                   false) {
+            /** 用于存储操作失败时的错误信息 */
             private String failureMessage;
 
+            /**
+             * 执行本地 Nacos 注册中心的停止操作
+             * <p> 该方法通过调用 LocalNacosService 停止本地注册中心服务, 并等待其完全停止.
+             * 如果在指定超时时间内未完成, 则设置失败信息为超时提示.
+             * 在执行过程中, 会更新进度指示器状态, 并处理可能发生的中断或异常.
+             *
+             * @param indicator 进度指示器, 用于显示操作进度
+             */
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(false);
@@ -582,6 +649,11 @@ public class NacosSettingsPanel {
                 }
             }
 
+            /**
+             * 操作完成后的回调方法
+             * <p> 在后台任务执行完成后, 更新界面上的相关状态和按钮标签, 并根据操作结果展示通知信息
+             *
+             */
             @Override
             public void onFinished() {
                 ApplicationManager.getApplication().invokeLater(() -> {
@@ -600,6 +672,13 @@ public class NacosSettingsPanel {
         });
     }
 
+    /**
+     * 绑定本地 Nacos 操作任务
+     * <p> 将异步操作与完成回调绑定, 并在操作完成后更新状态和刷新本地状态信息
+     *
+     * @param future     异步操作的 Future 对象, 不能为 null
+     * @param onComplete 操作完成后的回调函数, 不能为 null
+     */
     private void bindLocalOperation(@NotNull CompletableFuture<Void> future, @NotNull Runnable onComplete) {
         future.whenComplete((unused, throwable) -> ApplicationManager.getApplication().invokeLater(() -> {
             try {
@@ -614,11 +693,24 @@ public class NacosSettingsPanel {
         }, ModalityState.any()));
     }
 
+    /**
+     * 设置本地 Nacos 操作是否正在进行中
+     * <p> 此方法用于标记当前是否正在执行本地注册中心的启动或停止操作, 并更新相关组件的状态.
+     *
+     * @param inProgress 如果为 true 表示正在进行本地操作, 否则表示操作已完成
+     */
     private void setLocalOperationInProgress(boolean inProgress) {
         this.localOperationInProgress = inProgress;
         updateLocalRegistryState();
     }
 
+    /**
+     * 自动停止本地 Nacos 服务
+     * <p> 检查本地 Nacos 是否正在运行, 如果正在运行, 则调用 {@link #stopLocalNacosInternal(boolean)} 停止服务;
+     * 如果未运行, 则刷新本地状态.
+     * <p>
+     * 该方法在异步线程中执行, 确保不会阻塞主线程.
+     */
     private void autoStopLocalNacos() {
         CompletableFuture
             .supplyAsync(() -> LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS),
@@ -632,6 +724,12 @@ public class NacosSettingsPanel {
             }, ModalityState.any()));
     }
 
+    /**
+     * 刷新本地注册中心的状态
+     * <p> 异步检查本地注册中心是否正在运行, 并更新界面状态
+     *
+     * @since 1.0.0
+     */
     private void refreshLocalStatus() {
         CompletableFuture
             .supplyAsync(() -> LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS),
@@ -640,6 +738,12 @@ public class NacosSettingsPanel {
                                                                                    ModalityState.any()));
     }
 
+    /**
+     * 更新本地 Nacos 状态的视觉表示
+     * <p> 根据传入的运行状态更新按钮启用状态和指示器颜色, 同时触发注册中心状态更新逻辑
+     *
+     * @param running 表示本地 Nacos 是否正在运行
+     */
     private void updateLocalStatusVisual(boolean running) {
         this.localRegistryRunning = running;
         if (running) {
@@ -652,6 +756,22 @@ public class NacosSettingsPanel {
         updateLocalRegistryState();
     }
 
+    /**
+     * 等待本地注册中心停止
+     * <p> 通过两次定时检查确认本地注册中心是否已停止运行, 若在指定时间内未停止则返回 false
+     * <p> 使用示例:
+     * <pre>{@code
+     * if (waitUntilRegistryStops(indicator)) {
+     *     // 注册中心已停止
+     * } else {
+     *     // 超时未停止, 可能需要手动处理
+     * }
+     * }</pre>
+     *
+     * @param indicator 进度指示器, 用于检查取消和设置进度
+     * @return 如果注册中心在超时前停止则返回 true, 否则返回 false
+     * @throws InterruptedException 当线程被中断时抛出
+     */
     private boolean waitUntilRegistryStops(@NotNull ProgressIndicator indicator) throws InterruptedException {
         if (waitAndCheck(indicator, STOP_FIRST_CHECK_DELAY, 0.6)) {
             return true;
@@ -659,6 +779,16 @@ public class NacosSettingsPanel {
         return waitAndCheck(indicator, STOP_SECOND_CHECK_DELAY, 1.0);
     }
 
+    /**
+     * 等待指定时间并检查本地 Nacos 注册中心是否停止
+     * <p> 该方法用于在停止本地 Nacos 服务时, 等待一段时间后检查注册中心是否已经停止.
+     *
+     * @param indicator  进度指示器, 用于更新进度和检测取消操作
+     * @param waitMillis 等待的毫秒数
+     * @param fraction   进度指示器的进度值
+     * @return 如果注册中心已停止返回 true, 否则返回 false
+     * @throws InterruptedException 如果线程被中断
+     */
     private boolean waitAndCheck(@NotNull ProgressIndicator indicator, long waitMillis, double fraction)
         throws InterruptedException {
         indicator.checkCanceled();
@@ -668,6 +798,12 @@ public class NacosSettingsPanel {
         return !LocalRegistryManager.localRegistryStarted(LocalRegistry.NACOS);
     }
 
+    /**
+     * 构建本地链接面板
+     * <p> 用于显示与本地 Nacos 相关的提示信息和操作按钮, 如打开本地目录等
+     *
+     * @return 包含本地链接信息的面板
+     */
     private JPanel buildLocalLinksPanel() {
         JPanel firstLine = new JPanel(new FlowLayout(FlowLayout.LEFT, JBUI.scale(4), 0));
         firstLine.setOpaque(false);
@@ -690,6 +826,11 @@ public class NacosSettingsPanel {
         return container;
     }
 
+    /**
+     * 打开本地 Nacos 安装目录
+     * <p> 根据当前选择的版本号查找对应的本地 Nacos 目录并尝试打开
+     *
+     */
     private void openLocalNacosDir() {
         String version = (String) versionComboBox.getSelectedItem();
         if (StringUtils.isBlank(version)) {
@@ -712,6 +853,14 @@ public class NacosSettingsPanel {
         }
     }
 
+    /**
+     * 更新本地提示详细文本
+     * <p> 根据当前选择的 Nacos 版本, 返回对应的本地路径信息
+     * <p> 如果版本为空, 则使用默认版本 "2.4.3"
+     * <p> 根据操作系统类型, 返回 Windows 或 macOS 的本地路径
+     *
+     * @return 返回本地路径信息, 具体取决于操作系统类型和 Nacos 版本
+     */
     private String updateLocalHintDetailText() {
         String version = (String) versionComboBox.getSelectedItem();
         if (StringUtils.isBlank(version)) {
