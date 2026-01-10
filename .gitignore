@@ -55,3 +55,4 @@ CLAUDE.md
 reference/
 docs-list.json
 *.mp4
+.tmp*

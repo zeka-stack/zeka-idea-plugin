@@ -6,20 +6,14 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiJavaFile;
-import com.intellij.psi.PsiManager;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.javadoc.service.DocumentationGenerationService;
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
-import dev.dong4j.zeka.stack.idea.javadoc.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +73,9 @@ public class CommitJavadocGenerator {
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
                     // 检测缺少 Javadoc 的元素
-                    List<DocumentationTask> tasks = detectMissingJavaDoc(javaFiles, indicator);
+                    List<DocumentationTask> tasks = CommitJavadocChecker.detectMissingJavaDoc(project, javaFiles, indicator);
+
+                    log.debug("Git 提交页面：检测到 {} 个缺少 Javadoc 的元素", tasks.size());
 
                     if (tasks.isEmpty()) {
                         ApplicationManager.getApplication().invokeLater(() -> {
@@ -90,25 +86,11 @@ public class CommitJavadocGenerator {
                     }
 
                     // 显示检测结果
-                    int classCount = 0;
-                    int methodCount = 0;
-                    int fieldCount = 0;
-
-                    for (DocumentationTask task : tasks) {
-                        switch (task.getType()) {
-                            case CLASS -> classCount++;
-                            case METHOD, TEST_METHOD -> methodCount++;
-                            case FIELD -> fieldCount++;
-                        }
-                    }
-
-                    final int finalClassCount = classCount;
-                    final int finalMethodCount = methodCount;
-                    final int finalFieldCount = fieldCount;
+                    CommitJavadocChecker.DetectionSummary summary = CommitJavadocChecker.buildDetectionSummary(tasks);
 
                     // 在 EDT 中显示检测结果并询问用户是否继续
                     ApplicationManager.getApplication().invokeLater(() -> {
-                        String message = buildDetectionMessage(finalClassCount, finalMethodCount, finalFieldCount);
+                        String message = JavadocBundle.message("commit.detection.message", summary.summary());
                         int result = Messages.showYesNoDialog(
                             project,
                             message,
@@ -124,44 +106,6 @@ public class CommitJavadocGenerator {
                     });
                 }
             });
-    }
-
-    /**
-     * 检测指定 Java 文件中缺少 Javadoc 的文档任务
-     * <p>
-     * 遍历给定的 Java 文件列表, 检测其中缺少 Javadoc 的元素, 并生成对应的文档任务.
-     *
-     * @param javaFiles 要检测的 Java 文件列表
-     * @param indicator 进度指示器, 用于显示检测进度
-     * @return 缺少 Javadoc 的文档任务列表
-     */
-    @NotNull
-    private List<DocumentationTask> detectMissingJavaDoc(@NotNull List<VirtualFile> javaFiles,
-                                                         @NotNull ProgressIndicator indicator) {
-        List<DocumentationTask> tasks = new ArrayList<>();
-        TaskCollector collector = new TaskCollector(project);
-
-        for (int i = 0; i < javaFiles.size(); i++) {
-            VirtualFile virtualFile = javaFiles.get(i);
-            indicator.setText(JavadocBundle.message("commit.detecting.file", virtualFile.getName()));
-            indicator.setFraction((double) i / javaFiles.size());
-
-            // 在 read-action 中将 VirtualFile 转换为 PsiFile 并收集任务
-            List<DocumentationTask> fileTasks = ApplicationManager.getApplication().runReadAction(
-                (Computable<List<DocumentationTask>>) () -> {
-                    PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
-                    if (psiFile instanceof PsiJavaFile) {
-                        // 使用专门的方法收集缺失 Javadoc 的任务（忽略 overrideExisting 配置）
-                        return collector.collectMissingJavaDocFromFile(psiFile);
-                    }
-                    return new ArrayList<>();
-                }
-                                                                                                 );
-            tasks.addAll(fileTasks);
-        }
-
-        log.debug("Git 提交页面：检测到 {} 个缺少 Javadoc 的元素", tasks.size());
-        return tasks;
     }
 
     /**
@@ -187,36 +131,4 @@ public class CommitJavadocGenerator {
                                       });
     }
 
-    /**
-     * 构建检测消息, 用于提示缺少的 Javadoc 注释信息
-     * <p>
-     * 根据传入的类, 方法, 字段数量, 生成对应的检测提示信息. 如果所有数量都为 0, 则返回无 Javadoc 的提示信息; 否则, 返回包含具体缺失项的提示信息.
-     *
-     * @param classCount  缺失 Javadoc 的类数量
-     * @param methodCount 缺失 Javadoc 的方法数量
-     * @param fieldCount  缺失 Javadoc 的字段数量
-     * @return 包含缺失 Javadoc 信息的提示字符串
-     * @since 1.0
-     */
-    @NotNull
-    private String buildDetectionMessage(int classCount, int methodCount, int fieldCount) {
-        List<String> parts = new ArrayList<>();
-
-        if (classCount > 0) {
-            parts.add(JavadocBundle.message("commit.detection.classes", classCount));
-        }
-        if (methodCount > 0) {
-            parts.add(JavadocBundle.message("commit.detection.methods", methodCount));
-        }
-        if (fieldCount > 0) {
-            parts.add(JavadocBundle.message("commit.detection.fields", fieldCount));
-        }
-
-        if (parts.isEmpty()) {
-            return JavadocBundle.message("commit.no.missing.javadoc");
-        }
-
-        return JavadocBundle.message("commit.detection.message", String.join("、", parts));
-    }
 }
-
