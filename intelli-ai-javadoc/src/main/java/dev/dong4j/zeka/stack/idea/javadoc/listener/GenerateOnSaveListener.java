@@ -128,118 +128,121 @@ public class GenerateOnSaveListener implements FileDocumentManagerListener {
             return;
         }
 
-        // 获取项目对象
-        Project project = getProjectForFile(virtualFile);
-        if (project == null || project.isDisposed()) {
-            return;
-        }
+        ReadAction.nonBlocking(() -> getProjectForFile(virtualFile))
+            .expireWhen(() -> !virtualFile.isValid())
+            .finishOnUiThread(ModalityState.nonModal(), project -> {
+                if (project == null || project.isDisposed()) {
+                    return;
+                }
 
-        if (!isCurrentEditorFile(project, document, virtualFile)) {
-            return;
-        }
+                if (!isCurrentEditorFile(project, document, virtualFile)) {
+                    return;
+                }
 
-        // 检查项目是否处于 Dumb Mode（索引模式）
-        if (DumbService.isDumb(project)) {
-            return;
-        }
+                // 检查项目是否处于 Dumb Mode（索引模式）
+                if (DumbService.isDumb(project)) {
+                    return;
+                }
 
-        // 检查 AI Provider 配置
-        AIProviderConfig config = settings.providerConfig;
-        if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"), JavadocBundle.message(
-            "settings.ai.provider.selection"))) {
-            return;
-        }
+                // 检查 AI Provider 配置
+                AIProviderConfig config = settings.providerConfig;
+                if (!AIProviderUtils.hasAIProvider(project, config, JavadocBundle.message("settings.display.name"),
+                                                   JavadocBundle.message("settings.ai.provider.selection"))) {
+                    return;
+                }
 
-        List<TextRange> changedRanges = consumeChangedRanges(document);
-        if (changedRanges.isEmpty()) {
-            return;
-        }
+                List<TextRange> changedRanges = consumeChangedRanges(document);
+                if (changedRanges.isEmpty()) {
+                    return;
+                }
 
-        // 延迟执行，确保在保存完成后再生成（延迟 500ms，避免与保存操作冲突）
-        AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
-            // 再次检查项目状态
-            if (project.isDisposed()) {
-                return;
-            }
-
-            // 在后台线程中执行生成逻辑，避免阻塞
-            ReadAction.nonBlocking(() -> {
-                    // 重新获取文件（保存后可能需要刷新）
-                    VirtualFile file = FileDocumentManager.getInstance().getFile(document);
-                    if (file == null || !file.isValid()) {
-                        return null;
-                    }
-
-                    // 获取 PsiFile 对象
-                    PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-                    if (psiFile == null) {
-                        return null;
-                    }
-
-                    // 检查文件类型
-                    if (!(psiFile instanceof PsiJavaFile) && !(psiFile instanceof KtFile)) {
-                        return null;
-                    }
-
-                    // 检查是否支持 Kotlin
-                    if (psiFile instanceof KtFile) {
-                        if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
-                            return null;
-                        }
-                    }
-
-                    // 收集任务
-                    TaskCollector collector = new TaskCollector(project);
-                    List<DocumentationTask> tasks = collector.collectFromModifiedElements(psiFile, changedRanges, true);
-
-                    // 如果没有任务，直接返回
-                    if (tasks.isEmpty()) {
-                        return null;
-                    }
-
-                    return new GenerationContext(project, tasks, psiFile.getName());
-                })
-                .finishOnUiThread(ModalityState.nonModal(), context -> {
-                    // 在 UI 线程中执行生成逻辑
-                    if (context == null) {
-                        return;
-                    }
-
+                // 延迟执行，确保在保存完成后再生成（延迟 500ms，避免与保存操作冲突）
+                AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
                     // 再次检查项目状态
-                    if (context.project.isDisposed()) {
+                    if (project.isDisposed()) {
                         return;
                     }
 
-                    // 设置生成标志，防止重复触发
-                    if (!isGenerating.compareAndSet(false, true)) {
-                        return;
-                    }
+                    // 在后台线程中执行生成逻辑，避免阻塞
+                    ReadAction.nonBlocking(() -> {
+                            // 重新获取文件（保存后可能需要刷新）
+                            VirtualFile file = FileDocumentManager.getInstance().getFile(document);
+                            if (file == null || !file.isValid()) {
+                                return null;
+                            }
 
-                    try {
-                        // 使用文档生成服务处理任务
-                        DocumentationGenerationService service = new DocumentationGenerationService();
-                        if (service.checkEmptyTasks(context.project, context.tasks,
-                                                    JavadocBundle.message("notification.no.task.selection"))) {
-                            isGenerating.set(false);
-                            return;
-                        }
+                            // 获取 PsiFile 对象
+                            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
+                            if (psiFile == null) {
+                                return null;
+                            }
 
-                        // 生成文档（异步执行，不阻塞 UI）
-                        service.generateDocumentation(context.project, context.tasks,
-                                                      JavadocBundle.message("task.target.save", context.fileName),
-                                                      stats -> {
-                                                          // 生成完成后重置标志
-                                                          isGenerating.set(false);
-                                                          log.debug("保存时自动生成 Javadoc 完成: {}", stats);
-                                                      });
-                    } catch (Exception e) {
-                        // 发生异常时重置标志
-                        isGenerating.set(false);
-                        log.debug("保存时自动生成 Javadoc 失败", e);
-                    }
-                })
-                .submit(AppExecutorUtil.getAppExecutorService());
-        }, 500, TimeUnit.MILLISECONDS);
+                            // 检查文件类型
+                            if (!(psiFile instanceof PsiJavaFile) && !(psiFile instanceof KtFile)) {
+                                return null;
+                            }
+
+                            // 检查是否支持 Kotlin
+                            if (psiFile instanceof KtFile) {
+                                if (!settings.isLanguageSupported(PluginContents.KOTLIN)) {
+                                    return null;
+                                }
+                            }
+
+                            // 收集任务
+                            TaskCollector collector = new TaskCollector(project);
+                            List<DocumentationTask> tasks = collector.collectFromModifiedElements(psiFile, changedRanges, true);
+
+                            // 如果没有任务，直接返回
+                            if (tasks.isEmpty()) {
+                                return null;
+                            }
+
+                            return new GenerationContext(project, tasks, psiFile.getName());
+                        })
+                        .finishOnUiThread(ModalityState.nonModal(), context -> {
+                            // 在 UI 线程中执行生成逻辑
+                            if (context == null) {
+                                return;
+                            }
+
+                            // 再次检查项目状态
+                            if (context.project.isDisposed()) {
+                                return;
+                            }
+
+                            // 设置生成标志，防止重复触发
+                            if (!isGenerating.compareAndSet(false, true)) {
+                                return;
+                            }
+
+                            try {
+                                // 使用文档生成服务处理任务
+                                DocumentationGenerationService service = new DocumentationGenerationService();
+                                if (service.checkEmptyTasks(context.project, context.tasks,
+                                                            JavadocBundle.message("notification.no.task.selection"))) {
+                                    isGenerating.set(false);
+                                    return;
+                                }
+
+                                // 生成文档（异步执行，不阻塞 UI）
+                                service.generateDocumentation(context.project, context.tasks,
+                                                              JavadocBundle.message("task.target.save", context.fileName),
+                                                              stats -> {
+                                                                  // 生成完成后重置标志
+                                                                  isGenerating.set(false);
+                                                                  log.debug("保存时自动生成 Javadoc 完成: {}", stats);
+                                                              });
+                            } catch (Exception e) {
+                                // 发生异常时重置标志
+                                isGenerating.set(false);
+                                log.debug("保存时自动生成 Javadoc 失败", e);
+                            }
+                        })
+                        .submit(AppExecutorUtil.getAppExecutorService());
+                }, 500, TimeUnit.MILLISECONDS);
+            })
+            .submit(AppExecutorUtil.getAppExecutorService());
     }
 
     /**
