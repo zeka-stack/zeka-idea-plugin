@@ -28,16 +28,19 @@ import com.intellij.ui.EditorTextField;
 import com.intellij.ui.HyperlinkAdapter;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.Alarm;
+import com.intellij.util.concurrency.AppExecutorUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.Point;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -699,14 +702,17 @@ public class CommitMessageGenerator {
     }
 
     /**
-     * 处理多仓库变更
-     * <p> 在工具窗口输出每个仓库的提交建议，并提示用户拆分提交。
+     * 处理多仓库变更的提交信息生成
+     * <p> 该方法用于在存在多个 VCS 仓库根目录的场景下, 分别对每个仓库的变更进行提交信息生成. 每个仓库的变更会异步处理, 最终将所有生成的提交信息合并并显示在提交面板中.
+     * <p> 如果某个仓库的提交信息生成失败, 将忽略该失败并继续处理其他仓库.
      *
-     * @param service       生成服务
-     * @param changesByRoot 按仓库分组的变更
-     * @param contextText   用户补充说明
-     * @param outputSession 可能存在的输出会话
-     * @throws Exception 生成失败时抛出
+     * @param service              提交信息生成服务实例, 用于调用 AI 服务生成提交消息, 不能为 null
+     * @param changesByRoot        按仓库根路径分组的变更集合,key 为仓库根路径,value 为该路径下的变更列表, 不能为 null
+     * @param contextText          用于生成提交消息的上下文文本, 可以为 null
+     * @param outputSession        工具窗口输出会话, 用于在工具窗口中同步输出最终结果, 可以为 null
+     * @param commitMessageControl 提交面板的提交信息控件, 用于在 UI 中设置生成的提交消息, 可以为 null
+     * @param typingIndicator      打字动画指示器, 用于在生成过程中显示打字效果, 不能为 null
+     * @throws Exception 当任意仓库的提交信息生成失败时抛出异常
      */
     private void handleMultiRepositoryChanges(@NotNull ChangelogService service,
                                               @NotNull Map<String, List<Change>> changesByRoot,
@@ -714,28 +720,43 @@ public class CommitMessageGenerator {
                                               @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
                                               @Nullable CommitMessageI commitMessageControl,
                                               @NotNull TypingIndicator typingIndicator) throws Exception {
-        // 提取每个仓库路径的最后一级目录名，兼容 Windows 和 Unix 系统
-        String repoList = changesByRoot.keySet().stream()
-            .map(path -> new java.io.File(path).getName())
-            .collect(java.util.stream.Collectors.joining(", "));
 
-        NotificationUtil.noShow(project,
-                                ChangelogBundle.message("commit.multi.repo.detected",
-                                                        changesByRoot.size(),
-                                                        repoList));
-
-        // 多仓库场景：为每个仓库生成独立的 commit message，再合并输出。
-        List<String> commitMessages = new java.util.ArrayList<>();
+        // 多仓库场景：为每个仓库并行生成独立的 commit message，再合并输出。
+        List<CompletableFuture<String>> futures = new ArrayList<>();
         for (Map.Entry<String, List<Change>> entry : changesByRoot.entrySet()) {
             List<Change> rootChanges = entry.getValue();
             if (rootChanges.isEmpty()) {
                 continue;
             }
-            // todo-dong4j : (2026.01.11 14:49) [多个 git 仓库会调用多次, 考虑并行或者在 diff 阶段分组, 在提示词中明确拆分成多个]
-            String commitMessage = service.generateCommitMessageFromDiff(rootChanges, contextText);
-            String formattedCommitMessage = MessageFormatter.format(commitMessage);
-            if (!formattedCommitMessage.isBlank()) {
-                commitMessages.add(formattedCommitMessage.trim());
+            CompletableFuture<String> future = CompletableFuture
+                .supplyAsync(() -> {
+                    String commitMessage;
+                    try {
+                        commitMessage = service.generateCommitMessageFromDiff(rootChanges, contextText);
+                    } catch (Exception e) {
+                        log.debug("Git 提交页面：[{}] 生成失败", rootChanges, e);
+                        commitMessage = "";
+                    }
+                    String formattedCommitMessage = MessageFormatter.format(commitMessage);
+                    return formattedCommitMessage.isBlank() ? "" : formattedCommitMessage.trim();
+                }, AppExecutorUtil.getAppExecutorService())
+                .exceptionally(ex -> {
+                    log.debug("Git 提交页面：多仓库提交信息生成失败", ex);
+                    return "";
+                });
+            futures.add(future);
+        }
+
+        if (futures.isEmpty()) {
+            return;
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        List<String> commitMessages = new ArrayList<>();
+        for (CompletableFuture<String> future : futures) {
+            String message = future.join();
+            if (!message.isBlank()) {
+                commitMessages.add(message);
             }
         }
 
@@ -756,8 +777,6 @@ public class CommitMessageGenerator {
                 }
                 // 输出到提交消息输入框
                 setCommitMessageText(combined, commitMessageControl, true);
-                setCommitMessagePlaceholder(ChangelogBundle.message("commit.multi.repo.placeholder",
-                                                                    changesByRoot.size()), commitMessageControl);
             });
         }
     }
