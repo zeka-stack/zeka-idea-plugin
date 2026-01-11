@@ -45,6 +45,34 @@ public final class MessageFormatter {
     private static final Pangu pangu = new Pangu();
 
     /**
+     * 常见的不可见空格字符列表
+     * <p> 用于将不可见的空格字符替换为普通空格
+     * <p> 包括以下字符:
+     * <ul>
+     *   <li>ZWSP (Zero Width Space): \u200B</li>
+     *   <li>ZWNJ (Zero Width Non-Joiner): \u200C</li>
+     *   <li>ZWJ (Zero Width Joiner): \u200D</li>
+     *   <li>NBSP (Non-Breaking Space): \u00A0</li>
+     *   <li>THIN SPACE: \u2009</li>
+     *   <li>HAIR SPACE: \u200A</li>
+     *   <li>NARROW NO-BREAK SPACE: \u202F</li>
+     *   <li>WORD JOINER: \u2060</li>
+     * </ul>
+     *
+     * @see #replaceInvisibleSpaces(String)
+     */
+    private static final char[] INVISIBLE_SPACE_CHARS = {
+        '\u200B', // ZWSP - Zero Width Space
+        '\u200C', // ZWNJ - Zero Width Non-Joiner
+        '\u200D', // ZWJ - Zero Width Joiner
+        '\u00A0', // NBSP - Non-Breaking Space
+        '\u2009', // THIN SPACE
+        '\u200A', // HAIR SPACE
+        '\u202F', // NARROW NO-BREAK SPACE
+        '\u2060', // WORD JOINER
+    };
+
+    /**
      * 私有构造函数
      * <p> 此构造函数被标记为私有且抛出异常, 以防止实例化该工具类
      *
@@ -88,12 +116,15 @@ public final class MessageFormatter {
         // 1. 删除前后的代码包裹符号
         result = stripCodeFences(result);
 
-        // 2. 替换中文标点符号为英文标点符号
+        // 2. 替换不可见空格为普通空格
+        result = replaceInvisibleSpaces(result);
+
+        // 3. 替换中文标点符号为英文标点符号
         if (replaceChinesePunctuation) {
             result = replaceChinesePunctuation(result);
         }
 
-        // 3. 在中英文之间添加空格
+        // 4. 在中英文之间添加空格
         if (addSpaceBetweenChineseAndEnglish) {
             result = pangu.spacingText(result);
         }
@@ -120,6 +151,22 @@ public final class MessageFormatter {
             result = lastFence > 0 ? result.substring(0, lastFence) : "";
         }
         return result.trim();
+    }
+
+    /**
+     * 替换不可见空格为普通空格
+     * <p> 将文本中常见的不可见空格字符 (如 ZWSP, NBSP 等) 替换为普通空格字符
+     *
+     * @param text 输入文本
+     * @return 处理后的文本, 其中不可见空格已被替换为普通空格
+     */
+    @NotNull
+    private static String replaceInvisibleSpaces(@NotNull String text) {
+        String result = text;
+        for (char invisibleSpace : INVISIBLE_SPACE_CHARS) {
+            result = result.replace(invisibleSpace, ' ');
+        }
+        return result;
     }
 
     /**
