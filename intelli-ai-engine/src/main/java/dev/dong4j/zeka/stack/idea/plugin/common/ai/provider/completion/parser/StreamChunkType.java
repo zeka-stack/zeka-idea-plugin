@@ -19,6 +19,8 @@ public enum StreamChunkType {
     TOOL_CALL,
     /** 语义化流式块类型中的元数据标记 */
     META,
+    /** 提示信息类型, 用于向 UI 发送提示文本 */
+    NOTICE,
     /** 流式块结束标记 */
     END
 }

@@ -207,6 +207,10 @@ public class StreamRequestExecutor {
                             listener.onThinkingChunk(chunk.text());
                             return;
                         }
+                        if (chunk.type() == StreamChunkType.NOTICE) {
+                            listener.onNotice(chunk.text());
+                            return;
+                        }
                         if (chunk.type() == StreamChunkType.CONTENT) {
                             if (inThinking[0]) {
                                 AIConsoleLoggerUtil.printStreamPlain(

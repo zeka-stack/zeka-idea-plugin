@@ -72,7 +72,7 @@ public class FallbackTextStrategy implements StreamParseStrategy {
         // 如果是最后一行数据, 且使用过此策略输出过内容的, 如果没有警告过那就输出一行警告, 因为只要走了这个策略那就意味着有部分特殊的响应体没有覆盖到, 所以需要反馈
         if (chunk.isDone() && context.isFallbackUsed() && !context.isFallbackWarningEmitted()) {
             context.markFallbackWarningEmitted();
-            emitter.emit(new StreamChunk(StreamChunkType.CONTENT, "\n" + FALLBACK_WARNING));
+            emitter.emit(new StreamChunk(StreamChunkType.NOTICE, FALLBACK_WARNING));
         }
     }
 }
