@@ -102,7 +102,7 @@ public class CommitJavadocGenerator {
                         }
 
                         // 用户确认后，开始生成文档
-                        generateDocumentation(tasks);
+                        generateForTasks(tasks);
                     });
                 }
             });
@@ -116,7 +116,7 @@ public class CommitJavadocGenerator {
      *
      * @param tasks 文档生成任务列表
      */
-    private void generateDocumentation(@NotNull List<DocumentationTask> tasks) {
+    void generateForTasks(@NotNull List<DocumentationTask> tasks) {
         DocumentationGenerationService service = new DocumentationGenerationService();
         service.generateDocumentation(project, tasks, JavadocBundle.message("commit.target.description"),
                                       stats -> {

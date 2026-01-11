@@ -12,6 +12,7 @@ import com.intellij.openapi.vcs.checkin.CheckinHandlerFactory;
 import com.intellij.openapi.vcs.checkin.CommitCheck;
 import com.intellij.openapi.vcs.checkin.CommitInfo;
 import com.intellij.openapi.vcs.checkin.CommitProblem;
+import com.intellij.openapi.vcs.checkin.CommitProblemWithDetails;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
@@ -144,10 +145,9 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
                         return null;
                     }
 
-                    CommitJavadocChecker.DetectionSummary summary = CommitJavadocChecker.buildDetectionSummary(tasks);
-                    String message = JavadocBundle.message("commit.check.javadoc.warning", summary.summary());
+                    String message = JavadocBundle.message("commit.check.javadoc.warning");
                     context.putUserData(SKIP_ONCE_KEY, Boolean.TRUE);
-                    return new JavadocCommitProblem(message);
+                    return new JavadocCommitProblem(message, project, tasks);
                 },
                 continuation
                                          );
@@ -187,15 +187,21 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
      * @date 2026.01.11
      * @since 1.0.0
      */
-    private record JavadocCommitProblem(String text) implements CommitProblem {
+    private record JavadocCommitProblem(String text,
+                                        Project project,
+                                        List<DocumentationTask> tasks) implements CommitProblemWithDetails {
         /**
          * 初始化 JavadocCommitProblem 实例
          * <p> 构造函数, 用于创建一个包含指定文本的 JavadocCommitProblem 对象
          *
          * @param text 问题描述文本, 不能为空
          */
-        private JavadocCommitProblem(@NotNull String text) {
+        private JavadocCommitProblem(@NotNull String text,
+                                     @NotNull Project project,
+                                     @NotNull List<DocumentationTask> tasks) {
             this.text = text;
+            this.project = project;
+            this.tasks = List.copyOf(tasks);
         }
 
         /**
@@ -221,6 +227,50 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
         public @NotNull CheckinHandler.ReturnResult showModalSolution(@NotNull Project project,
                                                                       @NotNull CommitInfo commitInfo) {
             return CheckinHandler.ReturnResult.CANCEL;
+        }
+
+        /**
+         * 獲取顯示詳細資訊的連結
+         * <p> 返回用於顯示詳細資訊的連結字串, 該連結通常用於導航至相關的修復或說明頁面.
+         *
+         * @return 顯示詳細資訊的連結字串, 保證不為 null
+         */
+        @Override
+        public @NotNull String getShowDetailsLink() {
+            return JavadocBundle.message("commit.check.javadoc.fix.link");
+        }
+
+        /**
+         * 獲取顯示詳細資訊的動作標籤
+         * <p> 返回用於顯示詳細資訊的動作標籤, 該標籤會被用來在用戶介面中顯示對應的操作選項.
+         *
+         * @return 顯示詳細資訊的動作標籤, 保證不為 null
+         */
+        @Override
+        public @NotNull String getShowDetailsAction() {
+            return JavadocBundle.message("commit.check.javadoc.fix.action");
+        }
+
+        /**
+         * 顯示詳細資訊並生成 Javadoc
+         * <p> 此方法會檢查當前項目是否與該實例所屬的項目一致, 並在項目未被釋放且非處於啓動狀態時, 若存在 Java 文件, 則呼叫 CommitJavadocGenerator 來生成更改的 Javadoc.
+         *
+         * @param project 當前項目物件, 用以驗證是否為相同項目並進行相關操作
+         */
+        @Override
+        public void showDetails(@NotNull Project project) {
+            if (this.project != project) {
+                return;
+            }
+            if (project.isDisposed() || DumbService.isDumb(project)) {
+                return;
+            }
+
+            if (tasks.isEmpty()) {
+                return;
+            }
+
+            new CommitJavadocGenerator(project).generateForTasks(tasks);
         }
     }
 }
