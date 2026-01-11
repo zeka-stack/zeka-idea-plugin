@@ -290,14 +290,12 @@ public class CommitMessageHintManager implements Disposable {
         // 检查是否启用了"使用提交消息输入作为上下文"设置
         // 这个检查不需要 read-action，因为 SettingsState 是线程安全的
         if (!SettingsState.getInstance().useCommitMessageInputAsContext) {
-            log.debug("Commit Message Hint: 设置未启用");
             return false;
         }
 
         // 检查文档是否有内容
         // Document.getTextLength() 是线程安全的，不需要 read-action
         if (editor.getDocument().getTextLength() == 0) {
-            log.debug("Commit Message Hint: 文档为空");
             return false;
         }
 
@@ -305,14 +303,12 @@ public class CommitMessageHintManager implements Disposable {
         // Document.getText() 需要在 read-action 中调用
         String text = editor.getDocument().getText();
         if (text.trim().isEmpty()) {
-            log.debug("Commit Message Hint: 文档内容只包含空白字符");
             return false;
         }
 
         // 检查是否有选中文本
         // SelectionModel.hasSelection() 需要 read-action
         if (editor.getSelectionModel().hasSelection()) {
-            log.debug("Commit Message Hint: 有选中文本");
             return false;
         }
 
@@ -320,22 +316,15 @@ public class CommitMessageHintManager implements Disposable {
         // CommitMessageGenerator.isRunning() 是线程安全的
         Project project = editor.getProject();
         if (project != null && CommitMessageGenerator.isRunning(project)) {
-            log.debug("Commit Message Hint: 正在生成中");
             return false;
         }
 
         // 检查是否处于生成完成状态
         // 如果生成已完成且用户未修改，不显示提示
-        if (generationCompleted) {
-            log.debug("Commit Message Hint: 生成已完成，用户未修改，不显示提示");
-            return false;
-        }
+        return !generationCompleted;
 
         // 注意：检查是否有选中的文件需要在 EDT 中执行（获取 DataContext）
         // 这部分检查在 finishOnUiThread 回调中进行
-
-        log.debug("Commit Message Hint: 基本条件满足");
-        return true;
     }
 
     /**
@@ -459,9 +448,7 @@ public class CommitMessageHintManager implements Disposable {
             try {
                 Document document = editor.getDocument();
                 // 检查文档是否仍然有效
-                if (document != null) {
-                    document.removeDocumentListener(documentListener);
-                }
+                document.removeDocumentListener(documentListener);
             } catch (Exception e) {
                 // 监听器可能已经被移除，或者文档已销毁
                 log.debug("移除文档监听器失败（可能已被移除或文档已销毁）", e);
