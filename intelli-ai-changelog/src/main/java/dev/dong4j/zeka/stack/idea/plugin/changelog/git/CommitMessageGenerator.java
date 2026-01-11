@@ -556,7 +556,7 @@ public class CommitMessageGenerator {
      * @return key 为仓库根路径的分组 Map
      */
     @NotNull
-    private Map<String, List<Change>> groupChangesByRoot(@NotNull Collection<Change> changes) {
+    Map<String, List<Change>> groupChangesByRoot(@NotNull Collection<Change> changes) {
         ProjectLevelVcsManager vcsManager = ProjectLevelVcsManager.getInstance(project);
         Map<String, List<Change>> grouped = new LinkedHashMap<>();
         for (Change change : changes) {
@@ -719,10 +719,10 @@ public class CommitMessageGenerator {
             .map(path -> new java.io.File(path).getName())
             .collect(java.util.stream.Collectors.joining(", "));
 
-        NotificationUtil.showWarning(project,
-                                     ChangelogBundle.message("commit.multi.repo.detected",
-                                                             changesByRoot.size(),
-                                                             repoList));
+        NotificationUtil.noShow(project,
+                                ChangelogBundle.message("commit.multi.repo.detected",
+                                                        changesByRoot.size(),
+                                                        repoList));
 
         // 多仓库场景：为每个仓库生成独立的 commit message，再合并输出。
         List<String> commitMessages = new java.util.ArrayList<>();
@@ -731,6 +731,7 @@ public class CommitMessageGenerator {
             if (rootChanges.isEmpty()) {
                 continue;
             }
+            // todo-dong4j : (2026.01.11 14:49) [多个 git 仓库会调用多次, 考虑并行或者在 diff 阶段分组, 在提示词中明确拆分成多个]
             String commitMessage = service.generateCommitMessageFromDiff(rootChanges, contextText);
             String formattedCommitMessage = MessageFormatter.format(commitMessage);
             if (!formattedCommitMessage.isBlank()) {
@@ -743,25 +744,38 @@ public class CommitMessageGenerator {
 
         if (!combined.isBlank()) {
             typingIndicator.stop();
-            // 输出到工具窗口，便于复制与审阅。
-            ChangelogToolWindowService.ChangelogOutputSession session = outputSession;
-            if (session == null) {
-                session = ChangelogToolWindowService.getInstance(project)
-                    .openSession(ChangelogBundle.message("commit.multi.repo.session.title"));
-            }
-            session.setText(combined);
+            // 输出到工具窗口，便于复制与审阅
+            // printToToolwindow(outputSession, combined);
 
-            // 若提交面板可用，同步写入多条 message，方便用户直接复制。
+            // 若提交面板可用，同步写入多条 message，方便用户直接复制
             // 必须在 EDT 中执行 UI 操作
             ApplicationManager.getApplication().invokeLater(() -> {
                 // 检查项目是否已销毁
                 if (project.isDisposed()) {
                     return;
                 }
+                // 输出到提交消息输入框
+                setCommitMessageText(combined, commitMessageControl, true);
                 setCommitMessagePlaceholder(ChangelogBundle.message("commit.multi.repo.placeholder",
                                                                     changesByRoot.size()), commitMessageControl);
             });
         }
+    }
+
+    /**
+     * 将生成的提交信息文本输出到工具窗口会话中
+     * <p> 如果传入的输出会话为 null, 则自动创建一个新的会话并设置标题为多仓库会话标题. 然后将合并后的文本内容写入该会话.
+     *
+     * @param outputSession 工具窗口输出会话, 可以为 null
+     * @param combined      合并后的提交信息文本内容, 不能为空
+     */
+    private void printToToolwindow(ChangelogToolWindowService.@Nullable ChangelogOutputSession outputSession, String combined) {
+        ChangelogToolWindowService.ChangelogOutputSession session = outputSession;
+        if (session == null) {
+            session = ChangelogToolWindowService.getInstance(project)
+                .openSession(ChangelogBundle.message("commit.multi.repo.session.title"));
+        }
+        session.setText(combined);
     }
 
     /**

@@ -21,6 +21,10 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
  */
 public class NotificationUtil {
 
+    public static void noShow(@Nullable Project project, @NotNull String message) {
+
+    }
+
     public static void showInfo(@Nullable Project project, @NotNull String message) {
         dev.dong4j.zeka.stack.idea.plugin.kit.NotificationUtil.showInfo(project, PluginContents.PLUGIN_NAME, message);
     }
