@@ -73,6 +73,9 @@
                     canCloseContents="true"
                     doNotActivateOnStart="true"/>
 
+        <!-- Git 提交多仓库检查 -->
+        <checkinHandlerFactory implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMultiRepoCheckinHandlerFactory"/>
+
         <!-- 状态栏快捷设置改为由 engine 聚合 -->
     </extensions>
 
