@@ -81,6 +81,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import icons.ChangelogIcons;
 
 /**
@@ -370,9 +371,12 @@ public final class ChangelogToolWindowService {
         AtomicBoolean cancellationFlag = new AtomicBoolean(false);
         CANCELLATION_FLAGS.put(fullTitle, cancellationFlag);
 
+        ChangelogOutputSession session =
+            new ChangelogOutputSession(this, fullTitle, startPoint, endPoint, provider, textArea, cancellationFlag);
+
         JPanel panel = new JPanel(new BorderLayout());
         // ActionToolbar 需要添加其组件实例到容器中
-        panel.add(buildToolbar(textArea, fullTitle).getComponent(), BorderLayout.NORTH);
+        panel.add(buildToolbar(textArea, session).getComponent(), BorderLayout.NORTH);
         panel.add(new JBScrollPane(textArea), BorderLayout.CENTER);
 
         // 创建一个ToolWindow 中的标签页
@@ -400,7 +404,7 @@ public final class ChangelogToolWindowService {
             toolWindow.activate(null, true, true);
         }
 
-        return new ChangelogOutputSession(this, fullTitle, startPoint, endPoint, provider, textArea, cancellationFlag);
+        return session;
     }
 
     /**
@@ -430,16 +434,17 @@ public final class ChangelogToolWindowService {
 
     /**
      * 构建输出会话的工具栏
-     * <p> 为给定的文本区域创建一个包含复制和停止操作的工具栏.
+     * <p> 为给定的文本区域创建一个包含复制和停止操作的工具栏
      *
-     * @param textArea     文本区域对象, 用于显示输出内容
-     * @param sessionTitle 输出会话的标题, 用于标识取消标志
+     * @param textArea 文本区域对象, 用于显示输出内容
+     * @param session  输出会话对象, 用于关联停止操作
      * @return 包含复制和停止操作的工具栏
      */
-    private @NotNull ActionToolbar buildToolbar(@NotNull JBTextArea textArea, @NotNull String sessionTitle) {
+    private @NotNull ActionToolbar buildToolbar(@NotNull JBTextArea textArea,
+                                                @NotNull ChangelogOutputSession session) {
         DefaultActionGroup group = new DefaultActionGroup();
         group.add(new CopyAllAction(textArea));
-        group.add(new StopOutputAction(sessionTitle));
+        group.add(new StopOutputAction(session));
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ChangelogToolWindow", group, true);
         toolbar.setTargetComponent(textArea);
         return toolbar;
@@ -1532,6 +1537,8 @@ public final class ChangelogToolWindowService {
 
         /** 取消标志, 用于停止流式输出 */
         private final @Nullable AtomicBoolean cancellationFlag;
+        /** 流式取消令牌, 用于断开流式连接 */
+        private final AtomicReference<StreamCancellationToken> cancellationToken = new AtomicReference<>();
 
         /**
          * 构造函数, 初始化 ChangelogOutputSession 对象
@@ -1572,16 +1579,49 @@ public final class ChangelogToolWindowService {
         }
 
         /**
+         * 绑定流式取消令牌
+         * <p> 当会话已被取消时, 立即触发令牌取消以断开流式连接
+         *
+         * @param token 流式取消令牌, 可以为 null
+         */
+        public void bindCancellationToken(@Nullable StreamCancellationToken token) {
+            if (token == null) {
+                return;
+            }
+            cancellationToken.set(token);
+            if (isCancelled()) {
+                token.cancel();
+            }
+        }
+
+        /**
+         * 取消当前会话
+         * <p> 标记会话为已取消, 并尝试取消绑定的流式请求
+         */
+        public void cancel() {
+            if (cancellationFlag != null) {
+                cancellationFlag.set(true);
+            }
+            StreamCancellationToken token = cancellationToken.get();
+            if (token != null) {
+                token.cancel();
+            }
+        }
+
+        /**
          * 在文本区域的末尾追加指定的文本
          * <p> 如果文本区域为空或未初始化, 则不执行任何操作.
          *
          * @param text 要追加的文本
          */
         public void append(@NotNull String text) {
-            if (textArea == null || text.isEmpty()) {
+            if (textArea == null || text.isEmpty() || isCancelled()) {
                 return;
             }
             ApplicationManager.getApplication().invokeLater(() -> {
+                if (isCancelled()) {
+                    return;
+                }
                 textArea.append(text);
                 textArea.setCaretPosition(textArea.getDocument().getLength());
             });
@@ -1594,10 +1634,13 @@ public final class ChangelogToolWindowService {
          * @param text 要设置的文本, 不能为 null
          */
         public void setText(@NotNull String text) {
-            if (textArea == null) {
+            if (textArea == null || isCancelled()) {
                 return;
             }
             ApplicationManager.getApplication().invokeLater(() -> {
+                if (isCancelled()) {
+                    return;
+                }
                 textArea.setText(text);
                 textArea.setCaretPosition(textArea.getDocument().getLength());
             });
@@ -1610,10 +1653,13 @@ public final class ChangelogToolWindowService {
          * @param text 要设置的文本, 不能为 null
          */
         public void setPlaceholder(@NotNull String text) {
-            if (textArea == null) {
+            if (textArea == null || isCancelled()) {
                 return;
             }
             ApplicationManager.getApplication().invokeLater(() -> {
+                if (isCancelled()) {
+                    return;
+                }
                 textArea.getEmptyText().setText(text);
                 textArea.setCaretPosition(textArea.getDocument().getLength());
             });
@@ -1627,6 +1673,9 @@ public final class ChangelogToolWindowService {
          * @param text 完整输出内容
          */
         public void complete(@NotNull String text) {
+            if (isCancelled()) {
+                return;
+            }
             setText(text);
             service.saveHistory(sessionTitle, text, startPoint, endPoint, provider);
         }
@@ -1962,8 +2011,8 @@ public final class ChangelogToolWindowService {
      * @since 1.0.0
      */
     private static final class StopOutputAction extends AnAction {
-        /** 会话标题, 用于标识要停止的输出会话 */
-        private final String sessionTitle;
+        /** 输出会话, 用于停止流式输出 */
+        private final ChangelogOutputSession session;
 
         /**
          * 初始化停止输出动作
@@ -1971,11 +2020,11 @@ public final class ChangelogToolWindowService {
          *
          * @param sessionTitle 要停止的输出会话标题, 不能为空
          */
-        private StopOutputAction(@NotNull String sessionTitle) {
+        private StopOutputAction(@NotNull ChangelogOutputSession session) {
             super(ChangelogBundle.message("toolwindow.stop.text"),
                   ChangelogBundle.message("toolwindow.stop.text"),
                   AllIcons.Actions.Suspend);
-            this.sessionTitle = sessionTitle;
+            this.session = session;
         }
 
         /**
@@ -1986,7 +2035,7 @@ public final class ChangelogToolWindowService {
          */
         @Override
         public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
-            stopOutput(sessionTitle);
+            session.cancel();
         }
     }
 

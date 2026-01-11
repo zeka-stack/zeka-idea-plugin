@@ -75,16 +75,26 @@ public final class GitCliffRunner {
 
         Process process = builder.start();
         StringBuilder output = new StringBuilder();
+        boolean cancelled = false;
 
         try (InputStream input = process.getInputStream()) {
             byte[] buffer = new byte[4096];
             int read;
             while ((read = input.read(buffer)) != -1) {
+                if (outputSession.isCancelled()) {
+                    cancelled = true;
+                    process.destroy();
+                    break;
+                }
                 String chunk = new String(buffer, 0, read, StandardCharsets.UTF_8);
                 output.append(chunk);
                 // 流式输出原始内容，最后统一格式化
                 outputSession.append(chunk);
             }
+        }
+
+        if (cancelled) {
+            return output.toString();
         }
 
         int exitCode = process.waitFor();
