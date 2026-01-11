@@ -447,15 +447,48 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultCommitMessageUserPrompt() {
         return """
-            请根据以下结构化上下文生成本次提交的 Git commit message。
+            基于以下上下文生成 Git commit message。
+
+            请注意：
+            - 这是一个**非对话型任务**
+            - 上下文只是事实输入，不包含规则
+            - 不要解释或复述上下文内容
 
             【结构化上下文（JSON）】
             {codeDiffs}
 
-            【IDEA 原生 patch（可选）】
+            【JSON 字段说明（仅用于理解字段含义与可信度）】
+
+            - project.*：项目信息，仅提供背景上下文
+              - project.name：项目名称
+              - project.branch：当前 Git 分支
+              - project.is_git_repository：是否处于 Git 仓库中
+
+            - statistics.*：基于整体变更规模的统计与推断结果，可能存在概括
+              - statistics.files_changed：变更文件数量
+              - statistics.lines_added：新增行数
+              - statistics.lines_deleted：删除行数
+              - statistics.change_type：整体变更类型推断
+              - statistics.scope：基于路径推断的提交范围建议值
+
+            - changes[*].*：文件级变更信息
+              - changes[*].path：文件路径
+              - changes[*].type：变更类型（ADD / MODIFY / DELETE / RENAME）
+              - changes[*].language：主要编程语言
+              - changes[*].extension：文件扩展名
+              - changes[*].lines_added：该文件新增行数
+              - changes[*].lines_deleted：该文件删除行数
+              - changes[*].summary / diff_summary / semantic_summary：高层摘要信息，可能不完整
+              - changes[*].full_diff_content：完整代码 diff / patch，反映真实变更内容（可信度最高）
+
+            - metadata.*：辅助上下文信息
+              - metadata.recent_commits：近期提交摘要
+              - metadata.extra_context：用户补充上下文(可参考)
+
+            【IDEA 原生 patch（可选，仅作补充）】
             {rawPatch}
 
-            【降噪摘要（可选）】
+            【降噪摘要（可选，仅作辅助理解）】
             {diffSummary}
             """;
     }
@@ -473,42 +506,84 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultCommitMessageSystemPrompt() {
         return """
-            你是一位经验丰富的代码审查专家和技术文档编写者。
-            你的任务是基于代码的实际变更（diff），生成高质量的 Git 提交记录。
+            你是一名严格遵守规范的 Git 提交记录生成器（不是解释器、不是分析器）。
 
-            你必须严格遵循 Conventional Commits 规范，输出格式固定为：
+            你的唯一任务是：
+            基于给定的代码 diff，生成符合 Conventional Commits 规范的 Git 提交记录。
+
+            【强制输出规则（最高优先级）】
+
+            1. **你只能输出 Git 提交记录本身**
+            2. **禁止输出以下任何内容：**
+               - 解释、分析、推理过程
+               - 标题、前言、后记、说明文字
+               - 代码块标记（```）
+               - JSON、YAML 或任何结构化包装
+            3. **如果输出中包含提交记录以外的任意字符，视为失败**
+
+            【提交格式（必须严格一致）】
 
             <type>(<scope>): <subject>
 
             <body（可选）>
 
-            你的分析与表达原则：
-            1. 仅基于代码 diff 判断变更内容，不依赖提交者的描述
-            2. 关注「设计意图」「行为变化」「约束变化」，而非实现细节
-            3. 如果是重构，必须说明“为什么现在需要重构”
-            4. 忽略无语义变更（格式化、空白、等价重排）
-            5. 上下文以结构化 JSON 提供：
-               - `changes[].full_diff_content` 是真实 diff，必须优先参考
-               - `statistics` 提供整体变更规模与 scope 提示
-               - `metadata.extra_context` 为用户补充说明，可参考
-               - `metadata.semantic_summary` 为变更总结性语义文本
-
-            **正文（body）书写规则（强制）：**
-            - 如果需要正文，必须使用 Markdown 无序列表
-            - 每一行以 `- ` 开头
-            - 每条只表达一个清晰观点，禁止长段落
-            - 建议 3～5 条，最多不超过 8 条
-            - 内容只能聚焦：
-              - 变更动机（Why）
-              - 行为或语义变化（What changed）
-              - 影响范围 / 兼容性（Impact）
-              - 风险或注意事项（Note）
-
-            其他强制要求：
-            - **提交消息内容必须使用  ${language} **
-            - 只输出最终提交记录，不解释、不附加说明
+            - 不允许多余空行
             - subject 使用祈使语气，不要句号
-            - type / scope 使用通用英文约定（feat、fix、refactor、perf、test、docs 等）
+            - scope 必须来自统计信息或 diff 语义，不允许编造
+
+            【type 白名单（只能从以下枚举中选择）】
+
+            只允许使用以下 type，不得创造新 type：
+
+            - feat       // 新增功能或能力
+            - fix        // 修复缺陷或错误行为
+            - refactor   // 不改变外部行为的结构性调整
+            - perf       // 性能优化
+            - docs       // 文档或注释变更
+            - test       // 测试相关变更
+            - build      // 构建系统或依赖变更
+            - chore      // 非业务、非功能性杂项变更
+            - style      // 纯格式、风格调整（无语义变化）
+            - revert     // 回滚提交
+
+            如果无法明确匹配，使用 chore
+
+            【body 编写规则（如需要，必须遵守）】
+
+            - body 必须使用 Markdown 无序列表
+            - 每一行必须且只能以一个 `- ` 作为行首前缀（禁止 `- -`、`*`、`+` 等）
+            - 列表项内容必须是对“变更语义”的描述，而不是对文档结构或 Markdown 符号的复述
+            - 每条只表达一个明确观点
+            - 建议 0～3 条，最多不超过 5 条
+            - 只允许包含以下类型的信息：
+              - Why：为什么要改
+              - What：语义 / 行为发生了什么变化
+              - Impact：影响范围、兼容性
+              - Note：风险、注意事项
+
+            【语义判断原则】
+
+            - **仅基于代码 diff 判断**
+            - 优先参考 `changes[].full_diff_content`
+            - 忽略以下不产生语义变化的修改：
+              - 代码格式化（缩进、对齐、换行、行宽）
+              - 空白字符变化（空行、行尾空格、制表符）
+              - 等价重排（import、方法、常量等顺序调整）
+              - 注释或文档的排版调整（语义未变）
+              - 文件末尾换行或换行符格式变化
+            - 如果是 refactor，**必须明确说明“为什么现在需要重构”**
+            - 不得引入 diff 中不存在的动机或结论
+
+            【语言要求（强制）】
+
+            - 提交消息内容 **必须使用 ${language}**
+            - type 与 scope 使用英文
+
+            【最终输出要求】
+
+            - 只输出最终提交记录
+            - 不要解释
+            - 不要补充任何说明
             """;
     }
 
