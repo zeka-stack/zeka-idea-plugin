@@ -28,10 +28,12 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import icons.ChangelogIcons;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 抽象 Git 日志操作类
@@ -45,6 +47,7 @@ import icons.ChangelogIcons;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 public abstract class AbstractGitLogAction extends AnAction {
 
     /**
@@ -249,6 +252,9 @@ public abstract class AbstractGitLogAction extends AnAction {
 
                 try {
                     ChangelogService service = ChangelogService.getInstance(project);
+                    StreamCancellationToken cancellationToken = new StreamCancellationToken();
+                    outputSession.bindCancellationToken(cancellationToken);
+
                     AIStreamResponseListener listener = new AIStreamResponseListener() {
                         /**
                          * 在活动开始时清空输出会话文本
@@ -258,7 +264,21 @@ public abstract class AbstractGitLogAction extends AnAction {
                          */
                         @Override
                         public void onStart() {
+                            if (outputSession.isCancelled()) {
+                                return;
+                            }
                             outputSession.setText("");
+                        }
+
+                        /**
+                         * 获取流式取消令牌
+                         * <p> 返回用于控制流式输出取消的令牌对象
+                         *
+                         * @return 流式取消令牌
+                         */
+                        @Override
+                        public @NotNull StreamCancellationToken cancellationToken() {
+                            return cancellationToken;
                         }
 
                         /**
@@ -269,6 +289,9 @@ public abstract class AbstractGitLogAction extends AnAction {
                          */
                         @Override
                         public void onChunk(@NotNull String chunk) {
+                            if (outputSession.isCancelled()) {
+                                return;
+                            }
                             outputSession.append(chunk);
                         }
 
@@ -280,8 +303,26 @@ public abstract class AbstractGitLogAction extends AnAction {
                          */
                         @Override
                         public void onComplete(@NotNull String fullText) {
+                            if (outputSession.isCancelled()) {
+                                return;
+                            }
                             String formattedText = MessageFormatter.format(fullText);
                             outputSession.complete(formattedText);
+                        }
+
+                        /**
+                         * 处理提示信息
+                         * <p> 将提示信息输出到日志, 供 UI 后续使用
+                         *
+                         * @param message 提示信息内容, 不能为空
+                         */
+                        @Override
+                        public void onNotice(@NotNull String message) {
+                            if (outputSession.isCancelled()) {
+                                return;
+                            }
+                            // todo-dong4j : (2026.01.11 04:25) [输入到 UI]
+                            log.debug("Changelog notice: {}", message);
                         }
                     };
 
