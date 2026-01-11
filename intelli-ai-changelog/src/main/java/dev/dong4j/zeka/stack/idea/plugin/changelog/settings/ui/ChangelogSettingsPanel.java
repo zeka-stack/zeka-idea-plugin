@@ -133,6 +133,8 @@ public class ChangelogSettingsPanel {
     private final JBCheckBox useCommitMessageInputAsContextCheckBox;
     /** 是否显示提交消息提示词设置 */
     private final JBCheckBox showCommitMessagePromptCheckBox;
+    /** 是否启用多 Git 仓库提交检查 */
+    private final JBCheckBox enableCommitMultiRepoCheckBox;
     /** 提交消息 diff 生成方式 */
     private final JComboBox<SettingsState.CommitMessageDiffProvider> commitMessageDiffProviderComboBox;
     /** 提交消息提示词容器面板（用于控制可见性） */
@@ -267,6 +269,9 @@ public class ChangelogSettingsPanel {
 
         // 创建显示提交消息提示词复选框
         showCommitMessagePromptCheckBox = new JBCheckBox(ChangelogBundle.message("settings.commit.message.prompt.show"));
+
+        // 创建多 Git 仓库提交检查开关
+        enableCommitMultiRepoCheckBox = new JBCheckBox(ChangelogBundle.message("settings.commit.multi.repo.check.enable"));
         commitMessageDiffProviderComboBox = new ComboBox<>(SettingsState.CommitMessageDiffProvider.values());
         commitMessageDiffProviderComboBox.setRenderer(new javax.swing.DefaultListCellRenderer() {
             @Override
@@ -378,6 +383,7 @@ public class ChangelogSettingsPanel {
             || useCommitMessageInputAsContextCheckBox.isSelected() != settings.useCommitMessageInputAsContext
             || commitMessageDiffProviderComboBox.getSelectedItem() != settings.commitMessageDiffProvider
             || showCommitMessagePromptCheckBox.isSelected() != settings.showCommitMessagePrompt
+            || enableCommitMultiRepoCheckBox.isSelected() != settings.enableCommitMultiRepoCheck
             || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings
             || releaseLogByGitCliffRadioButton.isSelected() != (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF)
             || useTagAsStartRadioButton.isSelected() != settings.useTagAsStart
@@ -415,6 +421,7 @@ public class ChangelogSettingsPanel {
         settings.useCommitMessageInputAsContext = useCommitMessageInputAsContextCheckBox.isSelected();
         settings.commitMessageDiffProvider = (SettingsState.CommitMessageDiffProvider) commitMessageDiffProviderComboBox.getSelectedItem();
         settings.showCommitMessagePrompt = showCommitMessagePromptCheckBox.isSelected();
+        settings.enableCommitMultiRepoCheck = enableCommitMultiRepoCheckBox.isSelected();
         settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
         settings.releaseLog = releaseLogByGitCliffRadioButton.isSelected() ? ReleaseLogProvider.GIT_CLIFF : ReleaseLogProvider.AI;
         settings.useTagAsStart = useTagAsStartRadioButton.isSelected();
@@ -450,6 +457,7 @@ public class ChangelogSettingsPanel {
         useCommitMessageInputAsContextCheckBox.setSelected(settings.useCommitMessageInputAsContext);
         commitMessageDiffProviderComboBox.setSelectedItem(settings.commitMessageDiffProvider);
         showCommitMessagePromptCheckBox.setSelected(settings.showCommitMessagePrompt);
+        enableCommitMultiRepoCheckBox.setSelected(settings.enableCommitMultiRepoCheck);
         commitMessagePromptPanel.setVisible(settings.showCommitMessagePrompt);
         showExcludePatternsCheckBox.setSelected(false); // 不持久化，默认为 false
         excludePatternsPanel.setVisible(false); // 默认隐藏
@@ -627,6 +635,7 @@ public class ChangelogSettingsPanel {
             .addLabeledComponent(ChangelogBundle.message("settings.commit.message.diff.provider.label"),
                                  commitMessageDiffProviderComboBox)
             .addComponent(useCommitMessageInputAsContextCheckBox)
+            .addComponent(enableCommitMultiRepoCheckBox)
             .addComponent(commitMessagePromptCheckBoxPanel)
             .addComponent(commitMessagePromptPanel)
             .addComponent(excludePatternsCheckBoxPanel)

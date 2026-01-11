@@ -6,6 +6,7 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vcs.CheckinProjectPanel;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.CommitContext;
+import com.intellij.openapi.vcs.changes.ui.BooleanCommitOption;
 import com.intellij.openapi.vcs.checkin.CheckinHandler;
 import com.intellij.openapi.vcs.checkin.CheckinHandlerFactory;
 import com.intellij.openapi.vcs.checkin.CommitCheck;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ import java.util.Map;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import kotlin.coroutines.Continuation;
 import kotlin.jvm.functions.Function2;
@@ -44,8 +47,8 @@ import kotlinx.coroutines.CoroutineScope;
 import kotlinx.coroutines.Dispatchers;
 
 /**
- * 多仓库提交检查处理器工厂
- * <p> 用于在提交前检测是否涉及多个 Git 仓库，并提供可点击的提示链接。
+ * CommitMultiRepoCheckinHandlerFactory
+ * <p> 用于创建和管理多仓库提交检查处理器的工厂类, 主要职责是根据传入的面板和提交上下文生成对应的处理器实例. 该类封装了多仓库提交检查的业务逻辑, 避免基础设施关注, 专注于封装业务规则, 面向对象设计, 不负责请求处理.
  *
  * @author dong4j
  * @version 1.0.0
@@ -55,11 +58,12 @@ import kotlinx.coroutines.Dispatchers;
  */
 public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory {
     /**
-     * 创建提交处理程序实例
+     * 创建多仓库提交检查处理器实例
+     * <p> 该方法用于创建并返回一个 {@link CommitMultiRepoCheckinHandler} 实例, 用于在提交前检测是否涉及多个 Git 仓库.</p>
      *
-     * @param panel         提交面板
-     * @param commitContext 提交上下文
-     * @return 提交处理程序实例
+     * @param panel         提交面板, 提供项目上下文和相关信息
+     * @param commitContext 提交上下文, 包含与当前提交相关的额外信息
+     * @return 返回新创建的 {@link CommitMultiRepoCheckinHandler} 实例
      */
     @Override
     public @NotNull CheckinHandler createHandler(@NotNull CheckinProjectPanel panel,
@@ -69,9 +73,19 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
 
     /**
      * 多仓库提交检查处理器
+     * <p> 用于在提交代码时检测是否涉及多个仓库的变更, 若检测到多个仓库的变更, 则提示用户并阻止提交, 以避免提交到错误的仓库.
+     * 该处理器在提交流程早期执行, 仅在启用多仓库提交检查功能时生效, 且不负责请求处理, 仅提供检查逻辑.
+     * 通过将变更按根目录分组, 统计涉及的仓库数量, 并生成提示信息, 引导用户确认提交意图.
+     * 该类为内部使用, 避免基础设施关注, 符合面向对象设计原则.
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.11
+     * @since 1.0.0
      */
     private static class CommitMultiRepoCheckinHandler extends CheckinHandler implements CommitCheck {
-        /** 多仓库提交检查处理器使用的面板 */
+        /** 提交项目面板, 提供项目上下文和相关信息 */
         private final CheckinProjectPanel panel;
 
         /**
@@ -97,19 +111,20 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
 
         /**
          * 检查此处理器是否已启用
-         * <p> 此方法用于确定多仓库提交检查处理器当前是否处于启用状态
-         * <p> 在提交检查过程中, 系统会调用此方法来决定是否执行多仓库检查逻辑
+         * <p> 此方法用于确定多仓库提交检查处理器当前是否处于启用状态.
+         * 在提交检查过程中, 系统会调用此方法来决定是否执行多仓库检查逻辑.
          *
-         * @return 始终返回 {@code true}, 表示此处理器已启用并将在检查过程中执行
+         * @return 返回 {@code true} 表示此处理器已启用并将在检查过程中执行; 返回 {@code false} 表示未启用.
          */
         @Override
         public boolean isEnabled() {
-            return true;
+            return SettingsState.getInstance().enableCommitMultiRepoCheck;
         }
 
         /**
          * 执行多仓库提交检查
-         * <p> 检查提交是否涉及多个仓库, 如果涉及多个仓库则返回相应的提交问题提示
+         * <p> 检查提交是否涉及多个仓库, 如果涉及多个仓库则返回相应的提交问题提示.
+         * 如果未启用多仓库提交检查功能或项目已废弃或处于哑模式, 则返回 null.</p>
          *
          * @param commitInfo   提交信息, 包含提交消息和已提交的变更列表
          * @param continuation 协程 continuation, 用于异步处理
@@ -121,6 +136,9 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
             return BuildersKt.withContext(
                 Dispatchers.getDefault(),
                 (Function2<CoroutineScope, Continuation<? super CommitProblem>, Object>) (scope, cont) -> {
+                    if (!SettingsState.getInstance().enableCommitMultiRepoCheck) {
+                        return null;
+                    }
                     Project project = panel.getProject();
                     if (project.isDisposed() || DumbService.isDumb(project)) {
                         return null;
@@ -143,59 +161,95 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
                     }
 
                     String repoList = changesByRoot.keySet().stream()
-                        .map(path -> new java.io.File(path).getName())
+                        .map(path -> "- " + new java.io.File(path).getName())
                         .collect(java.util.stream.Collectors.joining("\n"));
 
                     String message = ChangelogBundle.message("commit.multi.repo.detected",
-                                                             changesByRoot.size(),
-                                                             repoList);
+                                                             changesByRoot.size());
 
                     String commitMessage = commitInfo.getCommitMessage();
                     return new MultiRepoCommitProblem(message,
                                                       project,
                                                       commitMessage,
-                                                      changesByRoot.size());
+                                                      changesByRoot.size(),
+                                                      repoList);
                 },
                 continuation
                                          );
         }
+
+        /**
+         * 获取提交前配置面板
+         * <p> 创建并返回一个布尔类型的提交前配置面板, 用于控制多仓库提交检查功能的启用状态.
+         * 该面板允许用户在提交前选择是否启用多仓库提交检查, 其状态与全局设置同步.
+         *
+         * @return 提交前配置面板, 类型为 {@link com.intellij.openapi.vcs.ui.RefreshableOnComponent}
+         * @see BooleanCommitOption
+         * @see SettingsState
+         * @see ChangelogBundle
+         */
+        @Override
+        public com.intellij.openapi.vcs.ui.RefreshableOnComponent getBeforeCheckinConfigurationPanel() {
+            return BooleanCommitOption.create(
+                panel.getProject(),
+                this,
+                false,
+                ChangelogBundle.message("commit.multi.repo.check.option"),
+                () -> SettingsState.getInstance().enableCommitMultiRepoCheck,
+                value -> SettingsState.getInstance().enableCommitMultiRepoCheck = value
+                                             );
+        }
     }
 
     /**
-     * 多仓库提交问题
+     * 多仓库提交问题数据记录类
+     * <p> 用于封装在多仓库环境下提交时遇到的问题详情, 包括提交信息, 仓库数量, 仓库列表等, 并提供在 IDE 中以消息工具窗口形式展示问题详情的交互能力.
+     * 该类作为不可变数据记录类 (record), 主要用于在提交流程中传递和展示多仓库冲突或提示信息, 避免直接暴露基础设施细节.
+     * 通过 {@link #showDetails(Project)} 方法, 可在指定项目中弹出消息工具窗口, 展示问题详情和提交信息, 支持动态调整文本区域高度和滚动行为.
+     * 该类不负责请求处理, 仅作为数据载体和展示逻辑的封装, 符合面向对象设计原则, 职责单一.
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.11
+     * @since 1.0.0
      */
     private record MultiRepoCommitProblem(String text,
                                           Project project,
                                           String commitMessage,
-                                          int repoCount) implements CommitProblemWithDetails {
-        /**
-         * 存储消息工具窗口中 JBTextArea 的键值
-         *
-         * @see Key
-         */
+                                          int repoCount,
+                                          String repoList) implements CommitProblemWithDetails {
+        /** 消息工具窗口文本区域的键值 */
         private static final Key<JBTextArea> MESSAGE_TEXT_AREA_KEY =
             Key.create("changelog.multi.repo.message.textarea");
         /** 存储消息工具窗口中用于显示提示信息的 JBTextArea 的键值 */
         private static final Key<JBTextArea> HINT_TEXT_AREA_KEY =
             Key.create("changelog.multi.repo.message.hint.textarea");
+        /** 存储消息工具窗口中用于承载提交信息输入框的滚动面板 */
+        private static final Key<JBScrollPane> MESSAGE_SCROLL_PANE_KEY =
+            Key.create("changelog.multi.repo.message.scrollpane");
 
         /**
          * 构造一个表示多仓库提交问题的实例
-         * <p> 该构造函数用于创建一个记录多仓库提交问题的对象, 包含问题描述, 所属项目, 提交信息和涉及的仓库数量.
+         * <p> 该构造函数用于创建一个记录多仓库提交问题的对象, 包含问题描述, 所属项目, 提交信息以及涉及的仓库数量.
+         * 该构造函数创建的是不可变对象, 所有属性在对象创建后不可修改.
          *
-         * @param text          问题描述文本
-         * @param project       所属项目对象
-         * @param commitMessage 提交信息内容
+         * @param text          问题描述文本, 不能为空
+         * @param project       所属项目对象, 不能为空
+         * @param commitMessage 提交信息内容, 不能为空
          * @param repoCount     涉及的仓库数量
+         * @param repoList      仓库列表字符串, 可能包含多个仓库标识, 可以为空
          */
         private MultiRepoCommitProblem(@NotNull String text,
                                        @NotNull Project project,
                                        @NotNull String commitMessage,
-                                       int repoCount) {
+                                       int repoCount,
+                                       String repoList) {
             this.text = text;
             this.project = project;
             this.commitMessage = commitMessage;
             this.repoCount = repoCount;
+            this.repoList = repoList;
         }
 
         /**
@@ -211,7 +265,7 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
 
         /**
          * 显示模态解决方案界面
-         * <p> 在提交过程中弹出模态对话框以供用户选择解决方案, 本实现直接取消提交操作
+         * <p> 在提交过程中弹出模态对话框以供用户选择解决方案, 本实现直接取消提交操作.
          *
          * @param project    当前项目实例, 用于获取工具窗口或显示内容
          * @param commitInfo 提交信息对象, 包含提交的详细内容和上下文
@@ -247,7 +301,7 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
 
         /**
          * 显示多仓库提交问题的详细信息
-         * <p> 该方法会检查当前项目是否与实例所属项目一致, 且项目未被释放或处于 Dumb 模式.
+         * <p>该方法会检查当前项目是否与实例所属项目一致, 且项目未被释放或处于 Dumb 模式.
          * 如果条件满足, 则构造提示信息并调用 {@link MultiRepoCommitProblem#showInMessageToolWindow(Project, String, String)} 方法显示在消息工具窗口中.
          *
          * @param project 当前项目上下文, 必须非空
@@ -258,7 +312,7 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
                 return;
             }
 
-            String placeholder = ChangelogBundle.message("commit.multi.repo.placeholder", repoCount);
+            String placeholder = ChangelogBundle.message("commit.multi.repo.placeholder", repoCount, repoList);
             showInMessageToolWindow(project, placeholder, commitMessage);
         }
 
@@ -301,16 +355,19 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
                     manager.addContent(target);
                     target.putUserData(HINT_TEXT_AREA_KEY, hintArea);
                     target.putUserData(MESSAGE_TEXT_AREA_KEY, messageArea);
+                    target.putUserData(MESSAGE_SCROLL_PANE_KEY, messageScroll);
                 }
 
                 JBTextArea hintArea = target.getUserData(HINT_TEXT_AREA_KEY);
                 JBTextArea messageArea = target.getUserData(MESSAGE_TEXT_AREA_KEY);
+                JBScrollPane messageScroll = target.getUserData(MESSAGE_SCROLL_PANE_KEY);
                 if (hintArea != null) {
                     hintArea.setText(placeholder);
                 }
                 if (messageArea != null) {
                     messageArea.setText(commitMessage);
                     messageArea.setCaretPosition(0);
+                    updateMessageAreaHeight(messageArea, messageScroll);
                 }
                 manager.setSelectedContent(target);
 
@@ -351,6 +408,38 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
         }
 
         /**
+         * 根据文本区域内容动态调整其高度以适应显示内容
+         * <p> 该方法用于在消息工具窗口中自动调整提交信息文本区域的高度, 使其能完整显示所有行内容, 同时保持水平宽度不变. 如果传入的滚动面板非空, 则同步调整其尺寸. 通过计算文本行数和字体行高, 动态设置文本区域的行数和首选尺寸,
+         * 并触发重验证以确保界面更新.
+         *
+         * @param messageArea 需要调整高度的文本区域对象, 必须非空
+         * @param scrollPane  用于包裹文本区域的滚动面板, 可为空
+         */
+        private void updateMessageAreaHeight(@NotNull JBTextArea messageArea, @Nullable JBScrollPane scrollPane) {
+            int width = 0;
+            if (scrollPane != null) {
+                width = scrollPane.getViewport().getWidth();
+            }
+            if (width <= 0) {
+                width = messageArea.getPreferredSize().width;
+            }
+            if (width <= 0) {
+                return;
+            }
+            messageArea.setSize(new Dimension(width, Integer.MAX_VALUE));
+            int lineCount = Math.max(1, messageArea.getLineCount());
+            messageArea.setRows(lineCount);
+            int lineHeight = messageArea.getFontMetrics(messageArea.getFont()).getHeight();
+            int targetHeight = lineCount * lineHeight;
+            messageArea.setPreferredSize(new Dimension(width, targetHeight));
+            messageArea.revalidate();
+            if (scrollPane != null) {
+                scrollPane.setPreferredSize(new Dimension(width, targetHeight));
+                scrollPane.revalidate();
+            }
+        }
+
+        /**
          * 创建包含提示文本和提交信息标题的头部面板
          * <p>该方法使用 GridBagLayout 布局创建一个包含两个组件的面板: 上方的提示文本区域 (hintArea) 和下方的“Commit Message”标签.
          * 提示文本区域占据第一行, 标题标签占据第二行, 两者均设置相同的边距.
@@ -370,7 +459,7 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
 
             gbc.gridy = 1;
             gbc.insets = JBUI.insets(8, 8, 4, 8);
-            panel.add(new JBLabel("Commit Message"), gbc);
+            panel.add(new JBLabel(ChangelogBundle.message("commit.message.label")), gbc);
 
             return panel;
         }

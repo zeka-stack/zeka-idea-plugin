@@ -150,6 +150,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      */
     public CommitMessageDiffProvider commitMessageDiffProvider = CommitMessageDiffProvider.AUTO;
 
+    /** 是否启用多 Git 仓库提交检查 */
+    public boolean enableCommitMultiRepoCheck = true;
+
     /**
      * 提交消息 diff 生成方式
      */
