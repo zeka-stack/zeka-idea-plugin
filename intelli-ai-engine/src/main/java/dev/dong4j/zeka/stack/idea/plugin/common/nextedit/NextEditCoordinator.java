@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.nextedit;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -50,7 +51,11 @@ final class NextEditCoordinator implements Disposable {
      * @param editor 要启用跟踪的编辑器, 不能为 null
      */
     void enableEditor(@NotNull Editor editor) {
-        trackers.computeIfAbsent(editor, ed -> new NextEditTracker(project, ed));
+        trackers.computeIfAbsent(editor, ed -> {
+            NextEditTracker tracker = new NextEditTracker(project, ed);
+            Disposer.register(this, tracker);
+            return tracker;
+        });
     }
 
     /**
@@ -62,7 +67,7 @@ final class NextEditCoordinator implements Disposable {
     void disableEditor(@NotNull Editor editor) {
         NextEditTracker tracker = trackers.remove(editor);
         if (tracker != null) {
-            tracker.dispose();
+            Disposer.dispose(tracker);
         }
     }
 
@@ -89,7 +94,7 @@ final class NextEditCoordinator implements Disposable {
     @Override
     public void dispose() {
         for (NextEditTracker tracker : trackers.values()) {
-            tracker.dispose();
+            Disposer.dispose(tracker);
         }
         trackers.clear();
     }
