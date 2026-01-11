@@ -19,6 +19,14 @@ public interface AIStreamResponseListener {
     default void onStart() {}
 
     /**
+     * 接收提示信息
+     * <p> 在流式响应过程中, 当需要向 UI 发送提示信息时调用此方法
+     *
+     * @param message 提示信息内容
+     */
+    default void onNotice(@NotNull String message) {}
+
+    /**
      * 接收增量内容块
      *
      * @param chunk 增量内容块
