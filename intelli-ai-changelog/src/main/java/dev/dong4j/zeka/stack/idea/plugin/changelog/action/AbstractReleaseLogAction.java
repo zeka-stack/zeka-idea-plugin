@@ -52,6 +52,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 生成发布日志的动作类
@@ -73,6 +74,7 @@ import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
  * @date 2025.12.31
  * @since 1.0.0
  */
+@Slf4j
 public abstract class AbstractReleaseLogAction extends AnAction {
 
     /**
@@ -237,6 +239,20 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                 }
                                 String formattedText = MessageFormatter.format(fullText);
                                 outputSession.complete(formattedText);
+                            }
+
+                            /**
+                             * 处理提示信息
+                             * <p> 将提示信息输出到日志, 供 UI 后续使用
+                             *
+                             * @param message 提示信息内容, 不能为空
+                             */
+                            @Override
+                            public void onNotice(@NotNull String message) {
+                                if (outputSession.isCancelled()) {
+                                    return;
+                                }
+                                log.debug("Changelog notice: {}", message);
                             }
 
                             /**

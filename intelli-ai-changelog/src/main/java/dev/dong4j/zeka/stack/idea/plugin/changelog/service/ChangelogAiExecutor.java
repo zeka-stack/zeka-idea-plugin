@@ -412,6 +412,20 @@ final class ChangelogAiExecutor {
             }
 
             /**
+             * 处理提示信息
+             * <p> 当需要向 UI 输出提示信息时调用此方法
+             *
+             * @param message 提示信息内容, 不能为空
+             */
+            @Override
+            public void onNotice(@NotNull String message) {
+                if (Thread.currentThread().isInterrupted()) {
+                    return;
+                }
+                externalListener.onNotice(message);
+            }
+
+            /**
              * 处理完整文本的完成事件
              * <p> 当 AI 流式响应完成时调用此方法, 将完整文本设置到结果引用中, 并通知外部监听器
              * <p> 如果当前线程被中断, 则仅触发计数器减一并返回, 不执行其他操作

@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
+import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
 import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.ide.util.PropertiesComponent;
@@ -163,6 +164,9 @@ public class CommitMessageGenerator {
                     state.typingIndicator.set(typingIndicator);
                     StreamCancellationToken cancellationToken = new StreamCancellationToken();
                     state.cancellationToken.set(cancellationToken);
+                    if (outputSession != null) {
+                        outputSession.bindCancellationToken(cancellationToken);
+                    }
 
                     try {
                         if (state.cancelled.get()) {
@@ -359,6 +363,24 @@ public class CommitMessageGenerator {
                                 outputSession.setText(fullText);
                             }
                         }
+
+                        /**
+                         * 处理提示信息
+                         * <p> 将提示信息输出到日志, 供 UI 后续使用
+                         *
+                         * @param message 提示信息内容, 不能为空
+                         */
+                        @Override
+                        public void onNotice(@NotNull String message) {
+                            if (state.cancelled.get()) {
+                                return;
+                            }
+
+                            final EditorTextField editorField = getEditorTextField(commitMessageControl);
+                            if (editorField != null) {
+                                showNoticeActionTip(editorField.getComponent(), message);
+                            }
+                        }
                     };
                 }
             });
@@ -377,7 +399,7 @@ public class CommitMessageGenerator {
      *
      * @param component 显示气泡的组件, 不能为 null
      */
-    private void showActionTip(@NotNull JComponent component) {
+    private void showContextSettingActionTip(@NotNull JComponent component) {
         PropertiesComponent propertiesComponent = PropertiesComponent.getInstance(project);
         String shownKey = "changelog.commit.context.tip.shown";
         String versionKey = "changelog.commit.context.tip.version";
@@ -412,15 +434,69 @@ public class CommitMessageGenerator {
             propertiesComponent.setValue(shownKey, true);
             propertiesComponent.setValue(versionKey, currentVersion);
         }
-        // 创建超链接监听器, 处理"关闭"链接的点击事件
+
+        showActionTip(component,
+                      "",
+                      ChangelogBundle.message("commit.context.tip.enabled"),
+                      "action:close",
+                      MessageType.INFO,
+                      5000);
+    }
+
+    /**
+     * 显示操作提示气泡
+     * <p> 在指定组件的下方显示一个包含 HTML 格式提示信息的气泡提示框, 提示用户当前上下文功能已启用.
+     * <p> 气泡中包含一个 "关闭" 超链接, 点击后将禁用上下文功能并持久化设置.
+     * <p> 注意: 每个项目只会显示一次此提示, 避免重复打扰用户.
+     * <p> 示例:
+     * <pre>{@code
+     * showNoticeActionTip(myComponent, feedbackUrl);
+     * }</pre>
+     *
+     * @param component 显示气泡的组件, 不能为 null
+     * @param message   反馈 URL, 用于打开浏览器
+     */
+    private void showNoticeActionTip(@NotNull JComponent component, @NotNull String message) {
+        showActionTip(component,
+                      message,
+                      ChangelogBundle.message("commit.context.tip.fallback"),
+                      "action:fallback",
+                      MessageType.WARNING,
+                      10000);
+    }
+
+
+    /**
+     * 显示操作提示气泡
+     * <p> 在指定组件的下方显示一个包含 HTML 格式提示信息的气泡提示框, 用于展示操作提示内容.
+     * <p> 气泡中包含一个超链接, 点击后根据配置执行指定动作 (如打开浏览器).
+     * <p> 该方法为重载方法, 需配合多个参数使用, 确保提示内容和交互行为正确.
+     * <p> 示例:
+     * <pre>{@code
+     * showActionTip(myComponent, "提示信息内容", "<html> 点击此处反馈 </html>", "action:fallback", MessageType.WARNING, 10000);
+     * }</pre>
+     *
+     * @param component   显示气泡的组件, 不能为 null
+     * @param message     提示信息内容, 不能为 null
+     * @param htmlContent HTML 格式的内容, 用于显示在气泡中
+     * @param actionName  超链接的标识名称, 用于匹配点击事件, 例如 "action:fallback"
+     * @param messageType 提示气泡的类型, 如 MessageType.INFO 或 MessageType.WARNING
+     * @param outTime     气泡自动消失的延迟时间 (毫秒)
+     */
+    private void showActionTip(@NotNull JComponent component,
+                               @NotNull String message,
+                               String htmlContent,
+                               String actionName,
+                               MessageType messageType,
+                               int outTime) {
         HyperlinkAdapter linkListener = new HyperlinkAdapter() {
             /**
              * 处理超链接激活事件
-             * <p> 当用户点击超链接时触发, 若链接描述为 "action:close", 则关闭提交信息输入框作为上下文功能, 并保存设置
+             * <p> 当用户点击超链接时触发, 若链接描述为 "action:fallback", 则在浏览器中打开反馈 URL
              * <p> 示例:
              * <pre>{@code
-             * // 当用户点击关闭按钮时, 将设置 useCommitMessageInputAsContext 置为 false 并保存
-             * hyperlinkActivated(event); // event.getDescription() 返回 "action:close"
+             * // 当用户点击反馈链接时, 使用浏览器打开反馈 URL
+             * hyperlinkActivated(event); // event.getDescription() 返回 "action:fallback"
              * }</pre>
              *
              * @param e 超链接事件对象, 不能为 null
@@ -428,22 +504,19 @@ public class CommitMessageGenerator {
             @Override
             protected void hyperlinkActivated(@NotNull HyperlinkEvent e) {
                 String url = e.getDescription();
-                // 处理 action:close 链接
-                if ("action:close".equals(url)) {
-                    // 关闭"使用提交输入作为上下文"设置并持久化
-                    SettingsState settings = SettingsState.getInstance();
-                    settings.useCommitMessageInputAsContext = false;
-                    ApplicationManager.getApplication().saveSettings();
+                // 处理 action:fallback 链接
+                if (actionName.equals(url)) {
+                    BrowserUtil.browse(message);
                 }
             }
         };
 
         final Balloon balloon = JBPopupFactory.getInstance()
             .createHtmlTextBalloonBuilder(
-                ChangelogBundle.message("commit.context.tip.enabled"),
-                MessageType.INFO,
+                htmlContent,
+                messageType,
                 linkListener)
-            .setFadeoutTime(5000)
+            .setFadeoutTime(outTime)
             .setLayer(Balloon.Layer.normal)
             .setHideOnLinkClick(true)
             .createBalloon();
@@ -1147,7 +1220,7 @@ public class CommitMessageGenerator {
                 } else {
                     final EditorTextField editorField = getEditorTextField(commitMessageControl);
                     if (editorField != null) {
-                        showActionTip(editorField.getComponent());
+                        showContextSettingActionTip(editorField.getComponent());
                     }
                 }
                 setCommitMessagePlaceholder("", commitMessageControl);
