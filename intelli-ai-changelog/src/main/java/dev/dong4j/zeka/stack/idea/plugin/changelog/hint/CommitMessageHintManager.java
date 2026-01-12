@@ -425,35 +425,8 @@ public class CommitMessageHintManager implements Disposable {
     public void dispose() {
         hideHint();
 
-        // 检查 editor 是否已销毁
-        if (editor.isDisposed()) {
-            log.debug("Editor 已销毁，跳过移除监听器");
-            caretListener = null;
-            documentListener = null;
-            return;
-        }
-
-        // 移除光标监听器
-        if (caretListener != null) {
-            try {
-                editor.getCaretModel().removeCaretListener(caretListener);
-            } catch (Exception e) {
-                log.debug("移除光标监听器失败", e);
-            }
-            caretListener = null;
-        }
-
-        // 移除文档监听器
-        if (documentListener != null) {
-            try {
-                Document document = editor.getDocument();
-                // 检查文档是否仍然有效
-                document.removeDocumentListener(documentListener);
-            } catch (Exception e) {
-                // 监听器可能已经被移除，或者文档已销毁
-                log.debug("移除文档监听器失败（可能已被移除或文档已销毁）", e);
-            }
-            documentListener = null;
-        }
+        // 监听器已通过 add*Listener(listener, this) 绑定到 Disposable，交由 Disposer 自动移除
+        caretListener = null;
+        documentListener = null;
     }
 }
