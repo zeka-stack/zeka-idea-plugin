@@ -86,10 +86,12 @@ install-dependencies: install-kit install-engine
 publish-engine:
 	@echo "正在发布 intelli-ai-engine 插件..."
 	cd $(ENGINE_DIR) && ./gradlew publishPlugin
+	@echo "正在完成: https://plugins.jetbrains.com/plugin/29152."
 
 publish-javadoc:
 	@echo "正在发布 intelli-ai-javadoc 插件..."
 	cd $(JAVADOC_DIR) && ./gradlew publishPlugin
+	@echo "正在完成: https://plugins.jetbrains.com/plugin/28835."
 
 # 必须先部署且通过审核才能发布后续插件
 deploy-engine:
