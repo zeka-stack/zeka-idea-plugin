@@ -4,6 +4,10 @@
     "path": "./docs/AIProviderConfigPanel重构方案.md"
   },
   {
+    "name": "AIStreamResponseListener使用总结",
+    "path": "./docs/AIStreamResponseListener使用总结.md"
+  },
+  {
     "name": "AI工作流解释器功能实现方案",
     "path": "./docs/AI工作流解释器功能实现方案.md"
   },
@@ -22,6 +26,26 @@
   {
     "name": "AI生成集成指南-流式与非流式",
     "path": "./docs/AI生成集成指南-流式与非流式.md"
+  },
+  {
+    "name": "Autocomplete-Suggestions-Cosy-实现分析",
+    "path": "./docs/Autocomplete-Suggestions-Cosy-实现分析.md"
+  },
+  {
+    "name": "Autocomplete-Suggestions-Engine-结构设计草图与职责对照表",
+    "path": "./docs/Autocomplete-Suggestions-Engine-结构设计草图与职责对照表.md"
+  },
+  {
+    "name": "Autocomplete-Suggestions-Engine-落地方案(整合版)",
+    "path": "./docs/Autocomplete-Suggestions-Engine-落地方案(整合版).md"
+  },
+  {
+    "name": "Autocomplete-Suggestions-SweepAI-实现分析",
+    "path": "./docs/Autocomplete-Suggestions-SweepAI-实现分析.md"
+  },
+  {
+    "name": "Autocomplete-Suggestions功能实现方案",
+    "path": "./docs/Autocomplete-Suggestions功能实现方案.md"
   },
   {
     "name": "Engine-SSE-流式输出实现方案",
@@ -60,6 +84,10 @@
     "path": "./docs/插件更新功能集成说明.md"
   },
   {
+    "name": "数据统计需求",
+    "path": "./docs/数据统计需求.md"
+  },
+  {
     "name": "架构设计-非标准AI服务集成方案",
     "path": "./docs/架构设计-非标准AI服务集成方案.md"
   },
@@ -76,12 +104,20 @@
     "path": "./docs/流式输出AI响应接口实现方案.md"
   },
   {
+    "name": "流式输出AI响应接口实现方案v2",
+    "path": "./docs/流式输出AI响应接口实现方案v2.md"
+  },
+  {
     "name": "状态栏扩展点集成指南",
     "path": "./docs/状态栏扩展点集成指南.md"
   },
   {
     "name": "用户手册",
     "path": "./docs/用户手册.md"
+  },
+  {
+    "name": "相似文本替换",
+    "path": "./docs/相似文本替换.md"
   },
   {
     "name": "设置页面动态刷新实现方案",
