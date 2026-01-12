@@ -97,3 +97,4 @@ commit_preprocessors = [
 ## 2026.01.10
 
 - [ ] 支持 Scala 生成 javadoc
+- [ ] 大文件生成不了 commit message

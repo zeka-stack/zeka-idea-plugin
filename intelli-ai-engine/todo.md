@@ -100,3 +100,17 @@ Presentation.putClientProperty(String, Object) （1 ）
 ## 2026.01.07
 
 - [x] 适配 minimax 流式输出格式
+
+定时检查问题:
+
+2026-01-12 11:51:42,967 [5565287]   FINE - dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentManager - 检查端口 8765
+上的服务失败: http://127.0.0.1:8765/health
+java.net.ConnectException: Connection refused
+at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:682)
+at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:549)
+at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592)
+at java.base/java.net.Socket.connect(Socket.java:751)
+at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)
+at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:531)
+at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:636)
