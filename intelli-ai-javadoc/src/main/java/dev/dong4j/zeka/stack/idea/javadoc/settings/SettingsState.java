@@ -6,6 +6,7 @@ import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.util.messages.Topic;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 
 import org.jetbrains.annotations.NotNull;
@@ -285,6 +286,35 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
      * @since 2.8.0
      */
     public boolean enableCommitJavadocCheck = true;
+
+    /**
+     * 设置变更监听器
+     * <p>
+     * 用于在设置发生变化时广播通知，便于同步到其他 UI（如提交前检查面板）。
+     */
+    public interface SettingsChangeListener {
+        /** 设置变更通知主题, 用于在设置变化时广播通知, 便于同步到其他 UI 组件. */
+        Topic<SettingsChangeListener> TOPIC =
+            Topic.create("JavadocSettingsChanged", SettingsChangeListener.class);
+
+        /**
+         * 当设置发生变化时被调用, 用于广播通知
+         * <p> 在设置状态更新后, 通过此方法通知所有注册的监听器, 便于同步到其他 UI 组件 (如提交前检查面板).
+         *
+         * @param state 当前的设置状态对象, 不能为空
+         */
+        void settingsChanged(@NotNull SettingsState state);
+    }
+
+    /**
+     * 发送设置变更通知
+     */
+    public void notifySettingsChanged() {
+        ApplicationManager.getApplication()
+            .getMessageBus()
+            .syncPublisher(SettingsChangeListener.TOPIC)
+            .settingsChanged(this);
+    }
 
     /**
      * 是否显示自定义 Javadoc 标签配置面板

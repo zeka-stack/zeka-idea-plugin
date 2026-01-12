@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.javadoc.git;
 
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
@@ -14,6 +15,7 @@ import com.intellij.openapi.vcs.checkin.CommitInfo;
 import com.intellij.openapi.vcs.checkin.CommitProblem;
 import com.intellij.openapi.vcs.checkin.CommitProblemWithDetails;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.messages.MessageBusConnection;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,13 +67,17 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
      * @date 2026.01.11
      * @since 1.0.0
      */
-    private static class CommitJavadocCheckinHandler extends CheckinHandler implements CommitCheck {
+    private static class CommitJavadocCheckinHandler extends CheckinHandler implements CommitCheck, Disposable {
         /** 跳过本次提交时的 Javadoc 检查标记键, 用于在提交后临时禁用检查, 避免重复提示 <a href="https://example.com">https://example.com</a> */
         private static final Key<Boolean> SKIP_ONCE_KEY =
             Key.create("dev.dong4j.zeka.stack.idea.javadoc.commit.check.skip.once");
 
         /** 提交项目面板, 用于访问提交相关的项目信息和配置 */
         private final CheckinProjectPanel panel;
+        /** 消息总线连接, 用于监听设置变更并同步界面状态 */
+        private MessageBusConnection connection;
+        /** 提交前配置面板, 用于控制是否在提交时检查 JavaDoc, 允许用户启用或禁用该功能 */
+        private com.intellij.openapi.vcs.ui.RefreshableOnComponent option;
 
         /**
          * 初始化 CommitJavadocCheckinHandler 实例
@@ -165,14 +171,46 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
          */
         @Override
         public com.intellij.openapi.vcs.ui.RefreshableOnComponent getBeforeCheckinConfigurationPanel() {
-            return BooleanCommitOption.create(
+            com.intellij.openapi.vcs.ui.RefreshableOnComponent option = BooleanCommitOption.create(
                 panel.getProject(),
                 this,
                 false,
                 JavadocBundle.message("commit.check.javadoc.option"),
                 () -> SettingsState.getInstance().enableCommitJavadocCheck,
-                value -> SettingsState.getInstance().enableCommitJavadocCheck = value
-                                             );
+                value -> {
+                    SettingsState settings = SettingsState.getInstance();
+                    settings.enableCommitJavadocCheck = value;
+                    settings.notifySettingsChanged();
+                });
+            if (connection != null) {
+                connection.disconnect();
+                connection = null;
+            }
+            this.option = option;
+            connection = panel.getProject().getMessageBus().connect(this);
+            connection.subscribe(SettingsState.SettingsChangeListener.TOPIC,
+                                 (SettingsState.SettingsChangeListener) state -> {
+                                     if (CommitJavadocCheckinHandler.this.option != null) {
+                                         CommitJavadocCheckinHandler.this.option.restoreState();
+                                     }
+                                 });
+            return option;
+        }
+
+        /**
+         * 释放资源并清理相关引用
+         * <p> 在对象被销毁时调用, 用于断开消息订阅连接并清空引用, 避免内存泄漏.
+         *
+         * @see #connection
+         * @see #option
+         */
+        @Override
+        public void dispose() {
+            if (connection != null) {
+                connection.disconnect();
+                connection = null;
+            }
+            option = null;
         }
     }
 
