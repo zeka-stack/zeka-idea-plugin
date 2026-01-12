@@ -89,6 +89,7 @@ public class ChangelogSettingsConfigurable implements Configurable {
     public void apply() throws ConfigurationException {
         SettingsState settings = SettingsState.getInstance();
         settingsPanel.apply(settings);
+        settings.notifySettingsChanged();
     }
 
     /**

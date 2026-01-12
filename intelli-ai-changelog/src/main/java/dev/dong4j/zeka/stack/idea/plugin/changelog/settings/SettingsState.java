@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
+import com.intellij.util.messages.Topic;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 
 import org.jetbrains.annotations.NotNull;
@@ -152,6 +153,35 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
     /** 是否启用多 Git 仓库提交检查 */
     public boolean enableCommitMultiRepoCheck = true;
+
+    /**
+     * 设置变更监听器
+     * <p>
+     * 用于在设置发生变化时广播通知，便于同步到其他 UI（如提交前检查面板）。
+     */
+    public interface SettingsChangeListener {
+        /** 设置变更通知主题, 用于在设置变化时广播通知, 便于同步到其他 UI 组件. */
+        Topic<SettingsChangeListener> TOPIC =
+            Topic.create("ChangelogSettingsChanged", SettingsChangeListener.class);
+
+        /**
+         * 当设置状态发生变化时被调用, 用于广播通知其他监听器
+         * <p> 该方法在设置内容更新后被触发, 常用于同步到其他用户界面组件 (如提交前检查面板).
+         *
+         * @param state 当前的设置状态对象, 不能为空
+         */
+        void settingsChanged(@NotNull SettingsState state);
+    }
+
+    /**
+     * 发送设置变更通知
+     */
+    public void notifySettingsChanged() {
+        ApplicationManager.getApplication()
+            .getMessageBus()
+            .syncPublisher(SettingsChangeListener.TOPIC)
+            .settingsChanged(this);
+    }
 
     /**
      * 提交消息 diff 生成方式
@@ -558,11 +588,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 列表项内容必须是对“变更语义”的描述，而不是对文档结构或 Markdown 符号的复述
             - 每条只表达一个明确观点
             - 建议 0～3 条，最多不超过 5 条
-            - 只允许包含以下类型的信息：
-              - Why：为什么要改
-              - What：语义 / 行为发生了什么变化
-              - Impact：影响范围、兼容性
-              - Note：风险、注意事项
 
             【语义判断原则】
 
