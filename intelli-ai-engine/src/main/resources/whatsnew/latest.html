@@ -416,7 +416,7 @@
         glance.</p>
     <div class="meta">
         <span class="tag">Aggregated Changelog</span>
-        <span>Generated at: 2026-01-07 22:03</span>
+        <span>Generated at: 2026-01-12 11:40</span>
     </div>
 </section>
 <main>
@@ -438,34 +438,41 @@
         <div class="card-body" id="preview-0">
             <h3>2025.3.11</h3>
             <ul>
+                <li><b>✨ 新增</b>：新增流式输出的兜底解析策略, 新增 NOTICE 类型并在触发兜底策略时给出友好提示</li>
+                <li><b>🔧 优化</b>：动态获取插件版本号作为启用唯一标识</li>
+                <li><b>🔧 优化</b>：优化 AI 提供上配置界面的布局与交互</li>
+                <li><b>🔧 优化</b>：修改通义千问的默认模型为 omni-flash</li>
                 <li><b>🐛 修复 </b>: 修正插件下载地址与版本提取逻辑, 修复配置比较中空指针异常风险, 修复启动活动中调度器的使用</li>
-                <li><b>🔧 优化 </b>: 优化输入框和下拉框宽度防止布局被拉宽</li>
-                <li><b>🔧 优化 </b>: 优化日志窗口内容写入流程, 修复线程调度问题, 提升稳定性</li>
-                <li><b>🐛 修复 </b>: 修复插件下载地址与版本提取逻辑, 确保版本信息准确</li>
-                <li><b>🐛 修复 </b>: 修复启动活动中调度器使用问题, 提升程序稳定性</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-0" style="display:none;">
         <h3>2025.3.11</h3>
-        <h4>本次更新主要聚焦于稳定性提升, 包括:</h4>
+        <h4>本次更新聚焦于稳定性提升, 围绕 <a href="https://plugins.jetbrains.com/plugin/29154">🎉 IntelliAI Changelog</a> 而做的底层优化与问题修复
+        </h4>
         <ul>
+            <li><b>✨ 新增</b>：新增流式输出的兜底解析策略, 新增 NOTICE 类型并在触发兜底策略时给出友好提示</li>
+            <li><b>🔧 优化</b>：动态获取插件版本号作为启用唯一标识</li>
+            <li><b>🔧 优化</b>：优化 AI 提供上配置界面的布局与交互</li>
+            <li><b>🔧 优化</b>：修改通义千问的默认模型为 omni-flash</li>
             <li><b>🐛 修复 </b>: 修正插件下载地址与版本提取逻辑, 修复配置比较中空指针异常风险, 修复启动活动中调度器的使用</li>
-            <li><b>🔧 优化 </b>: 优化输入框和下拉框宽度防止布局被拉宽</li>
-            <li><b>🔧 优化 </b>: 优化日志窗口内容写入流程, 修复线程调度问题, 提升稳定性</li>
-            <li><b>🐛 修复 </b>: 修复插件下载地址与版本提取逻辑, 确保版本信息准确</li>
-            <li><b>🐛 修复 </b>: 修复启动活动中调度器使用问题, 提升程序稳定性</li>
+            <li><b>🐛 修复 </b>: 修复 NextEditTracker 生命周期错误问题</li>
         </ul>
         <h3>2025.3.11</h3>
+        <h4>This update focuses on stability improvements, with underlying optimizations and bug fixes around
+            <a href="https://plugins.jetbrains.com/plugin/29154">🎉 IntelliAI Changelog</a></h4>
         <ul>
+            <li><b>✨ Added</b>: Added fallback parsing strategy for stream output, added NOTICE type and provides friendly prompt when
+                fallback strategy is triggered
+            </li>
+            <li><b>🔧 Optimized</b>: Dynamically get plugin version number as unique identifier for enabling</li>
+            <li><b>🔧 Optimized</b>: Optimized AI provider configuration interface layout and interaction</li>
+            <li><b>🔧 Optimized</b>: Changed default model for Tongyi Qianwen to omni-flash</li>
             <li><b>🐛 Fixed</b>: Fixed plugin download URL and version extraction logic, fixed null pointer exception risk in configuration
                 comparison, fixed scheduler usage in startup activity
             </li>
-            <li><b>🔧 Optimized</b>: Optimized input field and dropdown width to prevent layout stretching</li>
-            <li><b>🔧 Optimized</b>: Optimized log window content writing process, fixed thread scheduling issues, improved stability</li>
-            <li><b>🐛 Fixed</b>: Fixed plugin download URL and version extraction logic, ensuring accurate version information</li>
-            <li><b>🐛 Fixed</b>: Fixed scheduler usage issues in startup activity, improved program stability</li>
+            <li><b>🐛 Fixed</b>: Fixed NextEditTracker lifecycle error issue</li>
         </ul>
 
         <h3>2025.3.1</h3>
@@ -714,23 +721,40 @@
         <div class="card-body" id="preview-1">
             <h3>2025.3.11</h3>
             <ul>
-                <li><b>✨ 新增 </b>: 实现保存时自动生成 Javadoc 注释功能, 新增保存时自动生成注释选项</li>
-                <li><b>🐛 修复</b>：修正配置比较中空指针异常风险</li>
+                <li><b>✨ 新增</b>：新增保存时自动生成 Javadoc 注释功能，可在设置页面开启/关闭</li>
+                <li><b>✨ 新增</b>：新增提交前 Javadoc 检查功能，可在提交前配置中启用/禁用</li>
+                <li><b>✨ 新增</b>：新增类注释语义增强功能，提升类注释准确性（可在设置页面开启/关闭）</li>
+                <li><b>✨ 新增</b>：新增项目树目录快捷键功能，可在目录上使用快捷键为目录下所有文件生成 Javadoc</li>
+                <li><b>🔧 优化</b>：规范注释中的 URL 格式，更新多语言支持状态</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-1" style="display:none;">
         <h3>2025.3.11</h3>
-        <h4>本次更新主要聚焦于易用性, 包括:</h4>
+        <h4>本次更新主要聚焦于功能性与稳定性, 包括:</h4>
         <ul>
-            <li><b>✨ 新增 </b>: 实现保存时自动生成 Javadoc 注释功能, 新增保存时自动生成注释选项</li>
-            <li><b>🐛 修复</b>：修正配置比较中空指针异常风险</li>
+            <li><b>✨ 新增</b>：新增保存时自动生成 Javadoc 注释功能，可在设置页面开启/关闭</li>
+            <li><b>✨ 新增</b>：新增提交前 Javadoc 检查功能，可在提交前配置中启用/禁用</li>
+            <li><b>✨ 新增</b>：新增类注释语义增强功能，提升类注释准确性（可在设置页面开启/关闭）</li>
+            <li><b>✨ 新增</b>：新增项目树目录快捷键功能，可在目录上使用快捷键为目录下所有文件生成 Javadoc</li>
+            <li><b>🔧 优化</b>：规范注释中的 URL 格式，更新多语言支持状态</li>
+            <li><b>🐛 修复</b>：修复生成 Javadoc 时错误扫描非项目文件的问题</li>
+            <li><b>🐛 修复</b>：修复配置比较中的空指针异常风险</li>
         </ul>
         <h3>2025.3.11</h3>
-        <h4>This update focuses on usability improvements, including:</h4>
+        <h4>This update focuses on functionality and stability, including:</h4>
         <ul>
-            <li><b>✨ Added</b>: Implemented auto-generate Javadoc comments on save feature, added auto-generate comments on save option</li>
+            <li><b>✨ Added</b>: Added auto-generate Javadoc comments on save feature, can be enabled/disabled in settings page</li>
+            <li><b>✨ Added</b>: Added pre-commit Javadoc check feature, can be enabled/disabled in pre-commit configuration</li>
+            <li><b>✨ Added</b>: Added class comment semantic enhancement feature, improves class comment accuracy (can be enabled/disabled
+                in settings page)
+            </li>
+            <li><b>✨ Added</b>: Added project tree directory shortcut feature, can use keyboard shortcut on directory to generate Javadoc
+                for all files under the directory
+            </li>
+            <li><b>🔧 Optimized</b>: Standardized URL format in comments, updated multi-language support status</li>
+            <li><b>🐛 Fixed</b>: Fixed issue where non-project files were incorrectly scanned when generating Javadoc</li>
             <li><b>🐛 Fixed</b>: Fixed null pointer exception risk in configuration comparison</li>
         </ul>
 
@@ -1256,53 +1280,67 @@
         <div class="card-body" id="preview-2">
             <h3>2025.3.11</h3>
             <ul>
-                <li><b>✨ 新增 </b>: 支持基于 PSI 的语义变更摘要能力, 优化提交消息 diff 方案配置与状态栏交互</li>
-                <li><b>✨ 新增 </b>: 引入提交差异生成方式切换功能, 动态显示生成发布日志动作的详细信息</li>
-                <li><b>✨ 新增 </b>: 支持读取提交消息输入框文本作为生成上下文, 优化代码差异提取及上下文解析功能</li>
-                <li><b>✨ 优化 </b>: 增强历史记录列表功能, 支持过滤, 统计与悬停高亮效果</li>
-                <li><b>🔧 优化 </b>: 优化提交信息生成逻辑与提示词模板, 重构提交信息相关文档并制定最终上下文构建方案</li>
+                <li><b>✨ 新增</b>：支持基于 PSI 的语义变更摘要能力，优化提交消息 diff 方案配置与状态栏交互</li>
+                <li><b>✨ 新增</b>：新增 Diff 生成时读取配置中的排除文件列表，避免硬编码</li>
+                <li><b>✨ 新增</b>：新增多 Git 仓库提交检查功能，在生成 Commit Message 时检测多仓库变更并提示分开提交（可在提交前配置中启用/禁用）
+                </li>
+                <li><b>✨ 新增</b>：新增生成 Commit Message 时的步骤提示（分析中、思考中、生成中）</li>
+                <li><b>✨ 新增</b>：新增生成 Commit Message 时未勾选任何变更文件的友好提示</li>
             </ul>
         </div>
         <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-2" style="display:none;">
         <h3>2025.3.11</h3>
-        <h4>本次更新主要聚焦于功能性和易用性的升级, 包括:</h4>
+        <h4>本次更新主要聚焦于功能性和交互的升级, 包括:</h4>
         <ul>
-            <li><b>✨ 新增 </b>: 支持基于 PSI 的语义变更摘要能力, 优化提交消息 diff 方案配置与状态栏交互</li>
-            <li><b>✨ 新增 </b>: 引入提交差异生成方式切换功能, 动态显示生成发布日志动作的详细信息</li>
-            <li><b>✨ 新增 </b>: 支持读取提交消息输入框文本作为生成上下文, 优化代码差异提取及上下文解析功能</li>
-            <li><b>✨ 优化 </b>: 增强历史记录列表功能, 支持过滤, 统计与悬停高亮效果</li>
-            <li><b>🔧 优化 </b>: 优化提交信息生成逻辑与提示词模板, 重构提交信息相关文档并制定最终上下文构建方案</li>
-            <li><b>🔧 优化 </b>: 新增 MiniMax 流式响应格式适配 感谢 <a href="https://github.com/danny-su">@danny-su</a> 提交的反馈</li>
-            <li><b>🔧 优化 </b>: 重构获取选中 Git 提交逻辑, 增强变更日志请求日志记录</li>
+            <li><b>✨ 新增</b>：支持基于 PSI 的语义变更摘要能力，优化提交消息 diff 方案配置与状态栏交互</li>
+            <li><b>✨ 新增</b>：新增 Diff 生成时读取配置中的排除文件列表，避免硬编码</li>
+            <li><b>✨ 新增</b>：新增多 Git 仓库提交检查功能，在生成 Commit Message 时检测多仓库变更并提示分开提交（可在提交前配置中启用/禁用）
+            </li>
+            <li><b>✨ 新增</b>：新增生成 Commit Message 时的步骤提示（分析中、思考中、生成中）</li>
+            <li><b>✨ 新增</b>：新增生成 Commit Message 时未勾选任何变更文件的友好提示</li>
+            <li><b>✨ 新增</b>：新增在开启"提交输入作为上下文"功能后生成 Commit Message 的友好提示（可关闭）</li>
+            <li><b>✨ 新增</b>：新增在开启"提交输入作为上下文"功能后在提交消息输入框输入文本的提示，可通过 Tab 键触发 Commit Message 生成</li>
+            <li><b>🔧 优化</b>：重写流式输出结构解析逻辑，增加容错性（如果无法解析会原样输出并提示反馈）</li>
+            <li><b>🔧 优化</b>：优化提示词，安装新版本后需要重置提示词</li>
+            <li><b>🔧 优化</b>：优化状态栏 UI，添加 AI 模型选中标识以及其他主要配置选中标识</li>
+            <li><b>🔧 优化</b>：优化手动停止流式输出功能，停止后断开 SSE 连接</li>
+            <li><b>🔧 优化</b>：优化 Changelog 日志历史记录功能，删除多余 title，优化历史记录搜索逻辑</li>
+            <li><b>🔧 优化</b>：优化 AI 响应格式化逻辑，新增不可见空格格式化为普通空格</li>
+            <li><b>🐛 修复</b>：修复流式输出无法正常中断的问题</li>
         </ul>
         <h3>2025.3.11</h3>
-        <h4>This update focuses on functionality and usability improvements, including:</h4>
+        <h4>This update focuses on functionality and interaction improvements, including:</h4>
         <ul>
-            <li><b>✨ Added</b>: Support PSI-based semantic change summarization capability, optimized commit message diff scheme
-                configuration and
+            <li><b>✨ Added</b>: Support for PSI-based semantic change summarization, optimized commit message diff scheme configuration and
                 status bar interaction
             </li>
-            <li><b>✨ Added</b>: Introduced commit diff generation method switching feature, dynamically displays detailed information of
-                generate
-                release log action
+            <li><b>✨ Added</b>: Added reading exclude file list from configuration during Diff generation, avoiding hardcoding</li>
+            <li><b>✨ Added</b>: Added commit check feature for generating Commit Message in multi-Git projects, prompts to submit separately
+                (this check can be disabled)
             </li>
-            <li><b>✨ Added</b>: Support reading commit message input field text as generation context, optimized code diff extraction and
-                context
-                parsing functionality
+            <li><b>✨ Added</b>: Added step prompts when generating Commit Message</li>
+            <li><b>✨ Added</b>: Added friendly prompt when no changed files are selected during Commit Message generation</li>
+            <li><b>✨ Added</b>: Added friendly prompt when generating Commit Message after enabling commit input as context feature (can be
+                disabled)
             </li>
-            <li><b>✨ Optimized</b>: Enhanced history record list functionality, supports filtering, statistics, and hover highlight effects
+            <li><b>✨ Added</b>: Added prompt when entering text in commit message input box after enabling commit input as context feature,
+                can trigger Commit Message generation via Tab key
             </li>
-            <li><b>🔧 Optimized</b>: Optimized commit message generation logic and prompt templates, refactored commit message related
-                documentation
-                and established final context construction scheme
+            <li><b>🔧 Optimized</b>: Rewrote stream output structure parsing logic, increased fault tolerance (if parsing fails, outputs
+                as-is and prompts for feedback)
             </li>
-            <li><b>🔧 Optimized</b>: Added MiniMax streaming response format adaptation, thanks to
-                <a href="https://github.com/danny-su">@danny-su</a> for the feedback
+            <li><b>🔧 Optimized</b>: Optimized prompts, need to reset prompts after installing new version</li>
+            <li><b>🔧 Optimized</b>: Optimized status bar UI, added AI model selection indicator and other major configuration selection
+                indicators
             </li>
-            <li><b>🔧 Optimized</b>: Refactored logic for getting selected Git commits, enhanced changelog request logging</li>
+            <li><b>🔧 Optimized</b>: Optimized manual stop stream output feature, disconnects SSE connection after stopping</li>
+            <li><b>🔧 Optimized</b>: Optimized Changelog history feature, removed redundant title, optimized history search logic</li>
+            <li><b>🔧 Optimized</b>: Optimized AI response formatting logic, added invisible space formatting to normal space</li>
+            <li><b>🐛 Fixed</b>: Fixed issue where stream output could not be interrupted normally</li>
         </ul>
+
 
         <h3>2025.3.1</h3>
         <h4>本次更新主要聚焦于功能性和易用性的升级, 包括:</h4>

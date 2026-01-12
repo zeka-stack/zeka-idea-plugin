@@ -1,10 +1,50 @@
 <h3>2025.3.11</h3>
-<h4>本次更新主要聚焦于功能性和易用性的升级, 包括:</h4>
+<h4>本次更新主要聚焦于功能性和交互的升级, 包括:</h4>
 <ul>
-    <li><b>✨ 新增 </b>: 支持基于 PSI 的语义变更摘要能力, 优化提交消息 diff 方案配置与状态栏交互</li>
-
+    <li><b>✨ 新增</b>：支持基于 PSI 的语义变更摘要能力，优化提交消息 diff 方案配置与状态栏交互</li>
+    <li><b>✨ 新增</b>：新增 Diff 生成时读取配置中的排除文件列表，避免硬编码</li>
+    <li><b>✨ 新增</b>：新增多 Git 仓库提交检查功能，在生成 Commit Message 时检测多仓库变更并提示分开提交（可在提交前配置中启用/禁用）</li>
+    <li><b>✨ 新增</b>：新增生成 Commit Message 时的步骤提示（分析中、思考中、生成中）</li>
+    <li><b>✨ 新增</b>：新增生成 Commit Message 时未勾选任何变更文件的友好提示</li>
+    <li><b>✨ 新增</b>：新增在开启"提交输入作为上下文"功能后生成 Commit Message 的友好提示（可关闭）</li>
+    <li><b>✨ 新增</b>：新增在开启"提交输入作为上下文"功能后在提交消息输入框输入文本的提示，可通过 Tab 键触发 Commit Message 生成</li>
+    <li><b>🔧 优化</b>：重写流式输出结构解析逻辑，增加容错性（如果无法解析会原样输出并提示反馈）</li>
+    <li><b>🔧 优化</b>：优化提示词，安装新版本后需要重置提示词</li>
+    <li><b>🔧 优化</b>：优化状态栏 UI，添加 AI 模型选中标识以及其他主要配置选中标识</li>
+    <li><b>🔧 优化</b>：优化手动停止流式输出功能，停止后断开 SSE 连接</li>
+    <li><b>🔧 优化</b>：优化 Changelog 日志历史记录功能，删除多余 title，优化历史记录搜索逻辑</li>
+    <li><b>🔧 优化</b>：优化 AI 响应格式化逻辑，新增不可见空格格式化为普通空格</li>
+    <li><b>🐛 修复</b>：修复流式输出无法正常中断的问题</li>
 </ul>
 <h3>2025.3.11</h3>
+<h4>This update focuses on functionality and interaction improvements, including:</h4>
+<ul>
+    <li><b>✨ Added</b>: Support for PSI-based semantic change summarization, optimized commit message diff scheme configuration and status
+        bar interaction
+    </li>
+    <li><b>✨ Added</b>: Added reading exclude file list from configuration during Diff generation, avoiding hardcoding</li>
+    <li><b>✨ Added</b>: Added commit check feature for generating Commit Message in multi-Git projects, prompts to submit separately (this
+        check can be disabled)
+    </li>
+    <li><b>✨ Added</b>: Added step prompts when generating Commit Message</li>
+    <li><b>✨ Added</b>: Added friendly prompt when no changed files are selected during Commit Message generation</li>
+    <li><b>✨ Added</b>: Added friendly prompt when generating Commit Message after enabling commit input as context feature (can be
+        disabled)
+    </li>
+    <li><b>✨ Added</b>: Added prompt when entering text in commit message input box after enabling commit input as context feature, can
+        trigger Commit Message generation via Tab key
+    </li>
+    <li><b>🔧 Optimized</b>: Rewrote stream output structure parsing logic, increased fault tolerance (if parsing fails, outputs as-is and
+        prompts for feedback)
+    </li>
+    <li><b>🔧 Optimized</b>: Optimized prompts, need to reset prompts after installing new version</li>
+    <li><b>🔧 Optimized</b>: Optimized status bar UI, added AI model selection indicator and other major configuration selection indicators
+    </li>
+    <li><b>🔧 Optimized</b>: Optimized manual stop stream output feature, disconnects SSE connection after stopping</li>
+    <li><b>🔧 Optimized</b>: Optimized Changelog history feature, removed redundant title, optimized history search logic</li>
+    <li><b>🔧 Optimized</b>: Optimized AI response formatting logic, added invisible space formatting to normal space</li>
+    <li><b>🐛 Fixed</b>: Fixed issue where stream output could not be interrupted normally</li>
+</ul>
 
 
 <h3>2025.3.1</h3>
