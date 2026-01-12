@@ -304,6 +304,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.overrideMode = panelSettings.overrideMode;
         currentSettings.fixJavadocPromptTemplate = panelSettings.fixJavadocPromptTemplate;
         currentSettings.enableGenerationContext = panelSettings.enableGenerationContext;
+        currentSettings.enableSemanticContext = panelSettings.enableSemanticContext;
         currentSettings.enableCodeCompression = panelSettings.enableCodeCompression;
         currentSettings.maxClassCodeLines = panelSettings.maxClassCodeLines;
 
@@ -318,6 +319,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
 
         // 保存允许删除 Javadoc 配置
         currentSettings.allowDeleteJavadoc = panelSettings.allowDeleteJavadoc;
+        currentSettings.enableCommitJavadocCheck = panelSettings.enableCommitJavadocCheck;
         // 保存自定义 Javadoc 标签配置
         currentSettings.customJavadocTags = panelSettings.customJavadocTags;
         currentSettings.showCustomJavaDocTags = panelSettings.showCustomJavaDocTags;
@@ -351,6 +353,7 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         currentSettings.showProviderStatistics = panelSettings.showProviderStatistics;
         currentSettings.showGenerateJavadocHint = panelSettings.showGenerateJavadocHint;
         currentSettings.generateOnSave = panelSettings.generateOnSave;
+        currentSettings.notifySettingsChanged();
 
         // 触发标签同步（需要在写操作中执行）
         ApplicationManager.getApplication().invokeLater(() -> {
