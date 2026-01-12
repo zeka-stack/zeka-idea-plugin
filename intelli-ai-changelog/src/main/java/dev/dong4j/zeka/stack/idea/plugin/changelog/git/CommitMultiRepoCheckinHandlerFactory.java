@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
+import com.intellij.openapi.Disposable;
+import com.intellij.openapi.options.UnnamedConfigurable;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
@@ -22,6 +24,7 @@ import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.MessageView;
+import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
@@ -45,6 +48,7 @@ import kotlin.jvm.functions.Function2;
 import kotlinx.coroutines.BuildersKt;
 import kotlinx.coroutines.CoroutineScope;
 import kotlinx.coroutines.Dispatchers;
+
 
 /**
  * CommitMultiRepoCheckinHandlerFactory
@@ -84,9 +88,13 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
      * @date 2026.01.11
      * @since 1.0.0
      */
-    private static class CommitMultiRepoCheckinHandler extends CheckinHandler implements CommitCheck {
+    private static class CommitMultiRepoCheckinHandler extends CheckinHandler implements CommitCheck, Disposable {
         /** 提交项目面板, 提供项目上下文和相关信息 */
         private final CheckinProjectPanel panel;
+        /** 消息总线连接, 用于监听设置变更事件并响应相关通知 */
+        private MessageBusConnection connection;
+        /** 提交前配置面板, 用于控制多仓库提交检查功能的启用状态, 与全局设置同步 */
+        private com.intellij.openapi.vcs.ui.RefreshableOnComponent option;
 
         /**
          * 构造多仓库提交检查处理器
@@ -179,6 +187,17 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
         }
 
         /**
+         * 获取提交前配置设置项
+         * <p> 通过将提交前配置面板转换为 {@link UnnamedConfigurable} 类型返回, 用于在提交前配置界面中展示多仓库提交检查功能的启用状态.</p>
+         *
+         * @return 提交前配置设置项, 若转换失败则返回 {@code null}
+         */
+        @Override
+        public @Nullable UnnamedConfigurable getBeforeCheckinSettings() {
+            return super.getBeforeCheckinSettings();
+        }
+
+        /**
          * 获取提交前配置面板
          * <p> 创建并返回一个布尔类型的提交前配置面板, 用于控制多仓库提交检查功能的启用状态.
          * 该面板允许用户在提交前选择是否启用多仓库提交检查, 其状态与全局设置同步.
@@ -190,14 +209,45 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
          */
         @Override
         public com.intellij.openapi.vcs.ui.RefreshableOnComponent getBeforeCheckinConfigurationPanel() {
-            return BooleanCommitOption.create(
+            com.intellij.openapi.vcs.ui.RefreshableOnComponent option = BooleanCommitOption.create(
                 panel.getProject(),
                 this,
                 false,
                 ChangelogBundle.message("commit.multi.repo.check.option"),
                 () -> SettingsState.getInstance().enableCommitMultiRepoCheck,
-                value -> SettingsState.getInstance().enableCommitMultiRepoCheck = value
-                                             );
+                value -> {
+                    SettingsState settings = SettingsState.getInstance();
+                    settings.enableCommitMultiRepoCheck = value;
+                    settings.notifySettingsChanged();
+                });
+            if (connection != null) {
+                connection.disconnect();
+                connection = null;
+            }
+            this.option = option;
+            connection = panel.getProject().getMessageBus().connect(this);
+            connection.subscribe(SettingsState.SettingsChangeListener.TOPIC, (SettingsState.SettingsChangeListener) state -> {
+                if (CommitMultiRepoCheckinHandler.this.option != null) {
+                    CommitMultiRepoCheckinHandler.this.option.restoreState();
+                }
+            });
+            return option;
+        }
+
+        /**
+         * 释放资源并清理相关引用
+         * <p> 在对象被销毁时调用, 用于断开消息订阅连接并清空引用, 避免内存泄漏.
+         *
+         * @see #connection
+         * @see #option
+         */
+        @Override
+        public void dispose() {
+            if (connection != null) {
+                connection.disconnect();
+                connection = null;
+            }
+            option = null;
         }
     }
 
