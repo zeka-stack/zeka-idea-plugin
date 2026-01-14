@@ -10,6 +10,7 @@ import com.intellij.psi.PsiFile;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.javadoc.service.FileSelectionJavadocService;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import lombok.extern.slf4j.Slf4j;
 
@@ -79,8 +80,8 @@ public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction
             // 如果没有编辑器，检查是否有选中的文件（例如在 Project 视图中选中了目录或文件）
             VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
             if (files != null && files.length > 0) {
-                // 委托给 GenerateJavadocForFilesAction 处理批量文件/目录
-                new GenerateJavadocForFilesAction().actionPerformed(e);
+                // 委托给文件选择服务处理批量文件/目录
+                new FileSelectionJavadocService().generateForFiles(e.getProject(), files);
             } else {
                 // 既没有编辑器也没有选中文件，尝试按原有逻辑处理（可能会因为没有文件而直接返回）
                 process(e, false);

@@ -8,6 +8,10 @@
     "path": "./docs/ActionUpdateThread修复说明.md"
   },
   {
+    "name": "CommitMessageJavadocInspection",
+    "path": "./docs/CommitMessageJavadocInspection.md"
+  },
+  {
     "name": "Console集成指南",
     "path": "./docs/Console集成指南.md"
   },
@@ -46,6 +50,10 @@
   {
     "name": "docs.html-使用说明",
     "path": "./docs/docs.html-使用说明.md"
+  },
+  {
+    "name": "保存时自动生成注释功能实现方案",
+    "path": "./docs/保存时自动生成注释功能实现方案.md"
   },
   {
     "name": "国际化实现说明",
@@ -114,6 +122,10 @@
   {
     "name": "类代码优化功能实现说明",
     "path": "./docs/类代码优化功能实现说明.md"
+  },
+  {
+    "name": "类注释语义增强实现方案",
+    "path": "./docs/类注释语义增强实现方案.md"
   },
   {
     "name": "线程安全问题修复说明",
