@@ -59,6 +59,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public String swaggerTemplate = getDefaultSwaggerTemplate();
 
     /**
+     * 是否允许覆盖已有 Swagger 注解
+     * <p> 默认开启, 直接覆盖已有 Swagger 注解片段.
+     */
+    public boolean overrideExisting = true;
+
+    /**
      * 获取 SettingsState 的单例实例
      *
      * <p> 通过 IntelliJ 平台的 ApplicationManager 获取当前应用上下文中注册的服务实例.
@@ -127,14 +133,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     @NotNull
     public static String getDefaultSwaggerTemplate() {
         return """
-            请根据以下内容生成 Swagger 注解建议：
+            你是精通 Spring MVC/Spring Boot 的接口文档专家。
+            请根据以下接口信息生成 OpenAPI 3 的 Swagger 注解片段：
 
             {content}
 
             要求：
-            1. 生成的内容要清晰、准确
-            2. 符合最佳实践
-            3. 仅返回可直接写回源码的注解片段
+            1. 仅输出可直接写回源码的注解片段
+            2. 只生成方法级 Swagger 注解（如 @Operation/@Parameters/@ApiResponses/@RequestBody 等）
+            3. 使用 io.swagger.v3.oas.annotations.* 的全限定名
+            4. 不要输出任何解释性文本、代码块标记或方法签名
             """;
     }
 }
