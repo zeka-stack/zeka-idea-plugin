@@ -20,6 +20,9 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -36,10 +39,15 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public final class GitCliffDownloadManager {
+    /** GitHub Releases API 地址, 用于获取 git-cliff 最新版本信息 */
     private static final String GITHUB_API_URL = "https://api.github.com/repos/orhun/git-cliff/releases/latest";
+    /** GitHub 发布下载基础 URL */
     private static final String GITHUB_DOWNLOAD_BASE_URL = "https://github.com/orhun/git-cliff/releases/download";
+    /** 插件目录名称, 用于标识插件相关文件的根目录 */
     private static final String PLUGIN_DIR_NAME = "changelog";
+    /** Git-cliff 二进制文件所在目录名称 */
     private static final String GIT_CLIFF_DIR_NAME = "git-cliff";
+    /** 下载文件存放目录名称 */
     private static final String DISTS_DIR_NAME = "dists";
 
     /**
@@ -147,7 +155,6 @@ public final class GitCliffDownloadManager {
     public static String generatePackageName(@NotNull String version) {
         String arch = System.getProperty("os.arch");
         String osArch = normalizeArch(arch);
-        String osName = normalizeOs();
         String extension = SystemInfo.isWindows ? ".zip" : ".tar.gz";
 
         if (SystemInfo.isMac) {
@@ -176,22 +183,6 @@ public final class GitCliffDownloadManager {
             return "x86_64";
         }
         return arch;
-    }
-
-    /**
-     * 规范化操作系统名称
-     *
-     * @return 操作系统标识
-     */
-    @NotNull
-    private static String normalizeOs() {
-        if (SystemInfo.isMac) {
-            return "apple-darwin";
-        } else if (SystemInfo.isWindows) {
-            return "pc-windows-msvc";
-        } else {
-            return "unknown-linux-gnu";
-        }
     }
 
     /**
@@ -226,7 +217,7 @@ public final class GitCliffDownloadManager {
         String fileName = url.substring(url.lastIndexOf('/') + 1);
         Path targetFile = distsDir.resolve(fileName);
 
-        indicator.setText("正在下载 git-cliff...");
+        indicator.setText("Downloading git-cliff...");
         HttpRequests.request(url)
             .productNameAsUserAgent()
             .tuner(connection -> {
@@ -294,32 +285,14 @@ public final class GitCliffDownloadManager {
         try (InputStream fileInputStream = Files.newInputStream(archivePath);
              GzipCompressorInputStream gzipInputStream = new GzipCompressorInputStream(fileInputStream);
              TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gzipInputStream)) {
-
-            TarArchiveEntry entry;
-            while ((entry = tarInputStream.getNextTarEntry()) != null) {
-                if (entry.isDirectory()) {
-                    continue;
-                }
-
-                String entryName = entry.getName();
-                // 跳过顶层目录（通常压缩包内有一个 git-cliff-{version} 目录）
-                int firstSlash = entryName.indexOf('/');
-                if (firstSlash > 0) {
-                    entryName = entryName.substring(firstSlash + 1);
-                }
-
-                Path targetFile = targetDir.resolve(entryName);
-                Files.createDirectories(targetFile.getParent());
-
-                try (OutputStream outputStream = Files.newOutputStream(targetFile)) {
-                    tarInputStream.transferTo(outputStream);
-                }
-
-                // 设置可执行权限（非 Windows）
-                if (!SystemInfo.isWindows && entryName.equals("git-cliff")) {
-                    targetFile.toFile().setExecutable(true);
-                }
-            }
+            extractEntries(
+                tarInputStream,
+                targetDir,
+                tarInputStream::getNextEntry,
+                TarArchiveEntry::getName,
+                TarArchiveEntry::isDirectory,
+                name -> name.equals("git-cliff.exe") || name.equals("git-cliff")
+                          );
         }
     }
 
@@ -332,30 +305,117 @@ public final class GitCliffDownloadManager {
      */
     private static void extractZip(@NotNull Path archivePath, @NotNull Path targetDir) throws IOException {
         try (ZipInputStream zipInputStream = new ZipInputStream(Files.newInputStream(archivePath))) {
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (entry.isDirectory()) {
-                    continue;
-                }
+            extractEntries(
+                zipInputStream,
+                targetDir,
+                zipInputStream::getNextEntry,
+                ZipEntry::getName,
+                ZipEntry::isDirectory,
+                name -> name.equals("git-cliff.exe") || name.equals("git-cliff")
+                          );
+        }
+    }
 
-                String entryName = entry.getName();
-                // 跳过顶层目录
-                int firstSlash = entryName.indexOf('/');
-                if (firstSlash > 0) {
-                    entryName = entryName.substring(firstSlash + 1);
-                }
+    /**
+     * 条目数据提供者接口
+     * <p> 定义了从数据源获取条目数据的契约, 适用于需要延迟加载或动态获取数据的场景. 该接口为函数式接口, 仅包含一个抽象方法 {@code get()}, 用于统一数据获取逻辑. 实现类应确保在发生 I/O 错误时抛出
+     * {@link java.io.IOException}, 若无数据或发生错误则返回 {@code null}.</p>
+     * <p> 本接口不负责请求处理, 仅专注于数据获取, 符合面向对象设计原则, 避免基础设施关注, 适用于内部系统组件间的数据委托与注入场景.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.14
+     * @since 1.0.0
+     */
+    @FunctionalInterface
+    private interface EntrySupplier<T> {
+        /**
+         * 获取条目数据
+         * <p> 通过此方法从数据源中获取条目数据, 若发生 I/O 错误则抛出异常
+         *
+         * @return 条目数据, 若无数据或发生错误则返回 null
+         * @throws IOException 当数据读取过程中发生 I/O 错误时抛出
+         */
+        @Nullable T get() throws IOException;
+    }
 
-                Path targetFile = targetDir.resolve(entryName);
-                Files.createDirectories(targetFile.getParent());
+    /**
+     * 从输入流中提取归档文件条目并写入目标目录
+     * <p>
+     * 该方法遍历归档文件中的每个条目, 跳过目录项, 对文件项进行名称规范化后写入目标目录.
+     * 若条目名称匹配可执行文件名, 则在非 Windows 系统下设置可执行权限.
+     *
+     * @param inputStream    归档文件输入流
+     * @param targetDir      目标目录路径
+     * @param entrySupplier  条目提供器, 用于获取下一个条目
+     * @param nameProvider   条目名称提供器, 用于获取条目名称
+     * @param isDirectory    判断条目是否为目录的谓词
+     * @param executableName 判断条目名称是否为可执行文件的谓词
+     * @throws IOException 当读取或写入文件时发生错误
+     */
+    private static <T> void extractEntries(@NotNull InputStream inputStream,
+                                           @NotNull Path targetDir,
+                                           @NotNull EntrySupplier<T> entrySupplier,
+                                           @NotNull Function<T, String> nameProvider,
+                                           @NotNull Predicate<T> isDirectory,
+                                           @NotNull Predicate<String> executableName) throws IOException {
+        T entry;
+        while ((entry = entrySupplier.get()) != null) {
+            if (isDirectory.test(entry)) {
+                continue;
+            }
 
-                try (OutputStream outputStream = Files.newOutputStream(targetFile)) {
-                    zipInputStream.transferTo(outputStream);
-                }
+            String entryName = normalizeEntryName(nameProvider.apply(entry));
+            if (entryName.isEmpty()) {
+                continue;
+            }
 
-                // 设置可执行权限（非 Windows）
-                if (!SystemInfo.isWindows && (entryName.equals("git-cliff.exe") || entryName.equals("git-cliff"))) {
-                    targetFile.toFile().setExecutable(true);
-                }
+            writeEntry(inputStream, targetDir, entryName, executableName.test(entryName));
+        }
+    }
+
+    /**
+     * 规范化压缩包内文件路径名称
+     * <p>
+     * 移除压缩包内顶层目录 (如 "git-cliff-2.11.0/"), 仅保留文件或子目录的相对路径.
+     *
+     * @param entryName 原始文件路径名称 (可能包含顶层目录前缀)
+     * @return 规范化后的文件路径名称, 若无顶层目录则原样返回
+     */
+    private static String normalizeEntryName(@NotNull String entryName) {
+        // 跳过顶层目录（通常压缩包内有一个 git-cliff-{version} 目录）
+        int firstSlash = entryName.indexOf('/');
+        return firstSlash > 0 ? entryName.substring(firstSlash + 1) : entryName;
+    }
+
+    /**
+     * 将输入流中的数据写入目标文件, 并根据平台设置可执行权限
+     * <p>
+     * 该方法负责将压缩包中的单个条目 (文件或目录) 写入目标目录. 如果目标文件是可执行文件且当前系统不是 Windows, 则尝试设置其可执行权限.
+     *
+     * @param inputStream 输入流, 包含要写入的数据
+     * @param targetDir   目标目录路径, 用于构建目标文件路径
+     * @param entryName   条目名称(文件或目录名), 用于构建目标文件路径
+     * @param executable  是否为可执行文件, 若为 true 且非 Windows 系统, 则尝试设置可执行权限
+     * @throws IOException 写入文件或设置权限时发生错误
+     */
+    private static void writeEntry(@NotNull InputStream inputStream,
+                                   @NotNull Path targetDir,
+                                   @NotNull String entryName,
+                                   boolean executable) throws IOException {
+        Path targetFile = targetDir.resolve(entryName);
+        Files.createDirectories(targetFile.getParent());
+
+        try (OutputStream outputStream = Files.newOutputStream(targetFile)) {
+            inputStream.transferTo(outputStream);
+        }
+
+        // 设置可执行权限（非 Windows）
+        if (!SystemInfo.isWindows && executable) {
+            final boolean b = targetFile.toFile().setExecutable(true);
+            if (!b) {
+                log.debug("设置可执行权限失败: {}", targetFile);
             }
         }
     }
@@ -446,33 +506,15 @@ public final class GitCliffDownloadManager {
      *
      * @param archivePath 压缩包路径
      * @param indicator   进度指示器
-     * @return 安装的二进制文件路径
      * @throws IOException 安装失败时抛出
      */
-    @NotNull
-    public static Path installFromLocalPackage(@NotNull Path archivePath,
+    public static void installFromLocalPackage(@NotNull Path archivePath,
                                                @NotNull ProgressIndicator indicator) throws IOException {
         if (!Files.exists(archivePath)) {
             throw new IOException("压缩包不存在: " + archivePath);
         }
 
-        indicator.setText("正在从本地压缩包安装...");
-
-        // 解压到目标目录
-        Path targetDir = getGitCliffDir();
-        // 如果目录已存在，先删除
-        if (Files.exists(targetDir)) {
-            deleteDirectory(targetDir);
-        }
-        extractPackage(archivePath, targetDir);
-
-        // 返回二进制文件路径
-        Path binary = getBinaryPath();
-        if (binary == null) {
-            throw new IOException("解压后未找到 git-cliff 二进制文件");
-        }
-
-        return binary;
+        getPath(indicator, "Installing from local archive...", archivePath);
     }
 
     /**
@@ -487,7 +529,7 @@ public final class GitCliffDownloadManager {
     public static Path downloadAndInstall(@NotNull ProgressIndicator indicator,
                                           @Nullable DownloadProgressListener progressListener) throws IOException {
         // 1. 获取最新版本
-        indicator.setText("正在获取最新版本...");
+        indicator.setText("Getting the latest version...");
         String tagName = fetchLatestVersion();
         if (tagName == null || tagName.isEmpty()) {
             throw new IOException("无法获取 git-cliff 最新版本");
@@ -502,7 +544,24 @@ public final class GitCliffDownloadManager {
         Path archivePath = downloadPackage(downloadUrl, indicator, progressListener);
 
         // 4. 解压到目标目录
-        indicator.setText("正在解压...");
+        return getPath(indicator, "Extracting...", archivePath);
+    }
+
+    /**
+     * 从压缩包中提取并安装 git-cliff 二进制文件
+     * <p>
+     * 该方法负责将指定的压缩包解压到 git-cliff 安装目录, 并返回解压后二进制文件的路径.
+     * 若目标目录已存在, 则先删除其内容. 解压完成后, 检查是否成功找到可执行文件.
+     * 若未找到, 则抛出异常.
+     *
+     * @param indicator   进度指示器, 用于更新当前操作状态
+     * @param text        操作描述文本, 用于设置进度指示器的显示内容
+     * @param archivePath 压缩包路径, 包含待解压的 git-cliff 二进制文件
+     * @return 解压后 git-cliff 二进制文件的路径
+     * @throws IOException 当解压失败, 未找到可执行文件或发生其他 I/O 错误时抛出
+     */
+    private static @NotNull Path getPath(@NotNull ProgressIndicator indicator, String text, Path archivePath) throws IOException {
+        indicator.setText(text);
         Path targetDir = getGitCliffDir();
         // 如果目录已存在，先删除
         if (Files.exists(targetDir)) {
@@ -515,7 +574,6 @@ public final class GitCliffDownloadManager {
         if (binary == null) {
             throw new IOException("解压后未找到 git-cliff 二进制文件");
         }
-
         return binary;
     }
 
@@ -548,7 +606,7 @@ public final class GitCliffDownloadManager {
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                log.debug("获取 git-cliff 版本失败，退出码: " + exitCode);
+                log.debug("获取 git-cliff 版本失败，退出码: {}", exitCode);
                 return null;
             }
 
@@ -561,7 +619,7 @@ public final class GitCliffDownloadManager {
                 return matcher.group(1);
             }
 
-            log.debug("无法从输出中解析版本号: " + versionOutput);
+            log.debug("无法从输出中解析版本号: {}", versionOutput);
             return null;
         } catch (Exception e) {
             log.debug("获取 git-cliff 版本失败", e);
@@ -578,16 +636,15 @@ public final class GitCliffDownloadManager {
     private static void deleteDirectory(@NotNull Path directory) throws IOException {
         if (Files.exists(directory)) {
             try (java.util.stream.Stream<Path> paths = Files.walk(directory)) {
-                paths.sorted((a, b) -> b.compareTo(a)) // 先删除文件，再删除目录
+                paths.sorted(Comparator.reverseOrder()) // 先删除文件，再删除目录
                     .forEach(path -> {
                         try {
                             Files.delete(path);
                         } catch (IOException e) {
-                            log.debug("删除文件失败: " + path, e);
+                            log.debug("删除文件失败: {}", path, e);
                         }
                     });
             }
         }
     }
 }
-
