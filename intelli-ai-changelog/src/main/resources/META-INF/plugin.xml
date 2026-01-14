@@ -34,6 +34,12 @@
     <resource-bundle>messages.ChangelogBundle</resource-bundle>
 
     <!-- 插件定义的扩展点。
+     更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true"/>
+    </extensions>
+
+    <!-- 插件定义的扩展点。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
     <extensionPoints>
         <extensionPoint name="languageContextResolver"
