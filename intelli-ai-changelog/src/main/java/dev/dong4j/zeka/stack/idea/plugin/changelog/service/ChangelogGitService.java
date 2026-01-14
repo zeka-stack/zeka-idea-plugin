@@ -364,6 +364,11 @@ final class ChangelogGitService {
             }
 
             for (DiffEntry entry : diffs) {
+                if (entry.getChangeType() == DiffEntry.ChangeType.DELETE) {
+                    String metadata = buildDiffMetadata(entry);
+                    appendEntryDiff(diffText, metadata + buildDeletedFileMarker(entry));
+                    continue;
+                }
                 FileContent before = loadFileContent(repository, parent, entry.getOldPath());
                 FileContent after = loadFileContent(repository, commit, entry.getNewPath());
                 if (before.binary || after.binary) {
@@ -450,6 +455,20 @@ final class ChangelogGitService {
             }
         }
         return meta.toString();
+    }
+
+    /**
+     * 构建删除文件的标记文本
+     * <p> 根据给定的 DiffEntry 生成 Git 差异格式中用于标识文件被删除的文本内容.
+     *
+     * @param entry 差异条目对象, 不能为 null
+     * @return 标记文件被删除的 diff 文本
+     */
+    private @NotNull String buildDeletedFileMarker(@NotNull DiffEntry entry) {
+        String beforeName = formatUnifiedPath(entry.getOldPath(), "a/");
+        return "--- " + beforeName + "\n" +
+               "+++ /dev/null\n" +
+               "deleted file\n";
     }
 
     /**

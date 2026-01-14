@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +43,14 @@ public final class CodeDiffUtil {
     private static final int MAX_HUNKS_PER_FILE = 6;
     /** 单个 diff 块最多保留的行数 */
     private static final int MAX_LINES_PER_HUNK = 20;
+    /** 单个文件触发摘要模式的最大行数阈值 */
+    private static final int LARGE_FILE_MAX_LINES = 2000;
+    /** 变更行数超过该值时触发摘要模式 */
+    private static final int LARGE_DIFF_MAX_CHANGED_LINES = 400;
+    /** 内容长度超过该值时触发摘要模式 */
+    private static final int LARGE_DIFF_MAX_CHARS = 20000;
+    /** 摘要模式下 head/tail 保留行数 */
+    private static final int LARGE_DIFF_HEAD_TAIL_LINES = 3;
 
     /**
      * 私有构造函数, 用于防止外部实例化
@@ -87,15 +96,31 @@ public final class CodeDiffUtil {
 
         String filePath = virtualFile.getPath();
         CodeDiff.ChangeType changeType = determineChangeType(change);
-        DiffResult diffResult = extractDiffResult(change);
-        String diffContent = diffResult != null ? diffResult.diffContent() : null;
+        DiffResult diffResult = null;
+        String diffContent;
+        if (changeType != CodeDiff.ChangeType.DELETE) {
+            diffResult = extractDiffResult(change);
+            diffContent = diffResult != null ? diffResult.diffContent() : null;
+        } else {
+            ContentRevision beforeRevision = change.getBeforeRevision();
+            String fileName = beforeRevision != null ? beforeRevision.getFile().getName() : virtualFile.getName();
+            diffContent = buildDeletedFileDiff(fileName);
+        }
         String scopeHint = resolveScopeHint(virtualFile);
         String semanticSummary = resolveSemanticSummary(virtualFile, diffResult);
 
         // 计算新增和删除的行数
         int addedLines = 0;
         int deletedLines = 0;
-        if (diffContent != null) {
+        if (diffResult != null && !diffResult.fragments().isEmpty()) {
+            int[] changed = countChangedLines(diffResult.fragments());
+            addedLines = changed[0];
+            deletedLines = changed[1];
+        } else if (changeType == CodeDiff.ChangeType.DELETE) {
+            ContentRevision beforeRevision = change.getBeforeRevision();
+            String beforeContent = beforeRevision != null ? safeGetContent(beforeRevision) : null;
+            deletedLines = beforeContent != null ? countLines(beforeContent) : 0;
+        } else if (diffContent != null) {
             String[] lines = diffContent.split("\n");
             for (String line : lines) {
                 if (line.startsWith("+") && !line.startsWith("+++")) {
@@ -177,15 +202,25 @@ public final class CodeDiffUtil {
                     return null;
                 }
 
-                // 生成简单的 unified diff 格式
-                String diff = generateUnifiedDiff(
-                    beforeRevision != null ? beforeRevision.getFile().getName() : "null",
-                    afterRevision != null ? afterRevision.getFile().getName() : "null",
-                    beforeContent,
-                    afterContent,
-                    change.getVirtualFile()
-                                          );
+                String beforeFileName = beforeRevision != null ? beforeRevision.getFile().getName() : "null";
+                String afterFileName = afterRevision != null ? afterRevision.getFile().getName() : "null";
+                String diff;
+                if (shouldSummarizeLargeDiff(beforeContent, afterContent, fragments)) {
+                    diff = buildLargeDiffSummary(beforeFileName, afterFileName, beforeContent, afterContent, fragments);
+                } else {
+                    // 生成简单的 unified diff 格式
+                    diff = generateUnifiedDiffInternal(
+                        beforeFileName,
+                        afterFileName,
+                        beforeContent,
+                        afterContent,
+                        change.getVirtualFile(),
+                        fragments
+                                                      );
+                }
                 return diff.isEmpty() ? null : new DiffResult(diff, beforeContent, afterContent, fragments);
+            } catch (com.intellij.openapi.progress.ProcessCanceledException e) {
+                throw e;
             } catch (Exception e) {
                 // 忽略异常，返回 null
                 return null;
@@ -209,13 +244,33 @@ public final class CodeDiffUtil {
                                              @NotNull String beforeContent,
                                              @NotNull String afterContent,
                                              @Nullable VirtualFile virtualFile) {
-        boolean isJavaFile = virtualFile != null && "java".equalsIgnoreCase(virtualFile.getExtension());
         List<LineFragment> fragments = ComparisonManager.getInstance()
             .compareLines(beforeContent, afterContent, ComparisonPolicy.DEFAULT,
                           ProgressIndicatorProvider.getGlobalProgressIndicator());
         if (fragments.isEmpty()) {
             return "";
         }
+        return generateUnifiedDiffInternal(beforeFileName, afterFileName, beforeContent, afterContent, virtualFile, fragments);
+    }
+
+    /**
+     * 生成 Unified Diff 格式的字符串
+     * <p> 根据变更片段生成统一的 diff 内容, 用于展示代码差异. 会处理多个 diff 块, 并跳过一些无意义的变更, 如仅空白字符, 导入语句, 注释或顺序调整等.
+     *
+     * @param beforeFileName 修改前的文件名
+     * @param afterFileName  修改后的文件名
+     * @param beforeContent  修改前的内容
+     * @param afterContent   修改后的内容
+     * @param virtualFile    虚拟文件对象, 可以为空
+     * @return 生成的 Unified Diff 字符串, 如果无有效变更则返回空字符串
+     */
+    private static String generateUnifiedDiffInternal(@NotNull String beforeFileName,
+                                                      @NotNull String afterFileName,
+                                                      @NotNull String beforeContent,
+                                                      @NotNull String afterContent,
+                                                      @Nullable VirtualFile virtualFile,
+                                                      @NotNull List<LineFragment> fragments) {
+        boolean isJavaFile = virtualFile != null && "java".equalsIgnoreCase(virtualFile.getExtension());
 
         StringBuilder diff = new StringBuilder();
         diff.append("--- ").append(beforeFileName).append("\n");
@@ -278,6 +333,188 @@ public final class CodeDiffUtil {
     }
 
     /**
+     * 判断是否需要对代码差异进行摘要模式处理
+     * <p> 当文件内容长度, 文件行数或变更行数超过预设阈值时, 返回 true, 表示应启用摘要模式以避免输出过长的差异内容.
+     *
+     * @param beforeContent 修改前的文件内容, 不能为空
+     * @param afterContent  修改后的文件内容, 不能为空
+     * @param fragments     差异片段列表, 不能为空
+     * @return 如果满足任一摘要条件 (内容长度, 文件行数或变更行数超过阈值), 则返回 true, 否则返回 false
+     */
+    private static boolean shouldSummarizeLargeDiff(@NotNull String beforeContent,
+                                                    @NotNull String afterContent,
+                                                    @NotNull List<LineFragment> fragments) {
+        if (beforeContent.length() > LARGE_DIFF_MAX_CHARS || afterContent.length() > LARGE_DIFF_MAX_CHARS) {
+            return true;
+        }
+        int beforeLines = countLines(beforeContent);
+        int afterLines = countLines(afterContent);
+        if (beforeLines > LARGE_FILE_MAX_LINES || afterLines > LARGE_FILE_MAX_LINES) {
+            return true;
+        }
+        int[] changed = countChangedLines(fragments);
+        return Math.max(changed[0], changed[1]) > LARGE_DIFF_MAX_CHANGED_LINES;
+    }
+
+    /**
+     * 构建大型差异文件的摘要信息
+     * <p> 当文件差异过大时, 生成包含头部和尾部内容的摘要格式差异信息
+     * <p> 该方法会统计变更行数并添加摘要说明, 然后调用 appendHeadTail 方法显示文件的头部和尾部内容
+     *
+     * @param beforeFileName 修改前的文件名
+     * @param afterFileName  修改后的文件名
+     * @param beforeContent  修改前的内容
+     * @param afterContent   修改后的内容
+     * @param fragments      差异片段列表
+     * @return 包含摘要信息的差异字符串, 显示文件的变更统计和头尾内容
+     */
+    private static String buildLargeDiffSummary(@NotNull String beforeFileName,
+                                                @NotNull String afterFileName,
+                                                @NotNull String beforeContent,
+                                                @NotNull String afterContent,
+                                                @NotNull List<LineFragment> fragments) {
+        int[] changed = countChangedLines(fragments);
+        StringBuilder diff = new StringBuilder();
+        diff.append("--- ").append(beforeFileName).append("\n");
+        diff.append("+++ ").append(afterFileName).append("\n");
+        diff.append("@@ summary @@\n");
+        diff.append("文件: ").append(afterFileName).append("\n");
+        diff.append("变更行数: +").append(changed[0]).append(" / -").append(changed[1]).append("\n");
+        diff.append("diff too large, showing head/tail\n");
+
+        appendHeadTail(diff, beforeContent, afterContent);
+        return diff.toString();
+    }
+
+    /**
+     * 构建大差异摘要的头尾内容
+     * <p> 当差异内容过大时, 此方法用于生成摘要模式下的头部和尾部展示内容.
+     * 它会将修改前后的内容分别分割成行, 然后提取头部和尾部各 N 行进行展示,
+     * 其中 N 由常量 LARGE_DIFF_HEAD_TAIL_LINES 定义
+     *
+     * @param diff          差异内容的字符串构建器, 用于追加头尾内容
+     * @param beforeContent 修改前的文件内容
+     * @param afterContent  修改后的文件内容
+     */
+    private static void appendHeadTail(@NotNull StringBuilder diff,
+                                       @NotNull String beforeContent,
+                                       @NotNull String afterContent) {
+        List<String> beforeLines = splitLines(beforeContent);
+        List<String> afterLines = splitLines(afterContent);
+
+        diff.append("--- head ---\n");
+        appendPrefixedLines(diff, "-", beforeLines, 0, Math.min(LARGE_DIFF_HEAD_TAIL_LINES, beforeLines.size()));
+        appendPrefixedLines(diff, "+", afterLines, 0, Math.min(LARGE_DIFF_HEAD_TAIL_LINES, afterLines.size()));
+
+        diff.append("--- tail ---\n");
+        int beforeStart = Math.max(0, beforeLines.size() - LARGE_DIFF_HEAD_TAIL_LINES);
+        int afterStart = Math.max(0, afterLines.size() - LARGE_DIFF_HEAD_TAIL_LINES);
+        appendPrefixedLines(diff, "-", beforeLines, beforeStart, beforeLines.size());
+        appendPrefixedLines(diff, "+", afterLines, afterStart, afterLines.size());
+    }
+
+    /**
+     * 将指定范围内的行追加到 {@code diff}, 并在每行前加上 {@code prefix}.
+     *
+     * @param diff   目标 {@link StringBuilder}, 用于接收追加的内容
+     * @param prefix 每行前追加的前缀字符串
+     * @param lines  需要追加的行列表
+     * @param start  起始索引 (包含)
+     * @param end    结束索引 (不包含)
+     */
+    private static void appendPrefixedLines(@NotNull StringBuilder diff,
+                                            @NotNull String prefix,
+                                            @NotNull List<String> lines,
+                                            int start,
+                                            int end) {
+        for (int i = start; i < end; i++) {
+            diff.append(prefix).append(lines.get(i)).append("\n");
+        }
+    }
+
+    /**
+     * 将字符串按行分割为字符串列表
+     * <p> 根据换行符将输入字符串分割成行, 并返回包含所有行的不可变列表. 如果输入字符串为空, 则返回空列表.
+     *
+     * @param content 要分割的字符串, 不能为空
+     * @return 分割后的行列表, 如果输入为空则返回空列表
+     */
+    @NotNull
+    private static List<String> splitLines(@NotNull String content) {
+        if (content.isEmpty()) {
+            return List.of();
+        }
+        return Arrays.asList(content.split("\n", -1));
+    }
+
+    /**
+     * 统计代码变更中的新增和删除行数
+     * <p> 遍历所有差异块, 计算每个块中新增和删除的行数, 并返回一个包含这两个值的数组.
+     *
+     * @param fragments 差异块列表, 不能为 null
+     * @return 包含新增行数和删除行数的整数数组, 索引 0 表示新增行数, 索引 1 表示删除行数
+     */
+    private static int[] countChangedLines(@NotNull List<LineFragment> fragments) {
+        int added = 0;
+        int deleted = 0;
+        for (LineFragment fragment : fragments) {
+            deleted += fragment.getEndLine1() - fragment.getStartLine1();
+            added += fragment.getEndLine2() - fragment.getStartLine2();
+        }
+        return new int[] {added, deleted};
+    }
+
+    /**
+     * 统计字符串中换行符的数量以计算行数
+     * <p>该方法用于计算给定字符串中包含的行数, 通过遍历字符串并统计换行符 (\\n) 的数量实现. 若字符串为空, 则返回 0.
+     *
+     * @param content 要统计行数的字符串, 不能为空
+     * @return 字符串中的行数, 若内容为空则返回 0
+     */
+    private static int countLines(@NotNull String content) {
+        if (content.isEmpty()) {
+            return 0;
+        }
+        int count = 1;
+        for (int i = 0; i < content.length(); i++) {
+            if (content.charAt(i) == '\n') {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 构建删除文件的差异内容
+     * <p> 生成表示文件已被删除的统一差异格式字符串, 包含文件名, 删除标记和状态信息.
+     * 该方法用于在代码差异分析中, 当文件被删除时提供标准化的差异输出.
+     *
+     * @param fileName 被删除文件的名称, 不能为空
+     * @return 表示文件被删除的差异内容字符串, 格式为标准的 Unified Diff 格式
+     */
+    @NotNull
+    private static String buildDeletedFileDiff(@NotNull String fileName) {
+        return "--- " + fileName + "\n" +
+               "+++ /dev/null\n" +
+               "deleted file\n";
+    }
+
+    /**
+     * 安全获取内容
+     * <p> 尝试从给定的 ContentRevision 对象中获取内容字符串. 如果在获取过程中发生异常, 则返回 null.
+     *
+     * @param revision 内容修订对象, 不能为空
+     * @return 返回内容字符串, 若发生异常则返回 null
+     */
+    @Nullable
+    private static String safeGetContent(@NotNull ContentRevision revision) {
+        try {
+            return revision.getContent();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    /**
      * 从字符串数组中提取指定范围的行内容
      * <p> 根据起始索引和结束索引从字符串数组中提取行内容, 返回包含指定范围行的列表
      * <p> 注意: 提取范围为 [start, end), 即包含 start 但不包含 end, 且索引必须在有效范围内
@@ -308,7 +545,7 @@ public final class CodeDiffUtil {
     private static List<String> filterNonIgnorableLines(@NotNull List<String> lines) {
         List<String> result = new ArrayList<>();
         for (String line : lines) {
-            if (!isIgnorableLine(line)) {
+            if (notIgnorableLine(line)) {
                 result.add(line);
             }
         }
@@ -352,12 +589,12 @@ public final class CodeDiffUtil {
             return false;
         }
         for (String line : beforeLines) {
-            if (!isImportLine(line) && !isIgnorableLine(line)) {
+            if (notImportLine(line) && notIgnorableLine(line)) {
                 return false;
             }
         }
         for (String line : afterLines) {
-            if (!isImportLine(line) && !isIgnorableLine(line)) {
+            if (notImportLine(line) && notIgnorableLine(line)) {
                 return false;
             }
         }
@@ -415,9 +652,9 @@ public final class CodeDiffUtil {
      * @param line 要检查的代码行, 不能为空
      * @return 如果行以 "import" 开头则返回 true, 否则返回 false
      */
-    private static boolean isImportLine(@NotNull String line) {
+    private static boolean notImportLine(@NotNull String line) {
         String trimmed = line.trim();
-        return trimmed.startsWith("import ");
+        return !trimmed.startsWith("import ");
     }
 
     /**
@@ -427,9 +664,9 @@ public final class CodeDiffUtil {
      * @param line 要判断的行内容
      * @return 如果是空白行则返回 true, 否则返回 false
      */
-    private static boolean isIgnorableLine(@NotNull String line) {
+    private static boolean notIgnorableLine(@NotNull String line) {
         String trimmed = line.trim();
-        return trimmed.isEmpty();
+        return !trimmed.isEmpty();
     }
 
     /**
@@ -545,8 +782,7 @@ public final class CodeDiffUtil {
             return null;
         }
         String[] segments = relative.split("/");
-        for (int i = 0; i < segments.length; i++) {
-            String segment = segments[i];
+        for (String segment : segments) {
             if (segment.isEmpty()) {
                 continue;
             }

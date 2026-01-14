@@ -51,6 +51,12 @@ final class ChangelogPromptBuilder {
     private static final int MAX_COMMIT_MESSAGE_DIFF_CHARS = 500_000;
     /** 最大提交消息中包含的文件数量限制 */
     private static final int MAX_COMMIT_MESSAGE_FILES = 50;
+    /** 批量删除操作的阈值, 当删除行数超过该值时触发批量删除统计逻辑 */
+    private static final int BULK_DELETE_THRESHOLD = 10;
+    /** 批量删除文件时采样的最大数量, 用于降噪和性能优化 */
+    private static final int BULK_DELETE_SAMPLE_SIZE = 5;
+    /** 目录统计的最大数量限制 */
+    private static final int MAX_DIR_STATS = 5;
 
     /** 当前项目对象 */
     private final Project project;
@@ -211,8 +217,9 @@ final class ChangelogPromptBuilder {
                                           @Nullable String branch,
                                           boolean isGitRepository,
                                           int maxFiles) {
-        List<CodeDiff> limitedDiffs = limitDiffs(payload.codeDiffs(), maxFiles);
-        ChangeStats stats = buildChangeStats(limitedDiffs);
+        List<CodeDiff> allDiffs = payload.codeDiffs();
+        List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
+        ChangeStats stats = buildChangeStats(allDiffs);
 
         StringBuilder json = new StringBuilder();
         json.append("{\n");
@@ -287,9 +294,14 @@ final class ChangelogPromptBuilder {
                                         int maxFiles,
                                         int maxDiffChars) {
         StringBuilder summary = new StringBuilder();
+        List<CodeDiff> allDiffs = payload.codeDiffs();
+        List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
+
+        appendBulkDeleteSummary(summary, allDiffs, maxDiffChars);
+
         int fileCount = 0;
-        for (CodeDiff diff : payload.codeDiffs()) {
-            if (fileCount >= maxFiles || summary.length() >= maxDiffChars) {
+        for (CodeDiff diff : limitedDiffs) {
+            if (summary.length() >= maxDiffChars) {
                 break;
             }
             summary.append("文件: ").append(diff.filePath).append("\n");
@@ -320,6 +332,10 @@ final class ChangelogPromptBuilder {
             }
             summary.append("\n");
             fileCount++;
+        }
+
+        if (allDiffs.size() > fileCount && summary.length() < maxDiffChars) {
+            appendRemainingFilesSummary(summary, allDiffs, fileCount, maxDiffChars);
         }
 
         String summaryText = summary.toString().trim();
@@ -609,7 +625,152 @@ final class ChangelogPromptBuilder {
         if (diffs.size() <= maxFiles) {
             return diffs;
         }
-        return new ArrayList<>(diffs.subList(0, maxFiles));
+        List<CodeDiff> sorted = new ArrayList<>(diffs);
+        sorted.sort((left, right) -> Integer.compare(
+            (right.addedLines + right.deletedLines),
+            (left.addedLines + left.deletedLines)
+                                                    ));
+        return new ArrayList<>(sorted.subList(0, maxFiles));
+    }
+
+    /**
+     * 添加批量删除文件摘要信息
+     * <p>当检测到大量删除文件 (超过阈值) 时, 向摘要中追加批量删除文件的统计信息和示例路径, 以帮助用户快速识别大规模删除操作.
+     * <p>该方法仅在删除文件数量超过阈值且摘要长度未达上限时执行.
+     *
+     * @param summary      用于追加摘要内容的 StringBuilder 对象, 不能为空
+     * @param diffs        所有代码差异对象列表, 不能为空
+     * @param maxDiffChars 摘要内容的最大字符数限制, 不能为负数
+     */
+    private void appendBulkDeleteSummary(@NotNull StringBuilder summary,
+                                         @NotNull List<CodeDiff> diffs,
+                                         int maxDiffChars) {
+        List<CodeDiff> deletes = diffs.stream()
+            .filter(diff -> diff.changeType == CodeDiff.ChangeType.DELETE)
+            .toList();
+        if (deletes.size() < BULK_DELETE_THRESHOLD || summary.length() >= maxDiffChars) {
+            return;
+        }
+        summary.append("删除文件总数: ").append(deletes.size()).append("\n");
+        for (int i = 0; i < BULK_DELETE_SAMPLE_SIZE; i++) {
+            summary.append("- ").append(deletes.get(i).filePath).append("\n");
+        }
+        summary.append("\n");
+    }
+
+    /**
+     * 构建剩余文件的摘要统计信息
+     * <p> 当文件数量超出显示限制时, 追加包含剩余文件数量, 变更类型分布和目录分布的统计信息
+     *
+     * @param summary      用于追加统计信息的字符串构建器, 不能为 null
+     * @param diffs        所有代码差异列表, 不能为 null
+     * @param displayed    已显示的文件数量
+     * @param maxDiffChars 差异内容的最大字符数限制
+     */
+    private void appendRemainingFilesSummary(@NotNull StringBuilder summary,
+                                             @NotNull List<CodeDiff> diffs,
+                                             int displayed,
+                                             int maxDiffChars) {
+        int remaining = diffs.size() - displayed;
+        summary.append("其余文件: ").append(remaining).append("\n");
+        summary.append("变更类型分布: ").append(buildChangeTypeSummary(diffs)).append("\n");
+
+        List<String> dirStats = buildDirectoryStats(diffs);
+        if (!dirStats.isEmpty() && summary.length() < maxDiffChars) {
+            summary.append("目录分布(Top ").append(MAX_DIR_STATS).append("):\n");
+            for (String line : dirStats) {
+                summary.append("- ").append(line).append("\n");
+            }
+        }
+    }
+
+    /**
+     * 生成变更类型摘要
+     * <p> 遍历给定的 {@code List<CodeDiff>}, 统计各类型变更的数量, 并按
+     * {@code MODIFY},{@code ADD},{@code DELETE},{@code RENAME} 的顺序生成摘要字符串.
+     * 仅在对应计数不为 0 时才将该条目追加到结果中, 最终返回一个
+     * 空格或分号分隔的摘要文本; 若所有计数均为 0, 返回空字符串.
+     *
+     * @param diffs 代码差异列表, 不能为空
+     * @return 变更类型摘要字符串, 例如“MODIFY 3 ADD 2 DELETE 1 RENAME 0”,
+     *     计数为 0 的项将被省略; 若所有计数为 0, 则返回空字符串
+     */
+    @NotNull
+    private String buildChangeTypeSummary(@NotNull List<CodeDiff> diffs) {
+        int add = 0;
+        int modify = 0;
+        int delete = 0;
+        int rename = 0;
+        for (CodeDiff diff : diffs) {
+            switch (diff.changeType) {
+                case ADD -> add++;
+                case MODIFY -> modify++;
+                case DELETE -> delete++;
+                case RENAME -> rename++;
+                default -> {
+                }
+            }
+        }
+        StringBuilder summary = new StringBuilder();
+        appendIfNonZero(summary, "MODIFY", modify);
+        appendIfNonZero(summary, "ADD", add);
+        appendIfNonZero(summary, "DELETE", delete);
+        appendIfNonZero(summary, "RENAME", rename);
+        return summary.toString();
+    }
+
+    /**
+     * 如果给定的值大于零, 则将标签和值追加到构建器中
+     * <p> 此方法会在构建器不为空的情况下添加一个逗号, 然后追加标签和值的组合
+     *
+     * @param builder 构建器对象, 不能为空
+     * @param label   标签, 不能为空
+     * @param value   要检查的数值, 如果大于零则会被追加
+     */
+    private void appendIfNonZero(@NotNull StringBuilder builder, @NotNull String label, int value) {
+        if (value <= 0) {
+            return;
+        }
+        if (!builder.isEmpty()) {
+            builder.append(", ");
+        }
+        builder.append(label).append("=").append(value);
+    }
+
+    /**
+     * 构建目录统计信息
+     * <p> 根据代码差异列表, 统计每个目录下的文件数量, 并返回按文件数量从高到低排序的前 MAX_DIR_STATS 个目录及其文件数量
+     *
+     * @param diffs 代码差异列表, 不能为空
+     * @return 包含目录及其文件数量的列表, 按文件数量从高到低排序
+     */
+    @NotNull
+    private List<String> buildDirectoryStats(@NotNull List<CodeDiff> diffs) {
+        Map<String, Integer> counts = new java.util.HashMap<>();
+        for (CodeDiff diff : diffs) {
+            String dir = extractDirectory(diff.filePath);
+            counts.put(dir, counts.getOrDefault(dir, 0) + 1);
+        }
+        return counts.entrySet().stream()
+            .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+            .limit(MAX_DIR_STATS)
+            .map(entry -> entry.getKey() + " (" + entry.getValue() + ")")
+            .toList();
+    }
+
+    /**
+     * 提取文件路径的目录部分
+     * <p> 将给定文件路径转换为标准化格式 (使用正斜杠), 并返回其所在目录的路径.
+     * 如果路径中不包含目录信息, 则返回 "." 表示当前目录.
+     *
+     * @param filePath 文件路径字符串, 不能为 null 或空
+     * @return 提取后的目录路径字符串, 不会为 null
+     */
+    @NotNull
+    private String extractDirectory(@NotNull String filePath) {
+        String normalized = filePath.replace('\\', '/');
+        int lastSlash = normalized.lastIndexOf('/');
+        return lastSlash > 0 ? normalized.substring(0, lastSlash) : ".";
     }
 
     /**
