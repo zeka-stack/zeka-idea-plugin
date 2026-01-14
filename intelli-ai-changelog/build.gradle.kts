@@ -187,6 +187,9 @@ tasks {
 
     // 在 runIde 之前执行复制任务（在 prepareSandbox 之后）
     runIde {
+        jvmArgumentProviders += CommandLineArgumentProvider {
+            listOf("-Didea.kotlin.plugin.use.k2=true")
+        }
         dependsOn(copyAiCommonPlugin)
         // 热更新
         // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
