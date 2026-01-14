@@ -1,15 +1,31 @@
 [
   {
+    "name": "Commit-Message-Inlay-Hint实现方案",
+    "path": "./docs/Commit-Message-Inlay-Hint实现方案.md"
+  },
+  {
+    "name": "Commit-Message提示优化",
+    "path": "./docs/Commit-Message提示优化.md"
+  },
+  {
+    "name": "Commit-Message生成优化",
+    "path": "./docs/Commit-Message生成优化.md"
+  },
+  {
     "name": "全量变更日志生成方案",
     "path": "./docs/全量变更日志生成方案.md"
   },
   {
-    "name": "变更日志HTML预览方案",
-    "path": "./docs/变更日志HTML预览方案.md"
-  },
-  {
     "name": "变更日志流式输出方案",
     "path": "./docs/变更日志流式输出方案.md"
+  },
+  {
+    "name": "基于PSI优化提示词上下文",
+    "path": "./docs/基于PSI优化提示词上下文.md"
+  },
+  {
+    "name": "提交信息生成优化方案",
+    "path": "./docs/提交信息生成优化方案.md"
   },
   {
     "name": "用户手册",
