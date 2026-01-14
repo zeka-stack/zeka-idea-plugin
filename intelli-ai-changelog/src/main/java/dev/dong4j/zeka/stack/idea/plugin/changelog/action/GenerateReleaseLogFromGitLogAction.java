@@ -3,7 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.vcs.log.VcsFullCommitDetails;
-import com.intellij.vcs.log.VcsLog;
+import com.intellij.vcs.log.VcsLogCommitSelection;
 import com.intellij.vcs.log.VcsLogDataKeys;
 
 import org.jetbrains.annotations.NotNull;
@@ -41,15 +41,15 @@ public class GenerateReleaseLogFromGitLogAction extends AbstractReleaseLogAction
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
-        
+
         // 检查项目是否处于索引模式
         if (AbstractReleaseLogAction.isIndexing(project)) {
             e.getPresentation().setEnabled(false);
             return;
         }
-        
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
-        boolean enabled = project != null && log != null && !log.getSelectedDetails().isEmpty();
+
+        VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
+        boolean enabled = project != null && selection != null && !selection.getCachedFullDetails().isEmpty();
         e.getPresentation().setEnabled(enabled);
         e.getPresentation().setText(ChangelogBundle.message("action.generate.release.log"));
         e.getPresentation().setDescription(ChangelogBundle.message("action.generate.release.log.description"));
@@ -87,13 +87,13 @@ public class GenerateReleaseLogFromGitLogAction extends AbstractReleaseLogAction
             return;
         }
 
-        VcsLog log = e.getData(VcsLogDataKeys.VCS_LOG);
-        if (log == null) {
+        VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
+        if (selection == null) {
             NotificationUtil.showError(project, ChangelogBundle.message("error.no.git.log"));
             return;
         }
 
-        List<VcsFullCommitDetails> selectedCommits = getSelectedCommits(log);
+        List<VcsFullCommitDetails> selectedCommits = getSelectedCommits(selection);
         if (selectedCommits.isEmpty()) {
             NotificationUtil.showError(project, ChangelogBundle.message("error.no.commits.selected"));
             return;
@@ -113,15 +113,15 @@ public class GenerateReleaseLogFromGitLogAction extends AbstractReleaseLogAction
      * 获取选中的提交记录列表
      * <p> 从给定的日志中获取用户选中的提交记录列表. 如果日志为空, 则返回一个空列表.
      *
-     * @param log 日志对象, 可以为 null
+     * @param selection 提交选择对象, 可以为 null
      * @return 选中的提交记录列表, 如果日志为空则返回空列表
      */
     @NotNull
-    protected List<VcsFullCommitDetails> getSelectedCommits(@Nullable VcsLog log) {
-        if (log == null) {
+    protected List<VcsFullCommitDetails> getSelectedCommits(@Nullable VcsLogCommitSelection selection) {
+        if (selection == null) {
             return List.of();
         }
-        return log.getSelectedDetails();
+        return selection.getCachedFullDetails();
     }
 
 }
