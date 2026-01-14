@@ -20,11 +20,11 @@
 
 ## 2025.11.05
 
-- [ ] @author 优化: 使用占位符或直接读取系统用户名
+- [x] @author 优化: 使用占位符或直接读取系统用户名
   如果 javadoc 注释中已有 @author 就不要改了(优化提示词)
-- [ ] 增加非标准 javadoc 标签, 比如 @date
-- [ ] @since 优化: 读取 maven pom.xml 文件中的版本号
-- [ ] 任务完成后, 在控制台输出总 Token 使用量统计
+- [x] 增加非标准 javadoc 标签, 比如 @date
+- [x] @since 优化: 读取 maven pom.xml 文件中的版本号
+- [x] 任务完成后, 在控制台输出总 Token 使用量统计
 
 ## 2025.11.06
 
@@ -64,14 +64,14 @@
 
 ## 2025.12.15
 
-- [ ] 在类注释生成时添加类关系上下文: dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector.buildGenerationContext
+- [x] 在类注释生成时添加类关系上下文: dev.dong4j.zeka.stack.idea.plugin.task.TaskCollector.buildGenerationContext
 - [ ] 添加一个面板, 根据 token 的用量来解锁成就
 - [ ] 添加一个开关: 允许上传 token 统计, 在 landing 页面展示统计信息
 - [ ] 优化代码, 及时释放临时对象, 新增生命周期管理
 
 ## 2026.01.05
 
-- [ ] 添加调用链到类和方法中作为上下文
+- [x] 添加调用链到类和方法中作为上下文
 - [ ] 将 maven 作为可选项, 没有 maven 依赖时将 version 和 since 设置为默认的 x.x.x
 
 ## 2026.01.05
@@ -81,20 +81,7 @@
 ## 2026.01.06
 
 - [x] 优化自动保存生成 javadoc 的逻辑
-- [ ] 替换 git-cliff 中的 github 链接地址
-
-```
-commit_preprocessors = [
-    # 将问题编号替换为链接模板，在 `changelog.postprocessors` 中更新
-    #{ pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
-    # 使用 https://github.com/crate-ci/typos 检查提交消息的拼写
-    # 如果拼写不正确，将自动修复
-    #{ pattern = '.*', replace_command = 'typos --write-changes -' },
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/zeka-stack/zeka-idea-plugin/issues/${2}))" },
-]
-```
 
 ## 2026.01.10
 
 - [ ] 支持 Scala 生成 javadoc
-- [ ] 大文件生成不了 commit message
