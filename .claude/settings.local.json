@@ -9,7 +9,8 @@
       "mcp__jetbrains__find_files_by_name_keyword",
       "mcp__jetbrains__execute_run_configuration",
       "Bash(../gradlew compileJava:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(make install-plugins:*)"
     ],
     "deny": [],
     "ask": []
