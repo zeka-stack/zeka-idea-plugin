@@ -6,21 +6,12 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import dev.dong4j.zeka.stack.idea.javadoc.service.DocumentationGenerationService;
-import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
-import dev.dong4j.zeka.stack.idea.javadoc.task.TaskCollector;
+import dev.dong4j.zeka.stack.idea.javadoc.service.FileSelectionJavadocService;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
-import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
-import dev.dong4j.zeka.stack.idea.javadoc.util.PluginUtil;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 为文件生成 Javadoc 的动作类
@@ -37,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")
-@Slf4j
 public class GenerateJavadocForFilesAction extends AnAction {
 
     /**
@@ -47,6 +37,9 @@ public class GenerateJavadocForFilesAction extends AnAction {
      * 然后收集所有需要生成 Javadoc 的任务, 检查任务是否为空, 若为空则返回.
      * 若任务数量较多, 会弹出确认对话框, 用户确认后才继续执行.
      * 最后调用文档生成服务, 生成 Javadoc 并显示完成信息.
+     * <p>
+     * 注意: 该方法继承自 {@code AnAction#actionPerformed}，其声明带有 {@link org.jetbrains.annotations.ApiStatus.OverrideOnly}，
+     * 仅用于框架回调或子类重写。外部调用请使用 {@link FileSelectionJavadocService}。
      *
      * @param e 动作事件对象, 包含项目和选中的文件信息
      */
@@ -54,53 +47,7 @@ public class GenerateJavadocForFilesAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-
-        if (project == null || project.isDisposed() || files == null || files.length == 0) {
-            return;
-        }
-
-        // 检查项目是否处于 Dumb Mode（索引模式）
-        if (DumbService.isDumb(project)) {
-            NotificationUtil.notifyIndexing(project);
-            return;
-        }
-
-        log.debug("为 {} 个文件/目录生成 Javadoc", files.length);
-
-        // 收集任务
-        TaskCollector collector = new TaskCollector(project);
-        List<DocumentationTask> tasks = new ArrayList<>();
-
-        for (VirtualFile file : files) {
-            if (file.isDirectory()) {
-                tasks.addAll(collector.collectFromDirectory(file));
-            } else if (PluginUtil.isSupportedFile(file)) {
-                tasks.addAll(collector.collectFromVirtualFile(file));
-            }
-        }
-
-        // 使用文档生成服务处理任务
-        DocumentationGenerationService service = new DocumentationGenerationService();
-        if (service.checkEmptyTasks(project, tasks, JavadocBundle.message("notification.no.task.selection"))) {
-            return;
-        }
-
-        // 确认是否继续（如果任务很多）
-        if (tasks.size() > 50) {
-            int result = Messages.showYesNoDialog(
-                project,
-                JavadocBundle.message("confirmation.batch.generation.message", tasks.size()),
-                JavadocBundle.message("confirmation.batch.generation.title"),
-                Messages.getQuestionIcon()
-                                                 );
-
-            if (result != Messages.YES) {
-                return;
-            }
-        }
-
-        // 使用服务生成文档，带自定义完成回调
-        service.generateDocumentation(project, tasks, JavadocBundle.message("task.target.selection"));
+        new FileSelectionJavadocService().generateForFiles(project, files);
     }
 
     /**
@@ -145,4 +92,3 @@ public class GenerateJavadocForFilesAction extends AnAction {
     }
 
 }
-
