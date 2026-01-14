@@ -202,7 +202,7 @@ public class Notifications {
                                                                          false,
                                                                          false,
                                                                          BalloonLayoutData.fullContent(),
-                                                                         null);
+                                                                         project);
 
                 JComponent component = window.getComponent();
                 balloon.show(getUpperRightRelativePoint(component, (BalloonImpl) balloon), Balloon.Position.above);

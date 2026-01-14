@@ -1,7 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.whatsnew;
 
-import com.intellij.ide.util.TipUIUtil;
-import com.intellij.ide.util.TipUIUtil.Browser;
+import com.intellij.ide.BrowserUtil;
+import com.intellij.ide.ui.text.StyledTextPane;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.util.ResourceUtil;
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
+import javax.swing.event.HyperlinkEvent;
 
 /**
  * 用于显示“新功能”或“更新日志”的面板组件
@@ -29,12 +30,9 @@ import javax.swing.JPanel;
  * @since 1.0.0
  */
 public class WhatsNewPanel extends JPanel {
-    /**
-     * 浏览器组件, 用于显示 "What's New" 内容
-     *
-     * @see TipUIUtil#createBrowser()
-     */
-    private final Browser browser = TipUIUtil.createBrowser();
+    /** 浏览器组件, 用于显示 "What's New" 内容 */
+    @SuppressWarnings("UnstableApiUsage")
+    private final StyledTextPane browser = new StyledTextPane();
     /**
      * 提供者对象, 用于获取更新页面列表
      *
@@ -50,7 +48,7 @@ public class WhatsNewPanel extends JPanel {
     /**
      * 当前显示的变更日志页面索引
      *
-     * @see #newerChangelog()*@see #olderChangelog()
+     * @see #newerChangelog()
      */
     private int pageIndex;
 
@@ -63,8 +61,16 @@ public class WhatsNewPanel extends JPanel {
      */
     public WhatsNewPanel() {
         super(new BorderLayout());
-        browser.getComponent().setBorder(JBUI.Borders.empty(8, 12));
-        var scrollPane = ScrollPaneFactory.createScrollPane(browser.getComponent(), true);
+        browser.setContentType("text/html");
+        browser.setEditable(false);
+        browser.setOpaque(false);
+        browser.setBorder(JBUI.Borders.empty(8, 12));
+        browser.addHyperlinkListener(event -> {
+            if (event.getEventType() == HyperlinkEvent.EventType.ACTIVATED && event.getURL() != null) {
+                BrowserUtil.browse(event.getURL());
+            }
+        });
+        var scrollPane = ScrollPaneFactory.createScrollPane(browser, true);
         scrollPane.setBorder(JBUI.Borders.customLine(new JBColor(0xd9d9d9, 0x515151), 0, 0, 1, 0));
         add(scrollPane, BorderLayout.CENTER);
     }
@@ -205,24 +211,26 @@ public class WhatsNewPanel extends JPanel {
             ? provider.getPluginDescriptor().getPluginClassLoader()
             : getClass().getClassLoader();
 
-        try (InputStream stream = ResourceUtil.getResourceAsStream(classLoader, provider.getBasePath(), fileName)) {
-            if (stream == null) {
-                throw new IllegalStateException("Whats new file not found: " + fileName);
+        if (classLoader != null) {
+            try (InputStream stream = ResourceUtil.getResourceAsStream(classLoader, provider.getBasePath(), fileName)) {
+                if (stream == null) {
+                    throw new IllegalStateException("Whats new file not found: " + fileName);
+                }
+                String htmlContent = ResourceUtil.loadText(stream);
+                try {
+                    browser.setText(htmlContent);
+                } catch (Exception e) {
+                    // Swing 的 HTML 解析器可能不支持某些 CSS 属性，显示错误消息
+                    String errorHtml = "<html><body>" +
+                                       "<h3>无法显示内容</h3>" +
+                                       "<p>HTML 内容包含不支持的 CSS 属性，无法在 Swing 浏览器中正确显示。</p>" +
+                                       "<p>错误信息: " + e.getMessage() + "</p>" +
+                                       "</body></html>";
+                    browser.setText(errorHtml);
+                }
+            } catch (IOException ex) {
+                throw new IllegalStateException("Failed to load whats new page: " + fileName, ex);
             }
-            String htmlContent = ResourceUtil.loadText(stream);
-            try {
-                browser.setText(htmlContent);
-            } catch (Exception e) {
-                // Swing 的 HTML 解析器可能不支持某些 CSS 属性，显示错误消息
-                String errorHtml = "<html><body>" +
-                    "<h3>无法显示内容</h3>" +
-                    "<p>HTML 内容包含不支持的 CSS 属性，无法在 Swing 浏览器中正确显示。</p>" +
-                    "<p>错误信息: " + e.getMessage() + "</p>" +
-                    "</body></html>";
-                browser.setText(errorHtml);
-            }
-        } catch (IOException ex) {
-            throw new IllegalStateException("Failed to load whats new page: " + fileName, ex);
         }
     }
 }
