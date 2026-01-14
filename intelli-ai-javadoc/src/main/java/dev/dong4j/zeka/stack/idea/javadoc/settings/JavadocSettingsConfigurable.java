@@ -275,7 +275,8 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
      *
      * @throws ConfigurationException 配置验证失败时抛出
      * @see #validateSettings(SettingsState)
-     * @see SettingsState#getInstance()* @see JavadocFileTemplatesHandler#applyTemplateConfiguration(Project, SettingsState)
+     * @see SettingsState#getInstance()
+     * @see JavadocFileTemplatesHandler#applyTemplateConfiguration(Project, SettingsState)
      * @see CustomJavadocTagRegistrar#syncCustomTags(Project)
      */
     @SuppressWarnings("D")
@@ -358,9 +359,11 @@ public class JavadocSettingsConfigurable implements SearchableConfigurable {
         // 触发标签同步（需要在写操作中执行）
         ApplicationManager.getApplication().invokeLater(() -> {
             ApplicationManager.getApplication().runWriteAction(() -> {
-                Project project = ProjectManager.getInstance().getDefaultProject();
-                if (!project.isDisposed()) {
-                    CustomJavadocTagRegistrar.syncCustomTags(project);
+                Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
+                for (Project project : openProjects) {
+                    if (project != null && !project.isDisposed()) {
+                        CustomJavadocTagRegistrar.syncCustomTags(project);
+                    }
                 }
             });
         });
