@@ -86,16 +86,28 @@ IntelliAI Changelog 是一个基于 IntelliAI Engine 的 IntelliJ IDEA 插件，
 
 配置完成后点击 `测试连接`，确保显示"连接成功"。
 
+## 设置
+
+![](./assets/20260114_9f3wJ1.png)
+
+## 状态栏
+
+![](./assets/20260114_8hDwDG.png)
+
 ## 💻 使用指南
 
 ### 生成变更日志
 
-1. **打开 Git Log**: `Git` → `Show Git Log` 或快捷键 `Alt+9`
+![](./assets/20260114_d3vTxO.png)
+
+1. **打开 Git Log**: `Git` → `Show Git Log`
 2. **选择提交记录**: 单个或多个提交（Ctrl/Cmd+Click 多选）
 3. **右键生成**: 右键点击 → `IntelliAI Changelog` → `生成变更日志`
 4. **查看结果**: 在弹出对话框中查看和编辑生成的内容
 
 ### 生成工作日报
+
+![](./assets/20260114_JRmdw8.png)
 
 1. **选择今日提交**: 在 Git Log 中选择当天的提交记录
 2. **生成日报**: 右键 → `IntelliAI Changelog` → `生成工作日报`
@@ -103,17 +115,22 @@ IntelliAI Changelog 是一个基于 IntelliAI Engine 的 IntelliJ IDEA 插件，
 
 ### 生成工作周报
 
+![](./assets/20260114_gY1EWf.png)
+
 1. **选择一周提交**: 使用日期筛选器选择一周内的提交
 2. **生成周报**: 右键 → `IntelliAI Changelog` → `生成工作周报`
 3. **结构调整**: AI 自动按工作日组织内容
+
+### Changelog 生成历史记录
+
+![](./assets/20260114_9NR2Hd.png)
 
 ### 智能提交信息
 
 #### 在提交窗口中
 
-1. **暂存变更**: 在 Git 提交窗口中暂存要提交的文件
-2. **生成信息**: 点击提交区域右侧的 `生成提交信息` 按钮
-3. **应用提交**: 编辑后使用生成的提交信息完成提交
+1. **生成信息**: 点击提交区域右侧的 `生成提交信息` 按钮
+2. **应用提交**: 编辑后使用生成的提交信息完成提交
 
 #### 为已有提交重新生成
 

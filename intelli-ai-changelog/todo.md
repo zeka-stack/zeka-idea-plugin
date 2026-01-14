@@ -29,3 +29,16 @@
 - [x] 优化删除大量文件的 diff
 - [x] 优化单个文件大量改动的 diff
 - [x] 优化大量文件改动的 diff
+
+- [ ] 替换 git-cliff 中的 github 链接地址
+
+```
+commit_preprocessors = [
+    # 将问题编号替换为链接模板，在 `changelog.postprocessors` 中更新
+    #{ pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
+    # 使用 https://github.com/crate-ci/typos 检查提交消息的拼写
+    # 如果拼写不正确，将自动修复
+    #{ pattern = '.*', replace_command = 'typos --write-changes -' },
+    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/zeka-stack/zeka-idea-plugin/issues/${2}))" },
+]
+```
