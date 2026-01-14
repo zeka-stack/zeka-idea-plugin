@@ -35,13 +35,24 @@ import dev.dong4j.zeka.stack.idea.plugin.workflow.util.MethodContextExtractor;
  * @version 1.0.0
  */
 public class CallGraphBuilder {
+    /** 限制调用链递归深度, 避免性能问题 */
     private static final int MAX_DEPTH = 2; // 限制深度，避免性能问题
+    /** 最多查找的调用者数量 */
     private static final int MAX_CALLERS = 5; // 最多查找的调用者数量
+    /** 最多查找的被调用者数量 */
     private static final int MAX_CALLEES = 10; // 最多查找的被调用者数量
 
+    /** 项目上下文, 用于获取当前项目范围的搜索作用域和资源 */
     private final Project project;
+    /** 用于记录已访问的方法, 避免递归查找时重复处理 */
     private final Set<PsiMethod> visited = new HashSet<>();
 
+    /**
+     * 构造函数, 初始化调用链构建器
+     * <p> 用于创建一个调用链构建器实例, 传入项目上下文以支持后续的调用关系分析
+     *
+     * @param project 项目上下文, 用于在后续分析中访问项目范围的元素
+     */
     public CallGraphBuilder(@NotNull Project project) {
         this.project = project;
     }
@@ -77,23 +88,36 @@ public class CallGraphBuilder {
             ReferencesSearch.search(method, GlobalSearchScope.projectScope(project))
                 .forEach(ref -> {
                     if (callers.size() >= MAX_CALLERS) {
-                        return;
+                        return false;
                     }
                     PsiElement element = ref.getElement();
                     PsiMethod callerMethod = PsiTreeUtil.getParentOfType(element, PsiMethod.class);
-                    if (callerMethod != null && !callerMethod.equals(method)) {
-                        // 避免重复添加
-                        boolean alreadyAdded = callers.stream()
-                            .anyMatch(c -> c.qualifiedClassName.equals(getQualifiedClassName(callerMethod))
-                                           && c.name.equals(callerMethod.getName()));
-                        if (!alreadyAdded) {
-                            MethodInfo callerInfo = MethodContextExtractor.extractMethodInfo(callerMethod);
-                            callers.add(callerInfo);
-                        }
-                    }
+                    addCallers(method, callers, callerMethod);
+                    return true;
                 });
         } catch (Exception e) {
             // 静默处理异常，避免影响功能
+        }
+    }
+
+    /**
+     * 处理方法调用者信息, 避免重复添加
+     * <p> 检查传入的调用者方法是否已存在于调用者列表中, 若未存在则提取其上下文信息并添加到列表中
+     *
+     * @param method       目标方法, 用于获取调用者上下文
+     * @param callers      调用者方法列表, 用于去重和添加新调用者
+     * @param callerMethod 调用者方法, 可能为 null, 若不为 null 且不等于目标方法, 则视为有效调用者
+     */
+    private void addCallers(@NotNull PsiMethod method, @NotNull List<MethodInfo> callers, PsiMethod callerMethod) {
+        if (callerMethod != null && !callerMethod.equals(method)) {
+            // 避免重复添加
+            boolean alreadyAdded = callers.stream()
+                .anyMatch(c -> c.qualifiedClassName.equals(getQualifiedClassName(callerMethod))
+                               && c.name.equals(callerMethod.getName()));
+            if (!alreadyAdded) {
+                MethodInfo callerInfo = MethodContextExtractor.extractMethodInfo(callerMethod);
+                callers.add(callerInfo);
+            }
         }
     }
 
@@ -130,6 +154,12 @@ public class CallGraphBuilder {
         }
 
         body.accept(new JavaRecursiveElementVisitor() {
+            /**
+             * 重写方法调用表达式访问器, 处理方法调用节点
+             * <p> 在访问方法调用表达式时, 若调用链长度已达到最大限制, 则直接返回; 否则解析被调用方法并执行相关处理逻辑
+             *
+             * @param expression 方法调用表达式节点, 非空
+             */
             @Override
             public void visitMethodCallExpression(@NotNull PsiMethodCallExpression expression) {
                 super.visitMethodCallExpression(expression);
@@ -137,16 +167,7 @@ public class CallGraphBuilder {
                     return;
                 }
                 PsiMethod calledMethod = expression.resolveMethod();
-                if (calledMethod != null && !calledMethod.equals(method)) {
-                    // 避免重复添加
-                    boolean alreadyAdded = callees.stream()
-                        .anyMatch(c -> c.qualifiedClassName.equals(getQualifiedClassName(calledMethod))
-                                       && c.name.equals(calledMethod.getName()));
-                    if (!alreadyAdded) {
-                        MethodInfo calleeInfo = MethodContextExtractor.extractMethodInfo(calledMethod);
-                        callees.add(calleeInfo);
-                    }
-                }
+                addCallers(method, callees, calledMethod);
             }
         });
     }
@@ -410,4 +431,3 @@ public class CallGraphBuilder {
         return "";
     }
 }
-
