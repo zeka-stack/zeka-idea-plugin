@@ -5,9 +5,13 @@ import com.intellij.codeInspection.InspectionProfile;
 import com.intellij.codeInspection.ex.InspectionToolWrapper;
 import com.intellij.codeInspection.javaDoc.JavadocDeclarationInspection;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
+import com.intellij.openapi.util.Key;
 import com.intellij.profile.codeInspection.ProjectInspectionProfileManager;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
@@ -39,8 +42,9 @@ import kotlin.coroutines.Continuation;
  * @since 1.0.0
  */
 public class CustomJavadocTagRegistrar implements ProjectActivity {
-    /** 是否已执行过初始化操作 */
-    private final AtomicBoolean hasRun = new AtomicBoolean(false);
+    /** 是否已执行过初始化操作（按项目） */
+    private static final Key<Boolean> HAS_RUN_KEY =
+        Key.create("zeka.stack.javadoc.custom.tags.has.run");
 
     /**
      * 在项目启动时运行, 注册自定义的 Javadoc 标签
@@ -52,10 +56,12 @@ public class CustomJavadocTagRegistrar implements ProjectActivity {
     @Nullable
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
-        // 只在第一次运行时检查更新
-        if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
+        // 只在每个项目第一次运行时检查更新
+        if (Boolean.TRUE.equals(project.getUserData(HAS_RUN_KEY))
+            || ApplicationManager.getApplication().isUnitTestMode()) {
             return Unit.INSTANCE;
         }
+        project.putUserData(HAS_RUN_KEY, true);
         // 在写操作中执行标签注册
         ApplicationManager.getApplication().invokeLater(() -> {
             ApplicationManager.getApplication().runWriteAction(() -> {
@@ -80,6 +86,9 @@ public class CustomJavadocTagRegistrar implements ProjectActivity {
      */
     public static void syncCustomTags(@NotNull Project project) {
         try {
+            if (project.isDisposed()) {
+                return;
+            }
             // 获取项目的检查配置管理器
             ProjectInspectionProfileManager profileManager =
                 ProjectInspectionProfileManager.getInstance(project);
@@ -103,8 +112,8 @@ public class CustomJavadocTagRegistrar implements ProjectActivity {
                     // 通知配置已更改
                     profileManager.fireProfileChanged();
 
-                    // 重启代码分析，使更改立即生效
-                    DaemonCodeAnalyzer.getInstance(project).restart();
+                    // 仅重启当前项目中已打开的文件
+                    restartOpenedFiles(project);
                 }
             }
         } catch (Exception e) {
@@ -165,6 +174,22 @@ public class CustomJavadocTagRegistrar implements ProjectActivity {
         }
     }
 
+    /**
+     * 仅重启当前项目中已打开的文件，避免全项目刷新
+     *
+     * @param project 项目对象
+     */
+    private static void restartOpenedFiles(@NotNull Project project) {
+        FileEditorManager editorManager = FileEditorManager.getInstance(project);
+        PsiManager psiManager = PsiManager.getInstance(project);
+
+        for (com.intellij.openapi.vfs.VirtualFile file : editorManager.getOpenFiles()) {
+            PsiFile psiFile = psiManager.findFile(file);
+            if (psiFile != null) {
+                DaemonCodeAnalyzer.getInstance(project).restart(psiFile);
+            }
+        }
+    }
     /**
      * 获取当前已注册的标签字符串
      *
