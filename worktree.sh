@@ -5,6 +5,7 @@ set -e
 BASE_BRANCH="main"
 PREFIX="ai"
 WT_PREFIX="wt-ai"
+BASE_DIR="../zeka-idea-plugin-worktree"
 
 usage() {
   cat <<EOF
@@ -25,7 +26,7 @@ cmd="$1"
 task="$2"
 
 branch="${PREFIX}/${task}"
-dir="../${WT_PREFIX}-${task}"
+dir="${BASE_DIR}/${WT_PREFIX}-${task}"
 
 case "$cmd" in
   create)

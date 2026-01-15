@@ -5,8 +5,11 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.HyperlinkLabel;
+import com.intellij.ui.TextFieldWithAutoCompletion;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -28,11 +31,14 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -41,8 +47,11 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
@@ -82,6 +91,14 @@ public final class AIProviderConfigUI {
     private HyperlinkLabel getApiKeyLink;
     /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
+    /** 模型智能搜索输入框 */
+    private TextFieldWithAutoCompletion<String> modelSearchField;
+    /** 模型下拉框的完整数据源 */
+    private final List<String> modelItems = new ArrayList<>();
+    /** 模型过滤更新标记 */
+    private boolean suppressModelFilter;
+    /** 模型过滤监听是否已安装 */
+    private boolean modelFilterInstalled;
     /** 基础 URL 输入框 */
     private JBTextField baseUrlField;
     /** API 密钥输入框 */
@@ -100,12 +117,16 @@ public final class AIProviderConfigUI {
     private JBTable availableProvidersTable;
     /** 可用提供者表格模型 */
     private AvailableProvidersTableModel availableProvidersTableModel;
+    /** Autocomplete 默认服务商下拉框 */
+    private ComboBox<AIProviderConfig> autocompleteProviderComboBox;
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
     private JBCheckBox lastUpdateCheckCheckBox;
     /** 控制是否显示新版本通知的复选框 */
     private JBCheckBox showUpdateNotificationCheckBox;
+    /** 控制是否启用下一步建议 */
+    private JBCheckBox nextEditEnabledCheckBox;
     /** 注释语言选择下拉框 */
     private ComboBox<ResponseLanguage> languageComboBox;
     /** 控制是否显示高级设置内容的复选框 */
@@ -160,6 +181,12 @@ public final class AIProviderConfigUI {
         Dimension modelComboBoxSize = new Dimension(400, modelComboBox.getPreferredSize().height);
         modelComboBox.setPreferredSize(modelComboBoxSize);
         modelComboBox.setMaximumSize(modelComboBoxSize);
+        SwingUtilities.invokeLater(this::installModelSearchFilter);
+        modelSearchField = TextFieldWithAutoCompletion.create(getDefaultProject(),
+                                                              modelItems,
+                                                              false,
+                                                              "");
+        modelSearchField.setVisible(false);
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
@@ -191,8 +218,21 @@ public final class AIProviderConfigUI {
         verboseLoggingCheckBox = new JBCheckBox(AICommonBundle.message("settings.verbose.logging"));
         lastUpdateCheckCheckBox = new JBCheckBox(AICommonBundle.message("settings.auto.update"));
         showUpdateNotificationCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.update.notification"));
+        nextEditEnabledCheckBox = new JBCheckBox(AICommonBundle.message("settings.nextedit.enabled"));
         languageComboBox = new ComboBox<>(ResponseLanguage.values());
         languageComboBox.setRenderer(new DefaultListCellRenderer() {
+            /**
+             * 重写列表单元格渲染器组件的方法, 用于自定义显示语言描述
+             * <p> 该方法继承自父类的 {@code getListCellRendererComponent} 方法, 当列表项为 {@link ResponseLanguage} 类型时,
+             * 会将显示文本设置为该语言对象的描述信息 ({@code getDesc()}).
+             *
+             * @param list         列表组件
+             * @param value        当前列表项的数据对象
+             * @param index        当前列的索引
+             * @param isSelected   当前列是否被选中
+             * @param cellHasFocus 当前列是否有焦点
+             * @return 渲染后的 JLabel 组件
+             */
             @Override
             public Component getListCellRendererComponent(JList<?> list,
                                                           Object value,
@@ -303,6 +343,7 @@ public final class AIProviderConfigUI {
         // 创建子面板
         JPanel connectionPanel = createConnectionPanel();
         JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
+        JPanel autocompleteProviderPanel = createAutocompleteProviderPanel();
         JPanel basicPanel = createBasicPanel();
         JPanel advancedPanel = createAdvancedPanel();
         // 个人信息面板（作者信息）
@@ -315,6 +356,8 @@ public final class AIProviderConfigUI {
             .addComponent(connectionPanel)
             .addSeparator(10)
             .addComponent(availableProvidersSectionPanel)
+            .addSeparator(10)
+            .addComponent(autocompleteProviderPanel)
             .addSeparator(10)
             .addComponent(basicPanel)
             .addSeparator(10)
@@ -365,6 +408,240 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 获取模型智能搜索输入框组件
+     * <p> 返回用于输入和自动完成模型名称的文本框组件, 支持智能搜索功能 </p>
+     *
+     * @return 模型智能搜索输入框组件, 保证不为 null
+     */
+    @NotNull
+    public TextFieldWithAutoCompletion<String> getModelSearchField() {
+        return modelSearchField;
+    }
+
+    /**
+     * 触发模型搜索弹出框
+     * <p> 此方法用于触发模型搜索弹出框的显示. 首先检查模型搜索字段是否存在, 然后将其设为焦点.
+     * 如果调用 <code>invokeModelSearchPopup</code> 方法成功触发了任意一种弹出框 ("showPopup","showCompletionPopup" 或 "showAutoPopup"), 则直接返回.
+     * 否则, 尝试通过在文本末尾添加一个空格并立即移除的方式来触发弹出框.</p>
+     *
+     * @since 1.0.0
+     */
+    public void triggerModelSearchPopup() {
+        if (modelSearchField == null) {
+            return;
+        }
+        modelSearchField.requestFocusInWindow();
+        if (invokeModelSearchPopup("showPopup")
+            || invokeModelSearchPopup("showCompletionPopup")
+            || invokeModelSearchPopup("showAutoPopup")) {
+            return;
+        }
+        String text = modelSearchField.getText();
+        modelSearchField.setText(text + " ");
+        modelSearchField.setCaretPosition(text.length());
+        modelSearchField.setText(text);
+        modelSearchField.setCaretPosition(text.length());
+    }
+
+    /**
+     * 调用模型搜索弹窗的指定方法
+     * <p> 通过反射机制获取并调用 {@code TextFieldWithAutoCompletion} 类中指定名称的方法, 用于触发模型搜索弹窗的显示行为. 如果调用失败则返回 false.</p>
+     *
+     * @param methodName 要调用的方法名称, 必须为有效方法名
+     * @return 如果成功调用方法并触发弹窗则返回 true, 否则返回 false
+     */
+    private boolean invokeModelSearchPopup(@NotNull String methodName) {
+        try {
+            java.lang.reflect.Method method = TextFieldWithAutoCompletion.class.getMethod(methodName);
+            method.setAccessible(true);
+            method.invoke(modelSearchField);
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
+        }
+    }
+
+
+    /**
+     * 更新模型下拉框选项并应用当前过滤
+     *
+     * @param items              完整模型列表
+     * @param preferredSelection 优先选中的模型
+     */
+    public void updateModelItems(@NotNull List<String> items, @Nullable String preferredSelection) {
+        modelItems.clear();
+        modelItems.addAll(items);
+        modelSearchField.setVariants(modelItems);
+        suppressModelFilter = true;
+        try {
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            for (String item : modelItems) {
+                model.addElement(item);
+            }
+            modelComboBox.setModel(model);
+            modelComboBox.setEditable(true);
+
+            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
+                if (model.getIndexOf(preferredSelection) >= 0) {
+                    modelComboBox.setSelectedItem(preferredSelection);
+                }
+            }
+
+            String filterText = getModelFilterText();
+            if (!filterText.isEmpty() && modelComboBox.getEditor() != null) {
+                modelComboBox.getEditor().setItem(filterText);
+            }
+        } finally {
+            suppressModelFilter = false;
+        }
+    }
+
+    /**
+     * 安装模型搜索过滤器监听器
+     * <p> 当模型下拉框编辑器组件为文本组件时, 为其文档添加监听器, 监听文本内容的插入, 删除和变更事件,
+     * 并在每次变更后调用 {@code onModelFilterChanged()} 方法以触发模型过滤更新 </p>
+     *
+     * @since 1.0.0
+     */
+    private void installModelSearchFilter() {
+        if (modelFilterInstalled) {
+            return;
+        }
+        if (modelComboBox.getEditor() == null) {
+            return;
+        }
+        Object editorComponent = modelComboBox.getEditor().getEditorComponent();
+        if (editorComponent instanceof javax.swing.text.JTextComponent textComponent) {
+            textComponent.getDocument().addDocumentListener(new DocumentListener() {
+                /**
+                 * 文档内容插入更新事件处理方法
+                 * <p> 当文档内容发生插入操作时调用此方法, 并触发模型过滤器变更通知
+                 *
+                 * @param e 文档事件对象, 包含插入操作的详细信息
+                 */
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    onModelFilterChanged();
+                }
+
+                /**
+                 * 处理文档删除事件
+                 * <p> 当文档内容被删除时, 此方法会被调用, 触发模型过滤刷新操作
+                 *
+                 * @param e 文档事件对象, 包含文档变更的详细信息
+                 */
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    onModelFilterChanged();
+                }
+
+                /**
+                 * 文档结构属性发生变化时的回调方法
+                 * <p>当文档的结构属性 (如段落样式, 字体等) 发生变化时,Swing 框架会自动调用此方法.
+                 * 该方法内部调用 {@code onModelFilterChanged()} 方法来处理文档变更事件.
+                 *
+                 * @param e 文档事件对象, 包含变更的详细信息
+                 * @see javax.swing.event.DocumentListener
+                 * @see #insertUpdate(javax.swing.event.DocumentEvent)
+                 * @see #removeUpdate(javax.swing.event.DocumentEvent)
+                 */
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    onModelFilterChanged();
+                }
+            });
+            modelFilterInstalled = true;
+        }
+    }
+
+
+    /**
+     * 处理模型过滤器变化事件
+     * <p> 当模型下拉框的过滤器文本发生变化时触发此方法. 如果当前处于抑制过滤器状态,
+     * 则直接返回以避免重复处理. 该方法使用 Swing 的事件调度线程延迟执行模型过滤操作,
+     * 以确保 UI 操作的线程安全性.
+     */
+    private void onModelFilterChanged() {
+        if (suppressModelFilter) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> applyModelFilter(getModelFilterText(), null));
+    }
+
+    /**
+     * 获取当前模型下拉框编辑器中的过滤文本
+     * <p>
+     * 如果编辑器为空则返回空字符串; 否则将编辑器中的对象转换为字符串,
+     * 覆盖为默认值空字符串, 然后使用 {@link String#trim()} 去除首尾空白字符.
+     *
+     * @return 过滤文本, 若无编辑器返回空字符串
+     */
+    @NotNull
+    private String getModelFilterText() {
+        if (modelComboBox.getEditor() == null) {
+            return "";
+        }
+        return Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
+    }
+
+    /**
+     * 根据指定的过滤文本及可选的优先选择项, 更新模型下拉框的内容.
+     *
+     * <p> 该方法首先构造一个 {@link DefaultComboBoxModel}, 将 {@link #modelItems} 中满足过滤条件的
+     * 项目添加进去. 若 {@code filterText} 为空, 则全部项目均被加入; 否则仅将包含
+     * {@code filterText}(不区分大小写) 的项目加入模型. 完成后将新的模型设置给 {@code
+     * modelComboBox}, 并保持其可编辑状态. 若 {@code preferredSelection} 非空且存在于模型中,
+     * 则将其设为当前选择. 最后如果 {@code modelComboBox} 的编辑器不为 {@code null}, 则把
+     * {@code filterText} 重新写入编辑器, 以便保持显示一致.
+     *
+     * @param filterText         用于过滤模型列表的文本, 支持不区分大小写的子串搜索
+     * @param preferredSelection 若不为空且存在于筛选结果中, 则将其设为当前选中项; 否则保持
+     *                           原选择
+     */
+    private void applyModelFilter(@NotNull String filterText, @Nullable String preferredSelection) {
+        suppressModelFilter = true;
+        try {
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            if (filterText.isEmpty()) {
+                for (String item : modelItems) {
+                    model.addElement(item);
+                }
+            } else {
+                String keyword = filterText.toLowerCase();
+                for (String item : modelItems) {
+                    if (item != null && item.toLowerCase().contains(keyword)) {
+                        model.addElement(item);
+                    }
+                }
+            }
+            modelComboBox.setModel(model);
+            modelComboBox.setEditable(true);
+
+            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
+                if (model.getIndexOf(preferredSelection) >= 0) {
+                    modelComboBox.setSelectedItem(preferredSelection);
+                }
+            }
+
+            if (modelComboBox.getEditor() != null) {
+                modelComboBox.getEditor().setItem(filterText);
+            }
+        } finally {
+            suppressModelFilter = false;
+        }
+    }
+
+    /**
+     * 获取默认项目实例
+     * <p> 返回 IDE 中的默认项目对象, 用于获取与项目相关的资源和配置信息 </p>
+     *
+     * @return 默认项目对象, 保证不为 null
+     */
+    private static @NotNull Project getDefaultProject() {
+        return ProjectManager.getInstance().getDefaultProject();
+    }
+
+    /**
      * 获取基础 URL 输入框组件
      * <p> 返回用于输入 AI 服务基础 URL 的文本字段组件
      *
@@ -375,106 +652,289 @@ public final class AIProviderConfigUI {
         return baseUrlField;
     }
 
+    /**
+     * 获取 API 密钥输入框组件
+     * <p> 返回用于输入 AI 服务提供商 API 密钥的密码字段组件 </p>
+     *
+     * @return API 密钥输入框组件, 保证不为 null
+     */
     @NotNull
     public JBPasswordField getApiKeyField() {
         return apiKeyField;
     }
 
+    /**
+     * 获取测试连接按钮组件
+     * <p> 返回用于测试 AI 服务连接状态的按钮组件, 点击该按钮可执行连接测试操作.</p>
+     *
+     * @return 测试连接按钮组件, 保证不为 null
+     */
     @NotNull
     public StatusIndicatorButton getTestConnectionButton() {
         return testConnectionButton;
     }
 
+    /**
+     * 获取刷新模型列表的按钮组件
+     * <p> 返回用于刷新 AI 模型列表的按钮控件, 该按钮通常用于重新加载当前服务提供商支持的模型列表 </p>
+     *
+     * @return 刷新模型列表的按钮组件, 保证不为 null
+     */
     @NotNull
     public StatusIndicatorButton getRefreshModelsButton() {
         return refreshModelsButton;
     }
 
+    /**
+     * 获取显示可用提供者的复选框组件
+     * <p> 返回用于控制是否显示可用 AI 服务提供商列表的复选框组件 </p>
+     *
+     * @return 显示可用提供者的复选框组件, 保证不为 null
+     */
     @NotNull
     public JBCheckBox getShowAvailableProvidersCheckBox() {
         return showAvailableProvidersCheckBox;
     }
 
+    /**
+     * 获取可用提供者面板组件
+     * <p> 返回用于展示和管理可用 AI 服务提供商列表及其操作的面板组件 </p>
+     *
+     * @return 可用提供者面板组件, 保证不为 null
+     */
     @NotNull
     public JPanel getAvailableProvidersPanel() {
         return availableProvidersPanel;
     }
 
+    /**
+     * 获取显示可用提供者描述的标签组件.
+     *
+     * <p> 该方法返回用于在 UI 上展示可用 AI 服务提供者信息的 {@link JBLabel} 组件. 若当前 UI 初始化未创建该标签或标签被隐藏,
+     * 则会返回 {@code null}.</p>
+     *
+     * @return 可用提供者描述标签组件, 若组件不存在则返回 {@code null}
+     */
     @Nullable
     public JBLabel getAvailableProvidersDescriptionLabel() {
         return availableProvidersDescriptionLabel;
     }
 
+    /**
+     * 获取可用提供者表格模型
+     * <p> 返回用于管理可用 AI 服务提供商列表的表格模型, 包含提供者信息及其相关操作 </p>
+     *
+     * @return 可用提供者表格模型, 保证不为 null
+     */
     @NotNull
     public AvailableProvidersTableModel getAvailableProvidersTableModel() {
         return availableProvidersTableModel;
     }
 
+    /**
+     * 获取自动补全提供者下拉框组件
+     * <p> 返回用于在输入时自动推荐 AI 服务提供者的组合框组件, 支持从预设配置列表中选择并绑定到当前上下文 </p>
+     *
+     * @return 自动补全提供者下拉框组件, 保证不为 null
+     */
+    @NotNull
+    public ComboBox<AIProviderConfig> getAutocompleteProviderComboBox() {
+        return autocompleteProviderComboBox;
+    }
+
+    /**
+     * 设置自动完成提供商列表及其选中项
+     * <p> 该方法用于初始化自动完成提供商下拉框的数据模型, 并根据指定的凭证 ID 设置默认选中的项.</p>
+     *
+     * @param providers            提供商配置列表, 不可为 null
+     * @param selectedCredentialId 要选中的提供商凭证 ID, 可为 null
+     */
+    public void setAutocompleteProviderItems(@NotNull List<AIProviderConfig> providers,
+                                             @Nullable String selectedCredentialId) {
+        DefaultComboBoxModel<AIProviderConfig> model = new DefaultComboBoxModel<>();
+        for (AIProviderConfig config : providers) {
+            model.addElement(config.copy());
+        }
+        autocompleteProviderComboBox.setModel(model);
+        autocompleteProviderComboBox.setEnabled(model.getSize() > 0);
+
+        AIProviderConfig selected = null;
+        if (selectedCredentialId != null) {
+            for (int i = 0; i < model.getSize(); i++) {
+                AIProviderConfig config = model.getElementAt(i);
+                if (selectedCredentialId.equals(config.credentialId)) {
+                    selected = config;
+                    break;
+                }
+            }
+        }
+        if (selected != null) {
+            autocompleteProviderComboBox.setSelectedItem(selected);
+        } else if (model.getSize() > 0) {
+            autocompleteProviderComboBox.setSelectedItem(null);
+        }
+    }
+
+    /**
+     * 获取控制日志详细输出的复选框组件
+     * <p> 返回用于控制是否启用详细日志记录功能的复选框 UI 组件 </p>
+     *
+     * @return 日志详细输出复选框组件, 保证不为 null
+     */
     @NotNull
     public JBCheckBox getVerboseLoggingCheckBox() {
         return verboseLoggingCheckBox;
     }
 
+    /**
+     * 获取自动更新检查复选框组件
+     * <p> 返回用于控制是否启用自动更新检查功能的复选框组件, 该复选框允许用户开启或关闭自动检查软件更新的功能 </p>
+     *
+     * @return 自动更新检查复选框组件, 保证不为 null
+     */
     @NotNull
     public JBCheckBox getLastUpdateCheckCheckBox() {
         return lastUpdateCheckCheckBox;
     }
 
+    /**
+     * 获取是否显示更新通知的复选框组件
+     * <p> 返回用于控制是否显示新版本通知的复选框, 该复选框允许用户选择是否接收更新通知.</p>
+     *
+     * @return 显示更新通知的复选框组件, 保证不为 null
+     */
     @NotNull
     public JBCheckBox getShowUpdateNotificationCheckBox() {
         return showUpdateNotificationCheckBox;
     }
 
+    /**
+     * 获取是否启用下一步建议的复选框组件
+     * <p> 返回用于控制是否启用下一步建议功能的复选框组件, 该组件允许用户在使用 AI 服务时决定是否开启智能建议功能 </p>
+     *
+     * @return 是否启用下一步建议的复选框组件, 保证不为 null
+     */
+    @NotNull
+    public JBCheckBox getNextEditEnabledCheckBox() {
+        return nextEditEnabledCheckBox;
+    }
+
+    /**
+     * 获取注释语言选择下拉框组件
+     * <p> 返回用于设置 AI 生成文本语言的组合框控件, 支持多种语言选项 </p>
+     *
+     * @return 注释语言选择下拉框组件, 保证不为 null
+     */
     @NotNull
     public ComboBox<ResponseLanguage> getLanguageComboBox() {
         return languageComboBox;
     }
 
+    /**
+     * 获取是否显示高级设置内容的复选框组件
+     * <p> 返回一个复选框组件, 用于指示是否在界面上显示高级设置内容.</p>
+     *
+     * @return 复选框组件, 保证不为 null
+     */
     @NotNull
     public JBCheckBox getShowAdvancedSettingsCheckBox() {
         return showAdvancedSettingsCheckBox;
     }
 
+    /**
+     * 获取高级设置内容面板
+     * <p> 返回用于展示和管理高级配置选项的面板组件 </p>
+     *
+     * @return 高级设置内容面板, 如果未初始化则返回 null
+     */
     @Nullable
     public JPanel getAdvancedSettingsContentPanel() {
         return advancedSettingsContentPanel;
     }
 
+    /**
+     * 获取最大重试次数输入框组件
+     * <p> 返回用于设置 AI 请求最大重试次数的文本字段组件, 支持输入数字或 "auto", 默认值为 "2"</p>
+     *
+     * @return 最大重试次数输入框组件, 保证不为 null
+     */
     @NotNull
     public JBTextField getMaxRetriesField() {
         return maxRetriesField;
     }
 
+    /**
+     * 获取超时时间输入框组件
+     * <p> 返回用于设置请求超时时间的文本字段组件, 支持输入数字或 "auto"</p>
+     *
+     * @return 超时时间输入框组件, 保证不为 null
+     */
     @NotNull
     public JBTextField getTimeoutField() {
         return timeoutField;
     }
 
+    /**
+     * 获取温度设置输入框组件
+     * <p> 返回用于设置 AI 模型生成文本时的温度参数的文本字段组件, 支持输入 "auto" 或数字值 </p>
+     *
+     * @return 温度设置输入框组件, 保证不为 null
+     */
     @NotNull
     public JBTextField getTemperatureField() {
         return temperatureField;
     }
 
+    /**
+     * 获取最大令牌数输入控件
+     * <p> 返回用于设置 AI 模型最大令牌数的文本输入框组件, 支持输入 "auto" 或数字 </p>
+     *
+     * @return 最大令牌数输入框组件, 保证不为 null
+     */
     @NotNull
     public JBTextField getMaxTokensField() {
         return maxTokensField;
     }
 
+    /**
+     * 获取 Top-p 参数输入框组件
+     * <p> 返回用于设置 AI 模型的 Top-p 参数的输入控件, 支持输入 "auto" 或数字 </p>
+     *
+     * @return Top-p 参数输入框组件, 保证不为 null
+     */
     @NotNull
     public JBTextField getTopPField() {
         return topPField;
     }
 
+    /**
+     * 获取用于设置 AI 模型 Top-k 参数的输入控件
+     * <p> 该控件允许用户输入数字或 "auto" 值, 用于控制模型生成文本时的 Top-k 参数 </p>
+     *
+     * @return Top-k 参数输入控件, 保证不为 null
+     */
     @NotNull
     public JBTextField getTopKField() {
         return topKField;
     }
 
+    /**
+     * 获取偏差惩罚值输入控件
+     * <p> 返回用于设置生成文本时的偏差惩罚参数的输入控件, 支持输入 "auto" 或数字 </p>
+     *
+     * @return 偏差惩罚值输入控件, 保证不为 null
+     */
     @NotNull
     public JBTextField getPresencePenaltyField() {
         return presencePenaltyField;
     }
 
+    /**
+     * 获取智能代理面板组件
+     * <p> 返回用于展示和管理智能代理功能的面板组件, 该面板包含与 AI 代理交互的用户界面元素和操作控件 </p>
+     *
+     * @return 智能代理面板组件, 保证不为 null
+     */
     @NotNull
     public IntelliAgentPanel getAgentPanel() {
         return intelliAgentPanel;
@@ -509,11 +969,17 @@ public final class AIProviderConfigUI {
         modelPanel.add(modelComboBox, BorderLayout.CENTER);
         modelPanel.add(testConnectionButton, BorderLayout.EAST);
 
+        JPanel modelSearchPanel = new JPanel(new BorderLayout(5, 0));
+        modelSearchPanel.add(modelSearchField, BorderLayout.CENTER);
+        modelSearchPanel.setVisible(false);
+
         JPanel panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.base.url.label")), baseUrlField)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.api.key.label")), apiKeyPanel)
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.label")), modelPanel)
+            // todo-dong4j : (2026.01.7 16:11) [暂时隐藏, 还需要完善]
+            // .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.model.search.label")), modelSearchPanel)
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.connection.config"));
@@ -577,6 +1043,46 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 创建 Autocomplete 默认服务商选择面板
+     */
+    private JPanel createAutocompleteProviderPanel() {
+        autocompleteProviderComboBox = new ComboBox<>();
+        autocompleteProviderComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JBLabel label = new JBLabel();
+            if (value != null) {
+                Icon icon = AICommonIcons.getProviderIcon(value.providerType);
+                label.setIcon(icon);
+                String modelName = value.modelName != null ? value.modelName : "";
+                label.setText(value.providerType.getDisplayName() + ":" + modelName);
+            } else {
+                label.setText(AICommonBundle.message("settings.autocomplete.provider.empty"));
+            }
+            if (isSelected) {
+                label.setBackground(list.getSelectionBackground());
+                label.setForeground(list.getSelectionForeground());
+            } else {
+                label.setBackground(list.getBackground());
+                label.setForeground(list.getForeground());
+            }
+            label.setOpaque(true);
+            return label;
+        });
+
+        // Autocomplete 服务商提示
+        JBLabel autocompleteProviderHintLabel = new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.hint"));
+        autocompleteProviderHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        autocompleteProviderHintLabel.setFont(autocompleteProviderHintLabel.getFont().deriveFont(autocompleteProviderHintLabel.getFont().getSize() - 1f));
+
+        JPanel panel = FormBuilder.createFormBuilder()
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.autocomplete.provider.label")),
+                                 autocompleteProviderComboBox)
+            .addComponent(autocompleteProviderHintLabel)
+            .getPanel();
+
+        return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.autocomplete.provider.selection"));
+    }
+
+    /**
      * 创建基础配置面板
      * <p>
      * 用于生成包含日志详细设置选项的基础配置面板, 包含一个复选框用于控制日志详细级别.
@@ -589,6 +1095,7 @@ public final class AIProviderConfigUI {
             .addComponent(createCheckBoxWithHint(verboseLoggingCheckBox, "settings.verbose.logging.hint"))
             .addComponent(createCheckBoxWithHint(lastUpdateCheckCheckBox, "settings.auto.update.hint"))
             .addComponent(createCheckBoxWithHint(showUpdateNotificationCheckBox, "settings.show.update.notification.hint"))
+            .addComponent(createCheckBoxWithHint(nextEditEnabledCheckBox, "settings.nextedit.enabled.hint"))
             .getPanel();
 
         return createPanelWithTitledBorder(panel, AICommonBundle.message("settings.basic.config"));
@@ -778,6 +1285,16 @@ public final class AIProviderConfigUI {
 
         AbstractDocument doc = (AbstractDocument) textField.getDocument();
         doc.setDocumentFilter(new DocumentFilter() {
+            /**
+             * 在指定位置插入字符串
+             * <p> 此方法在过滤器中插入字符串之前, 会调用 {@link #isValidInput} 方法验证输入的有效性. 只有当输入有效时, 才会将字符串插入到文档中.
+             *
+             * @param fb     过滤器旁路对象, 提供对底层文档的访问
+             * @param offset 插入字符串的位置
+             * @param string 要插入的字符串
+             * @param attr   字符串的属性集
+             * @throws BadLocationException 如果指定的位置无效, 则抛出此异常
+             */
             @Override
             public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
                 if (isValidInput(fb.getDocument().getText(0, fb.getDocument().getLength()), string, offset)) {
@@ -785,6 +1302,17 @@ public final class AIProviderConfigUI {
                 }
             }
 
+            /**
+             * 替换文档中的部分内容
+             * <p> 在指定位置替换文本内容, 如果输入通过验证则执行替换操作.
+             *
+             * @param fb     文本过滤器的绕过对象, 用于访问和修改文档内容
+             * @param offset 要替换的起始位置 (偏移量)
+             * @param length 要替换的旧文本长度
+             * @param text   新插入的文本内容
+             * @param attrs  插入文本的属性集
+             * @throws BadLocationException 如果偏移量或长度无效时抛出此异常
+             */
             @Override
             public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
                 String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
@@ -832,7 +1360,7 @@ public final class AIProviderConfigUI {
 
                 // 如果输入的是 "auto" 的一部分（如 "a", "au", "aut"），允许输入
                 String lowerTrimmed = trimmed.toLowerCase();
-                if (lowerTrimmed.length() <= 4 && "auto".startsWith(lowerTrimmed)) {
+                if ("auto".startsWith(lowerTrimmed)) {
                     return true;
                 }
 
@@ -888,7 +1416,7 @@ public final class AIProviderConfigUI {
                         }
 
                         // 检查是否可能形成有效数字或 "auto" 的一部分
-                        if (testTrimmed.toLowerCase().length() <= 4 && "auto".startsWith(testTrimmed.toLowerCase())) {
+                        if ("auto".startsWith(testTrimmed.toLowerCase())) {
                             return true;
                         }
 
@@ -1035,6 +1563,17 @@ public final class AIProviderConfigUI {
      * @since 1.0.0
      */
     private static class ProviderListCellRenderer extends DefaultListCellRenderer {
+        /**
+         * 覆盖父类方法, 自定义 JList 单元格的渲染逻辑
+         * <p> 根据传入的值设置标签文本和图标, 用于在列表中显示 AI Provider 的名称及其对应图标.
+         *
+         * @param list         列表组件
+         * @param value        当前单元格的值, 预期为 String 类型的显示名称
+         * @param index        当前单元格的索引
+         * @param isSelected   当前单元格是否被选中
+         * @param cellHasFocus 当前单元格是否有焦点
+         * @return 渲染后的 JLabel 组件
+         */
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
@@ -1063,6 +1602,19 @@ public final class AIProviderConfigUI {
      * @since 1.0.0
      */
     private static class ProviderTableCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        /**
+         * 用于自定义 AI 提供商配置信息在表格中的显示样式
+         * <p> 该方法继承自 DefaultTableCellRenderer 的 getTableCellRendererComponent 方法, 用于渲染 AIProviderConfig 对象,
+         * 显示其对应的显示名称和图标. 支持根据配置类型获取对应的显示名称和图标, 提升表格数据的可读性和可视化效果.
+         *
+         * @param table      表格组件
+         * @param value      当前单元格的值, 应为 AIProviderConfig 类型
+         * @param isSelected 是否选中当前单元格
+         * @param hasFocus   是否具有焦点
+         * @param row        当前行号
+         * @param column     当前列号
+         * @return 返回渲染后的组件, 通常为 JLabel
+         */
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row,
                                                        int column) {
@@ -1093,6 +1645,7 @@ public final class AIProviderConfigUI {
      * @since 1.0.0
      */
     public static class AvailableProvidersTableModel extends AbstractTableModel {
+        /** 列名数组, 用于定义表格中各列的显示标题 */
         private final String[] columnNames = {
             AICommonBundle.message("settings.available.providers.column.provider"),
             AICommonBundle.message("settings.available.providers.column.model"),
@@ -1100,20 +1653,45 @@ public final class AIProviderConfigUI {
             AICommonBundle.message("settings.available.providers.column.max.tokens"),
             AICommonBundle.message("settings.available.providers.column.remark")
         };
+        /**
+         * 存储可用 AI 提供者配置信息的列表
+         *
+         * @see AIProviderConfig
+         */
         private final List<AIProviderConfig> data = new java.util.ArrayList<>();
 
+        /**
+         * 设置可用提供者的数据
+         * <p> 清空当前数据列表, 并将传入的 AIProviderConfig 列表中的每个配置对象的副本添加到数据列表中.
+         * 调用 fireTableDataChanged() 方法通知观察者数据已更改.
+         *
+         * @param configs 包含 AIProviderConfig 对象的列表
+         */
         public void setData(List<AIProviderConfig> configs) {
             data.clear();
             configs.forEach(config -> data.add(config.copy()));
             fireTableDataChanged();
         }
 
+        /**
+         * 获取当前表格中所有 AI 提供者配置的副本列表
+         * <p> 该方法遍历内部数据列表, 对每个配置对象调用 copy() 方法生成副本, 并返回一个独立的列表, 避免外部直接修改原始数据.
+         *
+         * @return 包含所有配置对象副本的列表, 类型为 {@code List<AIProviderConfig>}
+         */
         public List<AIProviderConfig> getData() {
             List<AIProviderConfig> copy = new java.util.ArrayList<>();
             data.forEach(config -> copy.add(config.copy()));
             return copy;
         }
 
+        /**
+         * 根据索引获取 AI 提供者配置对象
+         * <p> 通过指定的索引从数据列表中获取对应的 AIProviderConfig 实例, 如果索引越界则返回 null
+         *
+         * @param index 索引位置, 必须为非负数且小于数据列表大小
+         * @return 对应索引的 AIProviderConfig 实例, 如果索引越界则返回 null
+         */
         public AIProviderConfig getProviderConfig(int index) {
             if (index >= 0 && index < data.size()) {
                 return data.get(index);
@@ -1121,21 +1699,48 @@ public final class AIProviderConfigUI {
             return null;
         }
 
+        /**
+         * 获取表格行数
+         * <p> 返回当前数据列表中的元素数量, 用于确定表格显示的总行数 </p>
+         *
+         * @return 数据列表的行数
+         */
         @Override
         public int getRowCount() {
             return data.size();
         }
 
+        /**
+         * 获取表格的列数量
+         * <p> 返回表格模型中定义的列名称数组的长度, 即表格的总列数
+         *
+         * @return 表格的列数量, 等于列名称数组的长度
+         */
         @Override
         public int getColumnCount() {
             return columnNames.length;
         }
 
+        /**
+         * 获取指定列的列名称
+         * <p> 根据列索引返回对应的列名称, 用于表格显示
+         *
+         * @param column 列索引, 从 0 开始
+         * @return 指定列的名称字符串
+         */
         @Override
         public String getColumnName(int column) {
             return columnNames[column];
         }
 
+        /**
+         * 获取表格中指定单元格的值
+         * <p> 根据行索引和列索引返回对应的单元格数据, 不同列返回不同的提供者配置信息
+         *
+         * @param rowIndex    行索引
+         * @param columnIndex 列索引,0 - 提供者配置,1 - 模型名称,2 - 超时设置,3 - 最大 token 数,4 - 备注信息
+         * @return 对应单元格的值, 当列索引无效时返回空字符串
+         */
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             AIProviderConfig config = data.get(rowIndex);
@@ -1156,11 +1761,35 @@ public final class AIProviderConfigUI {
             };
         }
 
+        /**
+         * 判断表格中指定位置的单元格是否可编辑.
+         * <p>本模型仅允许第 2,3,4 列 (即 “timeout”,"max tokens","remark" 列) 的单元格可编辑, 其余列不可编辑.
+         *
+         * @param rowIndex    行索引
+         * @param columnIndex 列索引
+         * @return 若该单元格属于可编辑列, 返回 {@code true}; 否则返回 {@code false}
+         */
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
             return columnIndex == 2 || columnIndex == 3 || columnIndex == 4;
         }
 
+        /**
+         * 设置指定单元格的值, 并同步更新内部数据模型.<p>
+         * <p>
+         * 根据 {@code columnIndex} 的值执行不同的更新逻辑:<ul>
+         * <li> 列 2(超时时间): 若 {@code aValue} 可解析为整数, 则将其限制在 1~600 范围内后保存; 若解析失败则忽略.</li>
+         * <li> 列 3(最大 Token): 将 {@code aValue} 转为字符串并去除首尾空格; 若为空字符串则默认设为 {@code "auto"}.</li>
+         * <li> 列 4(备注): 直接将 {@code aValue} 解析为字符串并保存.</li>
+         * </ul>
+         * 其它列保持不变. 随后调用 {@link #fireTableCellUpdated(int, int)} 通知监听器单元格已更新.<p>
+         * <p>
+         * 当 {@code rowIndex} 超出数据集合范围时方法直接返回, 保持表状态不变.<p>
+         *
+         * @param aValue      要设置的新值, 支持 {@code String},{@code Integer} 等类型; 若为 {@code null} 则按默认处理.
+         * @param rowIndex    行索引, 从 0 开始. 若小于 0 或大于等于当前数据行数, 方法无操作.
+         * @param columnIndex 列索引, 主要关注 2,3,4. 其他索引值保持原始内容不变.
+         */
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             if (rowIndex < 0 || rowIndex >= data.size()) {
