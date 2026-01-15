@@ -10,6 +10,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.Component;
 import java.awt.Window;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,11 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -252,10 +252,24 @@ public final class AIProviderConfigController {
         return ui.getNextEditEnabledCheckBox().isSelected() != NextEditSettings.getInstance().enabled;
     }
 
+    /**
+     * 判断是否启用“下一次编辑”功能
+     * <p>
+     * 该方法用于获取用户界面中“下一次编辑”复选框的选中状态, 返回布尔值表示是否启用该功能.
+     *
+     * @return 如果“下一次编辑”复选框被选中, 则返回 true; 否则返回 false
+     */
     public boolean isNextEditEnabled() {
         return ui.getNextEditEnabledCheckBox().isSelected();
     }
 
+    /**
+     * 获取对话框父组件
+     * <p>
+     * 通过查找主面板的祖先窗口来确定对话框的父组件. 如果找到窗口, 则返回该窗口; 否则返回主面板本身.
+     *
+     * @return 对话框的父组件, 可能是窗口或主面板
+     */
     @NotNull
     private Component resolveDialogParent() {
         Window window = SwingUtilities.getWindowAncestor(ui.getMainPanel());
@@ -514,21 +528,22 @@ public final class AIProviderConfigController {
                 models = filterLanguageModels(models);
                 models.sort(String::compareToIgnoreCase);
                 saveCachedModels(providerType, models);
+                List<String> finalModels = models;
                 SwingUtilities.invokeLater(() -> {
-                    if (!models.isEmpty()) {
+                    if (!finalModels.isEmpty()) {
                         String defaultModelName = refreshConfig.modelName;
                         String preferredSelection = null;
-                        if (defaultModelName != null && !defaultModelName.trim().isEmpty() && models.contains(defaultModelName)) {
+                        if (defaultModelName != null && !defaultModelName.trim().isEmpty() && finalModels.contains(defaultModelName)) {
                             preferredSelection = defaultModelName;
-                        } else if (!currentModelName.trim().isEmpty() && models.contains(currentModelName)) {
+                        } else if (!currentModelName.trim().isEmpty() && finalModels.contains(currentModelName)) {
                             preferredSelection = currentModelName;
                         } else {
-                            preferredSelection = models.get(0);
+                            preferredSelection = finalModels.get(0);
                         }
-                        ui.updateModelItems(models, preferredSelection);
+                        ui.updateModelItems(finalModels, preferredSelection);
                         refreshModelsSuccess = true;
                         JOptionPane.showMessageDialog(resolveDialogParent(),
-                                                      AICommonBundle.message("settings.refresh.models.success", models.size()),
+                                                      AICommonBundle.message("settings.refresh.models.success", finalModels.size()),
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.INFORMATION_MESSAGE);
                         SwingUtilities.invokeLater(ui::triggerModelSearchPopup);
@@ -568,6 +583,15 @@ public final class AIProviderConfigController {
         });
     }
 
+    /**
+     * 过滤掉包含特定关键词的模型名称
+     * <p>
+     * 该方法用于从模型列表中移除名称中包含 "vl" 或 "tts" 的模型, 通常用于过滤掉视觉或语音相关模型.
+     * 返回的列表中仅包含符合过滤条件的模型名称.
+     *
+     * @param models 待过滤的模型名称列表, 可为 null 或空列表
+     * @return 过滤后的模型名称列表, 若输入为空或 null, 则返回空列表
+     */
     private static List<String> filterLanguageModels(List<String> models) {
         if (models == null || models.isEmpty()) {
             return List.of();
@@ -586,6 +610,16 @@ public final class AIProviderConfigController {
         return filtered;
     }
 
+    /**
+     * 从缓存文件中加载支持的 AI 模型列表
+     * <p>
+     * 根据指定的 AI 服务提供商类型, 查找并读取本地缓存文件中的模型名称列表. 若缓存文件不存在或读取失败, 则返回空列表.
+     * 加载后的模型列表会经过语言模型过滤 (如移除包含 "vl" 或 "tts" 的模型), 并返回过滤后的结果.
+     *
+     * @param providerType AI 服务提供商类型, 用于确定缓存文件路径
+     * @return 缓存中加载的模型名称列表, 若失败或无缓存则返回空列表
+     * @since 1.0
+     */
     @NotNull
     private static List<String> loadCachedModels(@NotNull AIProviderType providerType) {
         Path cachePath = resolveModelsCachePath(providerType);
@@ -600,6 +634,15 @@ public final class AIProviderConfigController {
         }
     }
 
+    /**
+     * 将指定 AI 服务提供商支持的模型列表缓存到本地文件系统
+     * <p>
+     * 该方法根据传入的 AI 服务提供商类型, 解析缓存路径并写入模型列表. 如果缓存目录不存在, 则自动创建. 写入操作会覆盖现有文件内容.
+     * 缓存失败时忽略异常, 不抛出错误.
+     *
+     * @param providerType AI 服务提供商类型, 不能为空
+     * @param models       支持的模型名称列表, 不能为空
+     */
     private static void saveCachedModels(@NotNull AIProviderType providerType, @NotNull List<String> models) {
         Path cachePath = resolveModelsCachePath(providerType);
         if (cachePath == null) {
@@ -616,6 +659,15 @@ public final class AIProviderConfigController {
         }
     }
 
+    /**
+     * 根据 AI 服务提供商类型解析模型缓存文件的路径
+     * <p>
+     * 该方法通过系统用户主目录构建模型缓存文件的完整路径, 文件名格式为 {@code models-<providerId>.txt}, 存储在 {@code ~/.zeka-stack/plugin/engine/} 目录下.
+     * 如果用户主目录无法获取或为空, 则返回 null.
+     *
+     * @param providerType AI 服务提供商类型, 不能为空
+     * @return 模型缓存文件的路径, 如果无法解析则返回 null
+     */
     @Nullable
     private static Path resolveModelsCachePath(@NotNull AIProviderType providerType) {
         String homeDir = System.getProperty("user.home");
