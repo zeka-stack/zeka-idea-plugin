@@ -188,6 +188,10 @@ public final class AICommonIcons {
         }
         Icon icon = switch (providerType) {
             case CUSTOM -> PROVIDER_CHATGPT;
+            case CLAUDE -> PROVIDER_CHATGPT;
+            case GEMINI -> PROVIDER_CHATGPT;
+            case CODEX -> PROVIDER_CHATGPT;
+            case GLM -> PROVIDER_CHATGPT;
             case QIANWEN -> PROVIDER_QWEN;
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
             case OLLAMA -> PROVIDER_OLLAMA;
@@ -214,6 +218,10 @@ public final class AICommonIcons {
         }
         return switch (providerType) {
             case CUSTOM -> PROVIDER_CHATGPT_64;
+            case CLAUDE -> PROVIDER_CHATGPT_64;
+            case GEMINI -> PROVIDER_CHATGPT_64;
+            case CODEX -> PROVIDER_CHATGPT_64;
+            case GLM -> PROVIDER_CHATGPT_64;
             case QIANWEN -> PROVIDER_QWEN_64;
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
             case OLLAMA -> PROVIDER_OLLAMA_64;
@@ -231,4 +239,3 @@ public final class AICommonIcons {
         // 工具类，禁止实例化
     }
 }
-

@@ -38,6 +38,65 @@ public enum AIProviderType {
         List.of("gpt-3.5-turbo", "gpt-4o-mini")
     ),
     /**
+     * Claude（Anthropic）模型配置
+     */
+    CLAUDE(
+        "claude",
+        "Claude",
+        "https://api.anthropic.com",
+        "claude-3-5-sonnet-20241022",
+        true,
+        false,
+        List.of(
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022",
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307"
+        )
+    ),
+    /**
+     * Gemini（Google AI Studio）模型配置
+     */
+    GEMINI(
+        "gemini",
+        "Gemini",
+        "https://generativelanguage.googleapis.com/v1beta",
+        "gemini-1.5-flash-latest",
+        true,
+        false,
+        List.of(
+            "gemini-2.0-flash",
+            "gemini-1.5-pro-latest",
+            "gemini-1.5-flash-latest",
+            "gemini-1.0-pro"
+        )
+    ),
+    /**
+     * Codex（OpenAI）模型配置
+     */
+    CODEX(
+        "codex",
+        "Codex",
+        "https://api.openai.com/v1",
+        "codex-mini-latest",
+        true,
+        false,
+        List.of("codex-mini-latest", "gpt-4o-mini")
+    ),
+    /**
+     * GLM（智谱 OpenAI 兼容）模型配置
+     */
+    GLM(
+        "glm",
+        "GLM",
+        "https://open.bigmodel.cn/api/paas/v4",
+        "glm-4.5-flash",
+        true,
+        false,
+        List.of("glm-4.6", "glm-4.5", "glm-4.5-flash")
+    ),
+    /**
      * 通义千问模型的标识信息
      * <p>
      * 包含模型名称, 别名, 图标地址, 默认模型版本, 是否启用, 是否为默认模型以及支持的模型版本列表
@@ -374,6 +433,14 @@ public enum AIProviderType {
         switch (this) {
             case CUSTOM:
                 return "https://platform.openai.com/api-keys";
+            case CLAUDE:
+                return "https://console.anthropic.com/settings/keys";
+            case GEMINI:
+                return "https://aistudio.google.com/app/apikey";
+            case CODEX:
+                return "https://platform.openai.com/api-keys";
+            case GLM:
+                return "https://open.bigmodel.cn/usercenter/apikeys";
             case QIANWEN:
                 return "https://dashscope.console.aliyun.com/apiKey";
             case SILICONFLOW:
