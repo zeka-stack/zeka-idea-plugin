@@ -11,13 +11,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 
@@ -350,11 +350,15 @@ public final class ChangelogService {
      * 该方法负责将生成的变更日志内容保存到项目根目录下的 CHANGELOG.md 文件中
      * 如果文件已存在, 则将新内容添加到文件开头; 如果不存在, 则创建新文件.
      *
-     * @param project  项目对象
-     * @param content  生成的变更日志内容
+     * @param project 项目对象
+     * @param content 生成的变更日志内容
      * @throws IOException 当保存文件时发生 I/O 错误
      */
     public void saveChangelogToFile(@NotNull Project project, @NotNull String content) throws IOException {
+        if (!SettingsState.getInstance().generateChangelogFile) {
+            return;
+        }
+
         String basePath = project.getBasePath();
         if (basePath == null) {
             throw new IOException(ChangelogBundle.message("error.project.path.not.found"));
@@ -366,18 +370,18 @@ public final class ChangelogService {
         // 检查文件是否存在
         if (changelogFile.exists()) {
             // 读取现有内容
-            String existingContent = new String(Files.readAllBytes(changelogPath), StandardCharsets.UTF_8);
-            
+            String existingContent = Files.readString(changelogPath);
+
             // 合并内容：新内容放在开头，现有内容放在后面
             // 添加一个空行分隔新旧内容
             String mergedContent = content + "\n\n" + existingContent;
-            
+
             // 写入合并后的内容
-            Files.write(changelogPath, mergedContent.getBytes(StandardCharsets.UTF_8));
+            Files.writeString(changelogPath, mergedContent);
         } else {
             // 文件不存在，创建并写入内容
             Files.createFile(changelogPath);
-            Files.write(changelogPath, content.getBytes(StandardCharsets.UTF_8));
+            Files.writeString(changelogPath, content);
         }
 
         // 刷新 VFS 以确保 IDE 能立即看到文件变化

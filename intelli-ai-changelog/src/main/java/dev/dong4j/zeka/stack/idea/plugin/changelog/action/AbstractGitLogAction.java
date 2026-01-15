@@ -154,18 +154,18 @@ public abstract class AbstractGitLogAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
+        // 检查项目是否处于索引模式
+        if (project != null && DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+
         VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
 
         // 设置按钮文本、描述和图标
         e.getPresentation().setText(ChangelogBundle.message(getTextKey()));
         e.getPresentation().setDescription(ChangelogBundle.message(getDescriptionKey()));
         e.getPresentation().setIcon(getIcon());
-
-        // 检查项目是否处于索引模式
-        if (project != null && DumbService.isDumb(project)) {
-            e.getPresentation().setEnabled(false);
-            return;
-        }
 
         // 只有在 Git Log 工具窗口中有选中提交时才启用
         boolean enabled = project != null && selection != null;

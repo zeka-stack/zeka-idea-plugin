@@ -103,6 +103,11 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         group.add(new CommitMessageDiffProviderActionGroup());
         group.add(new CommitMessageContextToggleAction(project));
 
+        // Changelog 设置分组：包含“生成 CHANGELOG.md”开关。
+        group.add(Separator.create());
+        group.add(Separator.create(ChangelogBundle.message("statusbar.changelog.settings.title")));
+        group.add(new GenerateChangelogFileToggleAction());
+
         group.add(Separator.create());
         group.add(Separator.create(ChangelogBundle.message("statusbar.release.log.settings.title")));
         group.add(new ReleaseLogStartPointActionGroup());
@@ -150,6 +155,31 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             SettingsState.getInstance().useCommitMessageInputAsContext = state;
+        }
+    }
+
+    /**
+     * CHANGELOG.md 生成开关动作类
+     * <p> 用于在状态栏快捷设置中切换是否写入项目根目录的 CHANGELOG.md 文件。
+     */
+    private static class GenerateChangelogFileToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        GenerateChangelogFileToggleAction() {
+            super(ChangelogBundle.message("statusbar.changelog.file.generate.toggle"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().generateChangelogFile;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().generateChangelogFile = state;
         }
     }
 

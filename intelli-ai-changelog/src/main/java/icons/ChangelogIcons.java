@@ -40,11 +40,18 @@ public class ChangelogIcons {
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */
     public static final Icon CHANGELOG_16 = load("/icons/changelog_16.svg");
+    /** 日志图标, 用于显示日志相关操作或视图的界面元素 */
     public static final Icon LOGS = load("/icons/logs.svg");
+    /** 周报图标 (16x16), 用于工具栏按钮, 动作图标, 菜单项, 工具窗口标签 */
     public static final Icon WEEKLY = load("/icons/weekly.svg");
+    /** 日报图标, 用于显示日报相关操作或视图的界面元素 */
     public static final Icon DAILY = load("/icons/daily.svg");
+    /** 差异对比图标 (16x16), 用于工具栏按钮, 动作图标, 菜单项, 工具窗口标签 */
     public static final Icon DIFF = load("/icons/diff.svg");
+    /** IntelliJ AI 变更日志发布图标 (16x16)<br> 用于工具栏按钮, 动作图标, 菜单项, 工具窗口标签 */
     public static final Icon RELEASE = load("/icons/release.svg");
+    /** IntelliJ AI 变更日志主图标 (16x16), 用于工具栏按钮, 动作图标, 菜单项及工具窗口标签 */
+    public static final Icon CHANGELOG = load("/icons/change-logo.svg");
 
 }
 
