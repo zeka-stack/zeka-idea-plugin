@@ -8,6 +8,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+
 /**
  * 工具窗口标题工具类
  * <p>
@@ -142,5 +146,27 @@ public final class ToolWindowTitleUtil {
         return actionKey.length() >= 2
                ? actionKey.substring(0, 2).toUpperCase()
                : actionKey.toUpperCase();
+    }
+
+    /**
+     * 构建当前 AI Provider 信息
+     * <p>
+     * 从全局设置中获取当前配置的 AI 提供商类型和模型名称, 组合成可读的文本格式.
+     * 若未配置模型名称, 则仅返回提供商品牌名; 若配置了模型名称, 则返回格式为 "品牌名 (模型名)" 的字符串.
+     *
+     * @return provider 文本, 例如 "OpenAI(GPT-4)" 或 "OpenAI"
+     */
+    public static @NotNull String resolveProviderText() {
+        AIProviderConfig config = SettingsState.getInstance().providerConfig;
+        if (config == null || config.providerType == null) {
+            return "";
+        }
+        AIProviderType providerType = config.providerType;
+        String providerName = providerType.getDisplayName();
+        String modelName = config.modelName != null ? config.modelName.trim() : "";
+        if (!modelName.isEmpty()) {
+            return providerName + "(" + modelName + ")";
+        }
+        return providerName;
     }
 }

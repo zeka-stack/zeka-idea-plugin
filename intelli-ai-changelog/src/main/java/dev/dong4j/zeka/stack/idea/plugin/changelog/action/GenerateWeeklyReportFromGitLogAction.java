@@ -114,10 +114,21 @@ public class GenerateWeeklyReportFromGitLogAction extends AbstractGitLogAction {
         return service.generateWeeklyReport(commitHashes);
     }
 
+    /**
+     * 生成每周报告内容的流式输出方法
+     * <p>
+     * 该方法通过调用 {@link ChangelogService#generateWeeklyReportStream(java.util.List, AIStreamResponseListener)} 方法,
+     * 将指定提交哈希列表对应的每周报告内容以流式方式输出到监听器中, 适用于需要实时反馈报告生成进度的场景.
+     *
+     * @param service      用于生成报告的 {@link ChangelogService} 实例
+     * @param commitHashes 提交哈希列表, 报告将基于这些提交生成
+     * @param listener     用于接收流式报告内容的监听器, 用于实时处理生成过程中的数据
+     * @throws Exception 生成过程中可能抛出的任何异常
+     */
     @Override
-    protected @NotNull String generateContentStream(@NotNull ChangelogService service,
-                                                    @NotNull List<String> commitHashes,
-                                                    @NotNull AIStreamResponseListener listener) throws Exception {
-        return service.generateWeeklyReportStream(commitHashes, listener);
+    protected void generateContentStream(@NotNull ChangelogService service,
+                                         @NotNull List<String> commitHashes,
+                                         @NotNull AIStreamResponseListener listener) throws Exception {
+        service.generateWeeklyReportStream(commitHashes, listener);
     }
 }

@@ -26,7 +26,6 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -129,18 +128,15 @@ public abstract class AbstractGitLogAction extends AnAction {
      * @param service      ChangelogService 实例
      * @param commitHashes 提交记录 hash 列表
      * @param listener     流式监听器
-     * @return 生成的内容
      * @throws Exception 生成过程中可能发生的异常
      */
-    @NotNull
-    protected String generateContentStream(@NotNull ChangelogService service,
+    protected void generateContentStream(@NotNull ChangelogService service,
                                            @NotNull List<String> commitHashes,
                                            @NotNull AIStreamResponseListener listener) throws Exception {
         String content = generateContent(service, commitHashes);
         listener.onStart();
         listener.onChunk(content);
         listener.onComplete(content);
-        return content;
     }
 
     /**
@@ -224,7 +220,7 @@ public abstract class AbstractGitLogAction extends AnAction {
         String toolWindowTitle = ToolWindowTitleUtil.buildToolWindowTitle(getTextKey());
         String startPoint = selectedHashes.get(0);
         String endPoint = selectedHashes.get(selectedHashes.size() - 1);
-        String provider = resolveProviderText();
+        String provider = ToolWindowTitleUtil.resolveProviderText();
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
             ChangelogToolWindowService.getInstance(project).openSession(toolWindowTitle, startPoint, endPoint, provider);
 
@@ -353,22 +349,4 @@ public abstract class AbstractGitLogAction extends AnAction {
         return ActionUpdateThread.BGT;
     }
 
-    /**
-     * 构建当前 AI Provider 信息
-     *
-     * @return provider 文本
-     */
-    private @NotNull String resolveProviderText() {
-        AIProviderConfig config = SettingsState.getInstance().providerConfig;
-        if (config == null || config.providerType == null) {
-            return "";
-        }
-        AIProviderType providerType = config.providerType;
-        String providerName = providerType.getDisplayName();
-        String modelName = config.modelName != null ? config.modelName.trim() : "";
-        if (!modelName.isEmpty()) {
-            return providerName + "(" + modelName + ")";
-        }
-        return providerName;
-    }
 }

@@ -47,7 +47,6 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.ui.ChangelogToolWindowService
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
@@ -160,7 +159,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
         RangePoints points = buildReleaseRangePoints(settings, gitRoot);
         String providerText = provider == ReleaseLogProvider.GIT_CLIFF
                               ? buildGitCliffProviderText()
-                              : resolveProviderText(settings);
+                              : ToolWindowTitleUtil.resolveProviderText();
         ChangelogToolWindowService.ChangelogOutputSession outputSession =
             ChangelogToolWindowService.getInstance(project).openSession(title, points.start, points.end, providerText);
 
@@ -562,26 +561,6 @@ public abstract class AbstractReleaseLogAction extends AnAction {
             return "git-cliff";
         }
         return "git-cliff(" + version + ")";
-    }
-
-    /**
-     * 构建当前 AI Provider 信息
-     *
-     * @param settings 当前配置
-     * @return provider 文本
-     */
-    private @NotNull String resolveProviderText(@NotNull SettingsState settings) {
-        AIProviderConfig config = settings.providerConfig;
-        if (config == null || config.providerType == null) {
-            return "";
-        }
-        AIProviderType providerType = config.providerType;
-        String providerName = providerType.getDisplayName();
-        String modelName = config.modelName != null ? config.modelName.trim() : "";
-        if (!modelName.isEmpty()) {
-            return providerName + "(" + modelName + ")";
-        }
-        return providerName;
     }
 
     /**

@@ -216,15 +216,13 @@ public final class ChangelogService {
      *
      * @param commitHashes 提交哈希列表
      * @param listener     流式监听器, 用于接收生成过程中的数据流
-     * @return 生成的变更日志内容 (Markdown 格式)
      * @throws Exception 当生成过程中发生错误时抛出异常
      */
-    @NotNull
-    public String generateChangelogFromDiffStream(@NotNull List<String> commitHashes,
-                                                  @NotNull AIStreamResponseListener listener) throws Exception {
+    public void generateChangelogFromDiffStream(@NotNull List<String> commitHashes,
+                                                @NotNull AIStreamResponseListener listener) throws Exception {
         List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(commitHashes);
         String prompt = promptBuilder.buildDiffChangelogPrompt(diffCommits);
-        return aiExecutor.callChangelogStream(prompt, listener);
+        aiExecutor.callChangelogStream(prompt, listener);
     }
 
     /**
