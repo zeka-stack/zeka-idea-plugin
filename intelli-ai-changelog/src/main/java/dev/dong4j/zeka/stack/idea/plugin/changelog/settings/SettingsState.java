@@ -62,6 +62,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean showPromptSettings = false;
 
     /**
+     * 是否生成 CHANGELOG.md 文件
+     * <p>
+     * 控制在执行“生成并保存 CHANGELOG.md”相关能力时，是否实际写入项目根目录下的 CHANGELOG.md 文件。
+     * 可在设置页与状态栏快捷设置中快速切换。
+     *
+     * <p>默认值: true（默认开启，保持生成文件能力可用）
+     */
+    public boolean generateChangelogFile = true;
+
+    /**
      * 系统提示词模板
      *
      * <p>用于设定 AI 角色和行为准则的系统提示词。

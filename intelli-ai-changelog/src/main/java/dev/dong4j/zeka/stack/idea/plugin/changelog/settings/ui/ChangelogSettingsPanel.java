@@ -73,6 +73,8 @@ public class ChangelogSettingsPanel {
     // 高级设置
     /** 显示高级设置的复选框 */
     private final JBCheckBox showAdvancedSettingsCheckBox;
+    /** 是否生成 CHANGELOG.md 文件复选框 */
+    private final JBCheckBox generateChangelogFileCheckBox;
     /** 高级设置容器面板（用于控制可见性） */
     private final JPanel advancedSettingsPanel;
 
@@ -157,6 +159,9 @@ public class ChangelogSettingsPanel {
     public ChangelogSettingsPanel() {
         // 创建高级设置复选框
         showAdvancedSettingsCheckBox = new JBCheckBox(ChangelogBundle.message("settings.prompt.settings.show"));
+
+        // 创建生成 CHANGELOG.md 文件复选框
+        generateChangelogFileCheckBox = new JBCheckBox(ChangelogBundle.message("settings.changelog.file.generate"));
 
         // 创建高级设置容器面板
         advancedSettingsPanel = new JPanel(new BorderLayout());
@@ -384,6 +389,7 @@ public class ChangelogSettingsPanel {
             || commitMessageDiffProviderComboBox.getSelectedItem() != settings.commitMessageDiffProvider
             || showCommitMessagePromptCheckBox.isSelected() != settings.showCommitMessagePrompt
             || enableCommitMultiRepoCheckBox.isSelected() != settings.enableCommitMultiRepoCheck
+            || generateChangelogFileCheckBox.isSelected() != settings.generateChangelogFile
             || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings
             || releaseLogByGitCliffRadioButton.isSelected() != (settings.releaseLog == ReleaseLogProvider.GIT_CLIFF)
             || useTagAsStartRadioButton.isSelected() != settings.useTagAsStart
@@ -422,6 +428,7 @@ public class ChangelogSettingsPanel {
         settings.commitMessageDiffProvider = (SettingsState.CommitMessageDiffProvider) commitMessageDiffProviderComboBox.getSelectedItem();
         settings.showCommitMessagePrompt = showCommitMessagePromptCheckBox.isSelected();
         settings.enableCommitMultiRepoCheck = enableCommitMultiRepoCheckBox.isSelected();
+        settings.generateChangelogFile = generateChangelogFileCheckBox.isSelected();
         settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
         settings.releaseLog = releaseLogByGitCliffRadioButton.isSelected() ? ReleaseLogProvider.GIT_CLIFF : ReleaseLogProvider.AI;
         settings.useTagAsStart = useTagAsStartRadioButton.isSelected();
@@ -459,6 +466,7 @@ public class ChangelogSettingsPanel {
         showCommitMessagePromptCheckBox.setSelected(settings.showCommitMessagePrompt);
         enableCommitMultiRepoCheckBox.setSelected(settings.enableCommitMultiRepoCheck);
         commitMessagePromptPanel.setVisible(settings.showCommitMessagePrompt);
+        generateChangelogFileCheckBox.setSelected(settings.generateChangelogFile);
         showExcludePatternsCheckBox.setSelected(false); // 不持久化，默认为 false
         excludePatternsPanel.setVisible(false); // 默认隐藏
         List<String> excludePatterns = settings.excludePatterns != null && !settings.excludePatterns.isEmpty()
@@ -1268,6 +1276,7 @@ public class ChangelogSettingsPanel {
      */
     private JPanel createChangelogSettingsPanel() {
         JPanel contentPanel = FormBuilder.createFormBuilder()
+            .addComponent(generateChangelogFileCheckBox)
             .addComponent(showAdvancedSettingsCheckBox)
             .addComponent(advancedSettingsPanel)
             .getPanel();

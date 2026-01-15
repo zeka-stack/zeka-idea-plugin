@@ -1,45 +1,94 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.action;
 
-import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VfsUtil;
-import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
 import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.ChangelogService;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import icons.ChangelogIcons;
 
 /**
- * 用于生成并保存 CHANGELOG.md 文件的 Action 类
- * <p>
- * 该类继承自 AbstractGitLogAction, 主要负责生成基于 Git 提交记录的变更日志内容
- * 并将其保存到项目根目录下的 CHANGELOG.md 文件中, 如果文件已存在则更新内容.
+ * 生成变更日志文件的操作类
+ * <p> 继承自 {@code AbstractGitLogAction}, 用于在 IntelliJ IDEA 插件中实现根据 Git 提交记录生成或更新 CHANGELOG.md 文件的功能.
+ * 该类主要负责在用户触发操作时, 判断项目中是否已存在 CHANGELOG.md 文件, 若不存在则生成新文件, 若存在则更新内容.
+ * 本类不负责请求处理, 仅专注于变更日志文件的生成与更新逻辑, 避免与基础设施层耦合.
+ * <p> 支持流式生成变更日志内容 (通过 {@code AIStreamResponseListener}), 并可将结果保存至文件系统.
+ * <p> 在更新操作前会检查项目是否处于“Dumb”状态或用户禁用该功能, 若条件不满足则禁用操作项.
  *
- * @author zeka.stack.team
+ * @author dong4j
  * @version 1.0.0
- * @email mailto:zeka.stack@gmail.com
+ * @email "mailto:dong4j@gmail.com"
  * @date 2026.01.15
  * @since 1.0.0
  */
 public class GenerateChangelogFileAction extends AbstractGitLogAction {
 
+    /**
+     * 获取操作图标的实现方法
+     * <p>
+     * 该方法用于返回当前操作对应的图标资源, 此处返回的是变更日志相关的图标常量 {@code ChangelogIcons.CHANGELOG}.
+     *
+     * @return 图标对象, 类型为 {@code Icon}, 用于在 UI 中显示该操作的图标
+     */
     @NotNull
     protected Icon getIcon() {
-        return ChangelogIcons.LOGS;
+        return ChangelogIcons.CHANGELOG;
+    }
+
+    /**
+     * 更新操作按钮的启用状态和显示文本
+     * <p>
+     * 根据当前项目状态, 是否处于哑模式 (DumbService) 以及配置项 generateChangelogFile 的值, 动态设置按钮的启用状态和显示文本.
+     * 如果变更日志文件已存在, 则显示“更新变更日志文件”相关文本; 否则显示“生成变更日志文件”相关文本.
+     *
+     * @param e 操作事件对象, 包含当前操作上下文信息
+     */
+    @Override
+    public void update(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+        super.update(e);
+        Project project = e.getProject();
+        if (project != null && DumbService.isDumb(project)) {
+            e.getPresentation().setEnabled(false);
+            return;
+        }
+
+        if (e.getPresentation().isEnabled() && !SettingsState.getInstance().generateChangelogFile) {
+            e.getPresentation().setEnabled(false);
+        }
+
+        boolean exists = project != null && !project.isDisposed() && changelogFileExists(project);
+        if (exists) {
+            e.getPresentation().setText(ChangelogBundle.message("action.update.changelog.file.gitlog"));
+            e.getPresentation().setDescription(ChangelogBundle.message("action.update.changelog.file.gitlog.description"));
+        } else {
+            e.getPresentation().setText(ChangelogBundle.message(getTextKey()));
+            e.getPresentation().setDescription(ChangelogBundle.message(getDescriptionKey()));
+        }
+    }
+
+    /**
+     * 检查项目根目录下是否存在 CHANGELOG.md 文件
+     * <p>
+     * 通过获取项目基础路径, 并构造路径 <pre>{@code Paths.get(basePath, "CHANGELOG.md")}</pre>, 判断该文件是否存在.
+     *
+     * @param project 项目实例, 用于获取基础路径
+     * @return 如果文件存在则返回 true, 否则返回 false
+     */
+    private static boolean changelogFileExists(@NotNull Project project) {
+        String basePath = project.getBasePath();
+        if (basePath == null || basePath.isBlank()) {
+            return false;
+        }
+        return Paths.get(basePath, "CHANGELOG.md").toFile().exists();
     }
 
     /**
@@ -69,9 +118,9 @@ public class GenerateChangelogFileAction extends AbstractGitLogAction {
     /**
      * 获取进度标题的资源键
      * <p>
-     * 返回用于显示进度标题的国际化资源键字符串
+     * 返回用于显示进度标题的国际化资源键字符串, 用于在生成变更日志过程中显示进度标题.
      *
-     * @return 进度标题的资源键
+     * @return 进度标题的资源键字符串
      */
     @Override
     protected @NotNull String getProgressTitleKey() {
@@ -120,15 +169,17 @@ public class GenerateChangelogFileAction extends AbstractGitLogAction {
     }
 
     /**
-     * 流式生成内容
+     * 流式生成变更日志内容
      * <p>
-     * 子类可重写此方法以启用 AI 流式输出. 默认实现会退化为一次性生成.
+     * 该方法通过传入的变更日志服务和提交哈希列表, 调用流式生成接口生成日志内容, 并实时保存到文件中. 生成完成后返回完整内容.
+     * <p>
+     * 本方法适用于需要实时输出或 AI 流式响应的场景, 支持监听器回调.
      *
-     * @param service      ChangelogService 实例
-     * @param commitHashes 提交记录 hash 列表
-     * @param listener     流式监听器
-     * @return 生成的内容
-     * @throws Exception 生成过程中可能发生的异常
+     * @param service      变更日志服务实例, 用于执行流式日志生成和文件保存
+     * @param commitHashes 提交记录的哈希列表, 用于确定生成日志所包含的提交范围
+     * @param listener     流式响应监听器, 用于接收中间生成内容或进度反馈
+     * @return 生成的完整变更日志内容
+     * @throws Exception 生成或保存过程中发生异常时抛出
      */
     @Override
     protected @NotNull String generateContentStream(@NotNull ChangelogService service,
@@ -136,10 +187,10 @@ public class GenerateChangelogFileAction extends AbstractGitLogAction {
                                                     @NotNull AIStreamResponseListener listener) throws Exception {
         // 先使用流式生成内容
         String content = service.generateChangelogStream(commitHashes, listener);
-        
+
         // 然后保存到文件
         service.saveChangelogToFile(service.getProject(), content);
-        
+
         return content;
     }
 }
