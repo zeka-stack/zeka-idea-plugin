@@ -293,15 +293,11 @@ final class ChangelogGitService {
         if (basePath == null) {
             return null;
         }
-        File gitDir = new File(basePath, ".git");
-        if (!gitDir.exists()) {
-            return null;
-        }
         try {
+            // 兼容普通仓库与 git worktree（worktree 下 .git 可能是文件而非目录）
             return new FileRepositoryBuilder()
-                .setGitDir(gitDir)
                 .readEnvironment()
-                .findGitDir()
+                .findGitDir(new File(basePath))
                 .build();
         } catch (IOException e) {
             return null;
@@ -318,15 +314,11 @@ final class ChangelogGitService {
      */
     @Nullable
     Repository getRepository(@NotNull Path gitRoot) {
-        File gitDir = gitRoot.resolve(".git").toFile();
-        if (!gitDir.exists()) {
-            return null;
-        }
         try {
+            // 兼容普通仓库与 git worktree（worktree 下 .git 可能是文件而非目录）
             return new FileRepositoryBuilder()
-                .setGitDir(gitDir)
                 .readEnvironment()
-                .findGitDir()
+                .findGitDir(gitRoot.toFile())
                 .build();
         } catch (IOException ignored) {
             return null;

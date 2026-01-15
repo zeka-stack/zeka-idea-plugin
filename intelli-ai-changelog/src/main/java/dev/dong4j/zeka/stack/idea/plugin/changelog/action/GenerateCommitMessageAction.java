@@ -28,6 +28,7 @@ import java.awt.Component;
 import java.awt.Point;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -165,17 +166,36 @@ public class GenerateCommitMessageAction extends AnAction {
         // “编辑提交消息”对话框：基于 Git Log 选中提交的真实 diff 再生提交信息
         VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
         if (selection == null) {
-            showActionTip(e, ChangelogBundle.message("commit.regenerate.select.single.commit"));
+            showActionTip(e, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
             return;
         }
         List<VcsFullCommitDetails> commits = selection.getCachedFullDetails();
-        if (commits.size() != 1) {
-            showActionTip(e, ChangelogBundle.message("commit.regenerate.select.single.commit"));
+        if (commits.isEmpty()) {
+            showActionTip(e, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
             return;
         }
 
-        String commitHash = commits.get(0).getId().asString();
-        generator.generateForCommitHash(commitHash, commitMessageControl, null);
+        // 1) 单条：编辑提交消息（改写当前提交 message）
+        if (commits.size() == 1) {
+            String commitHash = commits.get(0).getId().asString();
+            generator.generateForCommitHash(commitHash, commitMessageControl, null);
+            return;
+        }
+
+        // 2) 多条：压缩提交（Squash）对话框，基于多条提交的真实 diff 合并重写提交 message
+        List<String> commitHashes = commits.stream().map(it -> it.getId().asString()).collect(Collectors.toList());
+        List<String> commitMessages = commits.stream()
+            .map(it -> {
+                String fullMessage = it.getFullMessage();
+                if (fullMessage == null) {
+                    return "";
+                }
+                int idx = fullMessage.indexOf('\n');
+                return (idx >= 0 ? fullMessage.substring(0, idx) : fullMessage).trim();
+            })
+            .filter(it -> !it.isBlank())
+            .collect(Collectors.toList());
+        generator.generateForCommitHashes(commitHashes, commitMessages, commitMessageControl, null);
     }
 
     /**

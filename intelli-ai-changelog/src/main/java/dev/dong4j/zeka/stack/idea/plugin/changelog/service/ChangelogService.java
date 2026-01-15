@@ -323,6 +323,55 @@ public final class ChangelogService {
     }
 
     /**
+     * 基于 Git Log 中多条已提交记录的真实 diff（压缩提交/Squash）再生提交记录（流式回调）
+     *
+     * @param commitHashes         提交 hash 列表（至少 2 条）
+     * @param selectedCommitTitles 选中提交的原始 message（可为空，用于帮助模型合并语义）
+     * @param listener             流式响应监听器
+     * @param userContext          用户补充上下文说明，可为空
+     * @return 生成的提交记录内容
+     * @throws Exception 当读取 diff 或调用 AI 服务失败时抛出
+     */
+    @NotNull
+    public String generateSquashCommitMessageFromGitLogStream(@NotNull List<String> commitHashes,
+                                                              @NotNull List<String> selectedCommitTitles,
+                                                              @NotNull AIStreamResponseListener listener,
+                                                              @Nullable String userContext) throws Exception {
+        List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(commitHashes);
+        if (diffCommits.isEmpty()) {
+            throw new Exception(ChangelogBundle.message("commit.regenerate.no.commit.diff"));
+        }
+
+        StringBuilder diffTextBuilder = new StringBuilder();
+        for (ChangelogCommitModels.DiffCommitInfo diffCommit : diffCommits) {
+            String diffText = diffCommit.diffText();
+            if (diffText == null || diffText.isBlank()) {
+                continue;
+            }
+            if (!diffTextBuilder.isEmpty()) {
+                diffTextBuilder.append("\n");
+            }
+            diffTextBuilder.append(diffText.strip());
+        }
+        String diffText = diffTextBuilder.toString().trim();
+        if (diffText.isBlank()) {
+            throw new Exception(ChangelogBundle.message("commit.no.changes"));
+        }
+
+        String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
+        String branch = gitService.getCurrentBranch();
+        boolean isGitRepository = gitService.isGitRepository();
+        String prompt = promptBuilder.buildCommitMessagePromptFromCommitDiffs(commitHashes,
+                                                                              selectedCommitTitles,
+                                                                              diffText,
+                                                                              recentCommitsText,
+                                                                              userContext,
+                                                                              branch,
+                                                                              isGitRepository);
+        return aiExecutor.callCommitMessageStream(prompt, listener);
+    }
+
+    /**
      * 构建基于代码变更的提交消息提示词
      * <p>
      * 根据提供的代码变更集合和可选的用户上下文, 构建用于 AI 生成提交消息的提示词.
