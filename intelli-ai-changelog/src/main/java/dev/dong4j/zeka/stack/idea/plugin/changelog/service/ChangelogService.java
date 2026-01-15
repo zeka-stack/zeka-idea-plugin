@@ -3,11 +3,18 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vfs.VfsUtil;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 
@@ -303,5 +310,80 @@ public final class ChangelogService {
         String branch = gitService.getCurrentBranch();
         boolean isGitRepository = gitService.isGitRepository();
         return promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
+    }
+
+    /**
+     * 生成并保存 CHANGELOG.md 文件
+     * <p>
+     * 根据提供的提交哈希列表生成变更日志内容, 并将其保存到项目根目录下的 CHANGELOG.md 文件中.
+     * 如果文件已存在, 则更新文件内容; 如果不存在, 则创建新文件.
+     *
+     * @param project      项目对象
+     * @param commitHashes 提交记录的 hash 列表
+     * @return 生成的变更日志内容
+     * @throws Exception 当生成或保存过程中发生错误时抛出
+     */
+    public @NotNull String generateAndSaveChangelogFile(@NotNull Project project, @NotNull List<String> commitHashes) throws Exception {
+        // 生成变更日志内容
+        String changelogContent = generateChangelog(commitHashes);
+
+        // 保存到文件
+        saveChangelogToFile(project, changelogContent);
+
+        return changelogContent;
+    }
+
+    /**
+     * 获取项目对象
+     * <p>
+     * 返回当前 ChangelogService 关联的 Project 对象
+     *
+     * @return 项目对象
+     */
+    public @NotNull Project getProject() {
+        return gitService.project;
+    }
+
+    /**
+     * 保存生成的变更日志内容到 CHANGELOG.md 文件
+     * <p>
+     * 该方法负责将生成的变更日志内容保存到项目根目录下的 CHANGELOG.md 文件中
+     * 如果文件已存在, 则将新内容添加到文件开头; 如果不存在, 则创建新文件.
+     *
+     * @param project  项目对象
+     * @param content  生成的变更日志内容
+     * @throws IOException 当保存文件时发生 I/O 错误
+     */
+    public void saveChangelogToFile(@NotNull Project project, @NotNull String content) throws IOException {
+        String basePath = project.getBasePath();
+        if (basePath == null) {
+            throw new IOException(ChangelogBundle.message("error.project.path.not.found"));
+        }
+
+        Path changelogPath = Paths.get(basePath, "CHANGELOG.md");
+        File changelogFile = changelogPath.toFile();
+
+        // 检查文件是否存在
+        if (changelogFile.exists()) {
+            // 读取现有内容
+            String existingContent = new String(Files.readAllBytes(changelogPath), StandardCharsets.UTF_8);
+            
+            // 合并内容：新内容放在开头，现有内容放在后面
+            // 添加一个空行分隔新旧内容
+            String mergedContent = content + "\n\n" + existingContent;
+            
+            // 写入合并后的内容
+            Files.write(changelogPath, mergedContent.getBytes(StandardCharsets.UTF_8));
+        } else {
+            // 文件不存在，创建并写入内容
+            Files.createFile(changelogPath);
+            Files.write(changelogPath, content.getBytes(StandardCharsets.UTF_8));
+        }
+
+        // 刷新 VFS 以确保 IDE 能立即看到文件变化
+        VirtualFile virtualFile = VfsUtil.findFileByIoFile(changelogFile, true);
+        if (virtualFile != null) {
+            virtualFile.refresh(false, true);
+        }
     }
 }

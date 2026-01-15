@@ -65,7 +65,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 final class ChangelogGitService {
 
     /** 项目实例, 用于获取基础路径和执行 Git 操作 */
-    private final Project project;
+    public final Project project;
 
     /**
      * 构造函数, 初始化 ChangelogGitService 对象

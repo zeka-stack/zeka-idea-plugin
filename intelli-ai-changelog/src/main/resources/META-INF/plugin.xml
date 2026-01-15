@@ -117,6 +117,10 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"
                 popup="true">
         </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFileAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFileAction"
+                popup="true">
+        </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction">
             <add-to-group group-id="Vcs.Log.Toolbar" anchor="last"/>
@@ -145,6 +149,7 @@
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"/>
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"/>
             <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"/>
+            <reference ref="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFileAction"/>
             <add-to-group group-id="Vcs.Log.ContextMenu" anchor="first"/>
         </group>
     </actions>
