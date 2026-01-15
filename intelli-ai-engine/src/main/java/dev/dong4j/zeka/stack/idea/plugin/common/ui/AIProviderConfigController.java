@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.Component;
 import java.awt.Window;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +19,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -283,7 +289,11 @@ public final class AIProviderConfigController {
         String preferredSelection = (currentModel != null && !currentModel.trim().isEmpty())
                                     ? currentModel
                                     : providerType.getDefaultModel();
-        ui.updateModelItems(providerType.getSupportedModels(), preferredSelection);
+        List<String> cachedModels = loadCachedModels(providerType);
+        if (cachedModels.isEmpty()) {
+            cachedModels = providerType.getSupportedModels();
+        }
+        ui.updateModelItems(cachedModels, preferredSelection);
 
         ui.getBaseUrlField().setText(providerType.getDefaultBaseUrl());
         ui.getApiKeyField().setEnabled(true);
@@ -501,7 +511,9 @@ public final class AIProviderConfigController {
             try {
                 String currentModelName = getSelectedModelName();
                 List<String> models = provider.getAvailableModels(apiKey);
+                models = filterLanguageModels(models);
                 models.sort(String::compareToIgnoreCase);
+                saveCachedModels(providerType, models);
                 SwingUtilities.invokeLater(() -> {
                     if (!models.isEmpty()) {
                         String defaultModelName = refreshConfig.modelName;
@@ -554,6 +566,64 @@ public final class AIProviderConfigController {
                 });
             }
         });
+    }
+
+    private static List<String> filterLanguageModels(List<String> models) {
+        if (models == null || models.isEmpty()) {
+            return List.of();
+        }
+        List<String> filtered = new ArrayList<>(models.size());
+        for (String model : models) {
+            if (model == null) {
+                continue;
+            }
+            String lowerName = model.toLowerCase(java.util.Locale.ROOT);
+            if (lowerName.contains("vl") || lowerName.contains("tts")) {
+                continue;
+            }
+            filtered.add(model);
+        }
+        return filtered;
+    }
+
+    @NotNull
+    private static List<String> loadCachedModels(@NotNull AIProviderType providerType) {
+        Path cachePath = resolveModelsCachePath(providerType);
+        if (cachePath == null || !Files.exists(cachePath)) {
+            return List.of();
+        }
+        try {
+            List<String> cached = Files.readAllLines(cachePath, StandardCharsets.UTF_8);
+            return filterLanguageModels(cached);
+        } catch (Exception ignored) {
+            return List.of();
+        }
+    }
+
+    private static void saveCachedModels(@NotNull AIProviderType providerType, @NotNull List<String> models) {
+        Path cachePath = resolveModelsCachePath(providerType);
+        if (cachePath == null) {
+            return;
+        }
+        try {
+            Files.createDirectories(cachePath.getParent());
+            Files.write(cachePath, models, StandardCharsets.UTF_8,
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE);
+        } catch (Exception ignored) {
+            // ignore cache failures
+        }
+    }
+
+    @Nullable
+    private static Path resolveModelsCachePath(@NotNull AIProviderType providerType) {
+        String homeDir = System.getProperty("user.home");
+        if (homeDir == null || homeDir.trim().isEmpty()) {
+            return null;
+        }
+        return Paths.get(homeDir, ".zeka-stack", "plugin", "engine",
+                         "models-" + providerType.getProviderId() + ".txt");
     }
 
     /**
