@@ -389,6 +389,173 @@ public class CommitMessageGenerator {
             });
     }
 
+    /**
+     * 基于 Git Log 中已提交记录的真实 diff 再生提交信息
+     *
+     * @param commitHash           提交 hash
+     * @param commitMessageControl 提交消息控件（编辑提交消息对话框或提交面板）
+     * @param outputSession        工具窗口输出会话，可为空
+     */
+    public void generateForCommitHash(@NotNull String commitHash,
+                                      @Nullable CommitMessageI commitMessageControl,
+                                      @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        if (commitHash.isBlank()) {
+            log.debug("Git 提交页面：提交记录再生失败，commit hash 为空");
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.single.commit"));
+            return;
+        }
+
+        GenerationState state = new GenerationState();
+        GENERATION_STATES.put(project, state);
+
+        ProgressManager.getInstance().run(
+            new Task.Backgroundable(project, ChangelogBundle.message("commit.generating.progress"), true) {
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    indicator.setIndeterminate(true);
+                    indicator.setText(ChangelogBundle.message("commit.analyzing.changes"));
+                    state.indicator.set(indicator);
+                    state.thread.set(Thread.currentThread());
+
+                    String contextText = null;
+                    if (SettingsState.getInstance().useCommitMessageInputAsContext) {
+                        contextText = getCommitMessageText(commitMessageControl);
+                    }
+
+                    TypingIndicator typingIndicator = startTypingIndicator(commitMessageControl, outputSession, contextText == null);
+                    state.typingIndicator.set(typingIndicator);
+                    StreamCancellationToken cancellationToken = new StreamCancellationToken();
+                    state.cancellationToken.set(cancellationToken);
+                    if (outputSession != null) {
+                        outputSession.bindCancellationToken(cancellationToken);
+                    }
+
+                    try {
+                        if (state.cancelled.get()) {
+                            return;
+                        }
+
+                        ChangelogService service = ChangelogService.getInstance(project);
+
+                        StringBuilder buffer = new StringBuilder();
+                        AtomicReference<Boolean> updated = new AtomicReference<>(false);
+                        final AIStreamResponseListener listener = getStreamResponseListener(buffer,
+                                                                                           typingIndicator,
+                                                                                           updated,
+                                                                                           cancellationToken);
+
+                        String commitMessage = service.generateCommitMessageFromGitLogStream(commitHash, listener, contextText);
+                        String formattedCommitMessage = MessageFormatter.format(commitMessage);
+
+                        ApplicationManager.getApplication().invokeLater(() -> {
+                            if (project.isDisposed() || state.cancelled.get()) {
+                                log.debug("项目已销毁或任务已取消，跳过设置提交消息");
+                                return;
+                            }
+
+                            boolean applied = setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
+                            if (!applied && !updated.get()) {
+                                log.debug("Git 提交页面：提交面板不可用，无法写入提交记录");
+                            }
+
+                            if (outputSession != null && !project.isDisposed()) {
+                                outputSession.setText(formattedCommitMessage);
+                            }
+                        });
+
+                        log.debug("Git 提交页面：提交记录再生成功，commit={}", commitHash);
+                    } catch (Exception e) {
+                        log.debug("Git 提交页面：提交记录再生失败，commit={}", commitHash, e);
+                        ApplicationManager.getApplication().invokeLater(() -> {
+                            if (project.isDisposed() || state.cancelled.get()) {
+                                return;
+                            }
+                            typingIndicator.generateFailure();
+                            String errorMessage = e.getMessage();
+                            if (errorMessage != null && !errorMessage.isEmpty()) {
+                                NotificationUtil.showError(project, errorMessage);
+                            } else {
+                                NotificationUtil.showError(
+                                    project,
+                                    ChangelogBundle.message("commit.generation.error",
+                                                            ChangelogBundle.message("error.ai.service.unknown")));
+                            }
+                        });
+                    } finally {
+                        resetCommitMessagePlaceholder(commitMessageControl);
+                        typingIndicator.stop();
+                        GENERATION_STATES.remove(project);
+                    }
+                }
+
+                private @NotNull AIStreamResponseListener getStreamResponseListener(StringBuilder buffer,
+                                                                                   TypingIndicator typingIndicator,
+                                                                                   AtomicReference<Boolean> updated,
+                                                                                   StreamCancellationToken cancellationToken) {
+                    AtomicBoolean contentStarted = new AtomicBoolean(false);
+                    return new AIStreamResponseListener() {
+                        @Override
+                        public void onStart() {
+                            buffer.setLength(0);
+                        }
+
+                        @Override
+                        public @Nullable StreamCancellationToken cancellationToken() {
+                            return cancellationToken;
+                        }
+
+                        @Override
+                        public void onChunk(@NotNull String chunk) {
+                            if (state.cancelled.get()) {
+                                return;
+                            }
+                            if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
+                                typingIndicator.stop();
+                            }
+                            buffer.append(chunk);
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                if (project.isDisposed() || state.cancelled.get()) {
+                                    return;
+                                }
+                                if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
+                                    updated.set(true);
+                                }
+                            });
+                            if (outputSession != null) {
+                                outputSession.append(chunk);
+                            }
+                        }
+
+                        @Override
+                        public void onComplete(@NotNull String fullContent) {
+                            if (state.cancelled.get()) {
+                                return;
+                            }
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                if (project.isDisposed() || state.cancelled.get()) {
+                                    return;
+                                }
+                                typingIndicator.generateSuccess();
+                            });
+                        }
+
+                        @Override
+                        public void onError(@NotNull Throwable error) {
+                            if (state.cancelled.get()) {
+                                return;
+                            }
+                            ApplicationManager.getApplication().invokeLater(() -> {
+                                if (project.isDisposed() || state.cancelled.get()) {
+                                    return;
+                                }
+                                typingIndicator.generateFailure();
+                            });
+                        }
+                    };
+                }
+            });
+    }
+
 
     /**
      * 显示操作提示气泡
