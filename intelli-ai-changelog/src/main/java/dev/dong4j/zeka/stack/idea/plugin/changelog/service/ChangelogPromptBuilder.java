@@ -245,6 +245,42 @@ final class ChangelogPromptBuilder {
     }
 
     /**
+     * 基于多条已提交记录的 unified diff（压缩提交/Squash）构建提交信息提示词
+     * <p>
+     * 占位符保持与现有模板一致：{codeDiffs}/{rawPatch}/{diffSummary}，避免影响用户自定义模板。
+     */
+    @NotNull
+    String buildCommitMessagePromptFromCommitDiffs(@NotNull List<String> commitHashes,
+                                                   @NotNull List<String> selectedCommitTitles,
+                                                   @NotNull String diffText,
+                                                   @NotNull String recentCommitsText,
+                                                   @Nullable String userContext,
+                                                   @Nullable String branch,
+                                                   boolean isGitRepository) {
+        SettingsState settings = SettingsState.getInstance();
+        String template = settings.commitMessageTemplate;
+        int maxFiles = MAX_COMMIT_MESSAGE_FILES;
+
+        List<CodeDiff> codeDiffs = parseUnifiedDiffToCodeDiffs(diffText);
+
+        String contextJson = buildStructuredContextFromCommitDiffs(commitHashes,
+                                                                   selectedCommitTitles,
+                                                                   codeDiffs,
+                                                                   recentCommitsText,
+                                                                   userContext,
+                                                                   branch,
+                                                                   isGitRepository,
+                                                                   maxFiles);
+        String diffSummary = buildDiffSummaryTextFromCommitDiffs(codeDiffs, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
+        String rawPatch = truncateText(diffText.trim(), MAX_COMMIT_MESSAGE_DIFF_CHARS);
+
+        return template
+            .replace("{codeDiffs}", contextJson)
+            .replace("{rawPatch}", rawPatch)
+            .replace("{diffSummary}", diffSummary);
+    }
+
+    /**
      * 构建结构化上下文（JSON）
      * <p>
      * 该 JSON 会放在 prompt 开头，优先提供项目、统计与文件级变更信息，
@@ -400,6 +436,104 @@ final class ChangelogPromptBuilder {
 
         json.append("}");
         return json.toString();
+    }
+
+    @NotNull
+    private String buildStructuredContextFromCommitDiffs(@NotNull List<String> commitHashes,
+                                                         @NotNull List<String> selectedCommitTitles,
+                                                         @NotNull List<CodeDiff> codeDiffs,
+                                                         @NotNull String recentCommitsText,
+                                                         @Nullable String userContext,
+                                                         @Nullable String branch,
+                                                         boolean isGitRepository,
+                                                         int maxFiles) {
+        List<CodeDiff> limitedDiffs = limitDiffs(codeDiffs, maxFiles);
+        ChangeStats stats = buildChangeStats(codeDiffs);
+        int maxFileDiffChars = 12_000;
+
+        // 控制输出噪声：最多输出 20 条标题
+        List<String> limitedTitles = selectedCommitTitles.size() > 20 ? selectedCommitTitles.subList(0, 20) : selectedCommitTitles;
+        List<String> limitedHashes = commitHashes.size() > 50 ? commitHashes.subList(0, 50) : commitHashes;
+
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+
+        json.append("  \"project\": {\n");
+        json.append("    \"name\": \"").append(escapeJson(project.getName())).append("\",\n");
+        json.append("    \"branch\": \"").append(escapeJson(normalizeBranch(branch))).append("\",\n");
+        json.append("    \"is_git_repository\": ").append(isGitRepository).append("\n");
+        json.append("  },\n");
+
+        json.append("  \"squash\": {\n");
+        json.append("    \"commit_count\": ").append(commitHashes.size()).append(",\n");
+        json.append("    \"hashes\": ").append(buildStringArrayJson(limitedHashes)).append(",\n");
+        json.append("    \"titles\": ").append(buildStringArrayJson(limitedTitles)).append("\n");
+        json.append("  },\n");
+
+        json.append("  \"statistics\": {\n");
+        json.append("    \"files_changed\": ").append(stats.filesChanged()).append(",\n");
+        json.append("    \"lines_added\": ").append(stats.linesAdded()).append(",\n");
+        json.append("    \"lines_deleted\": ").append(stats.linesDeleted()).append(",\n");
+        json.append("    \"change_type\": \"").append(escapeJson(stats.primaryType())).append("\",\n");
+        json.append("    \"scope\": \"").append(escapeJson(stats.scope())).append("\"\n");
+        json.append("  },\n");
+
+        json.append("  \"changes\": [\n");
+        for (int i = 0; i < limitedDiffs.size(); i++) {
+            CodeDiff diff = limitedDiffs.get(i);
+            String filePath = diff.filePath;
+            String language = resolveLanguage(filePath);
+            String extension = extractExtension(filePath);
+            String summary = buildFileSummary(diff);
+            String diffSummary = buildDiffSummary(diff);
+            String fullDiff = diff.diffContent != null ? diff.diffContent : "";
+            if (fullDiff.length() > maxFileDiffChars) {
+                fullDiff = fullDiff.substring(0, maxFileDiffChars) + "\n...[diff truncated]";
+            }
+
+            json.append("    {\n");
+            json.append("      \"path\": \"").append(escapeJson(filePath)).append("\",\n");
+            json.append("      \"type\": \"").append(escapeJson(diff.changeType.name())).append("\",\n");
+            json.append("      \"language\": \"").append(escapeJson(language)).append("\",\n");
+            json.append("      \"extension\": \"").append(escapeJson(extension)).append("\",\n");
+            json.append("      \"lines_added\": ").append(diff.addedLines).append(",\n");
+            json.append("      \"lines_deleted\": ").append(diff.deletedLines).append(",\n");
+            json.append("      \"summary\": \"").append(escapeJson(summary)).append("\",\n");
+            json.append("      \"diff_summary\": \"").append(escapeJson(diffSummary)).append("\",\n");
+            json.append("      \"full_diff_content\": \"").append(escapeJson(fullDiff)).append("\"\n");
+            json.append("    }");
+            if (i < limitedDiffs.size() - 1) {
+                json.append(",");
+            }
+            json.append("\n");
+        }
+        json.append("  ],\n");
+
+        json.append("  \"metadata\": {\n");
+        json.append("    \"recent_commits\": ").append(buildRecentCommitsJson(recentCommitsText)).append(",\n");
+        json.append("    \"preferred_language\": \"").append(escapeJson(resolvePreferredLanguage())).append("\"");
+        if (userContext != null && !userContext.trim().isEmpty()) {
+            json.append(",\n    \"extra_context\": \"").append(escapeJson(userContext.trim())).append("\"");
+        }
+        json.append(",\n    \"commit_template\": \"type(scope): subject\"\n");
+        json.append("  }\n");
+
+        json.append("}");
+        return json.toString();
+    }
+
+    @NotNull
+    private String buildStringArrayJson(@NotNull List<String> values) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append("\"").append(escapeJson(values.get(i))).append("\"");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     @NotNull
