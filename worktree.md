@@ -13,7 +13,7 @@
 
 ## **2️⃣ 脚本：**
 
-## **ai-worktree.sh**
+## **worktree.sh**
 
 ```
 #!/usr/bin/env bash
@@ -96,12 +96,12 @@ esac
 ### **使用方式**
 
 ```
-chmod +x ai-worktree.sh
+chmod +x worktree.sh
 
-./ai-worktree.sh create javadoc
-./ai-worktree.sh create changelog
-./ai-worktree.sh list
-./ai-worktree.sh remove javadoc
+./worktree.sh create javadoc
+./worktree.sh create changelog
+./worktree.sh list
+./worktree.sh remove javadoc
 ```
 
 ------
@@ -220,7 +220,7 @@ main
 ## **1️⃣ 创建任务**
 
 ```
-./ai-worktree.sh create javadoc
+./worktree.sh create javadoc
 ```
 
 👉 把 ../wt-ai-javadoc 交给 AI
@@ -307,7 +307,7 @@ git merge ai/javadoc
 ## **6️⃣ 清理**
 
 ```
-./ai-worktree.sh remove javadoc
+./worktree.sh remove javadoc
 ```
 
 ------
@@ -404,7 +404,7 @@ git pull --rebase
 ### Step 1：创建 AI Worktree（人类）
 
 ```bash
-./ai-worktree.sh create javadoc
+./worktree.sh create javadoc
 ```
 
 效果：
@@ -495,7 +495,7 @@ git merge ai/javadoc
 ### Step 6：清理（必须）
 
 ```bash
-./ai-worktree.sh remove javadoc
+./worktree.sh remove javadoc
 ```
 
 效果：
