@@ -2,7 +2,7 @@
 
 set -e
 
-BASE_BRANCH="main"
+BASE_BRANCH="dev"
 PREFIX="ai"
 WT_PREFIX="wt-ai"
 BASE_DIR="../zeka-idea-plugin-worktree"

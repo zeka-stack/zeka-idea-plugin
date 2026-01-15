@@ -10,7 +10,9 @@
       "mcp__jetbrains__execute_run_configuration",
       "Bash(../gradlew compileJava:*)",
       "Bash(./gradlew:*)",
-      "Bash(make install-plugins:*)"
+      "Bash(make install-plugins:*)",
+      "mcp__jetbrains__open_file_in_editor",
+      "mcp__jetbrains__get_file_text_by_path"
     ],
     "deny": [],
     "ask": []

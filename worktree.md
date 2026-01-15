@@ -20,7 +20,7 @@
 
 set -e
 
-BASE_BRANCH="main"
+BASE_BRANCH="dev"
 PREFIX="ai"
 WT_PREFIX="wt-ai"
 
@@ -155,7 +155,7 @@ merge / rebase 只能由人完成
 ### **❌ 4. 禁止 AI 依赖其他 AI 的分支**
 
 ```
-所有 AI 分支必须直接基于 main
+所有 AI 分支必须直接基于 dev
 ```
 
 ------
@@ -202,7 +202,7 @@ feat(javadoc): generate class-level Javadoc [AI]
 ## **0️⃣ 总体结构图**
 
 ```
-main
+dev
  ├─ ai/javadoc     → wt-ai-javadoc     → commit
  ├─ ai/refactor    → wt-ai-refactor    → commit
  └─ ai/changelog   → wt-ai-changelog   → commit
@@ -210,7 +210,7 @@ main
           ↓
       人工 Review
           ↓
-      人工 Merge
+      人工 Merge 到 dev
           ↓
       删除 AI worktree
 ```
@@ -240,7 +240,7 @@ AI **只能**：
 
 - merge
 - rebase
-- pull main
+- pull dev
 
 ------
 
@@ -262,8 +262,8 @@ git log --oneline
 你只需要做 3 件事：
 
 ```
-git diff main..ai/javadoc
-git log main..ai/javadoc
+git diff dev..ai/javadoc
+git log dev..ai/javadoc
 git show <commit>
 ```
 
@@ -278,7 +278,7 @@ git show <commit>
 ### **✅ 推荐方式一：merge**
 
 ```
-git checkout main
+git checkout dev
 git merge ai/javadoc
 ```
 
@@ -293,8 +293,8 @@ git merge ai/javadoc
 
 ```
 git checkout ai/javadoc
-git rebase main
-git checkout main
+git rebase dev
+git checkout dev
 git merge ai/javadoc
 ```
 
@@ -346,13 +346,14 @@ git merge ai/javadoc
 
 ---
 
-### 3. Main 是唯一真实时间线
+### 3. Dev 是开发主分支
 
-* `main` 永远保持：
+* `dev` 是开发主分支，保持：
 
     * 可构建
-    * 可发布
-* **所有 AI 分支都直接基于 `main` 创建**
+  * 可测试
+* **所有 AI 分支都直接基于 `dev` 创建**
+* `main` 是发布分支，仅用于发布稳定版本
 
 ---
 
@@ -392,10 +393,10 @@ wt-ai-<task>
 ### Step 0：前置条件
 
 * 本地仓库 clean
-* `main` 为最新状态
+* `dev` 为最新状态
 
 ```bash
-git checkout main
+git checkout dev
 git pull --rebase
 ```
 
@@ -411,7 +412,7 @@ git pull --rebase
 
 * 创建分支：`ai/javadoc`
 * 创建目录：`../wt-ai-javadoc`
-* 分支基线：`main`
+* 分支基线：`dev`
 
 ---
 
@@ -427,7 +428,7 @@ AI **严禁**：
 
 * `merge`
 * `rebase`
-* `pull main`
+* `pull dev`
 * 修改 CI / Git 配置
 
 ---
@@ -448,8 +449,8 @@ git log --oneline
 必须完成以下检查：
 
 ```bash
-git diff main..ai/javadoc
-git log main..ai/javadoc
+git diff dev..ai/javadoc
+git log dev..ai/javadoc
 ```
 
 Review 重点：
@@ -465,7 +466,7 @@ Review 重点：
 #### 方案 A：Merge（推荐，保留 AI 来源）
 
 ```bash
-git checkout main
+git checkout dev
 git merge ai/javadoc
 ```
 
@@ -481,8 +482,8 @@ git merge ai/javadoc
 
 ```bash
 git checkout ai/javadoc
-git rebase main
-git checkout main
+git rebase dev
+git checkout dev
 git merge ai/javadoc
 ```
 
@@ -507,7 +508,7 @@ git merge ai/javadoc
 
 ## 四、禁止事项清单（🚫 必须遵守）
 
-### 🚫 1. 禁止 AI 操作 main / release 分支
+### 🚫 1. 禁止 AI 操作 main / dev / release 分支
 
 ```text
 AI 只能在 ai/* 分支中工作
@@ -571,7 +572,7 @@ refactor(psi): simplify visitor logic [AI]
 
 ```text
 parent/
-├─ project/                 ← 主仓库（main）
+├─ project/                 ← 主仓库（dev 分支）
 ├─ wt-ai-javadoc/            ← AI #1
 ├─ wt-ai-refactor/           ← AI #2
 └─ wt-ai-changelog/          ← AI #3
@@ -584,7 +585,7 @@ parent/
 ### Q1：AI 能不能直接 push 到远端？
 
 * 可以 push 到 **ai/* 分支**
-* 不得 push 到 main
+* 不得 push 到 main 或 dev
 
 ---
 
@@ -600,7 +601,7 @@ parent/
 
 > * **Worktree 是 AI 的执行空间**
 > * **分支是 AI 的责任边界**
-> * **Main 是唯一可信时间线**
+> * **Dev 是开发主分支**
 > * **人类拥有最终合并权**
 
 这套流程的目标不是“让 AI 更自由”，
