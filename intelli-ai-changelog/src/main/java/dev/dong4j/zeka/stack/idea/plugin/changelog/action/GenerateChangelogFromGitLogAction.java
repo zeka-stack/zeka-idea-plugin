@@ -23,6 +23,13 @@ import icons.ChangelogIcons;
  */
 public class GenerateChangelogFromGitLogAction extends AbstractGitLogAction {
 
+    /**
+     * 获取用于显示该操作的图标
+     * <p>
+     * 返回一个预定义的图标实例, 用于在用户界面中显示该操作的视觉标识.
+     *
+     * @return 图标实例, 类型为 {@code Icon}, 非空
+     */
     @NotNull
     protected Icon getIcon() {
         return ChangelogIcons.LOGS;
@@ -104,10 +111,21 @@ public class GenerateChangelogFromGitLogAction extends AbstractGitLogAction {
         return service.generateChangelog(commitHashes);
     }
 
+    /**
+     * 生成变更日志流内容
+     * <p>
+     * 使用指定的变更日志服务, 提交哈希列表和流响应监听器, 以流式方式生成变更日志内容.
+     * 该方法适用于需要实时处理或分块输出日志的场景.
+     *
+     * @param service      变更日志服务实例, 用于执行日志生成逻辑
+     * @param commitHashes 提交哈希列表, 用于指定需要包含的提交记录
+     * @param listener     流响应监听器, 用于接收生成过程中的流式输出
+     * @throws Exception 如果生成过程中发生错误
+     */
     @Override
-    protected @NotNull String generateContentStream(@NotNull ChangelogService service,
+    protected void generateContentStream(@NotNull ChangelogService service,
                                                     @NotNull List<String> commitHashes,
                                                     @NotNull AIStreamResponseListener listener) throws Exception {
-        return service.generateChangelogStream(commitHashes, listener);
+        service.generateChangelogStream(commitHashes, listener);
     }
 }

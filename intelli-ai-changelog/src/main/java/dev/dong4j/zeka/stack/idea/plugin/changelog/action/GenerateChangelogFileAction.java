@@ -178,19 +178,15 @@ public class GenerateChangelogFileAction extends AbstractGitLogAction {
      * @param service      变更日志服务实例, 用于执行流式日志生成和文件保存
      * @param commitHashes 提交记录的哈希列表, 用于确定生成日志所包含的提交范围
      * @param listener     流式响应监听器, 用于接收中间生成内容或进度反馈
-     * @return 生成的完整变更日志内容
      * @throws Exception 生成或保存过程中发生异常时抛出
      */
     @Override
-    protected @NotNull String generateContentStream(@NotNull ChangelogService service,
+    protected void generateContentStream(@NotNull ChangelogService service,
                                                     @NotNull List<String> commitHashes,
                                                     @NotNull AIStreamResponseListener listener) throws Exception {
         // 先使用流式生成内容
         String content = service.generateChangelogStream(commitHashes, listener);
-
         // 然后保存到文件
         service.saveChangelogToFile(service.getProject(), content);
-
-        return content;
     }
 }

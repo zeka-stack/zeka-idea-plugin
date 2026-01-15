@@ -113,10 +113,21 @@ public class GenerateDailyReportFromGitLogAction extends AbstractGitLogAction {
         return service.generateDailyReport(commitHashes);
     }
 
+    /**
+     * 生成每日报告内容流
+     * <p>
+     * 通过调用 {@link ChangelogService#generateDailyReportStream(java.util.List, AIStreamResponseListener)} 方法, 将提交哈希列表和流式响应监听器传递给服务,
+     * 以流式方式生成每日报告内容.
+     *
+     * @param service      用于生成报告的 {@link ChangelogService} 实例
+     * @param commitHashes 提供的提交哈希列表
+     * @param listener     用于接收流式响应的监听器
+     * @throws Exception 生成过程中可能抛出的异常
+     */
     @Override
-    protected @NotNull String generateContentStream(@NotNull ChangelogService service,
-                                                    @NotNull List<String> commitHashes,
-                                                    @NotNull AIStreamResponseListener listener) throws Exception {
-        return service.generateDailyReportStream(commitHashes, listener);
+    protected void generateContentStream(@NotNull ChangelogService service,
+                                         @NotNull List<String> commitHashes,
+                                         @NotNull AIStreamResponseListener listener) throws Exception {
+        service.generateDailyReportStream(commitHashes, listener);
     }
 }
