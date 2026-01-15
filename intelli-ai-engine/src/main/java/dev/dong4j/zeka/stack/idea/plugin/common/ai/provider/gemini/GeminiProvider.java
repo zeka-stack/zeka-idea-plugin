@@ -164,7 +164,7 @@ public class GeminiProvider extends AICompatibleProvider {
             String responseBody = HttpRequests.request(url)
                 .tuner(connection -> tuneGeminiConnection((HttpURLConnection) connection, apiKey))
                 .connect(HttpRequests.Request::readString);
-            List<String> models = parseModelsResponse(responseBody);
+            List<String> models = parseGeminiModelsResponse(responseBody);
             if (!models.isEmpty()) {
                 AIConsoleLoggerUtil.printSuccess(project, "成功获取 " + models.size() + " 个模型");
                 return models;
@@ -389,7 +389,7 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
-    private List<String> parseModelsResponse(@NotNull String responseBody) {
+    private List<String> parseGeminiModelsResponse(@NotNull String responseBody) {
         List<String> models = new ArrayList<>();
         try {
             JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
