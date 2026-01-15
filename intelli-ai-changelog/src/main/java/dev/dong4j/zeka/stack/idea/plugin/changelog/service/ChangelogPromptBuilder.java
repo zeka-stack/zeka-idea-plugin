@@ -17,6 +17,7 @@ import java.util.Map;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ProjectVersionResolver;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 
@@ -83,10 +84,10 @@ final class ChangelogPromptBuilder {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.changelogTemplate;
         String commitsText = buildCommitsText(commits);
+        String version = ProjectVersionResolver.resolveVersion(project);
 
-        // todo-dong4j 版本替代
         return template
-            .replace("{version}", "v1.0.0")
+            .replace("{version}", version)
             .replace("{commits}", commitsText);
     }
 
@@ -121,9 +122,10 @@ final class ChangelogPromptBuilder {
                           : settings.aiReleaseLogPrompt;
         String commitsText = buildCommitsText(commits);
         String date = formatCurrentDate();
+        String version = ProjectVersionResolver.resolveVersion(project);
 
         return template
-            .replace("{version}", "Unreleased")
+            .replace("{version}", version)
             .replace("{date}", date)
             .replace("{commits}", commitsText);
     }
