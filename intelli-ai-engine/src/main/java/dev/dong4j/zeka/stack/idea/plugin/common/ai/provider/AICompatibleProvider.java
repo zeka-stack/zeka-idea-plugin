@@ -275,9 +275,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             String url = config.baseUrl + "/models";
             AIConsoleLoggerUtil.print(project, "请求 URL: " + url);
             String responseBody = HttpRequests.request(url)
-                .tuner(connection -> {
-                    tuneConnection((HttpURLConnection) connection, apiKey);
-                })
+                .tuner(connection -> tuneConnection((HttpURLConnection) connection, apiKey))
                 .connect(HttpRequests.Request::readString);
 
             if (!responseBody.trim().isEmpty()) {
