@@ -17,6 +17,9 @@ import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.ui.awt.RelativePoint;
+import com.intellij.vcs.log.VcsFullCommitDetails;
+import com.intellij.vcs.log.VcsLogCommitSelection;
+import com.intellij.vcs.log.VcsLogDataKeys;
 import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
@@ -24,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import java.awt.Component;
 import java.awt.Point;
 import java.util.Collection;
+import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.CommitMessageGenerator;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -129,12 +133,6 @@ public class GenerateCommitMessageAction extends AnAction {
             return;
         }
 
-        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
-        if (commitWorkflowHandler == null) {
-            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
-            return;
-        }
-
         // 检查 AI Provider 配置
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
         if (!AIProviderUtils.hasAIProvider(project,
@@ -144,22 +142,40 @@ public class GenerateCommitMessageAction extends AnAction {
             return;
         }
 
-        log.debug("Git 提交页面：开始生成提交记录");
-        // 获取提交的文件变更
-        Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
-        if (changes.isEmpty()) {
-            log.debug("Git 提交页面：未选择任何文件变更");
-            showActionTip(e, ChangelogBundle.message("commit.no.selected.changes"));
+        // 读取提交面板的提交信息控件，用于直接写入提交记录
+        CommitMessageI commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);
+        CommitMessageGenerator generator = new CommitMessageGenerator(project);
+
+        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
+        if (commitWorkflowHandler != null) {
+            log.debug("Git 提交页面：开始生成提交记录");
+            // 获取提交的文件变更
+            Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
+            if (changes.isEmpty()) {
+                log.debug("Git 提交页面：未选择任何文件变更");
+                showActionTip(e, ChangelogBundle.message("commit.no.selected.changes"));
+                return;
+            }
+
+            log.debug("Git 提交页面：找到 {} 个文件变更", changes.size());
+            generator.generateForChanges(changes, commitMessageControl, null);
             return;
         }
 
-        log.debug("Git 提交页面：找到 {} 个文件变更", changes.size());
+        // “编辑提交消息”对话框：基于 Git Log 选中提交的真实 diff 再生提交信息
+        VcsLogCommitSelection selection = e.getData(VcsLogDataKeys.VCS_LOG_COMMIT_SELECTION);
+        if (selection == null) {
+            showActionTip(e, ChangelogBundle.message("commit.regenerate.select.single.commit"));
+            return;
+        }
+        List<VcsFullCommitDetails> commits = selection.getCachedFullDetails();
+        if (commits.size() != 1) {
+            showActionTip(e, ChangelogBundle.message("commit.regenerate.select.single.commit"));
+            return;
+        }
 
-        // 读取提交面板的提交信息控件，用于直接写入提交记录
-        CommitMessageI commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);
-        // 使用生成器生成提交记录
-        CommitMessageGenerator generator = new CommitMessageGenerator(project);
-        generator.generateForChanges(changes, commitMessageControl, null);
+        String commitHash = commits.get(0).getId().asString();
+        generator.generateForCommitHash(commitHash, commitMessageControl, null);
     }
 
     /**
