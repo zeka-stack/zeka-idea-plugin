@@ -1,0 +1,19 @@
+{
+  "title": "测试反馈标题",
+  "content": "这是一个测试反馈内容，用于验证反馈接口是否正常工作。",
+  "type": "BUG",
+  "category": "GENERAL",
+  "userInfo": {
+    "name": "测试用户",
+    "email": "test@example.com",
+    "githubUsername": "testuser",
+    "pluginName": "IntelliAI Engine",
+    "pluginVersion": "2025.3.1200",
+    "ideaVersion": "2025.3",
+    "os": "macOS 14.0"
+  },
+  "metadata": {
+    "clientId": "test-client-123",
+    "timestamp": 1705392000000
+  }
+}

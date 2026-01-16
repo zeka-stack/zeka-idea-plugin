@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="ZekaStackApiApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot"
+                   nameIsGenerated="true">
+        <module name="zeka-stack-api"/>
+        <option name="SPRING_BOOT_MAIN_CLASS" value="dev.dong4j.zeka.stack.api.ZekaStackApiApplication"/>
+        <method v="2">
+            <option name="Make" enabled="true"/>
+        </method>
+    </configuration>
+</component>

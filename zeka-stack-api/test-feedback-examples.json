@@ -1,0 +1,79 @@
+{
+  "examples": [
+    {
+      "description": "Bug 报告示例（完整字段）",
+      "request": {
+        "title": "插件在 macOS 上启动时崩溃",
+        "content": "当我在 macOS 14.0 上启动 IntelliJ IDEA 2025.3 时，插件加载后立即崩溃。错误信息显示：java.lang.NullPointerException at dev.dong4j.zeka.stack...",
+        "type": "BUG",
+        "category": "GENERAL",
+        "userInfo": {
+          "name": "张三",
+          "email": "zhangsan@example.com",
+          "githubUsername": "zhangsan",
+          "pluginName": "IntelliAI Engine",
+          "pluginVersion": "2025.3.1200",
+          "ideaVersion": "2025.3",
+          "os": "macOS 14.0"
+        },
+        "metadata": {
+          "clientId": "idea-plugin-client-001",
+          "timestamp": 1705392000000
+        }
+      }
+    },
+    {
+      "description": "功能建议示例（最小字段）",
+      "request": {
+        "title": "希望支持自定义 AI 模型",
+        "content": "建议添加自定义 AI 模型配置功能，允许用户添加自己的 API 端点。",
+        "type": "FEATURE",
+        "category": "IDEAS",
+        "userInfo": {
+          "pluginName": "IntelliAI Changelog",
+          "pluginVersion": "2025.3.1200",
+          "ideaVersion": "2025.3",
+          "os": "Windows 11"
+        }
+      }
+    },
+    {
+      "description": "使用问题示例（无 category）",
+      "request": {
+        "title": "如何配置 API Key？",
+        "content": "我在设置页面找不到 API Key 的配置入口，请问应该如何配置？",
+        "type": "QUESTION",
+        "userInfo": {
+          "name": "李四",
+          "email": "lisi@example.com",
+          "pluginName": "IntelliAI Javadoc",
+          "pluginVersion": "1.0.0",
+          "ideaVersion": "2024.2",
+          "os": "Linux Ubuntu 22.04"
+        },
+        "metadata": {
+          "clientId": "idea-plugin-client-002"
+        }
+      }
+    },
+    {
+      "description": "其他类型反馈（最简字段）",
+      "request": {
+        "title": "感谢开发团队",
+        "content": "这个插件非常好用，感谢开发团队的辛勤工作！",
+        "type": "OTHER",
+        "userInfo": {
+          "pluginName": "IntelliAI Engine",
+          "pluginVersion": "2025.3.1200",
+          "ideaVersion": "2025.3",
+          "os": "macOS 15.0"
+        }
+      }
+    }
+  ],
+  "enumValues": {
+    "type": ["BUG", "FEATURE", "QUESTION", "OTHER"],
+    "category": ["GENERAL", "IDEAS", "QA", "ANNOUNCEMENTS"]
+  },
+  "curlExample": "curl -X POST https://api.dong4j.site/plugin/feedback \\\n  -H 'Content-Type: application/json' \\\n  -d @test-feedback-request.json"
+}
