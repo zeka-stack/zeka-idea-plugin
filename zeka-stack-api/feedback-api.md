@@ -63,13 +63,19 @@ github:
 ### 3. 构建项目
 
 ```bash
-./gradlew build
+mvn clean package
 ```
 
 ### 4. 启动服务
 
 ```bash
-./gradlew bootRun
+mvn spring-boot:run
+```
+
+或者：
+
+```bash
+java -jar target/feedback-server-1.0.0.jar
 ```
 
 服务将在 `http://localhost:8080` 启动。
@@ -192,16 +198,16 @@ feedback-server/
 ### 运行测试
 
 ```bash
-./gradlew test
+mvn test
 ```
 
 ### 构建 JAR
 
 ```bash
-./gradlew build
+mvn clean package
 ```
 
-构建产物位于 `build/libs/feedback-server-1.0.0.jar`
+构建产物位于 `target/feedback-server-1.0.0.jar`
 
 ### 运行 JAR
 
@@ -211,9 +217,9 @@ java -jar build/libs/feedback-server-1.0.0.jar
 
 ## 参考文档
 
-- [GitHub Discussions API 参数整理](./docs/GitHub%20Discussions%20API%20参数整理.md)
-- [用户身份识别方案](./docs/用户身份识别方案.md)
-- [API 使用示例](./docs/API使用示例.md)
+- [GitHub Discussions API 参数整理](../feedback-server/docs/GitHub%20Discussions%20API%20参数整理.md)
+- [用户身份识别方案](../feedback-server/docs/用户身份识别方案.md)
+- [API 使用示例](../feedback-server/docs/API使用示例.md)
 
 ## 常见问题
 
