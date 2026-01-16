@@ -5,11 +5,9 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
+import com.intellij.ui.ComboboxSpeedSearch;
 import com.intellij.ui.HyperlinkLabel;
-import com.intellij.ui.TextFieldWithAutoCompletion;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -50,8 +48,6 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
@@ -91,14 +87,6 @@ public final class AIProviderConfigUI {
     private HyperlinkLabel getApiKeyLink;
     /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
-    /** 模型智能搜索输入框 */
-    private TextFieldWithAutoCompletion<String> modelSearchField;
-    /** 模型下拉框的完整数据源 */
-    private final List<String> modelItems = new ArrayList<>();
-    /** 模型过滤更新标记 */
-    private boolean suppressModelFilter;
-    /** 模型过滤监听是否已安装 */
-    private boolean modelFilterInstalled;
     /** 基础 URL 输入框 */
     private JBTextField baseUrlField;
     /** API 密钥输入框 */
@@ -176,17 +164,11 @@ public final class AIProviderConfigUI {
         providerComboBox.addItemListener(e -> updateApiKeyLinkUrl());
 
         modelComboBox = new ComboBox<>();
-        modelComboBox.setEditable(true);
+        ComboboxSpeedSearch.installOn(modelComboBox);
         // 设置固定宽度，防止输入超长模型名称时拉宽整个 UI
         Dimension modelComboBoxSize = new Dimension(400, modelComboBox.getPreferredSize().height);
         modelComboBox.setPreferredSize(modelComboBoxSize);
         modelComboBox.setMaximumSize(modelComboBoxSize);
-        SwingUtilities.invokeLater(this::installModelSearchFilter);
-        modelSearchField = TextFieldWithAutoCompletion.create(getDefaultProject(),
-                                                              modelItems,
-                                                              false,
-                                                              "");
-        modelSearchField.setVisible(false);
 
         baseUrlField = new JBTextField();
         baseUrlField.setToolTipText(AICommonBundle.message("settings.base.url.tooltip"));
@@ -398,7 +380,7 @@ public final class AIProviderConfigUI {
 
     /**
      * 获取模型选择下拉框组件
-     * <p> 返回用于选择 AI 模型的组合框控件, 该控件支持编辑功能, 允许用户输入自定义模型名称 </p>
+     * <p> 返回用于选择 AI 模型的组合框控件, 内置 SpeedSearch 支持下拉后键盘快速搜索 </p>
      *
      * @return 模型选择下拉框组件, 保证不为 null
      */
@@ -408,237 +390,31 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 获取模型智能搜索输入框组件
-     * <p> 返回用于输入和自动完成模型名称的文本框组件, 支持智能搜索功能 </p>
-     *
-     * @return 模型智能搜索输入框组件, 保证不为 null
-     */
-    @NotNull
-    public TextFieldWithAutoCompletion<String> getModelSearchField() {
-        return modelSearchField;
-    }
-
-    /**
-     * 触发模型搜索弹出框
-     * <p> 此方法用于触发模型搜索弹出框的显示. 首先检查模型搜索字段是否存在, 然后将其设为焦点.
-     * 如果调用 <code>invokeModelSearchPopup</code> 方法成功触发了任意一种弹出框 ("showPopup","showCompletionPopup" 或 "showAutoPopup"), 则直接返回.
-     * 否则, 尝试通过在文本末尾添加一个空格并立即移除的方式来触发弹出框.</p>
-     *
-     * @since 1.0.0
-     */
-    public void triggerModelSearchPopup() {
-        if (modelSearchField == null) {
-            return;
-        }
-        modelSearchField.requestFocusInWindow();
-        if (invokeModelSearchPopup("showPopup")
-            || invokeModelSearchPopup("showCompletionPopup")
-            || invokeModelSearchPopup("showAutoPopup")) {
-            return;
-        }
-        String text = modelSearchField.getText();
-        modelSearchField.setText(text + " ");
-        modelSearchField.setCaretPosition(text.length());
-        modelSearchField.setText(text);
-        modelSearchField.setCaretPosition(text.length());
-    }
-
-    /**
-     * 调用模型搜索弹窗的指定方法
-     * <p> 通过反射机制获取并调用 {@code TextFieldWithAutoCompletion} 类中指定名称的方法, 用于触发模型搜索弹窗的显示行为. 如果调用失败则返回 false.</p>
-     *
-     * @param methodName 要调用的方法名称, 必须为有效方法名
-     * @return 如果成功调用方法并触发弹窗则返回 true, 否则返回 false
-     */
-    private boolean invokeModelSearchPopup(@NotNull String methodName) {
-        try {
-            java.lang.reflect.Method method = TextFieldWithAutoCompletion.class.getMethod(methodName);
-            method.setAccessible(true);
-            method.invoke(modelSearchField);
-            return true;
-        } catch (ReflectiveOperationException ignored) {
-            return false;
-        }
-    }
-
-
-    /**
-     * 更新模型下拉框选项并应用当前过滤
+     * 更新模型下拉框选项
      *
      * @param items              完整模型列表
      * @param preferredSelection 优先选中的模型
      */
     public void updateModelItems(@NotNull List<String> items, @Nullable String preferredSelection) {
-        modelItems.clear();
-        modelItems.addAll(items);
-        modelSearchField.setVariants(modelItems);
-        suppressModelFilter = true;
-        try {
-            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-            for (String item : modelItems) {
-                model.addElement(item);
-            }
-            modelComboBox.setModel(model);
-            modelComboBox.setEditable(true);
+        List<String> options = new ArrayList<>(items.size() + 1);
+        if (preferredSelection != null && !preferredSelection.trim().isEmpty() && !items.contains(preferredSelection)) {
+            options.add(preferredSelection);
+        }
+        options.addAll(items);
 
-            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
-                if (model.getIndexOf(preferredSelection) >= 0) {
-                    modelComboBox.setSelectedItem(preferredSelection);
-                }
-            }
+        modelComboBox.setModel(new DefaultComboBoxModel<>(options.toArray(new String[0])));
 
-            String filterText = getModelFilterText();
-            if (!filterText.isEmpty() && modelComboBox.getEditor() != null) {
-                modelComboBox.getEditor().setItem(filterText);
-            }
-        } finally {
-            suppressModelFilter = false;
+        if (preferredSelection != null && !preferredSelection.trim().isEmpty()) {
+            modelComboBox.setSelectedItem(preferredSelection);
         }
     }
 
     /**
-     * 安装模型搜索过滤器监听器
-     * <p> 当模型下拉框编辑器组件为文本组件时, 为其文档添加监听器, 监听文本内容的插入, 删除和变更事件,
-     * 并在每次变更后调用 {@code onModelFilterChanged()} 方法以触发模型过滤更新 </p>
-     *
-     * @since 1.0.0
+     * 打开模型下拉框并聚焦, 以便用户直接键盘搜索（SpeedSearch）
      */
-    private void installModelSearchFilter() {
-        if (modelFilterInstalled) {
-            return;
-        }
-        if (modelComboBox.getEditor() == null) {
-            return;
-        }
-        Object editorComponent = modelComboBox.getEditor().getEditorComponent();
-        if (editorComponent instanceof javax.swing.text.JTextComponent textComponent) {
-            textComponent.getDocument().addDocumentListener(new DocumentListener() {
-                /**
-                 * 文档内容插入更新事件处理方法
-                 * <p> 当文档内容发生插入操作时调用此方法, 并触发模型过滤器变更通知
-                 *
-                 * @param e 文档事件对象, 包含插入操作的详细信息
-                 */
-                @Override
-                public void insertUpdate(DocumentEvent e) {
-                    onModelFilterChanged();
-                }
-
-                /**
-                 * 处理文档删除事件
-                 * <p> 当文档内容被删除时, 此方法会被调用, 触发模型过滤刷新操作
-                 *
-                 * @param e 文档事件对象, 包含文档变更的详细信息
-                 */
-                @Override
-                public void removeUpdate(DocumentEvent e) {
-                    onModelFilterChanged();
-                }
-
-                /**
-                 * 文档结构属性发生变化时的回调方法
-                 * <p>当文档的结构属性 (如段落样式, 字体等) 发生变化时,Swing 框架会自动调用此方法.
-                 * 该方法内部调用 {@code onModelFilterChanged()} 方法来处理文档变更事件.
-                 *
-                 * @param e 文档事件对象, 包含变更的详细信息
-                 * @see javax.swing.event.DocumentListener
-                 * @see #insertUpdate(javax.swing.event.DocumentEvent)
-                 * @see #removeUpdate(javax.swing.event.DocumentEvent)
-                 */
-                @Override
-                public void changedUpdate(DocumentEvent e) {
-                    onModelFilterChanged();
-                }
-            });
-            modelFilterInstalled = true;
-        }
-    }
-
-
-    /**
-     * 处理模型过滤器变化事件
-     * <p> 当模型下拉框的过滤器文本发生变化时触发此方法. 如果当前处于抑制过滤器状态,
-     * 则直接返回以避免重复处理. 该方法使用 Swing 的事件调度线程延迟执行模型过滤操作,
-     * 以确保 UI 操作的线程安全性.
-     */
-    private void onModelFilterChanged() {
-        if (suppressModelFilter) {
-            return;
-        }
-        SwingUtilities.invokeLater(() -> applyModelFilter(getModelFilterText(), null));
-    }
-
-    /**
-     * 获取当前模型下拉框编辑器中的过滤文本
-     * <p>
-     * 如果编辑器为空则返回空字符串; 否则将编辑器中的对象转换为字符串,
-     * 覆盖为默认值空字符串, 然后使用 {@link String#trim()} 去除首尾空白字符.
-     *
-     * @return 过滤文本, 若无编辑器返回空字符串
-     */
-    @NotNull
-    private String getModelFilterText() {
-        if (modelComboBox.getEditor() == null) {
-            return "";
-        }
-        return Objects.toString(modelComboBox.getEditor().getItem(), "").trim();
-    }
-
-    /**
-     * 根据指定的过滤文本及可选的优先选择项, 更新模型下拉框的内容.
-     *
-     * <p> 该方法首先构造一个 {@link DefaultComboBoxModel}, 将 {@link #modelItems} 中满足过滤条件的
-     * 项目添加进去. 若 {@code filterText} 为空, 则全部项目均被加入; 否则仅将包含
-     * {@code filterText}(不区分大小写) 的项目加入模型. 完成后将新的模型设置给 {@code
-     * modelComboBox}, 并保持其可编辑状态. 若 {@code preferredSelection} 非空且存在于模型中,
-     * 则将其设为当前选择. 最后如果 {@code modelComboBox} 的编辑器不为 {@code null}, 则把
-     * {@code filterText} 重新写入编辑器, 以便保持显示一致.
-     *
-     * @param filterText         用于过滤模型列表的文本, 支持不区分大小写的子串搜索
-     * @param preferredSelection 若不为空且存在于筛选结果中, 则将其设为当前选中项; 否则保持
-     *                           原选择
-     */
-    private void applyModelFilter(@NotNull String filterText, @Nullable String preferredSelection) {
-        suppressModelFilter = true;
-        try {
-            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-            if (filterText.isEmpty()) {
-                for (String item : modelItems) {
-                    model.addElement(item);
-                }
-            } else {
-                String keyword = filterText.toLowerCase();
-                for (String item : modelItems) {
-                    if (item != null && item.toLowerCase().contains(keyword)) {
-                        model.addElement(item);
-                    }
-                }
-            }
-            modelComboBox.setModel(model);
-            modelComboBox.setEditable(true);
-
-            if (preferredSelection != null && !preferredSelection.trim().isEmpty() && model.getSize() > 0) {
-                if (model.getIndexOf(preferredSelection) >= 0) {
-                    modelComboBox.setSelectedItem(preferredSelection);
-                }
-            }
-
-            if (modelComboBox.getEditor() != null) {
-                modelComboBox.getEditor().setItem(filterText);
-            }
-        } finally {
-            suppressModelFilter = false;
-        }
-    }
-
-    /**
-     * 获取默认项目实例
-     * <p> 返回 IDE 中的默认项目对象, 用于获取与项目相关的资源和配置信息 </p>
-     *
-     * @return 默认项目对象, 保证不为 null
-     */
-    private static @NotNull Project getDefaultProject() {
-        return ProjectManager.getInstance().getDefaultProject();
+    public void triggerModelComboBoxPopup() {
+        modelComboBox.requestFocusInWindow();
+        modelComboBox.showPopup();
     }
 
     /**
@@ -968,10 +744,6 @@ public final class AIProviderConfigUI {
         JPanel modelPanel = new JPanel(new BorderLayout(5, 0));
         modelPanel.add(modelComboBox, BorderLayout.CENTER);
         modelPanel.add(testConnectionButton, BorderLayout.EAST);
-
-        JPanel modelSearchPanel = new JPanel(new BorderLayout(5, 0));
-        modelSearchPanel.add(modelSearchField, BorderLayout.CENTER);
-        modelSearchPanel.setVisible(false);
 
         JPanel panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerPanel)
