@@ -16,9 +16,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.UnifiedDiffParser;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 
 /**
@@ -302,24 +304,7 @@ public final class ChangelogService {
     public String generateCommitMessageFromGitLogStream(@NotNull String commitHash,
                                                         @NotNull AIStreamResponseListener listener,
                                                         @Nullable String userContext) throws Exception {
-        List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(List.of(commitHash));
-        if (diffCommits.isEmpty()) {
-            throw new Exception(ChangelogBundle.message("commit.regenerate.no.commit.diff"));
-        }
-        String diffText = diffCommits.get(0).diffText();
-        if (diffText == null || diffText.isBlank()) {
-            throw new Exception(ChangelogBundle.message("commit.no.changes"));
-        }
-        String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
-        String branch = gitService.getCurrentBranch();
-        boolean isGitRepository = gitService.isGitRepository();
-        String prompt = promptBuilder.buildCommitMessagePromptFromCommitDiffs(commitHash,
-                                                                              diffText,
-                                                                              recentCommitsText,
-                                                                              userContext,
-                                                                              branch,
-                                                                              isGitRepository);
-        return aiExecutor.callCommitMessageStream(prompt, listener);
+        return generateCommitMessageFromGitLogSelectionStream(List.of(commitHash), List.of(), listener, userContext);
     }
 
     /**
@@ -337,11 +322,32 @@ public final class ChangelogService {
                                                               @NotNull List<String> selectedCommitTitles,
                                                               @NotNull AIStreamResponseListener listener,
                                                               @Nullable String userContext) throws Exception {
+        return generateCommitMessageFromGitLogSelectionStream(commitHashes, selectedCommitTitles, listener, userContext);
+    }
+
+    @NotNull
+    private String generateCommitMessageFromGitLogSelectionStream(@NotNull List<String> commitHashes,
+                                                                  @NotNull List<String> selectedCommitTitles,
+                                                                  @NotNull AIStreamResponseListener listener,
+                                                                  @Nullable String userContext) throws Exception {
         List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(commitHashes);
         if (diffCommits.isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.regenerate.no.commit.diff"));
         }
 
+        String diffText = joinCommitDiffTexts(diffCommits);
+        if (diffText.isBlank()) {
+            throw new Exception(ChangelogBundle.message("commit.no.changes"));
+        }
+
+        ChangelogCommitDiffBuilder.DiffPayload payload = buildPayloadFromUnifiedDiff(diffText);
+        CommitSelectionMeta selectionMeta = new CommitSelectionMeta("git_log", commitHashes, selectedCommitTitles);
+        String prompt = buildCommitMessagePrompt(payload, userContext, selectionMeta);
+        return aiExecutor.callCommitMessageStream(prompt, listener);
+    }
+
+    @NotNull
+    private String joinCommitDiffTexts(@NotNull List<ChangelogCommitModels.DiffCommitInfo> diffCommits) {
         StringBuilder diffTextBuilder = new StringBuilder();
         for (ChangelogCommitModels.DiffCommitInfo diffCommit : diffCommits) {
             String diffText = diffCommit.diffText();
@@ -353,22 +359,28 @@ public final class ChangelogService {
             }
             diffTextBuilder.append(diffText.strip());
         }
-        String diffText = diffTextBuilder.toString().trim();
-        if (diffText.isBlank()) {
-            throw new Exception(ChangelogBundle.message("commit.no.changes"));
-        }
+        return diffTextBuilder.toString().trim();
+    }
 
+    @NotNull
+    private ChangelogCommitDiffBuilder.DiffPayload buildPayloadFromUnifiedDiff(@NotNull String diffText) {
+        List<dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff> codeDiffs = UnifiedDiffParser.parseToCodeDiffs(diffText);
+        return new ChangelogCommitDiffBuilder.DiffPayload(codeDiffs, Map.of(), diffText);
+    }
+
+    @NotNull
+    private String buildCommitMessagePrompt(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
+                                            @Nullable String userContext,
+                                            @Nullable CommitSelectionMeta selectionMeta) {
         String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
         String branch = gitService.getCurrentBranch();
         boolean isGitRepository = gitService.isGitRepository();
-        String prompt = promptBuilder.buildCommitMessagePromptFromCommitDiffs(commitHashes,
-                                                                              selectedCommitTitles,
-                                                                              diffText,
-                                                                              recentCommitsText,
-                                                                              userContext,
-                                                                              branch,
-                                                                              isGitRepository);
-        return aiExecutor.callCommitMessageStream(prompt, listener);
+        return promptBuilder.buildCommitMessagePrompt(payload,
+                                                     recentCommitsText,
+                                                     userContext,
+                                                     branch,
+                                                     isGitRepository,
+                                                     selectionMeta);
     }
 
     /**
@@ -386,10 +398,7 @@ public final class ChangelogService {
         if (payload.codeDiffs().isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.no.changes"));
         }
-        String recentCommitsText = gitService.buildRecentCommitMessagesText(RECENT_COMMITS_LIMIT);
-        String branch = gitService.getCurrentBranch();
-        boolean isGitRepository = gitService.isGitRepository();
-        return promptBuilder.buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository);
+        return buildCommitMessagePrompt(payload, userContext, null);
     }
 
     /**

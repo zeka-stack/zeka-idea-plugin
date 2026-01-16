@@ -85,6 +85,15 @@ public class CommitMessageGenerator {
     /** 光标闪烁间隔 (毫秒) */
     private static final int TYPING_CURSOR_DELAY_MS = 500;
 
+    @FunctionalInterface
+    private interface StreamGeneration {
+        @NotNull
+        String generate(@NotNull ChangelogService service,
+                        @NotNull AIStreamResponseListener listener,
+                        @Nullable String contextText,
+                        @NotNull TypingIndicator typingIndicator) throws Exception;
+    }
+
     /**
      * 初始化 CommitMessageGenerator 实例
      * <p> 构造函数, 用于创建 CommitMessageGenerator 对象, 并初始化项目对象
@@ -137,256 +146,21 @@ public class CommitMessageGenerator {
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.changes"));
             return;
         }
-
-        GenerationState state = new GenerationState();
-        GENERATION_STATES.put(project, state);
-
-        // 在后台任务中执行生成
-        ProgressManager.getInstance().run(
-            new Task.Backgroundable(project, ChangelogBundle.message("commit.generating.progress"), true) {
-                /**
-                 * 执行提交信息生成任务
-                 * <p> 设置进度指示器为不确定状态, 并显示分析更改中的提示信息. 调用 ChangelogService 生成提交信息, 并在 UI 线程中显示结果或错误信息.
-                 *
-                 * @param indicator 进度指示器, 用于显示任务进度和状态信息
-                 */
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    indicator.setIndeterminate(true);
-                    indicator.setText(ChangelogBundle.message("commit.analyzing.changes"));
-                    state.indicator.set(indicator);
-                    state.thread.set(Thread.currentThread());
-
-                    String contextText = null;
-                    if (SettingsState.getInstance().useCommitMessageInputAsContext) {
-                        contextText = getCommitMessageText(commitMessageControl);
-                    }
-
-                    // 如果 contextText 不为 null, 则不能清空
-                    TypingIndicator typingIndicator = startTypingIndicator(commitMessageControl, outputSession, contextText == null);
-                    state.typingIndicator.set(typingIndicator);
-                    StreamCancellationToken cancellationToken = new StreamCancellationToken();
-                    state.cancellationToken.set(cancellationToken);
-                    if (outputSession != null) {
-                        outputSession.bindCancellationToken(cancellationToken);
-                    }
-
-                    try {
-                        if (state.cancelled.get()) {
-                            return;
-                        }
-
-                        ChangelogService service = ChangelogService.getInstance(project);
-
-                        // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
-                        Map<String, List<Change>> changesByRoot = groupChangesByRoot(changes);
-                        if (changesByRoot.size() > 1) {
-                            handleMultiRepositoryChanges(service,
-                                                         changesByRoot,
-                                                         contextText,
-                                                         outputSession,
-                                                         commitMessageControl,
-                                                         typingIndicator);
-                            return;
-                        }
-
-                        StringBuilder buffer = new StringBuilder();
-                        AtomicReference<Boolean> updated = new AtomicReference<>(false);
-                        final AIStreamResponseListener listener = getStreamResponseListener(buffer,
-                                                                                            typingIndicator,
-                                                                                            updated,
-                                                                                            cancellationToken);
-
-                        // 流式生成并同步返回最终结果
-                        String commitMessage = service.generateCommitMessageFromDiffStream(changes, listener, contextText);
-                        String formattedCommitMessage = MessageFormatter.format(commitMessage);
-
-                        // 在 EDT 中显示结果
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            // 检查项目是否已销毁
-                            if (project.isDisposed() || state.cancelled.get()) {
-                                log.debug("项目已销毁或任务已取消，跳过设置提交消息");
-                                return;
-                            }
-
-                            // 直接写入提交面板，避免弹窗打断提交流程
-                            boolean applied = setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
-                            if (!applied && !updated.get()) {
-                                log.debug("Git 提交页面：提交面板不可用，无法写入提交记录");
-                            }
-
-                            if (outputSession != null && !project.isDisposed()) {
-                                outputSession.setText(formattedCommitMessage);
-                            }
-                        });
-
-                        log.debug("Git 提交页面：提交记录生成成功");
-                    } catch (Exception e) {
-                        log.debug("Git 提交页面：生成提交记录失败", e);
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            // 检查项目是否已销毁
-                            if (project.isDisposed() || state.cancelled.get()) {
-                                return;
-                            }
-                            typingIndicator.generateFailure();
-                            String errorMessage = e.getMessage();
-                            if (errorMessage != null && !errorMessage.isEmpty()) {
-                                NotificationUtil.showError(project, errorMessage);
-                            } else {
-                                NotificationUtil.showError(
-                                    project,
-                                    ChangelogBundle.message("commit.generation.error",
-                                                            ChangelogBundle.message("error.ai.service.unknown")));
-                            }
-                        });
-                    } finally {
-                        // 重设提示语
-                        resetCommitMessagePlaceholder(commitMessageControl);
-                        typingIndicator.stop();
-                        GENERATION_STATES.remove(project);
-                    }
-                }
-
-                /**
-                 * 创建 AI 流式响应监听器
-                 * <p> 创建一个用于处理 AI 响应流的监听器, 该监听器会实时更新提交消息文本
-                 * <p> 监听器包含三个回调方法:
-                 * <ul>
-                 *   <li>onStart: 启动时清空缓冲区 </li>
-                 *   <li>onChunk: 处理接收到的文本块并实时更新 </li>
-                 *   <li>onComplete: 在异步操作完成后更新提交消息 </li>
-                 * </ul>
-                 *
-                 * @param buffer          用于累积文本的缓冲区, 不能为 null
-                 * @param typingIndicator 打字指示器, 用于显示和停止打字动画效果, 不能为 null
-                 * @param updated         原子引用, 用于跟踪提交消息文本是否已更新, 不能为 null
-                 * @return AIStreamResponseListener 实例, 用于监听 AI 响应的流式事件
-                 */
-                private @NotNull AIStreamResponseListener getStreamResponseListener(StringBuilder buffer,
-                                                                                    TypingIndicator typingIndicator,
-                                                                                    AtomicReference<Boolean> updated,
-                                                                                    StreamCancellationToken cancellationToken) {
-                    AtomicBoolean contentStarted = new AtomicBoolean(false);
-                    // 流式回调中实时写入提交面板，保证内容可见且可编辑
-                    return new AIStreamResponseListener() {
-                        /**
-                         * 在监听器启动时调用
-                         * <p> 清空缓冲区并将提交消息文本设置为空
-                         *
-                         * @since 1.0
-                         */
-                        @Override
-                        public void onStart() {
-                            buffer.setLength(0);
-                        }
-
-                        /**
-                         * 获取与此监听器关联的流取消令牌
-                         * <p> 返回用于控制流操作取消行为的令牌对象, 如果未设置则返回 null
-                         *
-                         * @return 流取消令牌, 可能为 null
-                         * @since 1.0
-                         */
-                        @Override
-                        public @Nullable StreamCancellationToken cancellationToken() {
-                            return cancellationToken;
-                        }
-
-                        /**
-                         * 处理接收到的文本块
-                         * <p> 将接收到的文本块追加到缓冲区, 并在事件调度线程中更新提交消息文本
-                         *
-                         * @param chunk 接收到的文本块
-                         */
-                        @Override
-                        public void onChunk(@NotNull String chunk) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
-                                typingIndicator.stop();
-                            }
-                            buffer.append(chunk);
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                // 检查项目是否已销毁
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
-                                    updated.set(true);
-                                }
-                            });
-                            if (outputSession != null) {
-                                outputSession.append(chunk);
-                            }
-                        }
-
-                        /**
-                         * 处理接收到的思考阶段文本块
-                         * <p> 当接收到思考阶段的文本块时, 若未取消操作且文本非空, 则启动思考状态指示器
-                         *
-                         * @param chunk 接收到的文本块
-                         */
-                        @Override
-                        public void onThinkingChunk(@NotNull String chunk) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!chunk.isBlank()) {
-                                typingIndicator.startThinkingStage();
-                            }
-                        }
-
-                        /**
-                         * 在异步操作完成后更新提交消息文本
-                         * <p> 此方法在异步操作完成后被调用, 用于更新提交消息文本. 如果更新成功, 则将 updated 标志设置为 true.
-                         *
-                         * @param fullText 完整的文本内容
-                         */
-                        @Override
-                        public void onComplete(@NotNull String fullText) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!fullText.isBlank() && contentStarted.compareAndSet(false, true)) {
-                                typingIndicator.stop();
-                            } else if (fullText.isBlank()) {
-                                typingIndicator.stop();
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                // 检查项目是否已销毁
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                if (setCommitMessageText(fullText, commitMessageControl, true)) {
-                                    updated.set(true);
-                                }
-                            });
-                            if (outputSession != null) {
-                                outputSession.setText(fullText);
-                            }
-                        }
-
-                        /**
-                         * 处理提示信息
-                         * <p> 将提示信息输出到日志, 供 UI 后续使用
-                         *
-                         * @param message 提示信息内容, 不能为空
-                         */
-                        @Override
-                        public void onNotice(@NotNull String message) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-
-                            final EditorTextField editorField = getEditorTextField(commitMessageControl);
-                            if (editorField != null) {
-                                showNoticeActionTip(editorField.getComponent(), message);
-                            }
-                        }
-                    };
-                }
-            });
+        runGeneration(commitMessageControl,
+                      outputSession,
+                      (service, listener, contextText, typingIndicator) -> {
+                          // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
+                          Map<String, List<Change>> changesByRoot = groupChangesByRoot(changes);
+                          if (changesByRoot.size() > 1) {
+                              return handleMultiRepositoryChanges(service,
+                                                                  changesByRoot,
+                                                                  contextText,
+                                                                  outputSession,
+                                                                  commitMessageControl,
+                                                                  typingIndicator);
+                          }
+                          return service.generateCommitMessageFromDiffStream(changes, listener, contextText);
+                      });
     }
 
     /**
@@ -404,204 +178,7 @@ public class CommitMessageGenerator {
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.single.commit"));
             return;
         }
-
-        GenerationState state = new GenerationState();
-        GENERATION_STATES.put(project, state);
-
-        ProgressManager.getInstance().run(
-            new Task.Backgroundable(project, ChangelogBundle.message("commit.generating.progress"), true) {
-                /**
-                 * 执行生成提交消息的后台任务
-                 * <p> 该方法在后台线程中运行, 负责分析 Git 日志并调用 AI 服务生成提交消息, 最终在 UI 线程中更新提交面板内容.
-                 * 任务过程中会显示进度指示器, 并在失败时弹出错误通知.
-                 *
-                 * @param indicator 进度指示器, 用于显示任务进度和状态
-                 * @since 1.0
-                 */
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    indicator.setIndeterminate(true);
-                    indicator.setText(ChangelogBundle.message("commit.analyzing.changes"));
-                    state.indicator.set(indicator);
-                    state.thread.set(Thread.currentThread());
-
-                    String contextText = null;
-                    if (SettingsState.getInstance().useCommitMessageInputAsContext) {
-                        contextText = getCommitMessageText(commitMessageControl);
-                    }
-
-                    TypingIndicator typingIndicator = startTypingIndicator(commitMessageControl, outputSession, contextText == null);
-                    state.typingIndicator.set(typingIndicator);
-                    StreamCancellationToken cancellationToken = new StreamCancellationToken();
-                    state.cancellationToken.set(cancellationToken);
-                    if (outputSession != null) {
-                        outputSession.bindCancellationToken(cancellationToken);
-                    }
-
-                    try {
-                        if (state.cancelled.get()) {
-                            return;
-                        }
-
-                        ChangelogService service = ChangelogService.getInstance(project);
-
-                        StringBuilder buffer = new StringBuilder();
-                        AtomicReference<Boolean> updated = new AtomicReference<>(false);
-                        final AIStreamResponseListener listener = getStreamResponseListener(buffer,
-                                                                                           typingIndicator,
-                                                                                           updated,
-                                                                                           cancellationToken);
-
-                        String commitMessage = service.generateCommitMessageFromGitLogStream(commitHash, listener, contextText);
-                        String formattedCommitMessage = MessageFormatter.format(commitMessage);
-
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            if (project.isDisposed() || state.cancelled.get()) {
-                                log.debug("项目已销毁或任务已取消，跳过设置提交消息");
-                                return;
-                            }
-
-                            boolean applied = setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
-                            if (!applied && !updated.get()) {
-                                log.debug("Git 提交页面：提交面板不可用，无法写入提交记录");
-                            }
-
-                            if (outputSession != null && !project.isDisposed()) {
-                                outputSession.setText(formattedCommitMessage);
-                            }
-                        });
-
-                        log.debug("Git 提交页面：提交记录再生成功，commit={}", commitHash);
-                    } catch (Exception e) {
-                        log.debug("Git 提交页面：提交记录再生失败，commit={}", commitHash, e);
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            if (project.isDisposed() || state.cancelled.get()) {
-                                return;
-                            }
-                            typingIndicator.generateFailure();
-                            String errorMessage = e.getMessage();
-                            if (errorMessage != null && !errorMessage.isEmpty()) {
-                                NotificationUtil.showError(project, errorMessage);
-                            } else {
-                                NotificationUtil.showError(
-                                    project,
-                                    ChangelogBundle.message("commit.generation.error",
-                                                            ChangelogBundle.message("error.ai.service.unknown")));
-                            }
-                        });
-                    } finally {
-                        resetCommitMessagePlaceholder(commitMessageControl);
-                        typingIndicator.stop();
-                        GENERATION_STATES.remove(project);
-                    }
-                }
-
-                /**
-                 * 创建并返回一个用于监听 AI 流式响应的监听器实例
-                 * <p> 该监听器在响应流中接收数据块 (chunk), 并实时更新提交消息文本框和输出会话, 同时管理响应状态和取消逻辑.
-                 *
-                 * @param buffer            用于累积接收到的响应内容的字符串缓冲区
-                 * @param typingIndicator   用于模拟打字效果的指示器, 响应开始后会停止
-                 * @param updated           标记是否已成功更新提交消息的原子引用
-                 * @param cancellationToken 用于取消流式响应的令牌对象
-                 * @return AI 流式响应监听器实例, 实现响应开始, 数据块接收, 完成和错误处理的回调
-                 */
-                private @NotNull AIStreamResponseListener getStreamResponseListener(StringBuilder buffer,
-                                                                                   TypingIndicator typingIndicator,
-                                                                                   AtomicReference<Boolean> updated,
-                                                                                   StreamCancellationToken cancellationToken) {
-                    AtomicBoolean contentStarted = new AtomicBoolean(false);
-                    return new AIStreamResponseListener() {
-                        /**
-                         * 重置缓冲区长度, 用于开始新的流式响应处理
-                         * <p> 该方法在流式响应开始时被调用, 清空当前缓冲区内容, 为后续数据接收做准备
-                         */
-                        @Override
-                        public void onStart() {
-                            buffer.setLength(0);
-                        }
-
-                        /**
-                         * 获取流取消令牌
-                         * <p> 返回当前流操作的取消令牌, 用于在需要时取消流处理过程
-                         *
-                         * @return 流取消令牌, 如果未设置则返回 null
-                         */
-                        @Override
-                        public @Nullable StreamCancellationToken cancellationToken() {
-                            return cancellationToken;
-                        }
-
-                        /**
-                         * 处理流式响应的片段数据
-                         * <p> 当接收到新的响应片段时, 将片段内容追加到缓冲区, 并在 UI 线程中更新提交信息文本, 同时若存在输出会话则将其追加到输出会话中
-                         * <p> 如果已取消或项目已销毁, 则直接返回, 不执行后续操作
-                         *
-                         * @param chunk 当前接收到的响应片段内容
-                         */
-                        @Override
-                        public void onChunk(@NotNull String chunk) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
-                                typingIndicator.stop();
-                            }
-                            buffer.append(chunk);
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
-                                    updated.set(true);
-                                }
-                            });
-                            if (outputSession != null) {
-                                outputSession.append(chunk);
-                            }
-                        }
-
-                        /**
-                         * 当流处理完成时的回调方法
-                         * <p> 在流内容完全接收后调用, 用于执行后续处理逻辑. 如果流已被取消或项目已销毁, 则不执行任何操作.
-                         *
-                         * @param fullContent 完整的流内容字符串
-                         */
-                        @Override
-                        public void onComplete(@NotNull String fullContent) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                }
-                                // typingIndicator.generateSuccess();
-                            });
-                        }
-
-                        /**
-                         * 处理流式响应错误事件
-                         * <p> 当流式响应发生错误时, 该方法会被调用. 如果当前操作已被取消, 则直接返回. 否则, 通过应用线程调度器在 UI 线程中执行错误处理逻辑, 调用 {@code typingIndicator
-                         * .generateFailure()} 显示错误状态.
-                         *
-                         * @param error     错误信息, 非空字符串
-                         * @param exception 错误异常, 可能为 null
-                         */
-                        @Override
-                        public void onError(@NotNull String error, @Nullable Throwable exception) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                typingIndicator.generateFailure();
-                            });
-                        }
-                    };
-                }
-            });
+        generateForCommitSelection(List.of(commitHash), List.of(), commitMessageControl, outputSession);
     }
 
     /**
@@ -621,7 +198,45 @@ public class CommitMessageGenerator {
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
             return;
         }
+        generateForCommitSelection(commitHashes, selectedCommitTitles, commitMessageControl, outputSession);
+    }
 
+    /**
+     * 基于提交哈希列表再生提交信息 (支持单条或压缩提交)
+     * <p> 该方法用于根据指定的提交哈希列表, 从 Git 日志中提取真实变更内容, 调用 AI 服务生成提交信息, 并在 UI 线程中更新提交面板或工具窗口输出. 支持多提交压缩合并场景.
+     *
+     * @param commitHashes         提交哈希列表 (至少一条), 用于定位 Git 日志中的提交记录
+     * @param selectedCommitTitles 选中提交的原始消息列表 (可为空), 用于辅助模型合并语义
+     * @param commitMessageControl 提交消息控件 (如压缩提交对话框或提交面板), 可为空
+     * @param outputSession        工具窗口输出会话, 用于同步显示生成结果, 可为空
+     * @since 1.0.0
+     */
+    private void generateForCommitSelection(@NotNull List<String> commitHashes,
+                                            @NotNull List<String> selectedCommitTitles,
+                                            @Nullable CommitMessageI commitMessageControl,
+                                            @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        if (commitHashes.isEmpty()) {
+            log.debug("Git 提交页面：提交记录再生失败，commit hash 为空列表");
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
+            return;
+        }
+        runGeneration(commitMessageControl,
+                      outputSession,
+                      (service, listener, contextText, typingIndicator) -> commitHashes.size() > 1
+                                                                         ? service.generateSquashCommitMessageFromGitLogStream(
+                                                                             commitHashes,
+                                                                             selectedCommitTitles,
+                                                                             listener,
+                                                                             contextText)
+                                                                         : service.generateCommitMessageFromGitLogStream(
+                                                                             commitHashes.get(0),
+                                                                             listener,
+                                                                             contextText));
+    }
+
+    private void runGeneration(@Nullable CommitMessageI commitMessageControl,
+                               @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                               @NotNull StreamGeneration generation) {
         GenerationState state = new GenerationState();
         GENERATION_STATES.put(project, state);
 
@@ -657,15 +272,23 @@ public class CommitMessageGenerator {
                         StringBuilder buffer = new StringBuilder();
                         AtomicReference<Boolean> updated = new AtomicReference<>(false);
                         final AIStreamResponseListener listener =
-                            getStreamResponseListener(buffer, typingIndicator, updated, cancellationToken);
+                            createStreamResponseListener(state,
+                                                         buffer,
+                                                         typingIndicator,
+                                                         updated,
+                                                         cancellationToken,
+                                                         commitMessageControl,
+                                                         outputSession);
 
-                        String commitMessage =
-                            service.generateSquashCommitMessageFromGitLogStream(commitHashes, selectedCommitTitles, listener, contextText);
+                        String commitMessage = generation.generate(service, listener, contextText, typingIndicator);
                         String formattedCommitMessage = MessageFormatter.format(commitMessage);
 
                         ApplicationManager.getApplication().invokeLater(() -> {
                             if (project.isDisposed() || state.cancelled.get()) {
                                 log.debug("项目已销毁或任务已取消，跳过设置提交消息");
+                                return;
+                            }
+                            if (formattedCommitMessage.isBlank() && !updated.get()) {
                                 return;
                             }
 
@@ -678,10 +301,8 @@ public class CommitMessageGenerator {
                                 outputSession.setText(formattedCommitMessage);
                             }
                         });
-
-                        log.debug("Git 提交页面：压缩提交再生成功，commits={}", commitHashes.size());
                     } catch (Exception e) {
-                        log.debug("Git 提交页面：压缩提交再生失败，commits={}", commitHashes.size(), e);
+                        log.debug("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
                             if (project.isDisposed() || state.cancelled.get()) {
                                 return;
@@ -703,72 +324,161 @@ public class CommitMessageGenerator {
                         GENERATION_STATES.remove(project);
                     }
                 }
-
-                private @NotNull AIStreamResponseListener getStreamResponseListener(StringBuilder buffer,
-                                                                                   TypingIndicator typingIndicator,
-                                                                                   AtomicReference<Boolean> updated,
-                                                                                   StreamCancellationToken cancellationToken) {
-                    AtomicBoolean contentStarted = new AtomicBoolean(false);
-                    return new AIStreamResponseListener() {
-                        @Override
-                        public void onStart() {
-                            buffer.setLength(0);
-                        }
-
-                        @Override
-                        public @Nullable StreamCancellationToken cancellationToken() {
-                            return cancellationToken;
-                        }
-
-                        @Override
-                        public void onChunk(@NotNull String chunk) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
-                                typingIndicator.stop();
-                            }
-                            buffer.append(chunk);
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
-                                    updated.set(true);
-                                }
-                            });
-                            if (outputSession != null) {
-                                outputSession.append(chunk);
-                            }
-                        }
-
-                        @Override
-                        public void onComplete(@NotNull String fullContent) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                }
-                                // typingIndicator.generateSuccess();
-                            });
-                        }
-
-                        @Override
-                        public void onError(@NotNull String error, @Nullable Throwable exception) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                typingIndicator.generateFailure();
-                            });
-                        }
-                    };
-                }
             });
+    }
+
+    /**
+     * 创建 AI 流式响应监听器
+     * <p> 创建一个用于处理 AI 响应流的监听器, 该监听器会实时更新提交消息文本.
+     * <p> 监听器包含四个回调方法:
+     * <ul>
+     * <li>{@code onStart}: 启动时清空缓冲区 </li>
+     * <li>{@code onChunk}: 处理接收到的文本块并实时更新提交消息文本 </li>
+     * <li>{@code onComplete}: 在异步操作完成后更新提交消息文本 </li>
+     * <li>{@code onError}: 处理错误情况, 显示失败提示 </li>
+     * </ul>
+     * <p> 该监听器支持在 UI 线程中安全更新提交消息控件, 并可选地将内容输出到工具窗口会话.
+     *
+     * @param state                生成状态对象, 用于跟踪任务生命周期和取消状态, 不能为 null
+     * @param buffer               用于累积文本的缓冲区, 不能为 null
+     * @param typingIndicator      打字指示器, 用于控制动画效果, 不能为 null
+     * @param updated              原子引用, 用于标记提交消息是否已更新, 不能为 null
+     * @param cancellationToken    流取消令牌, 用于控制流式操作的取消行为, 不能为 null
+     * @param commitMessageControl 提交消息控件, 可为空, 用于设置生成的提交消息文本
+     * @param outputSession        工具窗口输出会话, 可为空, 用于将生成内容追加到输出窗口
+     * @return AIStreamResponseListener 实例, 用于监听 AI 响应的流式事件
+     */
+    private @NotNull AIStreamResponseListener createStreamResponseListener(@NotNull GenerationState state,
+                                                                           @NotNull StringBuilder buffer,
+                                                                           @NotNull TypingIndicator typingIndicator,
+                                                                           @NotNull AtomicReference<Boolean> updated,
+                                                                           @NotNull StreamCancellationToken cancellationToken,
+                                                                           @Nullable CommitMessageI commitMessageControl,
+                                                                           @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        AtomicBoolean contentStarted = new AtomicBoolean(false);
+        return new AIStreamResponseListener() {
+            /**
+             * 初始化缓冲区, 清空之前的内容
+             * <p> 在流开始时调用, 用于重置缓冲区内容, 为后续接收数据做准备
+             */
+            @Override
+            public void onStart() {
+                buffer.setLength(0);
+            }
+
+            /**
+             * 获取流取消令牌
+             * <p> 返回当前流操作的取消令牌, 用于在需要时取消流处理过程
+             *
+             * @return 流取消令牌, 如果未设置则返回 null
+             */
+            @Override
+            public @Nullable StreamCancellationToken cancellationToken() {
+                return cancellationToken;
+            }
+
+            /**
+             * 处理流式响应的片段数据
+             * <p> 当接收到新的响应片段时, 将片段内容追加到缓冲区, 并在 UI 线程中更新提交信息文本.
+             * 如果内容开始标志未设置且片段非空, 则停止打字指示器.
+             * 若输出会话存在, 则将片段内容追加到输出会话中.
+             *
+             * @param chunk 当前接收到的响应片段内容
+             */
+            @Override
+            public void onChunk(@NotNull String chunk) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
+                    typingIndicator.stop();
+                }
+                buffer.append(chunk);
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                        return;
+                    }
+                    if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
+                        updated.set(true);
+                    }
+                });
+                if (outputSession != null) {
+                    outputSession.append(chunk);
+                }
+            }
+
+            @Override
+            public void onThinkingChunk(@NotNull String chunk) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                if (!chunk.isBlank()) {
+                    typingIndicator.startThinkingStage();
+                }
+            }
+
+            /**
+             * 当流处理完成时的回调方法
+             * <p> 在流内容完全接收后被调用, 用于执行后续处理逻辑. 如果流已被取消或项目已销毁, 则不执行任何操作.
+             *
+             * @param fullContent 完整的流内容字符串
+             */
+            @Override
+            public void onComplete(@NotNull String fullContent) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                if (!fullContent.isBlank() && contentStarted.compareAndSet(false, true)) {
+                    typingIndicator.stop();
+                } else if (fullContent.isBlank()) {
+                    typingIndicator.stop();
+                }
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                        return;
+                    }
+                    if (setCommitMessageText(fullContent, commitMessageControl, true)) {
+                        updated.set(true);
+                    }
+                    if (outputSession != null) {
+                        outputSession.setText(fullContent);
+                    }
+                });
+            }
+
+            @Override
+            public void onNotice(@NotNull String message) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+
+                final EditorTextField editorField = getEditorTextField(commitMessageControl);
+                if (editorField != null) {
+                    showNoticeActionTip(editorField.getComponent(), message);
+                }
+            }
+
+            /**
+             * 处理流式响应错误事件
+             * <p> 当流式响应发生错误时, 该方法会被调用. 在 UI 线程中执行错误处理逻辑, 包括停止打字指示器的失败状态.
+             * 如果当前任务已被取消或项目已销毁, 则不执行任何操作.
+             *
+             * @param error     错误信息, 非空字符串
+             * @param exception 错误异常, 可能为 null
+             */
+            @Override
+            public void onError(@NotNull String error, @Nullable Throwable exception) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                        return;
+                    }
+                    typingIndicator.generateFailure();
+                });
+            }
+        };
     }
 
 
@@ -1096,7 +806,7 @@ public class CommitMessageGenerator {
      * @param typingIndicator      打字动画指示器, 用于在生成过程中显示打字效果, 不能为 null
      * @throws Exception 当任意仓库的提交信息生成失败时抛出异常
      */
-    private void handleMultiRepositoryChanges(@NotNull ChangelogService service,
+    private @NotNull String handleMultiRepositoryChanges(@NotNull ChangelogService service,
                                               @NotNull Map<String, List<Change>> changesByRoot,
                                               @Nullable String contextText,
                                               @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
@@ -1130,7 +840,7 @@ public class CommitMessageGenerator {
         }
 
         if (futures.isEmpty()) {
-            return;
+            return "";
         }
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -1147,20 +857,8 @@ public class CommitMessageGenerator {
 
         if (!combined.isBlank()) {
             typingIndicator.stop();
-            // 输出到工具窗口，便于复制与审阅
-            // printToToolwindow(outputSession, combined);
-
-            // 若提交面板可用，同步写入多条 message，方便用户直接复制
-            // 必须在 EDT 中执行 UI 操作
-            ApplicationManager.getApplication().invokeLater(() -> {
-                // 检查项目是否已销毁
-                if (project.isDisposed()) {
-                    return;
-                }
-                // 输出到提交消息输入框
-                setCommitMessageText(combined, commitMessageControl, true);
-            });
         }
+        return combined;
     }
 
     /**
