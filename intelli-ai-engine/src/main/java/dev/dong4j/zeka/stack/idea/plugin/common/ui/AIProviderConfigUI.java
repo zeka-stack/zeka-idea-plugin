@@ -32,6 +32,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -45,9 +46,13 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
@@ -107,6 +112,16 @@ public final class AIProviderConfigUI {
     private AvailableProvidersTableModel availableProvidersTableModel;
     /** Autocomplete 默认服务商下拉框 */
     private ComboBox<AIProviderConfig> autocompleteProviderComboBox;
+    /** 模型下拉框的完整模型列表快照 */
+    private final List<String> allModelItems = new ArrayList<>();
+    /** 避免模型下拉框更新时触发递归监听 */
+    private boolean isUpdatingModelComboBox = false;
+    /** 模型过滤输入防抖定时器 */
+    private Timer modelFilterTimer;
+    /** 记录上一次过滤文本，避免重复刷新 */
+    private String lastModelFilterText;
+    /** 记录上一次过滤结果，避免重复刷新 */
+    private List<String> lastFilteredModelItems = new ArrayList<>();
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
@@ -164,7 +179,9 @@ public final class AIProviderConfigUI {
         providerComboBox.addItemListener(e -> updateApiKeyLinkUrl());
 
         modelComboBox = new ComboBox<>();
+        modelComboBox.setEditable(true);
         ComboboxSpeedSearch.installOn(modelComboBox);
+        installModelComboBoxFiltering();
         // 设置固定宽度，防止输入超长模型名称时拉宽整个 UI
         Dimension modelComboBoxSize = new Dimension(400, modelComboBox.getPreferredSize().height);
         modelComboBox.setPreferredSize(modelComboBoxSize);
@@ -396,17 +413,15 @@ public final class AIProviderConfigUI {
      * @param preferredSelection 优先选中的模型
      */
     public void updateModelItems(@NotNull List<String> items, @Nullable String preferredSelection) {
-        List<String> options = new ArrayList<>(items.size() + 1);
-        if (preferredSelection != null && !preferredSelection.trim().isEmpty() && !items.contains(preferredSelection)) {
-            options.add(preferredSelection);
-        }
-        options.addAll(items);
+        allModelItems.clear();
+        allModelItems.addAll(items);
 
-        modelComboBox.setModel(new DefaultComboBoxModel<>(options.toArray(new String[0])));
-
-        if (preferredSelection != null && !preferredSelection.trim().isEmpty()) {
-            modelComboBox.setSelectedItem(preferredSelection);
-        }
+        String editorText = getModelEditorText();
+        String selection = preferredSelection != null && !preferredSelection.trim().isEmpty()
+                           ? preferredSelection
+                           : editorText;
+        List<String> options = buildModelOptions(editorText, preferredSelection);
+        updateModelComboBoxModel(options, selection, false);
     }
 
     /**
@@ -415,6 +430,233 @@ public final class AIProviderConfigUI {
     public void triggerModelComboBoxPopup() {
         modelComboBox.requestFocusInWindow();
         modelComboBox.showPopup();
+    }
+
+    /**
+     * 为模型下拉框组件安装文本过滤功能
+     * <p>该方法通过监听编辑器文本内容的变化, 当用户输入或删除字符时, 自动触发模型选项的动态过滤和更新. 支持键盘快速搜索 (SpeedSearch) 功能.</p>
+     *
+     * @see DocumentListener
+     * @see JTextField
+     * @see ComboBox
+     */
+    private void installModelComboBoxFiltering() {
+        Component editorComponent = modelComboBox.getEditor().getEditorComponent();
+        if (!(editorComponent instanceof JTextField editor)) {
+            return;
+        }
+        modelFilterTimer = new Timer(250, e -> applyModelFilter());
+        modelFilterTimer.setRepeats(false);
+        editor.getDocument().addDocumentListener(new DocumentListener() {
+            /**
+             * 处理文档插入事件
+             * <p> 当文档内容被插入时触发此方法, 用于更新模型过滤状态
+             *
+             * @param e 文档事件对象, 包含插入操作的详细信息
+             */
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                handleModelFilterChanged();
+            }
+
+            /**
+             * 处理文档内容移除事件
+             * <p> 当文档内容被删除时触发, 用于更新模型过滤状态
+             *
+             * @param e 文档事件对象, 包含删除操作的详细信息
+             */
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                handleModelFilterChanged();
+            }
+
+            /**
+             * 处理文档内容变更的更新事件
+             * <p> 当文档内容发生变更时被调用, 用于触发模型过滤条件的重新计算
+             *
+             * @param e 文档事件对象, 包含变更信息
+             */
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                handleModelFilterChanged();
+            }
+        });
+    }
+
+    /**
+     * 处理模型下拉框过滤文本变化事件
+     * <p> 当模型下拉框编辑器内容发生变化时, 该方法会触发模型选项的重新过滤和更新. 如果当前正在更新模型下拉框, 则直接返回, 避免递归调用.</p>
+     * <p> 该方法会获取当前编辑器中的过滤文本, 调用 {@code buildModelOptions} 构建符合条件的模型选项列表, 并通过 {@code updateModelComboBoxModel} 更新下拉框模型, 同时保持弹出窗口打开状态.</p>
+     *
+     * @see #getModelEditorText()* @see #buildModelOptions(String, String)
+     * @see #updateModelComboBoxModel(List, String, boolean)
+     */
+    private void handleModelFilterChanged() {
+        if (isUpdatingModelComboBox) {
+            return;
+        }
+        if (modelFilterTimer != null) {
+            modelFilterTimer.restart();
+        } else {
+            applyModelFilter();
+        }
+    }
+
+    /**
+     * 应用模型下拉框的文本过滤功能
+     * <p> 当模型下拉框编辑器内容发生变化时, 该方法会触发模型选项的重新过滤和更新. 如果当前正在更新模型下拉框, 则直接返回, 避免递归调用.</p>
+     * <p> 该方法会获取当前编辑器中的过滤文本, 调用 {@code buildModelOptions} 构建符合条件的模型选项列表, 并通过 {@code updateModelComboBoxModel} 更新下拉框模型, 同时保持弹出窗口打开状态.</p>
+     *
+     * @see #getModelEditorText()* @see #buildModelOptions(String, String)
+     * @see #updateModelComboBoxModel(List, String, boolean)
+     */
+    private void applyModelFilter() {
+        if (isUpdatingModelComboBox) {
+            return;
+        }
+        String filterText = getModelEditorText();
+        List<String> options = buildModelOptions(filterText, null);
+        if (Objects.equals(filterText, lastModelFilterText)
+            && options.size() == lastFilteredModelItems.size()
+            && options.equals(lastFilteredModelItems)) {
+            return;
+        }
+        lastModelFilterText = filterText;
+        lastFilteredModelItems = new ArrayList<>(options);
+        updateModelComboBoxModel(options, filterText, true);
+    }
+
+    /**
+     * 获取模型下拉框编辑器中的文本内容
+     * <p> 从模型下拉框的编辑器组件中提取当前输入的文本内容, 仅当编辑器组件为 {@link JTextField} 类型时返回其文本内容, 否则返回 null.</p>
+     *
+     * @return 编辑器中的文本内容, 如果编辑器组件不是 {@link JTextField} 类型或为空, 则返回 {@code null}
+     */
+    @Nullable
+    private String getModelEditorText() {
+        Component editorComponent = modelComboBox.getEditor().getEditorComponent();
+        if (editorComponent instanceof JTextField) {
+            return ((JTextField) editorComponent).getText();
+        }
+        return null;
+    }
+
+    /**
+     * 更新模型下拉框的模型数据并可选地保持弹窗打开状态
+     * <p> 该方法用于替换模型下拉框的显示选项列表, 并根据指定的选中项设置当前选中值. 在更新完成后, 若指定保持弹窗打开, 则会重新显示弹窗.</p>
+     *
+     * @param options       新的模型选项列表, 不可为 null
+     * @param selection     选中的模型名称, 可为 null 或空字符串, 若非空则设置为当前选中项
+     * @param keepPopupOpen 是否在更新后保持弹窗可见, 若为 true 且弹窗当前可见, 则重新调用 showPopup
+     */
+    private void updateModelComboBoxModel(@NotNull List<String> options,
+                                          @Nullable String selection,
+                                          boolean keepPopupOpen) {
+        Component editorComponent = modelComboBox.getEditor().getEditorComponent();
+        String editorText = keepPopupOpen ? getModelEditorText() : null;
+        int selectionStart = -1;
+        int selectionEnd = -1;
+        if (keepPopupOpen && editorComponent instanceof JTextField editorField) {
+            selectionStart = editorField.getSelectionStart();
+            selectionEnd = editorField.getSelectionEnd();
+        }
+        if (isSameModelOptions(options)) {
+            if (keepPopupOpen) {
+                if (editorComponent instanceof JTextField editorField && editorText != null) {
+                    editorField.setText(editorText);
+                }
+                SwingUtilities.invokeLater(() -> {
+                    Component popupEditorComponent = modelComboBox.getEditor().getEditorComponent();
+                    boolean editorFocused = popupEditorComponent != null && popupEditorComponent.isFocusOwner();
+                    if (editorFocused && !modelComboBox.isPopupVisible() && !options.isEmpty()) {
+                        modelComboBox.showPopup();
+                    }
+                });
+            }
+            return;
+        }
+        isUpdatingModelComboBox = true;
+        try {
+            modelComboBox.setModel(new DefaultComboBoxModel<>(options.toArray(new String[0])));
+            if (!keepPopupOpen && selection != null && !selection.trim().isEmpty()) {
+                modelComboBox.setSelectedItem(selection);
+            }
+            if (keepPopupOpen && editorText != null) {
+                modelComboBox.setSelectedItem(editorText);
+                Component newEditorComponent = modelComboBox.getEditor().getEditorComponent();
+                if (newEditorComponent instanceof JTextField editorField) {
+                    int textLength = editorField.getText().length();
+                    if (selectionStart >= 0 && selectionEnd >= 0) {
+                        int safeStart = Math.min(selectionStart, textLength);
+                        int safeEnd = Math.min(selectionEnd, textLength);
+                        editorField.select(safeStart, safeEnd);
+                    }
+                }
+            }
+        } finally {
+            isUpdatingModelComboBox = false;
+        }
+        if (keepPopupOpen) {
+            SwingUtilities.invokeLater(() -> {
+                Component popupEditorComponent = modelComboBox.getEditor().getEditorComponent();
+                boolean editorFocused = popupEditorComponent != null && popupEditorComponent.isFocusOwner();
+                if (editorFocused && !modelComboBox.isPopupVisible() && !options.isEmpty()) {
+                    modelComboBox.showPopup();
+                }
+            });
+        }
+    }
+
+    /**
+     * 判断当前模型下拉框的选项列表是否与指定列表相同
+     * <p> 该方法通过比较下拉框中所有选项的数量和内容, 判断是否与传入的选项列表完全一致. 若数量不同或任意一项内容不匹配, 则返回 false; 否则返回 true.</p>
+     *
+     * @param options 要比较的模型选项列表, 不可为 null
+     * @return 如果下拉框选项与传入列表完全一致则返回 true, 否则返回 false
+     */
+    private boolean isSameModelOptions(@NotNull List<String> options) {
+        int size = modelComboBox.getItemCount();
+        if (size != options.size()) {
+            return false;
+        }
+        for (int i = 0; i < size; i++) {
+            Object item = modelComboBox.getItemAt(i);
+            String value = item != null ? item.toString() : "";
+            if (!value.equals(options.get(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 根据过滤文本和优先选中项构建模型选项列表
+     * <p>该方法用于根据用户输入的过滤关键词和预设的优先选中模型, 从完整模型列表中筛选并生成符合要求的选项列表. 若过滤文本为空, 则返回包含优先选中项 (如存在且不在列表中) 和所有模型的完整列表; 否则, 按关键词模糊匹配筛选模型.</p>
+     *
+     * @param filterText         过滤关键词, 可为 null, 表示不进行过滤
+     * @param preferredSelection 优先选中的模型名称, 可为 null, 若存在且不在模型列表中, 则会添加到结果列表中
+     * @return 包含匹配模型的列表, 若无匹配则返回空列表
+     */
+    private List<String> buildModelOptions(@Nullable String filterText, @Nullable String preferredSelection) {
+        String trimmed = filterText != null ? filterText.trim() : "";
+        if (trimmed.isEmpty()) {
+            List<String> options = new ArrayList<>(allModelItems.size() + 1);
+            if (preferredSelection != null && !preferredSelection.trim().isEmpty()
+                && !allModelItems.contains(preferredSelection)) {
+                options.add(preferredSelection);
+            }
+            options.addAll(allModelItems);
+            return options;
+        }
+
+        String lower = trimmed.toLowerCase(Locale.ROOT);
+        List<String> filtered = new ArrayList<>();
+        for (String item : allModelItems) {
+            if (item.toLowerCase(Locale.ROOT).contains(lower)) {
+                filtered.add(item);
+            }
+        }
+        return filtered;
     }
 
     /**
