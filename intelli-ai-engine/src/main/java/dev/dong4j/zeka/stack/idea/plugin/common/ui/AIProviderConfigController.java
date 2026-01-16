@@ -198,7 +198,7 @@ public final class AIProviderConfigController {
         AIProviderType providerType = resolveSelectedProviderType();
 
         AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
-        String modelName = Objects.toString(ui.getModelComboBox().getEditor().getItem(), "").trim();
+        String modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
         defaultConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
         defaultConfig.baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText().trim());
         defaultConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
@@ -325,7 +325,7 @@ public final class AIProviderConfigController {
         AIProviderType providerType = resolveSelectedProviderType(displayName);
         AIProviderConfig currentConfig = workingSettings.getDefaultProviderConfig(providerType);
 
-        String modelName = Objects.toString(ui.getModelComboBox().getEditor().getItem(), "").trim();
+        String modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
         currentConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
         String baseUrlText = ui.getBaseUrlField().getText();
         String trimmedBaseUrl = baseUrlText != null ? baseUrlText.trim() : "";
@@ -401,7 +401,7 @@ public final class AIProviderConfigController {
         AIProviderType providerType = resolveSelectedProviderType();
         AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
         AIProviderConfig testConfig = config.copy();
-        testConfig.modelName = Objects.toString(ui.getModelComboBox().getEditor().getItem(), "").trim();
+        testConfig.modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
         testConfig.baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText());
         testConfig.updateCredentialId(getCurrentApiKey());
         AIModelParameters modelSnapshot = snapshotModelParameters();
@@ -480,7 +480,7 @@ public final class AIProviderConfigController {
         AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
         AIProviderConfig refreshConfig = config.copy();
         refreshConfig.providerType = providerType;
-        refreshConfig.modelName = Objects.toString(ui.getModelComboBox().getEditor().getItem(), "").trim();
+        refreshConfig.modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
         refreshConfig.baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText());
         refreshConfig.updateCredentialId(getCurrentApiKey());
         AIModelParameters modelSnapshot = snapshotModelParameters();
@@ -546,7 +546,7 @@ public final class AIProviderConfigController {
                                                       AICommonBundle.message("settings.refresh.models.success", finalModels.size()),
                                                       AICommonBundle.message("settings.test.result.title"),
                                                       JOptionPane.INFORMATION_MESSAGE);
-                        SwingUtilities.invokeLater(ui::triggerModelSearchPopup);
+                        SwingUtilities.invokeLater(ui::triggerModelComboBoxPopup);
                     } else {
                         refreshModelsSuccess = false;
                         ui.updateModelItems(List.of(), null);
@@ -1003,10 +1003,6 @@ public final class AIProviderConfigController {
         Object selected = modelComboBox.getSelectedItem();
         if (selected != null) {
             return selected.toString().trim();
-        }
-        Object editorItem = modelComboBox.getEditor().getItem();
-        if (editorItem != null) {
-            return editorItem.toString().trim();
         }
         AIProviderType providerType = resolveSelectedProviderType();
         AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType);
