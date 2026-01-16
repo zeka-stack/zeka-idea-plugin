@@ -14,6 +14,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.OllamaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.QianWenProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.SiliconFlowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ZhipuProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.claude.ClaudeProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.codex.CodexProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.gemini.GeminiProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.glm.GlmProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
@@ -69,6 +73,10 @@ public final class AIServiceFactory {
         AIRuntimeSettings runtimeSettings = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
         return switch (providerType) {
             case CUSTOM -> new CustomProvider(project, config, modelParameters, runtimeSettings);
+            case CLAUDE -> new ClaudeProvider(project, config, modelParameters, runtimeSettings);
+            case GEMINI -> new GeminiProvider(project, config, modelParameters, runtimeSettings);
+            case CODEX -> new CodexProvider(project, config, modelParameters, runtimeSettings);
+            case GLM -> new GlmProvider(project, config, modelParameters, runtimeSettings);
             case QIANWEN -> new QianWenProvider(project, config, modelParameters, runtimeSettings);
             case SILICONFLOW -> new SiliconFlowProvider(project, config, modelParameters, runtimeSettings);
             case OLLAMA -> new OllamaProvider(project, config, modelParameters, runtimeSettings);
