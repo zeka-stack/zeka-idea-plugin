@@ -17,10 +17,10 @@ import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.ui.awt.RelativePoint;
+import com.intellij.vcs.commit.CommitWorkflowHandler;
 import com.intellij.vcs.log.VcsFullCommitDetails;
 import com.intellij.vcs.log.VcsLogCommitSelection;
 import com.intellij.vcs.log.VcsLogDataKeys;
-import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -187,9 +187,6 @@ public class GenerateCommitMessageAction extends AnAction {
         List<String> commitMessages = commits.stream()
             .map(it -> {
                 String fullMessage = it.getFullMessage();
-                if (fullMessage == null) {
-                    return "";
-                }
                 int idx = fullMessage.indexOf('\n');
                 return (idx >= 0 ? fullMessage.substring(0, idx) : fullMessage).trim();
             })
