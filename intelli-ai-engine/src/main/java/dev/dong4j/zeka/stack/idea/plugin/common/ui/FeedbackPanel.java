@@ -69,10 +69,11 @@ public class FeedbackPanel {
      *
      * @see #sendHttpRequest(Map)
      */
-    private static final String FEEDBACK_API_URL = "https://api.dong4j.site/idea-plugin-feedback";
+    private static final String FEEDBACK_API_URL = "https://api.dong4j.site/plugin/feedback";
     // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
     /** GitHub Discussions 链接 */
     private static final String GITHUB_DISCUSSIONS_URL = "https://github.com/zeka-stack/zeka-idea-plugin/discussions";
+    /** 请求超时时间, 单位为秒, 值为 10 */
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
 
     /** 面板内容 */
@@ -94,10 +95,15 @@ public class FeedbackPanel {
 
     /** 表单组件 */
     private JBTextField titleField;
+    /** 反馈内容输入区域, 支持多行文本输入, 自动换行并限制行数 */
     private JBTextArea contentArea;
+    /** 反馈类型下拉框, 用于选择反馈类别 (如 bug, 功能建议, 问题咨询等) */
     private JComboBox<String> typeComboBox;
+    /** GitHub 用户名输入框, 用于收集用户 GitHub 账号以便关联反馈内容 */
     private JBTextField githubUsernameField;
+    /** 提交按钮, 用于提交用户反馈表单 */
     private JButton submitButton;
+    /** 状态标签, 用于显示反馈提交结果或提示信息 */
     private JBLabel statusLabel;
 
     /** 主内容面板 */
@@ -270,6 +276,12 @@ public class FeedbackPanel {
 
         // 为容器添加点击事件（整个容器都可以点击）
         content.addMouseListener(new MouseAdapter() {
+            /**
+             * 处理鼠标点击事件, 用于切换面板的可见性并更新标题栏图标
+             * <p> 点击时切换 mainPanel 的可见状态, 根据当前状态显示不同的箭头图标 (▼ 或 ▶), 并重新设置边框和重绘内容区域 </p>
+             *
+             * @param e 鼠标点击事件对象
+             */
             @Override
             public void mouseClicked(MouseEvent e) {
                 boolean isVisible = mainPanel.isVisible();
@@ -327,30 +339,46 @@ public class FeedbackPanel {
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> responseMap = mapper.readValue(response, Map.class);
 
-                boolean success = (Boolean) responseMap.getOrDefault("success", false);
+                // 新的响应结构：外层 success 表示请求是否成功，data.success 表示业务是否成功
+                boolean requestSuccess = Boolean.TRUE.equals(responseMap.get("success"));
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) responseMap.get("data");
 
                 // 在 UI 线程更新状态
                 ApplicationManager.getApplication().executeOnPooledThread(() -> {
                     submitButton.setEnabled(true);
-                    if (success) {
-                        clearForm();
-                        // 解析响应中的 discussion URL
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> discussion = (Map<String, Object>) responseMap.get("discussion");
-                        if (discussion != null) {
-                            String url = (String) discussion.get("url");
-                            if (url != null && !url.isEmpty()) {
-                                // 显示可点击的链接
-                                showStatusWithLink(url);
+                    if (requestSuccess && data != null) {
+                        // 检查业务是否成功
+                        boolean businessSuccess = Boolean.TRUE.equals(data.get("success"));
+                        if (businessSuccess) {
+                            clearForm();
+                            // 解析响应中的 discussion URL
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> discussion = (Map<String, Object>) data.get("discussion");
+                            if (discussion != null) {
+                                String url = (String) discussion.get("url");
+                                if (url != null && !url.isEmpty()) {
+                                    // 显示可点击的链接
+                                    showStatusWithLink(url);
+                                } else {
+                                    showStatus(AICommonBundle.message("settings.feedback.success"), false);
+                                }
                             } else {
-                                showStatus(AICommonBundle.message("settings.feedback.success"), false);
+                                // 如果没有 discussion，使用 data 中的 message
+                                String message = (String) data.getOrDefault("message", AICommonBundle.message("settings.feedback.success"));
+                                showStatus(message, false);
                             }
                         } else {
-                            showStatus(AICommonBundle.message("settings.feedback.success"), false);
+                            // 业务失败，显示错误信息
+                            String error = (String) data.getOrDefault("error", "");
+                            String message = (String) data.getOrDefault("message", "");
+                            log.debug("提交反馈失败: {}", error.isEmpty() ? message : error);
+                            showStatus(AICommonBundle.message("settings.feedback.error"), true);
                         }
                     } else {
-                        String error = (String) responseMap.getOrDefault("error", "");
-                        log.debug("提交反馈失败", error);
+                        // 请求失败或响应格式不正确
+                        String message = (String) responseMap.getOrDefault("message", "");
+                        log.debug("提交反馈失败: {}", message.isEmpty() ? "未知错误" : message);
                         showStatus(AICommonBundle.message("settings.feedback.error"), true);
                     }
                 });
@@ -629,16 +657,34 @@ public class FeedbackPanel {
 
         // 添加点击事件来打开浏览器
         statusLabel.addMouseListener(new MouseAdapter() {
+            /**
+             * 处理鼠标点击事件, 打开指定 URL
+             * <p> 当用户点击时, 调用 {@code BrowserUtil.browse(url)} 方法在默认浏览器中打开指定 URL</p>
+             *
+             * @param e 鼠标点击事件对象
+             */
             @Override
             public void mouseClicked(MouseEvent e) {
                 BrowserUtil.browse(url);
             }
 
+            /**
+             * 当鼠标进入组件时, 将状态标签的光标设置为手型光标
+             * <p> 此方法用于在鼠标悬停于组件上时, 通过设置光标样式提示用户可点击操作
+             *
+             * @param e 鼠标事件对象, 包含鼠标进入位置等信息
+             */
             @Override
             public void mouseEntered(MouseEvent e) {
                 statusLabel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
             }
 
+            /**
+             * 鼠标移出时将状态栏光标恢复为默认光标
+             * <p> 当鼠标从组件上移出时, 将状态标签的光标设置为系统默认光标, 以提供一致的用户体验
+             *
+             * @param e 鼠标事件对象, 包含鼠标位置和状态信息
+             */
             @Override
             public void mouseExited(MouseEvent e) {
                 statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());
@@ -684,16 +730,34 @@ public class FeedbackPanel {
 
         // 添加点击事件来打开浏览器
         statusLabel.addMouseListener(new MouseAdapter() {
+            /**
+             * 处理鼠标点击事件, 打开 GitHub 讨论页面
+             * <p> 当用户点击时, 调用 BrowserUtil 浏览器工具打开指定的 GitHub 讨论地址
+             *
+             * @param e 鼠标点击事件对象
+             */
             @Override
             public void mouseClicked(MouseEvent e) {
                 BrowserUtil.browse(GITHUB_DISCUSSIONS_URL);
             }
 
+            /**
+             * 当鼠标进入组件时, 将状态标签的光标设置为手型光标
+             * <p> 此方法用于在鼠标悬停于状态标签上时, 提供视觉反馈, 提示用户该区域可点击
+             *
+             * @param e 鼠标事件对象, 包含鼠标进入位置等信息
+             */
             @Override
             public void mouseEntered(MouseEvent e) {
                 statusLabel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
             }
 
+            /**
+             * 鼠标移出时将状态标签的光标恢复为默认光标
+             * <p> 当鼠标从状态标签区域移出时, 将光标设置为系统默认光标样式, 以提供一致的用户体验
+             *
+             * @param e 鼠标事件对象, 包含鼠标位置和状态信息
+             */
             @Override
             public void mouseExited(MouseEvent e) {
                 statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());

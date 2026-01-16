@@ -6,6 +6,7 @@ import java.awt.event.ItemEvent;
 
 import javax.swing.JPanel;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 
@@ -24,8 +25,11 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
  */
 public final class AIProviderConfigPanel {
 
+    /** AI 提供商配置界面 UI 组件, 用于渲染和管理用户界面元素 */
     private final AIProviderConfigUI ui;
+    /** AI 提供者配置控制器, 负责管理配置面板的业务逻辑和数据流 */
     private final AIProviderConfigController controller;
+    /** 是否已设置监听器, 用于防止重复添加监听器 */
     private boolean listenersSetup = false;
 
     /**
@@ -95,6 +99,12 @@ public final class AIProviderConfigPanel {
         return controller.isModified(baseline);
     }
 
+    /**
+     * 检查是否允许进行下一步编辑操作
+     * <p> 该方法委托给控制器的 isNextEditEnabled 方法, 用于判断当前配置状态是否满足继续编辑的条件.
+     *
+     * @return 如果允许进行下一步编辑则返回 true, 否则返回 false
+     */
     public boolean isNextEditEnabled() {
         return controller.isNextEditEnabled();
     }
@@ -110,12 +120,23 @@ public final class AIProviderConfigPanel {
 
         ui.getProviderComboBox().addItemListener(e -> {
             if (e.getStateChange() == ItemEvent.SELECTED) {
+                AIProviderType selectedType = ui.getSelectedProviderType();
+                if (selectedType == null) {
+                    return;
+                }
                 // 处理切换之后的提供者信息
                 controller.updateBasicConnectionInfo();
                 controller.loadDefaultProviderConfig();
             } else if (e.getStateChange() == ItemEvent.DESELECTED) {
                 // 保存切换之前的提供者信息
-                controller.saveCurrentProviderConfig(String.valueOf(e.getItem()));
+                AIProviderType previousType = null;
+                Object item = e.getItem();
+                if (item instanceof AIProviderConfigUI.ProviderOption option && !option.isGroup()) {
+                    previousType = option.getProviderType();
+                }
+                if (previousType != null) {
+                    controller.saveCurrentProviderConfig(previousType);
+                }
             }
         });
 

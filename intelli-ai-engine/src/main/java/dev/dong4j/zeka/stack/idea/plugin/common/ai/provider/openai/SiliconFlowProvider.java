@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
+package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai;
 
 import com.intellij.openapi.project.Project;
 
@@ -20,7 +20,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class SiliconFlowProvider extends AICompatibleProvider {
+public class SiliconFlowProvider extends OpenAILikeProvider {
 
     /**
      * 初始化 SiliconFlowProvider 实例

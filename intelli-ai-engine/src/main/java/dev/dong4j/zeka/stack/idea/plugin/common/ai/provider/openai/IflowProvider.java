@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
+package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-public class IflowProvider extends AICompatibleProvider {
+public class IflowProvider extends OpenAILikeProvider {
     /** IFlow 模型列表接口地址 */
     private static final String MODELS_LIST_URL = "https://iflow.cn/api/platform/models/list";
 

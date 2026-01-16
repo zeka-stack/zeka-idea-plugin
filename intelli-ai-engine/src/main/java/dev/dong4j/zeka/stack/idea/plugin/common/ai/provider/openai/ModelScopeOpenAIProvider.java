@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
+package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -28,36 +28,31 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * ModelScope 提供商实现类
+ * ModelScope OpenAI 兼容提供商实现类
  * <p>
- * 该类继承自 AICompatibleProvider, 专门用于与 ModelScope 平台进行集成,
- * 提供模型列表获取功能. 通过并发请求多个页面数据来获取可用的 AI 模型列表,
- * 支持分页查询和结果合并, 确保能够获取到完整的模型信息.
- *
- * @author zeka.stack.team
- * @version 1.0.0
- * @email mailto:zeka.stack@gmail.com
- * @date 2025.11.30
- * @since 1.0.0
+ * 该类通过 ModelScope 的模型列表接口获取可用模型.
  */
 @Slf4j
-public class ModelScopeProvider extends AICompatibleProvider {
+public class ModelScopeOpenAIProvider extends OpenAILikeProvider {
     /** ModelScope 模型列表接口地址（固定） */
     private static final String MODELS_LIST_URL = "https://modelscope.cn/api/v1/dolphin/models";
     /** 最大页数，每页最多 30 条 */
     private static final int MAX_PAGES = 3;
 
     /**
-     * 构造函数
+     * 初始化 ModelScope OpenAI 兼容提供者实例
+     * <p>
+     * 该构造函数用于创建 ModelScope 提供者的实例, 继承自 OpenAILikeProvider, 初始化时传入项目, 配置, 模型参数和运行时设置.
      *
-     * @param config          提供者配置
-     * @param modelParameters 模型参数
-     * @param runtimeSettings 运行时配置
+     * @param project         项目上下文对象, 非空
+     * @param config          提供者配置对象, 非空
+     * @param modelParameters 模型参数对象, 非空
+     * @param runtimeSettings 运行时设置对象, 非空
      */
-    public ModelScopeProvider(@NotNull Project project,
-                              @NotNull AIProviderConfig config,
-                              @NotNull AIModelParameters modelParameters,
-                              @NotNull AIRuntimeSettings runtimeSettings) {
+    public ModelScopeOpenAIProvider(@NotNull Project project,
+                                    @NotNull AIProviderConfig config,
+                                    @NotNull AIModelParameters modelParameters,
+                                    @NotNull AIRuntimeSettings runtimeSettings) {
         super(project, config, modelParameters, runtimeSettings);
     }
 
@@ -225,4 +220,3 @@ public class ModelScopeProvider extends AICompatibleProvider {
         return new ArrayList<>(models);
     }
 }
-

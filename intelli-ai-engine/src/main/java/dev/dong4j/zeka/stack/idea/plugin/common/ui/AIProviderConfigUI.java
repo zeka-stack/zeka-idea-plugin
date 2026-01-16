@@ -26,6 +26,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import javax.swing.BorderFactory;
+import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
@@ -69,6 +71,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
+import lombok.Getter;
 
 /**
  * AI 提供商配置 UI 类
@@ -87,7 +90,7 @@ public final class AIProviderConfigUI {
     /** 主界面主面板, 用于承载主要功能组件和布局 */
     private JPanel mainPanel;
     /** 服务提供商下拉选择框 */
-    private ComboBox<String> providerComboBox;
+    private ComboBox<ProviderOption> providerComboBox;
     /** 获取 API Key 的超链接 */
     private HyperlinkLabel getApiKeyLink;
     /** 模型下拉选择框 */
@@ -122,6 +125,8 @@ public final class AIProviderConfigUI {
     private String lastModelFilterText;
     /** 记录上一次过滤结果，避免重复刷新 */
     private List<String> lastFilteredModelItems = new ArrayList<>();
+    /** 暂停模型过滤，用于批量更新 */
+    private boolean suppressModelFilter = false;
     /** 控制日志详细输出的复选框 */
     private JBCheckBox verboseLoggingCheckBox;
     /** 控制是否启用自动更新检查的复选框 */
@@ -168,8 +173,7 @@ public final class AIProviderConfigUI {
     public void createUI(@Nullable Runnable removeAvailableProviderCallback,
                          @Nullable Runnable clearAllAvailableProvidersCallback) {
         // 初始化连接配置组件
-        providerComboBox = new ComboBox<>(AIProviderType.getAllDisplayNames().toArray(new String[0]));
-        providerComboBox.setRenderer(new ProviderListCellRenderer());
+        setupProviderComboBox();
 
         // 创建获取 API Key 的超链接
         getApiKeyLink = new HyperlinkLabel(AICommonBundle.message("settings.get.api.key"));
@@ -372,6 +376,78 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 初始化并配置服务提供商下拉选择框
+     * <p> 该方法用于构建并设置 AI 服务提供商的下拉选择框组件, 包括加载所有可用提供商选项, 设置自定义渲染器, 并添加弹出菜单监听器, 以阻止用户选择分组项.</p>
+     * <p> 弹出菜单监听器在菜单显示前会拦截选择行为, 当用户尝试选择分组项时, 将不执行任何选择操作, 从而避免误选.</p>
+     *
+     * @see ProviderOption
+     * @see ProviderComboBoxModel
+     * @see ProviderListCellRenderer
+     * @see javax.swing.event.PopupMenuListener
+     * @see javax.swing.plaf.basic.ComboPopup
+     * @see javax.swing.DefaultListSelectionModel
+     */
+    private void setupProviderComboBox() {
+        ProviderOption[] providerOptions = buildProviderOptions().toArray(new ProviderOption[0]);
+        providerComboBox = new ComboBox<>(new ProviderComboBoxModel(providerOptions));
+        providerComboBox.setRenderer(new ProviderListCellRenderer());
+        providerComboBox.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
+            /**
+             * 当弹出菜单即将变得可见时的回调方法
+             * <p> 用于自定义组合框下拉列表的选择行为, 当用户选择的是分组项时, 阻止其被选中
+             *
+             * @param e 弹出菜单事件对象, 包含触发事件的上下文信息
+             */
+            @Override
+            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {
+                Object child = providerComboBox.getAccessibleContext().getAccessibleChild(0);
+                if (child instanceof javax.swing.plaf.basic.ComboPopup comboPopup) {
+                    JList<?> list = comboPopup.getList();
+                    list.setSelectionModel(new javax.swing.DefaultListSelectionModel() {
+                        /**
+                         * 设置选择区间, 若选中项为分组选项则不执行默认行为
+                         * <p> 当用户选择的索引区间中包含分组选项时, 该方法会直接返回, 不执行父类的区间选择逻辑 </p>
+                         * <p> 否则, 将调用父类的 <code>setSelectionInterval</code> 方法完成选择区间设置 </p>
+                         *
+                         * @param index0 起始索引
+                         * @param index1 结束索引
+                         * @since 1.0
+                         */
+                        @Override
+                        public void setSelectionInterval(int index0, int index1) {
+                            Object item = list.getModel().getElementAt(index0);
+                            if (item instanceof ProviderOption option && option.isGroup()) {
+                                return;
+                            }
+                            super.setSelectionInterval(index0, index1);
+                        }
+                    });
+                }
+            }
+
+            /**
+             * 当弹出菜单将要变为不可见时的回调方法
+             * <p> 此方法在用户关闭弹出菜单或菜单失去焦点时被调用, 用于执行清理或状态更新操作
+             *
+             * @param e 弹出菜单事件对象, 包含事件相关信息
+             */
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+            }
+
+            /**
+             * 当弹出菜单被取消时的回调方法
+             * <p>此方法在用户取消弹出菜单 (如点击外部区域关闭菜单) 时被调用, 用于执行清理或取消操作
+             *
+             * @param e 弹出菜单事件对象, 包含取消操作的相关信息
+             */
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+            }
+        });
+    }
+
+    /**
      * 获取主面板组件
      * <p> 返回 AI 提供商配置界面的主面板, 该面板包含了所有配置相关的 UI 组件 </p>
      *
@@ -382,8 +458,6 @@ public final class AIProviderConfigUI {
         return mainPanel;
     }
 
-    // ==================== Getter 方法 ====================
-
     /**
      * 获取提供商下拉选择框组件
      * <p> 返回用于选择 AI 服务提供商的组合框组件, 包含所有可用的提供商选项 </p>
@@ -391,8 +465,38 @@ public final class AIProviderConfigUI {
      * @return 提供商下拉选择框组件, 保证不为 null
      */
     @NotNull
-    public ComboBox<String> getProviderComboBox() {
+    public ComboBox<ProviderOption> getProviderComboBox() {
         return providerComboBox;
+    }
+
+    /**
+     * 获取当前选中的 AI 服务提供商类型
+     * <p> 从提供商下拉选择框中获取当前选中的选项, 若选项有效且非分组项, 则返回其对应的提供商类型; 否则返回 null.</p>
+     *
+     * @return 当前选中的 AI 服务提供商类型, 若未选中或选中项为分组项则返回 null
+     */
+    @Nullable
+    public AIProviderType getSelectedProviderType() {
+        ProviderOption option = (ProviderOption) providerComboBox.getSelectedItem();
+        return option != null && !option.isGroup() ? option.providerType : null;
+    }
+
+    /**
+     * 根据指定的服务提供商类型设置下拉框中对应的选项
+     * <p> 遍历提供商下拉框的模型数据, 查找与指定服务提供商类型匹配的选项, 若找到则设置为当前选中项并立即返回; 若未找到则不执行任何操作.</p>
+     *
+     * @param providerType 要设置的 AI 服务提供商类型, 不能为空
+     * @see #getProviderComboBox()
+     */
+    public void setSelectedProviderType(@NotNull AIProviderType providerType) {
+        ComboBoxModel<ProviderOption> model = providerComboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            ProviderOption option = model.getElementAt(i);
+            if (option != null && !option.isGroup() && providerType == option.providerType) {
+                providerComboBox.setSelectedItem(option);
+                return;
+            }
+        }
     }
 
     /**
@@ -425,11 +529,52 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 更新模型下拉框选项并立即显示下拉弹窗, 支持快速搜索
+     * <p>该方法用于在更新模型列表后, 立即显示下拉弹窗, 便于用户直接通过键盘搜索 (SpeedSearch) 选择模型. 在更新过程中会临时禁用模型过滤功能, 避免冲突.</p>
+     * <p>操作流程如下:</p>
+     * <ul>
+     *   <li>临时启用模型过滤抑制标志(<code>suppressModelFilter</code>)</li>
+     *   <li>清除当前过滤状态</li>
+     *   <li>清空并填充完整模型列表</li>
+     *   <li>构建过滤后模型选项列表(使用空字符串作为过滤条件)</li>
+     *   <li>更新下拉框模型, 不保留选中项</li>
+     *   <li>在事件队列中延迟执行:</li>
+     *   <ul>
+     *     <li>清除过滤状态</li>
+     *     <li>显示下拉弹窗</li>
+     *     <li>在后续事件中恢复模型过滤抑制标志</li>
+     *   </ul>
+     * </ul>
+     *
+     * @param items              完整的模型列表, 不能为空
+     * @param preferredSelection 优先选中的模型名称, 可为 null
+     * @see #suppressModelFilter
+     * @see #clearModelFilterState(boolean)
+     * @see #allModelItems
+     * @see #buildModelOptions(String, String)
+     * @see #updateModelComboBoxModel(List, String, boolean)
+     * @see #showModelComboBoxPopup()* @see #SwingUtilities.invokeLater(Runnable)
+     */
+    public void updateModelItemsAndShowPopup(@NotNull List<String> items, @Nullable String preferredSelection) {
+        suppressModelFilter = true;
+        clearModelFilterState(true);
+        allModelItems.clear();
+        allModelItems.addAll(items);
+
+        List<String> options = buildModelOptions("", preferredSelection);
+        updateModelComboBoxModel(options, null, false);
+        SwingUtilities.invokeLater(() -> {
+            clearModelFilterState(true);
+            showModelComboBoxPopup();
+            SwingUtilities.invokeLater(() -> suppressModelFilter = false);
+        });
+    }
+
+    /**
      * 打开模型下拉框并聚焦, 以便用户直接键盘搜索（SpeedSearch）
      */
     public void triggerModelComboBoxPopup() {
-        modelComboBox.requestFocusInWindow();
-        modelComboBox.showPopup();
+        showModelComboBoxPopup();
     }
 
     /**
@@ -493,6 +638,9 @@ public final class AIProviderConfigUI {
      */
     private void handleModelFilterChanged() {
         if (isUpdatingModelComboBox) {
+            return;
+        }
+        if (suppressModelFilter) {
             return;
         }
         if (modelFilterTimer != null) {
@@ -605,6 +753,55 @@ public final class AIProviderConfigUI {
                 }
             });
         }
+    }
+
+    /**
+     * 清除模型下拉框的过滤状态并可选清空编辑器文本
+     * <p> 该方法用于重置模型下拉框的过滤器状态, 包括停止定时器, 清空上次过滤文本和结果列表. 若指定清空编辑器文本, 则会清空当前输入框内容并防止在更新过程中触发递归.</p>
+     *
+     * @param clearEditorText 是否清空模型下拉框的编辑器文本
+     * @since 1.0
+     */
+    private void clearModelFilterState(boolean clearEditorText) {
+        if (modelFilterTimer != null) {
+            modelFilterTimer.stop();
+        }
+        lastModelFilterText = null;
+        lastFilteredModelItems = new ArrayList<>();
+        if (!clearEditorText) {
+            return;
+        }
+        Component editorComponent = modelComboBox.getEditor().getEditorComponent();
+        if (editorComponent instanceof JTextField editorField && !editorField.getText().isEmpty()) {
+            isUpdatingModelComboBox = true;
+            try {
+                editorField.setText("");
+            } finally {
+                isUpdatingModelComboBox = false;
+            }
+        }
+    }
+
+    /**
+     * 显示模型下拉框的弹出窗口
+     * <p>当模型下拉框中存在可选项时, 该方法会将焦点设置到编辑器组件或下拉框本身, 并在后续事件线程中显示弹出窗口. 若无选项则直接返回.</p>
+     * <p>此方法支持键盘快速搜索 (SpeedSearch) 功能, 确保用户在输入时能立即看到匹配的模型选项.</p>
+     *
+     * @see #getModelEditorText()* @see #installModelComboBoxFiltering()
+     * @see javax.swing.JComboBox
+     * @see javax.swing.SwingUtilities
+     */
+    private void showModelComboBoxPopup() {
+        if (modelComboBox.getItemCount() == 0) {
+            return;
+        }
+        Component editorComponent = modelComboBox.getEditor().getEditorComponent();
+        if (editorComponent != null) {
+            editorComponent.requestFocusInWindow();
+        } else {
+            modelComboBox.requestFocusInWindow();
+        }
+        SwingUtilities.invokeLater(() -> modelComboBox.setPopupVisible(true));
     }
 
     /**
@@ -849,6 +1046,24 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 构建服务提供商选项列表
+     * <p> 该方法按类别分组创建 AI 服务提供商选项, 包括 OpenAI 兼容服务商,Anthropic 兼容服务商和其他类型服务商, 每个类别下包含对应的提供商类型选项.</p>
+     * <p> 返回的列表可用于 UI 下拉框组件, 支持按组分类显示和单个提供商选项.</p>
+     *
+     * @return 服务提供商选项列表, 包含分组项和具体提供商项, 不会返回 null
+     */
+    private List<ProviderOption> buildProviderOptions() {
+        List<ProviderOption> options = new ArrayList<>();
+        for (Map.Entry<String, List<AIProviderType>> entry : AIProviderType.getGroupedProviders().entrySet()) {
+            options.add(ProviderOption.group(entry.getKey()));
+            for (AIProviderType providerType : entry.getValue()) {
+                options.add(ProviderOption.provider(providerType));
+            }
+        }
+        return options;
+    }
+
+    /**
      * 获取是否显示高级设置内容的复选框组件
      * <p> 返回一个复选框组件, 用于指示是否在界面上显示高级设置内容.</p>
      *
@@ -1005,13 +1220,7 @@ public final class AIProviderConfigUI {
      * 根据当前选择的服务提供商更新获取 API Key 链接的 URL
      */
     private void updateApiKeyLinkUrl() {
-        String selectedDisplayName = (String) providerComboBox.getSelectedItem();
-        if (selectedDisplayName == null) {
-            getApiKeyLink.setVisible(false);
-            return;
-        }
-
-        AIProviderType providerType = AIProviderType.fromDisplayName(selectedDisplayName);
+        AIProviderType providerType = getSelectedProviderType();
         if (providerType == null) {
             getApiKeyLink.setVisible(false);
             return;
@@ -1566,6 +1775,144 @@ public final class AIProviderConfigUI {
     // ==================== 内部类 ====================
 
     /**
+     * 提供商选项类
+     * <p> 用于封装 AI 服务提供商的显示标签, 类型及是否为分组项的配置信息, 支持创建分组选项和具体服务提供商选项.
+     * 该类为不可变数据类, 仅用于内部查询和检索逻辑, 不负责请求处理, 旨在避免基础设施关注, 符合面向对象设计原则.
+     * <p> 示例用法:
+     * <pre>{@code
+     * ProviderOption groupOption = ProviderOption.group("模型组");
+     * ProviderOption providerOption = ProviderOption.provider(AIProviderType.OPENAI);
+     * }</pre>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.17
+     * @since 1.0.0
+     */
+    public static final class ProviderOption {
+        /** 标签显示文本, 用于界面展示或用户识别 */
+        private final String label;
+        /** AI 提供商类型, 用于标识具体的 AI 服务提供商, 如 <a href="https://example.com">OpenAI</a> 或 <a href="https://example.com">Anthropic</a> */
+        private final AIProviderType providerType;
+        /** 是否为分组项, 用于标识该选项是否属于分组而非具体提供者 */
+        @Getter
+        private final boolean group;
+
+        /**
+         * 初始化提供者选项
+         * <p> 构造函数用于创建一个提供者选项, 包含标签, 提供者类型和是否为分组标识
+         *
+         * @param label        标签名称, 不能为空
+         * @param providerType 提供者类型, 可以为空
+         * @param group        是否为分组标识
+         */
+        private ProviderOption(@NotNull String label, @Nullable AIProviderType providerType, boolean group) {
+            this.label = label;
+            this.providerType = providerType;
+            this.group = group;
+        }
+
+        /**
+         * 创建一个分组选项
+         * <p> 用于表示一个分组标题, 不关联具体提供者类型, 仅作为视觉分组使用
+         *
+         * @param label 分组显示的标签名称, 不能为空
+         * @return 新创建的分组选项对象
+         */
+        public static ProviderOption group(@NotNull String label) {
+            return new ProviderOption(label, null, true);
+        }
+
+        /**
+         * 创建一个表示具体 AI 提供商的选项
+         * <p> 根据指定的 AI 提供商类型创建一个 ProviderOption 实例, 标签为该提供商的显示名称, 非分组项 </p>
+         *
+         * @param providerType AI 提供商类型, 不能为空
+         * @return 新创建的 ProviderOption 实例, 表示一个具体的 AI 提供商
+         */
+        public static ProviderOption provider(@NotNull AIProviderType providerType) {
+            return new ProviderOption(providerType.getDisplayName(), providerType, false);
+        }
+
+        /**
+         * 获取当前提供者类型
+         * <p> 返回当前 ProviderOption 实例所关联的 AIProviderType, 如果该实例为分组则返回 null
+         *
+         * @return AIProviderType 类型对象, 若为分组则返回 null
+         */
+        @Nullable
+        public AIProviderType getProviderType() {
+            return providerType;
+        }
+
+        /**
+         * 返回当前 ProviderOption 实例的标签字符串表示
+         * <p> 该方法重写了 Object.toString(), 返回创建时传入的 label 字段值, 用于调试或日志输出
+         *
+         * @return 当前实例的标签字符串
+         */
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    /**
+     * 提供商下拉框模型类
+     * <p> 继承自 {@link DefaultComboBoxModel}, 用于在 GUI 中展示和管理供应商选项列表, 支持自动选中非分组项作为默认选中项, 并在用户选择分组项时回退到上一个非分组项.</p>
+     * <p> 该类主要用于内部业务逻辑, 不负责请求处理, 专注于视图层数据模型的封装与交互逻辑.</p>
+     * <p> 设计意图: 避免基础设施关注, 遵循面向对象设计原则, 确保模型层与业务逻辑解耦.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.17
+     * @since 1.0.0
+     */
+    private static final class ProviderComboBoxModel extends DefaultComboBoxModel<ProviderOption> {
+        /** 上一次选中的提供者选项, 用于在用户选择分组项时恢复之前的选择 */
+        private ProviderOption lastSelected;
+
+        /**
+         * 初始化提供者组合框模型并设置默认选中项
+         * <p> 构造函数接收提供者选项数组, 遍历数组找到第一个非分组项并设为默认选中项, 若未找到则不设置默认值
+         *
+         * @param items 提供者选项数组
+         */
+        private ProviderComboBoxModel(ProviderOption[] items) {
+            super(items);
+            for (ProviderOption option : items) {
+                if (option != null && !option.isGroup()) {
+                    lastSelected = option;
+                    super.setSelectedItem(option);
+                    break;
+                }
+            }
+        }
+
+        /**
+         * 设置组合框中选中的项, 若选中项为分组项则不生效并恢复上一次选中项
+         * <p> 重写父类方法, 当选中项为分组项时, 不更新选中状态, 而是恢复上次选中的非分组项; 否则更新为当前选中项 </p>
+         *
+         * @param anObject 要设置为选中项的对象, 类型为 Object
+         */
+        @Override
+        public void setSelectedItem(Object anObject) {
+            if (anObject instanceof ProviderOption option) {
+                if (option.isGroup()) {
+                    if (lastSelected != null) {
+                        super.setSelectedItem(lastSelected);
+                    }
+                    return;
+                }
+                lastSelected = option;
+            }
+            super.setSelectedItem(anObject);
+        }
+    }
+
+    /**
      * 自定义的 Provider 列表单元格渲染器
      * <p>
      * 用于在 JList 中渲染 AI Provider 的显示名称和对应的图标, 支持根据显示名称获取对应的 Provider 类型, 并设置相应的图标.
@@ -1591,12 +1938,21 @@ public final class AIProviderConfigUI {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof String displayName) {
-                label.setText(displayName);
-                AIProviderType providerType = AIProviderType.fromDisplayName(displayName);
-                if (providerType != null) {
-                    Icon icon = AICommonIcons.getProviderIcon(providerType);
+            if (value instanceof ProviderOption option) {
+                label.setText(option.label);
+                if (option.isGroup()) {
+                    label.setFont(label.getFont().deriveFont(Font.BOLD));
+                    label.setForeground(UIUtil.getLabelDisabledForeground());
+                    label.setIcon(null);
+                    label.setBorder(JBUI.Borders.emptyLeft(4));
+                    if (isSelected) {
+                        label.setBackground(list.getBackground());
+                        label.setForeground(UIUtil.getLabelDisabledForeground());
+                    }
+                } else if (option.providerType != null) {
+                    Icon icon = AICommonIcons.getProviderIcon(option.providerType);
                     label.setIcon(icon);
+                    label.setBorder(JBUI.Borders.emptyLeft(16));
                 }
             }
             return label;

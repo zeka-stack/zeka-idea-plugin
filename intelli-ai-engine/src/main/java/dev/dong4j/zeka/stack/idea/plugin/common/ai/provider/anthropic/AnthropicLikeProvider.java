@@ -1,9 +1,10 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.claude;
+package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -37,17 +38,38 @@ import lombok.extern.slf4j.Slf4j;
  * 使用 Anthropic Messages API：/v1/messages
  */
 @Slf4j
-public class ClaudeProvider extends AICompatibleProvider {
+public class AnthropicLikeProvider extends AICompatibleProvider {
 
+    /** Anthropic API 的版本号, 固定为 2023-06-01 */
     private static final String ANTHROPIC_VERSION = "2023-06-01";
 
-    public ClaudeProvider(@NotNull Project project,
-                          @NotNull AIProviderConfig config,
-                          @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings) {
+    /**
+     * 初始化 Anthropic 提供商实例
+     * <p> 用于创建与 Anthropic API 交互的客户端, 配置项目, 提供者配置, 模型参数和运行时设置
+     *
+     * @param project         项目上下文, 用于日志输出和配置管理
+     * @param config          提供者配置, 包含基础 URL, 模型名称等信息
+     * @param modelParameters 模型参数, 如温度, 最大令牌数等
+     * @param runtimeSettings 运行时设置, 如重试次数, 超时时间等
+     */
+    public AnthropicLikeProvider(@NotNull Project project,
+                                 @NotNull AIProviderConfig config,
+                                 @NotNull AIModelParameters modelParameters,
+                                 @NotNull AIRuntimeSettings runtimeSettings) {
         super(project, config, modelParameters, runtimeSettings);
     }
 
+    /**
+     * 根据聊天请求生成内容
+     * <p> 通过 Anthropic Messages API 发送消息请求, 支持重试机制, 若请求失败则按指数退避策略重试, 最多重试次数由运行时设置决定.
+     * 若所有重试均失败, 则抛出 AIServiceException.
+     *
+     * @param request  聊天请求对象, 包含用户提示, 系统提示等信息
+     * @param apiKey   API 密钥, 若提供者类型要求密钥且未提供或为空, 则抛出异常
+     * @param listener 响应监听器, 用于接收请求, 响应, 使用情况等回调, 可为 null
+     * @return 生成的文本内容
+     * @throws AIServiceException 当配置错误, 网络错误, 服务不可用或响应解析失败时抛出
+     */
     @Override
     @NotNull
     public String generateContent(@NotNull AIChatRequest request,
@@ -88,6 +110,16 @@ public class ClaudeProvider extends AICompatibleProvider {
         throw new AIServiceException("AI 服务调用失败", AIServiceException.ErrorCode.UNKNOWN_ERROR);
     }
 
+    /**
+     * 以流式方式生成内容
+     * <p> 通过 Anthropic Messages API 的流式接口发送消息请求, 并逐块接收响应内容, 适用于实时输出场景.
+     * <p> 请求体使用 {@code buildMessagesRequestBody} 构建, 内容类型为 {@code application/json}, 并设置流式响应头 {@code Accept: text/event-stream}.
+     *
+     * @param request  AI 聊天请求对象, 包含用户提示, 系统提示等信息
+     * @param apiKey   API 密钥, 可为空, 若提供商要求密钥且未提供则抛出异常
+     * @param listener 流式响应监听器, 用于接收请求开始, 内容块, 错误及完成事件
+     * @throws AIServiceException 当 HTTP 错误, 网络错误或响应解析失败时抛出, 错误码根据具体异常类型映射
+     */
     @Override
     public void generateContentStream(@NotNull AIChatRequest request,
                                       @Nullable String apiKey,
@@ -130,6 +162,14 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 验证当前配置是否有效
+     * <p>通过发送一个简单的测试请求 ("i say ping, you say pong") 到 AI 服务, 检查连接是否正常.
+     * 如果响应非空, 则认为配置有效; 否则返回失败信息.
+     *
+     * @param apiKey API 密钥, 可为空. 若提供商要求密钥且未提供, 则会抛出异常.
+     * @return 验证结果对象, 包含成功或失败的状态, 消息及可选的异常信息
+     */
     @Override
     @NotNull
     public ValidationResult validateConfiguration(@Nullable String apiKey) {
@@ -152,6 +192,15 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 获取可用的模型列表
+     * <p> 通过调用 Anthropic API 的 /v1/models 接口获取当前提供商支持的模型列表.
+     * 如果未提供 API 密钥但提供商要求密钥, 则返回空列表.
+     * 若接口调用失败或解析失败, 将返回当前提供商默认支持的模型列表.
+     *
+     * @param apiKey 可选的 API 密钥, 用于认证请求. 若为 null 或空字符串, 则在提供商要求密钥时返回空列表.
+     * @return 可用模型名称列表. 若获取失败, 则返回提供商默认支持的模型列表.
+     */
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
@@ -179,6 +228,13 @@ public class ClaudeProvider extends AICompatibleProvider {
         return new ArrayList<>(getProviderType().getSupportedModels());
     }
 
+    /**
+     * 配置 Anthropic API 连接参数
+     * <p> 设置 HTTP 连接超时时间, 协议版本和 API 密钥头信息, 用于与 Anthropic 服务建立安全连接
+     *
+     * @param connection 需要配置的 HttpURLConnection 实例
+     * @param apiKey     可选的 API 密钥, 用于身份验证, 若为空或空白则不设置密钥头
+     */
     private void tuneAnthropicConnection(@NotNull HttpURLConnection connection, @Nullable String apiKey) {
         int timeoutMillis = runtimeSettings.getTimeoutInMillis();
         connection.setConnectTimeout(timeoutMillis);
@@ -189,6 +245,21 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 根据 HTTP 状态码映射对应的 AI 服务异常错误码
+     * <p> 该方法用于将 HTTP 响应状态码转换为统一的 AI 服务异常错误类型, 便于上层统一处理错误.
+     * <p> 支持的错误码映射规则如下:
+     * <ul>
+     *   <li>401,403 → <a href="https://example.com">INVALID_API_KEY</a>(无效 API 密钥)</li>
+     *   <li>408 → <a href="https://example.com">TIMEOUT</a>(请求超时)</li>
+     *   <li>429 → <a href="https://example.com">RATE_LIMIT</a>(请求频率限制)</li>
+     *   <li>500,502,503,504 → <a href="https://example.com">SERVICE_UNAVAILABLE</a>(服务不可用)</li>
+     *   <li> 其他状态码 → <a href="https://example.com">INVALID_RESPONSE</a>(无效响应)</li>
+     * </ul>
+     *
+     * @param statusCode HTTP 响应状态码
+     * @return 对应的 AI 服务异常错误码
+     */
     private static AIServiceException.ErrorCode mapHttpError(int statusCode) {
         return switch (statusCode) {
             case 401, 403 -> AIServiceException.ErrorCode.INVALID_API_KEY;
@@ -199,6 +270,14 @@ public class ClaudeProvider extends AICompatibleProvider {
         };
     }
 
+    /**
+     * 构建用于 Anthropic Messages API 的请求体
+     * <p> 根据传入的聊天请求和流式标志, 生成符合 Anthropic API 格式的 JSON 请求体, 包含模型, 流式设置, 系统提示, 用户消息及模型参数.
+     *
+     * @param request 聊天请求对象, 包含用户提示, 系统提示等信息
+     * @param stream  是否启用流式响应模式
+     * @return 构建完成的 JSON 请求体, 包含所有必要字段
+     */
     private JsonObject buildMessagesRequestBody(@NotNull AIChatRequest request, boolean stream) {
         JsonObject body = new JsonObject();
         body.addProperty("model", config.modelName);
@@ -237,6 +316,18 @@ public class ClaudeProvider extends AICompatibleProvider {
         return body;
     }
 
+    /**
+     * 向 Anthropic API 发送消息请求并获取响应
+     * <p> 通过 POST 请求向 <a href="https://example.com">https://example.com</a> 接口发送消息内容, 根据是否为验证模式决定返回内容类型 </p>
+     * <p> 请求体格式为 JSON, 包含模型, 消息内容, 温度, 最大令牌数等参数, 支持监听器回调请求与响应事件 </p>
+     *
+     * @param body       请求体 JSON 对象, 包含模型名称, 消息内容, 流式标志等配置
+     * @param apiKey     API 密钥, 可为空, 若为空且服务需要密钥则抛出异常
+     * @param listener   响应监听器, 用于在请求前后或响应时回调事件, 可为空
+     * @param validation 是否为验证模式, 若为 true 则仅返回 "OK" 表示连接正常, 否则解析并返回实际响应内容
+     * @return 非验证模式下返回解析后的文本响应内容; 验证模式下返回 "OK"
+     * @throws AIServiceException 当 HTTP 错误, 网络异常或响应解析失败时抛出, 包含错误码和原始异常
+     */
     private String sendMessagesRequest(@NotNull JsonObject body,
                                        @Nullable String apiKey,
                                        @Nullable AIResponseListener listener,
@@ -276,6 +367,15 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 解析 Claude API 返回的响应体并提取生成的文本内容
+     * <p> 从 JSON 响应中提取文本内容块, 若包含使用统计信息则调用监听器报告 token 数量, 若响应为空则抛出异常
+     *
+     * @param responseBody 服务器返回的 JSON 响应体字符串
+     * @param listener     响应监听器, 用于报告 token 使用情况 (可为空)
+     * @return 解析出的文本内容, 若内容为空则抛出异常
+     * @throws AIServiceException 当响应包含错误信息或解析失败时抛出
+     */
     private String parseClaudeMessageResponse(@NotNull String responseBody, @Nullable AIResponseListener listener) throws AIServiceException {
         JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
         if (json.has("error")) {
@@ -311,6 +411,25 @@ public class ClaudeProvider extends AICompatibleProvider {
         return result;
     }
 
+    /**
+     * 从 Claude SSE 流式响应中读取并处理内容块
+     * <p>该方法用于处理来自 Claude API 的服务器发送事件 (SSE) 流, 逐行解析响应数据, 提取文本块或思考块, 并通过监听器回调通知上层.
+     * 支持在流式传输过程中实时推送内容块 (<code>onChunk</code>) 或思考过程(<code>onThinkingChunk</code>), 并在流结束或发生错误时调用相应回调.
+     *
+     * @param connection 用于读取 SSE 流的 HTTP 连接, 必须已配置为接收文本 /event-stream 类型响应
+     * @param listener   流式响应监听器, 用于接收内容块, 思考块, 错误或完成事件
+     * @throws IOException 当读取连接输入流时发生 I/O 错误
+     *
+     *                     <pre>{@code
+     *                                         // 示例: 监听器回调处理
+     *                                         listener.onChunk("Hello"); // 接收文本块
+     *                                         listener.onThinkingChunk("正在思考..."); // 接收思考块
+     *                                         listener.onError("错误信息", null); // 发生错误时调用
+     *                                         listener.onComplete("完整响应内容"); // 流结束时调用
+     *                                         }</pre>
+     *
+     *                     <a href="https://docs.anthropic.com/claude/reference/messages">Claude Messages API 文档</a>
+     */
     private void readClaudeSse(@NotNull HttpURLConnection connection, @NotNull AIStreamResponseListener listener) throws IOException {
         StringBuilder fullText = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
@@ -364,6 +483,13 @@ public class ClaudeProvider extends AICompatibleProvider {
         listener.onComplete(fullText.toString());
     }
 
+    /**
+     * 安全解析 JSON 字符串为对象
+     * <p> 尝试将输入的 JSON 字符串解析为 {@link JsonElement}, 若成功且为对象类型则返回其 {@link JsonObject}, 否则返回 null
+     *
+     * @param data 待解析的 JSON 字符串, 不能为空
+     * @return 解析后的 {@link JsonObject}, 若解析失败或非对象类型则返回 null
+     */
     private static @Nullable JsonObject safeParseJson(@NotNull String data) {
         try {
             JsonElement el = JsonParser.parseString(data);
@@ -373,6 +499,13 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 解析 Claude 模型列表响应
+     * <p> 从 API 返回的 JSON 响应中提取模型 ID 列表, 用于展示可用模型
+     *
+     * @param responseBody API 返回的原始响应体, 格式为 JSON
+     * @return 解析出的模型 ID 列表, 若解析失败或无数据则返回空列表
+     */
     private List<String> parseClaudeModelsResponse(@NotNull String responseBody) {
         List<String> models = new ArrayList<>();
         try {
@@ -397,6 +530,14 @@ public class ClaudeProvider extends AICompatibleProvider {
         return models;
     }
 
+    /**
+     * 将字符串值解析为 Double 类型, 若解析失败或值为 null, 空字符串或 "auto", 则返回 null
+     * <p> 该方法用于安全地将字符串转换为浮点数, 避免抛出 NumberFormatException 异常.
+     * 若输入值为 "auto"(不区分大小写), 也视为无效值并返回 null.
+     *
+     * @param value 待解析的字符串值, 可能为 null, 空字符串或 "auto"
+     * @return 解析成功的 Double 值, 若失败或值为 "auto" 则返回 null
+     */
     private static @Nullable Double parseDouble(@Nullable String value) {
         if (value == null || value.isBlank() || "auto".equalsIgnoreCase(value.trim())) {
             return null;
@@ -408,6 +549,13 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 将字符串转换为整数, 若转换失败或值为 "auto" 则返回 null
+     * <p> 该方法用于安全地解析字符串为整数, 忽略空值, 空白字符串或 "auto" 字符串, 避免抛出 NumberFormatException
+     *
+     * @param value 待转换的字符串, 可能为 null 或空白字符串
+     * @return 解析成功的整数值, 若失败或值为 "auto" 则返回 null
+     */
     private static @Nullable Integer parseInt(@Nullable String value) {
         if (value == null || value.isBlank() || "auto".equalsIgnoreCase(value.trim())) {
             return null;
@@ -419,6 +567,14 @@ public class ClaudeProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 解析最大令牌数字符串
+     * <p> 将传入的字符串格式的最大令牌数转换为整数, 支持带 'K' 或 'k' 后缀的千单位格式 (如 "2K","3k"), 并自动转换为对应数值. 若字符串为 null, 空或 "auto", 则返回 null.
+     * <p> 示例: 输入 "2K" → 返回 2000, 输入 "500" → 返回 500, 输入 "auto" → 返回 null.
+     *
+     * @param maxTokens 最大令牌数字符串, 可能为 null, 空字符串或 "auto", 或包含数字及单位后缀的字符串
+     * @return 解析后的整数最大令牌数, 若解析失败或输入无效则返回 null
+     */
     private static @Nullable Integer parseMaxTokens(@Nullable String maxTokens) {
         if (maxTokens == null || maxTokens.isBlank() || "auto".equalsIgnoreCase(maxTokens.trim())) {
             return null;

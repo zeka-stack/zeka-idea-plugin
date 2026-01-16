@@ -189,7 +189,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                     break;
                 }
                 long waitTime = (long) (runtime.waitDuration * Math.pow(2, attempts - 1));
-                log.debug("AI request failed, retry in " + waitTime + "ms: " + e.getMessage());
+                log.debug("AI request failed, retry in {}ms: {}", waitTime, e.getMessage());
                 AIConsoleLoggerUtil.print(project, "等待 " + waitTime + "ms 后重试...");
                 try {
                     TimeUnit.MILLISECONDS.sleep(waitTime);

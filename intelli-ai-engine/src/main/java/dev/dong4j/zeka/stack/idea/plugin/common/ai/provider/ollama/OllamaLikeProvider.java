@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
+package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ollama;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
@@ -31,21 +32,21 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public class OllamaProvider extends AICompatibleProvider {
+public class OllamaLikeProvider extends AICompatibleProvider {
 
     /**
-     * 构造函数, 用于初始化 OllamaProvider 实例
+     * 构造函数, 用于初始化 OllamaLikeProvider 实例
      * <p>
-     * 通过传入的配置, 模型参数, 运行时设置和控制台日志记录器来初始化 OllamaProvider.
+     * 通过传入的配置, 模型参数, 运行时设置和控制台日志记录器来初始化 OllamaLikeProvider.
      *
      * @param config          AI 提供商的配置信息
      * @param modelParameters 模型相关参数
      * @param runtimeSettings 运行时设置
      */
-    public OllamaProvider(@NotNull Project project,
-                          @NotNull AIProviderConfig config,
-                          @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings) {
+    public OllamaLikeProvider(@NotNull Project project,
+                              @NotNull AIProviderConfig config,
+                              @NotNull AIModelParameters modelParameters,
+                              @NotNull AIRuntimeSettings runtimeSettings) {
         super(project, config, modelParameters, runtimeSettings);
     }
 

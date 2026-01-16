@@ -115,7 +115,7 @@ public final class AIProviderConfigController {
                                              ? workingSettings.aiProviderType
                                              : AIProviderType.QIANWEN;
 
-        ui.getProviderComboBox().setSelectedItem(defaultProviderType.getDisplayName());
+        ui.setSelectedProviderType(defaultProviderType);
         updateBasicConnectionInfo();
 
         AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(defaultProviderType);
@@ -319,10 +319,9 @@ public final class AIProviderConfigController {
      * <p>
      * 根据用户输入的显示名称解析对应的 AI 服务提供商类型, 获取默认配置, 并填充模型名称, 基础 URL, 配置验证状态等信息. 若存在 API 密钥, 则更新密钥信息并保存. 最后将配置应用到工作设置中.
      *
-     * @param displayName 显示名称, 用于解析对应的 AI 服务提供商类型
+     * @param providerType 显示名称, 用于解析对应的 AI 服务提供商类型
      */
-    public void saveCurrentProviderConfig(String displayName) {
-        AIProviderType providerType = resolveSelectedProviderType(displayName);
+    public void saveCurrentProviderConfig(@NotNull AIProviderType providerType) {
         AIProviderConfig currentConfig = workingSettings.getDefaultProviderConfig(providerType);
 
         String modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
@@ -531,22 +530,13 @@ public final class AIProviderConfigController {
                 List<String> finalModels = models;
                 SwingUtilities.invokeLater(() -> {
                     if (!finalModels.isEmpty()) {
-                        String defaultModelName = refreshConfig.modelName;
-                        String preferredSelection = null;
-                        if (defaultModelName != null && !defaultModelName.trim().isEmpty() && finalModels.contains(defaultModelName)) {
-                            preferredSelection = defaultModelName;
-                        } else if (!currentModelName.trim().isEmpty() && finalModels.contains(currentModelName)) {
-                            preferredSelection = currentModelName;
-                        } else {
-                            preferredSelection = finalModels.get(0);
-                        }
-                        ui.updateModelItems(finalModels, preferredSelection);
+                        final String preferredSelection = getPreferredSelection(refreshConfig, finalModels, currentModelName);
+                        ui.updateModelItemsAndShowPopup(finalModels, preferredSelection);
                         refreshModelsSuccess = true;
-                        JOptionPane.showMessageDialog(resolveDialogParent(),
-                                                      AICommonBundle.message("settings.refresh.models.success", finalModels.size()),
-                                                      AICommonBundle.message("settings.test.result.title"),
-                                                      JOptionPane.INFORMATION_MESSAGE);
-                        SwingUtilities.invokeLater(ui::triggerModelComboBoxPopup);
+                        // JOptionPane.showMessageDialog(resolveDialogParent(),
+                        //                               AICommonBundle.message("settings.refresh.models.success", finalModels.size()),
+                        //                               AICommonBundle.message("settings.test.result.title"),
+                        //                               JOptionPane.INFORMATION_MESSAGE);
                     } else {
                         refreshModelsSuccess = false;
                         ui.updateModelItems(List.of(), null);
@@ -581,6 +571,30 @@ public final class AIProviderConfigController {
                 });
             }
         });
+    }
+
+    /**
+     * 根据配置和模型列表选择最优的模型名称
+     * <p>
+     * 该方法用于从可用模型列表中选择一个首选模型名称, 优先级顺序为: 配置中指定的默认模型名称 > 当前选中的模型名称 > 列表中的第一个模型.
+     * 若所有条件均不满足, 则返回列表中的第一个模型名称.
+     *
+     * @param refreshConfig    当前刷新配置对象, 用于获取默认模型名称
+     * @param finalModels      过滤后的可用模型名称列表, 不能为空
+     * @param currentModelName 当前用户选择的模型名称, 用于作为备选
+     * @return 优先级最高的模型名称, 若列表为空则返回 null
+     */
+    private static String getPreferredSelection(AIProviderConfig refreshConfig, List<String> finalModels, String currentModelName) {
+        String defaultModelName = refreshConfig.modelName;
+        String preferredSelection;
+        if (defaultModelName != null && !defaultModelName.trim().isEmpty() && finalModels.contains(defaultModelName)) {
+            preferredSelection = defaultModelName;
+        } else if (!currentModelName.trim().isEmpty() && finalModels.contains(currentModelName)) {
+            preferredSelection = currentModelName;
+        } else {
+            preferredSelection = finalModels.get(0);
+        }
+        return preferredSelection;
     }
 
     /**
@@ -806,6 +820,13 @@ public final class AIProviderConfigController {
         }
     }
 
+    /**
+     * 刷新自动补全提供者下拉框的可用提供者列表项
+     * <p>
+     * 根据当前工作设置中的可用提供者列表和自动补全提供者凭证 ID, 更新用户界面中自动补全提供者下拉框的内容.
+     * 此方法用于在配置变更或数据更新后, 确保下拉框显示最新的提供者选项.
+     *
+     */
     private void refreshAutocompleteProviderItems() {
         ui.setAutocompleteProviderItems(workingSettings.availableProviders, workingSettings.autocompleteProviderCredentialId);
     }
@@ -971,21 +992,7 @@ public final class AIProviderConfigController {
      * @return 选中的 AI 服务提供商类型, 若解析失败或未选择则返回 QIANWEN
      */
     private AIProviderType resolveSelectedProviderType() {
-        String displayName = (String) ui.getProviderComboBox().getSelectedItem();
-        AIProviderType type = displayName != null ? AIProviderType.fromDisplayName(displayName) : null;
-        return type != null ? type : AIProviderType.QIANWEN;
-    }
-
-    /**
-     * 根据显示名称解析对应的 AI 服务提供商类型
-     * <p>
-     * 若传入的显示名称不为空, 则根据名称获取对应的 AI 服务提供商类型; 若为空, 则默认返回通义千问类型.
-     *
-     * @param displayName 显示名称
-     * @return 对应的 AI 服务提供商类型, 若无法解析则返回默认类型 AIProviderType.QIANWEN
-     */
-    private AIProviderType resolveSelectedProviderType(String displayName) {
-        AIProviderType type = displayName != null ? AIProviderType.fromDisplayName(displayName) : null;
+        AIProviderType type = ui.getSelectedProviderType();
         return type != null ? type : AIProviderType.QIANWEN;
     }
 

@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -37,15 +38,37 @@ import lombok.extern.slf4j.Slf4j;
  * 默认使用 AI Studio Key（x-goog-api-key）认证。
  */
 @Slf4j
-public class GeminiProvider extends AICompatibleProvider {
+public class GeminLikeiProvider extends AICompatibleProvider {
 
-    public GeminiProvider(@NotNull Project project,
-                          @NotNull AIProviderConfig config,
-                          @NotNull AIModelParameters modelParameters,
-                          @NotNull AIRuntimeSettings runtimeSettings) {
+    /**
+     * 初始化 Gemini 兼容提供者实例
+     * <p> 用于创建一个支持 Gemini API 的 AI 服务提供者, 继承自 AICompatibleProvider 类.
+     * 该构造函数接收项目, 配置, 模型参数和运行时设置等必要参数, 以初始化底层服务连接.
+     *
+     * @param project         项目上下文, 用于日志输出和调试
+     * @param config          服务配置信息, 包括提供商类型, 基础 URL, 模型名称等
+     * @param modelParameters 模型参数, 如温度,Top-P,Top-K, 最大令牌数等
+     * @param runtimeSettings 运行时设置, 包括重试次数, 超时时间等
+     */
+    public GeminLikeiProvider(@NotNull Project project,
+                              @NotNull AIProviderConfig config,
+                              @NotNull AIModelParameters modelParameters,
+                              @NotNull AIRuntimeSettings runtimeSettings) {
         super(project, config, modelParameters, runtimeSettings);
     }
 
+    /**
+     * 根据聊天请求生成内容
+     * <p> 通过调用 Gemini API 服务, 根据指定的聊天请求生成响应内容. 支持重试机制, 若请求失败则按指数退避策略重试, 最多重试次数由运行时配置决定.
+     * <p> 在调用前会打印模型信息 (供应商, 模型名称,Base URL), 并验证 API 密钥是否配置.
+     *
+     * @param request  聊天请求对象, 包含用户提示, 系统提示等信息
+     * @param apiKey   API 密钥, 可为空, 若服务需要密钥且未提供则抛出异常
+     * @param listener 响应监听器, 用于接收请求, 响应, 使用情况等回调, 可为空
+     * @return 生成的文本内容
+     * @throws AIServiceException 当配置错误, 网络错误, 服务不可用或响应解析失败时抛出
+     * @since 1.0.0
+     */
     @Override
     @NotNull
     public String generateContent(@NotNull AIChatRequest request,
@@ -86,6 +109,16 @@ public class GeminiProvider extends AICompatibleProvider {
         throw new AIServiceException("AI 服务调用失败", AIServiceException.ErrorCode.UNKNOWN_ERROR);
     }
 
+    /**
+     * 以流式方式生成内容
+     * <p> 通过 Gemini API 的 SSE(Server-Sent Events) 协议, 逐块接收并传递生成内容, 适用于大模型响应流式输出场景.
+     * <p> 请求前会验证是否需要 API 密钥, 若未提供则抛出配置异常.
+     *
+     * @param request  AI 聊天请求对象, 包含用户提示, 系统提示等信息
+     * @param apiKey   API 密钥, 可为空, 若提供商要求密钥且未提供则抛出异常
+     * @param listener 流式响应监听器, 用于接收响应开始, 分块内容, 完成及错误事件
+     * @throws AIServiceException 当发生 HTTP 错误, 网络错误或响应解析失败时抛出, 错误码根据具体异常类型映射
+     */
     @Override
     public void generateContentStream(@NotNull AIChatRequest request,
                                       @Nullable String apiKey,
@@ -128,6 +161,14 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 验证当前 AI 服务配置是否有效
+     * <p> 通过发送一个简单的 ping-pong 请求测试与 AI 服务的连接状态, 验证基础配置是否正确.
+     * 若连接成功且服务返回非空响应, 则视为配置有效; 否则返回失败结果.
+     *
+     * @param apiKey 可选的 API 密钥, 用于认证请求. 若服务提供商需要密钥且未提供, 则会抛出配置异常.
+     * @return 验证结果对象, 包含成功或失败状态, 消息及可选异常信息
+     */
     @Override
     @NotNull
     public ValidationResult validateConfiguration(@Nullable String apiKey) {
@@ -150,6 +191,15 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 获取可用的模型列表
+     * <p> 通过向 Gemini 服务的模型列表接口发起请求, 获取当前配置下支持的模型名称列表.
+     * 若请求失败或返回空列表, 则返回当前提供者默认支持的模型列表.
+     *
+     * @param apiKey API 密钥, 若为 null 或空字符串, 则提示需要密钥并返回空列表
+     * @return 可用模型名称列表, 若请求失败则返回默认支持的模型列表
+     * @since 1.0
+     */
     @Override
     @NotNull
     public List<String> getAvailableModels(@Nullable String apiKey) {
@@ -176,6 +226,15 @@ public class GeminiProvider extends AICompatibleProvider {
         return new ArrayList<>(getProviderType().getSupportedModels());
     }
 
+    /**
+     * 构建模型请求的完整 URL
+     * <p> 根据配置的模型名称和后缀拼接成完整的模型请求地址, 自动去除模型名称前缀 "models/"</p>
+     * <p> 示例: 若 config.modelName 为 "models/gemini-pro",suffix 为 "/generateContent", 则返回 "https://api.example
+     * .com/models/gemini-pro/generateContent"</p>
+     *
+     * @param suffix 请求路径后缀, 例如 ":generateContent" 或 ":streamGenerateContent?alt=sse"
+     * @return 完整的模型请求 URL 字符串
+     */
     private String buildModelUrl(@NotNull String suffix) {
         // Gemini: POST {baseUrl}/models/{model}:{method}
         String modelName = config.modelName != null ? config.modelName.trim() : "";
@@ -185,6 +244,15 @@ public class GeminiProvider extends AICompatibleProvider {
         return config.baseUrl + "/models/" + modelName + suffix;
     }
 
+    /**
+     * 配置 Gemini API 连接参数
+     * <p> 设置 HTTP 连接的超时时间, 并添加 API 密钥认证头 (如提供).
+     * <p> 连接超时时间由运行时设置中的超时毫秒数决定, 读取超时为连接超时的两倍.
+     * <p> 若提供 API 密钥, 则将其作为请求头 <code>x-goog-api-key</code> 发送.
+     *
+     * @param connection 需要配置的 HttpURLConnection 实例
+     * @param apiKey     可选的 API 密钥, 用于认证, 若为空或空白则不设置请求头
+     */
     private void tuneGeminiConnection(@NotNull HttpURLConnection connection, @Nullable String apiKey) {
         int timeoutMillis = runtimeSettings.getTimeoutInMillis();
         connection.setConnectTimeout(timeoutMillis);
@@ -194,6 +262,15 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 根据 HTTP 状态码映射对应的 AI 服务错误码
+     * <p> 该方法用于将 HTTP 响应状态码转换为统一的 AI 服务异常错误码, 便于上层统一处理错误.
+     * <p> 支持的错误码映射包括:401,403 → {@code INVALID_API_KEY},408 → {@code TIMEOUT},429 → {@code RATE_LIMIT},
+     * 500,502,503,504 → {@code SERVICE_UNAVAILABLE}, 其余状态码默认映射为 {@code INVALID_RESPONSE}.
+     *
+     * @param statusCode HTTP 响应状态码
+     * @return 对应的 {@link AIServiceException.ErrorCode} 错误码
+     */
     private static AIServiceException.ErrorCode mapHttpError(int statusCode) {
         return switch (statusCode) {
             case 401, 403 -> AIServiceException.ErrorCode.INVALID_API_KEY;
@@ -204,6 +281,29 @@ public class GeminiProvider extends AICompatibleProvider {
         };
     }
 
+    /**
+     * 构建用于生成内容的请求体 JSON 对象
+     * <p> 根据传入的 AI 聊天请求, 构造符合 Gemini API 格式的请求体, 包含系统指令, 用户输入内容及生成配置参数.
+     * <pre>{@code
+     * {*   "systemInstruction": { "parts": [{ "text": "系统提示内容"}] },
+     *   "contents": [
+     *     {
+     *       "role": "user",
+     *       "parts": [{"text": "用户输入内容"}]
+     *     }
+     *   ],
+     *   "generationConfig": {
+     *     "temperature": 0.7,
+     *     "topP": 0.9,
+     *     "topK": 40,
+     *     "maxOutputTokens": 500
+     *   }
+     * }
+     * }</pre>
+     *
+     * @param request AI 聊天请求对象, 包含系统提示和用户输入内容
+     * @return 构造完成的 JSON 请求体对象
+     */
     private JsonObject buildGenerateContentBody(@NotNull AIChatRequest request) {
         JsonObject body = new JsonObject();
 
@@ -250,6 +350,19 @@ public class GeminiProvider extends AICompatibleProvider {
         return body;
     }
 
+    /**
+     * 发送生成内容请求并获取响应
+     * <p> 通过 HTTP POST 请求调用 Gemini 模型生成内容接口, 支持同步和验证模式.
+     * 在验证模式下, 仅返回 "OK" 表示连接成功; 在非验证模式下, 解析并返回模型生成的文本内容.
+     * 请求过程中会调用监听器记录请求和响应信息, 若发生异常则抛出 AIServiceException.
+     *
+     * @param body       请求体内容, 包含模型输入参数 (如系统指令, 用户提示等)
+     * @param apiKey     API 密钥, 用于认证 (可为空, 但若提供商要求则必须提供)
+     * @param listener   响应监听器, 用于记录请求 / 响应内容或使用情况 (可为空)
+     * @param validation 是否为验证模式, 若为 true 则仅返回 "OK", 不解析响应内容
+     * @return 非验证模式下返回模型生成的文本内容; 验证模式下返回 "OK"
+     * @throws AIServiceException 当 HTTP 错误, 网络异常或响应解析失败时抛出
+     */
     private String sendGenerateContent(@NotNull JsonObject body,
                                        @Nullable String apiKey,
                                        @Nullable AIResponseListener listener,
@@ -289,6 +402,15 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 解析 Gemini 模型生成内容的响应体
+     * <p> 从 Gemini API 返回的 JSON 响应中提取文本内容, 并可选地记录 token 使用情况
+     *
+     * @param responseBody Gemini API 返回的原始响应体 (JSON 格式字符串)
+     * @param listener     可选的响应监听器, 用于在解析过程中回调 token 使用信息
+     * @return 解析出的生成文本内容, 去除首尾空白字符
+     * @throws AIServiceException 当响应中包含错误, 无 candidates,candidates 为空或响应内容为空时抛出
+     */
     private String parseGenerateContentResponse(@NotNull String responseBody, @Nullable AIResponseListener listener) throws AIServiceException {
         JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
         if (json.has("error")) {
@@ -317,6 +439,22 @@ public class GeminiProvider extends AICompatibleProvider {
         return text.trim();
     }
 
+    /**
+     * 从 Gemini 服务器的 SSE 流中读取并解析响应内容
+     * <p> 该方法用于处理流式响应, 逐行读取服务器发送的事件数据 (Event Stream), 并提取其中的文本片段, 逐步拼接完整响应内容.
+     * 当收到 "[DONE]" 标记或解析失败时, 停止读取并调用监听器的 {@code onComplete} 方法.
+     *
+     * @param connection 与 Gemini 服务建立的 HTTP 连接, 必须为 SSE 流式响应
+     * @param listener   用于接收流式响应事件的监听器, 包括 {@code onChunk} 和 {@code onComplete} 回调
+     * @throws IOException 当网络读取或解析过程中发生 I/O 错误时抛出
+     *
+     *                     <p> 示例响应格式 (SSE):
+     *                     <pre>{@code
+     *                                         data: {"candidates": [{"content": {"parts": [{"text": "Hello"}]}}]}
+     *                                         data: {"candidates": [{"content": {"parts": [{"text": "World"}]}}]}
+     *                                         data: [DONE]
+     *                                         }</pre>
+     */
     private void readGeminiSse(@NotNull HttpURLConnection connection, @NotNull AIStreamResponseListener listener) throws IOException {
         StringBuilder fullText = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
@@ -358,6 +496,14 @@ public class GeminiProvider extends AICompatibleProvider {
         listener.onComplete(fullText.toString());
     }
 
+    /**
+     * 从候选内容中提取纯文本内容
+     * <p> 遍历候选内容中的各个部分, 提取所有包含 "text" 字段的文本内容并拼接成字符串.
+     * 如果候选内容结构不符合预期 (如缺少 content 或 parts 字段), 则返回 null.
+     *
+     * @param candidate 非空的 JSON 对象, 表示 AI 响应中的一个候选内容
+     * @return 提取的文本内容字符串, 如果无有效文本或结构异常则返回 null
+     */
     private static @Nullable String extractTextFromCandidate(@NotNull JsonObject candidate) {
         if (!candidate.has("content") || !candidate.get("content").isJsonObject()) {
             return null;
@@ -380,6 +526,13 @@ public class GeminiProvider extends AICompatibleProvider {
         return sb.toString();
     }
 
+    /**
+     * 安全解析 JSON 字符串为对象
+     * <p> 尝试将传入的 JSON 字符串解析为 {@link JsonObject}, 若解析失败或非对象类型则返回 null
+     *
+     * @param data 待解析的 JSON 字符串
+     * @return 解析成功时返回 {@link JsonObject}, 否则返回 null
+     */
     private static @Nullable JsonObject safeParseJson(@NotNull String data) {
         try {
             JsonElement el = JsonParser.parseString(data);
@@ -389,6 +542,14 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 解析 Gemini 模型列表响应
+     * <p> 从 JSON 响应体中提取可用模型名称列表, 过滤无效或空名称, 并去除前缀 "models/".
+     * <p> 若解析失败, 将在日志中记录调试信息, 但不抛出异常, 返回空列表.
+     *
+     * @param responseBody 服务器返回的 JSON 响应体
+     * @return 解析出的模型名称列表, 若解析失败或无模型则返回空列表
+     */
     private List<String> parseGeminiModelsResponse(@NotNull String responseBody) {
         List<String> models = new ArrayList<>();
         try {
@@ -419,6 +580,13 @@ public class GeminiProvider extends AICompatibleProvider {
         return models;
     }
 
+    /**
+     * 将字符串值解析为双精度浮点数
+     * <p> 如果输入值为 null, 空白字符串或等于 "auto"(不区分大小写), 则返回 null; 否则尝试解析为 Double 类型, 解析失败时也返回 null.
+     *
+     * @param value 待解析的字符串值, 可能为 null 或空白
+     * @return 解析后的 Double 值, 若解析失败或输入无效则返回 null
+     */
     private static @Nullable Double parseDouble(@Nullable String value) {
         if (value == null || value.isBlank() || "auto".equalsIgnoreCase(value.trim())) {
             return null;
@@ -430,6 +598,13 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 将字符串值转换为整数, 若转换失败或值为 null, 空字符串或 "auto", 则返回 null
+     * <p> 该方法用于安全地解析字符串为整数, 忽略格式异常并返回 null 以表示无效输入.
+     *
+     * @param value 待转换的字符串值, 可能为 null, 空字符串或 "auto"
+     * @return 解析后的整数值, 若解析失败或输入无效则返回 null
+     */
     private static @Nullable Integer parseInt(@Nullable String value) {
         if (value == null || value.isBlank() || "auto".equalsIgnoreCase(value.trim())) {
             return null;
@@ -441,6 +616,14 @@ public class GeminiProvider extends AICompatibleProvider {
         }
     }
 
+    /**
+     * 解析最大令牌数参数
+     * <p> 将传入的字符串参数转换为整数形式的最大令牌数, 支持带单位 "K" 或 "k" 的格式 (如 "2K" 表示 2000 令牌), 若参数为 null, 空字符串或 "auto", 则返回 null.
+     * <p> 若解析失败或格式不合法, 也返回 null.
+     *
+     * @param maxTokens 最大令牌数的字符串表示, 可为 null, 空字符串,"auto" 或数字字符串, 如 "2K","1000"
+     * @return 解析后的整数最大令牌数, 若解析失败或参数无效则返回 null
+     */
     private static @Nullable Integer parseMaxTokens(@Nullable String maxTokens) {
         if (maxTokens == null || maxTokens.isBlank() || "auto".equalsIgnoreCase(maxTokens.trim())) {
             return null;

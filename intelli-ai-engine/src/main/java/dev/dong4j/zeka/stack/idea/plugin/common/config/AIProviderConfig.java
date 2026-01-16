@@ -23,13 +23,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.ProviderConfigUtils;
  */
 public class AIProviderConfig {
     /** AI 服务提供商类型, 默认为通义千问 */
-    public AIProviderType providerType = AIProviderType.CUSTOM;
+    public AIProviderType providerType = AIProviderType.OPENAI;
     /** 模型名称, 表示当前使用的默认模型 */
-    public String modelName = AIProviderType.CUSTOM.getDefaultModel();
+    public String modelName = AIProviderType.OPENAI.getDefaultModel();
     /**
      * 默认的基础 URL, 根据 AIProviderType.CUSTOM 获取
      */
-    public String baseUrl = AIProviderType.CUSTOM.getDefaultBaseUrl();
+    public String baseUrl = AIProviderType.OPENAI.getDefaultBaseUrl();
     /** 配置是否已验证的标志位 */
     public boolean configurationVerified;
     /** 最后一次验证时间 */
@@ -154,6 +154,15 @@ public class AIProviderConfig {
                && compareRuntimeSettings(other);
     }
 
+    /**
+     * 比较当前对象与指定对象的模型参数是否相等
+     * <p>
+     * 该方法用于比较两个 {@link AIModelParameters} 对象的温度, 最大令牌数,Top-P,Top-K 和存在惩罚等参数值.
+     * 若参数为 null, 则默认使用 "auto" 进行比较. 比较结果为所有参数值完全相等时返回 true, 否则返回 false.
+     *
+     * @param other 要比较的另一个配置对象, 不能为空
+     * @return 如果两个对象的模型参数在所有关键字段上相等, 则返回 true, 否则返回 false
+     */
     private boolean compareModelParameters(@NotNull AIProviderConfig other) {
         AIModelParameters left = modelParameters != null ? modelParameters : new AIModelParameters();
         AIModelParameters right = other.modelParameters != null ? other.modelParameters : new AIModelParameters();
@@ -174,6 +183,15 @@ public class AIProviderConfig {
                && presencePenalty1.equals(presencePenalty2);
     }
 
+    /**
+     * 比较当前运行时设置与另一个配置对象的运行时设置是否相等
+     * <p>
+     * 该方法用于比较两个 {@link AIRuntimeSettings} 对象的 {@code maxRetries},{@code timeout} 和 {@code waitDuration} 字段是否完全一致.
+     * 如果其中一个对象为 null, 则使用默认的空运行时设置进行比较.
+     *
+     * @param other 要比较的另一个配置对象
+     * @return 如果两个运行时设置在所有字段上相等, 则返回 {@code true}, 否则返回 {@code false}
+     */
     private boolean compareRuntimeSettings(@NotNull AIProviderConfig other) {
         AIRuntimeSettings left = runtimeSettings != null ? runtimeSettings : new AIRuntimeSettings();
         AIRuntimeSettings right = other.runtimeSettings != null ? other.runtimeSettings : new AIRuntimeSettings();

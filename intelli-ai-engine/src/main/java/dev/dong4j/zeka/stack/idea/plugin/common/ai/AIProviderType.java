@@ -4,8 +4,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import lombok.Getter;
 
 /**
@@ -28,9 +31,9 @@ public enum AIProviderType {
      * <p>
      * 用于指定 OpenAI API 的自定义模型参数, 包括模型名称, 支持的模型列表等信息
      */
-    CUSTOM(
-        "custom",
-        "OpenAI API",
+    OPENAI(
+        "openai",
+        "OpenAI",
         "https://api.openai.com/v1",
         "gpt-3.5-turbo",
         true,
@@ -40,9 +43,9 @@ public enum AIProviderType {
     /**
      * Claude（Anthropic）模型配置
      */
-    CLAUDE(
-        "claude",
-        "Claude",
+    ANTHROPIC(
+        "anthropic",
+        "Anthropic",
         "https://api.anthropic.com",
         "claude-3-5-sonnet-20241022",
         true,
@@ -83,18 +86,6 @@ public enum AIProviderType {
         true,
         false,
         List.of("codex-mini-latest", "gpt-4o-mini")
-    ),
-    /**
-     * GLM（智谱 OpenAI 兼容）模型配置
-     */
-    GLM(
-        "glm",
-        "GLM",
-        "https://open.bigmodel.cn/api/paas/v4",
-        "glm-4.5-flash",
-        true,
-        false,
-        List.of("glm-4.6", "glm-4.5", "glm-4.5-flash")
     ),
     /**
      * 通义千问模型的标识信息
@@ -167,6 +158,18 @@ public enum AIProviderType {
         List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
     ),
     /**
+     * ModelScope Anthropic 兼容模型配置
+     */
+    MODELSCOPE_ANTHROPIC(
+        "modelscope_anthropic",
+        "ModelScope (Anthropic)",
+        "https://api-inference.modelscope.cn",
+        "ZhipuAI/GLM-4.6",
+        true,
+        true,
+        List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
+    ),
+    /**
      * IFlow 模型配置
      * <p>
      * IFlow AI 服务提供商, 支持多种模型, 包括 kimi-k2-0905, qwen3-coder-plus, glm-4.6, deepseek-r1 等.
@@ -189,10 +192,46 @@ public enum AIProviderType {
         "zhipu",
         "智谱AI",
         "https://open.bigmodel.cn/api/paas/v4",
-        "glm-4.5-flash",
+        "glm-4.7",
         true,
         true,
-        List.of("glm-4.5-flash", "glm-4.6", "glm-4.5")
+        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+    ),
+    /**
+     * Z.AI（智谱海外版）OpenAI 兼容模型配置
+     */
+    ZAI(
+        "zai",
+        "Z.AI",
+        "https://api.z.ai/api/paas/v4",
+        "glm-4.7",
+        true,
+        true,
+        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+    ),
+    /**
+     * Z.AI（智谱 Anthropic 兼容）模型配置
+     */
+    ZHIPU_ANTHROPIC(
+        "glm",
+        "GLM",
+        "https://open.bigmodel.cn/api/anthropic",
+        "glm-4.7",
+        true,
+        true,
+        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+    ),
+    /**
+     * Z.AI（智谱海外版）Anthropic 兼容模型配置
+     */
+    ZAI_ANTHROPIC(
+        "zai_anthropic",
+        "Z.AI (Anthropic)",
+        "https://api.z.ai/api/anthropic",
+        "glm-4.7",
+        true,
+        true,
+        List.of("glm-4.7", "glm-4.6", "glm-4.5")
     );
 
     /** 服务提供方唯一标识符 */
@@ -422,6 +461,46 @@ public enum AIProviderType {
     }
 
     /**
+     * 获取按分组分类的 AI 服务提供商列表
+     * <p>
+     * 根据预定义的分组规则, 将所有 AI 服务提供商类型按类别组织成映射结构. 当前支持三类分组:
+     * <ul>
+     *   <li>OpenAI 系列提供商 (包括 OpenAI, 通义千问, 硅基流动,IFlow,LM Studio,ModelScope, 智谱 AI,Z.AI)</li>
+     *   <li>Anthropic 系列提供商 (包括 Anthropic,ModelScope(Anthropic), 智谱 AI(Anthropic),Z.AI(Anthropic))</li>
+     *   <li> 其他提供商 (包括 Gemini,Codex,Ollama)</li>
+     * </ul>
+     * 该方法主要用于 UI 界面或配置页面中对服务提供商进行分组展示.
+     *
+     * @return 包含分组名称与对应提供商列表的映射表, 键为分组名称 (如 "OpenAI"), 值为该分组内所有 {@link AIProviderType} 枚举值的列表
+     */
+    @NotNull
+    public static Map<String, List<AIProviderType>> getGroupedProviders() {
+        Map<String, List<AIProviderType>> groupedProviders = new LinkedHashMap<>();
+        groupedProviders.put(AICommonBundle.message("settings.provider.group.openai"), List.of(
+            AIProviderType.OPENAI,
+            AIProviderType.QIANWEN,
+            AIProviderType.SILICONFLOW,
+            AIProviderType.IFLOW,
+            AIProviderType.LM_STUDIO,
+            AIProviderType.MODELSCOPE,
+            AIProviderType.ZHIPU,
+            AIProviderType.ZAI
+                                                                                              ));
+        groupedProviders.put(AICommonBundle.message("settings.provider.group.anthropic"), List.of(
+            AIProviderType.ANTHROPIC,
+            AIProviderType.MODELSCOPE_ANTHROPIC,
+            AIProviderType.ZHIPU_ANTHROPIC,
+            AIProviderType.ZAI_ANTHROPIC
+                                                                                                 ));
+        groupedProviders.put(AICommonBundle.message("settings.provider.group.other"), List.of(
+            AIProviderType.GEMINI,
+            AIProviderType.CODEX,
+            AIProviderType.OLLAMA
+                                                                                             ));
+        return groupedProviders;
+    }
+
+    /**
      * 获取 API Key 的获取地址
      * <p>
      * 返回当前提供商获取 API Key 的 URL 地址。如果不需要 API Key 或没有专门的获取页面，返回 null。
@@ -430,35 +509,21 @@ public enum AIProviderType {
      */
     @Nullable
     public String getApiKeyUrl() {
-        switch (this) {
-            case CUSTOM:
-                return "https://platform.openai.com/api-keys";
-            case CLAUDE:
-                return "https://console.anthropic.com/settings/keys";
-            case GEMINI:
-                return "https://aistudio.google.com/app/apikey";
-            case CODEX:
-                return "https://platform.openai.com/api-keys";
-            case GLM:
-                return "https://open.bigmodel.cn/usercenter/apikeys";
-            case QIANWEN:
-                return "https://dashscope.console.aliyun.com/apiKey";
-            case SILICONFLOW:
-                return "https://cloud.siliconflow.cn/settings/api-keys";
-            case OLLAMA:
-                // Ollama 不需要 API Key
-                return null;
-            case LM_STUDIO:
-                // LM Studio 不需要 API Key
-                return null;
-            case MODELSCOPE:
-                return "https://modelscope.cn/usercenter/personal/settings/api-token";
-            case IFLOW:
-                return "https://console.iflow.cn/api-key";
-            case ZHIPU:
-                return "https://open.bigmodel.cn/usercenter/apikeys";
-            default:
-                return null;
-        }
+        return switch (this) {
+            case OPENAI, CODEX -> "https://platform.openai.com/api-keys";
+            case ANTHROPIC -> "https://console.anthropic.com/settings/keys";
+            case GEMINI -> "https://aistudio.google.com/app/apikey";
+            case QIANWEN -> "https://dashscope.console.aliyun.com/apiKey";
+            case SILICONFLOW -> "https://cloud.siliconflow.cn/settings/api-keys";
+            case OLLAMA -> "https://ollama.com/cloud";
+            case LM_STUDIO -> null;
+            case MODELSCOPE, MODELSCOPE_ANTHROPIC -> "https://modelscope.cn/usercenter/personal/settings/api-token";
+            case IFLOW -> "https://console.iflow.cn/api-key";
+            case ZHIPU -> "https://docs.bigmodel.cn/cn/guide/develop/openai/introduction";
+            case ZHIPU_ANTHROPIC -> "https://docs.bigmodel.cn/cn/guide/develop/claude/introduction";
+            case ZAI -> "https://docs.z.ai/api-reference/introduction";
+            case ZAI_ANTHROPIC -> "https://docs.z.ai/scenario-example/develop-tools/claude";
+            default -> null;
+        };
     }
 }

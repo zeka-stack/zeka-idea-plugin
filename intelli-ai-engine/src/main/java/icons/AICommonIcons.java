@@ -40,6 +40,7 @@ public final class AICommonIcons {
 
     // ========== AI 提供商图标 - 用于下拉列表 (16x16) ==========
 
+    /** 插件图标资源, 尺寸为 16x16, 用于界面中标识插件功能. */
     public static final Icon PLUGIN = load("/icons/plugin_16.svg");
     /**
      * 工具图标, 已按比例缩放
@@ -187,18 +188,21 @@ public final class AICommonIcons {
             return null;
         }
         Icon icon = switch (providerType) {
-            case CUSTOM -> PROVIDER_CHATGPT;
-            case CLAUDE -> PROVIDER_CHATGPT;
+            case OPENAI -> PROVIDER_CHATGPT;
+            case ANTHROPIC -> PROVIDER_CHATGPT;
             case GEMINI -> PROVIDER_CHATGPT;
             case CODEX -> PROVIDER_CHATGPT;
-            case GLM -> PROVIDER_CHATGPT;
+            case ZHIPU_ANTHROPIC -> PROVIDER_CHATGPT;
             case QIANWEN -> PROVIDER_QWEN;
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
             case OLLAMA -> PROVIDER_OLLAMA;
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
             case MODELSCOPE -> PROVIDER_MODELSCOPE;
+            case MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE;
             case IFLOW -> PROVIDER_IFLOW;
             case ZHIPU -> PROVIDER_ZHIPU;
+            case ZAI -> PROVIDER_ZHIPU;
+            case ZAI_ANTHROPIC -> PROVIDER_ZHIPU;
         };
         // 将图标从 16x16 缩放到 13x13，适合状态栏显示
         // 状态栏图标通常使用 13x13 尺寸
@@ -217,18 +221,21 @@ public final class AICommonIcons {
             return null;
         }
         return switch (providerType) {
-            case CUSTOM -> PROVIDER_CHATGPT_64;
-            case CLAUDE -> PROVIDER_CHATGPT_64;
+            case OPENAI -> PROVIDER_CHATGPT_64;
+            case ANTHROPIC -> PROVIDER_CHATGPT_64;
             case GEMINI -> PROVIDER_CHATGPT_64;
             case CODEX -> PROVIDER_CHATGPT_64;
-            case GLM -> PROVIDER_CHATGPT_64;
+            case ZHIPU_ANTHROPIC -> PROVIDER_CHATGPT_64;
             case QIANWEN -> PROVIDER_QWEN_64;
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
             case OLLAMA -> PROVIDER_OLLAMA_64;
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
             case MODELSCOPE -> PROVIDER_MODELSCOPE_64;
+            case MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE_64;
             case IFLOW -> PROVIDER_IFLOW_64;
             case ZHIPU -> PROVIDER_ZHIPU_64;
+            case ZAI -> PROVIDER_ZHIPU_64;
+            case ZAI_ANTHROPIC -> PROVIDER_ZHIPU_64;
         };
     }
 
