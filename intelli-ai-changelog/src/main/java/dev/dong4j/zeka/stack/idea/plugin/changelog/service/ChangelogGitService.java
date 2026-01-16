@@ -64,6 +64,17 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
  */
 final class ChangelogGitService {
 
+    /**
+     * 当 CodeDiffUtil 过滤导致 diff 为空时，使用 JGit diff 作为兜底输出的最大字符数。
+     * <p>
+     * 兜底 diff 主要用于保障 prompt 至少有可解析的 {@code diff --git} 块，避免“仅 import / 仅注释”场景完全无输入。
+     */
+    private static final int FALLBACK_JGIT_MAX_CHARS = 120_000;
+    /** 兜底 diff 截断时保留的头部字符数 */
+    private static final int FALLBACK_JGIT_HEAD_CHARS = 80_000;
+    /** 兜底 diff 截断时保留的尾部字符数 */
+    private static final int FALLBACK_JGIT_TAIL_CHARS = 20_000;
+
     /** 项目实例, 用于获取基础路径和执行 Git 操作 */
     public final Project project;
 
@@ -364,7 +375,7 @@ final class ChangelogGitService {
                 FileContent before = loadFileContent(repository, parent, entry.getOldPath());
                 FileContent after = loadFileContent(repository, commit, entry.getNewPath());
                 if (before.binary || after.binary) {
-                    appendEntryDiff(diffText, formatEntryWithJGit(repository, entry));
+                    appendEntryDiff(diffText, truncateFallbackDiff(formatEntryWithJGit(repository, entry)));
                     continue;
                 }
                 String beforeName = formatUnifiedPath(entry.getOldPath(), "a/");
@@ -378,7 +389,13 @@ final class ChangelogGitService {
                                                                   );
                 String metadata = buildDiffMetadata(entry);
                 if (codeDiff.isBlank()) {
-                    if (entry.getChangeType() != DiffEntry.ChangeType.MODIFY) {
+                    // CodeDiffUtil 为降噪会跳过 import-only / comment-only / reorder-only 等变更，
+                    // 在这些场景下需要兜底输出，避免 commit diffText 为空导致无法生成 commit message。
+                    String fallback = truncateFallbackDiff(formatEntryWithJGit(repository, entry));
+                    if (!fallback.isBlank()) {
+                        appendEntryDiff(diffText, fallback.startsWith("diff --git ") ? fallback : (metadata + fallback));
+                    } else {
+                        // 极端兜底：至少输出可解析的 diff --git 元数据块
                         appendEntryDiff(diffText, metadata);
                     }
                     continue;
@@ -584,6 +601,23 @@ final class ChangelogGitService {
             formatter.format(entry);
         }
         return output.toString(StandardCharsets.UTF_8).trim();
+    }
+
+    /**
+     * 截断兜底 diff，避免 prompt 过长导致生成失败或上下文爆炸。
+     * <p>
+     * 仅在 CodeDiffUtil 输出为空时使用 JGit diff 兜底，因此此处的截断策略以“保留可解析头部”为优先。
+     */
+    private @NotNull String truncateFallbackDiff(@NotNull String diff) {
+        String normalized = diff.stripTrailing();
+        if (normalized.length() <= FALLBACK_JGIT_MAX_CHARS) {
+            return normalized;
+        }
+        int headLen = Math.min(FALLBACK_JGIT_HEAD_CHARS, normalized.length());
+        int tailStart = Math.max(0, normalized.length() - FALLBACK_JGIT_TAIL_CHARS);
+        String head = normalized.substring(0, headLen);
+        String tail = normalized.substring(tailStart);
+        return head + "\n...[diff truncated]...\n" + tail;
     }
 
     /**
