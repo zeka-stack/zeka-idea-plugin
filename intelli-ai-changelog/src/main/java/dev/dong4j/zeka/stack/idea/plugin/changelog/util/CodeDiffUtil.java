@@ -12,11 +12,13 @@ import com.intellij.openapi.project.ProjectLocator;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.ContentRevision;
+import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,11 +46,11 @@ public final class CodeDiffUtil {
     /** 单个 diff 块最多保留的行数 */
     private static final int MAX_LINES_PER_HUNK = 20;
     /** 单个文件触发摘要模式的最大行数阈值 */
-    private static final int LARGE_FILE_MAX_LINES = 2000;
+    private static final int LARGE_FILE_MAX_LINES = 300;
     /** 变更行数超过该值时触发摘要模式 */
-    private static final int LARGE_DIFF_MAX_CHANGED_LINES = 400;
+    private static final int LARGE_DIFF_MAX_CHANGED_LINES = 200;
     /** 内容长度超过该值时触发摘要模式 */
-    private static final int LARGE_DIFF_MAX_CHARS = 20000;
+    private static final int LARGE_DIFF_MAX_CHARS = 6000;
     /** 摘要模式下 head/tail 保留行数 */
     private static final int LARGE_DIFF_HEAD_TAIL_LINES = 3;
 
@@ -98,13 +100,16 @@ public final class CodeDiffUtil {
         CodeDiff.ChangeType changeType = determineChangeType(change);
         DiffResult diffResult = null;
         String diffContent;
-        if (changeType != CodeDiff.ChangeType.DELETE) {
+        if (changeType == CodeDiff.ChangeType.DELETE) {
+            diffContent = null;
+        } else if (changeType == CodeDiff.ChangeType.ADD) {
+            diffContent = buildAddedFilePreview(change, virtualFile);
+        } else {
             diffResult = extractDiffResult(change);
             diffContent = diffResult != null ? diffResult.diffContent() : null;
-        } else {
-            ContentRevision beforeRevision = change.getBeforeRevision();
-            String fileName = beforeRevision != null ? beforeRevision.getFile().getName() : virtualFile.getName();
-            diffContent = buildDeletedFileDiff(fileName);
+            if (changeType == CodeDiff.ChangeType.RENAME && isRenameWithoutContentChange(diffResult)) {
+                diffContent = buildMovedFileSummary(change);
+            }
         }
         String scopeHint = resolveScopeHint(virtualFile);
         String semanticSummary = resolveSemanticSummary(virtualFile, diffResult);
@@ -120,6 +125,8 @@ public final class CodeDiffUtil {
             ContentRevision beforeRevision = change.getBeforeRevision();
             String beforeContent = beforeRevision != null ? safeGetContent(beforeRevision) : null;
             deletedLines = beforeContent != null ? countLines(beforeContent) : 0;
+        } else if (changeType == CodeDiff.ChangeType.ADD && diffContent != null) {
+            addedLines = countLines(diffContent);
         } else if (diffContent != null) {
             String[] lines = diffContent.split("\n");
             for (String line : lines) {
@@ -497,6 +504,94 @@ public final class CodeDiffUtil {
         return "--- " + fileName + "\n" +
                "+++ /dev/null\n" +
                "deleted file\n";
+    }
+
+    /**
+     * 判断重命名操作是否未包含内容变更
+     * <p> 当重命名操作的差异结果为 null, 无差异片段, 或差异内容为空时, 认为该重命名未包含内容变更.
+     *
+     * @param diffResult 差异结果对象, 可能为 null
+     * @return 如果重命名未包含内容变更, 则返回 true, 否则返回 false
+     */
+    private static boolean isRenameWithoutContentChange(@Nullable DiffResult diffResult) {
+        return diffResult == null || diffResult.fragments().isEmpty()
+               || diffResult.diffContent() == null || diffResult.diffContent().isBlank();
+    }
+
+    /**
+     * 构建文件重命名的摘要信息
+     * <p> 当文件被重命名时, 生成包含原始路径和目标路径的摘要字符串, 用于在代码差异中标识文件移动操作.
+     * 该方法适用于在版本控制系统中识别文件重命名而非内容修改的场景.
+     *
+     * @param change 变更对象, 不能为空, 用于获取重命名前后的文件路径
+     * @return 表示文件从原始路径移动到新路径的摘要字符串, 格式为 "moved from {beforePath} to {afterPath}"
+     */
+    @NotNull
+    private static String buildMovedFileSummary(@NotNull Change change) {
+        String beforePath = change.getBeforeRevision() != null ? change.getBeforeRevision().getFile().getPath() : "unknown";
+        String afterPath = change.getAfterRevision() != null ? change.getAfterRevision().getFile().getPath() : "unknown";
+        return "moved from " + beforePath + " to " + afterPath;
+    }
+
+    /**
+     * 构建新增文件的预览内容
+     * <p> 用于在文件被新增时, 生成其前几行内容作为预览摘要. 若文件为二进制文件或内容为空, 则返回 null.
+     * 该方法会根据文件类型判断是否需要剥离导入语句 (如 Java/Kotlin 文件), 并最多保留 50 行内容.
+     *
+     * @param change      变更对象, 不能为空, 用于获取新增文件的修订内容
+     * @param virtualFile 虚拟文件对象, 不能为空, 用于判断文件类型和加载文件内容
+     * @return 新增文件的前几行内容组成的字符串, 最多 50 行, 若文件为二进制, 内容为空或加载失败则返回 null
+     */
+    @Nullable
+    private static String buildAddedFilePreview(@NotNull Change change, @NotNull VirtualFile virtualFile) {
+        if (virtualFile.getFileType().isBinary()) {
+            return null;
+        }
+        String content = null;
+        ContentRevision afterRevision = change.getAfterRevision();
+        if (afterRevision != null) {
+            content = safeGetContent(afterRevision);
+        }
+        if (content == null) {
+            try {
+                content = VfsUtilCore.loadText(virtualFile);
+            } catch (IOException ignored) {
+                return null;
+            }
+        }
+        if (content.isEmpty()) {
+            return null;
+        }
+        List<String> lines = splitLines(content);
+        boolean stripImports = isJavaLikeFile(virtualFile);
+        List<String> normalized = new ArrayList<>();
+        for (String line : lines) {
+            if (stripImports && line.trim().startsWith("import ")) {
+                continue;
+            }
+            normalized.add(line);
+            if (normalized.size() >= 50) {
+                break;
+            }
+        }
+        return String.join("\n", normalized);
+    }
+
+    /**
+     * 判断文件是否为 Java 或 Kotlin 类型文件
+     * <p> 根据文件扩展名判断是否为 Java,Kotlin 或 KTS 文件, 用于区分代码文件类型以进行特定处理.
+     *
+     * @param virtualFile 虚拟文件对象, 不能为空
+     * @return 如果文件扩展名为 "java","kt" 或 "kts"(不区分大小写), 则返回 true, 否则返回 false
+     */
+    private static boolean isJavaLikeFile(@NotNull VirtualFile virtualFile) {
+        String extension = virtualFile.getExtension();
+        if (extension == null) {
+            return false;
+        }
+        return "java".equalsIgnoreCase(extension)
+               || "kt".equalsIgnoreCase(extension)
+               || "kts".equalsIgnoreCase(extension);
     }
 
     /**

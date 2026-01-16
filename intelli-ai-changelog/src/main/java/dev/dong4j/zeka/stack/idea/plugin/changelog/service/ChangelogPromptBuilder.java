@@ -191,6 +191,23 @@ final class ChangelogPromptBuilder {
         return buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository, null);
     }
 
+    /**
+     * 构建提交信息提示词
+     * <p> 根据代码差异, 最近提交记录和用户补充上下文生成用于提交信息生成的提示词.
+     * <p> 该方法会处理代码差异内容, 限制文件数量和变更内容长度, 并根据模板替换占位符.
+     * <p> 使用示例:
+     * <pre>{@code
+     * String prompt = buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, true);
+     * }</pre>
+     *
+     * @param payload           代码差异负载对象, 包含文件变更信息, 不能为空
+     * @param recentCommitsText 最近提交记录文本, 不能为空
+     * @param userContext       用户补充上下文信息, 可以为 null
+     * @param branch            当前分支名称, 可以为 null
+     * @param isGitRepository   是否为 Git 仓库, 用于判断上下文行为
+     * @param selectionMeta     选中提交的元数据, 可以为 null, 用于限制处理范围
+     * @return 生成的提交信息提示词, 不能为空
+     */
     @NotNull
     String buildCommitMessagePrompt(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
                                     @NotNull String recentCommitsText,
@@ -318,6 +335,14 @@ final class ChangelogPromptBuilder {
         return json.toString();
     }
 
+    /**
+     * 构建字符串数组的 JSON 格式字符串
+     * <p> 将指定的字符串列表转换为标准的 JSON 数组格式, 每个字符串值都会被双引号包裹并进行 JSON 转义处理.
+     * <p> 适用于需要将字符串列表作为 JSON 数组嵌入到结构化数据中的场景.
+     *
+     * @param values 要转换的字符串列表, 不能为空
+     * @return 生成的 JSON 数组字符串, 格式如 ["value1", "value2", ...]
+     */
     @NotNull
     private String buildStringArrayJson(@NotNull List<String> values) {
         StringBuilder sb = new StringBuilder();
@@ -344,12 +369,20 @@ final class ChangelogPromptBuilder {
         List<CodeDiff> allDiffs = payload.codeDiffs();
         List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
 
-        appendBulkDeleteSummary(summary, allDiffs, maxDiffChars);
+        appendDeleteOnlySummary(summary, limitedDiffs, maxDiffChars);
+        appendAddedBinarySummary(summary, limitedDiffs, maxDiffChars);
 
         int fileCount = 0;
         for (CodeDiff diff : limitedDiffs) {
             if (summary.length() >= maxDiffChars) {
                 break;
+            }
+            if (diff.changeType == CodeDiff.ChangeType.DELETE) {
+                continue;
+            }
+            if (diff.changeType == CodeDiff.ChangeType.ADD
+                && (diff.diffContent == null || diff.diffContent.isBlank())) {
+                continue;
             }
             summary.append("文件: ").append(diff.filePath).append("\n");
             summary.append("变更类型: ").append(diff.changeType.name()).append("\n");
@@ -360,7 +393,11 @@ final class ChangelogPromptBuilder {
             summary.append("删除行数: ").append(diff.deletedLines).append("\n");
 
             if (diff.diffContent != null && !diff.diffContent.isEmpty()) {
-                summary.append("变更内容:\n");
+                if (diff.changeType == CodeDiff.ChangeType.ADD) {
+                    summary.append("新增内容:\n");
+                } else {
+                    summary.append("变更内容:\n");
+                }
                 String metadata = payload.metadataByPath().get(diff.filePath);
                 if (metadata != null && !metadata.isBlank()) {
                     summary.append(metadata);
@@ -392,6 +429,76 @@ final class ChangelogPromptBuilder {
             summaryText = summaryText.substring(0, limit) + suffix;
         }
         return summaryText;
+    }
+
+    /**
+     * 生成仅包含删除文件的摘要内容
+     * <p> 该方法用于在变更日志中突出显示所有仅包含删除操作的文件, 适用于降噪处理场景.
+     * <p> 若没有检测到任何删除文件, 则直接返回, 不添加任何内容.
+     *
+     * @param summary      用于追加摘要内容的 StringBuilder 对象, 不能为空
+     * @param diffs        变更文件列表, 不能为空
+     * @param maxDiffChars 最大允许的摘要字符数, 用于长度限制
+     */
+    private void appendDeleteOnlySummary(@NotNull StringBuilder summary,
+                                         @NotNull List<CodeDiff> diffs,
+                                         int maxDiffChars) {
+        boolean hasDelete = false;
+        for (CodeDiff diff : diffs) {
+            if (diff.changeType == CodeDiff.ChangeType.DELETE) {
+                hasDelete = true;
+                break;
+            }
+        }
+        if (!hasDelete) {
+            return;
+        }
+        summary.append("删除文件:\n");
+        for (CodeDiff diff : diffs) {
+            if (summary.length() >= maxDiffChars) {
+                break;
+            }
+            if (diff.changeType == CodeDiff.ChangeType.DELETE) {
+                summary.append("- ").append(diff.filePath).append("\n");
+            }
+        }
+        summary.append("\n");
+    }
+
+    /**
+     * 附加新增二进制文件摘要信息
+     * <p>当存在新增二进制文件 (即新增文件但无内容差异) 时, 向摘要中追加此类文件列表.
+     * <p>该方法仅在检测到至少一个新增二进制文件时执行, 避免无意义的输出.
+     *
+     * @param summary      用于追加摘要内容的 StringBuilder 对象, 不能为空
+     * @param diffs        变更文件列表, 不能为空
+     * @param maxDiffChars 摘要内容最大字符数限制, 用于防止内容过长
+     */
+    private void appendAddedBinarySummary(@NotNull StringBuilder summary,
+                                          @NotNull List<CodeDiff> diffs,
+                                          int maxDiffChars) {
+        boolean hasAddedBinary = false;
+        for (CodeDiff diff : diffs) {
+            if (diff.changeType == CodeDiff.ChangeType.ADD
+                && (diff.diffContent == null || diff.diffContent.isBlank())) {
+                hasAddedBinary = true;
+                break;
+            }
+        }
+        if (!hasAddedBinary) {
+            return;
+        }
+        summary.append("新增文件:\n");
+        for (CodeDiff diff : diffs) {
+            if (summary.length() >= maxDiffChars) {
+                break;
+            }
+            if (diff.changeType == CodeDiff.ChangeType.ADD
+                && (diff.diffContent == null || diff.diffContent.isBlank())) {
+                summary.append("- ").append(diff.filePath).append("\n");
+            }
+        }
+        summary.append("\n");
     }
 
     /**

@@ -93,6 +93,12 @@ final class ChangelogCommitDiffBuilder {
     DiffPayload buildPayload(@NotNull Collection<Change> changes) {
         // 过滤无关/噪音变更，避免生成 commit message 时引入无效上下文。
         List<Change> filteredChanges = filterChanges(changes);
+        if (isDeleteOnlyChanges(filteredChanges)) {
+            return buildDeletedOnlyPayload(filteredChanges);
+        }
+        if (isAddOnlyChanges(filteredChanges)) {
+            return buildAddedOnlyPayload(filteredChanges);
+        }
         SettingsState settings = SettingsState.getInstance();
         SettingsState.CommitMessageDiffProvider provider = settings.commitMessageDiffProvider;
         if (provider == SettingsState.CommitMessageDiffProvider.AUTO) {
@@ -116,7 +122,133 @@ final class ChangelogCommitDiffBuilder {
      */
     private @NotNull DiffPayload buildCodeDiffPayload(@NotNull Collection<Change> changes) {
         List<CodeDiff> codeDiffs = filterCodeDiffs(CodeDiffUtil.extractCodeDiffs(changes));
+        if (codeDiffs.isEmpty() && isDeleteOnlyChanges(changes)) {
+            return buildDeletedOnlyPayload(changes);
+        }
         return new DiffPayload(codeDiffs, Map.of(), "");
+    }
+
+    /**
+     * 判断变更集合是否仅包含删除操作
+     * <p> 遍历给定的变更集合, 若所有变更均为删除类型 (Change.Type.DELETED), 且至少存在一个变更, 则返回 true; 否则返回 false.</p>
+     * <p> 注意: 即使集合中包含非删除类型的变更, 只要存在一个非删除变更, 即返回 false.</p>
+     *
+     * @param changes 变更集合, 不能为 null
+     * @return 如果集合中所有变更均为删除类型且至少有一个变更, 则返回 true; 否则返回 false
+     */
+    private boolean isDeleteOnlyChanges(@NotNull Collection<Change> changes) {
+        boolean hasChange = false;
+        for (Change change : changes) {
+            hasChange = true;
+            if (change.getType() != Change.Type.DELETED) {
+                return false;
+            }
+        }
+        return hasChange;
+    }
+
+    /**
+     * 判断变更集合是否仅包含新增文件
+     * <p> 遍历给定的变更集合, 检查所有变更是否均为新增类型 (<code>Change.Type.NEW</code>). 如果存在非新增类型的变更, 则返回 false; 若集合为空或仅包含新增变更, 则返回 true.
+     *
+     * @param changes 变更集合, 不能为 null
+     * @return 如果集合中所有变更均为新增类型且至少包含一个变更, 则返回 true; 否则返回 false
+     */
+    private boolean isAddOnlyChanges(@NotNull Collection<Change> changes) {
+        boolean hasChange = false;
+        for (Change change : changes) {
+            hasChange = true;
+            if (change.getType() != Change.Type.NEW) {
+                return false;
+            }
+        }
+        return hasChange;
+    }
+
+    /**
+     * 构建仅包含删除操作的差异负载
+     * <p> 当变更集合中仅包含删除类型的变更时, 生成一个仅包含删除差异的 DiffPayload 对象.
+     * <p> 该方法遍历所有变更, 仅保留类型为 DELETE 的变更, 并为其生成对应的 CodeDiff 对象.
+     * <p> 最终返回的 DiffPayload 包含删除差异列表, 空的元数据映射和空的补丁文本.
+     *
+     * @param changes 变更集合, 不能为 null, 包含所有待处理的变更对象
+     * @return 一个 DiffPayload 实例, 包含删除差异列表, 空的元数据映射和空的补丁文本
+     */
+    @NotNull
+    private DiffPayload buildDeletedOnlyPayload(@NotNull Collection<Change> changes) {
+        List<CodeDiff> codeDiffs = new ArrayList<>();
+        for (Change change : changes) {
+            if (change.getType() != Change.Type.DELETED) {
+                continue;
+            }
+            String path = resolveDeletedFilePath(change);
+            codeDiffs.add(new CodeDiff(path,
+                                       CodeDiff.ChangeType.DELETE,
+                                       0,
+                                       0,
+                                       null,
+                                       null,
+                                       null));
+        }
+        return new DiffPayload(codeDiffs, Map.of(), "");
+    }
+
+    /**
+     * 构建仅包含新增文件的差异负载
+     * <p> 当变更集合中仅包含新增文件时, 调用此方法构建差异负载对象. 该方法会提取所有新增文件的路径, 并创建对应的 CodeDiff 对象, 同时返回一个包含空元数据映射和空补丁文本的 DiffPayload 实例.
+     *
+     * @param changes 需要处理的变更集合, 不能为 null
+     * @return 一个 DiffPayload 实例, 包含新增文件的 CodeDiff 列表, 空的元数据映射和空的补丁文本
+     */
+    @NotNull
+    private DiffPayload buildAddedOnlyPayload(@NotNull Collection<Change> changes) {
+        List<CodeDiff> codeDiffs = new ArrayList<>();
+        for (Change change : changes) {
+            if (change.getType() != Change.Type.NEW) {
+                continue;
+            }
+            String path = resolveAddedFilePath(change);
+            codeDiffs.add(new CodeDiff(path,
+                                       CodeDiff.ChangeType.ADD,
+                                       0,
+                                       0,
+                                       null,
+                                       null,
+                                       null));
+        }
+        return new DiffPayload(codeDiffs, Map.of(), "");
+    }
+
+    /**
+     * 解析新增文件的完整路径
+     * <p>根据变更对象的后版本信息 (afterRevision) 优先获取文件路径, 若无则通过虚拟文件 (VirtualFile) 获取路径. 若两者均不可用, 则返回默认值 "unknown".
+     *
+     * @param change 变更对象, 不能为 null
+     * @return 文件的完整路径字符串, 若无法解析则返回 "unknown"
+     */
+    @NotNull
+    private String resolveAddedFilePath(@NotNull Change change) {
+        if (change.getAfterRevision() != null && change.getAfterRevision().getFile() != null) {
+            return change.getAfterRevision().getFile().getPath();
+        }
+        VirtualFile file = change.getVirtualFile();
+        return file != null ? file.getPath() : "unknown";
+    }
+
+    /**
+     * 解析删除文件的完整路径
+     * <p> 根据变更对象中的前置修订版本信息或虚拟文件对象, 获取被删除文件的完整路径. 如果前置修订版本存在且包含文件对象, 则使用其路径; 否则尝试从虚拟文件对象获取路径. 若两者均不可用, 则返回默认值 "unknown".
+     *
+     * @param change 变更对象, 不能为 null
+     * @return 被删除文件的完整路径, 若无法解析则返回 "unknown"
+     */
+    @NotNull
+    private String resolveDeletedFilePath(@NotNull Change change) {
+        if (change.getBeforeRevision() != null && change.getBeforeRevision().getFile() != null) {
+            return change.getBeforeRevision().getFile().getPath();
+        }
+        VirtualFile file = change.getVirtualFile();
+        return file != null ? file.getPath() : "unknown";
     }
 
     /**
@@ -128,8 +260,11 @@ final class ChangelogCommitDiffBuilder {
      */
     private @NotNull DiffPayload buildIdeaPatchDiffPayload(@NotNull Collection<Change> changes) {
         List<CodeDiff> codeDiffs = filterCodeDiffs(CodeDiffUtil.extractCodeDiffs(changes));
-        Map<String, String> metadataByPath = buildPatchMetadataByPath(changes);
-        String patchText = buildPatchText(changes);
+        List<Change> patchChanges = changes.stream()
+            .filter(change -> change.getType() != Change.Type.NEW && change.getType() != Change.Type.DELETED)
+            .toList();
+        Map<String, String> metadataByPath = buildPatchMetadataByPath(patchChanges);
+        String patchText = buildPatchText(patchChanges);
         return new DiffPayload(codeDiffs, metadataByPath, patchText);
     }
 

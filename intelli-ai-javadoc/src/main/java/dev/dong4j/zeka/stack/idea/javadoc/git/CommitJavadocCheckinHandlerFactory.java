@@ -97,7 +97,7 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
          */
         @Override
         public @NotNull ExecutionOrder getExecutionOrder() {
-            return ExecutionOrder.LATE;
+            return ExecutionOrder.EARLY;
         }
 
         /**
