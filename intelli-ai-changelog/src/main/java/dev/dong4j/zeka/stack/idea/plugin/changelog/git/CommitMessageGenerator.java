@@ -404,204 +404,7 @@ public class CommitMessageGenerator {
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.single.commit"));
             return;
         }
-
-        GenerationState state = new GenerationState();
-        GENERATION_STATES.put(project, state);
-
-        ProgressManager.getInstance().run(
-            new Task.Backgroundable(project, ChangelogBundle.message("commit.generating.progress"), true) {
-                /**
-                 * 执行生成提交消息的后台任务
-                 * <p> 该方法在后台线程中运行, 负责分析 Git 日志并调用 AI 服务生成提交消息, 最终在 UI 线程中更新提交面板内容.
-                 * 任务过程中会显示进度指示器, 并在失败时弹出错误通知.
-                 *
-                 * @param indicator 进度指示器, 用于显示任务进度和状态
-                 * @since 1.0
-                 */
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    indicator.setIndeterminate(true);
-                    indicator.setText(ChangelogBundle.message("commit.analyzing.changes"));
-                    state.indicator.set(indicator);
-                    state.thread.set(Thread.currentThread());
-
-                    String contextText = null;
-                    if (SettingsState.getInstance().useCommitMessageInputAsContext) {
-                        contextText = getCommitMessageText(commitMessageControl);
-                    }
-
-                    TypingIndicator typingIndicator = startTypingIndicator(commitMessageControl, outputSession, contextText == null);
-                    state.typingIndicator.set(typingIndicator);
-                    StreamCancellationToken cancellationToken = new StreamCancellationToken();
-                    state.cancellationToken.set(cancellationToken);
-                    if (outputSession != null) {
-                        outputSession.bindCancellationToken(cancellationToken);
-                    }
-
-                    try {
-                        if (state.cancelled.get()) {
-                            return;
-                        }
-
-                        ChangelogService service = ChangelogService.getInstance(project);
-
-                        StringBuilder buffer = new StringBuilder();
-                        AtomicReference<Boolean> updated = new AtomicReference<>(false);
-                        final AIStreamResponseListener listener = getStreamResponseListener(buffer,
-                                                                                           typingIndicator,
-                                                                                           updated,
-                                                                                           cancellationToken);
-
-                        String commitMessage = service.generateCommitMessageFromGitLogStream(commitHash, listener, contextText);
-                        String formattedCommitMessage = MessageFormatter.format(commitMessage);
-
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            if (project.isDisposed() || state.cancelled.get()) {
-                                log.debug("项目已销毁或任务已取消，跳过设置提交消息");
-                                return;
-                            }
-
-                            boolean applied = setCommitMessageText(formattedCommitMessage, commitMessageControl, true);
-                            if (!applied && !updated.get()) {
-                                log.debug("Git 提交页面：提交面板不可用，无法写入提交记录");
-                            }
-
-                            if (outputSession != null && !project.isDisposed()) {
-                                outputSession.setText(formattedCommitMessage);
-                            }
-                        });
-
-                        log.debug("Git 提交页面：提交记录再生成功，commit={}", commitHash);
-                    } catch (Exception e) {
-                        log.debug("Git 提交页面：提交记录再生失败，commit={}", commitHash, e);
-                        ApplicationManager.getApplication().invokeLater(() -> {
-                            if (project.isDisposed() || state.cancelled.get()) {
-                                return;
-                            }
-                            typingIndicator.generateFailure();
-                            String errorMessage = e.getMessage();
-                            if (errorMessage != null && !errorMessage.isEmpty()) {
-                                NotificationUtil.showError(project, errorMessage);
-                            } else {
-                                NotificationUtil.showError(
-                                    project,
-                                    ChangelogBundle.message("commit.generation.error",
-                                                            ChangelogBundle.message("error.ai.service.unknown")));
-                            }
-                        });
-                    } finally {
-                        resetCommitMessagePlaceholder(commitMessageControl);
-                        typingIndicator.stop();
-                        GENERATION_STATES.remove(project);
-                    }
-                }
-
-                /**
-                 * 创建并返回一个用于监听 AI 流式响应的监听器实例
-                 * <p> 该监听器在响应流中接收数据块 (chunk), 并实时更新提交消息文本框和输出会话, 同时管理响应状态和取消逻辑.
-                 *
-                 * @param buffer            用于累积接收到的响应内容的字符串缓冲区
-                 * @param typingIndicator   用于模拟打字效果的指示器, 响应开始后会停止
-                 * @param updated           标记是否已成功更新提交消息的原子引用
-                 * @param cancellationToken 用于取消流式响应的令牌对象
-                 * @return AI 流式响应监听器实例, 实现响应开始, 数据块接收, 完成和错误处理的回调
-                 */
-                private @NotNull AIStreamResponseListener getStreamResponseListener(StringBuilder buffer,
-                                                                                   TypingIndicator typingIndicator,
-                                                                                   AtomicReference<Boolean> updated,
-                                                                                   StreamCancellationToken cancellationToken) {
-                    AtomicBoolean contentStarted = new AtomicBoolean(false);
-                    return new AIStreamResponseListener() {
-                        /**
-                         * 重置缓冲区长度, 用于开始新的流式响应处理
-                         * <p> 该方法在流式响应开始时被调用, 清空当前缓冲区内容, 为后续数据接收做准备
-                         */
-                        @Override
-                        public void onStart() {
-                            buffer.setLength(0);
-                        }
-
-                        /**
-                         * 获取流取消令牌
-                         * <p> 返回当前流操作的取消令牌, 用于在需要时取消流处理过程
-                         *
-                         * @return 流取消令牌, 如果未设置则返回 null
-                         */
-                        @Override
-                        public @Nullable StreamCancellationToken cancellationToken() {
-                            return cancellationToken;
-                        }
-
-                        /**
-                         * 处理流式响应的片段数据
-                         * <p> 当接收到新的响应片段时, 将片段内容追加到缓冲区, 并在 UI 线程中更新提交信息文本, 同时若存在输出会话则将其追加到输出会话中
-                         * <p> 如果已取消或项目已销毁, 则直接返回, 不执行后续操作
-                         *
-                         * @param chunk 当前接收到的响应片段内容
-                         */
-                        @Override
-                        public void onChunk(@NotNull String chunk) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
-                                typingIndicator.stop();
-                            }
-                            buffer.append(chunk);
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
-                                    updated.set(true);
-                                }
-                            });
-                            if (outputSession != null) {
-                                outputSession.append(chunk);
-                            }
-                        }
-
-                        /**
-                         * 当流处理完成时的回调方法
-                         * <p> 在流内容完全接收后调用, 用于执行后续处理逻辑. 如果流已被取消或项目已销毁, 则不执行任何操作.
-                         *
-                         * @param fullContent 完整的流内容字符串
-                         */
-                        @Override
-                        public void onComplete(@NotNull String fullContent) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                }
-                                // typingIndicator.generateSuccess();
-                            });
-                        }
-
-                        /**
-                         * 处理流式响应错误事件
-                         * <p> 当流式响应发生错误时, 该方法会被调用. 如果当前操作已被取消, 则直接返回. 否则, 通过应用线程调度器在 UI 线程中执行错误处理逻辑, 调用 {@code typingIndicator
-                         * .generateFailure()} 显示错误状态.
-                         *
-                         * @param error     错误信息, 非空字符串
-                         * @param exception 错误异常, 可能为 null
-                         */
-                        @Override
-                        public void onError(@NotNull String error, @Nullable Throwable exception) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                typingIndicator.generateFailure();
-                            });
-                        }
-                    };
-                }
-            });
+        generateForCommitSelection(List.of(commitHash), List.of(), commitMessageControl, outputSession);
     }
 
     /**
@@ -618,6 +421,18 @@ public class CommitMessageGenerator {
                                         @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
         if (commitHashes.size() < 2) {
             log.debug("Git 提交页面：压缩提交再生失败，commit hash 数量不足，size={}", commitHashes.size());
+            NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
+            return;
+        }
+        generateForCommitSelection(commitHashes, selectedCommitTitles, commitMessageControl, outputSession);
+    }
+
+    private void generateForCommitSelection(@NotNull List<String> commitHashes,
+                                            @NotNull List<String> selectedCommitTitles,
+                                            @Nullable CommitMessageI commitMessageControl,
+                                            @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        if (commitHashes.isEmpty()) {
+            log.debug("Git 提交页面：提交记录再生失败，commit hash 为空列表");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
             return;
         }
@@ -657,10 +472,22 @@ public class CommitMessageGenerator {
                         StringBuilder buffer = new StringBuilder();
                         AtomicReference<Boolean> updated = new AtomicReference<>(false);
                         final AIStreamResponseListener listener =
-                            getStreamResponseListener(buffer, typingIndicator, updated, cancellationToken);
+                            createStreamResponseListener(state,
+                                                         buffer,
+                                                         typingIndicator,
+                                                         updated,
+                                                         cancellationToken,
+                                                         commitMessageControl,
+                                                         outputSession);
 
-                        String commitMessage =
-                            service.generateSquashCommitMessageFromGitLogStream(commitHashes, selectedCommitTitles, listener, contextText);
+                        String commitMessage = commitHashes.size() > 1
+                                               ? service.generateSquashCommitMessageFromGitLogStream(commitHashes,
+                                                                                                     selectedCommitTitles,
+                                                                                                     listener,
+                                                                                                     contextText)
+                                               : service.generateCommitMessageFromGitLogStream(commitHashes.get(0),
+                                                                                               listener,
+                                                                                               contextText);
                         String formattedCommitMessage = MessageFormatter.format(commitMessage);
 
                         ApplicationManager.getApplication().invokeLater(() -> {
@@ -679,9 +506,17 @@ public class CommitMessageGenerator {
                             }
                         });
 
-                        log.debug("Git 提交页面：压缩提交再生成功，commits={}", commitHashes.size());
+                        if (commitHashes.size() > 1) {
+                            log.debug("Git 提交页面：压缩提交再生成功，commits={}", commitHashes.size());
+                        } else {
+                            log.debug("Git 提交页面：提交记录再生成功，commit={}", commitHashes.get(0));
+                        }
                     } catch (Exception e) {
-                        log.debug("Git 提交页面：压缩提交再生失败，commits={}", commitHashes.size(), e);
+                        if (commitHashes.size() > 1) {
+                            log.debug("Git 提交页面：压缩提交再生失败，commits={}", commitHashes.size(), e);
+                        } else {
+                            log.debug("Git 提交页面：提交记录再生失败，commit={}", commitHashes.get(0), e);
+                        }
                         ApplicationManager.getApplication().invokeLater(() -> {
                             if (project.isDisposed() || state.cancelled.get()) {
                                 return;
@@ -703,72 +538,75 @@ public class CommitMessageGenerator {
                         GENERATION_STATES.remove(project);
                     }
                 }
-
-                private @NotNull AIStreamResponseListener getStreamResponseListener(StringBuilder buffer,
-                                                                                   TypingIndicator typingIndicator,
-                                                                                   AtomicReference<Boolean> updated,
-                                                                                   StreamCancellationToken cancellationToken) {
-                    AtomicBoolean contentStarted = new AtomicBoolean(false);
-                    return new AIStreamResponseListener() {
-                        @Override
-                        public void onStart() {
-                            buffer.setLength(0);
-                        }
-
-                        @Override
-                        public @Nullable StreamCancellationToken cancellationToken() {
-                            return cancellationToken;
-                        }
-
-                        @Override
-                        public void onChunk(@NotNull String chunk) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
-                                typingIndicator.stop();
-                            }
-                            buffer.append(chunk);
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
-                                    updated.set(true);
-                                }
-                            });
-                            if (outputSession != null) {
-                                outputSession.append(chunk);
-                            }
-                        }
-
-                        @Override
-                        public void onComplete(@NotNull String fullContent) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                }
-                                // typingIndicator.generateSuccess();
-                            });
-                        }
-
-                        @Override
-                        public void onError(@NotNull String error, @Nullable Throwable exception) {
-                            if (state.cancelled.get()) {
-                                return;
-                            }
-                            ApplicationManager.getApplication().invokeLater(() -> {
-                                if (project.isDisposed() || state.cancelled.get()) {
-                                    return;
-                                }
-                                typingIndicator.generateFailure();
-                            });
-                        }
-                    };
-                }
             });
+    }
+
+    private @NotNull AIStreamResponseListener createStreamResponseListener(@NotNull GenerationState state,
+                                                                          @NotNull StringBuilder buffer,
+                                                                          @NotNull TypingIndicator typingIndicator,
+                                                                          @NotNull AtomicReference<Boolean> updated,
+                                                                          @NotNull StreamCancellationToken cancellationToken,
+                                                                          @Nullable CommitMessageI commitMessageControl,
+                                                                          @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        AtomicBoolean contentStarted = new AtomicBoolean(false);
+        return new AIStreamResponseListener() {
+            @Override
+            public void onStart() {
+                buffer.setLength(0);
+            }
+
+            @Override
+            public @Nullable StreamCancellationToken cancellationToken() {
+                return cancellationToken;
+            }
+
+            @Override
+            public void onChunk(@NotNull String chunk) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                if (!chunk.isBlank() && contentStarted.compareAndSet(false, true)) {
+                    typingIndicator.stop();
+                }
+                buffer.append(chunk);
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                        return;
+                    }
+                    if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
+                        updated.set(true);
+                    }
+                });
+                if (outputSession != null) {
+                    outputSession.append(chunk);
+                }
+            }
+
+            @Override
+            public void onComplete(@NotNull String fullContent) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                    }
+                    // typingIndicator.generateSuccess();
+                });
+            }
+
+            @Override
+            public void onError(@NotNull String error, @Nullable Throwable exception) {
+                if (state.cancelled.get()) {
+                    return;
+                }
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                        return;
+                    }
+                    typingIndicator.generateFailure();
+                });
+            }
+        };
     }
 
 

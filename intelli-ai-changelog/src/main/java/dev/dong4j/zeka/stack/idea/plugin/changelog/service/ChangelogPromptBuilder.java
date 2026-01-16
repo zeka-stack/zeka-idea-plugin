@@ -14,8 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -190,12 +188,28 @@ final class ChangelogPromptBuilder {
                                     @Nullable String userContext,
                                     @Nullable String branch,
                                     boolean isGitRepository) {
+        return buildCommitMessagePrompt(payload, recentCommitsText, userContext, branch, isGitRepository, null);
+    }
+
+    @NotNull
+    String buildCommitMessagePrompt(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
+                                    @NotNull String recentCommitsText,
+                                    @Nullable String userContext,
+                                    @Nullable String branch,
+                                    boolean isGitRepository,
+                                    @Nullable CommitSelectionMeta selectionMeta) {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.commitMessageTemplate;
         int maxFiles = MAX_COMMIT_MESSAGE_FILES;
 
         // 1) 结构化 JSON 上下文：作为核心上下文，单独暴露为 {codeDiffs}。
-        String contextJson = buildStructuredContext(payload, recentCommitsText, userContext, branch, isGitRepository, maxFiles);
+        String contextJson = buildStructuredContext(payload,
+                                                    recentCommitsText,
+                                                    userContext,
+                                                    branch,
+                                                    isGitRepository,
+                                                    maxFiles,
+                                                    selectionMeta);
 
         // 2) 原生 patch 与降噪摘要：分别提供为独立占位符，便于用户自行裁剪。
         String diffSummary = buildDiffSummaryText(payload, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
@@ -208,77 +222,7 @@ final class ChangelogPromptBuilder {
             .replace("{diffSummary}", diffSummary);
     }
 
-    /**
-     * 基于已提交记录的 unified diff 构建提交信息提示词
-     * <p>
-     * 该方法用于“编辑提交消息”对话框的提交信息再生：无 CommitWorkflowHandler 上下文时，直接使用 Git Log 的真实 diff 作为输入。
-     * <p>
-     * 占位符保持与现有模板一致：{codeDiffs}/{rawPatch}/{diffSummary}，避免影响用户自定义模板。
-     */
-    @NotNull
-    String buildCommitMessagePromptFromCommitDiffs(@NotNull String commitHash,
-                                                   @NotNull String diffText,
-                                                   @NotNull String recentCommitsText,
-                                                   @Nullable String userContext,
-                                                   @Nullable String branch,
-                                                   boolean isGitRepository) {
-        SettingsState settings = SettingsState.getInstance();
-        String template = settings.commitMessageTemplate;
-        int maxFiles = MAX_COMMIT_MESSAGE_FILES;
-
-        List<CodeDiff> codeDiffs = parseUnifiedDiffToCodeDiffs(diffText);
-
-        String contextJson = buildStructuredContextFromCommitDiffs(commitHash,
-                                                                   codeDiffs,
-                                                                   recentCommitsText,
-                                                                   userContext,
-                                                                   branch,
-                                                                   isGitRepository,
-                                                                   maxFiles);
-        String diffSummary = buildDiffSummaryTextFromCommitDiffs(codeDiffs, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
-        String rawPatch = truncateText(diffText.trim(), MAX_COMMIT_MESSAGE_DIFF_CHARS);
-
-        return template
-            .replace("{codeDiffs}", contextJson)
-            .replace("{rawPatch}", rawPatch)
-            .replace("{diffSummary}", diffSummary);
-    }
-
-    /**
-     * 基于多条已提交记录的 unified diff（压缩提交/Squash）构建提交信息提示词
-     * <p>
-     * 占位符保持与现有模板一致：{codeDiffs}/{rawPatch}/{diffSummary}，避免影响用户自定义模板。
-     */
-    @NotNull
-    String buildCommitMessagePromptFromCommitDiffs(@NotNull List<String> commitHashes,
-                                                   @NotNull List<String> selectedCommitTitles,
-                                                   @NotNull String diffText,
-                                                   @NotNull String recentCommitsText,
-                                                   @Nullable String userContext,
-                                                   @Nullable String branch,
-                                                   boolean isGitRepository) {
-        SettingsState settings = SettingsState.getInstance();
-        String template = settings.commitMessageTemplate;
-        int maxFiles = MAX_COMMIT_MESSAGE_FILES;
-
-        List<CodeDiff> codeDiffs = parseUnifiedDiffToCodeDiffs(diffText);
-
-        String contextJson = buildStructuredContextFromCommitDiffs(commitHashes,
-                                                                   selectedCommitTitles,
-                                                                   codeDiffs,
-                                                                   recentCommitsText,
-                                                                   userContext,
-                                                                   branch,
-                                                                   isGitRepository,
-                                                                   maxFiles);
-        String diffSummary = buildDiffSummaryTextFromCommitDiffs(codeDiffs, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
-        String rawPatch = truncateText(diffText.trim(), MAX_COMMIT_MESSAGE_DIFF_CHARS);
-
-        return template
-            .replace("{codeDiffs}", contextJson)
-            .replace("{rawPatch}", rawPatch)
-            .replace("{diffSummary}", diffSummary);
-    }
+    // Git Log 单条/多条提交再生（含压缩提交）已收敛为 DiffPayload + selection meta 的统一构建逻辑。
 
     /**
      * 构建结构化上下文（JSON）
@@ -292,7 +236,8 @@ final class ChangelogPromptBuilder {
                                           @Nullable String userContext,
                                           @Nullable String branch,
                                           boolean isGitRepository,
-                                          int maxFiles) {
+                                          int maxFiles,
+                                          @Nullable CommitSelectionMeta selectionMeta) {
         List<CodeDiff> allDiffs = payload.codeDiffs();
         List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
         ChangeStats stats = buildChangeStats(allDiffs);
@@ -306,6 +251,18 @@ final class ChangelogPromptBuilder {
         json.append("    \"branch\": \"").append(escapeJson(normalizeBranch(branch))).append("\",\n");
         json.append("    \"is_git_repository\": ").append(isGitRepository).append("\n");
         json.append("  },\n");
+
+        // 选择信息（可选）：用于 Git Log 单条/多条提交再生或压缩提交等场景
+        if (selectionMeta != null && !selectionMeta.hashes().isEmpty()) {
+            List<String> hashes = selectionMeta.hashes().size() > 50 ? selectionMeta.hashes().subList(0, 50) : selectionMeta.hashes();
+            List<String> titles = selectionMeta.titles().size() > 20 ? selectionMeta.titles().subList(0, 20) : selectionMeta.titles();
+            json.append("  \"selection\": {\n");
+            json.append("    \"type\": \"").append(escapeJson(selectionMeta.type())).append("\",\n");
+            json.append("    \"commit_count\": ").append(selectionMeta.hashes().size()).append(",\n");
+            json.append("    \"hashes\": ").append(buildStringArrayJson(hashes)).append(",\n");
+            json.append("    \"titles\": ").append(buildStringArrayJson(titles)).append("\n");
+            json.append("  },\n");
+        }
 
         // 统计信息
         json.append("  \"statistics\": {\n");
@@ -362,167 +319,6 @@ final class ChangelogPromptBuilder {
     }
 
     @NotNull
-    private String buildStructuredContextFromCommitDiffs(@NotNull String commitHash,
-                                                         @NotNull List<CodeDiff> codeDiffs,
-                                                         @NotNull String recentCommitsText,
-                                                         @Nullable String userContext,
-                                                         @Nullable String branch,
-                                                         boolean isGitRepository,
-                                                         int maxFiles) {
-        List<CodeDiff> limitedDiffs = limitDiffs(codeDiffs, maxFiles);
-        ChangeStats stats = buildChangeStats(codeDiffs);
-        int maxFileDiffChars = 12_000;
-
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-
-        json.append("  \"project\": {\n");
-        json.append("    \"name\": \"").append(escapeJson(project.getName())).append("\",\n");
-        json.append("    \"branch\": \"").append(escapeJson(normalizeBranch(branch))).append("\",\n");
-        json.append("    \"is_git_repository\": ").append(isGitRepository).append("\n");
-        json.append("  },\n");
-
-        json.append("  \"commit\": {\n");
-        json.append("    \"hash\": \"").append(escapeJson(commitHash)).append("\"\n");
-        json.append("  },\n");
-
-        json.append("  \"statistics\": {\n");
-        json.append("    \"files_changed\": ").append(stats.filesChanged()).append(",\n");
-        json.append("    \"lines_added\": ").append(stats.linesAdded()).append(",\n");
-        json.append("    \"lines_deleted\": ").append(stats.linesDeleted()).append(",\n");
-        json.append("    \"change_type\": \"").append(escapeJson(stats.primaryType())).append("\",\n");
-        json.append("    \"scope\": \"").append(escapeJson(stats.scope())).append("\"\n");
-        json.append("  },\n");
-
-        json.append("  \"changes\": [\n");
-        for (int i = 0; i < limitedDiffs.size(); i++) {
-            CodeDiff diff = limitedDiffs.get(i);
-            String filePath = diff.filePath;
-            String language = resolveLanguage(filePath);
-            String extension = extractExtension(filePath);
-            String summary = buildFileSummary(diff);
-            String diffSummary = buildDiffSummary(diff);
-            String fullDiff = diff.diffContent != null ? diff.diffContent : "";
-            if (fullDiff.length() > maxFileDiffChars) {
-                fullDiff = fullDiff.substring(0, maxFileDiffChars) + "\n...[diff truncated]";
-            }
-
-            json.append("    {\n");
-            json.append("      \"path\": \"").append(escapeJson(filePath)).append("\",\n");
-            json.append("      \"type\": \"").append(escapeJson(diff.changeType.name())).append("\",\n");
-            json.append("      \"language\": \"").append(escapeJson(language)).append("\",\n");
-            json.append("      \"extension\": \"").append(escapeJson(extension)).append("\",\n");
-            json.append("      \"lines_added\": ").append(diff.addedLines).append(",\n");
-            json.append("      \"lines_deleted\": ").append(diff.deletedLines).append(",\n");
-            json.append("      \"summary\": \"").append(escapeJson(summary)).append("\",\n");
-            json.append("      \"diff_summary\": \"").append(escapeJson(diffSummary)).append("\",\n");
-            json.append("      \"full_diff_content\": \"").append(escapeJson(fullDiff)).append("\"\n");
-            json.append("    }");
-            if (i < limitedDiffs.size() - 1) {
-                json.append(",");
-            }
-            json.append("\n");
-        }
-        json.append("  ],\n");
-
-        json.append("  \"metadata\": {\n");
-        json.append("    \"recent_commits\": ").append(buildRecentCommitsJson(recentCommitsText)).append(",\n");
-        json.append("    \"preferred_language\": \"").append(escapeJson(resolvePreferredLanguage())).append("\"");
-        if (userContext != null && !userContext.trim().isEmpty()) {
-            json.append(",\n    \"extra_context\": \"").append(escapeJson(userContext.trim())).append("\"");
-        }
-        json.append(",\n    \"commit_template\": \"type(scope): subject\"\n");
-        json.append("  }\n");
-
-        json.append("}");
-        return json.toString();
-    }
-
-    @NotNull
-    private String buildStructuredContextFromCommitDiffs(@NotNull List<String> commitHashes,
-                                                         @NotNull List<String> selectedCommitTitles,
-                                                         @NotNull List<CodeDiff> codeDiffs,
-                                                         @NotNull String recentCommitsText,
-                                                         @Nullable String userContext,
-                                                         @Nullable String branch,
-                                                         boolean isGitRepository,
-                                                         int maxFiles) {
-        List<CodeDiff> limitedDiffs = limitDiffs(codeDiffs, maxFiles);
-        ChangeStats stats = buildChangeStats(codeDiffs);
-        int maxFileDiffChars = 12_000;
-
-        // 控制输出噪声：最多输出 20 条标题
-        List<String> limitedTitles = selectedCommitTitles.size() > 20 ? selectedCommitTitles.subList(0, 20) : selectedCommitTitles;
-        List<String> limitedHashes = commitHashes.size() > 50 ? commitHashes.subList(0, 50) : commitHashes;
-
-        StringBuilder json = new StringBuilder();
-        json.append("{\n");
-
-        json.append("  \"project\": {\n");
-        json.append("    \"name\": \"").append(escapeJson(project.getName())).append("\",\n");
-        json.append("    \"branch\": \"").append(escapeJson(normalizeBranch(branch))).append("\",\n");
-        json.append("    \"is_git_repository\": ").append(isGitRepository).append("\n");
-        json.append("  },\n");
-
-        json.append("  \"squash\": {\n");
-        json.append("    \"commit_count\": ").append(commitHashes.size()).append(",\n");
-        json.append("    \"hashes\": ").append(buildStringArrayJson(limitedHashes)).append(",\n");
-        json.append("    \"titles\": ").append(buildStringArrayJson(limitedTitles)).append("\n");
-        json.append("  },\n");
-
-        json.append("  \"statistics\": {\n");
-        json.append("    \"files_changed\": ").append(stats.filesChanged()).append(",\n");
-        json.append("    \"lines_added\": ").append(stats.linesAdded()).append(",\n");
-        json.append("    \"lines_deleted\": ").append(stats.linesDeleted()).append(",\n");
-        json.append("    \"change_type\": \"").append(escapeJson(stats.primaryType())).append("\",\n");
-        json.append("    \"scope\": \"").append(escapeJson(stats.scope())).append("\"\n");
-        json.append("  },\n");
-
-        json.append("  \"changes\": [\n");
-        for (int i = 0; i < limitedDiffs.size(); i++) {
-            CodeDiff diff = limitedDiffs.get(i);
-            String filePath = diff.filePath;
-            String language = resolveLanguage(filePath);
-            String extension = extractExtension(filePath);
-            String summary = buildFileSummary(diff);
-            String diffSummary = buildDiffSummary(diff);
-            String fullDiff = diff.diffContent != null ? diff.diffContent : "";
-            if (fullDiff.length() > maxFileDiffChars) {
-                fullDiff = fullDiff.substring(0, maxFileDiffChars) + "\n...[diff truncated]";
-            }
-
-            json.append("    {\n");
-            json.append("      \"path\": \"").append(escapeJson(filePath)).append("\",\n");
-            json.append("      \"type\": \"").append(escapeJson(diff.changeType.name())).append("\",\n");
-            json.append("      \"language\": \"").append(escapeJson(language)).append("\",\n");
-            json.append("      \"extension\": \"").append(escapeJson(extension)).append("\",\n");
-            json.append("      \"lines_added\": ").append(diff.addedLines).append(",\n");
-            json.append("      \"lines_deleted\": ").append(diff.deletedLines).append(",\n");
-            json.append("      \"summary\": \"").append(escapeJson(summary)).append("\",\n");
-            json.append("      \"diff_summary\": \"").append(escapeJson(diffSummary)).append("\",\n");
-            json.append("      \"full_diff_content\": \"").append(escapeJson(fullDiff)).append("\"\n");
-            json.append("    }");
-            if (i < limitedDiffs.size() - 1) {
-                json.append(",");
-            }
-            json.append("\n");
-        }
-        json.append("  ],\n");
-
-        json.append("  \"metadata\": {\n");
-        json.append("    \"recent_commits\": ").append(buildRecentCommitsJson(recentCommitsText)).append(",\n");
-        json.append("    \"preferred_language\": \"").append(escapeJson(resolvePreferredLanguage())).append("\"");
-        if (userContext != null && !userContext.trim().isEmpty()) {
-            json.append(",\n    \"extra_context\": \"").append(escapeJson(userContext.trim())).append("\"");
-        }
-        json.append(",\n    \"commit_template\": \"type(scope): subject\"\n");
-        json.append("  }\n");
-
-        json.append("}");
-        return json.toString();
-    }
-
-    @NotNull
     private String buildStringArrayJson(@NotNull List<String> values) {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
@@ -534,148 +330,6 @@ final class ChangelogPromptBuilder {
         }
         sb.append("]");
         return sb.toString();
-    }
-
-    @NotNull
-    private String buildDiffSummaryTextFromCommitDiffs(@NotNull List<CodeDiff> codeDiffs,
-                                                       int maxFiles,
-                                                       int maxDiffChars) {
-        StringBuilder summary = new StringBuilder();
-        List<CodeDiff> limitedDiffs = limitDiffs(codeDiffs, maxFiles);
-
-        int fileCount = 0;
-        for (CodeDiff diff : limitedDiffs) {
-            if (summary.length() >= maxDiffChars) {
-                break;
-            }
-            summary.append("文件: ").append(diff.filePath).append("\n");
-            summary.append("变更类型: ").append(diff.changeType.name()).append("\n");
-            summary.append("新增行数: ").append(diff.addedLines).append("\n");
-            summary.append("删除行数: ").append(diff.deletedLines).append("\n");
-
-            if (diff.diffContent != null && !diff.diffContent.isBlank()) {
-                summary.append("变更内容:\n");
-                int remaining = maxDiffChars - summary.length();
-                if (remaining > 0) {
-                    String content = diff.diffContent;
-                    if (content.length() > remaining) {
-                        content = content.substring(0, remaining);
-                    }
-                    summary.append(content).append("\n");
-                }
-            }
-            summary.append("\n");
-            fileCount++;
-        }
-
-        if (codeDiffs.size() > fileCount && summary.length() < maxDiffChars) {
-            int remainingFiles = Math.max(0, codeDiffs.size() - fileCount);
-            summary.append("剩余 ").append(remainingFiles).append(" 个文件变更已省略。\n");
-        }
-
-        return truncateText(summary.toString().trim(), maxDiffChars);
-    }
-
-    @NotNull
-    private String truncateText(@NotNull String text, int maxChars) {
-        if (text.length() <= maxChars) {
-            return text;
-        }
-        String suffix = "\n...[diff truncated]";
-        int limit = Math.max(0, maxChars - suffix.length());
-        return text.substring(0, limit) + suffix;
-    }
-
-    private static final Pattern DIFF_GIT_PATTERN = Pattern.compile("^diff --git a/(.+) b/(.+)$");
-
-    @NotNull
-    private List<CodeDiff> parseUnifiedDiffToCodeDiffs(@NotNull String diffText) {
-        List<CodeDiff> diffs = new ArrayList<>();
-        String[] lines = diffText.split("\n", -1);
-
-        String currentPath = null;
-        StringBuilder currentBlock = null;
-        int added = 0;
-        int deleted = 0;
-        boolean newFile = false;
-        boolean deletedFile = false;
-        boolean renamed = false;
-
-        for (String line : lines) {
-            if (line.startsWith("diff --git ")) {
-                flushParsedDiff(diffs, currentPath, currentBlock, added, deleted, newFile, deletedFile, renamed);
-
-                currentPath = null;
-                currentBlock = new StringBuilder();
-                currentBlock.append(line).append("\n");
-                added = 0;
-                deleted = 0;
-                newFile = false;
-                deletedFile = false;
-                renamed = false;
-
-                Matcher matcher = DIFF_GIT_PATTERN.matcher(line);
-                if (matcher.matches()) {
-                    String beforePath = matcher.group(1);
-                    String afterPath = matcher.group(2);
-                    currentPath = resolveDiffPath(beforePath, afterPath);
-                }
-                continue;
-            }
-
-            if (currentBlock == null) {
-                continue;
-            }
-
-            currentBlock.append(line).append("\n");
-
-            if (line.startsWith("new file mode")) {
-                newFile = true;
-            } else if (line.startsWith("deleted file mode")) {
-                deletedFile = true;
-            } else if (line.startsWith("rename from") || line.startsWith("rename to")) {
-                renamed = true;
-            }
-
-            if (line.startsWith("+") && !line.startsWith("+++")) {
-                added++;
-            } else if (line.startsWith("-") && !line.startsWith("---")) {
-                deleted++;
-            }
-        }
-
-        flushParsedDiff(diffs, currentPath, currentBlock, added, deleted, newFile, deletedFile, renamed);
-        return diffs;
-    }
-
-    private void flushParsedDiff(@NotNull List<CodeDiff> diffs,
-                                 @Nullable String filePath,
-                                 @Nullable StringBuilder diffBlock,
-                                 int added,
-                                 int deleted,
-                                 boolean newFile,
-                                 boolean deletedFile,
-                                 boolean renamed) {
-        if (filePath == null || filePath.isBlank() || diffBlock == null || diffBlock.isEmpty()) {
-            return;
-        }
-        CodeDiff.ChangeType changeType;
-        if (deletedFile) {
-            changeType = CodeDiff.ChangeType.DELETE;
-        } else if (newFile) {
-            changeType = CodeDiff.ChangeType.ADD;
-        } else if (renamed) {
-            changeType = CodeDiff.ChangeType.RENAME;
-        } else {
-            changeType = CodeDiff.ChangeType.MODIFY;
-        }
-        diffs.add(new CodeDiff(filePath, changeType, added, deleted, diffBlock.toString().trim(), null, null));
-    }
-
-    @NotNull
-    private String resolveDiffPath(@NotNull String beforePath, @NotNull String afterPath) {
-        String path = afterPath != null && !afterPath.isBlank() && !"/dev/null".equals(afterPath) ? afterPath : beforePath;
-        return path.replace('\\', '/');
     }
 
     /**
