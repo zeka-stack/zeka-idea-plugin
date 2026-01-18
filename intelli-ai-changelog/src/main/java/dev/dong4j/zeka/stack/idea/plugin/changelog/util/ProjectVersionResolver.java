@@ -1,6 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
+import com.intellij.openapi.externalSystem.model.ProjectSystemId;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import org.eclipse.jgit.lib.Repository;
@@ -182,7 +184,8 @@ public final class ProjectVersionResolver {
      */
     @Nullable
     private static String resolveFromPomXml(@NotNull Project project) {
-        VirtualFile baseDir = project.getBaseDir();
+        VirtualFile baseDir = guessProjectDir(project);
+        project.getBasePath();
         if (baseDir == null) {
             return null;
         }
@@ -271,9 +274,15 @@ public final class ProjectVersionResolver {
             }
 
             // 获取项目数据
+            ProjectSystemId gradleSystemId = new ProjectSystemId("GRADLE");
+            String externalProjectPath = getExternalProjectPath(project);
+            if (externalProjectPath == null || externalProjectPath.isEmpty()) {
+                return null;
+            }
+
             Object projectData = projectDataManagerClass
-                .getMethod("getExternalProjectData", Project.class, String.class)
-                .invoke(projectDataManager, project, "GRADLE");
+                .getMethod("getExternalProjectData", Project.class, ProjectSystemId.class, String.class)
+                .invoke(projectDataManager, project, gradleSystemId, externalProjectPath);
 
             if (projectData != null) {
                 // 尝试获取版本号
@@ -299,7 +308,7 @@ public final class ProjectVersionResolver {
      */
     @Nullable
     private static String resolveFromGradleFile(@NotNull Project project) {
-        VirtualFile baseDir = project.getBaseDir();
+        VirtualFile baseDir = guessProjectDir(project);
         if (baseDir == null) {
             return null;
         }
@@ -338,7 +347,7 @@ public final class ProjectVersionResolver {
      */
     @Nullable
     private static String resolveFromGitTag(@NotNull Project project) {
-        VirtualFile baseDir = project.getBaseDir();
+        VirtualFile baseDir = guessProjectDir(project);
         if (baseDir == null) {
             return null;
         }
@@ -406,5 +415,35 @@ public final class ProjectVersionResolver {
             normalized = normalized.substring(1);
         }
         return normalized;
+    }
+
+    /**
+     * 估算项目根目录
+     * <p>
+     * 根据项目对象尝试推断其根目录路径, 若无法推断则返回 null.
+     *
+     * @param project 项目对象, 不能为 null
+     * @return 项目根目录的虚拟文件, 如果无法推断则返回 null
+     */
+    @Nullable
+    private static VirtualFile guessProjectDir(@NotNull Project project) {
+        return ProjectUtil.guessProjectDir(project);
+    }
+
+    /**
+     * 获取外部项目路径
+     * <p>
+     * 优先通过项目根目录推断外部项目路径, 若失败则返回项目基础路径.
+     *
+     * @param project 项目对象, 不能为 null
+     * @return 外部项目路径字符串, 如果推断失败则返回项目基础路径, 可能为 null
+     */
+    @Nullable
+    private static String getExternalProjectPath(@NotNull Project project) {
+        VirtualFile baseDir = guessProjectDir(project);
+        if (baseDir != null) {
+            return baseDir.getPath();
+        }
+        return project.getBasePath();
     }
 }
