@@ -47,18 +47,7 @@ public final class AICommonIcons {
      * 工具图标
      */
     public static final Icon TOOL_ICON = PLUGIN;
-    /**
-     * AI 通用图标类
-     * <p>
-     * 提供 AI 服务提供商的图标资源管理, 包含各种 AI 提供商的 16x16 和 64x64 尺寸图标,
-     * 提供根据 AI 提供商类型获取对应图标的方法
-     *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @email "mailto:zeka.stack@gmail.com"
-     * @date 2025.11.30
-     * @since 1.0.0
-     */
+    /** ChatGPT 提供商图标 (16x16 像素), 用于设置页面 AI 供应商下拉列表及状态栏 */
     public static final Icon PROVIDER_CHATGPT = load("/icons/chatgpt_16.svg");
 
     /**
@@ -151,6 +140,62 @@ public final class AICommonIcons {
      *
      */
     public static final Icon PROVIDER_HUGGINGFACE_32 = load("/icons/huggingface_32.svg");
+
+    /**
+     * GitHub 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_GITHUB = load("/icons/github_16.svg");
+
+    /**
+     * GitHub 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_GITHUB_32 = load("/icons/github_32.svg");
+
+    /**
+     * Azure OpenAI 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_AZUREAI = load("/icons/azureai.svg");
+
+    /**
+     * Azure OpenAI 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_AZUREAI_32 = load("/icons/azureai_32.svg");
+
+    /**
+     * Amazon Bedrock 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_BEDROCK = load("/icons/bedrock.svg");
+
+    /**
+     * Amazon Bedrock 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_BEDROCK_32 = load("/icons/bedrock_32.svg");
+
+    /**
+     * Mistral 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_MISTRAL = load("/icons/mistral.svg");
+
+    /**
+     * Mistral 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_MISTRAL_32 = load("/icons/mistral_32.svg");
 
     /**
      * 提供商图标, 尺寸为 16x16, 用于标识插件功能和供应商类型.
@@ -253,6 +298,34 @@ public final class AICommonIcons {
     public static final Icon PROVIDER_HUGGINGFACE_64 = load("/icons/huggingface_64.svg");
 
     /**
+     * GitHub 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_GITHUB_64 = load("/icons/github_64.svg");
+
+    /**
+     * Azure OpenAI 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_AZUREAI_64 = load("/icons/azureai_64.svg");
+
+    /**
+     * Amazon Bedrock 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_BEDROCK_64 = load("/icons/bedrock_64.svg");
+
+    /**
+     * Mistral 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_MISTRAL_64 = load("/icons/mistral_64.svg");
+
+    /**
      * OpenRouter 提供商图标 (64x64)
      * <p>
      * 用于：错误提示框、对话框
@@ -340,6 +413,10 @@ public final class AICommonIcons {
             case OPENAI, CODEX -> PROVIDER_CHATGPT;
             case OPENROUTER -> PROVIDER_OPENROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
+            case BEDROCK -> PROVIDER_BEDROCK;
+            case AZURE_OPENAI -> PROVIDER_AZUREAI;
+            case MISTRAL -> PROVIDER_MISTRAL;
+            case GITHUB_MODELS -> PROVIDER_GITHUB;
             case ANTHROPIC -> PROVIDER_ANTHROPIC;
             case GEMINI -> PROVIDER_GEMINI;
             case NVIDIA -> PROVIDER_NVIDIA;
@@ -373,6 +450,10 @@ public final class AICommonIcons {
             case OPENAI, CODEX -> PROVIDER_CHATGPT_64;
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;
+            case BEDROCK -> PROVIDER_BEDROCK_64;
+            case AZURE_OPENAI -> PROVIDER_AZUREAI_64;
+            case MISTRAL -> PROVIDER_MISTRAL_64;
+            case GITHUB_MODELS -> PROVIDER_GITHUB_64;
             case ANTHROPIC -> PROVIDER_ANTHROPIC_64;
             case GEMINI -> PROVIDER_GEMINI_64;
             case NVIDIA -> PROVIDER_NVIDIA_64;

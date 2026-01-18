@@ -85,12 +85,28 @@ public class StreamRequestExecutor {
     public void sendStreamRequest(JsonObject body,
                                   @Nullable String apiKey,
                                   @NotNull AIStreamResponseListener listener) throws AIServiceException {
+        String url = config.baseUrl + "/chat/completions";
+        sendStreamRequest(body, apiKey, listener, url);
+    }
+
+    /**
+     * 发送流请求以获取 AI 服务响应（支持自定义 URL）
+     *
+     * @param body     请求体,JSON 格式的请求数据
+     * @param apiKey   可选的 API 密钥, 当提供商需要 API 密钥时必须提供
+     * @param listener 监听器, 用于接收请求过程中的各种事件回调
+     * @param url      请求地址
+     * @throws AIServiceException 当发生网络错误, 无效响应或 API 键无效时抛出
+     */
+    public void sendStreamRequest(JsonObject body,
+                                  @Nullable String apiKey,
+                                  @NotNull AIStreamResponseListener listener,
+                                  @NotNull String url) throws AIServiceException {
         if (config.providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
             throw new AIServiceException(AICommonBundle.message("error.ai.service.api.key.required"),
                                          AIServiceException.ErrorCode.CONFIGURATION_ERROR);
         }
 
-        String url = config.baseUrl + "/chat/completions";
         String requestBody = body.toString();
         StreamCancellationToken cancellationToken = listener.cancellationToken();
 

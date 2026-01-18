@@ -20,14 +20,7 @@ import lombok.Getter;
  */
 public class ValidationResult {
 
-    /** 如果验证成功返回 true，否则返回 false
-     * -- GETTER --
-     *  判断当前操作是否成功
-     *  <p>
-     *  返回操作是否成功的布尔值
-     *
-     * @return 如果操作成功返回 true, 否则返回 false
-     */
+    /** 验证是否成功, 成功时为 true, 失败时为 false */
     @Getter
     private final boolean success;
 

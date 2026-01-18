@@ -13,10 +13,14 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ZhipuAnthr
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.codex.CodexLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.gemini.GeminLikeiProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ollama.OllamaLikeProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.AzureOpenAIProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.BedrockOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.CloudflareOpenAIProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.GitHubModelsProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.HuggingFaceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.IflowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.LMStudioProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.MistralOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ModelScopeOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.NvidiaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OpenAILikeProvider;
@@ -87,6 +91,10 @@ public final class AIServiceFactory {
             case HUGGINGFACE -> new HuggingFaceProvider(project, config, modelParameters, runtimeSettings);
             case OPENROUTER -> new OpenRouterProvider(project, config, modelParameters, runtimeSettings);
             case CLOUDFLARE -> new CloudflareOpenAIProvider(project, config, modelParameters, runtimeSettings);
+            case BEDROCK -> new BedrockOpenAIProvider(project, config, modelParameters, runtimeSettings);
+            case AZURE_OPENAI -> new AzureOpenAIProvider(project, config, modelParameters, runtimeSettings);
+            case GITHUB_MODELS -> new GitHubModelsProvider(project, config, modelParameters, runtimeSettings);
+            case MISTRAL -> new MistralOpenAIProvider(project, config, modelParameters, runtimeSettings);
             case ZHIPU_ANTHROPIC -> new ZhipuAnthropicProvider(project, config, modelParameters, runtimeSettings);
             case QIANWEN -> new QwenProvider(project, config, modelParameters, runtimeSettings);
             case SILICONFLOW -> new SiliconFlowProvider(project, config, modelParameters, runtimeSettings);

@@ -92,7 +92,7 @@ public enum AIProviderType {
      */
     NVIDIA(
         "nvidia",
-        "NVIDIA",
+        "Nvidia",
         "https://integrate.api.nvidia.com/v1",
         "minimaxai/minimax-m2",
         true,
@@ -129,11 +129,59 @@ public enum AIProviderType {
     CLOUDFLARE(
         "cloudflare",
         "Cloudflare Workers AI",
-        "https://api.cloudflare.com/client/v4/accounts/{YOUR_ACCOUNT_ID}/ai/v1",
+        "https://api.cloudflare.com/client/v4/accounts/${YOUR_ACCOUNT_ID}/ai/v1",
         "@cf/meta/llama-3.1-8b-instruct",
         true,
         true,
         List.of("@cf/meta/llama-3.1-8b-instruct")
+    ),
+    /**
+     * Amazon Bedrock (OpenAI 兼容) 模型配置
+     */
+    BEDROCK(
+        "bedrock",
+        "Amazon Bedrock",
+        "https://bedrock-mantle.us-east-1.api.aws/v1",
+        "openai.gpt-oss-120b",
+        true,
+        true,
+        List.of("openai.gpt-oss-120b")
+    ),
+    /**
+     * Azure OpenAI (OpenAI 兼容) 模型配置
+     */
+    AZURE_OPENAI(
+        "azure_openai",
+        "Azure OpenAI",
+        "https://{YOUR_RESOURCE_NAME}.openai.azure.com/openai/deployments/{YOUR_DEPLOYMENT_NAME}",
+        "gpt-4o-mini",
+        true,
+        true,
+        List.of("gpt-4o-mini")
+    ),
+    /**
+     * GitHub Models (OpenAI 兼容) 模型配置
+     */
+    GITHUB_MODELS(
+        "github_models",
+        "GitHub Models",
+        "https://models.github.ai/inference",
+        "openai/gpt-4.1",
+        true,
+        true,
+        List.of("openai/gpt-4.1")
+    ),
+    /**
+     * Mistral AI (OpenAI 兼容) 模型配置
+     */
+    MISTRAL(
+        "mistral",
+        "Mistral AI",
+        "https://api.mistral.ai/v1",
+        "mistral-small-latest",
+        true,
+        true,
+        List.of("mistral-small-latest")
     ),
     /**
      * 通义千问模型的标识信息
@@ -530,6 +578,10 @@ public enum AIProviderType {
             AIProviderType.HUGGINGFACE,
             AIProviderType.OPENROUTER,
             AIProviderType.CLOUDFLARE,
+            AIProviderType.BEDROCK,
+            AIProviderType.AZURE_OPENAI,
+            AIProviderType.GITHUB_MODELS,
+            AIProviderType.MISTRAL,
             AIProviderType.QIANWEN,
             AIProviderType.SILICONFLOW,
             AIProviderType.IFLOW,
@@ -559,6 +611,7 @@ public enum AIProviderType {
      *
      * @return API Key 获取地址，如果不需要或不存在则返回 null
      */
+    @SuppressWarnings("DuplicatedCode")
     @Nullable
     public String getApiKeyUrl() {
         return switch (this) {
@@ -567,12 +620,16 @@ public enum AIProviderType {
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";
             case OPENROUTER -> "https://openrouter.ai/settings/keys";
             case CLOUDFLARE -> "https://developers.cloudflare.com/workers-ai/get-started/rest-api/";
+            case BEDROCK -> "https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys-generate.html";
+            case AZURE_OPENAI -> "https://portal.azure.com/";
+            case GITHUB_MODELS -> "https://github.com/settings/tokens";
+            case MISTRAL -> "https://console.mistral.ai/";
             case ANTHROPIC -> "https://console.anthropic.com/settings/keys";
             case GEMINI -> "https://aistudio.google.com/app/apikey";
             case QIANWEN -> "https://dashscope.console.aliyun.com/apiKey";
             case SILICONFLOW -> "https://cloud.siliconflow.cn/settings/api-keys";
             case OLLAMA -> "https://ollama.com/cloud";
-            case LM_STUDIO -> null;
+            case LM_STUDIO -> "https://lmstudio.ai/";
             case MODELSCOPE, MODELSCOPE_ANTHROPIC -> "https://modelscope.cn/usercenter/personal/settings/api-token";
             case IFLOW -> "https://console.iflow.cn/api-key";
             case ZHIPU -> "https://docs.bigmodel.cn/cn/guide/develop/openai/introduction";

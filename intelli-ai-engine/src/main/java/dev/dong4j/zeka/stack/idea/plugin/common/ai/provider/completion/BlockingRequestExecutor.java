@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -88,12 +89,31 @@ public class BlockingRequestExecutor {
                               @Nullable String apiKey,
                               @Nullable AIResponseListener listener,
                               boolean validation) throws AIServiceException {
+        String url = config.baseUrl + "/chat/completions";
+        return sendRequest(body, apiKey, listener, validation, url);
+    }
+
+    /**
+     * 向 AI 服务发送请求并获取响应（支持自定义 URL）
+     *
+     * @param body       请求体, 包含发送给 AI 模型的 JSON 数据, 不能为 null
+     * @param apiKey     API 密钥, 如果服务提供商需要认证则必须提供, 支持可为空
+     * @param listener   响应监听器, 用于接收请求和响应的回调通知, 支持可为空
+     * @param validation 是否为验证模式, 验证模式下仅验证响应有效性, 不解析内容
+     * @param url        请求地址
+     * @return AI 服务的响应内容, 验证模式下返回 "OK" 或解析后的内容字符串
+     * @throws AIServiceException 当发生配置错误, 无效 API 密钥, 请求频率限制, 服务不可用, 无效响应或未知错误时抛出
+     */
+    public String sendRequest(JsonObject body,
+                              @Nullable String apiKey,
+                              @Nullable AIResponseListener listener,
+                              boolean validation,
+                              @NotNull String url) throws AIServiceException {
         if (config.providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
             throw new AIServiceException("需要 API 密钥但未进行配置",
                                          AIServiceException.ErrorCode.CONFIGURATION_ERROR);
         }
 
-        String url = config.baseUrl + "/chat/completions";
         String requestBody = body.toString();
 
         logRequest(listener, requestBody, validation);
