@@ -129,6 +129,10 @@
         <!-- Git 提交工具栏操作 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction">
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
+                icon="ChangelogIcons.CHANGELOG_16">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
 
