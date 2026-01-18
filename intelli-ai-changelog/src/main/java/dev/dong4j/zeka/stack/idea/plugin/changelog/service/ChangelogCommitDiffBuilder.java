@@ -176,21 +176,7 @@ final class ChangelogCommitDiffBuilder {
      */
     @NotNull
     private DiffPayload buildDeletedOnlyPayload(@NotNull Collection<Change> changes) {
-        List<CodeDiff> codeDiffs = new ArrayList<>();
-        for (Change change : changes) {
-            if (change.getType() != Change.Type.DELETED) {
-                continue;
-            }
-            String path = resolveDeletedFilePath(change);
-            codeDiffs.add(new CodeDiff(path,
-                                       CodeDiff.ChangeType.DELETE,
-                                       0,
-                                       0,
-                                       null,
-                                       null,
-                                       null));
-        }
-        return new DiffPayload(codeDiffs, Map.of(), "");
+        return buildSimplePayload(changes, Change.Type.DELETED, CodeDiff.ChangeType.DELETE);
     }
 
     /**
@@ -202,14 +188,33 @@ final class ChangelogCommitDiffBuilder {
      */
     @NotNull
     private DiffPayload buildAddedOnlyPayload(@NotNull Collection<Change> changes) {
+        return buildSimplePayload(changes, Change.Type.NEW, CodeDiff.ChangeType.ADD);
+    }
+
+    /**
+     * 根据变更集合构建简单差异负载
+     * <p>根据给定的变更集合分类成新增和删除两种差异, 创建并返回一个只包含这些差异的 DiffPayload 对象.
+     * <p>该方法主要用于构建提交消息的差异负载, 适用于无复杂差异的情况.
+     *
+     * @param changes    需要处理的变更集合, 不能为 null
+     * @param changeType 差异类型, 支持新增 (Change.Type.NEW) 和删除(Change.Type.DELETED)
+     * @param diffType   代码差异类型, 分别对应新增或删除
+     * @return 一个 DiffPayload 实例, 只包含新增或删除类型的 CodeDiff 列表
+     */
+    @NotNull
+    private DiffPayload buildSimplePayload(@NotNull Collection<Change> changes,
+                                           @NotNull Change.Type changeType,
+                                           @NotNull CodeDiff.ChangeType diffType) {
         List<CodeDiff> codeDiffs = new ArrayList<>();
         for (Change change : changes) {
-            if (change.getType() != Change.Type.NEW) {
+            if (change.getType() != changeType) {
                 continue;
             }
-            String path = resolveAddedFilePath(change);
+            String path = changeType == Change.Type.DELETED
+                          ? resolveDeletedFilePath(change)
+                          : resolveAddedFilePath(change);
             codeDiffs.add(new CodeDiff(path,
-                                       CodeDiff.ChangeType.ADD,
+                                       diffType,
                                        0,
                                        0,
                                        null,
@@ -228,7 +233,8 @@ final class ChangelogCommitDiffBuilder {
      */
     @NotNull
     private String resolveAddedFilePath(@NotNull Change change) {
-        if (change.getAfterRevision() != null && change.getAfterRevision().getFile() != null) {
+        if (change.getAfterRevision() != null) {
+            change.getAfterRevision().getFile();
             return change.getAfterRevision().getFile().getPath();
         }
         VirtualFile file = change.getVirtualFile();
@@ -244,7 +250,8 @@ final class ChangelogCommitDiffBuilder {
      */
     @NotNull
     private String resolveDeletedFilePath(@NotNull Change change) {
-        if (change.getBeforeRevision() != null && change.getBeforeRevision().getFile() != null) {
+        if (change.getBeforeRevision() != null) {
+            change.getBeforeRevision().getFile();
             return change.getBeforeRevision().getFile().getPath();
         }
         VirtualFile file = change.getVirtualFile();
@@ -293,7 +300,12 @@ final class ChangelogCommitDiffBuilder {
     private boolean shouldExcludeChange(@NotNull Change change) {
         VirtualFile file = change.getVirtualFile();
         if (file == null) {
-            return true;
+            if (change.getBeforeRevision() != null) {
+                change.getBeforeRevision().getFile();
+                String path = change.getBeforeRevision().getFile().getPath();
+                return matchesIgnorePattern(path);
+            }
+            return false;
         }
         FileType fileType = file.getFileType();
         if (fileType.isBinary()) {

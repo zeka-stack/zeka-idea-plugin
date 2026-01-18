@@ -514,8 +514,7 @@ public final class CodeDiffUtil {
      * @return 如果重命名未包含内容变更, 则返回 true, 否则返回 false
      */
     private static boolean isRenameWithoutContentChange(@Nullable DiffResult diffResult) {
-        return diffResult == null || diffResult.fragments().isEmpty()
-               || diffResult.diffContent() == null || diffResult.diffContent().isBlank();
+        return diffResult == null || diffResult.fragments().isEmpty() || diffResult.diffContent().isBlank();
     }
 
     /**
