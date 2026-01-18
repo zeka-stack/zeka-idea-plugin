@@ -2,24 +2,20 @@ package icons;
 
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.util.IconUtil;
-
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.Icon;
-
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import javax.swing.*;
 
 /**
- * AI 通用图标类
- * <p>
- * 提供 AI 服务提供商的图标资源管理, 包含各种 AI 提供商的 16x16 和 64x64 尺寸图标,
- * 并提供根据 AI 提供商类型获取对应图标的方法
+ * 用户服务类
+ * <p> 提供用户相关的业务逻辑处理, 包括用户的查询, 创建, 更新和删除等操作
  *
- * @author zeka.stack.team
+ * @author dong4j
  * @version 1.0.0
- * @email "mailto:zeka.stack@gmail.com"
- * @date 2025.11.30
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2025.10.24
  * @since 1.0.0
  */
 @SuppressWarnings("DuplicatedCode")
@@ -30,7 +26,7 @@ public final class AICommonIcons {
      * 用于加载位于 {@code /icons/} 目录下的图标文件。
      * 路径必须以 {@code /icons/} 开头。
      *
-     * @param iconPath 图标文件路径，相对于 resources 根目录（例如："/icons/icon.svg"）
+     * @param iconPath 图标文件路径, 相对于 resources 根目录(例如:"/icons/icon.svg")
      * @return 加载的图标
      */
     @NotNull
@@ -40,34 +36,98 @@ public final class AICommonIcons {
 
     // ========== AI 提供商图标 - 用于下拉列表 (16x16) ==========
 
-    /** 插件图标资源, 尺寸为 16x16, 用于界面中标识插件功能. */
+    /**
+     * 插件图标资源, 尺寸为 16x16, 用于界面中标识插件功能.
+     * <a href="https://example.com">https://example.com</a>
+     */
     public static final Icon PLUGIN = load("/icons/plugin_16.svg");
     /**
-     * 工具图标, 已按比例缩放
-     * <p>
-     * 该图标用于表示插件相关的工具, 缩放比例为 0.8125
-     *
-     * @see IconUtil
+     * 工具图标
      */
     public static final Icon TOOL_ICON = PLUGIN;
     /**
-     * OpenAI API 提供商图标 (16x16)
+     * AI 通用图标类
      * <p>
-     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     * 提供 AI 服务提供商的图标资源管理, 包含各种 AI 提供商的 16x16 和 64x64 尺寸图标,
+     * 提供根据 AI 提供商类型获取对应图标的方法
+     *
+     * @author zeka.stack.team
+     * @version 1.0.0
+     * @email "mailto:zeka.stack@gmail.com"
+     * @date 2025.11.30
+     * @since 1.0.0
      */
     public static final Icon PROVIDER_CHATGPT = load("/icons/chatgpt_16.svg");
 
     /**
-     * 通义千问提供商图标 (16x16)
+     * Anthropic 提供商图标 (16x16)
      * <p>
-     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_ANTHROPIC = load("/icons/anthropic.svg");
+
+    /**
+     * Anthropic 提供商图标 (32x32)
+     * <p> 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_ANTHROPIC_32 = load("/icons/anthropic_32.svg");
+
+    /**
+     * Gemini 提供商图标 (16x16 像素)
+     * <p>
+     * 用于设置页面 AI 供应商下拉列表, 状态栏和错误提示框, 对话框
+     */
+    public static final Icon PROVIDER_GEMINI = load("/icons/gemini.svg");
+
+    /**
+     * Gemini 提供商图标 (32x32 像素)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_GEMINI_32 = load("/icons/gemini_32.svg");
+
+    /**
+     * Qwen 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
      */
     public static final Icon PROVIDER_QWEN = load("/icons/qwen_16.svg");
 
     /**
-     * 硅基流动提供商图标 (16x16)
+     * NVIDIA 提供商图标 (16x16)
      * <p>
-     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_NVIDIA = load("/icons/nvidia.svg");
+
+    /**
+     * NVIDIA 提供商图标 (32x32 像素)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_NVIDIA_32 = load("/icons/nvidia_32.svg");
+
+    /**
+     * HuggingFace 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_HUGGINGFACE = load("/icons/huggingface.svg");
+
+    /**
+     * HuggingFace 提供商图标 (32x32)
+     * <p>
+     * 用于显示在需要时作为 AI 提供商图标, 尤其是在列表, 下拉选项或特定场景中.
+     *
+     */
+    public static final Icon PROVIDER_HUGGINGFACE_32 = load("/icons/huggingface_32.svg");
+
+    /**
+     * 提供商图标, 尺寸为 16x16, 用于标识插件功能和供应商类型.
+     * <p> 该图标用于图形界面中表示 AI 提供商, 以及在不同场景下用于不同功能.
+     *
+     * @see AICommonIcons
+     * @since 1.0.0
      */
     public static final Icon PROVIDER_SILICONFLOW = load("/icons/siliconflow_16.svg");
 
@@ -79,9 +139,9 @@ public final class AICommonIcons {
     public static final Icon PROVIDER_OLLAMA = load("/icons/ollama_16.svg");
 
     /**
-     * LM Studio 提供商图标 (16x16)
+     * LM Studio 提供商图标 (16x16 像素)
      * <p>
-     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     * 用于设置页面 AI 供应商下拉列表, 状态栏
      */
     public static final Icon PROVIDER_LMSTUDIO = load("/icons/lmstudio_16.svg");
 
@@ -90,84 +150,129 @@ public final class AICommonIcons {
 
     /**
      * IFlow 提供商图标 (16x16)
-     * <p>
-     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     * <p> 用于: 设置页面 AI 供应商下拉列表, 状态栏 </p>
      */
     public static final Icon PROVIDER_IFLOW = load("/icons/iflow_16.svg");
 
     /**
-     * 智谱AI 提供商图标 (16x16)
+     * 智谱 AI 提供商图标 (16x16)
      * <p>
-     * 用于：设置页面 AI 供应商下拉列表、状态栏
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
      */
     public static final Icon PROVIDER_ZHIPU = load("/icons/chatglm_16.svg");
+
+    /**
+     * Z.AI 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_ZAI = load("/icons/zai.svg");
+
+    /**
+     * Z.AI 提供商图标 (32x32)
+     * <p> 用于: 设置页面 AI 供应商下拉列表, 状态栏 </p>
+     */
+    public static final Icon PROVIDER_ZAI_32 = load("/icons/zai_32.svg");
 
     // ========== AI 提供商图标 - 用于对话框/错误提示框 (64x64) ==========
 
     /**
-     * OpenAI API 提供商图标 (64x64)
-     * <p>
-     * 用于：错误提示框、对话框
+     * chatgpt_64.svg 图标资源, 尺寸为 64x64 像素
+     * <p> 用于错误提示框, 对话框 </p>
+     *
+     * @since 1.0.0
      */
     public static final Icon PROVIDER_CHATGPT_64 = load("/icons/chatgpt_64.svg");
-    /** 模型 scope 64x64 像素图标资源 */
+
+    /**
+     * Anthropic 提供商图标 (64x64)
+     * <p> 用于: 错误提示框, 对话框 </p>
+     */
+    public static final Icon PROVIDER_ANTHROPIC_64 = load("/icons/anthropic_64.svg");
+    /** modelscope_64 图标资源, 尺寸为 64x64 */
     public static final Icon PROVIDER_MODELSCOPE_64 = load("/icons/modelscope_64.svg");
 
     /**
-     * 通义千问提供商图标 (64x64)
+     * Qwen 64x64 像素 AI 提供商图标
      * <p>
-     * 用于：错误提示框、对话框
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏, 错误提示框, 对话框
+     *
+     * @see AICommonIcons
      */
     public static final Icon PROVIDER_QWEN_64 = load("/icons/qwen_64.svg");
 
     /**
-     * 硅基流动提供商图标 (64x64)
+     * Gemini 提供商图标 (64x64)
+     * <p>
+     * 用于: 错误提示框, 对话框
+     */
+    public static final Icon PROVIDER_GEMINI_64 = load("/icons/gemini_64.svg");
+
+    /**
+     * NVIDIA 提供商图标 (64x64)
+     * <p>
+     * 用于: 错误提示框, 对话框
+     */
+    public static final Icon PROVIDER_NVIDIA_64 = load("/icons/nvidia_64.svg");
+
+    /**
+     * HuggingFace 提供商图标 (64x64)
      * <p>
      * 用于：错误提示框、对话框
      */
+    public static final Icon PROVIDER_HUGGINGFACE_64 = load("/icons/huggingface_64.svg");
+
+    /** 模型 scope 64x64 像素图标资源 */
     public static final Icon PROVIDER_SILICONFLOW_64 = load("/icons/siliconflow_64.svg");
 
     /**
-     * Ollama 提供商图标 (64x64)
+     * 64x64 像素的 Ollama 提供商图标资源.
      * <p>
-     * 用于：错误提示框、对话框
+     * 用于错误提示框和对话框.
      */
     public static final Icon PROVIDER_OLLAMA_64 = load("/icons/ollama_64.svg");
 
     /**
      * LM Studio 提供商图标 (64x64)
      * <p>
-     * 用于：错误提示框、对话框
+     * 用于: 错误提示框, 对话框
      */
     public static final Icon PROVIDER_LMSTUDIO_64 = load("/icons/lmstudio_64.svg");
 
     /**
-     * IFlow 提供商图标 (64x64)
+     * 根据 AIProviderType 获取对应的 64x64 图标
      * <p>
-     * 用于：错误提示框、对话框
+     * 此方法用于返回指定类型提供商对应的 64x64 图标资源.
+     *
      */
     public static final Icon PROVIDER_IFLOW_64 = load("/icons/iflow_64.svg");
 
     /**
-     * 智谱AI 提供商图标 (64x64)
+     * 智谱 AI 提供商图标 (64x64)
      * <p>
-     * 用于：错误提示框、对话框
+     * 用于: 错误提示框, 对话框
      */
     public static final Icon PROVIDER_ZHIPU_64 = load("/icons/chatglm_64.svg");
+
+    /**
+     * Z.AI 提供商图标 (64x64)
+     * <p> 用于: 错误提示框, 对话框 </p>
+     */
+    public static final Icon PROVIDER_ZAI_64 = load("/icons/zai_64.svg");
 
     // ========== 支付方式图标 ==========
 
     /**
      * 微信支付图标
-     * <p>
-     * 用于：支持对话框中的支付方式显示
+     * <p> 用于支持对话框中的支付方式显示 </p>
+     *
+     * @see AICommonIcons#load(String) 加载图标
      */
     public static final Icon WECHAT_PAY = load("/images/wechat.webp");
 
     /**
      * 支付宝图标
-     * <p>
-     * 用于：支持对话框中的支付方式显示
+     * <p> 用于支持对话框中的支付方式显示 </p>
      */
     public static final Icon ALIPAY = load("/images/alipay.webp");
 
@@ -188,21 +293,19 @@ public final class AICommonIcons {
             return null;
         }
         Icon icon = switch (providerType) {
-            case OPENAI -> PROVIDER_CHATGPT;
-            case ANTHROPIC -> PROVIDER_CHATGPT;
-            case GEMINI -> PROVIDER_CHATGPT;
-            case CODEX -> PROVIDER_CHATGPT;
-            case ZHIPU_ANTHROPIC -> PROVIDER_CHATGPT;
+            case OPENAI, CODEX -> PROVIDER_CHATGPT;
+            case ANTHROPIC -> PROVIDER_ANTHROPIC;
+            case GEMINI -> PROVIDER_GEMINI;
+            case NVIDIA -> PROVIDER_NVIDIA;
+            case HUGGINGFACE -> PROVIDER_HUGGINGFACE;
+            case ZHIPU_ANTHROPIC, ZHIPU -> PROVIDER_ZHIPU;
             case QIANWEN -> PROVIDER_QWEN;
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
             case OLLAMA -> PROVIDER_OLLAMA;
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
-            case MODELSCOPE -> PROVIDER_MODELSCOPE;
-            case MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE;
+            case MODELSCOPE, MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE;
             case IFLOW -> PROVIDER_IFLOW;
-            case ZHIPU -> PROVIDER_ZHIPU;
-            case ZAI -> PROVIDER_ZHIPU;
-            case ZAI_ANTHROPIC -> PROVIDER_ZHIPU;
+            case ZAI, ZAI_ANTHROPIC -> PROVIDER_ZAI;
         };
         // 将图标从 16x16 缩放到 13x13，适合状态栏显示
         // 状态栏图标通常使用 13x13 尺寸
@@ -221,26 +324,25 @@ public final class AICommonIcons {
             return null;
         }
         return switch (providerType) {
-            case OPENAI -> PROVIDER_CHATGPT_64;
-            case ANTHROPIC -> PROVIDER_CHATGPT_64;
-            case GEMINI -> PROVIDER_CHATGPT_64;
-            case CODEX -> PROVIDER_CHATGPT_64;
-            case ZHIPU_ANTHROPIC -> PROVIDER_CHATGPT_64;
+            case OPENAI, CODEX -> PROVIDER_CHATGPT_64;
+            case ANTHROPIC -> PROVIDER_ANTHROPIC_64;
+            case GEMINI -> PROVIDER_GEMINI_64;
+            case NVIDIA -> PROVIDER_NVIDIA_64;
+            case HUGGINGFACE -> PROVIDER_HUGGINGFACE_64;
+            case ZHIPU_ANTHROPIC, ZHIPU -> PROVIDER_ZHIPU_64;
             case QIANWEN -> PROVIDER_QWEN_64;
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
             case OLLAMA -> PROVIDER_OLLAMA_64;
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
-            case MODELSCOPE -> PROVIDER_MODELSCOPE_64;
-            case MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE_64;
+            case MODELSCOPE, MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE_64;
             case IFLOW -> PROVIDER_IFLOW_64;
-            case ZHIPU -> PROVIDER_ZHIPU_64;
-            case ZAI -> PROVIDER_ZHIPU_64;
-            case ZAI_ANTHROPIC -> PROVIDER_ZHIPU_64;
+            case ZAI, ZAI_ANTHROPIC -> PROVIDER_ZAI_64;
         };
     }
 
     /**
-     * 私有构造函数, 防止外部实例化
+     * 私有构造函数
+     * <p> 防止外部实例化 </p>
      */
     private AICommonIcons() {
         // 工具类，禁止实例化
