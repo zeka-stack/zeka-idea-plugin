@@ -502,7 +502,7 @@
 </div>
 
 <script>
-    const API_URL = 'https://api.dong4j.site/idea-plugin-feedback';
+    const API_URL = 'https://api.dong4j.site/plugin/feedback';
 
     function showAlert(message, type = 'info') {
         const alertContainer = document.getElementById('alert-container');
@@ -588,21 +588,36 @@
                 body: JSON.stringify(requestBody)
             });
 
-            const data = await response.json();
+            const responseData = await response.json();
 
-            if (response.ok && data.success) {
-                showAlert('反馈提交成功！感谢您的反馈。', 'success');
-                clearForm();
-                // 如果有讨论链接，可以在这里处理
-                if (data.discussion && data.discussion.url) {
-                    setTimeout(() => {
-                        if (confirm('反馈已成功提交到 GitHub Discussions，是否前往查看？')) {
-                            window.open(data.discussion.url, '_blank');
-                        }
-                    }, 1000);
+            // 新的响应结构：外层 success 表示请求是否成功，data.success 表示业务是否成功
+            const requestSuccess = response.ok && responseData.success === true;
+            const data = responseData.data;
+
+            if (requestSuccess && data) {
+                const businessSuccess = data.success === true;
+
+                if (businessSuccess) {
+                    showAlert(data.message || '反馈提交成功！感谢您的反馈。', 'success');
+                    clearForm();
+
+                    // 如果有讨论链接，可以在这里处理
+                    if (data.discussion && data.discussion.url) {
+                        setTimeout(() => {
+                            if (confirm('反馈已成功提交到 GitHub Discussions，是否前往查看？')) {
+                                window.open(data.discussion.url, '_blank');
+                            }
+                        }, 1000);
+                    }
+                } else {
+                    // 业务失败，显示错误信息
+                    const errorMsg = data.error || data.message || responseData.message || '提交失败，请稍后重试。';
+                    showAlert(errorMsg, 'error');
                 }
             } else {
-                showAlert(data.error || '提交失败，请稍后重试。', 'error');
+                // 请求失败或响应格式不正确
+                const errorMsg = responseData.message || data?.error || data?.message || '提交失败，请稍后重试。';
+                showAlert(errorMsg, 'error');
             }
         } catch (error) {
             console.error('提交反馈失败:', error);
