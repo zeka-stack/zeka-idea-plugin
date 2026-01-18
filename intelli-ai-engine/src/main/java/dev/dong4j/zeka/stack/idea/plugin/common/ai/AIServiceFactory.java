@@ -2,6 +2,9 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+
+import org.jetbrains.annotations.NotNull;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.AnthropicLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ModelScopeAnthropicProvider;
@@ -10,11 +13,21 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ZhipuAnthr
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.codex.CodexLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.gemini.GeminLikeiProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ollama.OllamaLikeProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.*;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.CloudflareOpenAIProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.HuggingFaceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.IflowProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.LMStudioProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ModelScopeOpenAIProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.NvidiaProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OpenAILikeProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OpenRouterProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.QwenProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.SiliconFlowProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZaiOpenAIProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZhipuOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * AI 服务工厂类
@@ -72,6 +85,8 @@ public final class AIServiceFactory {
             case CODEX -> new CodexLikeProvider(project, config, modelParameters, runtimeSettings);
             case NVIDIA -> new NvidiaProvider(project, config, modelParameters, runtimeSettings);
             case HUGGINGFACE -> new HuggingFaceProvider(project, config, modelParameters, runtimeSettings);
+            case OPENROUTER -> new OpenRouterProvider(project, config, modelParameters, runtimeSettings);
+            case CLOUDFLARE -> new CloudflareOpenAIProvider(project, config, modelParameters, runtimeSettings);
             case ZHIPU_ANTHROPIC -> new ZhipuAnthropicProvider(project, config, modelParameters, runtimeSettings);
             case QIANWEN -> new QwenProvider(project, config, modelParameters, runtimeSettings);
             case SILICONFLOW -> new SiliconFlowProvider(project, config, modelParameters, runtimeSettings);

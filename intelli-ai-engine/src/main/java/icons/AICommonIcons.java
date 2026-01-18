@@ -2,11 +2,13 @@ package icons;
 
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.util.IconUtil;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+import javax.swing.Icon;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
  * 用户服务类
@@ -113,6 +115,34 @@ public final class AICommonIcons {
      * 用于: 设置页面 AI 供应商下拉列表, 状态栏
      */
     public static final Icon PROVIDER_HUGGINGFACE = load("/icons/huggingface.svg");
+
+    /**
+     * OpenRouter 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_OPENROUTER = load("/icons/openrouter.svg");
+
+    /**
+     * OpenRouter 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_OPENROUTER_32 = load("/icons/openrouter_32.svg");
+
+    /**
+     * Cloudflare 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_CLOUDFLARE = load("/icons/cloudflare.svg");
+
+    /**
+     * Cloudflare 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_CLOUDFLARE_32 = load("/icons/cloudflare_32.svg");
 
     /**
      * HuggingFace 提供商图标 (32x32)
@@ -222,6 +252,20 @@ public final class AICommonIcons {
      */
     public static final Icon PROVIDER_HUGGINGFACE_64 = load("/icons/huggingface_64.svg");
 
+    /**
+     * OpenRouter 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_OPENROUTER_64 = load("/icons/openrouter_64.svg");
+
+    /**
+     * Cloudflare 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_CLOUDFLARE_64 = load("/icons/cloudflare_64.svg");
+
     /** 模型 scope 64x64 像素图标资源 */
     public static final Icon PROVIDER_SILICONFLOW_64 = load("/icons/siliconflow_64.svg");
 
@@ -294,6 +338,8 @@ public final class AICommonIcons {
         }
         Icon icon = switch (providerType) {
             case OPENAI, CODEX -> PROVIDER_CHATGPT;
+            case OPENROUTER -> PROVIDER_OPENROUTER;
+            case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
             case ANTHROPIC -> PROVIDER_ANTHROPIC;
             case GEMINI -> PROVIDER_GEMINI;
             case NVIDIA -> PROVIDER_NVIDIA;
@@ -325,6 +371,8 @@ public final class AICommonIcons {
         }
         return switch (providerType) {
             case OPENAI, CODEX -> PROVIDER_CHATGPT_64;
+            case OPENROUTER -> PROVIDER_OPENROUTER_64;
+            case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;
             case ANTHROPIC -> PROVIDER_ANTHROPIC_64;
             case GEMINI -> PROVIDER_GEMINI_64;
             case NVIDIA -> PROVIDER_NVIDIA_64;

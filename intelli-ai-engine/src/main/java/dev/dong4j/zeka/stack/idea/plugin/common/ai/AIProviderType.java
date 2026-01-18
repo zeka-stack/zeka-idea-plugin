@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,6 +7,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import lombok.Getter;
 
 /**
  * AI 服务提供商类型枚举
@@ -109,6 +110,30 @@ public enum AIProviderType {
         true,
         true,
         List.of("zai-org/GLM-4.7:novita")
+    ),
+    /**
+     * OpenRouter (OpenAI 兼容) 模型配置
+     */
+    OPENROUTER(
+        "openrouter",
+        "OpenRouter",
+        "https://openrouter.ai/api/v1",
+        "z-ai/glm-4.5-air:free",
+        true,
+        true,
+        List.of("z-ai/glm-4.5-air:free")
+    ),
+    /**
+     * Cloudflare Workers AI (OpenAI 兼容) 模型配置
+     */
+    CLOUDFLARE(
+        "cloudflare",
+        "Cloudflare Workers AI",
+        "https://api.cloudflare.com/client/v4/accounts/{YOUR_ACCOUNT_ID}/ai/v1",
+        "@cf/meta/llama-3.1-8b-instruct",
+        true,
+        true,
+        List.of("@cf/meta/llama-3.1-8b-instruct")
     ),
     /**
      * 通义千问模型的标识信息
@@ -503,6 +528,8 @@ public enum AIProviderType {
             AIProviderType.OPENAI,
             AIProviderType.NVIDIA,
             AIProviderType.HUGGINGFACE,
+            AIProviderType.OPENROUTER,
+            AIProviderType.CLOUDFLARE,
             AIProviderType.QIANWEN,
             AIProviderType.SILICONFLOW,
             AIProviderType.IFLOW,
@@ -538,6 +565,8 @@ public enum AIProviderType {
             case OPENAI, CODEX -> "https://platform.openai.com/api-keys";
             case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";
+            case OPENROUTER -> "https://openrouter.ai/settings/keys";
+            case CLOUDFLARE -> "https://developers.cloudflare.com/workers-ai/get-started/rest-api/";
             case ANTHROPIC -> "https://console.anthropic.com/settings/keys";
             case GEMINI -> "https://aistudio.google.com/app/apikey";
             case QIANWEN -> "https://dashscope.console.aliyun.com/apiKey";
