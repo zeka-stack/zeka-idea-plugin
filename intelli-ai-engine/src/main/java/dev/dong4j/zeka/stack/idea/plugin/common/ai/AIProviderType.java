@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -7,9 +9,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
-import lombok.Getter;
 
 /**
  * AI 服务提供商类型枚举
@@ -49,7 +48,7 @@ public enum AIProviderType {
         "https://api.anthropic.com",
         "claude-3-5-sonnet-20241022",
         true,
-        false,
+        true,
         List.of(
             "claude-3-5-sonnet-20241022",
             "claude-3-5-haiku-20241022",
@@ -67,7 +66,7 @@ public enum AIProviderType {
         "https://generativelanguage.googleapis.com/v1beta",
         "gemini-1.5-flash-latest",
         true,
-        false,
+        true,
         List.of(
             "gemini-2.0-flash",
             "gemini-1.5-pro-latest",
@@ -84,8 +83,32 @@ public enum AIProviderType {
         "https://api.openai.com/v1",
         "codex-mini-latest",
         true,
-        false,
+        true,
         List.of("codex-mini-latest", "gpt-4o-mini")
+    ),
+    /**
+     * NVIDIA (OpenAI 兼容) 模型配置
+     */
+    NVIDIA(
+        "nvidia",
+        "NVIDIA",
+        "https://integrate.api.nvidia.com/v1",
+        "minimaxai/minimax-m2",
+        true,
+        true,
+        List.of("minimaxai/minimax-m2")
+    ),
+    /**
+     * HuggingFace (OpenAI 兼容) 模型配置
+     */
+    HUGGINGFACE(
+        "huggingface",
+        "HuggingFace",
+        "https://router.huggingface.co/v1",
+        "zai-org/GLM-4.7:novita",
+        true,
+        true,
+        List.of("zai-org/GLM-4.7:novita")
     ),
     /**
      * 通义千问模型的标识信息
@@ -154,7 +177,7 @@ public enum AIProviderType {
         "https://api-inference.modelscope.cn/v1",
         "ZhipuAI/GLM-4.6",
         true,
-        true,
+        false,
         List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
     ),
     /**
@@ -162,11 +185,11 @@ public enum AIProviderType {
      */
     MODELSCOPE_ANTHROPIC(
         "modelscope_anthropic",
-        "ModelScope (Anthropic)",
+        "ModelScope",
         "https://api-inference.modelscope.cn",
         "ZhipuAI/GLM-4.6",
         true,
-        true,
+        false,
         List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
     ),
     /**
@@ -180,7 +203,7 @@ public enum AIProviderType {
         "https://apis.iflow.cn/v1",
         "kimi-k2-0905",
         true,
-        true,
+        false,
         List.of("kimi-k2-0905", "qwen3-coder-plus", "glm-4.6", "deepseek-r1")
     ),
     /**
@@ -189,7 +212,7 @@ public enum AIProviderType {
      * 智谱AI (ChatGLM) 服务提供商, 支持多种 GLM 模型, 包括 glm-4.6, glm-4.5, glm-4.5-flash 等.
      */
     ZHIPU(
-        "zhipu",
+        "",
         "智谱AI",
         "https://open.bigmodel.cn/api/paas/v4",
         "glm-4.7",
@@ -213,8 +236,8 @@ public enum AIProviderType {
      * Z.AI（智谱 Anthropic 兼容）模型配置
      */
     ZHIPU_ANTHROPIC(
-        "glm",
-        "GLM",
+        "glm_anthropic",
+        "智谱AI",
         "https://open.bigmodel.cn/api/anthropic",
         "glm-4.7",
         true,
@@ -226,7 +249,7 @@ public enum AIProviderType {
      */
     ZAI_ANTHROPIC(
         "zai_anthropic",
-        "Z.AI (Anthropic)",
+        "Z.AI",
         "https://api.z.ai/api/anthropic",
         "glm-4.7",
         true,
@@ -478,6 +501,8 @@ public enum AIProviderType {
         Map<String, List<AIProviderType>> groupedProviders = new LinkedHashMap<>();
         groupedProviders.put(AICommonBundle.message("settings.provider.group.openai"), List.of(
             AIProviderType.OPENAI,
+            AIProviderType.NVIDIA,
+            AIProviderType.HUGGINGFACE,
             AIProviderType.QIANWEN,
             AIProviderType.SILICONFLOW,
             AIProviderType.IFLOW,
@@ -511,6 +536,8 @@ public enum AIProviderType {
     public String getApiKeyUrl() {
         return switch (this) {
             case OPENAI, CODEX -> "https://platform.openai.com/api-keys";
+            case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
+            case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";
             case ANTHROPIC -> "https://console.anthropic.com/settings/keys";
             case GEMINI -> "https://aistudio.google.com/app/apikey";
             case QIANWEN -> "https://dashscope.console.aliyun.com/apiKey";
