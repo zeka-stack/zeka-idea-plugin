@@ -51,7 +51,7 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.javadoc.component.CustomJavadocTagRegistrar"/>
 
         <!-- Maven 缓存清理监听器（在启动活动中注册） -->
-        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.javadoc.component.MavenCacheCleanupListener"/>
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.javadoc.component.ProjectVersionCacheCleanupListener"/>
 
         <!-- Javadoc 文件模板处理器 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.javadoc.component.JavadocFileTemplatesHandler"/>

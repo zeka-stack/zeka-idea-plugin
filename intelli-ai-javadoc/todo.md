@@ -72,7 +72,7 @@
 ## 2026.01.05
 
 - [x] 添加调用链到类和方法中作为上下文
-- [ ] 将 maven 作为可选项, 没有 maven 依赖时将 version 和 since 设置为默认的 x.x.x
+- [x] 将 maven 作为可选项, 没有 maven 依赖时将 version 和 since 设置为默认的 x.x.x
 
 ## 2026.01.05
 

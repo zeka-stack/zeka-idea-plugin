@@ -202,20 +202,4 @@ public final class MavenUtil {
         versionCache.clear();
     }
 
-    /**
-     * 将作者信息放入参数映射中
-     * <p>
-     * 从系统属性中获取作者名称, 如果未设置且为类模板模式, 则使用默认作者名称, 并将作者信息存入参数映射中.
-     *
-     * @param author 传入的作者名称, 如果为 null 或空字符串, 则从系统属性中获取
-     * @return 处理后的作者名称, 如果未设置则返回默认值 "zeka.stack.team"
-     */
-    public static String getAuthor(String author) {
-        if (author == null || author.isEmpty()) {
-            author = SystemUtils.getProperty("ZEKA_NAME_SPACE");
-            return author == null || author.isEmpty() ? "zeka.stack.team" : author;
-        }
-        return author;
-    }
-
 }

@@ -22,15 +22,7 @@ import lombok.Setter;
  */
 public class DocumentationTask {
 
-    /**
-     * 当前 Psi 元素对象, 用于表示代码中的语法结构节点
-     *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @email "mailto:zeka.stack@gmail.com"
-     * @date 2025.11.30
-     * @since 1.0.0
-     */
+    /** 当前 Psi 元素对象, 用于表示代码中的语法结构节点 */
     private final PsiElement element;
     /** 业务操作的唯一标识码 */
     private final String code;

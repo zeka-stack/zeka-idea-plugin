@@ -32,12 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class ParallelTaskProcessor {
-    /**
-     * 项目对象
-     *
-     * @NotNull
-     * @see Project
-     */
+    /** 项目对象, 用于上下文信息和资源访问 */
     @NotNull
     private final Project project;
 

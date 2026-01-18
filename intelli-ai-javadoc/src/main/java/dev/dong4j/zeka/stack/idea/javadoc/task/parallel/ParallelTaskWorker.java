@@ -84,13 +84,12 @@ public class ParallelTaskWorker implements Runnable {
     private final Project project;
 
     /**
-     * 设置配置
+     * 服务商设置配置
+     * <p>
+     * 存储当前 AI 服务提供商的配置参数, 用于控制服务调用行为, 超时设置, 重试策略等.
+     * 该配置由用户在插件设置中定义, 影响任务执行时的 AI 服务行为.
      *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @email mailto:zeka.stack@gmail.com
-     * @date 2025.12.01
-     * @since 1.0.0
+     * @see AIProviderSettings
      */
     @NotNull
     private final AIProviderSettings providerSettings;
@@ -138,6 +137,20 @@ public class ParallelTaskWorker implements Runnable {
     /** 默认超时时间（秒） */
     private static final int DEFAULT_TIMEOUT_SECONDS = 10;
 
+    /**
+     * 工作线程主循环, 负责从任务分发器中获取任务并执行
+     * <p>
+     * 该线程在运行时会持续从任务分发器中获取任务, 直到用户取消或无可用任务为止.
+     * 执行过程中会处理任务超时, 异常和重试逻辑, 并在任务完成后释放锁.
+     * 线程运行期间会记录调试日志, 包括线程名称, 服务商名称, 任务状态等.
+     *
+     * @see TaskDispatcher
+     * @see ProviderManager
+     * @see ProgressIndicator
+     * @see DocumentationTask
+     * @see TaskDispatcher.TaskWrapper
+     * @since 1.0.0
+     */
     @Override
     public void run() {
         String providerName = provider.providerType.getDisplayName();

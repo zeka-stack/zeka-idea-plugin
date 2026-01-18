@@ -13,14 +13,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.dong4j.zeka.stack.idea.javadoc.PluginDisposable;
-import dev.dong4j.zeka.stack.idea.javadoc.util.MavenUtil;
+import dev.dong4j.zeka.stack.idea.javadoc.util.ProjectVersionResolver;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 
 /**
- * Maven 缓存清理监听器
+ * 版本号缓存清理监听器
  * <p>
- * 该监听器实现了项目活动和项目管理器监听器接口, 负责在项目关闭时清理 Maven 缓存,
+ * 该监听器实现了项目活动和项目管理器监听器接口, 负责在项目关闭时清理版本号缓存,
  * 确保项目资源的正确释放和缓存的一致性.
  * <p>
  * 使用项目级别的服务作为 Disposable 父对象, 符合 IntelliJ 平台最佳实践.
@@ -31,7 +31,7 @@ import kotlin.coroutines.Continuation;
  * @date 2025.11.30
  * @since 1.0.0
  */
-public final class MavenCacheCleanupListener implements ProjectActivity, ProjectManagerListener {
+public final class ProjectVersionCacheCleanupListener implements ProjectActivity, ProjectManagerListener {
 
     /** 标记执行状态, 防止重复初始化监听器 */
     private final AtomicBoolean hasRun = new AtomicBoolean(false);
@@ -51,7 +51,7 @@ public final class MavenCacheCleanupListener implements ProjectActivity, Project
     @Override
     public Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         // 获取项目级别的服务作为 Disposable 父对象
-        Disposable parentDisposable = Disposer.newDisposable(PluginDisposable.getInstance(project), "MavenCacheCleanupListener");
+        Disposable parentDisposable = Disposer.newDisposable(PluginDisposable.getInstance(project), "ProjectVersionCacheCleanupListener");
 
         // 只在第一次运行时检查更新
         if (!hasRun.compareAndSet(false, true) || ApplicationManager.getApplication().isUnitTestMode()) {
@@ -70,13 +70,12 @@ public final class MavenCacheCleanupListener implements ProjectActivity, Project
     /**
      * 项目关闭时调用
      * <p>
-     * 清理该项目的 Maven 版本号缓存。
+     * 清理该项目的版本号缓存。
      *
      * @param project 关闭的项目
      */
     @Override
     public void projectClosing(@NotNull Project project) {
-        MavenUtil.clearCache(project);
+        ProjectVersionResolver.clearCache(project);
     }
 }
-

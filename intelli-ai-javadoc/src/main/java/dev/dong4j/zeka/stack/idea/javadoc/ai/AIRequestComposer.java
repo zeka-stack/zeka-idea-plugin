@@ -14,8 +14,9 @@ import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.task.GenerationContext;
-import dev.dong4j.zeka.stack.idea.javadoc.util.MavenUtil;
+import dev.dong4j.zeka.stack.idea.javadoc.util.ProjectVersionResolver;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PsiElementLocator;
+import dev.dong4j.zeka.stack.idea.javadoc.util.SystemUtils;
 import dev.dong4j.zeka.stack.idea.javadoc.util.TokenCounter;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
@@ -49,11 +50,12 @@ public final class AIRequestComposer {
     /**
      * 组合生成 AI 聊天请求对象
      * <p>
-     * 根据提供的设置和文档任务, 生成包含系统提示, 用户提示和预估令牌数的 AI 聊天请求对象.
+     * 根据提供的项目, 配置设置和文档任务, 生成包含系统提示词, 用户提示词及预估令牌数的 AI 聊天请求对象.
+     * 系统提示词和用户提示词均会根据语言设置进行占位符替换, 最终返回封装好的请求对象.
      *
-     * @param settings 配置设置, 用于生成系统提示
-     * @param task     文档任务, 用于生成用户提示
-     * @return 构建好的 AIChatRequest 对象
+     * @param settings 配置设置对象, 用于生成系统提示词模板
+     * @param task     文档生成任务对象, 用于生成用户提示词模板
+     * @return 构建完成的 AIChatRequest 对象, 包含系统提示, 用户提示和令牌预估数量
      * @since 1.0.0
      */
     @NotNull
@@ -113,15 +115,15 @@ public final class AIRequestComposer {
     }
 
     /**
-     * 根据任务类型和设置构建用户提示模板
+     * 根据项目, 配置设置和文档任务构建 AI 聊天请求对象
      * <p>
-     * 使用指定的设置和任务类型, 选择对应的模板并填充任务代码内容, 生成最终的用户提示字符串.
-     * 如果覆写模式是 FIX(仅修复错误注释), 且元素已有注释, 则使用修复错误 Javadoc 的提示词模板.
-     * 如果元素没有注释, 则使用正常的生成提示词模板.
+     * 该方法负责组合生成包含系统提示词, 用户提示词及预估令牌数的 AI 聊天请求对象.
+     * 系统提示词和用户提示词均会根据语言设置进行占位符替换, 最终返回封装好的请求对象.
      *
-     * @param settings 配置设置对象, 用于获取模板配置
-     * @param task     文档生成任务对象, 包含任务类型和代码内容
-     * @return 生成的用户提示字符串
+     * @param settings 配置设置对象, 用于生成系统提示词模板
+     * @param task     文档生成任务对象, 用于生成用户提示词模板
+     * @return 构建完成的 AIChatRequest 对象, 包含系统提示, 用户提示和令牌预估数量
+     * @since 1.0.0
      */
     private static String buildUserPrompt(@NotNull SettingsState settings, @NotNull DocumentationTask task) {
         // 如果覆写模式是 FIX（仅修复错误注释），且元素已有注释，使用修复错误 Javadoc 的提示词
@@ -263,18 +265,22 @@ public final class AIRequestComposer {
         return userTemplate;
     }
 
+
     /**
-     * 解析并替换类模板中的占位符
+     * 根据配置设置和文档任务构建 AI 聊天请求对象
      * <p>
-     * 根据给定的任务, 用户模板和默认模板, 解析模板内容并替换其中的占位符, 如作者, 版本, 日期和邮箱等信息.
+     * 该方法用于组合生成包含系统提示词, 用户提示词及预估令牌数的 AI 聊天请求对象.
+     * 系统提示词和用户提示词均会根据语言设置进行占位符替换, 最终返回封装好的请求对象.
      *
-     * @param task            当前文档生成任务
-     * @param userTemplate    用户自定义模板, 若为空则使用默认模板
-     * @param defaultTemplate 默认模板
-     * @return 替换占位符后的模板字符串
+     * @param userTemplate 用户提示词
+     * @param defaultTemplate 用户提示词为空时的默认提示词
+     * @param task     文档生成任务对象, 用于生成用户提示词模板
+     * @return 构建完成的 AIChatRequest 对象, 包含系统提示, 用户提示和令牌预估数量
+     * @since 1.0.0
      */
     private static String resolveClassTemplate(@NotNull DocumentationTask task,
-                                               String userTemplate, String defaultTemplate) {
+                                               String userTemplate,
+                                               String defaultTemplate) {
         String template = resolveTemplate(userTemplate, defaultTemplate);
         final PsiElement element = task.getElement();
 
@@ -285,8 +291,8 @@ public final class AIRequestComposer {
                 CustomJavadocTag::getDefaultValue,
                 (existing, replacement) -> existing));
 
-        template = template.replace("${author}", MavenUtil.getAuthor(customTagsMap.get("author")));
-        template = template.replace("${since}", MavenUtil.getVersion(element));
+        template = template.replace("${author}", getAuthor(customTagsMap.get("author")));
+        template = template.replace("${since}", ProjectVersionResolver.resolveVersion(element));
 
         String date = customTagsMap.get("date");
         if (date == null || date.isEmpty()) {
@@ -310,5 +316,21 @@ public final class AIRequestComposer {
         template = template.replace("${email}", email);
 
         return template;
+    }
+
+    /**
+     * 将作者信息放入参数映射中
+     * <p>
+     * 从系统属性中获取作者名称, 如果未设置且为类模板模式, 则使用默认作者名称, 并将作者信息存入参数映射中.
+     *
+     * @param author 传入的作者名称, 如果为 null 或空字符串, 则从系统属性中获取
+     * @return 处理后的作者名称, 如果未设置则返回默认值 "zeka.stack.team"
+     */
+    private static String getAuthor(String author) {
+        if (author == null || author.isEmpty()) {
+            author = SystemUtils.getProperty("ZEKA_NAME_SPACE");
+            return author == null || author.isEmpty() ? "zeka.stack.team" : author;
+        }
+        return author;
     }
 }

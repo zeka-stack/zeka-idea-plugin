@@ -42,24 +42,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor
 public class SequentialTaskProcessor {
-    /**
-     * 项目对象
-     * <p>
-     * 用于持有当前处理的项目信息, 如项目配置, 资源路径等.
-     *
-     * @since 1.0.0
-     */
+    /** 项目对象, 用于持有当前处理的项目信息, 如项目配置, 资源路径等. */
     @NotNull
     private final Project project;
 
-    /**
-     * 进度指示器
-     * <p>
-     * 用于在任务处理过程中更新和显示任务进度的组件.
-     * 可以用来通知用户当前任务的执行状态, 例如完成的任务数, 失败的任务数等.
-     *
-     * @since 1.0.0
-     */
+    /** 进度指示器, 用于在任务处理过程中更新和显示任务进度, 通知用户当前任务执行状态. */
     @NotNull
     private final ProgressIndicator indicator;
 
@@ -67,28 +54,15 @@ public class SequentialTaskProcessor {
     @NotNull
     private final SettingsState settings;
 
-    /**
-     * AI 服务
-     *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @email mailto:zeka.stack@gmail.com
-     * @date 2025.12.01
-     * @since 1.0.0
-     */
+    /** AI 服务, 用于调用 AI 生成文档内容 */
     @NotNull
     private final AIService aiService;
 
     /**
      * 文档插入辅助类
-     * <p>
-     * 用于辅助插入生成的文档内容, 提供文档插入相关操作的封装.
+     * <p> 用于辅助插入生成的文档内容, 提供文档插入相关操作的封装.
      *
-     * @author zeka.stack.team
-     * @version 1.0.0
-     * @email mailto:zeka.stack@gmail.com
-     * @date 2025.12.01
-     * @since 1.0.0
+     * @see DocumentationInserterHelper
      */
     @NotNull
     private final DocumentationInserterHelper inserterHelper;
@@ -149,7 +123,7 @@ public class SequentialTaskProcessor {
         // 使用进度管理器获取统计信息
         TaskStatistics statistics = progressManager != null ? progressManager.getStatistics() : new TaskStatistics(0, 0, 0);
         log.debug("任务处理完成。成功: {}, 失败: {}, 跳过: {}",
-                 statistics.completed(), statistics.failed(), statistics.skipped());
+                  statistics.completed(), statistics.failed(), statistics.skipped());
 
         // Console 日志：任务完成统计
         AIConsoleLoggerUtil.printWithTimestamp(project, "========== 生成完成 ==========");
