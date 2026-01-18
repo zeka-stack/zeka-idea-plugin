@@ -13,7 +13,16 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 
 /**
- * 智谱 AI Anthropic 兼容提供商实现类
+ * 智谱 AI 模型提供者实现类
+ * <p> 继承自 AnthropicLikeProvider, 实现 ZhipudModelListProvider 接口, 用于查询和检索智谱 AI 平台支持的模型列表.
+ * 该类专注于模型可用性查询, 不负责实际的请求处理, 仅作为基础设施层的适配器, 避免将基础设施关注点侵入业务逻辑.
+ * 适用于需要集成智谱 AI 模型服务的系统模块, 通过注入项目, 配置, 模型参数和运行时设置完成初始化.
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.18
+ * @since 1.0.0
  */
 public class ZhipuAnthropicProvider extends AnthropicLikeProvider implements ZhipudModelListProvider {
 
