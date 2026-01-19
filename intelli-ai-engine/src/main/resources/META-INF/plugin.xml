@@ -102,6 +102,9 @@
         <!--suppress PluginXmlI18n -->
         <notificationGroup displayType="STICKY_BALLOON" id="IntelliAI Engine Sticky Log" isLogByDefault="true"/>
 
+        <!-- 错误上报 -->
+        <errorHandler implementation="dev.dong4j.zeka.stack.idea.plugin.common.diagnostic.EngineFeedbackSubmitter"/>
+
         <!-- 状态栏聚合入口 -->
         <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidgetFactory"
                                 order="first" id="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidget"/>

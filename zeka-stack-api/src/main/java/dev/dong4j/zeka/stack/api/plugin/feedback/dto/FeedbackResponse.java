@@ -38,6 +38,14 @@ public class FeedbackResponse {
      */
     private DiscussionInfo discussion;
 
+    /**
+     * Issue 信息
+     * <p> 包含 issue 的相关详情, 如 ID, 编号,URL 和标题.
+     *
+     * @see IssueInfo
+     */
+    private IssueInfo issue;
+
     /** 反馈响应中的相关信息或提示文本 */
     private String message;
 
@@ -74,5 +82,32 @@ public class FeedbackResponse {
         /** 讨论标题 */
         private String title;
     }
-}
 
+    /**
+     * Issue 信息数据类
+     * <p> 用于封装和传递 Issue 的结构化数据.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.19
+     * @since 1.0.0
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IssueInfo {
+        /** Issue ID */
+        private String id;
+
+        /** Issue 编号 */
+        private Integer number;
+
+        /** Issue URL */
+        private String url;
+
+        /** Issue 标题 */
+        private String title;
+    }
+}

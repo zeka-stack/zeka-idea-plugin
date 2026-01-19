@@ -619,9 +619,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                代码片段
                }</pre>
                注意：代码片段必须放在 {@code} 标签内，并且外层使用 <pre> 标签包裹
-            10. **URL 格式规则（重要）**：如果注释中存在 URL，必须使用以下格式：
-                <a href="https://example.com">https://example.com</a>
-               注意：URL 必须使用 <a href="URL">URL</a> 格式，href 和显示文本都使用完整的 URL
+            10. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
             11. 添加 @author、@version、@email、@date、@since 标签且保存顺序
                 - 如果已存在 @author 且添加了作者信息则直接使用, 否则使用 ${author} 作为作者
                 - 如果已存在 @version 则保存不变, 否则使用 1.0.0 作为版本号
@@ -720,9 +718,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                 代码片段
                 }</pre>
                 注意：代码片段必须放在 {@code} 标签内，并且外层使用 <pre> 标签包裹
-            11. **URL 格式规则（重要）**：如果注释中存在 URL，必须使用以下格式：
-                <a href="https://example.com">https://example.com</a>
-                注意：URL 必须使用 <a href="URL">URL</a> 格式，href 和显示文本都使用完整的 URL
+            11. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
 
             # 示例说明
             **重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**
@@ -799,9 +795,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
                - 如果字段/属性说明简单（不超过 80 个字符，没有 @tag 标签），必须使用单行格式：/** 字段/属性说明 */
                - 如果字段/属性说明复杂（包含多个信息点、有 @tag 标签、或超过 80 个字符），使用多行格式
             5. Kotlin: 注意属性的可空类型（如 String?）和可变性（var/val）
-            6. **URL 格式规则（重要）**：如果注释中存在 URL，必须使用以下格式：
-               <a href="https://example.com">https://example.com</a>
-               注意：URL 必须使用 <a href="URL">URL</a> 格式，href 和显示文本都使用完整的 URL
+            6. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
 
             # 示例说明
             **重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**
@@ -869,9 +863,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             3. 注释应描述：测试目标、测试场景、预期结果
             4. 如果代码中有 @link 引用，请在注释中使用 {@link ClassName#methodName} 格式
             5. 如果运行单元测试需要特殊的场景, 尽量添加上说明
-            6. **URL 格式规则（重要）**：如果注释中存在 URL，必须使用以下格式：
-               <a href="https://example.com">https://example.com</a>
-               注意：URL 必须使用 <a href="URL">URL</a> 格式，href 和显示文本都使用完整的 URL
+            6. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
 
             # 示例说明
             **重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**
@@ -995,9 +987,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             5. 如果有返回值（Java 方法或 Kotlin 非 Unit 函数），必须包含 @return 标签
             6. 如果有异常抛出，使用 @throws 标签
             7. 不要添加不存在的参数、返回值和异常的注释标签
-            8. **URL 格式规则（重要）**：如果注释中存在 URL，必须使用以下格式：
-               <a href="https://example.com">https://example.com</a>
-               注意：URL 必须使用 <a href="URL">URL</a> 格式，href 和显示文本都使用完整的 URL
+            8. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
 
             # 示例说明
             **重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**

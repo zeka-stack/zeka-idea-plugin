@@ -70,12 +70,16 @@ public class FeedbackPanel {
      *
      * @see #sendHttpRequest(Map)
      */
-    private static final String FEEDBACK_API_URL = SiteContents.FEEDBACK_API_URL;
-    // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
+    private static final String DISCUSSIONS_API_URL = SiteContents.DISCUSSIONS_API_URL;
+    // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback/discussion";
     /** GitHub Discussions 链接 */
-    private static final String GITHUB_DISCUSSIONS_URL = "https://github.com/zeka-stack/zeka-idea-plugin/discussions";
+    private static final String GITHUB_DISCUSSIONS_URL = SiteContents.GITHUB_DISCUSSIONS_URL;
+    /** GitHub Discussions API 路径, 用于提交反馈问题 */
+    private static final String DISCUSSIONS_PATH = "/api/plugin/feedback/discussion";
     /** 请求超时时间, 单位为秒, 值为 10 */
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
+    /** 链接颜色（主题感知的蓝色） */
+    private static final Color LINK_COLOR = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
 
     /** 面板内容 */
     @Getter
@@ -464,8 +468,8 @@ public class FeedbackPanel {
         // 将 JSON 字符串转换为字节数组（用于签名）
         byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
 
-        String pathWithQuery = "/api/feedback";
-        URI uri = URI.create(FEEDBACK_API_URL);
+        String pathWithQuery = DISCUSSIONS_PATH;
+        URI uri = URI.create(DISCUSSIONS_API_URL);
         if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
             pathWithQuery += "?" + uri.getQuery();
         }
@@ -620,9 +624,7 @@ public class FeedbackPanel {
         statusLabel.setText(message);
         statusLabel.setForeground(isError ? JBColor.RED : UIUtil.getLabelForeground());
         // 移除所有鼠标监听器
-        for (java.awt.event.MouseListener listener : statusLabel.getMouseListeners()) {
-            statusLabel.removeMouseListener(listener);
-        }
+        removeAllMouseListeners();
         statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());
     }
 
@@ -636,28 +638,80 @@ public class FeedbackPanel {
     private void showStatusWithLink(@NotNull String url) {
         // 使用国际化文本作为链接显示文本
         String linkDisplayText = AICommonBundle.message("settings.feedback.view.discussion");
+        showLinkStatus(url, linkDisplayText);
+    }
 
+    /**
+     * 清空表单
+     */
+    private void clearForm() {
+        titleField.setText("");
+        contentArea.setText("");
+        typeComboBox.setSelectedIndex(0);
+        githubUsernameField.setText("");
+        // 恢复显示 Discussions 链接
+        showDiscussionsLink();
+    }
+
+    /**
+     * 显示 Discussions 超链接
+     * <p>
+     * 在状态标签中显示 Discussions 超链接，作为初始状态或清空表单后的状态
+     */
+    private void showDiscussionsLink() {
+        showLinkStatus(GITHUB_DISCUSSIONS_URL, "\uD83D\uDCACDiscussions");
+    }
+
+    /**
+     * 显示带链接的状态信息（通用方法）
+     * <p>
+     * 使用 HTML 格式创建蓝色可点击链接，参考 IntelliAgentPanel 和 PersonalInfoPanel 的实现
+     *
+     * @param url             链接地址
+     * @param linkDisplayText 链接显示文本
+     */
+    private void showLinkStatus(@NotNull String url, @NotNull String linkDisplayText) {
         // 使用 HTML 格式化链接样式，使用主题感知的蓝色
         // 添加 white-space: nowrap 防止换行
-        Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
         String linkText = String.format(
             "<html><div style='white-space: nowrap;'><a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;" +
             "'>%s</a></div></html>",
             url,
-            linkColor.getRed(),
-            linkColor.getGreen(),
-            linkColor.getBlue(),
+            LINK_COLOR.getRed(),
+            LINK_COLOR.getGreen(),
+            LINK_COLOR.getBlue(),
             linkDisplayText
                                        );
         statusLabel.setText(linkText);
 
         // 移除旧的鼠标监听器
+        removeAllMouseListeners();
+
+        // 添加点击事件来打开浏览器
+        statusLabel.addMouseListener(createLinkMouseAdapter(url));
+        statusLabel.setForeground(LINK_COLOR);
+    }
+
+    /**
+     * 移除状态标签的所有鼠标监听器
+     */
+    private void removeAllMouseListeners() {
         for (java.awt.event.MouseListener listener : statusLabel.getMouseListeners()) {
             statusLabel.removeMouseListener(listener);
         }
+    }
 
-        // 添加点击事件来打开浏览器
-        statusLabel.addMouseListener(new MouseAdapter() {
+    /**
+     * 创建链接鼠标适配器
+     * <p>
+     * 用于处理链接的点击、鼠标进入和移出事件
+     *
+     * @param url 链接地址
+     * @return 鼠标适配器
+     */
+    @NotNull
+    private MouseAdapter createLinkMouseAdapter(@NotNull String url) {
+        return new MouseAdapter() {
             /**
              * 处理鼠标点击事件, 打开指定 URL
              * <p> 当用户点击时, 调用 {@code BrowserUtil.browse(url)} 方法在默认浏览器中打开指定 URL</p>
@@ -681,7 +735,7 @@ public class FeedbackPanel {
             }
 
             /**
-             * 鼠标移出时将状态栏光标恢复为默认光标
+             * 鼠标移出时将状态标签的光标恢复为默认光标
              * <p> 当鼠标从组件上移出时, 将状态标签的光标设置为系统默认光标, 以提供一致的用户体验
              *
              * @param e 鼠标事件对象, 包含鼠标位置和状态信息
@@ -690,81 +744,7 @@ public class FeedbackPanel {
             public void mouseExited(MouseEvent e) {
                 statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());
             }
-        });
-        statusLabel.setForeground(linkColor);
-    }
-
-    /**
-     * 清空表单
-     */
-    private void clearForm() {
-        titleField.setText("");
-        contentArea.setText("");
-        typeComboBox.setSelectedIndex(0);
-        githubUsernameField.setText("");
-        // 恢复显示 Discussions 链接
-        showDiscussionsLink();
-    }
-
-    /**
-     * 显示 Discussions 超链接
-     * <p>
-     * 在状态标签中显示 Discussions 超链接，作为初始状态或清空表单后的状态
-     */
-    private void showDiscussionsLink() {
-        // 使用 HTML 格式化链接样式，使用主题感知的蓝色
-        Color linkColor = new JBColor(new Color(74, 144, 226), new Color(100, 149, 237));
-        String linkText = String.format(
-            "<html><div style='white-space: nowrap;'><a href='%s' style='color: rgb(%d,%d,%d); text-decoration: underline;" +
-            "'>\uD83D\uDCACDiscussions</a></div></html>",
-            GITHUB_DISCUSSIONS_URL,
-            linkColor.getRed(),
-            linkColor.getGreen(),
-            linkColor.getBlue()
-                                       );
-        statusLabel.setText(linkText);
-
-        // 移除所有鼠标监听器
-        for (java.awt.event.MouseListener listener : statusLabel.getMouseListeners()) {
-            statusLabel.removeMouseListener(listener);
-        }
-
-        // 添加点击事件来打开浏览器
-        statusLabel.addMouseListener(new MouseAdapter() {
-            /**
-             * 处理鼠标点击事件, 打开 GitHub 讨论页面
-             * <p> 当用户点击时, 调用 BrowserUtil 浏览器工具打开指定的 GitHub 讨论地址
-             *
-             * @param e 鼠标点击事件对象
-             */
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                BrowserUtil.browse(GITHUB_DISCUSSIONS_URL);
-            }
-
-            /**
-             * 当鼠标进入组件时, 将状态标签的光标设置为手型光标
-             * <p> 此方法用于在鼠标悬停于状态标签上时, 提供视觉反馈, 提示用户该区域可点击
-             *
-             * @param e 鼠标事件对象, 包含鼠标进入位置等信息
-             */
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                statusLabel.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
-            }
-
-            /**
-             * 鼠标移出时将状态标签的光标恢复为默认光标
-             * <p> 当鼠标从状态标签区域移出时, 将光标设置为系统默认光标样式, 以提供一致的用户体验
-             *
-             * @param e 鼠标事件对象, 包含鼠标位置和状态信息
-             */
-            @Override
-            public void mouseExited(MouseEvent e) {
-                statusLabel.setCursor(java.awt.Cursor.getDefaultCursor());
-            }
-        });
-        statusLabel.setForeground(linkColor);
+        };
     }
 
     /**

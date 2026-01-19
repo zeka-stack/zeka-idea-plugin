@@ -5,7 +5,7 @@
 ### 提交 Bug 反馈
 
 ```bash
-curl -X POST http://localhost:8080/api/feedback \
+curl -X POST http://localhost:8080/api/plugin/feedback/discussion \
   -H "Content-Type: application/json" \
   -d '{
     "title": "插件在 macOS 上崩溃",
@@ -26,7 +26,7 @@ curl -X POST http://localhost:8080/api/feedback \
 ### 提交功能建议
 
 ```bash
-curl -X POST http://localhost:8080/api/feedback \
+curl -X POST http://localhost:8080/api/plugin/feedback/discussion \
   -H "Content-Type: application/json" \
   -d '{
     "title": "希望支持批量生成 Javadoc",
@@ -44,7 +44,7 @@ curl -X POST http://localhost:8080/api/feedback \
 ### 提交使用问题
 
 ```bash
-curl -X POST http://localhost:8080/api/feedback \
+curl -X POST http://localhost:8080/api/plugin/feedback/discussion \
   -H "Content-Type: application/json" \
   -d '{
     "title": "如何配置 API Key？",
@@ -69,7 +69,7 @@ import java.net.http.HttpResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class FeedbackClient {
-    private static final String FEEDBACK_API_URL = "http://localhost:8080/api/feedback";
+    private static final String FEEDBACK_API_URL = "http://localhost:8080/api/plugin/feedback/discussion";
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
@@ -197,4 +197,3 @@ public class FeedbackClient {
 3. **Markdown 转义**: 用户输入的内容会进行适当的 Markdown 转义，防止格式混乱，但用户仍可以使用 Markdown 语法。
 
 4. **速率限制**: GitHub API 有速率限制，建议对请求进行适当的速率限制。
-

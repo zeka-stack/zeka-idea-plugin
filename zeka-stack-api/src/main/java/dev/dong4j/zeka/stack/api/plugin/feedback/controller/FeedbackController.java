@@ -17,8 +17,9 @@ import lombok.extern.slf4j.Slf4j;
  * <p> 负责处理与用户反馈相关的 HTTP 请求, 包括提交反馈和健康检查接口. 该控制器不直接处理请求细节, 而是将业务逻辑委托给 {@code FeedbackService}, 确保关注点分离, 符合面向对象设计原则.</p>
  * <p> 控制器仅作为业务逻辑的入口, 不包含基础设施或请求处理逻辑, 确保系统架构清晰, 职责单一.</p>
  * <p> 支持的接口路径:<pre>{@code
- * POST /api/feedback
- * GET /api/feedback/health
+ * POST /api/plugin/feedback/discussion
+ * POST /api/plugin/feedback/issue
+ * GET /api/plugin/feedback/health
  * }</pre></p>
  *
  * @author dong4j
@@ -43,9 +44,9 @@ public class FeedbackController {
      * @param request 反馈请求对象, 包含反馈类型, 标题及用户信息 (如 GitHub 用户名)
      * @return 包含提交结果的 HTTP 响应, 类型为 {@code ResponseEntity<FeedbackResponse>}
      */
-    @PostMapping("/feedback")
-    public FeedbackResponse submitFeedback(@Valid @RequestBody FeedbackRequest request) {
-        log.debug("Received feedback submission: type={}, title={}, githubUsername={}",
+    @PostMapping("/feedback/discussion")
+    public FeedbackResponse submitDiscussion(@Valid @RequestBody FeedbackRequest request) {
+        log.debug("Received discussion submission: type={}, title={}, githubUsername={}",
                   request.getType(), request.getTitle(),
                   request.getUserInfo() != null ? request.getUserInfo().getGithubUsername() : "N/A");
 
@@ -54,5 +55,21 @@ public class FeedbackController {
         return response;
     }
 
-}
+    /**
+     * 提交反馈为 Issue
+     *
+     * @param request 反馈请求对象
+     * @return 包含提交结果的 HTTP 响应
+     */
+    @PostMapping("/feedback/issue")
+    public FeedbackResponse submitIssue(@Valid @RequestBody FeedbackRequest request) {
+        log.debug("Received issue submission: type={}, title={}, githubUsername={}",
+                  request.getType(), request.getTitle(),
+                  request.getUserInfo() != null ? request.getUserInfo().getGithubUsername() : "N/A");
 
+        FeedbackResponse response = feedbackService.submitIssue(request);
+        BaseCodes.SUCCESS.isTrue(response.getSuccess());
+        return response;
+    }
+
+}

@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import dev.dong4j.zeka.stack.api.plugin.feedback.client.GitHubGraphQLClient;
+import dev.dong4j.zeka.stack.api.plugin.feedback.client.GitHubIssueClient;
 import dev.dong4j.zeka.stack.api.plugin.feedback.config.GitHubProperties;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackRequest;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackResponse;
@@ -39,6 +40,8 @@ public class FeedbackService {
 
     /** GitHub GraphQL 客户端实例, 用于与 GitHub 的 GraphQL API 进行交互, 执行如创建讨论等操作. */
     private final GitHubGraphQLClient gitHubClient;
+    /** GitHub Issue 客户端实例, 用于创建 Issue */
+    private final GitHubIssueClient gitHubIssueClient;
     /** GitHub 配置属性, 包含与 GitHub 相关的配置信息, 例如讨论类别映射等 */
     private final GitHubProperties gitHubProperties;
 
@@ -76,6 +79,34 @@ public class FeedbackService {
 
         } catch (IOException e) {
             log.debug("Failed to submit feedback", e);
+            return FeedbackResponse.builder()
+                .success(false)
+                .error("提交反馈失败: " + e.getMessage())
+                .build();
+        }
+    }
+
+    /**
+     * 提交反馈为 Issue
+     * <p> 根据反馈请求构建标题和内容, 并在 GitHub 上创建一个新的 Issue, 返回反馈响应.</p>
+     *
+     * @param request 包含反馈信息的请求对象, 不能为空
+     * @return 反馈响应对象, 包含提交结果和相关信息
+     */
+    public FeedbackResponse submitIssue(FeedbackRequest request) {
+        try {
+            String title = buildTitle(request);
+            String body = buildBody(request);
+
+            FeedbackResponse.IssueInfo issueInfo = gitHubIssueClient.createIssue(title, body);
+
+            return FeedbackResponse.builder()
+                .success(true)
+                .issue(issueInfo)
+                .message("反馈已成功提交")
+                .build();
+        } catch (IOException e) {
+            log.debug("Failed to submit issue feedback", e);
             return FeedbackResponse.builder()
                 .success(false)
                 .error("提交反馈失败: " + e.getMessage())
@@ -208,4 +239,3 @@ public class FeedbackService {
             .replace("!", "\\!");
     }
 }
-

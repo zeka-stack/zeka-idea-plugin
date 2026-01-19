@@ -54,6 +54,7 @@ GITHUB_CATEGORY_ID_ANNOUNCEMENTS=category_id_for_announcements
 github:
   token: your_github_token
   repository-id: your_repository_id
+  repository: zeka-stack/zeka-idea-plugin
   category:
     general: category_id_for_general
     ideas: category_id_for_ideas
@@ -84,7 +85,7 @@ java -jar target/feedback-server-1.0.0.jar
 
 ### 提交反馈
 
-**端点**: `POST /api/feedback`
+**端点**: `POST /api/plugin/feedback/discussion`
 
 **请求体**:
 
@@ -106,6 +107,27 @@ java -jar target/feedback-server-1.0.0.jar
     "clientId": "客户端唯一标识（可选）",
     "timestamp": 1704067200000
   }
+}
+```
+
+### 提交反馈为 Issue
+
+**端点**: `POST /api/plugin/feedback/issue`
+
+**请求体**: 与 `/api/plugin/feedback/discussion` 相同
+
+**响应**:
+
+```json
+{
+  "success": true,
+  "issue": {
+    "id": "I_kwDOxxxxxxxxx",
+    "number": 1,
+    "url": "https://github.com/zeka-stack/zeka-idea-plugin/issues/1",
+    "title": "[插件反馈] Bug 报告: 反馈标题"
+  },
+  "message": "反馈已成功提交"
 }
 ```
 
@@ -149,7 +171,7 @@ java -jar target/feedback-server-1.0.0.jar
 
 ### 健康检查
 
-**端点**: `GET /api/feedback/health`
+**端点**: `GET /api/plugin/feedback/health`
 
 **响应**: `OK`
 
@@ -252,4 +274,3 @@ cd scripts
 ### 4. API 返回 401 错误？
 
 检查 GitHub Token 是否正确，以及是否具有足够的权限。
-

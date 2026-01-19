@@ -42,6 +42,9 @@ public class GitHubProperties {
     @NotBlank(message = "仓库 ID 不能为空")
     private String repositoryId;
 
+    /** 仓库全名 (owner/repo), 用于 GitHub Issues API */
+    private String repository;
+
     /**
      * 讨论类别 ID 映射
      * <p> 用于存储不同讨论类别对应的 ID 映射关系, 支持动态配置和扩展
@@ -50,4 +53,3 @@ public class GitHubProperties {
      */
     private Map<String, String> category;
 }
-

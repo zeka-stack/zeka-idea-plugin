@@ -98,7 +98,7 @@ export const Donate: React.FC = () => {
         };
 
         try {
-            const response = await fetch('/api/plugin/feedback', {
+            const response = await fetch('/api/plugin/feedback/discussion', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(requestBody)

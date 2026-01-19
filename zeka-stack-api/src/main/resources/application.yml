@@ -39,6 +39,7 @@ zhipu:
 github:
   token: ${ZEKA_STACK_PLUGIN_GITHUB_TOKEN:}
   repository-id: ${GITHUB_REPOSITORY_ID:R_kgDOO3uf9g}
+  repository: ${GITHUB_REPOSITORY:zeka-stack/zeka-idea-plugin}
   category:
     general: ${GITHUB_CATEGORY_ID_GENERAL:DIC_kwDOO3uf9s4C0Jcg}
     ideas: ${GITHUB_CATEGORY_ID_IDEAS:DIC_kwDOO3uf9s4C0Jci}

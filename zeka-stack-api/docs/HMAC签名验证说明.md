@@ -39,7 +39,7 @@ signature = Base64( HMAC_SHA256(secret, canonicalString UTF-8) )
 假设：
 
 - Method: `POST`
-- Path: `/api/feedback`
+- Path: `/api/plugin/feedback/discussion`
 - Body: `{"title":"test"}`
 - Timestamp: `1735060000`
 - Nonce: `550e8400-e29b-41d4-a716-446655440000`
@@ -55,7 +55,7 @@ signature = Base64( HMAC_SHA256(secret, canonicalString UTF-8) )
 2. 构建规范字符串：
    ```
    POST\n
-   /api/feedback\n
+   /api/plugin/feedback/discussion\n
    a1b2c3d4...\n
    1735060000\n
    550e8400-e29b-41d4-a716-446655440000
@@ -178,7 +178,7 @@ echo -n '{"title":"test"}' | sha256sum
 # 2. 构建规范字符串并计算签名（需要编写脚本）
 
 # 3. 发送请求（使用插件的 pluginId 作为 clientId）
-curl -X POST https://zekastack.dong4j.site/api/feedback \
+curl -X POST https://zekastack.dong4j.site/api/plugin/feedback/discussion \
   -H "Content-Type: application/json" \
   -H "X-Client-Id: dev.dong4j.zeka.stack.idea.plugin" \
   -H "X-Timestamp: 1735060000" \
@@ -215,4 +215,3 @@ IDEA 插件会自动生成签名头，直接使用即可。
 3. **时间戳错误**：
     - 检查客户端和服务端时间是否同步
     - 调整系统时间或使用 NTP 同步
-
