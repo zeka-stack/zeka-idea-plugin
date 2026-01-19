@@ -73,7 +73,7 @@ export const Home: React.FC = () => {
                 </span>
                             </h1>
                             <p className="text-xl text-gray-500 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                                您的终极 IDE 伴侣。集成 AI 编码引擎、Swagger 接口管理、Javadoc 自动生成与 Nacos 配置中心，重新定义开发效率。
+                                您的终极 IDE 伴侣。集成 AI 编码引擎、Changelog 生成、Javadoc 自动生成、 Nacos 配置中心等使用插件，重新定义开发效率。
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                                 <button className="w-full sm:w-auto px-8 py-3.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">

@@ -159,7 +159,7 @@ export const FeatureRequests = () => {
 
                 {/* Footer Text */}
                 <div className="mt-16 text-center text-sm text-gray-400">
-                    Powered by <a href="#" className="font-medium text-gray-600 hover:underline">Cool Request</a>
+                    Powered by <a href="#" className="font-medium text-gray-600 hover:underline">dong4j</a>
                 </div>
             </main>
 
