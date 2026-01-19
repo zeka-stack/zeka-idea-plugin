@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PluginUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -39,6 +41,21 @@ public class FileSelectionJavadocService {
      * @param files   选中的文件或目录
      */
     public void generateForFiles(@Nullable Project project, @Nullable VirtualFile[] files) {
+        generateForFiles(project, files, StatisticsUserAction.UNKNOWN, StatisticsUserAction.UNKNOWN);
+    }
+
+    /**
+     * 为选中的文件或目录生成 Javadoc 注释
+     *
+     * @param project    当前项目
+     * @param files      选中的文件或目录
+     * @param dirAction  目录触发入口
+     * @param fileAction 文件触发入口
+     */
+    public void generateForFiles(@Nullable Project project,
+                                 @Nullable VirtualFile[] files,
+                                 @NotNull StatisticsUserAction dirAction,
+                                 @NotNull StatisticsUserAction fileAction) {
         if (project == null || project.isDisposed() || files == null || files.length == 0) {
             return;
         }
@@ -57,9 +74,13 @@ public class FileSelectionJavadocService {
 
         for (VirtualFile file : files) {
             if (file.isDirectory()) {
-                tasks.addAll(collector.collectFromDirectory(file));
+                List<DocumentationTask> dirTasks = collector.collectFromDirectory(file);
+                applyUserAction(dirTasks, dirAction);
+                tasks.addAll(dirTasks);
             } else if (PluginUtil.isSupportedFile(file)) {
-                tasks.addAll(collector.collectFromVirtualFile(file));
+                List<DocumentationTask> fileTasks = collector.collectFromVirtualFile(file);
+                applyUserAction(fileTasks, fileAction);
+                tasks.addAll(fileTasks);
             }
         }
 
@@ -85,5 +106,19 @@ public class FileSelectionJavadocService {
 
         // 使用服务生成文档
         service.generateDocumentation(project, tasks, JavadocBundle.message("task.target.selection"));
+    }
+
+    /**
+     * 为指定的文档任务列表应用用户操作行为
+     * <p> 遍历任务列表, 将每个任务的用户操作行为设置为指定的用户操作类型, 用于记录用户触发来源或行为类型
+     *
+     * @param tasks      任务列表, 必须非空, 包含待设置用户操作行为的文档任务
+     * @param userAction 用户操作行为类型, 必须非空, 表示用户触发该任务的具体行为类型
+     */
+    private void applyUserAction(@NotNull List<DocumentationTask> tasks,
+                                 @NotNull StatisticsUserAction userAction) {
+        for (DocumentationTask task : tasks) {
+            task.setUserAction(userAction);
+        }
     }
 }

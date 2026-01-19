@@ -18,7 +18,9 @@ import java.util.concurrent.TimeoutException;
 
 import dev.dong4j.zeka.stack.idea.javadoc.ai.AIRequestComposer;
 import dev.dong4j.zeka.stack.idea.javadoc.ai.JavadocAIResponseListener;
+import dev.dong4j.zeka.stack.idea.javadoc.ai.JavadocUsageCapturingListener;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.javadoc.statistics.JavadocStatisticsReporter;
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.task.ProgressManager;
 import dev.dong4j.zeka.stack.idea.javadoc.task.ProviderStatistics;
@@ -282,8 +284,10 @@ public class ParallelTaskWorker implements Runnable {
         AIChatRequest request = AIRequestComposer.compose(settings, task);
 
         // 生成文档内容
-        AIResponseListener listener = verboseLogging ? new JavadocAIResponseListener(project) : null;
-        String documentation = aiService.generateContent(project, request, provider, listener);
+        long startTimeMs = System.currentTimeMillis();
+        AIResponseListener baseListener = verboseLogging ? new JavadocAIResponseListener(project) : null;
+        JavadocUsageCapturingListener usageListener = new JavadocUsageCapturingListener(baseListener);
+        String documentation = aiService.generateContent(project, request, provider, usageListener);
 
         if (documentation.trim().isEmpty()) {
             throw new AIServiceException("生成的文档为空", AIServiceException.ErrorCode.INVALID_RESPONSE);
@@ -293,6 +297,20 @@ public class ParallelTaskWorker implements Runnable {
         ApplicationManager.getApplication().invokeAndWait(() -> {
             documentationInserter.insertDocumentation(task, documentation, verboseLogging);
         });
+
+        long latencyMs = System.currentTimeMillis() - startTimeMs;
+        JavadocStatisticsReporter.reportSuccess(
+            project,
+            task,
+            provider,
+            request,
+            documentation,
+            latencyMs,
+            usageListener.getPromptTokens(),
+            usageListener.getCompletionTokens(),
+            usageListener.getTotalTokens(),
+            task.getUserAction()
+                                               );
 
         return documentation;
     }

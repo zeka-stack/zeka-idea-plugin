@@ -16,6 +16,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.service.DocumentationGenerationService
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -117,6 +118,9 @@ public class CommitJavadocGenerator {
      * @param tasks 文档生成任务列表
      */
     void generateForTasks(@NotNull List<DocumentationTask> tasks) {
+        for (DocumentationTask task : tasks) {
+            task.setUserAction(StatisticsUserAction.COMMIT_PANEL);
+        }
         DocumentationGenerationService service = new DocumentationGenerationService();
         service.generateDocumentation(project, tasks, JavadocBundle.message("commit.target.description"),
                                       stats -> {

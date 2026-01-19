@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.javadoc.service.FileSelectionJavadocService;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -40,14 +41,14 @@ public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
-        
+
         // 检查项目是否处于索引模式
         if (project != null && DumbService.isDumb(project)) {
             e.getPresentation().setEnabled(false);
             e.getPresentation().setVisible(true);
             return;
         }
-        
+
         boolean isSupportedFile = false;
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
@@ -81,11 +82,33 @@ public class GenerateJavadocShortcutAction extends AbstractGenerateJavaDocAction
             VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
             if (files != null && files.length > 0) {
                 // 委托给文件选择服务处理批量文件/目录
-                new FileSelectionJavadocService().generateForFiles(e.getProject(), files);
+                new FileSelectionJavadocService().generateForFiles(
+                    e.getProject(),
+                    files,
+                    StatisticsUserAction.PROJECT_TREE_SHORTCUT_DIR,
+                    StatisticsUserAction.PROJECT_TREE_SHORTCUT_FILE
+                                                                  );
             } else {
                 // 既没有编辑器也没有选中文件，尝试按原有逻辑处理（可能会因为没有文件而直接返回）
                 process(e, false);
             }
         }
+    }
+
+    /**
+     * 根据是否包含编辑器确定用户操作类型
+     * <p> 当存在编辑器时, 返回 <code>StatisticsUserAction.EDITOR_SHORTCUT</code>; 否则返回 <code>StatisticsUserAction.UNKNOWN</code>.
+     * 该方法用于在快捷操作触发时, 根据上下文判断用户是通过编辑器界面还是其他方式触发操作, 以便记录统计信息.
+     *
+     * @param e             动作事件对象, 不能为空, 用于获取当前上下文信息
+     * @param editorPresent 是否存在编辑器, 用于判断操作来源
+     * @return 用户操作类型, 若存在编辑器则返回 <code>StatisticsUserAction.EDITOR_SHORTCUT</code>, 否则返回 <code>StatisticsUserAction.UNKNOWN</code>
+     */
+    @Override
+    protected @NotNull StatisticsUserAction resolveUserAction(@NotNull AnActionEvent e, boolean editorPresent) {
+        if (editorPresent) {
+            return StatisticsUserAction.EDITOR_SHORTCUT;
+        }
+        return StatisticsUserAction.UNKNOWN;
     }
 }

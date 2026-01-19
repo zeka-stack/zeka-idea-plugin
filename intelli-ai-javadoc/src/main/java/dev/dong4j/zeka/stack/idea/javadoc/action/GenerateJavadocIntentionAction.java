@@ -23,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PsiElementLocator;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import icons.AIJicons;
 import lombok.extern.slf4j.Slf4j;
 
@@ -209,8 +210,7 @@ public class GenerateJavadocIntentionAction extends PsiElementBaseIntentionActio
         }
 
         // 使用基类的统一逻辑处理
-        baseAction.process(project, editor, element.getContainingFile(), true);
+        baseAction.process(project, editor, element.getContainingFile(), true, StatisticsUserAction.INTENTION);
     }
 
 }
-

@@ -24,6 +24,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PsiElementLocator;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,7 +64,8 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         }
 
         Editor editor = e.getData(CommonDataKeys.EDITOR);
-        process(project, editor, psiFile, needEditor);
+        StatisticsUserAction userAction = resolveUserAction(e, editor != null);
+        process(project, editor, psiFile, needEditor, userAction);
     }
 
     /**
@@ -82,7 +84,8 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
     protected void process(@NotNull Project project,
                            Editor editor,
                            @NotNull PsiFile psiFile,
-                           boolean needEditor) {
+                           boolean needEditor,
+                           @NotNull StatisticsUserAction userAction) {
 
         // 检查 AI Provider 配置
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
@@ -134,9 +137,46 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
             log.debug("智能定位到: {}", targetDescription);
             tasks = collector.collectFromElement(locateResult.element());
         }
+        for (DocumentationTask task : tasks) {
+            task.setUserAction(userAction);
+        }
         // 生成文档
         generateDocumentation(project, tasks, targetDescription);
 
+    }
+
+    /**
+     * 处理生成 Javadoc 的逻辑 (重载版本)
+     * <p>
+     * 此方法是主处理方法的重载版本, 用于在不指定用户操作类型时调用. 它将调用主处理方法, 并传入默认的用户操作类型 {@link StatisticsUserAction#UNKNOWN}.
+     * 该方法通常由其他重载方法调用, 以避免重复代码.
+     *
+     * @param project    项目对象
+     * @param editor     编辑器对象
+     * @param psiFile    Psi 文件对象
+     * @param needEditor 是否需要编辑器
+     */
+    protected void process(@NotNull Project project,
+                           Editor editor,
+                           @NotNull PsiFile psiFile,
+                           boolean needEditor) {
+        process(project, editor, psiFile, needEditor, StatisticsUserAction.UNKNOWN);
+    }
+
+    /**
+     * 解析用户操作行为
+     * <p>
+     * 根据动作事件和编辑器是否存在状态, 返回默认的用户操作行为枚举值.
+     * 该方法用于在生成 Javadoc 时记录用户触发行为的来源, 便于后续统计分析.
+     * 子类可重写此方法以提供更具体的用户行为识别逻辑.
+     *
+     * @param e             动作事件对象, 包含当前上下文信息
+     * @param editorPresent 是否存在编辑器对象
+     * @return 默认用户操作行为, 当前实现返回 {@link StatisticsUserAction#UNKNOWN}
+     */
+    @NotNull
+    protected StatisticsUserAction resolveUserAction(@NotNull AnActionEvent e, boolean editorPresent) {
+        return StatisticsUserAction.UNKNOWN;
     }
 
     /**
@@ -182,14 +222,14 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
-        
+
         // 检查项目是否处于索引模式
         if (project != null && DumbService.isDumb(project)) {
             e.getPresentation().setEnabled(false);
             e.getPresentation().setVisible(true);
             return;
         }
-        
+
         PsiFile psiFile = e.getData(CommonDataKeys.PSI_FILE);
         boolean isSupportedFile = psiFile instanceof PsiJavaFile || psiFile instanceof KtFile;
 
@@ -263,4 +303,3 @@ public abstract class AbstractGenerateJavaDocAction extends AnAction {
         return false;
     }
 }
-

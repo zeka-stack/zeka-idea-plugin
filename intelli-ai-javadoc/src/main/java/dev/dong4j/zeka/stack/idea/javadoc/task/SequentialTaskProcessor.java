@@ -17,7 +17,9 @@ import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.javadoc.ai.AIRequestComposer;
 import dev.dong4j.zeka.stack.idea.javadoc.ai.JavadocAIResponseListener;
+import dev.dong4j.zeka.stack.idea.javadoc.ai.JavadocUsageCapturingListener;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.javadoc.statistics.JavadocStatisticsReporter;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -204,8 +206,10 @@ public class SequentialTaskProcessor {
             }
 
             // 使用 AIService API 生成内容
-            AIResponseListener listener = verboseLogging ? new JavadocAIResponseListener(project) : null;
-            String documentation = aiService.generateContent(project, request, provider, listener);
+            long startTimeMs = System.currentTimeMillis();
+            AIResponseListener baseListener = verboseLogging ? new JavadocAIResponseListener(project) : null;
+            JavadocUsageCapturingListener usageListener = new JavadocUsageCapturingListener(baseListener);
+            String documentation = aiService.generateContent(project, request, provider, usageListener);
 
             if (documentation.trim().isEmpty()) {
                 task.setStatus(DocumentationTask.TaskStatus.FAILED);
@@ -225,6 +229,20 @@ public class SequentialTaskProcessor {
             if (progressManager != null) {
                 progressManager.incrementCompleted();
             }
+
+            long latencyMs = System.currentTimeMillis() - startTimeMs;
+            JavadocStatisticsReporter.reportSuccess(
+                project,
+                task,
+                provider,
+                request,
+                documentation,
+                latencyMs,
+                usageListener.getPromptTokens(),
+                usageListener.getCompletionTokens(),
+                usageListener.getTotalTokens(),
+                task.getUserAction()
+                                                   );
 
             AIConsoleLoggerUtil.printSuccess(project, "✓ 任务完成");
             AIConsoleLoggerUtil.print(project, "");
@@ -304,4 +322,3 @@ public class SequentialTaskProcessor {
         return AIProviderSettings.getInstance().verboseLogging;
     }
 }
-

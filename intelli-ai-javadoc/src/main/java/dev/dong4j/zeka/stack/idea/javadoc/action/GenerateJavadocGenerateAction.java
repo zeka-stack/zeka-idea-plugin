@@ -4,6 +4,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,5 +32,17 @@ public class GenerateJavadocGenerateAction extends AbstractGenerateJavaDocAction
     public void actionPerformed(@NotNull AnActionEvent e) {
         process(e, true);
     }
-}
 
+    /**
+     * 解析用户操作类型
+     * <p> 根据当前动作事件和编辑器是否存在, 返回对应的统计用户操作类型, 此处固定返回编辑器上下文菜单操作类型.
+     *
+     * @param e             动作事件对象, 包含事件相关信息
+     * @param editorPresent 是否存在编辑器上下文
+     * @return 固定返回 {@link StatisticsUserAction#EDITOR_CONTEXT_MENU}, 表示编辑器上下文菜单操作
+     */
+    @Override
+    protected @NotNull StatisticsUserAction resolveUserAction(@NotNull AnActionEvent e, boolean editorPresent) {
+        return StatisticsUserAction.EDITOR_CONTEXT_MENU;
+    }
+}

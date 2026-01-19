@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.javadoc.service.FileSelectionJavadocService;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 
 /**
  * 为文件生成 Javadoc 的动作类
@@ -47,7 +48,12 @@ public class GenerateJavadocForFilesAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
-        new FileSelectionJavadocService().generateForFiles(project, files);
+        new FileSelectionJavadocService().generateForFiles(
+            project,
+            files,
+            StatisticsUserAction.PROJECT_TREE_CONTEXT_MENU_DIR,
+            StatisticsUserAction.PROJECT_TREE_CONTEXT_MENU_FILE
+                                                          );
     }
 
     /**

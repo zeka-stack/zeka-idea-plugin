@@ -4,6 +4,7 @@ import com.intellij.psi.PsiElement;
 
 import org.jetbrains.annotations.NotNull;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -67,6 +68,10 @@ public class DocumentationTask {
     @Getter
     @Setter
     private String errorMessage;
+    /** 触发入口 */
+    @Getter
+    @Setter
+    private StatisticsUserAction userAction = StatisticsUserAction.UNKNOWN;
 
     /**
      * 任务类型枚举
@@ -266,4 +271,3 @@ public class DocumentationTask {
                '}';
     }
 }
-
