@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 查看文档
+    url: https://zekastack.dong4j.site
+    about: 访问插件文档和用户手册
+  - name: 💬 讨论区
+    url: https://github.com/zeka-stack/zeka-idea-plugin/discussions
+    about: 在讨论区提问或分享想法
