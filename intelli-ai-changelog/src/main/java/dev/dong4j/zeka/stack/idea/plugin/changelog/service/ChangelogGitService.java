@@ -24,6 +24,7 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Git 变更日志服务类
@@ -56,13 +58,15 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
  * String currentBranch = service.getCurrentBranch();
  * }</pre>
  *
+ * @param project 项目实例, 用于获取基础路径和执行 Git 操作
  * @author dong4j
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2026.01.07
  * @since 1.0.0
  */
-final class ChangelogGitService {
+@Slf4j
+record ChangelogGitService(Project project) {
 
     /**
      * 当 CodeDiffUtil 过滤导致 diff 为空时，使用 JGit diff 作为兜底输出的最大字符数。
@@ -74,9 +78,6 @@ final class ChangelogGitService {
     private static final int FALLBACK_JGIT_HEAD_CHARS = 80_000;
     /** 兜底 diff 截断时保留的尾部字符数 */
     private static final int FALLBACK_JGIT_TAIL_CHARS = 20_000;
-
-    /** 项目实例, 用于获取基础路径和执行 Git 操作 */
-    public final Project project;
 
     /**
      * 构造函数, 初始化 ChangelogGitService 对象
@@ -135,7 +136,7 @@ final class ChangelogGitService {
     @NotNull
     List<ChangelogCommitModels.CommitInfo> readCommitsFromRange(@NotNull Path gitRoot, @Nullable String range) {
         List<ChangelogCommitModels.CommitInfo> commits = new ArrayList<>();
-        Repository repository = getRepository(gitRoot);
+        Repository repository = getRepository(gitRoot.toFile());
         if (repository == null) {
             return commits;
         }
@@ -304,34 +305,30 @@ final class ChangelogGitService {
         if (basePath == null) {
             return null;
         }
-        try {
-            // 兼容普通仓库与 git worktree（worktree 下 .git 可能是文件而非目录）
-            return new FileRepositoryBuilder()
-                .readEnvironment()
-                .findGitDir(new File(basePath))
-                .build();
-        } catch (IOException e) {
-            return null;
-        }
+        return getRepository(new File(basePath));
     }
 
     /**
      * 获取指定路径下的 Git 仓库对象
-     * <p> 该方法尝试从给定的路径解析 Git 仓库目录, 并返回对应的 Repository 对象.
-     * 如果路径不存在或解析失败, 则返回 null.
+     * <p> 该方法尝试从给定的路径解析 Git 仓库目录, 并返回对应的 Repository 对象. 如果路径不存在或解析失败, 则返回 null.
      *
-     * @param gitRoot Git 仓库的根路径
+     * @param current Git 仓库的根路径, 不能为空
      * @return 解析得到的 Repository 对象, 如果解析失败则返回 null
      */
     @Nullable
-    Repository getRepository(@NotNull Path gitRoot) {
+    Repository getRepository(@NotNull File current) {
         try {
             // 兼容普通仓库与 git worktree（worktree 下 .git 可能是文件而非目录）
-            return new FileRepositoryBuilder()
+            FileRepositoryBuilder builder = new FileRepositoryBuilder()
                 .readEnvironment()
-                .findGitDir(gitRoot.toFile())
-                .build();
-        } catch (IOException ignored) {
+                .findGitDir(current);
+            if (builder.getGitDir() == null) {
+                log.debug("Can't find git repository");
+                return null;
+            }
+            return builder.build();
+        } catch (IOException | IllegalArgumentException e) {
+            log.debug(e.getMessage(), e);
             return null;
         }
     }
@@ -359,7 +356,7 @@ final class ChangelogGitService {
             commitIter.reset(reader, commit.getTree());
 
             List<DiffEntry> diffs;
-            try (DiffFormatter formatter = new DiffFormatter(new java.io.ByteArrayOutputStream())) {
+            try (DiffFormatter formatter = new DiffFormatter(new ByteArrayOutputStream())) {
                 formatter.setRepository(repository);
                 formatter.setDiffComparator(RawTextComparator.DEFAULT);
                 formatter.setDetectRenames(true);
@@ -593,7 +590,7 @@ final class ChangelogGitService {
      * @throws IOException 当读取或写入数据时发生 I/O 错误
      */
     private @NotNull String formatEntryWithJGit(@NotNull Repository repository, @NotNull DiffEntry entry) throws IOException {
-        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (DiffFormatter formatter = new DiffFormatter(output)) {
             formatter.setRepository(repository);
             formatter.setDiffComparator(RawTextComparator.DEFAULT);
