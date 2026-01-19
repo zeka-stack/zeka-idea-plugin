@@ -46,6 +46,7 @@ import javax.swing.border.TitledBorder;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,7 +70,7 @@ public class FeedbackPanel {
      *
      * @see #sendHttpRequest(Map)
      */
-    private static final String FEEDBACK_API_URL = "https://api.dong4j.site/plugin/feedback";
+    private static final String FEEDBACK_API_URL = SiteContents.FEEDBACK_API_URL;
     // private static final String FEEDBACK_API_URL = "http://127.0.0.1:8080/api/feedback";
     /** GitHub Discussions 链接 */
     private static final String GITHUB_DISCUSSIONS_URL = "https://github.com/zeka-stack/zeka-idea-plugin/discussions";

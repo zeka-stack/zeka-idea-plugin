@@ -7,6 +7,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
+
 /**
  * URL 常量与可达性验证工具类
  * <p> 提供与项目相关的各类链接常量, 以及网络可达性检测功能.
@@ -33,25 +35,25 @@ public class Urls {
     public static final AtomicBoolean reachableAtomic = new AtomicBoolean(false);
 
     /** GitHub 仓库链接 */
-    public static final String GITHUB_LINK = "https://github.com/zeka-stack/zeka-idea-plugin";
+    public static final String GITHUB_LINK = SiteContents.GITHUB_LINK;
     /** GitHub Issues 链接 */
-    public static final String GITHUB_ISSUE_LINK = "https://github.com/zeka-stack/zeka-idea-plugin/issues/new";
+    public static final String GITHUB_ISSUE_LINK = SiteContents.GITHUB_ISSUE_LINK;
     /** 支持页面链接 */
-    public static final String SUPPORT_LINK = "https://plugins.jetbrains.com/plugin/29152";
+    public static final String SUPPORT_LINK = SiteContents.SUPPORT_LINK;
     /**
      * 捐赠链接
      * <p> 提供一个链接以便用户可以通过此链接进行捐赠.
      */
-    public static final String DONATE_LINK = "https://ideaplugin.dong4j.site/buy-me-a-coffee";
+    public static final String DONATE_LINK = SiteContents.DONATE;
     /**
      * 捐赠者列表链接
      * <p> 指向包含捐赠者名单的博客页面.
      */
-    public static final String DONORS_LIST_LINK = "https://blog.dong4j.site/about";
+    public static final String DONORS_LIST_LINK = SiteContents.DONORS_LIST_LINK;
     /** 插件市场链接, 存储插件在 JetBrains 插件市场的 URL */
-    public static final String MARKETPLACE_LINK = "https://plugins.jetbrains.com/plugin/29152";
+    public static final String MARKETPLACE_LINK = SiteContents.MARKETPLACE_LINK;
     /** 插件市场评价链接 */
-    public static final String MARKETPLACE_REVIEWS_LINK = "https://plugins.jetbrains.com/vendor/9afaba35-91ea-4364-8ced-64db868dd23e";
+    public static final String MARKETPLACE_REVIEWS_LINK = SiteContents.MARKETPLACE_REVIEWS_LINK;
     /** 邮箱链接 */
     public static final String EMAIL_LINK = "dong4j@gmail.com";
 

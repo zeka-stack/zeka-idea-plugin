@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StatisticsUploader {
     /** 统计数据上报的 API 地址 */
-    // private static final String UPLOAD_URL = "https://api.dong4j.site/plugin/events";
+    // private static final String UPLOAD_URL = dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents.UPLOAD_URL;
     private static final String UPLOAD_URL = "http://localhost:8080/api/plugin/events";
 
     /** 用户统计设置配置 */

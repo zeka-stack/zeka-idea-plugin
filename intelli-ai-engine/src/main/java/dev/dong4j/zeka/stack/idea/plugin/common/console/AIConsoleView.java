@@ -56,6 +56,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import lombok.Getter;
 
 
@@ -395,9 +396,9 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         enableButton.addActionListener(event -> enableVerboseLoggingAndShowConsole());
 
         JLabel moreLink = createLinkLabel(AICommonBundle.message("console.placeholder.learn.more"),
-                                          "https://ideaplugin.dong4j.site/engine/landing.html");
+                                          SiteContents.ENGINE);
         JLabel whatsNewLink = createLinkLabel(AICommonBundle.message("console.placeholder.whats.new"),
-                                              "https://ideaplugin.dong4j.site/whatsnew");
+                                              SiteContents.WHATSNEW);
         JLabel separator = new JBLabel("|");
 
         JPanel actionRow = new JBPanel<>(new FlowLayout(FlowLayout.CENTER, 12, 0));
@@ -445,13 +446,13 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setOpaque(false);
         listPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        listPanel.add(buildPluginItem("IntelliAI Javadoc", "https://ideaplugin.dong4j.site/javadoc/landing.html"));
+        listPanel.add(buildPluginItem("IntelliAI Javadoc", SiteContents.JAVADOC));
         listPanel.add(Box.createVerticalStrut(6));
-        listPanel.add(buildPluginItem("IntelliAI Changelog", "https://ideaplugin.dong4j.site/changelog/landing.html"));
+        listPanel.add(buildPluginItem("IntelliAI Changelog", SiteContents.CHANGELOG));
         listPanel.add(Box.createVerticalStrut(6));
-        listPanel.add(buildPluginItem("IntelliAI Tracer", "https://ideaplugin.dong4j.site/tracer/landing.html"));
+        listPanel.add(buildPluginItem("IntelliAI Tracer", SiteContents.TRACER));
         listPanel.add(Box.createVerticalStrut(6));
-        listPanel.add(buildPluginItem("IntelliAI Swagger", "https://ideaplugin.dong4j.site/swagger/landing.html"));
+        listPanel.add(buildPluginItem("IntelliAI Swagger", SiteContents.SWAGGER));
 
         JPanel block = new JBPanel<>();
         block.setLayout(new BoxLayout(block, BoxLayout.Y_AXIS));
@@ -473,7 +474,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * <p>每个插件项包含一个项目符号 (•) 和一个可点击的超链接, 点击后会打开对应插件的网页.
      * <p>使用示例:
      * <pre>{@code
-     * JPanel pluginItem = buildPluginItem("IntelliAI Javadoc", "https://ideaplugin.dong4j.site/javadoc/landing.html");
+     * JPanel pluginItem = buildPluginItem("IntelliAI Javadoc", SiteContents.JAVADOC);
      * }</pre>
      *
      * @param name 插件名称, 不能为空

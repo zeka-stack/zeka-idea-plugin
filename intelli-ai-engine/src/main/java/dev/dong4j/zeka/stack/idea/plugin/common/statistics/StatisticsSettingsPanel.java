@@ -27,6 +27,7 @@ import javax.swing.JPanel;
 import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 
 /**
  * 统计设置面板
@@ -69,8 +70,6 @@ public class StatisticsSettingsPanel {
      * <p>
      * 设备 ID 复制功能通过点击复制按钮实现, 复制后弹出提示.
      * <p>
-     * 隐私政策链接点击后将打开 <a href="https://api.dong4j.site/plugin/privacy">https://api.dong4j.site/plugin/privacy</a>
-     * 数据查看链接点击后将打开 <a href="https://api.dong4j.site/plugin/datas">https://api.dong4j.site/plugin/datas</a>
      *
      * @see #updateComponentsEnabled()* @see #showCopySuccessTip(JComponent)
      * @see #createCollapsiblePanel(String, JPanel)
@@ -106,7 +105,7 @@ public class StatisticsSettingsPanel {
         privacyPanel.add(privacyAgreementCheckBox, BorderLayout.WEST);
         HyperlinkLabel privacyPolicyLink = new HyperlinkLabel(AICommonBundle.message("settings.statistics.view.privacy.policy"));
         privacyPolicyLink.setHyperlinkText(AICommonBundle.message("settings.statistics.view.privacy.policy"));
-        privacyPolicyLink.addHyperlinkListener(e -> BrowserUtil.browse("https://api.dong4j.site/plugin/privacy"));
+        privacyPolicyLink.addHyperlinkListener(e -> BrowserUtil.browse(SiteContents.PRIVACY));
         privacyPanel.add(privacyPolicyLink, BorderLayout.CENTER);
         content.add(privacyPanel);
         content.add(Box.createVerticalStrut(8));
@@ -116,7 +115,7 @@ public class StatisticsSettingsPanel {
         enableCheckboxPanel.add(enableStatistics, BorderLayout.WEST);
         HyperlinkLabel viewDataLink = new HyperlinkLabel(AICommonBundle.message("settings.statistics.view.data"));
         viewDataLink.setHyperlinkText(AICommonBundle.message("settings.statistics.view.data"));
-        viewDataLink.addHyperlinkListener(e -> BrowserUtil.browse("https://api.dong4j.site/plugin/datas"));
+        viewDataLink.addHyperlinkListener(e -> BrowserUtil.browse(SiteContents.DATAS));
         enableCheckboxPanel.add(viewDataLink, BorderLayout.CENTER);
         content.add(enableCheckboxPanel);
         content.add(Box.createVerticalStrut(8));

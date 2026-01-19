@@ -36,6 +36,7 @@ import javax.swing.Timer;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import lombok.Getter;
 
 /**
@@ -442,7 +443,7 @@ public class PersonalInfoPanel {
         }
 
         // Buy Me a Coffee 链接
-        final String buyMeACoffeeUrl = "https://ideaplugin.dong4j.site/buy-me-a-coffee";
+        final String buyMeACoffeeUrl = SiteContents.DONATE;
         JBLabel buyMeACoffeeLabel = new JBLabel(
             "<html><div style='text-align: center; color: #999; font-size: 11px;'>" +
             "<a href='" + buyMeACoffeeUrl + "'>Buy Me a Coffee</a>" +

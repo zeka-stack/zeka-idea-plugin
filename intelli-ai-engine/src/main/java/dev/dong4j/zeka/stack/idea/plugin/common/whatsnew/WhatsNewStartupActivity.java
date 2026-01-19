@@ -23,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class WhatsNewStartupActivity implements ProjectActivity {
-    private static final String VERSION_URL = "https://ideaplugin.dong4j.site/version";
+    private static final String VERSION_URL = SiteContents.VERSION_URL;
     private static final PluginId PLUGIN_ID = PluginId.getId(EngineContents.PLUGIN_ID);
 
     private final AtomicBoolean hasRun = new AtomicBoolean(false);

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 
 /**
  * 共享模型列表获取能力
@@ -24,7 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 public interface ZhipudModelListProvider {
 
     /** 模型列表 API 基础 URL */
-    String MODEL_API_BASE_URL = "https://api.dong4j.site/plugin/model";
+    String MODEL_API_BASE_URL = SiteContents.MODEL_API_BASE_URL;
     // String MODEL_API_BASE_URL = "http://localhost:8080/api/plugin/v1/models";
 
     /** 请求超时时间（毫秒） */
