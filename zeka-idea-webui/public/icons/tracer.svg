@@ -1,0 +1,27 @@
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg class="icon" viewBox="0 0 40 40" version="1.1" xmlns="http://www.w3.org/2000/svg"
+     data-darkreader-inline-fill="" width="40" height="40">
+    <!-- 透明背景，整体尺寸 40x40 -->
+    <!-- 图标内容缩放并居中，四周留出透明边距 -->
+    <g transform="translate(4, 4) scale(0.03125)">
+        <!-- scale(0.03125) = 32/1024，将 1024x1024 的图标缩放到 32x32，四周各留 4px 透明边距 -->
+        <path
+            d="M509.441408 1022.464a193.6128 193.6128 0 0 1-92.0064-23.1168L104.807808 830.0288C47.361408 798.0544 12.443008 741.4528 12.801408 680.5248V342.016c0-60.8512 34.5344-117.4784 91.9552-149.504L417.435008 23.1168a194.7136 194.7136 0 0 1 184.0128 0L914.177408 192.512c57.4208 32.1024 92.2368 88.6528 92.0064 149.504v338.5088c0 60.8512-34.5344 117.5296-92.0064 149.504l-312.704 169.3184a193.1776 193.1776 0 0 1-92.0064 23.1168z"
+            fill="#1EDAB5"
+            style="--darkreader-inline-fill: var(--darkreader-background-1edab5, #35aa8c);">
+        </path>
+        <path
+            d="M486.708608 1022.1056c-40.9088-191.2064-40.9088-325.7856-42.1888-360.064L576.001408 384c128.7424-46.8224 215.04-120.6784 408.832-122.368 14.2336 24.8832 21.76 52.992 21.9392 81.664v338.4832c0 60.8512-34.688 117.4784-92.032 149.504l-312.6784 169.2672a194.0992 194.0992 0 0 1-115.3536 21.5552z"
+            fill="#77E89B"
+            style="--darkreader-inline-fill: var(--darkreader-background-77e89b, #28794a);">
+        </path>
+        <!-- 字符区: https://text-to-svg.com/-->
+        <g transform="translate(512, 562) scale(1.2) translate(-512, -562)">
+            <path fill="#FFFFFF" fill-rule="evenodd"
+                  d="M300 350 H724 V430 H300 Z
+                     M472 430 H552 V774 H472 Z"/>
+        </g>
+    </g>
+    <!-- 右下角绿色圆点 -->
+    <circle cx="35" cy="29" r="3.5" fill="#EF4444" stroke="#FFFFFF" stroke-width="0.5"/>
+</svg>
