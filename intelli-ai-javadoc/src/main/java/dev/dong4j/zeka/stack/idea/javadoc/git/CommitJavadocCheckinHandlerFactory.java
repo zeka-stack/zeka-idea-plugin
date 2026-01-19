@@ -3,6 +3,9 @@ package dev.dong4j.zeka.stack.idea.javadoc.git;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.ui.popup.PopupStep;
+import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vcs.CheckinProjectPanel;
 import com.intellij.openapi.vcs.changes.Change;
@@ -275,7 +278,7 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
          */
         @Override
         public @NotNull String getShowDetailsLink() {
-            return JavadocBundle.message("commit.check.javadoc.details.link");
+            return JavadocBundle.message("commit.check.javadoc.fix.link");
         }
 
         /**
@@ -286,7 +289,7 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
          */
         @Override
         public @NotNull String getShowDetailsAction() {
-            return JavadocBundle.message("commit.check.javadoc.details.action");
+            return JavadocBundle.message("commit.check.javadoc.fix.action");
         }
 
         /**
@@ -308,7 +311,46 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
                 return;
             }
 
-            CommitJavadocDetailsPanel.show(project, tasks);
+            showActionsPopup(project);
+        }
+
+        /**
+         * 显示操作弹出菜单并处理用户选择
+         * <p> 此方法创建一个包含“修复 Javadoc”和“显示详细信息”两个选项的弹出菜单, 用户选择后将执行相应操作:
+         * <ul>
+         *   <li> 选择“修复 Javadoc”时, 调用 {@code CommitJavadocGenerator} 为任务生成 Javadoc</li>
+         *   <li> 选择“显示详细信息”时, 调用 {@code CommitJavadocDetailsPanel.show} 显示详细信息面板 </li>
+         * </ul>
+         * 弹出菜单会在当前窗口中心显示.
+         *
+         * @param project 当前项目对象, 用于创建弹出菜单和执行相关操作
+         */
+        private void showActionsPopup(@NotNull Project project) {
+            java.util.List<String> actions = java.util.List.of(
+                JavadocBundle.message("commit.check.javadoc.fix.action"),
+                JavadocBundle.message("commit.check.javadoc.details.action")
+                                                              );
+            BaseListPopupStep<String> step = new BaseListPopupStep<>(
+                JavadocBundle.message("commit.check.javadoc.actions.title"), actions) {
+                /**
+                 * 处理用户选择项并执行相应操作
+                 * <p> 当用户选择“修复 Javadoc”选项时, 使用 CommitJavadocGenerator 为任务生成 Javadoc; 否则显示 Javadoc 详情面板 </p>
+                 *
+                 * @param selectedValue 用户选择的值
+                 * @param finalChoice   是否为最终选择
+                 * @return 返回 FINAL_CHOICE, 表示操作完成并关闭弹窗
+                 */
+                @Override
+                public PopupStep<?> onChosen(String selectedValue, boolean finalChoice) {
+                    if (JavadocBundle.message("commit.check.javadoc.fix.action").equals(selectedValue)) {
+                        new CommitJavadocGenerator(project).generateForTasks(tasks);
+                    } else {
+                        CommitJavadocDetailsPanel.show(project, tasks);
+                    }
+                    return FINAL_CHOICE;
+                }
+            };
+            JBPopupFactory.getInstance().createListPopup(step).showCenteredInCurrentWindow(project);
         }
     }
 }
