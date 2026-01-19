@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.dong4j.zeka.stack.api.plugin.statistics.dao.EventMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="EventResultMap" type="dev.dong4j.zeka.stack.api.plugin.statistics.entity.po.Event">
+        <result column="id" property="id"/>
+        <result column="create_time" property="createTime"/>
+        <result column="device_id" property="deviceId"/>
+        <result column="client_timestamp" property="clientTimestamp"/>
+        <result column="project_name" property="projectName"/>
+        <result column="plugin_id" property="pluginId"/>
+        <result column="event_type" property="eventType"/>
+        <result column="provider" property="provider"/>
+        <result column="model" property="model"/>
+        <result column="token_count" property="tokenCount"/>
+        <result column="result_status" property="resultStatus"/>
+        <result column="latency_ms" property="latencyMs"/>
+        <result column="input_token" property="inputToken"/>
+        <result column="output_token" property="outputToken"/>
+        <result column="user_action" property="userAction"/>
+        <result column="received_time" property="receivedTime"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="all_field">
+        a.id,
+        a.`device_id`,
+        a.`client_timestamp`,
+        a.`project_name`,
+        a.`plugin_id`,
+        a.`event_type`,
+        a.`provider`,
+        a.`model`,
+        a.`token_count`,
+        a.`result_status`,
+        a.`latency_ms`,
+        a.`input_token`,
+        a.`output_token`,
+        a.`user_action`,
+        a.`received_time`
+    </sql>
+
+    <sql id="date_query">
+        <if test="query.startTime != null">
+            <![CDATA[
+                and a.create_time >= #{query.startTime}
+            ]]>
+        </if>
+        <if test="query.endTime != null">
+            <![CDATA[
+                and a.create_time < #{query.endTime}
+            ]]>
+        </if>
+    </sql>
+
+    <select id="page" resultType="dev.dong4j.zeka.stack.api.plugin.statistics.entity.dto.EventDTO"
+            parameterType="dev.dong4j.zeka.stack.api.plugin.statistics.entity.form.EventQuery">
+        select
+        <include refid="all_field"/>
+        from event as a
+        <where>
+            and a.deleted = 0
+            <include refid="date_query"/>
+        </where>
+    </select>
+</mapper>
