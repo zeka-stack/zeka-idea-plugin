@@ -61,9 +61,6 @@ public final class JavadocStatisticsReporter {
                                      int totalTokens,
                                      @Nullable StatisticsUserAction userAction) {
         StatisticsEventType eventType = resolveEventType(task.getType());
-        if (eventType == null) {
-            return;
-        }
 
         int inputToken = promptTokens > 0 ? promptTokens : Math.max(0, request.promptTokenEstimate());
         int outputToken = completionTokens > 0 ? completionTokens : TokenCounter.estimateTokens(documentation);
