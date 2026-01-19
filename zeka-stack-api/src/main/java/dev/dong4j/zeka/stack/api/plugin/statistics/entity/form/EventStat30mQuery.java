@@ -49,11 +49,11 @@ public class EventStat30mQuery extends BaseQuery<Long> {
     @Schema(description = "插件标识")
     private String pluginId;
 
-    /** 事件类型 <a href="https://example.com">https://example.com</a> */
+    /** 事件类型 */
     @Schema(description = "事件类型")
     private String eventType;
 
-    /** AI 服务商, 用于标识事件所关联的 AI 服务提供方 <a href="https://example.com">https://example.com</a> */
+    /** AI 服务商, 用于标识事件所关联的 AI 服务提供方 */
     @Schema(description = "AI 服务商")
     private String provider;
 

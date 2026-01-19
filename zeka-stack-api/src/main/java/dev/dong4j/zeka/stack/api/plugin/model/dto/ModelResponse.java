@@ -38,7 +38,7 @@ public class ModelResponse implements Serializable {
     /** 提供商名称 */
     private String provider;
 
-    /** 模型列表 <a href="https://example.com">https://example.com</a> */
+    /** 模型列表 */
     private List<String> models;
 
     /** 模型总数 */

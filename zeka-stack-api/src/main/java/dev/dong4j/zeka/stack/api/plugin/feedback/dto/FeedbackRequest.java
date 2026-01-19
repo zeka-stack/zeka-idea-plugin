@@ -127,7 +127,7 @@ public class FeedbackRequest {
     public enum DiscussionCategory {
         /** 一般讨论类别, 用于日常交流和非特定主题的讨论 */
         GENERAL("general", "一般讨论"),
-        /** 表示想法建议类别的枚举值 <a href="https://example.com">https://example.com</a> */
+        /** 表示想法建议类别的枚举值 */
         IDEAS("ideas", "想法建议"),
         /** 问答类别对应的值 */
         QA("qa", "问答"),

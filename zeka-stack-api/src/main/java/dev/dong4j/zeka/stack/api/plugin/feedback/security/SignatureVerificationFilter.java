@@ -76,17 +76,6 @@ public class SignatureVerificationFilter implements Filter {
      * @param chain    过滤器链, 用于将请求传递给下一个过滤器
      * @throws IOException      IO 异常, 如写入响应时发生错误
      * @throws ServletException Servlet 异常, 如过滤器处理过程中发生错误
-     *
-     *                          <pre>{@code
-     *                                                                            // 示例: 验证流程
-     *                                                                            if (shouldVerify(httpRequest)) {
-     *                                                                                // 验证签名, 时间戳,nonce 等
-     *                                                                                // 若失败, 调用 sendErrorResponse 返回 401
-     *                                                                                // 若成功, 调用 chain.doFilter(cachedRequest, response)
-     *                                                                            }
-     *                                                                            }</pre>
-     *
-     *                          <a href="https://example.com"> 签名验证机制说明 </a>
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
