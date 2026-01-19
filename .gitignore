@@ -41,13 +41,13 @@ bin/
 # Ignore all JAR files except Gradle Wrapper
 *.jar
 .gradle/
-chain.crt
-private.pem
-private_encrypted.pem
+.private/chain.crt
+.private/private.pem
+.private/private_encrypted.pem
 .qoder
 AGENTS.md
 IFLOW.md
-README_PRIVATE.md
+.private/README_PRIVATE.md
 
 # YoYo AI version control directory
 .yoyo/
@@ -56,3 +56,4 @@ reference/
 docs-list.json
 *.mp4
 .tmp*
+.private
