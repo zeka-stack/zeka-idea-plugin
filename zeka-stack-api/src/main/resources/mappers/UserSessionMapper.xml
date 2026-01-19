@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.dong4j.zeka.stack.api.auth.dao.UserSessionMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="UserSessionResultMap" type="dev.dong4j.zeka.stack.api.auth.entity.po.UserSession">
+        <result column="id" property="id"/>
+        <result column="create_time" property="createTime"/>
+        <result column="user_id" property="userId"/>
+        <result column="session_token" property="sessionToken"/>
+        <result column="expires_at" property="expiresAt"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="all_field">
+        a.id,
+        a.`user_id`,
+        a.`session_token`,
+        a.`expires_at`
+    </sql>
+
+    <sql id="date_query">
+        <if test="query.startTime != null">
+            <![CDATA[
+                and a.create_time >= #{query.startTime}
+            ]]>
+        </if>
+        <if test="query.endTime != null">
+            <![CDATA[
+                and a.create_time < #{query.endTime}
+            ]]>
+        </if>
+    </sql>
+
+    <select id="page" resultType="dev.dong4j.zeka.stack.api.auth.entity.dto.UserSessionDTO"
+            parameterType="dev.dong4j.zeka.stack.api.auth.entity.form.UserSessionQuery">
+        select
+        <include refid="all_field"/>
+        from user_session as a
+        <where>
+            and a.deleted = 0
+            <include refid="date_query"/>
+        </where>
+    </select>
+</mapper>

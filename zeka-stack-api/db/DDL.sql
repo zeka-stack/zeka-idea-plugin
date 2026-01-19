@@ -24,3 +24,81 @@ create table if not exists event (
     key idx_created_at (create_time)
 ) engine = InnoDB
     default charset = utf8mb4 comment '统计事件表';
+
+
+create table if not exists event_stat_30m (
+    id                 bigint unsigned auto_increment comment '主键' primary key,
+    bucket_start       datetime    not null comment '统计窗口开始时间（30分钟）',
+    bucket_end         datetime    not null comment '统计窗口结束时间（30分钟）',
+
+    device_id          varchar(64) not null comment '设备 ID',
+    project_name       varchar(255)         default '' null comment '项目名称',
+    plugin_id          varchar(32) not null comment '插件标识',
+    event_type         varchar(64) not null comment '事件类型',
+    provider           varchar(64)          default '' null comment 'AI 服务商',
+    model              varchar(128)         default '' null comment '模型名称',
+    user_action        varchar(64)          default '' null comment '触发入口',
+
+    total_count        bigint      not null default 0 comment '总次数',
+    success_count      bigint      not null default 0 comment '成功次数',
+    failed_count       bigint      not null default 0 comment '失败次数',
+
+    token_total        bigint      not null default 0 comment '总 token 数',
+    input_token_total  bigint      not null default 0 comment '输入 token 总数',
+    output_token_total bigint      not null default 0 comment '输出 token 总数',
+
+    latency_total_ms   bigint      not null default 0 comment '总耗时(毫秒)',
+    latency_avg_ms     bigint      not null default 0 comment '平均耗时(毫秒)',
+    latency_max_ms     bigint      not null default 0 comment '最大耗时(毫秒)',
+    latency_min_ms     bigint      not null default 0 comment '最小耗时(毫秒)',
+
+    create_time        timestamp            default current_timestamp not null comment '创建时间 (公共字段)',
+    update_time        timestamp            default current_timestamp not null on update current_timestamp comment '更新时间',
+
+    unique key uq_bucket_dim (bucket_start, bucket_end, device_id, project_name, plugin_id, event_type, provider, model, user_action
+        ),
+    key idx_bucket (bucket_start),
+    key idx_device (device_id),
+    key idx_project (project_name),
+    key idx_event_type (event_type),
+    key idx_provider (provider),
+    key idx_user_action (user_action)
+) comment '统计事件 30 分钟聚合表' charset = utf8mb4;
+
+
+create table if not exists user_account (
+    id              bigint unsigned not null auto_increment comment '主键',
+    github_id       bigint unsigned not null comment 'GitHub 用户 ID',
+    github_login    varchar(64)     not null comment 'GitHub 登录名',
+    github_name     varchar(128)             default '' comment 'GitHub 显示名',
+    avatar_url      varchar(512)             default '' comment '头像 URL',
+    email           varchar(255)             default '' comment '邮箱(可选)',
+    device_id       varchar(64)     not null comment '设备 ID',
+    last_login_time timestamp                default current_timestamp comment '最后登录时间',
+    create_time     timestamp       not null default current_timestamp comment '创建时间',
+    update_time     timestamp       not null default current_timestamp on update current_timestamp comment '更新时间',
+    primary key (id),
+    unique key uq_github_id (github_id),
+    unique key uq_github_login (github_login),
+    unique key uq_device_id (device_id),
+    key idx_device_id (device_id)
+) engine = InnoDB
+    default charset = utf8mb4 comment 'GitHub 账号绑定表';
+
+-- auto-generated definition
+create table user_session (
+    id            bigint unsigned auto_increment comment '主键' primary key,
+    user_id       bigint unsigned                     not null comment '用户 ID',
+    session_token varchar(64)                         not null comment '会话 token',
+    expires_at    timestamp                           not null comment '过期时间',
+    create_time   timestamp default current_timestamp not null comment '创建时间',
+    update_time   timestamp default current_timestamp not null on update current_timestamp comment '更新时间',
+    constraint uq_session_token unique (session_token)
+) comment '登录会话表' charset = utf8mb4;
+
+create index idx_expires_at on user_session (expires_at);
+
+create index idx_user_id on user_session (user_id);
+
+
+

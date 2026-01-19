@@ -178,7 +178,7 @@ echo -n '{"title":"test"}' | sha256sum
 # 2. 构建规范字符串并计算签名（需要编写脚本）
 
 # 3. 发送请求（使用插件的 pluginId 作为 clientId）
-curl -X POST https://api.dong4j.site/idea-plugin-feedback \
+curl -X POST https://zekastack.dong4j.site/api/feedback \
   -H "Content-Type: application/json" \
   -H "X-Client-Id: dev.dong4j.zeka.stack.idea.plugin" \
   -H "X-Timestamp: 1735060000" \

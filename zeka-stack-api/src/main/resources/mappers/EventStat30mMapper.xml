@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.dong4j.zeka.stack.api.plugin.statistics.dao.EventStat30mMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="EventStat30mResultMap" type="dev.dong4j.zeka.stack.api.plugin.statistics.entity.po.EventStat30m">
+        <result column="id" property="id"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="bucket_start" property="bucketStart"/>
+        <result column="bucket_end" property="bucketEnd"/>
+        <result column="device_id" property="deviceId"/>
+        <result column="project_name" property="projectName"/>
+        <result column="plugin_id" property="pluginId"/>
+        <result column="event_type" property="eventType"/>
+        <result column="provider" property="provider"/>
+        <result column="model" property="model"/>
+        <result column="user_action" property="userAction"/>
+        <result column="total_count" property="totalCount"/>
+        <result column="success_count" property="successCount"/>
+        <result column="failed_count" property="failedCount"/>
+        <result column="token_total" property="tokenTotal"/>
+        <result column="input_token_total" property="inputTokenTotal"/>
+        <result column="output_token_total" property="outputTokenTotal"/>
+        <result column="latency_total_ms" property="latencyTotalMs"/>
+        <result column="latency_avg_ms" property="latencyAvgMs"/>
+        <result column="latency_max_ms" property="latencyMaxMs"/>
+        <result column="latency_min_ms" property="latencyMinMs"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="all_field">
+        a.id,
+        a.`bucket_start`,
+        a.`bucket_end`,
+        a.`device_id`,
+        a.`project_name`,
+        a.`plugin_id`,
+        a.`event_type`,
+        a.`provider`,
+        a.`model`,
+        a.`user_action`,
+        a.`total_count`,
+        a.`success_count`,
+        a.`failed_count`,
+        a.`token_total`,
+        a.`input_token_total`,
+        a.`output_token_total`,
+        a.`latency_total_ms`,
+        a.`latency_avg_ms`,
+        a.`latency_max_ms`,
+        a.`latency_min_ms`
+    </sql>
+
+    <sql id="date_query">
+        <if test="query.startTime != null">
+            <![CDATA[
+                and a.create_time >= #{query.startTime}
+            ]]>
+        </if>
+        <if test="query.endTime != null">
+            <![CDATA[
+                and a.create_time < #{query.endTime}
+            ]]>
+        </if>
+    </sql>
+
+    <sql id="bucket_query">
+        <if test="query.startTime != null">
+            <![CDATA[
+                and a.bucket_start >= #{query.startTime}
+            ]]>
+        </if>
+        <if test="query.endTime != null">
+            <![CDATA[
+                and a.bucket_end < #{query.endTime}
+            ]]>
+        </if>
+    </sql>
+
+    <sql id="filters">
+        <if test="query.deviceId != null and query.deviceId != ''">
+            and a.device_id = #{query.deviceId}
+        </if>
+        <if test="query.projectName != null and query.projectName != ''">
+            and a.project_name = #{query.projectName}
+        </if>
+        <if test="query.pluginId != null and query.pluginId != ''">
+            and a.plugin_id = #{query.pluginId}
+        </if>
+        <if test="query.eventType != null and query.eventType != ''">
+            and a.event_type = #{query.eventType}
+        </if>
+        <if test="query.provider != null and query.provider != ''">
+            and a.provider = #{query.provider}
+        </if>
+        <if test="query.model != null and query.model != ''">
+            and a.model = #{query.model}
+        </if>
+        <if test="query.userAction != null and query.userAction != ''">
+            and a.user_action = #{query.userAction}
+        </if>
+    </sql>
+
+    <select id="page" resultType="dev.dong4j.zeka.stack.api.plugin.statistics.entity.dto.EventStat30mDTO"
+            parameterType="dev.dong4j.zeka.stack.api.plugin.statistics.entity.form.EventStat30mQuery">
+        select
+        <include refid="all_field"/>
+        from event_stat_30m as a
+        <where>
+            and a.deleted = 0
+            <include refid="date_query"/>
+            <include refid="filters"/>
+        </where>
+    </select>
+
+    <select id="selectForWebui" resultType="dev.dong4j.zeka.stack.api.plugin.statistics.entity.po.EventStat30m"
+            parameterType="dev.dong4j.zeka.stack.api.plugin.statistics.entity.form.EventStat30mQuery">
+        select
+        <include refid="all_field"/>
+        from event_stat_30m as a
+        <where>
+            and a.deleted = 0
+            <include refid="bucket_query"/>
+            <include refid="filters"/>
+        </where>
+        order by a.bucket_start desc
+    </select>
+
+    <insert id="aggregateBucket">
+        insert into event_stat_30m (bucket_start,
+                                    bucket_end,
+                                    device_id,
+                                    project_name,
+                                    plugin_id,
+                                    event_type,
+                                    provider,
+                                    model,
+                                    user_action,
+                                    total_count,
+                                    success_count,
+                                    failed_count,
+                                    token_total,
+                                    input_token_total,
+                                    output_token_total,
+                                    latency_total_ms,
+                                    latency_avg_ms,
+                                    latency_max_ms,
+                                    latency_min_ms)
+        select #{bucketStart}                                               as bucket_start,
+               #{bucketEnd}                                                 as bucket_end,
+               e.device_id,
+               ifnull(e.project_name, '')                                   as project_name,
+               e.plugin_id,
+               e.event_type,
+               ifnull(e.provider, '')                                       as provider,
+               ifnull(e.model, '')                                          as model,
+               ifnull(e.user_action, '')                                    as user_action,
+               count(1)                                                     as total_count,
+               sum(case when e.result_status = 'success' then 1 else 0 end) as success_count,
+               sum(case when e.result_status = 'success' then 0 else 1 end) as failed_count,
+               sum(e.token_count)                                           as token_total,
+               sum(e.input_token)                                           as input_token_total,
+               sum(e.output_token)                                          as output_token_total,
+               sum(e.latency_ms)                                            as latency_total_ms,
+               round(avg(e.latency_ms))                                     as latency_avg_ms,
+               max(e.latency_ms)                                            as latency_max_ms,
+               min(e.latency_ms)                                            as latency_min_ms
+        from event e
+        where <![CDATA[ e.create_time >= #{bucketStart} ]]>
+          and <![CDATA[ e.create_time < #{bucketEnd} ]]>
+        group by e.device_id,
+                 ifnull(e.project_name, ''),
+                 e.plugin_id,
+                 e.event_type,
+                 ifnull(e.provider, ''),
+                 ifnull(e.model, ''),
+                 ifnull(e.user_action, '')
+        on duplicate key update total_count        = values(total_count),
+                                success_count      = values(success_count),
+                                failed_count       = values(failed_count),
+                                token_total        = values(token_total),
+                                input_token_total  = values(input_token_total),
+                                output_token_total = values(output_token_total),
+                                latency_total_ms   = values(latency_total_ms),
+                                latency_avg_ms     = values(latency_avg_ms),
+                                latency_max_ms     = values(latency_max_ms),
+                                latency_min_ms     = values(latency_min_ms),
+                                update_time        = current_timestamp
+    </insert>
+</mapper>

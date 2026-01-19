@@ -81,11 +81,11 @@ class AutoGeneratorCodeTest {
             // 设置作者名, 默认读取 ZEKA_NAME_SPACE 变量
             .withAuthor(SystemUtils.USER_NAME)
             // 设置包名 (前缀默认为 公司项目顶层包路径, 因此最终的包名为: ${公司项目顶层包路径}.${packageName})
-            .withPackageName("stack.api.plugin.statistics")
+            .withPackageName("stack.api.auth")
             // 忽略前缀
             .withPrefix(new String[] {""})
             // 设置根据哪张表生成代码, 可写多张表
-            .withTables(new String[] {"event"})
+            .withTables(new String[] {"user_account", "user_session"})
             // 设置需要生成的模板 不设置则全部生成
             .withTemplate(
                 TemplatesConfig.DAO,           // 数据访问对象

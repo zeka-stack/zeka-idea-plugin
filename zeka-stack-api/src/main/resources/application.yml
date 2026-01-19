@@ -45,23 +45,11 @@ github:
     qa: ${GITHUB_CATEGORY_ID_QA:DIC_kwDOO3uf9s4C0Jch}
     announcements: ${GITHUB_CATEGORY_ID_ANNOUNCEMENTS:DIC_kwDOO3uf9s4C0Jcf}
 
-feedback:
-  signature:
-    # 是否启用签名验证（生产环境必须启用）
-    enabled: ${FEEDBACK_SIGNATURE_ENABLED:true}
-    # 客户端 ID 和 Secret 的映射
-    # 每个插件使用不同的 Secret，与客户端代码中的 Secret 对应
-    clients:
-      # IntelliAI Javadoc 插件
-      dev.dong4j.zeka.stack.idea.plugin: zeka-stack-javadoc-plugin
-      # IntelliAI Nacos 插件
-      dev.dong4j.zeka.stack.idea.plugin.nacos: zeka-stack-nacos-plugin
-      # IntelliAI Tracer 插件
-      dev.dong4j.zeka.stack.idea.plugin.workflow: zeka-stack-tracer-plugin
-      # IntelliAI Changelog 插件
-      dev.dong4j.zeka.stack.idea.plugin.changelog: zeka-stack-changelog-plugin
-      # IntelliAI Engine 插件
-      dev.dong4j.zeka.stack.idea.plugin.common.ai: zeka-stack-engine-plugin
-
-
-
+oauth:
+  github:
+    client-id: ${ZEKA_STACK_GITHUB_CLIENT_ID:}
+    client-secret: ${ZEKA_STACK_GITHUB_CLIENT_SECRET:}
+    redirect-uri: ${ZEKA_STACK_GITHUB_REDIRECT_URI:https://zekastack.dong4j.site/api/oauth/github/callback}
+    success-redirect: ${ZEKA_STACK_GITHUB_SUCCESS_REDIRECT:https://zekastack.dong4j.site/#/login}
+    failure-redirect: ${ZEKA_STACK_GITHUB_FAILURE_REDIRECT:https://zekastack.dong4j.site/#/login}
+    session-days: ${ZEKA_STACK_GITHUB_SESSION_DAYS:30}

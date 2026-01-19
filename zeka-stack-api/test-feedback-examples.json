@@ -75,5 +75,5 @@
     "type": ["BUG", "FEATURE", "QUESTION", "OTHER"],
     "category": ["GENERAL", "IDEAS", "QA", "ANNOUNCEMENTS"]
   },
-  "curlExample": "curl -X POST https://api.dong4j.site/plugin/feedback \\\n  -H 'Content-Type: application/json' \\\n  -d @test-feedback-request.json"
+  "curlExample": "curl -X POST https://zekastack.dong4j.site/api/plugin/feedback \\\n  -H 'Content-Type: application/json' \\\n  -d @test-feedback-request.json"
 }

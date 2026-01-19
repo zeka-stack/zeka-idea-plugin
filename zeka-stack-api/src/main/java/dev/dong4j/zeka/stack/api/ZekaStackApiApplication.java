@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.api;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,6 +22,7 @@ import dev.dong4j.zeka.starter.launcher.ZekaStarter;
  * @since 1.0.0
  */
 @RestController
+@EnableScheduling
 @SpringBootApplication
 public class ZekaStackApiApplication extends ZekaStarter {
 
