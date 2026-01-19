@@ -531,7 +531,7 @@ public final class ChangelogService {
      * @return 项目对象
      */
     public @NotNull Project getProject() {
-        return gitService.project;
+        return gitService.project();
     }
 
     /**
