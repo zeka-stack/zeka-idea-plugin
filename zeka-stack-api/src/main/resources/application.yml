@@ -6,6 +6,11 @@ server:
 spring:
   application:
     name: zeka-stack-api
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.31.5:3306/zeka-stack-helper?useUnicode=true&characterEncoding=utf8&useSSL=false&allowMultiQueries=true&serverTimezone=GMT%2b8
+    username: root
+    password: rootpassword
 
 logging:
   level:

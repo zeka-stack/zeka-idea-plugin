@@ -1,0 +1,26 @@
+create table if not exists event (
+    id               bigint unsigned not null auto_increment comment '主键',
+    device_id        varchar(64)     not null comment '设备 ID',
+    client_timestamp bigint          not null comment '客户端上报时间戳(毫秒)',
+    project_name     varchar(255)             default '' comment '项目名称',
+    plugin_id        varchar(32)     not null comment '插件标识',
+    event_type       varchar(64)     not null comment '事件类型',
+    provider         varchar(64)              default '' comment 'AI 服务商',
+    model            varchar(128)             default '' comment '模型名称',
+    token_count      bigint          not null default 0 comment '总 token 数',
+    result_status    varchar(32)              default '' comment '结果状态',
+    latency_ms       bigint          not null default 0 comment '耗时(毫秒)',
+    input_token      bigint          not null default 0 comment '输入 token 数',
+    output_token     bigint          not null default 0 comment '输出 token 数',
+    user_action      varchar(64)              default null comment '触发入口',
+    create_time      timestamp       not null default current_timestamp comment '创建时间 (公共字段)',
+    received_time    timestamp       not null default current_timestamp comment '服务端接收时间',
+    primary key (id),
+    key idx_device_id (device_id),
+    key idx_client_timestamp (client_timestamp),
+    key idx_event_type (event_type),
+    key idx_provider (provider),
+    key idx_project_name (project_name),
+    key idx_created_at (create_time)
+) engine = InnoDB
+    default charset = utf8mb4 comment '统计事件表';
