@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,7 +39,7 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     /** 最后选中的服务商类型（用于恢复 UI 状态） */
     public AIProviderType aiProviderType = AIProviderType.QIANWEN;
     /** 默认支持的 AI 服务提供商及其配置信息 */
-    public final Map<AIProviderType, AIProviderConfig> defaultProviders = new EnumMap<>(AIProviderType.class);
+    public final Map<AIProviderType, AIProviderConfig> defaultProviders = new LinkedHashMap<>();
     /** 可用的 AI 服务提供商配置列表 */
     public final List<AIProviderConfig> availableProviders = new ArrayList<>();
 
@@ -168,6 +168,8 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
     @Override
     public void loadState(@NotNull AIProviderSettings state) {
         XmlSerializerUtil.copyBean(state, this);
+        // 兼容旧配置或已删除枚举值导致的 null key
+        defaultProviders.entrySet().removeIf(entry -> entry.getKey() == null || entry.getValue() == null);
         // 确保嵌套对象被正确初始化，避免反序列化时为 null
         // 如果当前对象的嵌套对象为 null（可能在 copyBean 时被设置为 null），使用源对象的副本或创建新实例
         if (this.runtimeSettings == null) {
@@ -188,6 +190,9 @@ public class AIProviderSettings implements PersistentStateComponent<AIProviderSe
         }
         if (this.intelliAgentSettings == null) {
             this.intelliAgentSettings = state.intelliAgentSettings != null ? state.intelliAgentSettings.copy() : new IntelliAgentSettings();
+        }
+        if (this.aiProviderType == null) {
+            this.aiProviderType = AIProviderType.QIANWEN;
         }
         if (this.responseLanguage == null) {
             this.responseLanguage = ResponseLanguage.ZH;
