@@ -34,7 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StatisticsUploader {
     /** 统计数据上报的 API 地址 */
-    private static final String UPLOAD_URL = "https://api.intellai.com/v1/statistics/upload";
+    // private static final String UPLOAD_URL = "https://api.dong4j.site/plugin/events";
+    private static final String UPLOAD_URL = "http://localhost:8080/api/plugin/events";
 
     /** 用户统计设置配置 */
     private final StatisticsSettings settings;
@@ -194,6 +195,11 @@ public class StatisticsUploader {
             item.setProvider(record.getProvider());
             item.setModel(record.getModel());
             item.setTokenCount(record.getTokenCount());
+            item.setResultStatus(record.getResultStatus());
+            item.setLatencyMs(record.getLatencyMs());
+            item.setInputToken(record.getInputToken());
+            item.setOutputToken(record.getOutputToken());
+            item.setUserAction(record.getUserActionCode());
             item.setCreatedAt(record.getCreatedAt());
             items.add(item);
         }
@@ -417,6 +423,16 @@ public class StatisticsUploader {
          * <p> 表示该上报项所涉及的令牌数量, 通常用于统计模型使用情况
          */
         private long tokenCount;
+        /** 结果状态 */
+        private String resultStatus;
+        /** 耗时 (毫秒) */
+        private long latencyMs;
+        /** 输入 token 数 */
+        private long inputToken;
+        /** 输出 token 数 */
+        private long outputToken;
+        /** 触发入口 */
+        private String userAction;
         /** 事件创建时间, 单位为毫秒 */
         private long createdAt;
 
@@ -537,6 +553,96 @@ public class StatisticsUploader {
          */
         public void setTokenCount(long tokenCount) {
             this.tokenCount = tokenCount;
+        }
+
+        /**
+         * 获取结果状态
+         *
+         * @return 结果状态
+         */
+        public String getResultStatus() {
+            return resultStatus;
+        }
+
+        /**
+         * 设置结果状态
+         *
+         * @param resultStatus 结果状态
+         */
+        public void setResultStatus(String resultStatus) {
+            this.resultStatus = resultStatus;
+        }
+
+        /**
+         * 获取耗时 (毫秒)
+         *
+         * @return 耗时 (毫秒)
+         */
+        public long getLatencyMs() {
+            return latencyMs;
+        }
+
+        /**
+         * 设置耗时 (毫秒)
+         *
+         * @param latencyMs 耗时 (毫秒)
+         */
+        public void setLatencyMs(long latencyMs) {
+            this.latencyMs = latencyMs;
+        }
+
+        /**
+         * 获取输入 token 数
+         *
+         * @return 输入 token 数
+         */
+        public long getInputToken() {
+            return inputToken;
+        }
+
+        /**
+         * 设置输入 token 数
+         *
+         * @param inputToken 输入 token 数
+         */
+        public void setInputToken(long inputToken) {
+            this.inputToken = inputToken;
+        }
+
+        /**
+         * 获取输出 token 数
+         *
+         * @return 输出 token 数
+         */
+        public long getOutputToken() {
+            return outputToken;
+        }
+
+        /**
+         * 设置输出 token 数
+         *
+         * @param outputToken 输出 token 数
+         */
+        public void setOutputToken(long outputToken) {
+            this.outputToken = outputToken;
+        }
+
+        /**
+         * 获取触发入口
+         *
+         * @return 触发入口
+         */
+        public String getUserAction() {
+            return userAction;
+        }
+
+        /**
+         * 设置触发入口
+         *
+         * @param userAction 触发入口
+         */
+        public void setUserAction(String userAction) {
+            this.userAction = userAction;
         }
 
         /**

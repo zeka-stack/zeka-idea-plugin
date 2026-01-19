@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import lombok.extern.slf4j.Slf4j;
 /**
  * 统计数据写入器.
  *
@@ -19,6 +20,7 @@ import java.util.TimeZone;
  * @email mailto:dong4j@gmail.com
  * @date 2025 年 01 月 05 日
  */
+@Slf4j
 public class StatisticsDataWriter {
 
     /** 文件魔数, 用于标识文件类型 */
@@ -100,6 +102,7 @@ public class StatisticsDataWriter {
      */
     public void writeRecord(StatisticsRecord record) throws IOException {
         File file = getTodayDataFile();
+        log.debug("Writing statistics record to file: {}, record: {}", file.getAbsolutePath(), record);
         createFileIfNotExists(file);
 
         try (DataOutputStream dos = new DataOutputStream(
@@ -114,6 +117,11 @@ public class StatisticsDataWriter {
             dos.writeLong(record.getTokenCount());
             dos.writeLong(record.getCreatedAt());
             dos.writeUTF(EncryptUtils.encryptToHex(record.getProjectName()));
+            dos.writeUTF(EncryptUtils.encryptToHex(record.getResultStatus()));
+            dos.writeLong(record.getLatencyMs());
+            dos.writeLong(record.getInputToken());
+            dos.writeLong(record.getOutputToken());
+            dos.writeUTF(EncryptUtils.encryptToHex(record.getUserActionCode()));
         }
 
         // 更新 recordCount 和 checksum
@@ -131,6 +139,7 @@ public class StatisticsDataWriter {
             return;
         }
         File file = getTodayDataFile();
+        log.debug("Writing {} statistics records to file: {}", records.size(), file.getAbsolutePath());
         createFileIfNotExists(file);
 
         try (DataOutputStream dos = new DataOutputStream(
@@ -145,6 +154,11 @@ public class StatisticsDataWriter {
                 dos.writeLong(record.getTokenCount());
                 dos.writeLong(record.getCreatedAt());
                 dos.writeUTF(EncryptUtils.encryptToHex(record.getProjectName()));
+                dos.writeUTF(EncryptUtils.encryptToHex(record.getResultStatus()));
+                dos.writeLong(record.getLatencyMs());
+                dos.writeLong(record.getInputToken());
+                dos.writeLong(record.getOutputToken());
+                dos.writeUTF(EncryptUtils.encryptToHex(record.getUserActionCode()));
             }
         }
 

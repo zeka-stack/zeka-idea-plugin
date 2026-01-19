@@ -1,53 +1,60 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
+import lombok.Getter;
+
 /**
- * <p>Description : 统计事件类型枚举.</p>
+ * 统计事件类型枚举
+ * <p>用于标识系统中各类统计事件的类型, 支持通过代码快速查找对应描述, 常用于日志记录, 数据统计和行为追踪场景.
+ * <p>每个枚举值包含唯一代码 (code) 和对应中文描述(description), 便于前端展示或后端逻辑判断.
+ * <p>提供静态方法 {@code fromCode(String code)} 用于根据代码反向查找枚举值, 若未匹配则默认返回 {@code AI_REQUEST}.
  *
  * @author dong4j
- * @version 1.4.0
+ * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
- * @date 2025.01.05
+ * @date 2026.01.19
+ * @since 1.0.0
  */
+@Getter
 public enum StatisticsEventType {
 
-    /**
-     * AI 请求事件
-     * 表示与人工智能请求相关的统计事件类型
-     */
-    AI_REQUEST("ai_request", "AI 请求"),
+    /** AI 请求事件, 表示与人工智能请求相关的统计事件类型 */
+    AI_REQUEST("engine_ai_request", "AI 请求"),
 
     /** 自动完成事件 */
-    AUTOCOMPLETE("autocomplete", "自动完成"),
+    AUTOCOMPLETE("engine_autocomplete", "自动完成"),
 
-    /** 生成事件 -changelog */
-    COMMIT_MESSAGE("commit_message", "提交信息生成"),
+    /**
+     * 日志 / 报告相关事件: 提交信息生成
+     * <a href="https://example.com">https://example.com</a>
+     */
+    CHANGELOG_COMMIT_MESSAGE("changelog_commit_message", "提交信息生成"),
 
-    /** 生成事件 -javadoc 类注释 */
+    /** Release Log 生成事件类型, 用于统计 Release Log 生成相关的操作行为 */
+    CHANGELOG_RELEASE_LOG("changelog_release_log", "Release Log 生成"),
+
+    /** 日报生成事件类型, 用于统计每日报告生成相关的操作数据 */
+    CHANGELOG_DAILY_REPORT("changelog_daily_report", "日报生成"),
+
+    /** 周报生成事件类型, 用于统计周报相关操作的事件数据 */
+    CHANGELOG_WEEKLY_REPORT("changelog_weekly_report", "周报生成"),
+
+    /** 变更日志生成事件类型, 用于统计 Changelog 生成相关操作 */
+    CHANGELOG_CHANGELOG("changelog_changelog", "变更日志生成"),
+
+    /** 类注释生成 */
     JAVADOC_CLASS("javadoc_class", "类注释生成"),
 
-    /** 生成事件 -javadoc 方法注释 */
+    /** 方法注释生成 */
     JAVADOC_METHOD("javadoc_method", "方法注释生成"),
 
-    /** 生成事件 -javadoc 字段注释 */
-    JAVADOC_FIELD("javadoc_field", "字段注释生成"),
+    /** 字段注释生成 */
+    JAVADOC_FIELD("javadoc_field", "字段注释生成");
 
-    /** Release log 生成 */
-    RELEASE_LOG("release_log", "Release Log 生成"),
 
-    /** 日报生成 */
-    DAILY_REPORT("daily_report", "日报生成"),
-
-    /** 周报生成 */
-    WEEKLY_REPORT("weekly_report", "周报生成");
-
-    /** 枚举代码值, 用于标识统计事件类型 */
+    /** 事件类型的唯一标识码 */
     private final String code;
-    /**
-     * 事件类型的描述信息
-     * <p> 用于表示事件的具体含义 </p>
-     *
-     * @see StatisticsEventType
-     */
+
+    /** 事件类型的描述信息, 用于展示或日志记录 */
     private final String description;
 
     /**
@@ -62,30 +69,11 @@ public enum StatisticsEventType {
     }
 
     /**
-     * 获取枚举对应的代码标识
-     * <p> 返回该枚举实例对应的代码字符串, 用于唯一标识该事件类型.
+     * 根据事件类型标识码获取对应的枚举实例
+     * <p> 遍历所有枚举值, 匹配传入的 code 字符串, 若找到则返回对应枚举; 否则返回默认值 AI_REQUEST</p>
      *
-     * @return 事件类型的代码标识
-     */
-    public String getCode() {
-        return code;
-    }
-
-    /**
-     * 获取枚举项的描述信息
-     * <p> 返回该枚举常量对应的描述字符串, 用于展示或日志记录等场景
-     *
-     * @return 枚举项的描述信息
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * 根据 code 获取枚举
-     *
-     * @param code 枚举的唯一标识码
-     * @return 对应的枚举实例, 若未找到则返回 AI_REQUEST 默认值
+     * @param code 事件类型的唯一标识码
+     * @return 对应的枚举实例, 若未找到则返回 {@link StatisticsEventType#AI_REQUEST} 默认值
      */
     public static StatisticsEventType fromCode(String code) {
         for (StatisticsEventType type : values()) {

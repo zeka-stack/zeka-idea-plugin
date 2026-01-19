@@ -1,7 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.icons.AllIcons;
-import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -67,6 +66,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
@@ -92,7 +92,7 @@ public final class AIProviderConfigUI {
     /** 服务提供商下拉选择框 */
     private ComboBox<ProviderOption> providerComboBox;
     /** 获取 API Key 的超链接 */
-    private HyperlinkLabel getApiKeyLink;
+    private HyperlinkLabel hyperlinkLabel;
     /** 模型下拉选择框 */
     private ComboBox<String> modelComboBox;
     /** 基础 URL 输入框 */
@@ -157,6 +157,8 @@ public final class AIProviderConfigUI {
     private JBTextField presencePenaltyField;
     /** Agent 代理面板 */
     private IntelliAgentPanel intelliAgentPanel;
+    /** 统计设置面板 */
+    private StatisticsSettingsPanel statisticsSettingsPanel;
     /** checkBoxHintLabelMap 用于映射复选框与对应的提示标签 */
     private final Map<JBCheckBox, JBLabel> checkBoxHintLabelMap = new HashMap<>();
 
@@ -176,7 +178,8 @@ public final class AIProviderConfigUI {
         setupProviderComboBox();
 
         // 创建获取 API Key 的超链接
-        getApiKeyLink = new HyperlinkLabel(AICommonBundle.message("settings.get.api.key"));
+        // 注意：setHyperlinkTarget 会自动处理点击事件，不需要额外添加监听器
+        hyperlinkLabel = new HyperlinkLabel(AICommonBundle.message("settings.get.api.key"));
         updateApiKeyLinkUrl();
 
         // 添加下拉框选择监听器，当选择改变时更新链接 URL
@@ -353,6 +356,8 @@ public final class AIProviderConfigUI {
         PersonalInfoPanel personalInfoPanel = createPersonalInfoPanel();
         // 反馈面板
         FeedbackPanel feedbackPanel = createFeedbackPanel();
+        // 统计设置面板
+        statisticsSettingsPanel = createStatisticsPanel();
 
         // 组合成主面板
         mainPanel = FormBuilder.createFormBuilder()
@@ -367,6 +372,7 @@ public final class AIProviderConfigUI {
             .addComponent(advancedPanel)
             .addComponentFillVertically(new JPanel(), 0)
             .addComponent(intelliAgentPanel.getContent())
+            .addComponent(statisticsSettingsPanel.getPanel())
             .addComponent(feedbackPanel.getContent())
             .addComponent(personalInfoPanel.getContent())
             .getPanel();
@@ -1173,6 +1179,16 @@ public final class AIProviderConfigUI {
         return intelliAgentPanel;
     }
 
+    /**
+     * 获取统计设置面板
+     *
+     * @return 统计设置面板
+     */
+    @NotNull
+    public StatisticsSettingsPanel getStatisticsSettingsPanel() {
+        return statisticsSettingsPanel;
+    }
+
     // ==================== UI 创建方法 ====================
 
     /**
@@ -1192,7 +1208,7 @@ public final class AIProviderConfigUI {
         // 下拉框在中间动态拉伸，超链接在右边对齐
         JPanel providerPanel = new JPanel(new BorderLayout(5, 0));
         providerPanel.add(providerComboBox, BorderLayout.CENTER);
-        providerPanel.add(getApiKeyLink, BorderLayout.EAST);
+        providerPanel.add(hyperlinkLabel, BorderLayout.EAST);
 
         JPanel apiKeyPanel = new JPanel(new BorderLayout(5, 0));
         apiKeyPanel.add(apiKeyField, BorderLayout.CENTER);
@@ -1222,20 +1238,17 @@ public final class AIProviderConfigUI {
     private void updateApiKeyLinkUrl() {
         AIProviderType providerType = getSelectedProviderType();
         if (providerType == null) {
-            getApiKeyLink.setVisible(false);
+            hyperlinkLabel.setVisible(false);
             return;
         }
 
         String apiKeyUrl = providerType.getApiKeyUrl();
         if (apiKeyUrl != null && !apiKeyUrl.isEmpty()) {
-            final String url = apiKeyUrl; // 需要在 lambda 中使用 final 变量
-            getApiKeyLink.setHyperlinkTarget(url);
-            // 每次更新时添加新的监听器（HyperlinkLabel 会管理监听器，多次添加不会导致问题）
-            getApiKeyLink.addHyperlinkListener(e -> BrowserUtil.browse(url));
-            getApiKeyLink.setVisible(true);
+            hyperlinkLabel.setHyperlinkTarget(apiKeyUrl);
+            hyperlinkLabel.setVisible(true);
         } else {
             // 如果该提供商不需要 API Key，隐藏链接
-            getApiKeyLink.setVisible(false);
+            hyperlinkLabel.setVisible(false);
         }
     }
 
@@ -1387,6 +1400,18 @@ public final class AIProviderConfigUI {
             EngineContents.PLUGIN_NAME, // 插件名称
             "zeka-stack-engine-plugin" // 签名密钥
         );
+    }
+
+    /**
+     * 创建统计设置面板
+     * <p>
+     * 构建包含统计设置的面板，用于配置统计功能的启用状态和设备 ID
+     *
+     * @return 统计设置面板
+     */
+    @NotNull
+    private StatisticsSettingsPanel createStatisticsPanel() {
+        return new StatisticsSettingsPanel();
     }
 
     /**

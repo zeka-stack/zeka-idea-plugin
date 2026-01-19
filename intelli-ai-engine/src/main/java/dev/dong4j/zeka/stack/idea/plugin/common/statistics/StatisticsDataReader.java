@@ -115,8 +115,18 @@ public class StatisticsDataReader {
             long tokenCount = dis.readLong();
             long createdAt = dis.readLong();
             String projectName = EncryptUtils.decryptFromHex(dis.readUTF());
+            String resultStatus = EncryptUtils.decryptFromHex(dis.readUTF());
+            long latencyMs = dis.readLong();
+            long inputToken = dis.readLong();
+            long outputToken = dis.readLong();
+            StatisticsUserAction userAction = StatisticsUserAction.fromCode(
+                EncryptUtils.decryptFromHex(dis.readUTF())
+                                                                           );
 
-            return new StatisticsRecord(pluginId, eventType, provider, model, tokenCount, createdAt, projectName);
+            return new StatisticsRecord(
+                pluginId, eventType, provider, model, tokenCount, createdAt, projectName,
+                resultStatus, latencyMs, inputToken, outputToken, userAction
+            );
         } catch (EOFException e) {
             return null;
         }

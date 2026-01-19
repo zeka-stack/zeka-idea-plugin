@@ -1,47 +1,65 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
- * <p>Description : 统计数据记录.</p>
+ * 统计记录数据类
+ * <p>用于封装和传递统计相关的数据记录, 包括插件 ID, 事件类型, 提供者, 模型,Token 数量, 创建时间, 项目名称, 结果状态, 延迟毫秒数, 输入输出 Token 数量以及用户操作行为等字段.
+ * 该类支持通过 Lombok 的 {@code @Getter} 和 {@code @Setter} 注解自动生成 getter/setter 方法, 便于在业务系统中快速访问和修改统计数据.
+ * <p>适用于日志统计, 性能监控, 用户行为分析等场景, 可作为数据传输对象 (DTO) 在服务层与数据层之间传递.
  *
  * @author dong4j
- * @version 1.4.0
+ * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
- * @date 2025.01.05
+ * @date 2026.01.19
+ * @since 1.0.0
  */
+@Getter
+@Setter
 public class StatisticsRecord {
 
-    /** 插件 ID */
+    /** 插件标识符, 用于区分不同插件的统计记录 */
     private String pluginId;
-    /** 事件类型 */
+    /** 事件类型, 用于标识统计记录对应的事件类别 */
     private String eventType;
-    /** AI 服务商 */
+    /** 服务提供者标识, 用于区分不同服务提供商 */
     private String provider;
-    /** 模型名称 */
+    /** 模型标识, 用于区分使用的不同模型名称 */
     private String model;
-    /** 消耗的 token 数 */
+    /** 记录的总令牌数量 */
     private long tokenCount;
-    /** 创建时间戳 */
+    /** 创建时间戳, 单位为毫秒 */
     private long createdAt;
-    /** 项目名称 */
+    /** 项目名称, 用于标识统计记录所属的项目 */
     private String projectName;
+    /** 请求处理结果状态, 如成功, 失败, 超时等, 用于标识统计记录的最终处理结果 <a href="https://example.com">https://example.com</a> */
+    private String resultStatus;
+    /** 请求延迟时间 (毫秒) */
+    private long latencyMs;
+    /** 输入的 Token 数量 */
+    private long inputToken;
+    /** 输出的令牌数量 */
+    private long outputToken;
+    /** 用户操作行为信息, 用于记录用户在系统中的具体操作类型, 如点击, 提交, 删除等,<a href="https://example.com">https://example.com</a> */
+    private StatisticsUserAction userAction;
 
     /**
-     * 默认构造函数
-     * <p> 初始化一个空的 StatisticsRecord 实例, 所有字段初始值为默认值.
-     *
+     * 默认构造函数, 用于创建 StatisticsRecord 实例
+     * <p> 该构造函数不接受任何参数, 初始化一个空的 StatisticsRecord 对象
      */
     public StatisticsRecord() {
     }
 
     /**
-     * 构造函数, 用于初始化统计数据记录对象
-     * <p> 创建一个新的 StatisticsRecord 实例, 并设置插件 ID, 事件类型,AI 服务商, 模型名称, 消耗的 token 数, 创建时间戳和项目名称
+     * 初始化统计记录对象的构造函数
+     * <p> 用于创建一个包含插件 ID, 事件类型, 提供者, 模型, 令牌计数, 创建时间及项目名称的统计记录实例
      *
-     * @param pluginId    插件 ID
-     * @param eventType   事件类型
-     * @param provider    AI 服务商
+     * @param pluginId    插件唯一标识
+     * @param eventType   事件类型标识
+     * @param provider    提供者名称
      * @param model       模型名称
-     * @param tokenCount  消耗的 token 数量
+     * @param tokenCount  令牌总数
      * @param createdAt   创建时间戳 (毫秒)
      * @param projectName 项目名称
      */
@@ -57,149 +75,56 @@ public class StatisticsRecord {
     }
 
     /**
-     * 获取插件 ID
-     * <p> 返回当前统计数据记录的插件 ID
+     * 初始化统计记录对象的完整构造函数
+     * <p> 用于创建包含所有字段的统计记录实例, 适用于需要完整数据填充的场景
      *
-     * @return 插件 ID
+     * @param pluginId     插件 ID
+     * @param eventType    事件类型
+     * @param provider     提供商
+     * @param model        模型名称
+     * @param tokenCount   总 token 数量
+     * @param createdAt    创建时间戳
+     * @param projectName  项目名称
+     * @param resultStatus 结果状态
+     * @param latencyMs    延迟毫秒数
+     * @param inputToken   输入 token 数量
+     * @param outputToken  输出 token 数量
+     * @param userAction   用户操作信息
      */
-    public String getPluginId() {
-        return pluginId;
-    }
-
-    /**
-     * 设置插件 ID
-     *
-     * @param pluginId 插件的唯一标识符
-     */
-    public void setPluginId(String pluginId) {
+    public StatisticsRecord(String pluginId, String eventType, String provider, String model,
+                            long tokenCount, long createdAt, String projectName,
+                            String resultStatus, long latencyMs, long inputToken, long outputToken,
+                            StatisticsUserAction userAction) {
         this.pluginId = pluginId;
-    }
-
-    /**
-     * 获取事件类型
-     * <p> 返回当前统计数据记录所关联的事件类型
-     *
-     * @return 事件类型, 可能为 null
-     */
-    public String getEventType() {
-        return eventType;
-    }
-
-    /**
-     * 设置事件类型
-     * <p> 用于设置当前统计数据记录的事件类型 </p>
-     *
-     * @param eventType 事件类型, 不能为 null
-     */
-    public void setEventType(String eventType) {
         this.eventType = eventType;
-    }
-
-    /**
-     * 获取 AI 服务商信息
-     * <p> 返回当前统计数据记录中存储的 AI 服务商名称.</p>
-     *
-     * @return AI 服务商名称, 如果未设置则返回 null
-     */
-    public String getProvider() {
-        return provider;
-    }
-
-    /**
-     * 设置 AI 服务商
-     * <p> 用于记录当前统计记录所使用的 AI 服务提供商名称
-     *
-     * @param provider AI 服务商名称, 不能为 null 或空字符串
-     */
-    public void setProvider(String provider) {
         this.provider = provider;
-    }
-
-    /**
-     * 获取模型名称
-     * <p> 返回当前统计记录中所使用的 AI 模型名称
-     *
-     * @return 模型名称, 可能为 null 或空字符串
-     */
-    public String getModel() {
-        return model;
-    }
-
-    /**
-     * 设置模型名称
-     * <p> 用于记录当前统计数据所使用的 AI 模型名称
-     *
-     * @param model 模型名称, 不能为 null 或空字符串
-     */
-    public void setModel(String model) {
         this.model = model;
-    }
-
-    /**
-     * 获取消耗的 token 数
-     * <p> 返回统计数据记录中消耗的 token 数量.
-     *
-     * @return 消耗的 token 数
-     */
-    public long getTokenCount() {
-        return tokenCount;
-    }
-
-    /**
-     * 设置消耗的 token 数量
-     *
-     * @param tokenCount 消耗的 token 数, 必须为非负数
-     */
-    public void setTokenCount(long tokenCount) {
         this.tokenCount = tokenCount;
-    }
-
-    /**
-     * 获取记录的创建时间戳
-     * <p> 返回该统计数据记录的创建时间戳, 单位为毫秒.
-     *
-     * @return 记录的创建时间戳
-     */
-    public long getCreatedAt() {
-        return createdAt;
-    }
-
-    /**
-     * 设置创建时间戳
-     * <p> 此方法用于设置统计数据记录的创建时间戳
-     *
-     * @param createdAt 创建时间戳
-     */
-    public void setCreatedAt(long createdAt) {
         this.createdAt = createdAt;
-    }
-
-    /**
-     * 获取项目名称
-     * <p> 返回当前统计数据记录所属的项目名称 </p>
-     *
-     * @return 项目名称, 可能为 null
-     */
-    public String getProjectName() {
-        return projectName;
-    }
-
-    /**
-     * 设置项目名称
-     * <p> 用于设置统计数据记录所属的项目名称.
-     *
-     * @param projectName 项目名称, 可以为 null
-     */
-    public void setProjectName(String projectName) {
         this.projectName = projectName;
+        this.resultStatus = resultStatus;
+        this.latencyMs = latencyMs;
+        this.inputToken = inputToken;
+        this.outputToken = outputToken;
+        this.userAction = userAction;
     }
 
     /**
-     * 返回此统计数据记录的字符串表示形式
-     * <p> 该方法重写了 {@link Object#toString()}, 用于生成包含所有字段信息的可读字符串.
+     * 获取用户操作代码
+     * <p> 如果用户操作对象为 null, 则返回空字符串; 否则调用用户操作对象的 getCode 方法获取操作代码
      *
-     * @return 字符串格式的 StatisticsRecord 对象内容
-     * @since 1.4.0
+     * @return 用户操作代码, 若用户操作对象为 null 则返回空字符串
+     */
+    public String getUserActionCode() {
+        return userAction == null ? "" : userAction.getCode();
+    }
+
+    /**
+     * 生成当前 StatisticsRecord 对象的字符串表示形式
+     * <p> 返回包含所有字段值的格式化字符串, 用于调试或日志输出
+     * <p> 输出格式示例:StatisticsRecord{pluginId='xxx', eventType='yyy', ...}
+     *
+     * @return 包含所有字段值的字符串表示
      */
     @Override
     public String toString() {
@@ -211,6 +136,11 @@ public class StatisticsRecord {
                ", tokenCount=" + tokenCount +
                ", createdAt=" + createdAt +
                ", projectName='" + projectName + '\'' +
+               ", resultStatus='" + resultStatus + '\'' +
+               ", latencyMs=" + latencyMs +
+               ", inputToken=" + inputToken +
+               ", outputToken=" + outputToken +
+               ", userAction='" + getUserActionCode() + '\'' +
                '}';
     }
 }

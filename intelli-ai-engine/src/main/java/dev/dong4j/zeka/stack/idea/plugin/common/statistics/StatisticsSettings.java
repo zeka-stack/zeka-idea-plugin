@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
-import com.intellij.openapi.application.PathManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
@@ -10,7 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.util.UUID;
+import java.nio.file.Paths;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p> 描述: 统计设置.</p>
@@ -24,6 +25,7 @@ import java.util.UUID;
     name = "IntelliAIStatisticsSettings",
     storages = @Storage("intellai-statistics.xml")
 )
+@Slf4j
 public class StatisticsSettings implements PersistentStateComponent<StatisticsSettings.State> {
 
     /** 配置状态 */
@@ -88,9 +90,18 @@ public class StatisticsSettings implements PersistentStateComponent<StatisticsSe
      */
     public String getDeviceId() {
         if (state.deviceId == null || state.deviceId.isEmpty()) {
-            state.deviceId = UUID.randomUUID().toString();
+            state.deviceId = DeviceIdGenerator.generateDeviceId();
         }
         return state.deviceId;
+    }
+
+    /**
+     * 设置设备 ID
+     *
+     * @param deviceId 设备 ID
+     */
+    public void setDeviceId(@NotNull String deviceId) {
+        state.deviceId = deviceId == null ? "" : deviceId.trim();
     }
 
     /**
@@ -99,17 +110,62 @@ public class StatisticsSettings implements PersistentStateComponent<StatisticsSe
      * @return 存储统计数据的目录对象
      */
     public File getStatisticsDirectory() {
-        File configDir = new File(PathManager.getConfigPath(), "IntelliAI/statistics");
-        if (!configDir.exists()) {
-            configDir.mkdirs();
+        String deviceId = DeviceIdGenerator.sanitizeForPath(getDeviceId());
+        File configDir = Paths.get(System.getProperty("user.home"), ".zeka-stack", "engine", deviceId).toFile();
+        if (!configDir.exists() && configDir.mkdirs()) {
+            log.debug("Create statistics directory {}", configDir.getAbsolutePath());
         }
         return configDir;
     }
 
+    /**
+     * 是否同意隐私协议
+     *
+     * @return 是否同意隐私协议的布尔值
+     */
+    public boolean isPrivacyAgreementAccepted() {
+        return state.privacyAgreementAccepted;
+    }
+
+    /**
+     * 设置同意隐私协议
+     *
+     * @param accepted true 表示同意隐私协议, false 表示不同意
+     */
+    @OptionTag
+    public void setPrivacyAgreementAccepted(boolean accepted) {
+        state.privacyAgreementAccepted = accepted;
+    }
+
+    /**
+     * 是否允许上报数据
+     *
+     * @return 是否允许上报数据的布尔值
+     */
+    public boolean isAllowUpload() {
+        return state.allowUpload;
+    }
+
+    /**
+     * 设置允许上报数据
+     *
+     * @param allow true 表示允许上报数据, false 表示不允许
+     */
+    @OptionTag
+    public void setAllowUpload(boolean allow) {
+        state.allowUpload = allow;
+    }
+
     /** 配置状态类, 包含设备相关的配置信息. */
     public static class State {
+        /** 是否同意隐私协议 */
+        public boolean privacyAgreementAccepted = false;
+
         /** 是否启用统计 */
         public boolean enableStatistics = false;
+
+        /** 是否允许上报数据 */
+        public boolean allowUpload = false;
 
         /** 设备 ID */
         public String deviceId;

@@ -5,47 +5,62 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
- * 统计快照类, 用于聚合和存储统计记录数据.
+ * 统计快照数据类
+ * <p> 用于聚合和存储系统运行期间的各类统计信息, 包括请求记录, 插件统计, 事件类型统计, 提供者统计, 项目统计, 结果状态统计, 用户行为统计, 总令牌数, 输入输出令牌数, 总延迟等. 支持通过 {@code addRecord} 方法动态累加统计项,
+ * 并通过 {@code toMap} 方法转换为结构化 Map 用于序列化或展示.
+ * <p> 该类通常用于监控系统性能, 分析用户行为, 评估插件使用情况等场景, 是系统日志或仪表盘数据聚合的核心载体.
  *
  * @author dong4j
- * @version 1.4.0
- * @email dong4j@gmail.com
- * @date 2025.01.05
+ * @version 1.0.0
+ * @email "mailto:dong4j@gmail.com"
+ * @date 2026.01.19
+ * @since 1.0.0
  */
+@Getter
+@Setter
 public class StatisticsSnapshot {
 
-    /** 记录列表 */
+    /** 统计记录列表, 存储所有统计条目数据 */
     private List<StatisticsRecord> records = new ArrayList<>();
-    /** 总记录数 */
+    /** 总记录条数 */
     private int totalCount;
-    /** 按插件统计 */
+    /** 按插件 ID 统计的调用次数映射表, 键为插件 ID, 值为调用次数 */
     private Map<String, Long> byPlugin = new HashMap<>();
-    /** 按事件类型统计的映射表, 键为事件类型名称, 值为对应事件数量. */
+    /** 按事件类型统计的计数映射, 键为事件类型名, 值为出现次数 */
     private Map<String, Long> byEventType = new HashMap<>();
-    /**
-     * 按服务商统计的记录数映射
-     * 键为服务商名称, 值为对应的服务商记录数量
-     */
+    /** 按服务提供商统计的调用次数映射, 键为提供商标识, 值为调用次数 */
     private Map<String, Long> byProvider = new HashMap<>();
-    /** 按项目统计 */
+    /** 按项目统计的记录数量映射, 键为项目名称, 值为对应项目记录数 */
     private Map<String, Long> byProject = new HashMap<>();
-    /** Token 消耗总计 */
+    /** 按结果状态统计的计数映射, 用于记录不同结果状态的请求次数 */
+    private Map<String, Long> byResultStatus = new HashMap<>();
+    /** 用户操作统计映射, 键为用户操作代码, 值为操作次数 */
+    private Map<String, Long> byUserAction = new HashMap<>();
+    /** 总 token 数量, 用于统计所有记录的 token 消耗总量 */
     private long totalTokenCount;
+    /** 总输入 Token 数量, 用于统计请求输入部分的总字数或标记数 */
+    private long totalInputToken;
+    /** 总输出 Token 数量 */
+    private long totalOutputToken;
+    /** 总延迟时间 (毫秒), 用于统计所有记录的响应耗时总和 */
+    private long totalLatencyMs;
 
     /**
-     * 构造函数, 初始化统计快照对象
-     * <p> 该构造函数用于创建一个空的 StatisticsSnapshot 实例, 所有统计信息初始为空.
-     *
+     * 初始化统计快照对象
+     * <p> 创建一个空的 StatisticsSnapshot 实例, 用于后续收集和聚合统计信息
      */
     public StatisticsSnapshot() {
     }
 
     /**
-     * 向统计快照中添加一条记录, 并更新相关统计信息
-     * <p> 该方法将指定的统计记录加入到内部记录列表中, 同时根据记录内容自动更新各类聚合统计项, 包括插件, 事件类型, 服务商, 项目以及 Token 总消耗量.
+     * 添加一条统计记录并更新聚合数据
+     * <p> 将指定的统计记录添加到记录列表中, 并根据记录内容更新各维度的统计聚合值, 包括插件, 事件类型, 提供者, 项目, 结果状态, 用户操作等维度的计数, 以及总令牌数, 输入令牌数, 输出令牌数和总延迟毫秒数.
      *
-     * @param record 要添加的统计记录对象, 不能为 null
+     * @param record 要添加的统计记录对象, 不能为空
      */
     public void addRecord(StatisticsRecord record) {
         records.add(record);
@@ -60,151 +75,24 @@ public class StatisticsSnapshot {
         if (record.getProjectName() != null) {
             byProject.merge(record.getProjectName(), 1L, Long::sum);
         }
+        if (record.getResultStatus() != null) {
+            byResultStatus.merge(record.getResultStatus(), 1L, Long::sum);
+        }
+        if (record.getUserAction() != null) {
+            byUserAction.merge(record.getUserActionCode(), 1L, Long::sum);
+        }
         totalTokenCount += record.getTokenCount();
+        totalInputToken += record.getInputToken();
+        totalOutputToken += record.getOutputToken();
+        totalLatencyMs += record.getLatencyMs();
     }
 
     /**
-     * 获取统计记录列表
-     * <p> 返回当前统计快照中包含的所有统计记录
+     * 将统计快照数据转换为包含所有统计信息的 Map 对象
+     * <p>该方法将当前统计快照中的各项统计数据 (如总记录数, 按插件 / 事件类型 / 提供者等分组的计数, 总 Token 数, 总延迟等) 以及原始记录列表封装到一个 Map 中, 便于序列化或传输.
      *
-     * @return 统计记录列表, 如果无记录则返回空列表
-     */
-    public List<StatisticsRecord> getRecords() {
-        return records;
-    }
-
-    /**
-     * 设置统计记录列表
-     * <p> 将传入的统计记录列表赋值给当前对象的 records 字段.
-     *
-     * @param records 统计记录列表, 不能为 null
-     */
-    public void setRecords(List<StatisticsRecord> records) {
-        this.records = records;
-    }
-
-    /**
-     * 获取总记录数
-     * <p> 返回统计快照中记录的总数
-     *
-     * @return 总记录数
-     */
-    public int getTotalCount() {
-        return totalCount;
-    }
-
-    /**
-     * 设置总记录数
-     *
-     * @param totalCount 总记录数, 必须为非负整数
-     */
-    public void setTotalCount(int totalCount) {
-        this.totalCount = totalCount;
-    }
-
-    /**
-     * 获取按插件统计的结果
-     * <p> 返回一个 Map, 键为插件 ID, 值为对应的记录数量
-     *
-     * @return 按插件统计的 Map
-     */
-    public Map<String, Long> getByPlugin() {
-        return byPlugin;
-    }
-
-    /**
-     * 设置按插件统计的数据
-     * <p> 用于设置按插件分类的统计数据, 该数据通常由 {@link #addRecord(StatisticsRecord)} 方法自动更新 </p>
-     *
-     * @param byPlugin 按插件分类的统计信息, 键为插件 ID, 值为对应的记录数量
-     */
-    public void setByPlugin(Map<String, Long> byPlugin) {
-        this.byPlugin = byPlugin;
-    }
-
-    /**
-     * 获取按事件类型统计的映射表
-     * <p> 返回一个 Map, 其中键为事件类型名称, 值为对应事件类型的记录数量
-     *
-     * @return 按事件类型统计的映射表
-     */
-    public Map<String, Long> getByEventType() {
-        return byEventType;
-    }
-
-    /**
-     * 设置按事件类型的统计数据
-     * <p> 该方法用于更新按事件类型的统计数据映射.
-     *
-     * @param byEventType 事件类型的统计数据映射, 不能为 null
-     */
-    public void setByEventType(Map<String, Long> byEventType) {
-        this.byEventType = byEventType;
-    }
-
-    /**
-     * 获取按服务商统计的记录数映射
-     *
-     * @return 以服务商为键, 记录数为值的 Map, 可能包含 null 键 (如果服务商信息缺失则不统计)
-     */
-    public Map<String, Long> getByProvider() {
-        return byProvider;
-    }
-
-    /**
-     * 设置按服务商统计的数据
-     * <p> 将指定的 Map 数据赋值给内部的 byProvider 字段, 用于记录各服务商的统计信息.
-     *
-     * @param byProvider 按服务商统计的数据, 键为服务商名称, 值为对应的统计数量
-     */
-    public void setByProvider(Map<String, Long> byProvider) {
-        this.byProvider = byProvider;
-    }
-
-    /**
-     * 获取按项目统计的映射
-     * <p> 返回一个映射, 其中键为项目名称, 值为对应的记录数量
-     *
-     * @return 按项目统计的映射
-     */
-    public Map<String, Long> getByProject() {
-        return byProject;
-    }
-
-    /**
-     * 设置按项目统计的数据
-     * <p> 将传入的项目统计信息设置到内部变量中, 用于后续数据处理或展示.
-     *
-     * @param byProject 按项目统计的信息, 键为项目名称, 值为对应的统计数量
-     */
-    public void setByProject(Map<String, Long> byProject) {
-        this.byProject = byProject;
-    }
-
-    /**
-     * 获取总 Token 消耗计数
-     * <p> 返回统计快照中的总 Token 消耗数量
-     *
-     * @return 总 Token 消耗计数
-     */
-    public long getTotalTokenCount() {
-        return totalTokenCount;
-    }
-
-    /**
-     * 设置总的 Token 消耗数量
-     * <p> 将指定的 Token 消耗数量赋值给内部变量, 用于统计总消耗量.
-     *
-     * @param totalTokenCount 总的 Token 消耗数量
-     */
-    public void setTotalTokenCount(long totalTokenCount) {
-        this.totalTokenCount = totalTokenCount;
-    }
-
-    /**
-     * 转换为 JSON 友好的 Map
-     *
-     * @return 包含统计信息的 Map
+     * @return 包含所有统计字段的 Map 对象, 键包括 "total", "byPlugin", "byEventType", "byProvider", "byProject", "byResultStatus", "byUserAction",
+     * "totalTokenCount", "totalInputToken", "totalOutputToken", "totalLatencyMs", "records"
      */
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
@@ -213,7 +101,12 @@ public class StatisticsSnapshot {
         map.put("byEventType", byEventType);
         map.put("byProvider", byProvider);
         map.put("byProject", byProject);
+        map.put("byResultStatus", byResultStatus);
+        map.put("byUserAction", byUserAction);
         map.put("totalTokenCount", totalTokenCount);
+        map.put("totalInputToken", totalInputToken);
+        map.put("totalOutputToken", totalOutputToken);
+        map.put("totalLatencyMs", totalLatencyMs);
         map.put("records", records);
         return map;
     }

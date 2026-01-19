@@ -41,6 +41,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import icons.AICommonIcons;
@@ -167,6 +168,11 @@ public final class AIProviderConfigController {
                                                     : new IntelliAgentSettings();
         IntelliAgentPanel intelliAgentPanel = ui.getAgentPanel();
         intelliAgentPanel.getAutoStartCheckBox().setSelected(intelliAgentSettings.autoStart);
+
+        // 加载统计设置
+        StatisticsSettings statisticsSettings =
+            StatisticsSettings.getInstance();
+        ui.getStatisticsSettingsPanel().loadSettings(statisticsSettings);
         intelliAgentPanel.getAutoUpdateCheckBox().setSelected(intelliAgentSettings.autoUpdate);
         intelliAgentPanel.getDownloadUrlField().setText(intelliAgentSettings.downloadUrl != null ? intelliAgentSettings.downloadUrl : "");
         intelliAgentPanel.setLocalJarName(intelliAgentSettings.jarFileName, -1);
@@ -233,6 +239,11 @@ public final class AIProviderConfigController {
         applyParametersToConfig(defaultConfig, modelSnapshot, runtimeSnapshot);
         workingSettings.updateDefaultProviderConfig(providerType, defaultConfig);
 
+        // 保存统计设置
+        StatisticsSettings statisticsSettings =
+            StatisticsSettings.getInstance();
+        ui.getStatisticsSettingsPanel().apply(statisticsSettings);
+
         return workingSettings;
     }
 
@@ -249,7 +260,13 @@ public final class AIProviderConfigController {
         if (!latest.contentEquals(baseline)) {
             return true;
         }
-        return ui.getNextEditEnabledCheckBox().isSelected() != NextEditSettings.getInstance().enabled;
+        if (ui.getNextEditEnabledCheckBox().isSelected() != NextEditSettings.getInstance().enabled) {
+            return true;
+        }
+        // 检查统计设置是否修改
+        StatisticsSettings statisticsSettings =
+            StatisticsSettings.getInstance();
+        return ui.getStatisticsSettingsPanel().isModified(statisticsSettings);
     }
 
     /**

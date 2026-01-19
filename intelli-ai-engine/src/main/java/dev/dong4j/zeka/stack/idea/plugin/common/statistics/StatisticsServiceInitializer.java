@@ -27,7 +27,7 @@ public final class StatisticsServiceInitializer {
      * 统计服务的单例实现实例
      * <p> 用于延迟初始化并保证线程安全的访问
      */
-    private static StatisticsServiceImpl serviceInstance;
+    private static volatile StatisticsServiceImpl serviceInstance;
 
     /**
      * 私有构造函数, 防止外部实例化
@@ -68,11 +68,16 @@ public final class StatisticsServiceInitializer {
     }
 
     /**
-     * 项目启动时执行的统计活动
+     * 项目启动时的统计服务激活活动
+     * <p> 实现 {@link ProjectActivity} 接口, 用于在项目启动时判断是否启用统计功能, 并在启用时启动统计服务.
+     * 该活动作为项目启动流程中的一个回调处理器, 确保统计服务在合适时机被初始化.
+     * 适用于需要在应用启动阶段动态控制统计功能开关的场景.
      *
-     * @param project      项目对象
-     * @param continuation 续航对象, 用于异步回调
-     * @return Unit 实例, 表示操作完成
+     * @author dong4j
+     * @version 1.4.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2025.01.05
+     * @since 1.4.0
      */
     public static class StatisticsStartupActivity implements ProjectActivity {
 

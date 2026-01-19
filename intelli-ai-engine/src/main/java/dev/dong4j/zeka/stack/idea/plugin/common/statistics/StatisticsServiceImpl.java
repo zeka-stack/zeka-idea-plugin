@@ -32,7 +32,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     /** 写入间隔:5 分钟 (以毫秒为单位) */
     private static final long WRITE_INTERVAL_MS = 5 * 60 * 1000;
     /** 上报间隔:30 分钟 */
-    private static final long UPLOAD_INTERVAL_MS = 30 * 60 * 1000;
+    private static final long UPLOAD_INTERVAL_MS = 10 * 60 * 1000;
 
     /** 统计服务配置信息 */
     private final StatisticsSettings settings;

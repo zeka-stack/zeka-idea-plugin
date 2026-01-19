@@ -1,32 +1,34 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.statistics;
 
+import lombok.Getter;
+
 /**
- * <p> 统计插件 ID 枚举.</p>
+ * 统计插件标识枚举类
+ * <p> 用于标识系统中不同统计插件的唯一编码及其描述信息, 支持通过编码快速查找对应的枚举值.
+ * 适用于插件系统中对统计功能模块的区分与管理.
  *
  * @author dong4j
- * @version 1.4.0
+ * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
- * @date 2025.01.05
+ * @date 2026.01.19
+ * @since 1.0.0
  */
+@Getter
 public enum StatisticsPluginId {
 
-    /** Engine 插件 */
+    /** Engine 插件标识, 代码为 "engine", 描述为 "Engine" */
     ENGINE("engine", "Engine"),
 
-    /** Changelog 插件 */
+    /** Changelog 插件标识代码及描述 */
     CHANGELOG("changelog", "Changelog"),
 
-    /** Javadoc 插件 */
+    /** Javadoc 插件标识代码及描述 */
     JAVADOC("javadoc", "Javadoc");
 
-    /**
-     * 插件的唯一标识符代码.
-     * <p> 该字段用于存储枚举实例对应的代码值.</p>
-     *
-     * @see StatisticsPluginId
-     */
+    /** 插件标识代码, 不能为空 */
     private final String code;
-    /** 描述信息 */
+
+    /** 插件描述信息, 不能为空 */
     private final String description;
 
     /**
@@ -41,30 +43,11 @@ public enum StatisticsPluginId {
     }
 
     /**
-     * 获取枚举的代码值
-     * <p> 返回当前枚举实例的 code 字段值
+     * 根据插件标识代码获取对应的枚举常量
+     * <p> 遍历所有枚举值, 匹配传入的代码, 若找到则返回对应枚举, 否则默认返回 ENGINE 枚举常量 </p>
      *
-     * @return 枚举的代码值
-     */
-    public String getCode() {
-        return code;
-    }
-
-    /**
-     * 获取枚举项的描述信息
-     * <p> 返回该枚举项对应的描述字符串, 用于展示或日志记录等用途.
-     *
-     * @return 描述字符串
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * 根据 code 获取枚举
-     *
-     * @param code 枚举代码
-     * @return 对应的枚举常量
+     * @param code 插件标识代码, 不能为空
+     * @return 对应的 StatisticsPluginId 枚举常量, 若未找到则返回 ENGINE
      */
     public static StatisticsPluginId fromCode(String code) {
         for (StatisticsPluginId id : values()) {
