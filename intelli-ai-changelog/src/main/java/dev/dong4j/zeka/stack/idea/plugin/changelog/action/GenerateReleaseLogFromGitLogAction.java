@@ -16,6 +16,7 @@ import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import icons.ChangelogIcons;
 
 /**
@@ -106,7 +107,7 @@ public class GenerateReleaseLogFromGitLogAction extends AbstractReleaseLogAction
         }
 
         // Git Log 入口不更新 lastUsedTag/lastUsedHash
-        generate(project, gitRoot, selectedCommits, false);
+        generate(project, gitRoot, selectedCommits, false, StatisticsUserAction.GIT_LOG_PANEL);
     }
 
     /**

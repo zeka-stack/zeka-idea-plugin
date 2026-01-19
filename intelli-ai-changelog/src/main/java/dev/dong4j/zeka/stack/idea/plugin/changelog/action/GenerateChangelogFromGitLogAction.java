@@ -108,7 +108,7 @@ public class GenerateChangelogFromGitLogAction extends AbstractGitLogAction {
     @Override
     protected @NotNull String generateContent(@NotNull ChangelogService service,
                                               @NotNull List<String> commitHashes) throws Exception {
-        return service.generateChangelog(commitHashes);
+        return service.generateChangelog(commitHashes, getStatisticsUserAction());
     }
 
     /**
@@ -126,6 +126,6 @@ public class GenerateChangelogFromGitLogAction extends AbstractGitLogAction {
     protected void generateContentStream(@NotNull ChangelogService service,
                                                     @NotNull List<String> commitHashes,
                                                     @NotNull AIStreamResponseListener listener) throws Exception {
-        service.generateChangelogStream(commitHashes, listener);
+        service.generateChangelogStream(commitHashes, listener, getStatisticsUserAction());
     }
 }

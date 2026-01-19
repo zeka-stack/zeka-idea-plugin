@@ -111,7 +111,7 @@ public class GenerateWeeklyReportFromGitLogAction extends AbstractGitLogAction {
     @Override
     protected @NotNull String generateContent(@NotNull ChangelogService service,
                                               @NotNull List<String> commitHashes) throws Exception {
-        return service.generateWeeklyReport(commitHashes);
+        return service.generateWeeklyReport(commitHashes, getStatisticsUserAction());
     }
 
     /**
@@ -129,6 +129,6 @@ public class GenerateWeeklyReportFromGitLogAction extends AbstractGitLogAction {
     protected void generateContentStream(@NotNull ChangelogService service,
                                          @NotNull List<String> commitHashes,
                                          @NotNull AIStreamResponseListener listener) throws Exception {
-        service.generateWeeklyReportStream(commitHashes, listener);
+        service.generateWeeklyReportStream(commitHashes, listener, getStatisticsUserAction());
     }
 }

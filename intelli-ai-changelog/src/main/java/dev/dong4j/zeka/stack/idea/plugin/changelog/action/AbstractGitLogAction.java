@@ -29,6 +29,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import icons.ChangelogIcons;
@@ -93,6 +94,16 @@ public abstract class AbstractGitLogAction extends AnAction {
     @NotNull
     protected String getProgressTextKey() {
         return "";
+    }
+
+    /**
+     * 获取统计入口类型
+     *
+     * @return 用户操作入口
+     */
+    @NotNull
+    protected StatisticsUserAction getStatisticsUserAction() {
+        return StatisticsUserAction.GIT_LOG_PANEL;
     }
 
     /**

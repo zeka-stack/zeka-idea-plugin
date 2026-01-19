@@ -22,6 +22,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -172,7 +173,7 @@ public class GenerateCommitFromHintAction extends AnAction {
 
         // 触发生成
         CommitMessageGenerator generator = new CommitMessageGenerator(project);
-        generator.generateForChanges(changes, commitMessageControl, null);
+        generator.generateForChanges(changes, commitMessageControl, null, StatisticsUserAction.COMMIT_PANEL);
     }
 
     /**

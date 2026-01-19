@@ -22,6 +22,8 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.UnifiedDiffParser;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsEventType;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 
 /**
  * 变更日志服务类
@@ -86,9 +88,14 @@ public final class ChangelogService {
      */
     @NotNull
     public String generateChangelog(@NotNull List<String> commitHashes) throws Exception {
+        return generateChangelog(commitHashes, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateChangelog(@NotNull List<String> commitHashes,
+                                    @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommits(commitHashes);
         String prompt = promptBuilder.buildChangelogPrompt(commits);
-        return aiExecutor.callChangelog(prompt);
+        return aiExecutor.callChangelog(prompt, StatisticsEventType.CHANGELOG_CHANGELOG, userAction);
     }
 
     /**
@@ -102,9 +109,15 @@ public final class ChangelogService {
     @NotNull
     public String generateChangelogStream(@NotNull List<String> commitHashes,
                                           @NotNull AIStreamResponseListener listener) throws Exception {
+        return generateChangelogStream(commitHashes, listener, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateChangelogStream(@NotNull List<String> commitHashes,
+                                          @NotNull AIStreamResponseListener listener,
+                                          @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommits(commitHashes);
         String prompt = promptBuilder.buildChangelogPrompt(commits);
-        return aiExecutor.callChangelogStream(prompt, listener);
+        return aiExecutor.callChangelogStream(prompt, listener, StatisticsEventType.CHANGELOG_CHANGELOG, userAction);
     }
 
     /**
@@ -116,9 +129,14 @@ public final class ChangelogService {
      */
     @NotNull
     public String generateDailyReport(@NotNull List<String> commitHashes) throws Exception {
+        return generateDailyReport(commitHashes, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateDailyReport(@NotNull List<String> commitHashes,
+                                      @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommits(commitHashes);
         String prompt = promptBuilder.buildDailyReportPrompt(commits);
-        return aiExecutor.callChangelog(prompt);
+        return aiExecutor.callChangelog(prompt, StatisticsEventType.CHANGELOG_DAILY_REPORT, userAction);
     }
 
     /**
@@ -132,9 +150,15 @@ public final class ChangelogService {
     @NotNull
     public String generateDailyReportStream(@NotNull List<String> commitHashes,
                                             @NotNull AIStreamResponseListener listener) throws Exception {
+        return generateDailyReportStream(commitHashes, listener, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateDailyReportStream(@NotNull List<String> commitHashes,
+                                            @NotNull AIStreamResponseListener listener,
+                                            @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommits(commitHashes);
         String prompt = promptBuilder.buildDailyReportPrompt(commits);
-        return aiExecutor.callChangelogStream(prompt, listener);
+        return aiExecutor.callChangelogStream(prompt, listener, StatisticsEventType.CHANGELOG_DAILY_REPORT, userAction);
     }
 
     /**
@@ -146,9 +170,14 @@ public final class ChangelogService {
      */
     @NotNull
     public String generateWeeklyReport(@NotNull List<String> commitHashes) throws Exception {
+        return generateWeeklyReport(commitHashes, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateWeeklyReport(@NotNull List<String> commitHashes,
+                                       @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommits(commitHashes);
         String prompt = promptBuilder.buildWeeklyReportPrompt(commits);
-        return aiExecutor.callChangelog(prompt);
+        return aiExecutor.callChangelog(prompt, StatisticsEventType.CHANGELOG_WEEKLY_REPORT, userAction);
     }
 
     /**
@@ -162,9 +191,15 @@ public final class ChangelogService {
     @NotNull
     public String generateWeeklyReportStream(@NotNull List<String> commitHashes,
                                              @NotNull AIStreamResponseListener listener) throws Exception {
+        return generateWeeklyReportStream(commitHashes, listener, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateWeeklyReportStream(@NotNull List<String> commitHashes,
+                                             @NotNull AIStreamResponseListener listener,
+                                             @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommits(commitHashes);
         String prompt = promptBuilder.buildWeeklyReportPrompt(commits);
-        return aiExecutor.callChangelogStream(prompt, listener);
+        return aiExecutor.callChangelogStream(prompt, listener, StatisticsEventType.CHANGELOG_WEEKLY_REPORT, userAction);
     }
 
     /**
@@ -178,7 +213,7 @@ public final class ChangelogService {
     public void generateReleaseLogByAiStream(@NotNull Path gitRoot,
                                              @Nullable String range,
                                              @NotNull AIStreamResponseListener listener) throws Exception {
-        generateReleaseLogByAiStream(gitRoot, range, null, listener);
+        generateReleaseLogByAiStream(gitRoot, range, null, listener, StatisticsUserAction.UNKNOWN);
     }
 
     /**
@@ -194,9 +229,17 @@ public final class ChangelogService {
                                              @Nullable String range,
                                              @Nullable String promptTemplate,
                                              @NotNull AIStreamResponseListener listener) throws Exception {
+        generateReleaseLogByAiStream(gitRoot, range, promptTemplate, listener, StatisticsUserAction.UNKNOWN);
+    }
+
+    public void generateReleaseLogByAiStream(@NotNull Path gitRoot,
+                                             @Nullable String range,
+                                             @Nullable String promptTemplate,
+                                             @NotNull AIStreamResponseListener listener,
+                                             @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.CommitInfo> commits = gitService.readCommitsFromRange(gitRoot, range);
         String prompt = promptBuilder.buildReleaseLogPrompt(commits, promptTemplate);
-        aiExecutor.callChangelogStream(prompt, listener);
+        aiExecutor.callChangelogStream(prompt, listener, StatisticsEventType.CHANGELOG_RELEASE_LOG, userAction);
     }
 
     /**
@@ -208,9 +251,14 @@ public final class ChangelogService {
      */
     @NotNull
     public String generateChangelogFromDiff(@NotNull List<String> commitHashes) throws Exception {
+        return generateChangelogFromDiff(commitHashes, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateChangelogFromDiff(@NotNull List<String> commitHashes,
+                                            @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(commitHashes);
         String prompt = promptBuilder.buildDiffChangelogPrompt(diffCommits);
-        return aiExecutor.callChangelog(prompt);
+        return aiExecutor.callChangelog(prompt, StatisticsEventType.CHANGELOG_CHANGELOG, userAction);
     }
 
     /**
@@ -222,9 +270,15 @@ public final class ChangelogService {
      */
     public void generateChangelogFromDiffStream(@NotNull List<String> commitHashes,
                                                 @NotNull AIStreamResponseListener listener) throws Exception {
+        generateChangelogFromDiffStream(commitHashes, listener, StatisticsUserAction.UNKNOWN);
+    }
+
+    public void generateChangelogFromDiffStream(@NotNull List<String> commitHashes,
+                                                @NotNull AIStreamResponseListener listener,
+                                                @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(commitHashes);
         String prompt = promptBuilder.buildDiffChangelogPrompt(diffCommits);
-        aiExecutor.callChangelogStream(prompt, listener);
+        aiExecutor.callChangelogStream(prompt, listener, StatisticsEventType.CHANGELOG_CHANGELOG, userAction);
     }
 
     /**
@@ -238,7 +292,7 @@ public final class ChangelogService {
      */
     @NotNull
     public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes) throws Exception {
-        return generateCommitMessageFromDiff(changes, null);
+        return generateCommitMessageFromDiff(changes, null, StatisticsUserAction.UNKNOWN);
     }
 
     /**
@@ -254,7 +308,15 @@ public final class ChangelogService {
     @NotNull
     public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes,
                                                 @Nullable String userContext) throws Exception {
-        return aiExecutor.callCommitMessage(buildPrompt(changes, userContext));
+        return generateCommitMessageFromDiff(changes, userContext, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateCommitMessageFromDiff(@NotNull Collection<Change> changes,
+                                                @Nullable String userContext,
+                                                @NotNull StatisticsUserAction userAction) throws Exception {
+        return aiExecutor.callCommitMessage(buildPrompt(changes, userContext),
+                                            StatisticsEventType.CHANGELOG_COMMIT_MESSAGE,
+                                            userAction);
     }
 
     /**
@@ -270,7 +332,7 @@ public final class ChangelogService {
     @NotNull
     public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
                                                       @NotNull AIStreamResponseListener listener) throws Exception {
-        return generateCommitMessageFromDiffStream(changes, listener, null);
+        return generateCommitMessageFromDiffStream(changes, listener, null, StatisticsUserAction.UNKNOWN);
     }
 
     /**
@@ -288,7 +350,17 @@ public final class ChangelogService {
     public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
                                                       @NotNull AIStreamResponseListener listener,
                                                       @Nullable String userContext) throws Exception {
-        return aiExecutor.callCommitMessageStream(buildPrompt(changes, userContext), listener);
+        return generateCommitMessageFromDiffStream(changes, listener, userContext, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateCommitMessageFromDiffStream(@NotNull Collection<Change> changes,
+                                                      @NotNull AIStreamResponseListener listener,
+                                                      @Nullable String userContext,
+                                                      @NotNull StatisticsUserAction userAction) throws Exception {
+        return aiExecutor.callCommitMessageStream(buildPrompt(changes, userContext),
+                                                  listener,
+                                                  StatisticsEventType.CHANGELOG_COMMIT_MESSAGE,
+                                                  userAction);
     }
 
     /**
@@ -304,7 +376,14 @@ public final class ChangelogService {
     public String generateCommitMessageFromGitLogStream(@NotNull String commitHash,
                                                         @NotNull AIStreamResponseListener listener,
                                                         @Nullable String userContext) throws Exception {
-        return generateCommitMessageFromGitLogSelectionStream(List.of(commitHash), List.of(), listener, userContext);
+        return generateCommitMessageFromGitLogStream(commitHash, listener, userContext, StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateCommitMessageFromGitLogStream(@NotNull String commitHash,
+                                                        @NotNull AIStreamResponseListener listener,
+                                                        @Nullable String userContext,
+                                                        @NotNull StatisticsUserAction userAction) throws Exception {
+        return generateCommitMessageFromGitLogSelectionStream(List.of(commitHash), List.of(), listener, userContext, userAction);
     }
 
     /**
@@ -322,14 +401,27 @@ public final class ChangelogService {
                                                               @NotNull List<String> selectedCommitTitles,
                                                               @NotNull AIStreamResponseListener listener,
                                                               @Nullable String userContext) throws Exception {
-        return generateCommitMessageFromGitLogSelectionStream(commitHashes, selectedCommitTitles, listener, userContext);
+        return generateSquashCommitMessageFromGitLogStream(commitHashes,
+                                                           selectedCommitTitles,
+                                                           listener,
+                                                           userContext,
+                                                           StatisticsUserAction.UNKNOWN);
+    }
+
+    public String generateSquashCommitMessageFromGitLogStream(@NotNull List<String> commitHashes,
+                                                              @NotNull List<String> selectedCommitTitles,
+                                                              @NotNull AIStreamResponseListener listener,
+                                                              @Nullable String userContext,
+                                                              @NotNull StatisticsUserAction userAction) throws Exception {
+        return generateCommitMessageFromGitLogSelectionStream(commitHashes, selectedCommitTitles, listener, userContext, userAction);
     }
 
     @NotNull
     private String generateCommitMessageFromGitLogSelectionStream(@NotNull List<String> commitHashes,
                                                                   @NotNull List<String> selectedCommitTitles,
                                                                   @NotNull AIStreamResponseListener listener,
-                                                                  @Nullable String userContext) throws Exception {
+                                                                  @Nullable String userContext,
+                                                                  @NotNull StatisticsUserAction userAction) throws Exception {
         List<ChangelogCommitModels.DiffCommitInfo> diffCommits = gitService.readCommitDiffs(commitHashes);
         if (diffCommits.isEmpty()) {
             throw new Exception(ChangelogBundle.message("commit.regenerate.no.commit.diff"));
@@ -343,7 +435,10 @@ public final class ChangelogService {
         ChangelogCommitDiffBuilder.DiffPayload payload = buildPayloadFromUnifiedDiff(diffText);
         CommitSelectionMeta selectionMeta = new CommitSelectionMeta("git_log", commitHashes, selectedCommitTitles);
         String prompt = buildCommitMessagePrompt(payload, userContext, selectionMeta);
-        return aiExecutor.callCommitMessageStream(prompt, listener);
+        return aiExecutor.callCommitMessageStream(prompt,
+                                                  listener,
+                                                  StatisticsEventType.CHANGELOG_COMMIT_MESSAGE,
+                                                  userAction);
     }
 
     @NotNull
@@ -413,8 +508,14 @@ public final class ChangelogService {
      * @throws Exception 当生成或保存过程中发生错误时抛出
      */
     public @NotNull String generateAndSaveChangelogFile(@NotNull Project project, @NotNull List<String> commitHashes) throws Exception {
+        return generateAndSaveChangelogFile(project, commitHashes, StatisticsUserAction.UNKNOWN);
+    }
+
+    public @NotNull String generateAndSaveChangelogFile(@NotNull Project project,
+                                                        @NotNull List<String> commitHashes,
+                                                        @NotNull StatisticsUserAction userAction) throws Exception {
         // 生成变更日志内容
-        String changelogContent = generateChangelog(commitHashes);
+        String changelogContent = generateChangelog(commitHashes, userAction);
 
         // 保存到文件
         saveChangelogToFile(project, changelogContent);

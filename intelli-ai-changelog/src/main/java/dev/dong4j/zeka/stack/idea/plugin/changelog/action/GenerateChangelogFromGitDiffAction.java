@@ -101,7 +101,7 @@ public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
     @Override
     protected @NotNull String generateContent(@NotNull ChangelogService service,
                                               @NotNull List<String> commitHashes) throws Exception {
-        return service.generateChangelogFromDiff(commitHashes);
+        return service.generateChangelogFromDiff(commitHashes, getStatisticsUserAction());
     }
 
     /**
@@ -117,7 +117,7 @@ public class GenerateChangelogFromGitDiffAction extends AbstractGitLogAction {
     protected void generateContentStream(@NotNull ChangelogService service,
                                          @NotNull List<String> commitHashes,
                                          @NotNull AIStreamResponseListener listener) throws Exception {
-        service.generateChangelogFromDiffStream(commitHashes, listener);
+        service.generateChangelogFromDiffStream(commitHashes, listener, getStatisticsUserAction());
     }
 
 }

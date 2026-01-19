@@ -110,7 +110,7 @@ public class GenerateDailyReportFromGitLogAction extends AbstractGitLogAction {
     @Override
     protected @NotNull String generateContent(@NotNull ChangelogService service,
                                               @NotNull List<String> commitHashes) throws Exception {
-        return service.generateDailyReport(commitHashes);
+        return service.generateDailyReport(commitHashes, getStatisticsUserAction());
     }
 
     /**
@@ -128,6 +128,6 @@ public class GenerateDailyReportFromGitLogAction extends AbstractGitLogAction {
     protected void generateContentStream(@NotNull ChangelogService service,
                                          @NotNull List<String> commitHashes,
                                          @NotNull AIStreamResponseListener listener) throws Exception {
-        service.generateDailyReportStream(commitHashes, listener);
+        service.generateDailyReportStream(commitHashes, listener, getStatisticsUserAction());
     }
 }

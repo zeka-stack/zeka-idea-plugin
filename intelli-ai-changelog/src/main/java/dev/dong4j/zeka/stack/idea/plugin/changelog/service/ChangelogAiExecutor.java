@@ -7,13 +7,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ai.ChangelogAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.ai.ChangelogAIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.ai.ChangelogUsageCapturingListener;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.statistics.ChangelogStatisticsReporter;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
@@ -22,6 +25,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsEventType;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
@@ -44,6 +49,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  * @since 1.0.0
  */
 final class ChangelogAiExecutor {
+
+    private static final Pattern CHINESE_PATTERN = Pattern.compile("[\\u4E00-\\u9FA5]");
+    private static final double ENGLISH_CHARS_PER_TOKEN = 4.0;
+    private static final double CHINESE_CHARS_PER_TOKEN = 1.5;
 
     /** 当前项目上下文, 用于标识和操作当前 IDE 中的项目 */
     private final Project project;
@@ -71,7 +80,9 @@ final class ChangelogAiExecutor {
      * @throws Exception 当 AI 服务返回空结果或发生异常时抛出
      */
     @NotNull
-    String callChangelog(@NotNull String userPrompt) throws Exception {
+    String callChangelog(@NotNull String userPrompt,
+                         @NotNull StatisticsEventType eventType,
+                         @NotNull StatisticsUserAction userAction) throws Exception {
         SettingsState settings = SettingsState.getInstance();
         AIProviderConfig config = settings.providerConfig;
 
@@ -83,19 +94,32 @@ final class ChangelogAiExecutor {
         systemPrompt = replaceLanguagePlaceholder(systemPrompt);
         userPrompt = replaceLanguagePlaceholder(userPrompt);
 
-        AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
+        AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt, estimatePromptTokens(systemPrompt, userPrompt));
         boolean verboseLogging = AIProviderSettings.getInstance().verboseLogging;
         AIService aiService = AIServiceImpl.getInstance();
+        long startTimeMs = System.currentTimeMillis();
 
         try {
             String result;
             if (verboseLogging) {
                 logChangelogRequest("stream", config, request);
-                result = callAIServiceStream(aiService, request, config);
+                result = callAIServiceStream(aiService, request, config, eventType, userAction);
             } else {
                 logChangelogRequest("single", config, request);
-                AIResponseListener listener = new ChangelogAIResponseListener(project);
+                ChangelogUsageCapturingListener listener =
+                    new ChangelogUsageCapturingListener(new ChangelogAIResponseListener(project));
                 result = aiService.generateContent(project, request, config, listener);
+                long latencyMs = System.currentTimeMillis() - startTimeMs;
+                ChangelogStatisticsReporter.reportSuccess(project,
+                                                          eventType,
+                                                          config,
+                                                          request,
+                                                          result,
+                                                          latencyMs,
+                                                          listener.getPromptTokens(),
+                                                          listener.getCompletionTokens(),
+                                                          listener.getTotalTokens(),
+                                                          userAction);
             }
 
             if (result.trim().isEmpty()) {
@@ -124,11 +148,13 @@ final class ChangelogAiExecutor {
      */
     @NotNull
     String callChangelogStream(@NotNull String userPrompt,
-                               @NotNull AIStreamResponseListener listener) throws Exception {
+                               @NotNull AIStreamResponseListener listener,
+                               @NotNull StatisticsEventType eventType,
+                               @NotNull StatisticsUserAction userAction) throws Exception {
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
         AIChatRequest request = buildChangelogRequest(userPrompt);
         AIService aiService = AIServiceImpl.getInstance();
-        return callAIServiceStreamWithListener(aiService, request, config, listener);
+        return callAIServiceStreamWithListener(aiService, request, config, listener, eventType, userAction);
     }
 
     /**
@@ -145,13 +171,15 @@ final class ChangelogAiExecutor {
      * @throws AIServiceException 当底层 AI 服务发生错误时抛出
      */
     @NotNull
-    String callCommitMessage(@NotNull String userPrompt) throws Exception {
+    String callCommitMessage(@NotNull String userPrompt,
+                             @NotNull StatisticsEventType eventType,
+                             @NotNull StatisticsUserAction userAction) throws Exception {
         final AIChatRequest request = buildCommitMessageRequest(userPrompt);
         AIService aiService = AIServiceImpl.getInstance();
 
         try {
             AIProviderConfig config = SettingsState.getInstance().providerConfig;
-            String result = callAIServiceStream(aiService, request, config);
+            String result = callAIServiceStream(aiService, request, config, eventType, userAction);
 
             if (result.trim().isEmpty()) {
                 throw new Exception(ChangelogBundle.message("error.ai.service.empty.result"));
@@ -207,11 +235,13 @@ final class ChangelogAiExecutor {
      */
     @NotNull
     String callCommitMessageStream(@NotNull String userPrompt,
-                                   @NotNull AIStreamResponseListener listener) throws Exception {
+                                   @NotNull AIStreamResponseListener listener,
+                                   @NotNull StatisticsEventType eventType,
+                                   @NotNull StatisticsUserAction userAction) throws Exception {
         final AIChatRequest request = buildCommitMessageRequest(userPrompt);
         AIService aiService = AIServiceImpl.getInstance();
         AIProviderConfig config = SettingsState.getInstance().providerConfig;
-        return callAIServiceStreamWithListener(aiService, request, config, listener);
+        return callAIServiceStreamWithListener(aiService, request, config, listener, eventType, userAction);
     }
 
     /**
@@ -265,7 +295,8 @@ final class ChangelogAiExecutor {
         resolvedSystemPrompt = replaceLanguagePlaceholder(resolvedSystemPrompt);
         userPrompt = replaceLanguagePlaceholder(userPrompt);
 
-        return new AIChatRequest(resolvedSystemPrompt, userPrompt);
+        int promptTokenEstimate = estimatePromptTokens(resolvedSystemPrompt, userPrompt);
+        return new AIChatRequest(resolvedSystemPrompt, userPrompt, promptTokenEstimate);
     }
 
     /**
@@ -282,11 +313,13 @@ final class ChangelogAiExecutor {
     @NotNull
     private String callAIServiceStream(@NotNull AIService aiService,
                                        @NotNull AIChatRequest request,
-                                       @NotNull AIProviderConfig config) throws Exception {
+                                       @NotNull AIProviderConfig config,
+                                       @NotNull StatisticsEventType eventType,
+                                       @NotNull StatisticsUserAction userAction) throws Exception {
         AIStreamResponseListener streamListener =
             new ChangelogAIStreamResponseListener(project, new StringBuilder(),
                                                   new CountDownLatch(1), new AtomicReference<>());
-        return callAIServiceStreamWithListener(aiService, request, config, streamListener);
+        return callAIServiceStreamWithListener(aiService, request, config, streamListener, eventType, userAction);
     }
 
     /**
@@ -305,15 +338,40 @@ final class ChangelogAiExecutor {
     private String callAIServiceStreamWithListener(@NotNull AIService aiService,
                                                    @NotNull AIChatRequest request,
                                                    @NotNull AIProviderConfig config,
-                                                   @NotNull AIStreamResponseListener externalListener) throws Exception {
+                                                   @NotNull AIStreamResponseListener externalListener,
+                                                   @NotNull StatisticsEventType eventType,
+                                                   @NotNull StatisticsUserAction userAction) throws Exception {
         StringBuilder buffer = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Exception> errorRef = new AtomicReference<>();
         AtomicReference<String> resultRef = new AtomicReference<>();
+        long startTimeMs = System.currentTimeMillis();
 
         logChangelogRequest("stream", config, request);
 
-        final AIStreamResponseListener listener = buildStreamResponseListener(externalListener, buffer, latch, resultRef, errorRef);
+        final AIStreamResponseListener listener =
+            buildStreamResponseListener(externalListener,
+                                        buffer,
+                                        latch,
+                                        resultRef,
+                                        errorRef,
+                                        () -> {
+                                            long latencyMs = System.currentTimeMillis() - startTimeMs;
+                                            String content = resultRef.get();
+                                            if (content == null || content.isBlank()) {
+                                                content = buffer.toString();
+                                            }
+                                            ChangelogStatisticsReporter.reportSuccess(project,
+                                                                                      eventType,
+                                                                                      config,
+                                                                                      request,
+                                                                                      content,
+                                                                                      latencyMs,
+                                                                                      0,
+                                                                                      0,
+                                                                                      0,
+                                                                                      userAction);
+                                        });
 
         try {
             aiService.generateContentStream(project, request, config, listener);
@@ -364,7 +422,8 @@ final class ChangelogAiExecutor {
                                                                                  StringBuilder buffer,
                                                                                  CountDownLatch latch,
                                                                                  AtomicReference<String> resultRef,
-                                                                                 AtomicReference<Exception> errorRef) {
+                                                                                 AtomicReference<Exception> errorRef,
+                                                                                 @NotNull Runnable onComplete) {
         return new AIStreamResponseListener() {
             /**
              * 启动监听器
@@ -439,6 +498,7 @@ final class ChangelogAiExecutor {
                 }
                 resultRef.set(fullText);
                 externalListener.onComplete(fullText);
+                onComplete.run();
                 latch.countDown();
             }
 
@@ -542,5 +602,25 @@ final class ChangelogAiExecutor {
         String languageText = responseLanguage.getDescForPrompt();
 
         return prompt.replace("${language}", languageText);
+    }
+
+    private static int estimatePromptTokens(@NotNull String systemPrompt, @NotNull String userPrompt) {
+        return estimateTokens(systemPrompt) + estimateTokens(userPrompt);
+    }
+
+    private static int estimateTokens(@Nullable String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        int totalChars = text.length();
+        int chineseChars = 0;
+        Matcher matcher = CHINESE_PATTERN.matcher(text);
+        while (matcher.find()) {
+            chineseChars++;
+        }
+        int otherChars = Math.max(0, totalChars - chineseChars);
+        double chineseTokens = chineseChars / CHINESE_CHARS_PER_TOKEN;
+        double otherTokens = otherChars / ENGLISH_CHARS_PER_TOKEN;
+        return (int) Math.ceil(chineseTokens + otherTokens);
     }
 }

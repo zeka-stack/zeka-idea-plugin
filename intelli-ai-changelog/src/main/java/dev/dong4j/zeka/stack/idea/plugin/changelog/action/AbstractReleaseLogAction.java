@@ -49,6 +49,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import lombok.extern.slf4j.Slf4j;
@@ -126,16 +127,17 @@ public abstract class AbstractReleaseLogAction extends AnAction {
     protected void generate(@NotNull Project project,
                             @NotNull Path gitRoot,
                             @NotNull List<VcsFullCommitDetails> selectedCommits,
-                            boolean updateLastUsedRange) {
+                            boolean updateLastUsedRange,
+                            @NotNull StatisticsUserAction userAction) {
         ReleaseLogProvider provider = SettingsState.getInstance().releaseLog;
         Path binary = GitCliffBinaryResolver.resolve();
         if (provider == ReleaseLogProvider.GIT_CLIFF && binary == null) {
-            showGitCliffDownloadNotification(project, gitRoot, selectedCommits, updateLastUsedRange);
+            showGitCliffDownloadNotification(project, gitRoot, selectedCommits, updateLastUsedRange, userAction);
             return;
         }
 
         // 执行生成操作
-        executeGenerateWithProvider(project, gitRoot, selectedCommits, updateLastUsedRange, provider, binary);
+        executeGenerateWithProvider(project, gitRoot, selectedCommits, updateLastUsedRange, provider, binary, userAction);
     }
 
     /**
@@ -153,7 +155,8 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                              @NotNull List<VcsFullCommitDetails> selectedCommits,
                                              boolean updateLastUsedRange,
                                              @NotNull ReleaseLogProvider provider,
-                                             @Nullable Path binary) {
+                                             @Nullable Path binary,
+                                             @NotNull StatisticsUserAction userAction) {
         String title = ToolWindowTitleUtil.buildToolWindowTitle("action.generate.release.log");
         SettingsState settings = SettingsState.getInstance();
         RangePoints points = buildReleaseRangePoints(settings, gitRoot);
@@ -268,7 +271,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                 }
                             }
                         };
-                        service.generateReleaseLogByAiStream(gitRoot, range, promptTemplate, listener);
+                        service.generateReleaseLogByAiStream(gitRoot, range, promptTemplate, listener, userAction);
                     }
                     if (updateLastUsedRange) {
                         updateLastUsedRange(settings, gitRoot, selectedCommits);
@@ -594,7 +597,8 @@ public abstract class AbstractReleaseLogAction extends AnAction {
     private void showGitCliffDownloadNotification(@NotNull Project project,
                                                   @NotNull Path gitRoot,
                                                   @NotNull List<VcsFullCommitDetails> selectedCommits,
-                                                  boolean updateLastUsedRange) {
+                                                  boolean updateLastUsedRange,
+                                                  @NotNull StatisticsUserAction userAction) {
         NotificationGroup notificationGroup = NotificationGroupManager.getInstance()
             .getNotificationGroup("IntelliAI Changelog Notifications");
         if (notificationGroup == null) {
@@ -622,7 +626,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
             public void actionPerformed(@NotNull AnActionEvent e,
                                         @NotNull Notification notification) {
                 notification.expire();
-                downloadAndInstallGitCliff(project, gitRoot, selectedCommits, updateLastUsedRange);
+                downloadAndInstallGitCliff(project, gitRoot, selectedCommits, updateLastUsedRange, userAction);
             }
         });
 
@@ -640,7 +644,8 @@ public abstract class AbstractReleaseLogAction extends AnAction {
     private void downloadAndInstallGitCliff(@NotNull Project project,
                                             @NotNull Path gitRoot,
                                             @NotNull List<VcsFullCommitDetails> selectedCommits,
-                                            boolean updateLastUsedRange) {
+                                            boolean updateLastUsedRange,
+                                            @NotNull StatisticsUserAction userAction) {
         ProgressManager.getInstance().run(new Task.Backgroundable(
             project, ChangelogBundle.message("gitcliff.download.progress.title"), true) {
             /**
@@ -665,7 +670,7 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                         if (project.isDisposed()) {
                             return;
                         }
-                        executeGenerate(project, gitRoot, selectedCommits, updateLastUsedRange, binary);
+                        executeGenerate(project, gitRoot, selectedCommits, updateLastUsedRange, binary, userAction);
                     });
                 } catch (Exception e) {
                     ApplicationManager.getApplication().invokeLater(() -> {
@@ -691,9 +696,10 @@ public abstract class AbstractReleaseLogAction extends AnAction {
                                  @NotNull Path gitRoot,
                                  @NotNull List<VcsFullCommitDetails> selectedCommits,
                                  boolean updateLastUsedRange,
-                                 @NotNull Path binary) {
+                                 @NotNull Path binary,
+                                 @NotNull StatisticsUserAction userAction) {
         // 直接调用 executeGenerateWithProvider，传入 GIT_CLIFF provider 和 binary
         executeGenerateWithProvider(project, gitRoot, selectedCommits, updateLastUsedRange,
-                                    ReleaseLogProvider.GIT_CLIFF, binary);
+                                    ReleaseLogProvider.GIT_CLIFF, binary, userAction);
     }
 }

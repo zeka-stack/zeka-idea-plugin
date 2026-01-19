@@ -20,6 +20,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import icons.ChangelogIcons;
 
 /**
@@ -45,13 +46,13 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
-        
+
         // 检查项目是否处于索引模式
         if (AbstractReleaseLogAction.isIndexing(project)) {
             e.getPresentation().setEnabled(false);
             return;
         }
-        
+
         boolean enabled = project != null && resolveGitRoot(e) != null;
         e.getPresentation().setEnabled(enabled);
 
@@ -202,7 +203,39 @@ public class GenerateReleaseLogFromProjectAction extends AbstractReleaseLogActio
             return;
         }
 
-        generate(project, gitRoot, List.of(), true);
+        StatisticsUserAction userAction = resolveUserAction(e);
+        generate(project, gitRoot, List.of(), true, userAction);
+    }
+
+    /**
+     * 解析用户触发动作的上下文类型
+     * <p> 根据当前操作事件中的文件数据, 判断用户是在项目树目录上下文, 文件上下文, 还是未知上下文.
+     * 如果从选中文件数组中找到目录, 则返回目录上下文; 否则返回文件上下文; 若无任何文件数据, 则返回未知上下文.
+     *
+     * @param e 当前操作事件对象, 包含上下文信息
+     * @return 用户操作上下文类型, 可能为 {@link StatisticsUserAction#PROJECT_TREE_CONTEXT_MENU_DIR},
+     *     {@link StatisticsUserAction#PROJECT_TREE_CONTEXT_MENU_FILE} 或 {@link StatisticsUserAction#UNKNOWN}
+     */
+    @NotNull
+    private StatisticsUserAction resolveUserAction(@NotNull AnActionEvent e) {
+        VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
+        if (files != null && files.length > 0) {
+            for (VirtualFile file : files) {
+                if (file != null && file.isDirectory()) {
+                    return StatisticsUserAction.PROJECT_TREE_CONTEXT_MENU_DIR;
+                }
+            }
+            return StatisticsUserAction.PROJECT_TREE_CONTEXT_MENU_FILE;
+        }
+
+        VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
+        if (file != null) {
+            return file.isDirectory()
+                   ? StatisticsUserAction.PROJECT_TREE_CONTEXT_MENU_DIR
+                   : StatisticsUserAction.PROJECT_TREE_CONTEXT_MENU_FILE;
+        }
+
+        return StatisticsUserAction.UNKNOWN;
     }
 
     /**

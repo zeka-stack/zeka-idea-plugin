@@ -34,6 +34,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import icons.ChangelogIcons;
 import lombok.extern.slf4j.Slf4j;
@@ -127,7 +128,7 @@ public final class GenerateCommitMessageService {
             }
 
             log.debug("Git 提交页面：找到 {} 个文件变更", changes.size());
-            generator.generateForChanges(changes, commitMessageControl, null);
+            generator.generateForChanges(changes, commitMessageControl, null, StatisticsUserAction.COMMIT_PANEL);
             return;
         }
 
@@ -144,7 +145,7 @@ public final class GenerateCommitMessageService {
 
         if (commits.size() == 1) {
             String commitHash = commits.get(0).getId().asString();
-            generator.generateForCommitHash(commitHash, commitMessageControl, null);
+            generator.generateForCommitHash(commitHash, commitMessageControl, null, StatisticsUserAction.GIT_LOG_PANEL);
             return;
         }
 
@@ -157,7 +158,11 @@ public final class GenerateCommitMessageService {
             })
             .filter(it -> !it.isBlank())
             .collect(Collectors.toList());
-        generator.generateForCommitHashes(commitHashes, commitMessages, commitMessageControl, null);
+        generator.generateForCommitHashes(commitHashes,
+                                          commitMessages,
+                                          commitMessageControl,
+                                          null,
+                                          StatisticsUserAction.GIT_LOG_PANEL);
     }
 
     private void showActionTip(@NotNull AnActionEvent e, @NotNull String message) {

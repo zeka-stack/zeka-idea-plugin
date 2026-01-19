@@ -165,7 +165,7 @@ public class GenerateChangelogFileAction extends AbstractGitLogAction {
     protected @NotNull String generateContent(@NotNull ChangelogService service,
                                               @NotNull List<String> commitHashes) throws Exception {
         // 调用 generateAndSaveChangelogFile 方法，该方法会自动保存到文件
-        return service.generateAndSaveChangelogFile(service.getProject(), commitHashes);
+        return service.generateAndSaveChangelogFile(service.getProject(), commitHashes, getStatisticsUserAction());
     }
 
     /**
@@ -185,7 +185,7 @@ public class GenerateChangelogFileAction extends AbstractGitLogAction {
                                                     @NotNull List<String> commitHashes,
                                                     @NotNull AIStreamResponseListener listener) throws Exception {
         // 先使用流式生成内容
-        String content = service.generateChangelogStream(commitHashes, listener);
+        String content = service.generateChangelogStream(commitHashes, listener, getStatisticsUserAction());
         // 然后保存到文件
         service.saveChangelogToFile(service.getProject(), content);
     }

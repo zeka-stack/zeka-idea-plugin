@@ -58,6 +58,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,8 +86,42 @@ public class CommitMessageGenerator {
     /** 光标闪烁间隔 (毫秒) */
     private static final int TYPING_CURSOR_DELAY_MS = 500;
 
+    /**
+     * 流式生成接口
+     * <p> 定义了用于生成提交消息的流式处理逻辑, 支持通过 AI 服务逐块接收响应内容并实时更新提交消息. 该接口被设计为函数式接口, 便于在后台任务中动态调用不同生成策略 (如单提交, 压缩提交等).</p>
+     * <p> 实现类需提供以下功能:</p>
+     * <ul>
+     *   <li> 接收变更服务, 监听器, 上下文文本和打字指示器作为参数 </li>
+     *   <li> 返回生成的提交消息字符串, 支持异常抛出 </li>
+     *   <li> 支持在流式响应过程中控制文本输出节奏和状态反馈 </li>
+     * </ul>
+     * <p> 典型使用场景包括:</p>
+     * <ul>
+     *   <li> 根据代码变更生成提交消息 </li>
+     *   <li> 根据 Git 提交历史生成压缩提交消息 </li>
+     *   <li> 在 UI 线程中实时更新提交面板内容 </li>
+     * </ul>
+     * <p> 该接口被封装在 <code>CommitMessageGenerator</code> 类中, 作为生成流程的核心抽象, 支持灵活替换不同 AI 服务或生成策略.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.19
+     * @since 1.0.0
+     */
     @FunctionalInterface
     private interface StreamGeneration {
+        /**
+         * 生成流式响应内容
+         * <p> 根据传入的服务, 监听器, 上下文文本和输入指示器生成流式响应内容
+         *
+         * @param service         用于生成变更日志的服务实例, 不能为空
+         * @param listener        用于监听流式响应的监听器, 不能为空
+         * @param contextText     上下文文本, 可为空
+         * @param typingIndicator 输入指示器, 不能为空
+         * @return 生成的流式响应内容, 不能为空
+         * @throws Exception 在生成过程中发生异常时抛出
+         */
         @NotNull
         String generate(@NotNull ChangelogService service,
                         @NotNull AIStreamResponseListener listener,
@@ -112,7 +147,7 @@ public class CommitMessageGenerator {
      * @since 1.0.0
      */
     public void generateForChanges(@NotNull Collection<Change> changes) {
-        generateForChanges(changes, null, null);
+        generateForChanges(changes, null, null, StatisticsUserAction.UNKNOWN);
     }
 
     /**
@@ -126,7 +161,7 @@ public class CommitMessageGenerator {
      */
     public void generateForChanges(@NotNull Collection<Change> changes,
                                    @Nullable CommitMessageI commitMessageControl) {
-        generateForChanges(changes, commitMessageControl, null);
+        generateForChanges(changes, commitMessageControl, null, StatisticsUserAction.UNKNOWN);
     }
 
     /**
@@ -141,6 +176,13 @@ public class CommitMessageGenerator {
     public void generateForChanges(@NotNull Collection<Change> changes,
                                    @Nullable CommitMessageI commitMessageControl,
                                    @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        generateForChanges(changes, commitMessageControl, outputSession, StatisticsUserAction.UNKNOWN);
+    }
+
+    public void generateForChanges(@NotNull Collection<Change> changes,
+                                   @Nullable CommitMessageI commitMessageControl,
+                                   @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                   @NotNull StatisticsUserAction userAction) {
         if (changes.isEmpty()) {
             log.debug("Git 提交页面：没有代码变更需要处理");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.changes"));
@@ -157,9 +199,10 @@ public class CommitMessageGenerator {
                                                                   contextText,
                                                                   outputSession,
                                                                   commitMessageControl,
-                                                                  typingIndicator);
+                                                                  typingIndicator,
+                                                                  userAction);
                           }
-                          return service.generateCommitMessageFromDiffStream(changes, listener, contextText);
+                          return service.generateCommitMessageFromDiffStream(changes, listener, contextText, userAction);
                       });
     }
 
@@ -173,12 +216,19 @@ public class CommitMessageGenerator {
     public void generateForCommitHash(@NotNull String commitHash,
                                       @Nullable CommitMessageI commitMessageControl,
                                       @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        generateForCommitHash(commitHash, commitMessageControl, outputSession, StatisticsUserAction.UNKNOWN);
+    }
+
+    public void generateForCommitHash(@NotNull String commitHash,
+                                      @Nullable CommitMessageI commitMessageControl,
+                                      @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                      @NotNull StatisticsUserAction userAction) {
         if (commitHash.isBlank()) {
             log.debug("Git 提交页面：提交记录再生失败，commit hash 为空");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.single.commit"));
             return;
         }
-        generateForCommitSelection(List.of(commitHash), List.of(), commitMessageControl, outputSession);
+        generateForCommitSelection(List.of(commitHash), List.of(), commitMessageControl, outputSession, userAction);
     }
 
     /**
@@ -193,12 +243,20 @@ public class CommitMessageGenerator {
                                         @NotNull List<String> selectedCommitTitles,
                                         @Nullable CommitMessageI commitMessageControl,
                                         @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+        generateForCommitHashes(commitHashes, selectedCommitTitles, commitMessageControl, outputSession, StatisticsUserAction.UNKNOWN);
+    }
+
+    public void generateForCommitHashes(@NotNull List<String> commitHashes,
+                                        @NotNull List<String> selectedCommitTitles,
+                                        @Nullable CommitMessageI commitMessageControl,
+                                        @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                        @NotNull StatisticsUserAction userAction) {
         if (commitHashes.size() < 2) {
             log.debug("Git 提交页面：压缩提交再生失败，commit hash 数量不足，size={}", commitHashes.size());
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
             return;
         }
-        generateForCommitSelection(commitHashes, selectedCommitTitles, commitMessageControl, outputSession);
+        generateForCommitSelection(commitHashes, selectedCommitTitles, commitMessageControl, outputSession, userAction);
     }
 
     /**
@@ -214,7 +272,8 @@ public class CommitMessageGenerator {
     private void generateForCommitSelection(@NotNull List<String> commitHashes,
                                             @NotNull List<String> selectedCommitTitles,
                                             @Nullable CommitMessageI commitMessageControl,
-                                            @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession) {
+                                            @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                            @NotNull StatisticsUserAction userAction) {
         if (commitHashes.isEmpty()) {
             log.debug("Git 提交页面：提交记录再生失败，commit hash 为空列表");
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.regenerate.select.at.least.one.commit"));
@@ -227,11 +286,13 @@ public class CommitMessageGenerator {
                                                                              commitHashes,
                                                                              selectedCommitTitles,
                                                                              listener,
-                                                                             contextText)
+                                                                             contextText,
+                                                                             userAction)
                                                                          : service.generateCommitMessageFromGitLogStream(
                                                                              commitHashes.get(0),
                                                                              listener,
-                                                                             contextText));
+                                                                             contextText,
+                                                                             userAction));
     }
 
     private void runGeneration(@Nullable CommitMessageI commitMessageControl,
@@ -811,7 +872,8 @@ public class CommitMessageGenerator {
                                               @Nullable String contextText,
                                               @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
                                               @Nullable CommitMessageI commitMessageControl,
-                                              @NotNull TypingIndicator typingIndicator) throws Exception {
+                                                         @NotNull TypingIndicator typingIndicator,
+                                                         @NotNull StatisticsUserAction userAction) throws Exception {
 
         // 多仓库场景：为每个仓库并行生成独立的 commit message，再合并输出。
         List<CompletableFuture<String>> futures = new ArrayList<>();
@@ -824,7 +886,7 @@ public class CommitMessageGenerator {
                 .supplyAsync(() -> {
                     String commitMessage;
                     try {
-                        commitMessage = service.generateCommitMessageFromDiff(rootChanges, contextText);
+                        commitMessage = service.generateCommitMessageFromDiff(rootChanges, contextText, userAction);
                     } catch (Exception e) {
                         log.debug("Git 提交页面：[{}] 生成失败", rootChanges, e);
                         commitMessage = "";
