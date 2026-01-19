@@ -669,6 +669,7 @@ public final class ProjectVersionResolver {
         if (baseDir != null) {
             return baseDir.getPath();
         }
-        return project.getBasePath();
+        VirtualFile projectDir = project.getBaseDir();
+        return projectDir != null ? projectDir.getPath() : null;
     }
 }

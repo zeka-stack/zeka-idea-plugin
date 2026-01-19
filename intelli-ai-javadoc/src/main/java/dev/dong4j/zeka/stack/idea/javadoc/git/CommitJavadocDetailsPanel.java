@@ -5,13 +5,16 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.EditorFactory;
-import com.intellij.openapi.editor.EditorKind;
 import com.intellij.openapi.editor.ScrollType;
+import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
+import com.intellij.openapi.fileEditor.FileEditor;
+import com.intellij.openapi.fileEditor.TextEditor;
+import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VfsUtilCore;
@@ -23,7 +26,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.ui.OnePixelSplitter;
 import com.intellij.ui.ScrollPaneFactory;
-import com.intellij.ui.TreeSpeedSearch;
+import com.intellij.ui.TreeUIHelper;
 import com.intellij.ui.components.ActionLink;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.content.Content;
@@ -31,13 +34,14 @@ import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.MessageView;
 import com.intellij.ui.treeStructure.Tree;
+import com.intellij.util.containers.Convertor;
 import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +53,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
@@ -99,6 +104,8 @@ public final class CommitJavadocDetailsPanel implements Disposable {
 
     /** 当前文本编辑器实例 */
     private Editor currentEditor;
+    /** 当前文件编辑器实例 */
+    private FileEditor currentFileEditor;
     /** 当前在编辑器中显示的虚拟文件 */
     private VirtualFile currentFile;
     /** DocumentationTask 列表, 用于管理缺失文档注释的任务 */
@@ -126,14 +133,15 @@ public final class CommitJavadocDetailsPanel implements Disposable {
         this.tree = new Tree(treeModel);
         this.tree.setRootVisible(false);
         this.tree.setShowsRootHandles(true);
+        this.tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         this.tree.setCellRenderer(new JavadocTreeCellRenderer());
-        new TreeSpeedSearch(tree, path -> {
+        TreeUIHelper.getInstance().installTreeSpeedSearch(tree, path -> {
             Object userObject = ((DefaultMutableTreeNode) path.getLastPathComponent()).getUserObject();
             if (userObject instanceof NodeData nodeData) {
                 return nodeData.displayName;
             }
             return "";
-        });
+        }, true);
 
         this.summaryLabel = new JBLabel();
         this.generateAllLink = new ActionLink();
@@ -420,13 +428,23 @@ public final class CommitJavadocDetailsPanel implements Disposable {
             showEditorPlaceholder();
             return;
         }
-        Editor editor = createEditor(document, file);
-        currentEditor = editor;
-        currentFile = file;
-        editorHolder.removeAll();
-        editorHolder.add(editor.getComponent(), BorderLayout.CENTER);
-        editorHolder.revalidate();
-        editorHolder.repaint();
+        FileEditor fileEditor = TextEditorProvider.getInstance().createEditor(project, file);
+        if (fileEditor instanceof TextEditor textEditor) {
+            currentFileEditor = fileEditor;
+            currentEditor = textEditor.getEditor();
+            if (currentEditor instanceof EditorEx editorEx) {
+                editorEx.setContextMenuGroupId("EditorPopupMenu");
+                editorEx.setViewer(false);
+            }
+            currentFile = file;
+            editorHolder.removeAll();
+            editorHolder.add(fileEditor.getComponent(), BorderLayout.CENTER);
+            editorHolder.revalidate();
+            editorHolder.repaint();
+            return;
+        }
+        Disposer.dispose(fileEditor);
+        showEditorPlaceholder();
     }
 
     /**
@@ -441,7 +459,7 @@ public final class CommitJavadocDetailsPanel implements Disposable {
 
     /**
      * 释放当前面板所持有的资源
-     * <p> 若当前编辑器实例不为 null, 则调用 {@link EditorFactory#releaseEditor} 释放其占用的所有资源, 随后将编辑器实例与文件对象置为 null, 以便垃圾回收.
+     * <p> 若当前编辑器实例不为 null, 则释放其占用的所有资源, 随后将编辑器实例与文件对象置为 null, 以便垃圾回收.
      *
      * @see Disposable#dispose()
      */
@@ -452,13 +470,16 @@ public final class CommitJavadocDetailsPanel implements Disposable {
 
     /**
      * 释放当前编辑器所占用的资源
-     * <p> 若当前编辑器实例不为 null, 则调用 {@link EditorFactory#releaseEditor} 释放其占用的所有资源, 随后将编辑器实例与文件对象置为 null, 以便垃圾回收.
+     * <p> 若当前编辑器实例不为 null, 则释放其占用的所有资源, 随后将编辑器实例与文件对象置为 null, 以便垃圾回收.
      *
      * @see Disposable#dispose()
      */
     private void releaseEditor() {
+        if (currentFileEditor != null) {
+            Disposer.dispose(currentFileEditor);
+            currentFileEditor = null;
+        }
         if (currentEditor != null) {
-            EditorFactory.getInstance().releaseEditor(currentEditor);
             currentEditor = null;
             currentFile = null;
         }
@@ -478,29 +499,6 @@ public final class CommitJavadocDetailsPanel implements Disposable {
                          BorderLayout.CENTER);
         editorHolder.revalidate();
         editorHolder.repaint();
-    }
-
-    /**
-     * 创建一个编辑器实例用于显示指定文件的代码内容
-     * <p> 优先尝试通过反射调用包含 {@code EditorKind} 参数的 {@code createEditor} 方法, 若失败则回退到无参版本. 该方法用于在界面中加载并显示指定文件的源码内容.
-     *
-     * @param document 与文件关联的文档对象, 不能为空
-     * @param file     要加载的虚拟文件对象, 不能为空
-     * @return 创建的编辑器实例, 用于在 UI 中显示文件内容
-     */
-    private Editor createEditor(@NotNull Document document, @NotNull VirtualFile file) {
-        EditorFactory factory = EditorFactory.getInstance();
-        try {
-            Method method = EditorFactory.class.getMethod("createEditor",
-                                                          Document.class,
-                                                          Project.class,
-                                                          VirtualFile.class,
-                                                          boolean.class,
-                                                          EditorKind.class);
-            return (Editor) method.invoke(factory, document, project, file, false, EditorKind.MAIN_EDITOR);
-        } catch (ReflectiveOperationException ignored) {
-            return factory.createEditor(document, project, file, false);
-        }
     }
 
     /**
@@ -637,6 +635,12 @@ public final class CommitJavadocDetailsPanel implements Disposable {
                     setIcon(resolveIcon(nodeData));
                 }
             }
+            if (selected) {
+                setBackgroundSelectionColor(UIUtil.getTreeSelectionBackground(hasFocus));
+            } else {
+                setBackgroundNonSelectionColor(tree.getBackground());
+            }
+            setOpaque(true);
             return component;
         }
 
