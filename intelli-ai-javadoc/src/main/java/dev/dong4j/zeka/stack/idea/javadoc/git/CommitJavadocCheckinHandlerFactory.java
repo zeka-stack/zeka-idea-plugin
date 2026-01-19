@@ -68,7 +68,7 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
      * @since 1.0.0
      */
     private static class CommitJavadocCheckinHandler extends CheckinHandler implements CommitCheck, Disposable {
-        /** 跳过本次提交时的 Javadoc 检查标记键, 用于在提交后临时禁用检查, 避免重复提示 <a href="https://example.com">https://example.com</a> */
+        /** 跳过本次提交时的 Javadoc 检查标记键, 用于在提交后临时禁用检查, 避免重复提示 */
         private static final Key<Boolean> SKIP_ONCE_KEY =
             Key.create("dev.dong4j.zeka.stack.idea.javadoc.commit.check.skip.once");
 
@@ -268,25 +268,25 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
         }
 
         /**
-         * 獲取顯示詳細資訊的連結
-         * <p> 返回用於顯示詳細資訊的連結字串, 該連結通常用於導航至相關的修復或說明頁面.
+         * 获取显示详细信息的链接
+         * <p> 返回用于显示详细信息的链接字符串, 该链接通常用于导航至相关的修复或说明页面.
          *
-         * @return 顯示詳細資訊的連結字串, 保證不為 null
+         * @return 显示详细信息的链接字符串, 保证不为 null
          */
         @Override
         public @NotNull String getShowDetailsLink() {
-            return JavadocBundle.message("commit.check.javadoc.fix.link");
+            return JavadocBundle.message("commit.check.javadoc.details.link");
         }
 
         /**
-         * 獲取顯示詳細資訊的動作標籤
-         * <p> 返回用於顯示詳細資訊的動作標籤, 該標籤會被用來在用戶介面中顯示對應的操作選項.
+         * 获取显示详细信息的动作标签
+         * <p> 返回用于在用户界面中显示“显示详细信息”操作选项的标签字符串.
          *
-         * @return 顯示詳細資訊的動作標籤, 保證不為 null
+         * @return 显示详细信息的动作标签, 保证不为 null
          */
         @Override
         public @NotNull String getShowDetailsAction() {
-            return JavadocBundle.message("commit.check.javadoc.fix.action");
+            return JavadocBundle.message("commit.check.javadoc.details.action");
         }
 
         /**
@@ -308,7 +308,7 @@ public class CommitJavadocCheckinHandlerFactory extends CheckinHandlerFactory {
                 return;
             }
 
-            new CommitJavadocGenerator(project).generateForTasks(tasks);
+            CommitJavadocDetailsPanel.show(project, tasks);
         }
     }
 }
