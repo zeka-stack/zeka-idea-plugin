@@ -151,7 +151,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
                     return null;
                 });
         } catch (HttpRequests.HttpStatusException e) {
-            AIServiceException.ErrorCode code = mapHttpError(e.getStatusCode());
+            AIServiceException.ErrorCode code = AICompatibleProvider.mapHttpError(e.getStatusCode());
             String msg = "Claude HTTP 错误: " + e.getMessage();
             listener.onError(msg, e);
             throw new AIServiceException(msg, code, e);
@@ -246,31 +246,6 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
     }
 
     /**
-     * 根据 HTTP 状态码映射对应的 AI 服务异常错误码
-     * <p> 该方法用于将 HTTP 响应状态码转换为统一的 AI 服务异常错误类型, 便于上层统一处理错误.
-     * <p> 支持的错误码映射规则如下:
-     * <ul>
-     *   <li>401,403 → <a href="https://example.com">INVALID_API_KEY</a>(无效 API 密钥)</li>
-     *   <li>408 → <a href="https://example.com">TIMEOUT</a>(请求超时)</li>
-     *   <li>429 → <a href="https://example.com">RATE_LIMIT</a>(请求频率限制)</li>
-     *   <li>500,502,503,504 → <a href="https://example.com">SERVICE_UNAVAILABLE</a>(服务不可用)</li>
-     *   <li> 其他状态码 → <a href="https://example.com">INVALID_RESPONSE</a>(无效响应)</li>
-     * </ul>
-     *
-     * @param statusCode HTTP 响应状态码
-     * @return 对应的 AI 服务异常错误码
-     */
-    private static AIServiceException.ErrorCode mapHttpError(int statusCode) {
-        return switch (statusCode) {
-            case 401, 403 -> AIServiceException.ErrorCode.INVALID_API_KEY;
-            case 408 -> AIServiceException.ErrorCode.TIMEOUT;
-            case 429 -> AIServiceException.ErrorCode.RATE_LIMIT;
-            case 500, 502, 503, 504 -> AIServiceException.ErrorCode.SERVICE_UNAVAILABLE;
-            default -> AIServiceException.ErrorCode.INVALID_RESPONSE;
-        };
-    }
-
-    /**
      * 构建用于 Anthropic Messages API 的请求体
      * <p> 根据传入的聊天请求和流式标志, 生成符合 Anthropic API 格式的 JSON 请求体, 包含模型, 流式设置, 系统提示, 用户消息及模型参数.
      *
@@ -284,7 +259,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         body.addProperty("stream", stream);
 
         String systemPrompt = request.systemPrompt();
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
+        if (!systemPrompt.isBlank()) {
             body.addProperty("system", systemPrompt);
         }
 
@@ -318,7 +293,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
 
     /**
      * 向 Anthropic API 发送消息请求并获取响应
-     * <p> 通过 POST 请求向 <a href="https://example.com">https://example.com</a> 接口发送消息内容, 根据是否为验证模式决定返回内容类型 </p>
+     * <p> 通过 POST 请求向 接口发送消息内容, 根据是否为验证模式决定返回内容类型 </p>
      * <p> 请求体格式为 JSON, 包含模型, 消息内容, 温度, 最大令牌数等参数, 支持监听器回调请求与响应事件 </p>
      *
      * @param body       请求体 JSON 对象, 包含模型名称, 消息内容, 流式标志等配置
@@ -359,7 +334,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
             }
             return parseClaudeMessageResponse(responseBody, listener);
         } catch (HttpRequests.HttpStatusException e) {
-            throw new AIServiceException("Claude HTTP 错误: " + e.getMessage(), mapHttpError(e.getStatusCode()), e);
+            throw new AIServiceException("Claude HTTP 错误: " + e.getMessage(), AICompatibleProvider.mapHttpError(e.getStatusCode()), e);
         } catch (IOException e) {
             throw new AIServiceException("Claude 网络错误: " + e.getMessage(), AIServiceException.ErrorCode.NETWORK_ERROR, e);
         } catch (Exception e) {

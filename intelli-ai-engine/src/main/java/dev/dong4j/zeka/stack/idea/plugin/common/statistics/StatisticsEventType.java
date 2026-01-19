@@ -23,10 +23,7 @@ public enum StatisticsEventType {
     /** 自动完成事件 */
     AUTOCOMPLETE("engine_autocomplete", "自动完成"),
 
-    /**
-     * 日志 / 报告相关事件: 提交信息生成
-     * <a href="https://example.com">https://example.com</a>
-     */
+    /** 提交信息生成事件类型, 用于统计与提交信息生成相关的操作行为 */
     CHANGELOG_COMMIT_MESSAGE("changelog_commit_message", "提交信息生成"),
 
     /** Release Log 生成事件类型, 用于统计 Release Log 生成相关的操作行为 */

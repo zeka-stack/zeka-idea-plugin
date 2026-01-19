@@ -150,7 +150,7 @@ public class GeminLikeiProvider extends AICompatibleProvider {
                     return null;
                 });
         } catch (HttpRequests.HttpStatusException e) {
-            AIServiceException.ErrorCode code = mapHttpError(e.getStatusCode());
+            AIServiceException.ErrorCode code = AICompatibleProvider.mapHttpError(e.getStatusCode());
             String msg = "Gemini HTTP 错误: " + e.getMessage();
             listener.onError(msg, e);
             throw new AIServiceException(msg, code, e);
@@ -229,8 +229,8 @@ public class GeminLikeiProvider extends AICompatibleProvider {
     /**
      * 构建模型请求的完整 URL
      * <p> 根据配置的模型名称和后缀拼接成完整的模型请求地址, 自动去除模型名称前缀 "models/"</p>
-     * <p> 示例: 若 config.modelName 为 "models/gemini-pro",suffix 为 "/generateContent", 则返回 "https://api.example
-     * .com/models/gemini-pro/generateContent"</p>
+     * <p> 示例: 若 config.modelName 为 "models/gemini-pro",suffix 为 "/generateContent",
+     * 则返回 "<a href="https://api.example.com/models/gemini-pro/generateContent">...</a>"</p>
      *
      * @param suffix 请求路径后缀, 例如 ":generateContent" 或 ":streamGenerateContent?alt=sse"
      * @return 完整的模型请求 URL 字符串
@@ -260,25 +260,6 @@ public class GeminLikeiProvider extends AICompatibleProvider {
         if (apiKey != null && !apiKey.isBlank()) {
             connection.setRequestProperty("x-goog-api-key", apiKey.trim());
         }
-    }
-
-    /**
-     * 根据 HTTP 状态码映射对应的 AI 服务错误码
-     * <p> 该方法用于将 HTTP 响应状态码转换为统一的 AI 服务异常错误码, 便于上层统一处理错误.
-     * <p> 支持的错误码映射包括:401,403 → {@code INVALID_API_KEY},408 → {@code TIMEOUT},429 → {@code RATE_LIMIT},
-     * 500,502,503,504 → {@code SERVICE_UNAVAILABLE}, 其余状态码默认映射为 {@code INVALID_RESPONSE}.
-     *
-     * @param statusCode HTTP 响应状态码
-     * @return 对应的 {@link AIServiceException.ErrorCode} 错误码
-     */
-    private static AIServiceException.ErrorCode mapHttpError(int statusCode) {
-        return switch (statusCode) {
-            case 401, 403 -> AIServiceException.ErrorCode.INVALID_API_KEY;
-            case 408 -> AIServiceException.ErrorCode.TIMEOUT;
-            case 429 -> AIServiceException.ErrorCode.RATE_LIMIT;
-            case 500, 502, 503, 504 -> AIServiceException.ErrorCode.SERVICE_UNAVAILABLE;
-            default -> AIServiceException.ErrorCode.INVALID_RESPONSE;
-        };
     }
 
     /**
@@ -344,7 +325,7 @@ public class GeminLikeiProvider extends AICompatibleProvider {
         if (maxTokens != null) {
             generationConfig.addProperty("maxOutputTokens", maxTokens);
         }
-        if (generationConfig.size() > 0) {
+        if (!generationConfig.isEmpty()) {
             body.add("generationConfig", generationConfig);
         }
         return body;
@@ -394,7 +375,7 @@ public class GeminLikeiProvider extends AICompatibleProvider {
             }
             return parseGenerateContentResponse(responseBody, listener);
         } catch (HttpRequests.HttpStatusException e) {
-            throw new AIServiceException("Gemini HTTP 错误: " + e.getMessage(), mapHttpError(e.getStatusCode()), e);
+            throw new AIServiceException("Gemini HTTP 错误: " + e.getMessage(), AICompatibleProvider.mapHttpError(e.getStatusCode()), e);
         } catch (IOException e) {
             throw new AIServiceException("Gemini 网络错误: " + e.getMessage(), AIServiceException.ErrorCode.NETWORK_ERROR, e);
         } catch (Exception e) {

@@ -509,4 +509,23 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         }
         return models;
     }
+
+    /**
+     * 根据 HTTP 状态码映射对应的 AI 服务错误码
+     * <p> 该方法用于将 HTTP 响应状态码转换为统一的 AI 服务异常错误码, 便于上层统一处理错误.
+     * <p> 支持的错误码映射包括:401,403 → {@code INVALID_API_KEY},408 → {@code TIMEOUT},429 → {@code RATE_LIMIT},
+     * 500,502,503,504 → {@code SERVICE_UNAVAILABLE}, 其余状态码默认映射为 {@code INVALID_RESPONSE}.
+     *
+     * @param statusCode HTTP 响应状态码
+     * @return 对应的 {@link AIServiceException.ErrorCode} 错误码
+     */
+    public static AIServiceException.ErrorCode mapHttpError(int statusCode) {
+        return switch (statusCode) {
+            case 401, 403 -> AIServiceException.ErrorCode.INVALID_API_KEY;
+            case 408 -> AIServiceException.ErrorCode.TIMEOUT;
+            case 429 -> AIServiceException.ErrorCode.RATE_LIMIT;
+            case 500, 502, 503, 504 -> AIServiceException.ErrorCode.SERVICE_UNAVAILABLE;
+            default -> AIServiceException.ErrorCode.INVALID_RESPONSE;
+        };
+    }
 }

@@ -39,7 +39,6 @@ public class ZaiOpenAIProvider extends OpenAILikeProvider implements ZhipudModel
      *
      * @param apiKey API 密钥, 可为空
      * @return 可用模型列表, 始终返回非空列表
-     * @see <a href="https://example.com">ZhipudModelListProvider</a>
      */
     @Override
     @NotNull

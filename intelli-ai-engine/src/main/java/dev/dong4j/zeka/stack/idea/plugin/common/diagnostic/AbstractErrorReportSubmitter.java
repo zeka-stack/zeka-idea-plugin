@@ -115,11 +115,10 @@ public abstract class AbstractErrorReportSubmitter extends ErrorReportSubmitter 
     protected abstract @NotNull String generateTextByIssueId(String issueId);
 
     /**
-     * 根据问题 ID 生成对应的 URL 链接
-     * <p> 构建指定 Issue 的访问地址, 通常用于提交成功后查看详情或在隐私提示文本中显示链接.
+     * 根据问题 ID 生成对应的 URL
      *
      * @param issueId 问题 ID
-     * @return 生成的 Issue 访问链接, 不可为 null
+     * @return 生成的 URL 字符串
      */
     protected abstract @NotNull String generateUrlByIssueId(String issueId);
 

@@ -38,10 +38,7 @@ public final class AICommonIcons {
 
     // ========== AI 提供商图标 - 用于下拉列表 (16x16) ==========
 
-    /**
-     * 插件图标资源, 尺寸为 16x16, 用于界面中标识插件功能.
-     * <a href="https://example.com">https://example.com</a>
-     */
+    /** 插件图标资源, 尺寸为 16x16, 用于界面中标识插件功能. */
     public static final Icon PLUGIN = load("/icons/plugin_16.svg");
     /**
      * 工具图标

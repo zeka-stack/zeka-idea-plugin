@@ -1818,7 +1818,7 @@ public final class AIProviderConfigUI {
     public static final class ProviderOption {
         /** 标签显示文本, 用于界面展示或用户识别 */
         private final String label;
-        /** AI 提供商类型, 用于标识具体的 AI 服务提供商, 如 <a href="https://example.com">OpenAI</a> 或 <a href="https://example.com">Anthropic</a> */
+        /** AI 提供商类型, 用于标识具体的 AI 服务提供商 */
         private final AIProviderType providerType;
         /** 是否为分组项, 用于标识该选项是否属于分组而非具体提供者 */
         @Getter

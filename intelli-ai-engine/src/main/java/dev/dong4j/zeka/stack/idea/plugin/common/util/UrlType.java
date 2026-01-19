@@ -68,7 +68,7 @@ public enum UrlType {
      * 构造函数, 初始化 URL 类型的标识符和对应的 URL 地址
      *
      * @param id  URL 类型标识符, 例如 "plugin.#DEFAULT"
-     * @param url 对应的 URL 地址, 例如 <a href="https://example.com">https://example.com</a>
+     * @param url 对应的 URL 地址
      */
     UrlType(String id, String url) {
         this.id = id;

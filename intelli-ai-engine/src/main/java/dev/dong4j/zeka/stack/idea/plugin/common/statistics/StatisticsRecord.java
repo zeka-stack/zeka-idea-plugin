@@ -33,7 +33,7 @@ public class StatisticsRecord {
     private long createdAt;
     /** 项目名称, 用于标识统计记录所属的项目 */
     private String projectName;
-    /** 请求处理结果状态, 如成功, 失败, 超时等, 用于标识统计记录的最终处理结果 <a href="https://example.com">https://example.com</a> */
+    /** 请求处理结果状态, 如成功, 失败, 超时等, 用于标识统计记录的最终处理结果 */
     private String resultStatus;
     /** 请求延迟时间 (毫秒) */
     private long latencyMs;
@@ -41,7 +41,7 @@ public class StatisticsRecord {
     private long inputToken;
     /** 输出的令牌数量 */
     private long outputToken;
-    /** 用户操作行为信息, 用于记录用户在系统中的具体操作类型, 如点击, 提交, 删除等,<a href="https://example.com">https://example.com</a> */
+    /** 用户操作行为信息, 用于记录用户在系统中的具体操作类型, 如点击, 提交, 删除等, */
     private StatisticsUserAction userAction;
 
     /**
