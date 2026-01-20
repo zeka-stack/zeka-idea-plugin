@@ -300,6 +300,14 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return getPrefix(settings, line);
     }
 
+    /**
+     * 从终端视图中提取用户输入信息并封装为 InputInfo 对象
+     * <p> 该方法首先获取终端视图中的最后一条逻辑输入行, 若该行为空或不存在则返回 null; 接着根据设置中的前缀规则提取有效输入内容, 若内容为空或无效也返回 null; 否则创建并返回包含提取内容和多行标识的 InputInfo 对象.</p>
+     *
+     * @param terminalView 终端视图实例, 不能为空
+     * @param settings     设置状态对象, 不能为空
+     * @return 提取后的输入信息封装对象, 若输入无效则返回 null
+     */
     private static InputInfo getInputInfo(@NotNull TerminalView terminalView, @NotNull SettingsState settings) {
         LogicalLine logicalLine = getLastLogicalLine(terminalView);
         if (logicalLine == null || logicalLine.line.isBlank()) {
@@ -312,6 +320,14 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return new InputInfo(content, logicalLine.multiLine);
     }
 
+    /**
+     * 从 JBTerminalWidget 组件中提取用户输入信息
+     * <p> 该方法从终端组件获取当前文本内容, 按行分割后提取最后一行逻辑输入内容, 再根据设置中的前缀规则提取有效命令内容. 若输入无效或内容为空, 则返回 null.</p>
+     *
+     * @param widget   终端组件实例, 不能为空
+     * @param settings 设置状态对象, 包含触发前缀等配置, 不能为空
+     * @return 提取后的输入信息对象, 若输入无效则返回 null
+     */
     private static InputInfo getInputInfo(@NotNull JBTerminalWidget widget, @NotNull SettingsState settings) {
         String text = widget.getText();
         if (text.isBlank()) {
@@ -329,6 +345,14 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return new InputInfo(content, logicalLine.multiLine);
     }
 
+    /**
+     * 将终端输出快照中的每一行文本提取为字符串列表
+     * <p> 该方法从终端输出快照的最后一条行开始, 逐行向上遍历, 提取每行的文本内容, 并将结果列表反转后返回.
+     * 适用于从终端输出模型中提取所有可见行内容, 用于后续处理或显示.</p>
+     *
+     * @param snapshot 终端输出快照对象, 不能为空
+     * @return 包含所有行文本的字符串列表, 按从上到下的顺序排列
+     */
     private static List<String> snapshotToLines(@NotNull TerminalOutputModelSnapshot snapshot) {
         List<String> lines = new ArrayList<>(snapshot.getLineCount());
         TerminalLineIndex lineIndex = snapshot.getLastLineIndex();
@@ -346,6 +370,13 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return lines;
     }
 
+    /**
+     * 从字符串列表中获取最后一行逻辑输入行
+     * <p> 该方法会处理以反斜杠结尾的续行输入, 将多行合并为一行. 从列表末尾开始向前遍历, 遇到反斜杠续行时继续向上合并.</p>
+     *
+     * @param lines 字符串列表, 包含终端输入的多行内容, 不能为空
+     * @return 最后一条逻辑输入行对象, 如果所有行都为空或无效则返回 null
+     */
     @Nullable
     private static LogicalLine getLastLogicalLine(@NotNull List<String> lines) {
         int lastIndex = findLastNonBlankIndex(lines);
@@ -370,7 +401,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             }
             String prev = normalizeInputLine(prevRaw);
             if (!prev.isEmpty()) {
-                parts.add(0, prev);
+                parts.addFirst(prev);
             }
             multiLine = true;
             index = prevIndex;
@@ -381,6 +412,13 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return new LogicalLine(String.join(" ", parts).strip(), multiLine);
     }
 
+    /**
+     * 从字符串列表中查找最后一个非空白行的索引
+     * <p> 从列表末尾开始向前遍历, 找到第一个非空白行的索引. 若所有行均为空白, 则返回 - 1.</p>
+     *
+     * @param lines 字符串列表, 不能为空
+     * @return 最后一个非空白行的索引, 若无非空白行则返回 - 1
+     */
     private static int findLastNonBlankIndex(@NotNull List<String> lines) {
         for (int i = lines.size() - 1; i >= 0; i--) {
             if (!lines.get(i).isBlank()) {
@@ -390,6 +428,14 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return -1;
     }
 
+    /**
+     * 在指定索引之前查找第一个非空行的索引位置
+     * <p> 从 startIndex 开始向前遍历列表, 找到第一个非空行的索引. 如果未找到, 则返回 - 1.</p>
+     *
+     * @param lines      用于搜索的字符串列表, 不能为空
+     * @param startIndex 开始向前搜索的索引位置, 必须大于等于 0
+     * @return 第一个非空行的索引, 若不存在则返回 - 1
+     */
     private static int findPreviousNonBlankIndex(@NotNull List<String> lines, int startIndex) {
         for (int i = startIndex; i >= 0; i--) {
             if (!lines.get(i).isBlank()) {
@@ -399,6 +445,14 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         return -1;
     }
 
+    /**
+     * 标准化终端输入行内容
+     * <p>该方法首先移除行尾空白字符, 然后根据行首是否包含 shell 提示符 (如 {@code "$"}, {@code ">"}) 进行前缀去除处理. 若行尾以反斜杠 {@code "\\"} 结尾, 则移除该反斜杠并再次移除尾部空白.
+     * 最终返回处理后的纯文本内容, 且去除首尾空白.</p>
+     *
+     * @param line 原始输入行文本(非空)
+     * @return 标准化后的文本内容, 若处理后为空则返回空字符串
+     */
     @NotNull
     private static String normalizeInputLine(@NotNull String line) {
         String trimmed = line.stripTrailing();
@@ -588,15 +642,52 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         });
     }
 
+    /**
+     * 输入信息封装类
+     * <p>用于封装从终端中提取的用户输入内容及其多行标识, 便于后续处理和生成 AI 响应. 该类为不可变数据类, 包含两个核心属性: 内容文本 (content) 和是否为多行输入(multiLine).</p>
+     * <p>此类通常用于在终端 AI 生成功能中, 将用户输入内容结构化, 以便在调用 AI 服务前进行预处理或在生成结果后进行内容替换.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.20
+     * @since 1.0.0
+     */
     private record InputInfo(String content, boolean multiLine) {
-            private InputInfo(@NotNull String content, boolean multiLine) {
+        /**
+         * 初始化输入信息对象
+         * <p> 构造函数用于创建包含内容和是否多行标记的输入信息对象
+         *
+         * @param content   输入内容, 不能为空
+         * @param multiLine 是否为多行内容
+         */
+        private InputInfo(@NotNull String content, boolean multiLine) {
                 this.content = content;
                 this.multiLine = multiLine;
             }
         }
 
+    /**
+     * 逻辑行数据记录类
+     * <p> 用于封装终端中的一行输入内容及其是否为多行输入的标识信息. 该类作为不可变数据记录类 (record), 主要用于在终端输入处理过程中, 将用户输入内容按逻辑行进行封装和传递, 支持处理以反斜杠结尾的续行输入场景.</p>
+     * <p> 主要用途是在终端输入解析阶段, 将多行输入合并为一条逻辑行, 并标记是否为多行输入, 以便后续提取 AI 命令内容或替换终端行时正确处理.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.20
+     * @since 1.0.0
+     */
     private record LogicalLine(String line, boolean multiLine) {
-            private LogicalLine(@NotNull String line, boolean multiLine) {
+        /**
+         * 构造逻辑行对象
+         * <p> 初始化逻辑行内容及是否为多行标记
+         *
+         * @param line      逻辑行内容, 不能为空
+         * @param multiLine 是否为多行逻辑行标记
+         * @since 1.0
+         */
+        private LogicalLine(@NotNull String line, boolean multiLine) {
                 this.line = line;
                 this.multiLine = multiLine;
             }
