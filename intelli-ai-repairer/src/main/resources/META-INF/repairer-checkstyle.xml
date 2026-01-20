@@ -1,0 +1,6 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="CheckStyle-IDEA">
+        <checkstyleQuickFixProvider
+            implementation="dev.dong4j.zeka.stack.idea.plugin.repairer.checkstyle.AICheckstyleQuickFixProvider"/>
+    </extensions>
+</idea-plugin>

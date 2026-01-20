@@ -1,0 +1,29 @@
+<!-- 插件配置文件。更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>dev.dong4j.zeka.stack.idea.plugin.repairer</id>
+    <name>IntelliAI Repairer</name>
+    <vendor email="dong4j@gmail.com">dong4j</vendor>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
+    <depends optional="true" config-file="repairer-checkstyle.xml">CheckStyle-IDEA</depends>
+    <depends optional="true" config-file="repairer-maven.xml">org.jetbrains.idea.maven</depends>
+
+    <resource-bundle>messages.RepairerBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <externalAnnotator
+            language="JAVA"
+            implementationClass="dev.dong4j.zeka.stack.idea.plugin.repairer.annotator.StaticAnalysisAnnotator"/>
+    </extensions>
+
+    <actions>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.ImportStaticReportAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.ImportStaticReportAction"
+                text="Import Static Analysis Report..."
+                description="Import Checkstyle/PMD XML report and show problems">
+            <add-to-group group-id="AnalyzeMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
