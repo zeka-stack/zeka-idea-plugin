@@ -8,6 +8,7 @@ import {Statistics} from './pages/Statistics';
 import {EngineHome} from './pages/plugins/EngineHome';
 import {JavadocHome} from './pages/plugins/JavadocHome';
 import {ChangelogHome} from './pages/plugins/ChangelogHome';
+import {TerminalHome} from './pages/plugins/TerminalHome';
 import {Donate} from './pages/Donate';
 import {Changelog} from './pages/Changelog';
 import {Login} from './pages/Login';
@@ -43,6 +44,9 @@ function App() {
         Component = JavadocHome;
     } else if (route === '#/plugins/changelog') {
         Component = ChangelogHome;
+    } else if (route === '#/plugins/terminal') {
+        Component = TerminalHome;
+        footerVariant = 'dark';
     } else {
         // Switch for other routes
     switch (route) {

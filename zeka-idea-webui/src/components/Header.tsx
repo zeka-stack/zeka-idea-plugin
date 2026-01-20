@@ -66,17 +66,21 @@ export const Header: React.FC = () => {
 
                             <div className={`absolute top-full left-1/2 -translate-x-1/2 pt-2 w-56 transition-all duration-200 ${isProductsOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible -translate-y-2'}`}>
                                 <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden py-1">
-                                    <a href="#/plugins/engine" className="block px-4 py-3 hover:bg-gray-50 transition-colors">
+                                    <a href="#/plugins/engine" onClick={() => setIsProductsOpen(false)} className="block px-4 py-3 hover:bg-gray-50 transition-colors">
                                         <div className="font-bold text-gray-900">IntelliAI Engine</div>
                                         <div className="text-xs text-gray-500 mt-0.5">Core AI infrastructure</div>
                                     </a>
-                                    <a href="#/plugins/javadoc" className="block px-4 py-3 hover:bg-gray-50 transition-colors border-t border-gray-50">
+                                    <a href="#/plugins/javadoc" onClick={() => setIsProductsOpen(false)} className="block px-4 py-3 hover:bg-gray-50 transition-colors border-t border-gray-50">
                                         <div className="font-bold text-gray-900">IntelliAI Javadoc</div>
                                         <div className="text-xs text-gray-500 mt-0.5">Automated documentation</div>
                                     </a>
-                                    <a href="#/plugins/changelog" className="block px-4 py-3 hover:bg-gray-50 transition-colors border-t border-gray-50">
+                                    <a href="#/plugins/changelog" onClick={() => setIsProductsOpen(false)} className="block px-4 py-3 hover:bg-gray-50 transition-colors border-t border-gray-50">
                                         <div className="font-bold text-gray-900">IntelliAI Changelog</div>
                                         <div className="text-xs text-gray-500 mt-0.5">Smart git reporting</div>
+                                    </a>
+                                    <a href="#/plugins/terminal" onClick={() => setIsProductsOpen(false)} className="block px-4 py-3 hover:bg-gray-50 transition-colors border-t border-gray-50">
+                                        <div className="font-bold text-gray-900">IntelliAI Terminal</div>
+                                        <div className="text-xs text-gray-500 mt-0.5">AI Terminal Assistant</div>
                                     </a>
                                 </div>
                             </div>
