@@ -1,7 +1,68 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {BookOpen, ChevronRight, Command, Cpu, Download, Hash, ShieldCheck, Terminal} from 'lucide-react';
 
 export const TerminalHome: React.FC = () => {
+    const [terminalState, setTerminalState] = useState({
+        showPromptComment: false,
+        typedComment: '',
+        showAiAnalysis: false,
+        showPromptCommand: false,
+        typedCommand: ''
+    });
+
+    const commentText = '# 查找所有包含 "TODO" 的 Java 文件';
+    const commandText = 'find . -name "*.java" -exec grep -l "TODO" {} \\;';
+
+    useEffect(() => {
+        let timeoutId: NodeJS.Timeout;
+
+        const runSequence = async () => {
+            // Reset state
+            setTerminalState({
+                showPromptComment: true,
+                typedComment: '',
+                showAiAnalysis: false,
+                showPromptCommand: false,
+                typedCommand: ''
+            });
+
+            // 1. Type Comment
+            for (let i = 0; i <= commentText.length; i++) {
+                setTerminalState(prev => ({...prev, typedComment: commentText.slice(0, i)}));
+                await new Promise(r => setTimeout(r, 50 + Math.random() * 30));
+            }
+
+            // Pause before AI analysis
+            await new Promise(r => setTimeout(r, 500));
+
+            // 2. Show AI Analysis
+            setTerminalState(prev => ({...prev, showAiAnalysis: true}));
+
+            // Simulate analysis time
+            await new Promise(r => setTimeout(r, 1500));
+
+            // 3. Show Command Prompt
+            setTerminalState(prev => ({...prev, showPromptCommand: true}));
+
+            // 4. Type Command
+            for (let i = 0; i <= commandText.length; i++) {
+                setTerminalState(prev => ({...prev, typedCommand: commandText.slice(0, i)}));
+                await new Promise(r => setTimeout(r, 30 + Math.random() * 20));
+            }
+
+            // 5. Wait and restart
+            await new Promise(r => setTimeout(r, 5000));
+            runSequence();
+        };
+
+        runSequence();
+
+        return () => {
+            // Cleanup logic if needed (complex with async/await loop, but useEffect cleanup runs on unmount)
+            // Ideally we'd use a ref to cancel the loop
+        };
+    }, []);
+
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-[#33ff00] font-mono selection:bg-[#33ff00] selection:text-black">
             {/* Hero Section */}
@@ -57,52 +118,58 @@ export const TerminalHome: React.FC = () => {
             </section>
 
             {/* Terminal Demo */}
-            <section className="py-20 px-4 bg-[#050505] border-y border-gray-900 relative">
+            <section className="py-12 px-4 bg-[#050505] border-y border-gray-900 relative">
                 <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#33ff00]/50 to-transparent"></div>
-                <div className="max-w-5xl mx-auto">
+                <div className="max-w-4xl mx-auto">
                     <div className="bg-[#0c0c0c] rounded-lg overflow-hidden shadow-2xl border border-gray-800 font-mono text-sm md:text-base relative group">
                         {/* Terminal Glow */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-[#33ff00] to-emerald-600 rounded-lg blur opacity-5 group-hover:opacity-10 transition duration-1000 group-hover:duration-200"></div>
 
                         {/* Terminal Bar */}
-                        <div className="bg-[#1a1a1a] px-4 py-3 flex items-center gap-2 border-b border-gray-800 relative z-10">
+                        <div className="bg-[#1a1a1a] px-4 py-2 flex items-center gap-2 border-b border-gray-800 relative z-10">
                             <div className="flex gap-2">
-                                <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
-                                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
-                                <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></div>
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></div>
                             </div>
-                            <div className="ml-4 text-gray-500 text-xs flex-1 text-center font-mono">user@dev-machine:
+                            <div className="ml-4 text-gray-500 text-[10px] flex-1 text-center font-mono tracking-tight">user@dev-machine:
                                 ~/projects/zeka-stack
                             </div>
                         </div>
 
                         {/* Terminal Content */}
-                        <div className="p-6 text-gray-300 min-h-[300px] relative z-10">
-                            {/* History */}
-                            <div className="mb-2">
-                                <span className="text-[#33ff00]">➜</span> <span className="text-[#39a0ed]">~</span>
-                                <span className="text-gray-400">ls -la</span>
-                            </div>
-                            <div className="mb-6 text-gray-500 text-xs">
-                                drwxr-xr-x 5 user staff 160 Jan 20 10:00 .<br/>
-                                drwxr-xr-x+ 45 user staff 1440 Jan 19 23:59 ..<br/>
-                                -rw-r--r-- 1 user staff 1204 Jan 20 09:30 README.md
-                            </div>
-
+                        <div className="p-5 text-gray-300 min-h-[160px] relative z-10 flex flex-col justify-center">
                             {/* Interaction */}
-                            <div className="mb-2">
-                                <span className="text-[#33ff00]">➜</span> <span className="text-[#39a0ed]">~</span>
-                                <span className="text-gray-500 italic"># 查找所有包含 "TODO" 的 Java 文件</span>
+                            <div className="mb-2 h-6 flex items-center">
+                                {terminalState.showPromptComment && (
+                                    <>
+                                        <span className="text-[#33ff00] mr-2">➜</span>
+                                        <span className="text-[#39a0ed] mr-2">~</span>
+                                        <span className="text-gray-500 italic">{terminalState.typedComment}</span>
+                                        {!terminalState.showAiAnalysis && (
+                                            <span className="animate-pulse bg-gray-500 w-2 h-4 inline-block ml-1 align-middle"></span>
+                                        )}
+                                    </>
+                                )}
                             </div>
 
-                            <div className="mb-4 pl-4 border-l-2 border-[#33ff00]/30 text-xs text-gray-500 my-2">
-                                <span className="text-[#33ff00]">[AI]</span> 正在分析请求...
+                            <div className="mb-4 h-8 flex items-center">
+                                {terminalState.showAiAnalysis && (
+                                    <div className="pl-4 border-l-2 border-[#33ff00]/30 text-xs text-gray-500 animate-in fade-in slide-in-from-left-2 duration-300">
+                                        <span className="text-[#33ff00]">[AI]</span> 正在分析请求...
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="mb-4">
-                                <span className="text-[#33ff00]">➜</span> <span className="text-[#39a0ed]">~</span>
-                                <span className="text-white">find . -name "*.java" -exec grep -l "TODO" {} \;</span>
-                                <span className="animate-pulse bg-[#33ff00] w-2.5 h-5 inline-block ml-1 align-middle shadow-[0_0_8px_rgba(51,255,0,0.8)]"></span>
+                            <div className="mb-4 h-6 flex items-center">
+                                {terminalState.showPromptCommand && (
+                                    <>
+                                        <span className="text-[#33ff00] mr-2">➜</span>
+                                        <span className="text-[#39a0ed] mr-2">~</span>
+                                        <span className="text-white">{terminalState.typedCommand}</span>
+                                        <span className="animate-pulse bg-[#33ff00] w-2.5 h-5 inline-block ml-1 align-middle shadow-[0_0_8px_rgba(51,255,0,0.8)]"></span>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

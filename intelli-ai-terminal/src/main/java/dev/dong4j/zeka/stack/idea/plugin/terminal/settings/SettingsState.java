@@ -39,6 +39,12 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     /** 是否启用 Terminal AI, 控制是否在 Terminal 中拦截触发前缀并执行 AI 生成逻辑. */
     public boolean enableTerminalAI = true;
 
+    /** 是否启用流式输出 */
+    public boolean enableStreamResponse = false;
+
+    /** 是否启用上下文检测（可能增加延迟） */
+    public boolean enableTerminalContext = false;
+
     /**
      * 触发前缀
      * <p> 只有当当前输入行以该前缀开头时才触发 AI 生成.

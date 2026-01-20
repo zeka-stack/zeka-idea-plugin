@@ -9,8 +9,11 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.wm.StatusBar;
+import com.intellij.openapi.wm.WindowManager;
 import com.intellij.terminal.JBTerminalWidget;
 import com.intellij.terminal.frontend.view.TerminalView;
+import com.intellij.ui.awt.RelativePoint;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,6 +23,7 @@ import org.jetbrains.plugins.terminal.view.TerminalOutputModel;
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelSnapshot;
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelsSet;
 
+import java.awt.Point;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,10 +33,12 @@ import javax.swing.JComponent;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.terminal.context.TerminalContextService;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.TerminalBundle;
@@ -112,6 +118,8 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             return;
         }
 
+        showAiProcessingHint(terminalView, jbWidget);
+
         ProgressManager.getInstance().run(new Task.Backgroundable(
             project,
             TerminalBundle.message("action.terminal.progress"),
@@ -130,37 +138,65 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                 indicator.setIndeterminate(true);
                 indicator.setText(TerminalBundle.message("action.terminal.progress"));
 
-                String userPrompt = settings.terminalTemplate.replace("{content}", input);
+                String userContent = input;
+                if (settings.enableTerminalContext) {
+                    TerminalContextService contextService = project.getService(TerminalContextService.class);
+                    userContent = contextService.buildUserPrompt(input, terminalView);
+                }
+                String userPrompt = settings.terminalTemplate.replace("{content}", userContent);
                 log.debug("Built user prompt from template, length: {}", userPrompt.length());
                 AIChatRequest request = new AIChatRequest(settings.systemPrompt, userPrompt);
                 AIService aiService = com.intellij.openapi.application.ApplicationManager.getApplication().getService(AIService.class);
                 try {
                     log.debug("Starting AI content generation");
                     AIConsoleLoggerUtil.printWithTimestamp(project, "=== Terminal AI Request ===");
+                    if (settings.enableStreamResponse) {
+                        aiService.generateContentStream(project, request, providerConfig, new AIStreamResponseListener() {
+                            /** 用于缓存流式响应的文本内容, 累积所有分块数据以生成完整响应 */
+                            private final StringBuilder streamBuffer = new StringBuilder();
+
+                            /**
+                             * 处理流式响应的片段数据
+                             * <p> 将接收到的片段内容追加到内部缓冲区中, 用于后续完整响应的拼接
+                             *
+                             * @param chunk 当前接收到的响应片段内容
+                             */
+                            @Override
+                            public void onChunk(@NotNull String chunk) {
+                                streamBuffer.append(chunk);
+                            }
+
+                            /**
+                             * 处理 AI 流式响应完成事件
+                             * <p> 当 AI 响应完整返回时, 根据是否为空判断使用完整文本或缓冲区内容作为结果, 并调用处理方法
+                             *
+                             * @param fullText 完整的 AI 响应文本
+                             */
+                            @Override
+                            public void onComplete(@NotNull String fullText) {
+                                String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
+                                handleAiResult(project, terminalView, jbWidget, inputInfo, result);
+                            }
+
+                            /**
+                             * 处理 AI 流式响应错误情况
+                             * <p> 当 AI 服务发生错误时, 显示失败提示并弹出错误通知
+                             *
+                             * @param error     错误信息字符串, 用于构建错误提示消息
+                             * @param exception 可选的异常对象, 用于记录详细错误堆栈信息
+                             */
+                            @Override
+                            public void onError(@NotNull String error, @Nullable Throwable exception) {
+                                showAiFailedHint(terminalView, jbWidget);
+                                NotificationUtil.showError(project, TerminalBundle.message("error.ai.failed", error));
+                            }
+                        });
+                        return;
+                    }
+
                     String result = aiService.generateContent(project, request, providerConfig, null);
                     log.debug("AI generation completed, result length: {}", result.length());
-                    AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
-                    AIConsoleLoggerUtil.print(project, result);
-
-                    String command = extractCommand(result);
-                    log.debug("Extracted command: {}", command);
-                    if (command.isBlank()) {
-                        log.debug("Extracted command is blank");
-                        showTip(terminalView, jbWidget, TerminalBundle.message("error.ai.empty"));
-                        return;
-                    }
-                    if (!isValidShellOutput(command)) {
-                        log.debug("Command validation failed: {}", command);
-                        showTip(terminalView, jbWidget, TerminalBundle.message("error.ai.invalid.output"));
-                        return;
-                    }
-                    log.debug("Replacing current line with command, multiLine: {}", inputInfo.multiLine);
-                    if (terminalView != null) {
-                        replaceCurrentLine(terminalView, command, inputInfo.multiLine);
-                    } else {
-                        replaceCurrentLine(jbWidget, command, project, inputInfo.multiLine);
-                    }
-                    log.debug("Terminal line replaced successfully");
+                    handleAiResult(project, terminalView, jbWidget, inputInfo, result);
                 } catch (AIServiceException ex) {
                     String message = AIServiceException.build(ex);
                     log.debug("AI service exception: {}", message, ex);
@@ -670,15 +706,16 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     }
 
     /**
-     * 在指定的组件上显示提示信息
-     * <p> 根据传入的终端视图或 JBTerminalWidget 组件, 选择合适的位置显示提示信息.
-     * 如果组件不可见, 则在焦点中心显示.
+     * 在终端界面或状态栏显示提示信息
+     * <p> 该方法在 UI 线程中异步显示一个消息弹窗, 位置优先基于终端组件的右下角, 若组件不可见则显示在焦点中心. 同时, 将消息内容设置到项目状态栏中供用户查看.</p>
      *
-     * @param terminalView 终端视图对象, 可以为 null
-     * @param widget       JBTerminalWidget 对象, 可以为 null
-     * @param message      要显示的提示信息
+     * @param project      当前项目对象, 用于获取状态栏
+     * @param terminalView 终端视图实例, 用于获取其组件以定位弹窗位置, 可为 null
+     * @param widget       终端组件实例, 用于获取其组件以定位弹窗位置, 可为 null
+     * @param message      要显示的提示消息内容, 不能为空
      */
-    private static void showTip(@Nullable TerminalView terminalView,
+    private static void showTip(@NotNull Project project,
+                                @Nullable TerminalView terminalView,
                                 @Nullable JBTerminalWidget widget,
                                 @NotNull String message) {
         ApplicationManager.getApplication().invokeLater(() -> {
@@ -686,6 +723,11 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                    ? terminalView.getComponent()
                                    : (widget != null ? widget.getComponent() : null);
             if (component != null && component.isShowing()) {
+                // 计算右上角位置
+                int offsetX = component.getWidth() - 20; // 距离右边缘 20 像素
+                int offsetY = 20; // 距离顶部 20 像素
+                RelativePoint point = new RelativePoint(component, new Point(offsetX, offsetY));
+
                 JBPopupFactory.getInstance()
                     .createMessage(message)
                     .showInCenterOf(component);
@@ -694,7 +736,117 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     .createMessage(message)
                     .showInFocusCenter();
             }
+
+            StatusBar statusBar = WindowManager.getInstance().getStatusBar(project);
+            if (statusBar != null) {
+                statusBar.setInfo(message);
+            }
         });
+    }
+
+    /**
+     * 处理 AI 生成的结果并替换终端当前行内容
+     * <p> 该方法接收 AI 服务返回的响应内容, 提取其中的命令并替换终端当前输入行. 若提取的命令为空或无效, 则显示相应错误提示.</p>
+     *
+     * @param project      当前项目上下文, 用于日志记录和通知显示
+     * @param terminalView 终端视图实例, 用于替换当前行内容 (可为 null)
+     * @param jbWidget     终端组件实例, 用于替换当前行内容 (可为 null)
+     * @param inputInfo    输入信息封装对象, 包含原始输入内容和是否为多行标识
+     * @param result       AI 服务返回的完整响应内容
+     * @since 1.0.0
+     */
+    private static void handleAiResult(@NotNull Project project,
+                                       @Nullable TerminalView terminalView,
+                                       @Nullable JBTerminalWidget jbWidget,
+                                       @NotNull InputInfo inputInfo,
+                                       @NotNull String result) {
+        AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
+        AIConsoleLoggerUtil.print(project, result);
+
+        String command = extractCommand(result);
+        log.debug("Extracted command: {}", command);
+        if (command.isBlank()) {
+            log.debug("Extracted command is blank");
+            showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.empty"));
+            return;
+        }
+        if (!isValidShellOutput(command)) {
+            log.debug("Command validation failed: {}", command);
+            showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.invalid.output"));
+            return;
+        }
+        log.debug("Replacing current line with command, multiLine: {}", inputInfo.multiLine);
+        if (terminalView != null) {
+            replaceCurrentLine(terminalView, command, inputInfo.multiLine);
+        } else if (jbWidget != null) {
+            replaceCurrentLine(jbWidget, command, project, inputInfo.multiLine);
+        }
+        log.debug("Terminal line replaced successfully");
+    }
+
+    /**
+     * 显示 AI 处理中的提示信息
+     * <p> 在终端视图或终端组件中显示“正在处理中”的提示状态, 用于告知用户 AI 正在生成内容.</p>
+     *
+     * @param terminalView 终端视图实例, 可为 null
+     * @param widget       终端组件实例, 可为 null
+     */
+    private static void showAiProcessingHint(@Nullable TerminalView terminalView, @Nullable JBTerminalWidget widget) {
+        showAiStatusHint(terminalView, widget, TerminalBundle.message("terminal.hint.processing"));
+    }
+
+    /**
+     * 显示 AI 生成失败的提示信息
+     * <p> 该方法用于在终端界面中显示 AI 生成失败的提示, 通过调用 {@link #showAiStatusHint(TerminalView, JBTerminalWidget, String)} 方法, 传入失败提示消息.</p>
+     *
+     * @param terminalView 终端视图实例, 可为 null
+     * @param widget       终端组件实例, 可为 null
+     */
+    private static void showAiFailedHint(@Nullable TerminalView terminalView, @Nullable JBTerminalWidget widget) {
+        showAiStatusHint(terminalView, widget, TerminalBundle.message("terminal.hint.failed"));
+    }
+
+    /**
+     * 在终端中显示 AI 处理状态提示信息
+     * <p> 该方法根据传入的终端视图或终端组件, 向终端发送清除当前行的控制字符 (<code>\u0015</code>), 然后输出指定的提示消息. 若终端视图或组件均不可用, 则不执行任何操作.</p>
+     * <p> 提示消息会先经过 ANSI 转义序列去除处理 (<code>stripAnsi</code>), 确保显示内容纯净.</p>
+     *
+     * @param terminalView 终端视图实例, 若不为 null 则通过其发送清除和提示文本
+     * @param widget       终端组件实例, 若不为 null 且连接正常, 则通过其 TTY 连接器发送清除和提示文本
+     * @param message      要显示的提示消息内容, 将被清理 ANSI 序列后输出
+     */
+    private static void showAiStatusHint(@Nullable TerminalView terminalView,
+                                         @Nullable JBTerminalWidget widget,
+                                         @NotNull String message) {
+        String hint = stripAnsi(message);
+        if (terminalView != null) {
+            sendText(terminalView, "\u0015");
+            sendText(terminalView, hint);
+            return;
+        }
+        if (widget != null) {
+            try {
+                if (widget.getTtyConnector() != null && widget.getTtyConnector().isConnected()) {
+                    widget.getTtyConnector().write("\u0015");
+                    widget.getTtyConnector().write(hint);
+                }
+            } catch (IOException ignored) {
+                // ignore hint errors
+            }
+        }
+    }
+
+    /**
+     * 去除字符串中的 ANSI 转义序列
+     * <p>该方法用于从输入字符串中移除所有 ANSI 转义序列(如颜色, 格式化控制码), 仅保留纯文本内容.
+     * ANSI 转义序列通常以 ESC 字符 (\u001B) 开头, 后跟方括号内的数字和分号组合, 以字母 'm' 结尾.
+     *
+     * @param text 输入的字符串, 不能为空
+     * @return 去除 ANSI 转义序列后的纯文本字符串
+     */
+    @NotNull
+    private static String stripAnsi(@NotNull String text) {
+        return text.replaceAll("\u001B\\[[0-9;]*m", "");
     }
 
     /**
@@ -717,10 +869,10 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
          * @param multiLine 是否为多行内容
          */
         private InputInfo(@NotNull String content, boolean multiLine) {
-                this.content = content;
-                this.multiLine = multiLine;
-            }
+            this.content = content;
+            this.multiLine = multiLine;
         }
+    }
 
     /**
      * 逻辑行数据记录类
@@ -743,8 +895,8 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
          * @since 1.0
          */
         private LogicalLine(@NotNull String line, boolean multiLine) {
-                this.line = line;
-                this.multiLine = multiLine;
-            }
+            this.line = line;
+            this.multiLine = multiLine;
         }
+    }
 }

@@ -58,6 +58,10 @@ public class TerminalSettingsPanel {
     private final JPanel advancedSettingsPanel;
     /** 是否启用 Terminal AI 的复选框 */
     private final JBCheckBox enableTerminalAICheckBox;
+    /** 是否启用流式输出 */
+    private final JBCheckBox enableStreamResponseCheckBox;
+    /** 是否启用上下文检测 */
+    private final JBCheckBox enableTerminalContextCheckBox;
     /** 触发前缀输入框, 用于设置终端命令触发前缀 */
     private final JBTextField triggerPrefixField;
 
@@ -85,6 +89,8 @@ public class TerminalSettingsPanel {
     public TerminalSettingsPanel() {
         showAdvancedSettingsCheckBox = new JBCheckBox(TerminalBundle.message("settings.prompt.settings.show"));
         enableTerminalAICheckBox = new JBCheckBox(TerminalBundle.message("settings.terminal.enable"));
+        enableStreamResponseCheckBox = new JBCheckBox(TerminalBundle.message("settings.terminal.stream.enable"));
+        enableTerminalContextCheckBox = new JBCheckBox(TerminalBundle.message("settings.terminal.context.enable"));
         triggerPrefixField = new JBTextField();
 
         advancedSettingsPanel = new JPanel(new BorderLayout());
@@ -112,6 +118,8 @@ public class TerminalSettingsPanel {
             .addComponent(aiProviderSelectionPanel.getPanel())
             .addSeparator(10)
             .addComponent(enableTerminalAICheckBox)
+            .addComponent(enableStreamResponseCheckBox)
+            .addComponent(enableTerminalContextCheckBox)
             .addLabeledComponent(TerminalBundle.message("settings.terminal.trigger.prefix"), triggerPrefixField)
             .addComponent(showAdvancedSettingsCheckBox)
             .addComponent(advancedSettingsPanel)
@@ -138,6 +146,8 @@ public class TerminalSettingsPanel {
             || !terminalTemplateTextArea.getText().equals(settings.terminalTemplate)
             || showAdvancedSettingsCheckBox.isSelected() != settings.showAdvancedSettings
             || enableTerminalAICheckBox.isSelected() != settings.enableTerminalAI
+            || enableStreamResponseCheckBox.isSelected() != settings.enableStreamResponse
+            || enableTerminalContextCheckBox.isSelected() != settings.enableTerminalContext
             || !triggerPrefixField.getText().equals(settings.triggerPrefix)) {
             return true;
         }
@@ -164,6 +174,8 @@ public class TerminalSettingsPanel {
         settings.terminalTemplate = terminalTemplateTextArea.getText();
         settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
         settings.enableTerminalAI = enableTerminalAICheckBox.isSelected();
+        settings.enableStreamResponse = enableStreamResponseCheckBox.isSelected();
+        settings.enableTerminalContext = enableTerminalContextCheckBox.isSelected();
         settings.triggerPrefix = triggerPrefixField.getText();
         if (settings.isUsingDefaultPrompts()) {
             settings.promptTemplateVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
@@ -186,6 +198,8 @@ public class TerminalSettingsPanel {
         terminalTemplateTextArea.setText(settings.terminalTemplate);
         showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
         enableTerminalAICheckBox.setSelected(settings.enableTerminalAI);
+        enableStreamResponseCheckBox.setSelected(settings.enableStreamResponse);
+        enableTerminalContextCheckBox.setSelected(settings.enableTerminalContext);
         triggerPrefixField.setText(settings.triggerPrefix);
         advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
         aiProviderSelectionPanel.setSelectedProvider(settings.providerConfig);

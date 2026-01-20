@@ -35,11 +35,13 @@ function App() {
 
     let Component;
     let footerVariant: 'default' | 'dark' | 'transparent' | 'transparent-dark' = 'default';
+    let headerVariant: 'default' | 'dark' | 'terminal' = 'default';
 
     // Handle routes
     if (route === '#/plugins/engine') {
         Component = EngineHome;
         footerVariant = 'dark';
+        headerVariant = 'dark';
     } else if (route === '#/plugins/javadoc') {
         Component = JavadocHome;
     } else if (route === '#/plugins/changelog') {
@@ -47,6 +49,7 @@ function App() {
     } else if (route === '#/plugins/terminal') {
         Component = TerminalHome;
         footerVariant = 'dark';
+        headerVariant = 'terminal';
     } else {
         // Switch for other routes
     switch (route) {
@@ -83,7 +86,7 @@ function App() {
 
     return (
         <div className="min-h-screen bg-[#F9FAFB] font-sans selection:bg-indigo-100 selection:text-indigo-900 flex flex-col">
-            <Header/>
+            <Header variant={headerVariant}/>
             <div className="flex-1">
                 <Component/>
             </div>
