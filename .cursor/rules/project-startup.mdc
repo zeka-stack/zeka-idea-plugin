@@ -1,0 +1,7 @@
+# 项目启动注入规则
+
+当需要在项目启动时注入逻辑，必须遵循以下步骤：
+
+1. 实现 `ProjectActivity` 接口
+2. 实现 `execute(Project project)` 方法
+3. 在 `plugin.xml` 中使用 `<postStartupActivity implementation="..."/>` 注册
