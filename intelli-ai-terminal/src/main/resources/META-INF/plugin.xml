@@ -43,6 +43,8 @@
 
         <!-- 启动提示：默认提示词版本变更 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.PromptTemplateVersionNotifier"/>
+        <!-- 终端 Tab 标题装饰 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.terminal.TerminalTabTitleDecorator"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">

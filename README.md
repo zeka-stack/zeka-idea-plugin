@@ -706,18 +706,11 @@ includes/
 
 ---
 
-## 6 📚 文档资源
+## 6 📚 资源 & 文档
 
-### 6.1 各插件详细文档
+### 6.1 UI 检查器
 
-- [IntelliAI Engine - AI 工作流解释器](./intelli-ai-engine/docs/AI工作流解释器功能实现方案.md)
-- [IntelliAI Engine - 扩展点实现方案](./intelli-ai-engine/docs/扩展点实现方案.md)
-- [IntelliAI Javadoc - 开发指南](./intelli-ai-javadoc/docs/DEVELOPMENT_GUIDE.md)
-- [IntelliAI Javadoc - 快速开始](./intelli-ai-javadoc/docs/QUICK_START.md)
-- [IntelliAI Changelog - 方案设计](./intelli-ai-changelog/docs/方案设计.md)
-- [IntelliAI Tracer - 功能设计](./intelli-ai-tracer/docs/)
-- [Archiver Man - 功能规划](./archiver-man/docs/ArchiverMan功能规划清单.md)
-- [ZKS Dev Helper - 重构总结](./zks-dev-helper/重构总结.md)
+![](./assets/20260121_tRPpr6.png)
 
 ### 6.2 官方文档
 

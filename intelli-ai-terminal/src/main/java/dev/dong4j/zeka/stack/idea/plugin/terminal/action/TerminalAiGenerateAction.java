@@ -295,8 +295,6 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @return 提取后的有效输入内容, 若无有效输入则返回 null
      */
     private static String getCurrentInput(@NotNull TerminalView terminalView, @NotNull SettingsState settings) {
-        final String currentDirectory = terminalView.getCurrentDirectory();
-
         LogicalLine logicalLine = getLastLogicalLine(terminalView);
         String line = logicalLine == null ? null : logicalLine.line;
         if (line == null || line.isBlank()) {
