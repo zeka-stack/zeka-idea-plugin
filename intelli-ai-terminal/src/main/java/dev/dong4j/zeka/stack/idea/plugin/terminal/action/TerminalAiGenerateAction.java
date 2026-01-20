@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.terminal.action;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DataKey;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -36,6 +37,7 @@ import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.TerminalBundle;
 import icons.TerminalIcons;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 终端 AI 生成动作类
@@ -48,6 +50,7 @@ import icons.TerminalIcons;
  * @date 2026.01.20
  * @since 1.0.0
  */
+@Slf4j
 @SuppressWarnings("UnstableApiUsage")
 public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbAwareAction {
 
@@ -84,7 +87,9 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
 
         TerminalView terminalView = getTerminalView(e);
         JBTerminalWidget jbWidget = e.getData(JBTerminalWidget.TERMINAL_DATA_KEY);
+        log.debug("Terminal view: {}, JBTerminalWidget: {}", terminalView != null, jbWidget != null);
         if (terminalView == null && jbWidget == null) {
+            log.debug("No terminal found, skipping action");
             NotificationUtil.showWarning(project, TerminalBundle.message("error.terminal.not.found"));
             return;
         }
@@ -93,12 +98,16 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                               ? getInputInfo(terminalView, settings)
                               : getInputInfo(jbWidget, settings);
         String input = inputInfo == null ? null : inputInfo.content;
+        log.debug("Extracted input: {}, multiLine: {}", input, inputInfo != null && inputInfo.multiLine);
         if (input == null || input.isBlank()) {
+            log.debug("Input is empty, skipping AI generation");
             return;
         }
 
         AIProviderConfig providerConfig = resolveProviderConfig(settings);
+        log.debug("Resolved AI provider: {}", providerConfig != null ? providerConfig.providerType : null);
         if (providerConfig == null) {
+            log.debug("No AI provider available");
             NotificationUtil.showError(project, TerminalBundle.message("error.no.ai.provider"));
             return;
         }
@@ -122,30 +131,39 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                 indicator.setText(TerminalBundle.message("action.terminal.progress"));
 
                 String userPrompt = settings.terminalTemplate.replace("{content}", input);
+                log.debug("Built user prompt from template, length: {}", userPrompt.length());
                 AIChatRequest request = new AIChatRequest(settings.systemPrompt, userPrompt);
                 AIService aiService = com.intellij.openapi.application.ApplicationManager.getApplication().getService(AIService.class);
                 try {
+                    log.debug("Starting AI content generation");
                     AIConsoleLoggerUtil.printWithTimestamp(project, "=== Terminal AI Request ===");
                     String result = aiService.generateContent(project, request, providerConfig, null);
+                    log.debug("AI generation completed, result length: {}", result.length());
                     AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
                     AIConsoleLoggerUtil.print(project, result);
 
                     String command = extractCommand(result);
+                    log.debug("Extracted command: {}", command);
                     if (command.isBlank()) {
+                        log.debug("Extracted command is blank");
                         showTip(terminalView, jbWidget, TerminalBundle.message("error.ai.empty"));
                         return;
                     }
                     if (!isValidShellOutput(command)) {
+                        log.debug("Command validation failed: {}", command);
                         showTip(terminalView, jbWidget, TerminalBundle.message("error.ai.invalid.output"));
                         return;
                     }
+                    log.debug("Replacing current line with command, multiLine: {}", inputInfo.multiLine);
                     if (terminalView != null) {
                         replaceCurrentLine(terminalView, command, inputInfo.multiLine);
                     } else {
                         replaceCurrentLine(jbWidget, command, project, inputInfo.multiLine);
                     }
+                    log.debug("Terminal line replaced successfully");
                 } catch (AIServiceException ex) {
                     String message = AIServiceException.build(ex);
+                    log.debug("AI service exception: {}", message, ex);
                     AIConsoleLoggerUtil.printError(project, message);
                     NotificationUtil.showError(project, TerminalBundle.message("error.ai.failed", message));
                 }
@@ -161,17 +179,22 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      */
     @Override
     public void update(@NotNull AnActionEvent e) {
-        TerminalView terminalView = getTerminalView(e);
-        JBTerminalWidget widget = e.getData(JBTerminalWidget.TERMINAL_DATA_KEY);
         SettingsState settings = SettingsState.getInstance();
         if (!settings.enableTerminalAI) {
             e.getPresentation().setEnabled(false);
             return;
         }
+
+        TerminalView terminalView = getTerminalView(e);
+        JBTerminalWidget widget = e.getData(JBTerminalWidget.TERMINAL_DATA_KEY);
+
         String input = terminalView != null
                        ? getCurrentInput(terminalView, settings)
                        : (widget != null ? getCurrentInput(widget, settings) : null);
-        e.getPresentation().setEnabled(input != null && !input.isBlank());
+
+        boolean enabled = input != null && !input.isBlank();
+        log.debug("Action update: enabled={}, input={}", enabled, input != null ? input.substring(0, Math.min(50, input.length())) : null);
+        e.getPresentation().setEnabled(enabled);
     }
 
     /**
@@ -195,10 +218,12 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      */
     private static AIProviderConfig resolveProviderConfig(@NotNull SettingsState settings) {
         if (settings.providerConfig != null) {
+            log.debug("Using terminal-specific provider config: {}", settings.providerConfig.providerType);
             return settings.providerConfig.copy();
         }
         AIProviderSettings global = AIProviderSettings.getInstance();
         List<AIProviderConfig> verified = global.getVerifiedProviders();
+        log.debug("Using global provider config, verified providers count: {}", verified.size());
         if (verified.isEmpty()) {
             return null;
         }
@@ -216,10 +241,13 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         DataKey<TerminalView> key = DataKey.create("TerminalView");
         TerminalView view = e.getData(key);
         if (view != null) {
+            log.debug("Found TerminalView from 'TerminalView' data key");
             return view;
         }
         DataKey<TerminalView> keyLower = DataKey.create("terminalView");
-        return e.getData(keyLower);
+        TerminalView viewLower = e.getData(keyLower);
+        log.debug("TerminalView from 'terminalView' data key: {}", viewLower != null);
+        return viewLower;
     }
 
     /**
@@ -231,6 +259,8 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @return 提取后的有效输入内容, 若无有效输入则返回 null
      */
     private static String getCurrentInput(@NotNull TerminalView terminalView, @NotNull SettingsState settings) {
+        final String currentDirectory = terminalView.getCurrentDirectory();
+
         LogicalLine logicalLine = getLastLogicalLine(terminalView);
         String line = logicalLine == null ? null : logicalLine.line;
         if (line == null || line.isBlank()) {
@@ -252,9 +282,11 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     private static String getPrefix(@NotNull SettingsState settings, String line) {
         String prefix = settings.triggerPrefix == null ? "" : settings.triggerPrefix.trim();
         if (prefix.isEmpty()) {
+            log.debug("No trigger prefix configured, using entire line");
             return line.strip();
         }
         String extracted = extractPrompt(line, prefix);
+        log.debug("Extracted prefix content: prefix='{}', extracted='{}'", prefix, extracted);
         return extracted == null || extracted.isBlank() ? null : extracted;
     }
 
@@ -270,11 +302,16 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         TerminalOutputModelsSet models = terminalView.getOutputModels();
         TerminalOutputModel regular = models.getRegular();
         TerminalOutputModelSnapshot snapshot = regular.takeSnapshot();
+        log.debug("Terminal snapshot line count: {}", snapshot.getLineCount());
         if (snapshot.getLineCount() == 0) {
             return null;
         }
         List<String> lines = snapshotToLines(snapshot);
-        return getLastLogicalLine(lines);
+        LogicalLine logicalLine = getLastLogicalLine(lines);
+        log.debug("Last logical line extracted: {}, multiLine: {}",
+                  logicalLine != null ? logicalLine.line.substring(0, Math.min(50, logicalLine.line.length())) : null,
+                  logicalLine != null && logicalLine.multiLine);
+        return logicalLine;
     }
 
     /**
@@ -310,14 +347,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      */
     private static InputInfo getInputInfo(@NotNull TerminalView terminalView, @NotNull SettingsState settings) {
         LogicalLine logicalLine = getLastLogicalLine(terminalView);
-        if (logicalLine == null || logicalLine.line.isBlank()) {
-            return null;
-        }
-        String content = getPrefix(settings, logicalLine.line);
-        if (content == null || content.isBlank()) {
-            return null;
-        }
-        return new InputInfo(content, logicalLine.multiLine);
+        return inputInfo(settings, logicalLine);
     }
 
     /**
@@ -335,13 +365,28 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         }
         String[] lines = text.replace("\r", "").split("\n");
         LogicalLine logicalLine = getLastLogicalLine(List.of(lines));
+        return inputInfo(settings, logicalLine);
+    }
+
+    /**
+     * 从逻辑输入行和设置中提取并封装用户输入信息
+     * <p> 首先检查逻辑输入行是否为 null 或内容为空, 若满足则返回 null; 接着根据设置中的前缀规则提取有效内容, 若提取结果为 null 或空白也返回 null; 否则创建并返回包含提取内容和多行标识的 {@link InputInfo} 对象.</p>
+     *
+     * @param settings    当前设置状态, 不能为空
+     * @param logicalLine 待处理的逻辑输入行, 不能为空
+     * @return 包含提取内容和多行标识的 {@link InputInfo} 对象, 若输入无效则返回 null
+     */
+    private static InputInfo inputInfo(@NotNull SettingsState settings, LogicalLine logicalLine) {
         if (logicalLine == null || logicalLine.line.isBlank()) {
+            log.debug("Logical line is null or blank");
             return null;
         }
         String content = getPrefix(settings, logicalLine.line);
         if (content == null || content.isBlank()) {
+            log.debug("Extracted content is null or blank");
             return null;
         }
+        log.debug("Created InputInfo: content length={}, multiLine={}", content.length(), logicalLine.multiLine);
         return new InputInfo(content, logicalLine.multiLine);
     }
 
@@ -475,12 +520,14 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     private static String extractPrompt(@NotNull String currentLine, @NotNull String prefix) {
         String trimmed = stripPromptPrefix(currentLine.stripLeading());
         if (!trimmed.startsWith(prefix)) {
+            log.debug("Line does not start with prefix: '{}' vs '{}'", trimmed.substring(0, Math.min(20, trimmed.length())), prefix);
             return null;
         }
         String content = trimmed.substring(prefix.length());
         if (content.startsWith(" ")) {
             content = content.substring(1);
         }
+        log.debug("Extracted prompt content: '{}'", content.substring(0, Math.min(50, content.length())));
         return content.strip();
     }
 
@@ -519,6 +566,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param newText      用于替换当前行的文本
      */
     private static void replaceCurrentLine(@NotNull TerminalView terminalView, @NotNull String newText, boolean multiLine) {
+        log.debug("Replacing current line in TerminalView, multiLine: {}, command length: {}", multiLine, newText.length());
         if (multiLine) {
             sendText(terminalView, "\u0003");
             sendText(terminalView, newText);
@@ -542,9 +590,11 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                            boolean multiLine) {
         try {
             if (widget.getTtyConnector() == null || !widget.getTtyConnector().isConnected()) {
+                log.debug("Terminal connector not ready");
                 NotificationUtil.showWarning(project, TerminalBundle.message("error.terminal.not.ready"));
                 return;
             }
+            log.debug("Replacing current line in JBTerminalWidget, multiLine: {}, command length: {}", multiLine, newText.length());
             if (multiLine) {
                 widget.getTtyConnector().write("\u0003");
                 widget.getTtyConnector().write(newText);
@@ -553,6 +603,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             widget.getTtyConnector().write("\u0015");
             widget.getTtyConnector().write(newText);
         } catch (IOException ex) {
+            log.debug("Failed to replace terminal line", ex);
             NotificationUtil.showError(project, TerminalBundle.message("error.terminal.write.failed", ex.getMessage()));
         }
     }
@@ -582,6 +633,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             String trimmed = line.trim();
             if (trimmed.startsWith("```")) {
                 inFence = !inFence;
+                log.debug("Code fence detected: inFence={}", inFence);
                 continue;
             }
             if (inFence) {
@@ -591,9 +643,12 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                 continue;
             }
             candidate = trimmed;
+            log.debug("Found candidate command: '{}'", candidate.substring(0, Math.min(50, candidate.length())));
             break;
         }
-        return candidate == null ? result.trim() : candidate;
+        String finalCommand = candidate == null ? result.trim() : candidate;
+        log.debug("Final extracted command: '{}'", finalCommand.substring(0, Math.min(50, finalCommand.length())));
+        return finalCommand;
     }
 
     /**
@@ -626,7 +681,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     private static void showTip(@Nullable TerminalView terminalView,
                                 @Nullable JBTerminalWidget widget,
                                 @NotNull String message) {
-        com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater(() -> {
+        ApplicationManager.getApplication().invokeLater(() -> {
             JComponent component = terminalView != null
                                    ? terminalView.getComponent()
                                    : (widget != null ? widget.getComponent() : null);
