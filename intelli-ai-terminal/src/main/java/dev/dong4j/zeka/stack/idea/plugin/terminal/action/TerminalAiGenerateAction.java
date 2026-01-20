@@ -20,6 +20,8 @@ import org.jetbrains.plugins.terminal.view.TerminalOutputModelSnapshot;
 import org.jetbrains.plugins.terminal.view.TerminalOutputModelsSet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.swing.JComponent;
@@ -87,9 +89,10 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             return;
         }
 
-        String input = terminalView != null
-                       ? getCurrentInput(terminalView, settings)
-                       : getCurrentInput(jbWidget, settings);
+        InputInfo inputInfo = terminalView != null
+                              ? getInputInfo(terminalView, settings)
+                              : getInputInfo(jbWidget, settings);
+        String input = inputInfo == null ? null : inputInfo.content;
         if (input == null || input.isBlank()) {
             return;
         }
@@ -137,9 +140,9 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                         return;
                     }
                     if (terminalView != null) {
-                        replaceCurrentLine(terminalView, command);
+                        replaceCurrentLine(terminalView, command, inputInfo.multiLine);
                     } else {
-                        replaceCurrentLine(jbWidget, command, project);
+                        replaceCurrentLine(jbWidget, command, project, inputInfo.multiLine);
                     }
                 } catch (AIServiceException ex) {
                     String message = AIServiceException.build(ex);
@@ -228,7 +231,8 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @return 提取后的有效输入内容, 若无有效输入则返回 null
      */
     private static String getCurrentInput(@NotNull TerminalView terminalView, @NotNull SettingsState settings) {
-        String line = getLastLine(terminalView);
+        LogicalLine logicalLine = getLastLogicalLine(terminalView);
+        String line = logicalLine == null ? null : logicalLine.line;
         if (line == null || line.isBlank()) {
             return null;
         }
@@ -255,33 +259,22 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     }
 
     /**
-     * 获取终端视图的最后一行非空内容
-     * <p> 从终端输出的最后一行开始向前遍历, 查找并返回第一个非空行内容.
-     * 如果所有行都为空, 则返回 null</p>
+     * 获取终端视图的最后一条逻辑输入行
+     * <p> 该方法会处理以反斜杠结尾的续行输入, 将多行合并为一行.
+     * 从终端输出的最后一行开始向前遍历, 在遇到反斜杠续行时继续向上合并.</p>
      *
      * @param terminalView 终端视图实例, 不能为 null
-     * @return 最后一行非空内容, 如果所有行都为空则返回 null
+     * @return 最后一条逻辑输入行, 如果所有行都为空则返回 null
      */
-    private static String getLastLine(@NotNull TerminalView terminalView) {
+    private static LogicalLine getLastLogicalLine(@NotNull TerminalView terminalView) {
         TerminalOutputModelsSet models = terminalView.getOutputModels();
         TerminalOutputModel regular = models.getRegular();
         TerminalOutputModelSnapshot snapshot = regular.takeSnapshot();
         if (snapshot.getLineCount() == 0) {
             return null;
         }
-        TerminalLineIndex lineIndex = snapshot.getLastLineIndex();
-        int remaining = snapshot.getLineCount();
-        while (remaining-- > 0) {
-            TerminalOffset start = snapshot.getStartOfLine(lineIndex);
-            TerminalOffset end = snapshot.getEndOfLine(lineIndex, true);
-            CharSequence text = snapshot.getText(start, end);
-            String line = text.toString().stripTrailing();
-            if (!line.isEmpty()) {
-                return line;
-            }
-            lineIndex = lineIndex.minus(1);
-        }
-        return null;
+        List<String> lines = snapshotToLines(snapshot);
+        return getLastLogicalLine(lines);
     }
 
     /**
@@ -299,18 +292,122 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             return null;
         }
         String[] lines = text.replace("\r", "").split("\n");
-        String line = null;
-        for (int i = lines.length - 1; i >= 0; i--) {
-            String l = lines[i].stripTrailing();
-            if (!l.isEmpty()) {
-                line = l;
-                break;
-            }
-        }
+        LogicalLine logicalLine = getLastLogicalLine(List.of(lines));
+        String line = logicalLine == null ? null : logicalLine.line;
         if (line == null) {
             return null;
         }
         return getPrefix(settings, line);
+    }
+
+    private static InputInfo getInputInfo(@NotNull TerminalView terminalView, @NotNull SettingsState settings) {
+        LogicalLine logicalLine = getLastLogicalLine(terminalView);
+        if (logicalLine == null || logicalLine.line.isBlank()) {
+            return null;
+        }
+        String content = getPrefix(settings, logicalLine.line);
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+        return new InputInfo(content, logicalLine.multiLine);
+    }
+
+    private static InputInfo getInputInfo(@NotNull JBTerminalWidget widget, @NotNull SettingsState settings) {
+        String text = widget.getText();
+        if (text.isBlank()) {
+            return null;
+        }
+        String[] lines = text.replace("\r", "").split("\n");
+        LogicalLine logicalLine = getLastLogicalLine(List.of(lines));
+        if (logicalLine == null || logicalLine.line.isBlank()) {
+            return null;
+        }
+        String content = getPrefix(settings, logicalLine.line);
+        if (content == null || content.isBlank()) {
+            return null;
+        }
+        return new InputInfo(content, logicalLine.multiLine);
+    }
+
+    private static List<String> snapshotToLines(@NotNull TerminalOutputModelSnapshot snapshot) {
+        List<String> lines = new ArrayList<>(snapshot.getLineCount());
+        TerminalLineIndex lineIndex = snapshot.getLastLineIndex();
+        int remaining = snapshot.getLineCount();
+        while (remaining-- > 0) {
+            TerminalOffset start = snapshot.getStartOfLine(lineIndex);
+            TerminalOffset end = snapshot.getEndOfLine(lineIndex, true);
+            CharSequence text = snapshot.getText(start, end);
+            lines.add(text.toString());
+            if (remaining > 0) {
+                lineIndex = lineIndex.minus(1);
+            }
+        }
+        Collections.reverse(lines);
+        return lines;
+    }
+
+    @Nullable
+    private static LogicalLine getLastLogicalLine(@NotNull List<String> lines) {
+        int lastIndex = findLastNonBlankIndex(lines);
+        if (lastIndex < 0) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        String current = normalizeInputLine(lines.get(lastIndex));
+        if (!current.isEmpty()) {
+            parts.add(current);
+        }
+        int index = lastIndex;
+        boolean multiLine = false;
+        while (true) {
+            int prevIndex = findPreviousNonBlankIndex(lines, index - 1);
+            if (prevIndex < 0) {
+                break;
+            }
+            String prevRaw = lines.get(prevIndex).stripTrailing();
+            if (!prevRaw.endsWith("\\")) {
+                break;
+            }
+            String prev = normalizeInputLine(prevRaw);
+            if (!prev.isEmpty()) {
+                parts.add(0, prev);
+            }
+            multiLine = true;
+            index = prevIndex;
+        }
+        if (parts.isEmpty()) {
+            return null;
+        }
+        return new LogicalLine(String.join(" ", parts).strip(), multiLine);
+    }
+
+    private static int findLastNonBlankIndex(@NotNull List<String> lines) {
+        for (int i = lines.size() - 1; i >= 0; i--) {
+            if (!lines.get(i).isBlank()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int findPreviousNonBlankIndex(@NotNull List<String> lines, int startIndex) {
+        for (int i = startIndex; i >= 0; i--) {
+            if (!lines.get(i).isBlank()) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    @NotNull
+    private static String normalizeInputLine(@NotNull String line) {
+        String trimmed = line.stripTrailing();
+        boolean endsWithSlash = trimmed.endsWith("\\");
+        String normalized = stripPromptPrefix(trimmed);
+        if (endsWithSlash) {
+            normalized = normalized.substring(0, normalized.length() - 1).stripTrailing();
+        }
+        return normalized.strip();
     }
 
     /**
@@ -367,7 +464,12 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param terminalView 需要操作的 {@link TerminalView} 实例
      * @param newText      用于替换当前行的文本
      */
-    private static void replaceCurrentLine(@NotNull TerminalView terminalView, @NotNull String newText) {
+    private static void replaceCurrentLine(@NotNull TerminalView terminalView, @NotNull String newText, boolean multiLine) {
+        if (multiLine) {
+            sendText(terminalView, "\u0003");
+            sendText(terminalView, newText);
+            return;
+        }
         sendText(terminalView, "\u0015");
         sendText(terminalView, newText);
     }
@@ -380,10 +482,18 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param newText 要写入的新文本内容
      * @param project 当前项目上下文, 用于显示错误通知
      */
-    private static void replaceCurrentLine(@NotNull JBTerminalWidget widget, @NotNull String newText, @NotNull Project project) {
+    private static void replaceCurrentLine(@NotNull JBTerminalWidget widget,
+                                           @NotNull String newText,
+                                           @NotNull Project project,
+                                           boolean multiLine) {
         try {
             if (widget.getTtyConnector() == null || !widget.getTtyConnector().isConnected()) {
                 NotificationUtil.showWarning(project, TerminalBundle.message("error.terminal.not.ready"));
+                return;
+            }
+            if (multiLine) {
+                widget.getTtyConnector().write("\u0003");
+                widget.getTtyConnector().write(newText);
                 return;
             }
             widget.getTtyConnector().write("\u0015");
@@ -477,4 +587,18 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             }
         });
     }
+
+    private record InputInfo(String content, boolean multiLine) {
+            private InputInfo(@NotNull String content, boolean multiLine) {
+                this.content = content;
+                this.multiLine = multiLine;
+            }
+        }
+
+    private record LogicalLine(String line, boolean multiLine) {
+            private LogicalLine(@NotNull String line, boolean multiLine) {
+                this.line = line;
+                this.multiLine = multiLine;
+            }
+        }
 }
