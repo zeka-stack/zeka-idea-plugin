@@ -1,0 +1,69 @@
+<!-- 插件配置文件。更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- 插件的唯一标识符。应该是完全限定名。在插件版本之间不能更改。 -->
+    <id>dev.dong4j.zeka.stack.idea.plugin.terminal</id>
+
+    <!-- 公共插件名称应使用标题大小写书写。
+         指南：https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>IntelliAI Terminal</name>
+
+    <!-- 在插件页面上显示的供应商名称或组织ID。 -->
+    <vendor email="dong4j@gmail.com">dong4j</vendor>
+
+    <!-- 产品和插件兼容性要求。
+         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
+    <!-- 依赖 IntelliAI Engine 插件 -->
+    <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
+
+    <!-- 国际化资源文件 -->
+    <resource-bundle>messages.TerminalBundle</resource-bundle>
+
+    <!-- 插件定义的扩展点。
+         更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- 配置持久化 -->
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState"/>
+
+        <!-- 设置面板 -->
+        <!--suppress PluginXmlI18n -->
+        <applicationConfigurable
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
+            instance="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.TerminalSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.TerminalSettingsConfigurable"
+            displayName="🧩 IntelliAI Terminal"/>
+
+        <!-- 通知组 -->
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup id="IntelliAI Terminal Notifications"
+                           displayType="BALLOON"
+                           isLogByDefault="true"/>
+
+        <!-- 启动提示：默认提示词版本变更 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.PromptTemplateVersionNotifier"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
+        <!--suppress PluginXmlValidity -->
+        <allowedActionsProvider implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.terminal.TerminalAiAllowedActionsProvider"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.update.TerminalPluginUpdateInfoProvider"/>
+        <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.statusbar.TerminalStatusBarPopupProvider"/>
+    </extensions>
+
+    <!-- 插件定义的动作 -->
+    <actions>
+        <!-- Terminal AI -->
+        <!--suppress PluginXmlI18n -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiGenerateAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiGenerateAction"
+                text="Terminal AI Generate"
+                description="Generate terminal command with AI">
+            <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
+        </action>
+    </actions>
+</idea-plugin>
