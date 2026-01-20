@@ -117,6 +117,7 @@
             implementation="dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.InternalWhatsNewProvider"/>
     </extensions>
 
+
     <projectListeners>
     </projectListeners>
 

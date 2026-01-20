@@ -2,11 +2,8 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intellij.ide.BrowserUtil;
-import com.intellij.ide.plugins.IdeaPluginDescriptor;
-import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.SystemInfo;
@@ -46,6 +43,7 @@ import javax.swing.border.TitledBorder;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
+import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -534,16 +532,7 @@ public class FeedbackPanel {
      */
     @Nullable
     private String getPluginVersion() {
-        try {
-            PluginId pluginIdObj = PluginId.getId(pluginId);
-            IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginIdObj);
-            if (pluginDescriptor != null) {
-                return pluginDescriptor.getVersion();
-            }
-        } catch (Exception e) {
-            log.debug("获取插件版本失败", e);
-        }
-        return null;
+        return PluginUtil.getVersion(pluginId);
     }
 
     /**
