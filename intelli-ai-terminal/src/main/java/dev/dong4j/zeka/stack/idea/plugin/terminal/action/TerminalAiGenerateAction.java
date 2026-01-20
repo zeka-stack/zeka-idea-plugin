@@ -285,12 +285,13 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     }
 
     /**
-     * 根据 JBTerminalWidget 和设置状态获取当前终端输入内容
-     * <p> 从 JBTerminalWidget 的文本内容中提取最后一行非空行, 并根据设置中的触发前缀提取有效命令内容. 若无有效输入则返回 null</p>
+     * 从终端组件中获取当前用户输入内容
+     * <p> 从终端组件中获取文本内容, 提取最后一行非空输入, 并使用设置中的前缀规则进行处理.
+     * 如果文本为空或无有效输入, 则返回 null.
      *
-     * @param widget   JBTerminalWidget 实例, 用于获取终端文本内容
-     * @param settings 设置状态对象, 包含触发前缀等配置
-     * @return 提取后的有效输入内容, 若无有效输入则返回 null
+     * @param widget   终端组件, 不能为空
+     * @param settings 设置状态, 包含触发前缀等配置, 不能为空
+     * @return 处理后的用户输入内容, 如果无有效输入则返回 null
      */
     private static String getCurrentInput(@NotNull JBTerminalWidget widget, @NotNull SettingsState settings) {
         String text = widget.getText();
