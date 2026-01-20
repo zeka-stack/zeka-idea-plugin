@@ -37,14 +37,13 @@ public class AICheckstyleQuickFixProvider implements CheckstyleQuickFixProvider 
     }
 
     /**
-     * 判断给定 {@link Problem} 是否可修复.
-     *
-     * <p> 若问题的源文件名, 错误信息和目标位置均不为 {@code null}, 则认为该问题可被 AI 自动修复, 否则认为不可修复.</p>
+     * 判断给定的 {@link Problem} 是否可修复
+     * <p> 若问题的源文件名, 错误信息和目标位置均不为 {@code null}, 则认为该问题可被 AI 自动修复; 否则认为不可修复.</p>
      *
      * @param problem 当前检查到的错误信息
-     * @return 若问题的源文件名, 错误信息和目标位置均不为 {@code null}, 则返回 {@code true}; 否则返回 {@code false}.
+     * @return 若问题的源文件名, 错误信息和目标位置均不为 {@code null}, 则返回 {@code true}; 否则返回 {@code false}
      */
     private boolean isFixable(@NotNull Problem problem) {
-        return problem.sourceName() != null && problem.message() != null && problem.target() != null;
+        return problem.sourceName() != null;
     }
 }
