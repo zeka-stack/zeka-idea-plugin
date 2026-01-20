@@ -83,8 +83,8 @@ dependencies {
     // Nacos Client 依赖
     implementation("com.alibaba.nacos:nacos-client:2.2.0")
 
-    compileOnly("org.projectlombok:lombok:1.18.26")
-    annotationProcessor("org.projectlombok:lombok:1.18.26")
+    compileOnly("org.projectlombok:lombok:1.18.32")
+    annotationProcessor("org.projectlombok:lombok:1.18.32")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
@@ -93,8 +93,8 @@ dependencies {
     testImplementation("org.mockito:mockito-junit-jupiter:5.2.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
 
-    testCompileOnly("org.projectlombok:lombok:1.18.26")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.26")
+    testCompileOnly("org.projectlombok:lombok:1.18.32")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
 }
 
 tasks {

@@ -92,8 +92,8 @@ dependencies {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
 
-    compileOnly("org.projectlombok:lombok:1.18.26")
-    annotationProcessor("org.projectlombok:lombok:1.18.26")
+    compileOnly("org.projectlombok:lombok:1.18.32")
+    annotationProcessor("org.projectlombok:lombok:1.18.32")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
@@ -106,8 +106,8 @@ dependencies {
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    testCompileOnly("org.projectlombok:lombok:1.18.26")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.26")
+    testCompileOnly("org.projectlombok:lombok:1.18.32")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
 }
 
 tasks {
@@ -131,6 +131,34 @@ tasks {
 
     test {
         useJUnitPlatform()
+    }
+
+    // 本地开发：将已构建的 checkstyle-idea.zip 解压到 sandbox 的 plugins
+    val copyCheckstyleIdeaPlugin = register<Copy>("copyCheckstyleIdeaPlugin") {
+        description = "Unzip checkstyle-idea plugin into sandbox plugins"
+        group = "intellij"
+
+        val checkstylePluginDir = file("../reference/checkstyle-idea/build/distributions")
+        val zipFiles = fileTree(checkstylePluginDir) { include("*.zip") }
+
+        val sandboxProductDir =
+            "${providers.gradleProperty("platformType").get()}-${providers.gradleProperty("platformVersion").get()}"
+        val sandboxPluginsDir =
+            layout.buildDirectory.dir("idea-sandbox/$sandboxProductDir/plugins").get().asFile
+
+        doFirst {
+            if (zipFiles.isEmpty) {
+                throw GradleException("checkstyle-idea zip not found in ${checkstylePluginDir.absolutePath}")
+            }
+            sandboxPluginsDir.mkdirs()
+            val existing = sandboxPluginsDir.resolve("CheckStyle-IDEA")
+            if (existing.exists()) {
+                existing.deleteRecursively()
+            }
+        }
+
+        from(zipFiles.map { zipTree(it) })
+        into(sandboxPluginsDir)
     }
 
     // 本地开发：构建并复制 intelli-ai-engine 插件到 sandbox
@@ -190,7 +218,7 @@ tasks {
         jvmArgumentProviders += CommandLineArgumentProvider {
             listOf("-Didea.kotlin.plugin.use.k2=true")
         }
-        dependsOn(copyAiCommonPlugin)
+        dependsOn(copyAiCommonPlugin, copyCheckstyleIdeaPlugin)
         // 热更新
         // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
     }

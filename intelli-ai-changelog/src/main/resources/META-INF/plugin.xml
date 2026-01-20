@@ -24,7 +24,6 @@
     <depends optional="true" config-file="changelog-php.xml">com.jetbrains.php</depends>
     <depends optional="true" config-file="changelog-ruby.xml">com.intellij.modules.ruby</depends>
     <depends optional="true" config-file="changelog-cpp.xml">com.intellij.cidr.lang</depends>
-    <depends optional="true" config-file="changelog-database.xml">com.intellij.database</depends>
 
     <depends>com.intellij.modules.vcs</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->

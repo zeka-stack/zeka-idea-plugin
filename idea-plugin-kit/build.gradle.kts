@@ -34,8 +34,8 @@ dependencies {
     }
 
     // Lombok
-    compileOnly("org.projectlombok:lombok:1.18.26")
-    annotationProcessor("org.projectlombok:lombok:1.18.26")
+    compileOnly("org.projectlombok:lombok:1.18.32")
+    annotationProcessor("org.projectlombok:lombok:1.18.32")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
@@ -47,8 +47,8 @@ dependencies {
     testImplementation("org.mockito:mockito-junit-jupiter:5.2.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
 
-    testCompileOnly("org.projectlombok:lombok:1.18.26")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.26")
+    testCompileOnly("org.projectlombok:lombok:1.18.32")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
 }
 
 tasks {
