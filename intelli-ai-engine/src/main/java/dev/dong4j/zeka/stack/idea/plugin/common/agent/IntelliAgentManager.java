@@ -670,7 +670,7 @@ public final class IntelliAgentManager {
             }
             return isIntelliAgent;
         } catch (Exception e) {
-            log.debug("检查端口 " + IntelliAgentManager.DEFAULT_PORT + " 上的服务失败: {}", url, e);
+            log.debug("检查端口 " + IntelliAgentManager.DEFAULT_PORT + " 上的服务失败: {} {}", url, e.getMessage());
             return false;
         }
     }
