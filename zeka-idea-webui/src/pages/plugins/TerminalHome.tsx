@@ -94,7 +94,7 @@ export const TerminalHome: React.FC = () => {
                         </p>
                         <p className="flex items-center gap-3">
                             <span className="text-[#33ff00]">$</span>
-                            <span>只需输入描述并按 <span className="text-white bg-gray-800 px-2 py-0.5 rounded text-sm mx-1">TAB</span> 即可生成。</span>
+                            <span>只需输入描述并按 <span className="text-white bg-slate-800 border-b-4 border-slate-900 px-3 py-1 rounded text-base font-bold mx-1 shadow-lg">TAB</span> 即可生成。</span>
                         </p>
                     </div>
 
