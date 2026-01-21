@@ -134,6 +134,14 @@ export const Header: React.FC<HeaderProps> = ({variant = 'default'}) => {
                                         <div className={`font-bold ${s.dropdownItemTitle} transition-colors`}>IntelliAI Terminal</div>
                                         <div className={`text-xs ${s.dropdownItemDesc} mt-0.5`}>AI Terminal Assistant</div>
                                     </a>
+                                    <a href="#/plugins/tracer" onClick={() => setIsProductsOpen(false)} className={`block px-4 py-3 ${s.dropdownItem} transition-colors border-t ${s.dropdownDivider} group`}>
+                                        <div className={`font-bold ${s.dropdownItemTitle} transition-colors`}>IntelliAI Tracer</div>
+                                        <div className={`text-xs ${s.dropdownItemDesc} mt-0.5`}>Code Flow Analysis</div>
+                                    </a>
+                                    <a href="#/plugins/repairer" onClick={() => setIsProductsOpen(false)} className={`block px-4 py-3 ${s.dropdownItem} transition-colors border-t ${s.dropdownDivider} group`}>
+                                        <div className={`font-bold ${s.dropdownItemTitle} transition-colors`}>IntelliAI Repairer</div>
+                                        <div className={`text-xs ${s.dropdownItemDesc} mt-0.5`}>Automated Code Remediation</div>
+                                    </a>
                                 </div>
                             </div>
                         </div>

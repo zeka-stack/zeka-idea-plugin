@@ -9,6 +9,8 @@ import {EngineHome} from './pages/plugins/EngineHome';
 import {JavadocHome} from './pages/plugins/JavadocHome';
 import {ChangelogHome} from './pages/plugins/ChangelogHome';
 import {TerminalHome} from './pages/plugins/TerminalHome';
+import {TracerHome} from './pages/plugins/TracerHome';
+import {RepairerHome} from './pages/plugins/RepairerHome';
 import {Donate} from './pages/Donate';
 import {Changelog} from './pages/Changelog';
 import {Login} from './pages/Login';
@@ -50,6 +52,14 @@ function App() {
         Component = TerminalHome;
         footerVariant = 'dark';
         headerVariant = 'terminal';
+    } else if (route === '#/plugins/tracer') {
+        Component = TracerHome;
+        footerVariant = 'dark';
+        headerVariant = 'dark';
+    } else if (route === '#/plugins/repairer') {
+        Component = RepairerHome;
+        footerVariant = 'dark';
+        headerVariant = 'dark';
     } else {
         // Switch for other routes
     switch (route) {

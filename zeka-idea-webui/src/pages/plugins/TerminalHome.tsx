@@ -14,8 +14,6 @@ export const TerminalHome: React.FC = () => {
     const commandText = 'find . -name "*.java" -exec grep -l "TODO" {} \\;';
 
     useEffect(() => {
-        let timeoutId: NodeJS.Timeout;
-
         const runSequence = async () => {
             // Reset state
             setTerminalState({
