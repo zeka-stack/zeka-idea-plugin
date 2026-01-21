@@ -55,4 +55,15 @@ public class SiteContents {
     public static final String MARKETPLACE_LINK = "https://plugins.jetbrains.com/plugin/29152";
     /** 插件市场评论链接, 用于引导用户查看插件在 JetBrains Marketplace 上的用户评价与反馈 */
     public static final String MARKETPLACE_REVIEWS_LINK = "https://plugins.jetbrains.com/vendor/9afaba35-91ea-4364-8ced-64db868dd23e";
+
+
+    /** 终端图标资源地址 */
+    public static final String TERMINAL_LOGO_URL = "https://cdn.dong4j.site/source/image/logo.png";
+    /** 终端界面示例动图资源地址 */
+    public static final String TERMINAL_GIF_URL = "https://cdn.dong4j.site/source/image/sample.gif";
+
+    /** GitHub Releases API 地址, 用于获取 git-cliff 最新版本信息 */
+    public static final String GITHUB_API_URL = "https://api.github.com/repos/orhun/git-cliff/releases/latest";
+    /** GitHub 发布下载基础 URL */
+    public static final String GITHUB_DOWNLOAD_BASE_URL = "https://github.com/orhun/git-cliff/releases/download";
 }

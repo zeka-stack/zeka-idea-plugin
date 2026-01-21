@@ -13,12 +13,13 @@ import java.io.OutputStream;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import dev.dong4j.zeka.stack.idea.plugin.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -31,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public final class CodeStyleDownloadManager {
-    private static final String PLUGIN_DIR_NAME = "helper";
     private static final String CODE_STYLE_FILE_PREFIX = "zeka-stack-codestyle-";
     private static final String CODE_STYLE_FILE_SUFFIX = ".xml";
     private static final Pattern VERSION_PATTERN = Pattern.compile(
@@ -59,8 +59,7 @@ public final class CodeStyleDownloadManager {
      */
     @NotNull
     public static Path getCodeStyleDir() {
-        String userHome = System.getProperty("user.home");
-        return Paths.get(userHome, ".zeka-stack", "plugin", PLUGIN_DIR_NAME);
+        return StorageUtil.getPluginStorageDir(PluginContents.PLUGIN_SIMPLE_NAME);
     }
 
     /**
@@ -334,4 +333,3 @@ public final class CodeStyleDownloadManager {
         }
     }
 }
-

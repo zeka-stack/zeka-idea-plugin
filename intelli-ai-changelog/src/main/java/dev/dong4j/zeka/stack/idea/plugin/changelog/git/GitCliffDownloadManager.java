@@ -19,13 +19,15 @@ import java.io.OutputStream;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -40,11 +42,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class GitCliffDownloadManager {
     /** GitHub Releases API 地址, 用于获取 git-cliff 最新版本信息 */
-    private static final String GITHUB_API_URL = "https://api.github.com/repos/orhun/git-cliff/releases/latest";
+    private static final String GITHUB_API_URL = SiteContents.GITHUB_API_URL;
     /** GitHub 发布下载基础 URL */
-    private static final String GITHUB_DOWNLOAD_BASE_URL = "https://github.com/orhun/git-cliff/releases/download";
-    /** 插件目录名称, 用于标识插件相关文件的根目录 */
-    private static final String PLUGIN_DIR_NAME = "changelog";
+    private static final String GITHUB_DOWNLOAD_BASE_URL = SiteContents.GITHUB_DOWNLOAD_BASE_URL;
     /** Git-cliff 二进制文件所在目录名称 */
     private static final String GIT_CLIFF_DIR_NAME = "git-cliff";
     /** 下载文件存放目录名称 */
@@ -71,8 +71,7 @@ public final class GitCliffDownloadManager {
      */
     @NotNull
     public static Path getGitCliffDir() {
-        String userHome = System.getProperty("user.home");
-        return Paths.get(userHome, ".zeka-stack", "plugin", PLUGIN_DIR_NAME, GIT_CLIFF_DIR_NAME);
+        return StorageUtil.resolve(PluginContents.PLUGIN_SIMPLE_NAME, GIT_CLIFF_DIR_NAME);
     }
 
     /**
@@ -82,8 +81,7 @@ public final class GitCliffDownloadManager {
      */
     @NotNull
     public static Path getDistsDir() {
-        String userHome = System.getProperty("user.home");
-        return Paths.get(userHome, ".zeka-stack", "plugin", PLUGIN_DIR_NAME, DISTS_DIR_NAME);
+        return StorageUtil.resolve(PluginContents.PLUGIN_SIMPLE_NAME, DISTS_DIR_NAME);
     }
 
     /**

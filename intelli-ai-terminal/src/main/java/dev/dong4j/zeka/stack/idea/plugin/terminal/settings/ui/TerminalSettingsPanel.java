@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.terminal.settings.ui;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -15,7 +16,13 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -28,6 +35,8 @@ import javax.swing.border.TitledBorder;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.PromptTemplateVersionStore;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
@@ -70,6 +79,14 @@ public class TerminalSettingsPanel {
     /** 触发前缀下拉框, 用于设置终端命令触发前缀 */
     private final ComboBox<String> triggerPrefixField;
 
+    /** 终端 Logo 图片的网络地址 */
+    private static final String LOGO_URL = SiteContents.TERMINAL_LOGO_URL;
+    /** GIF 动图资源 URL, 用于终端设置面板中的动态演示展示 */
+    private static final String GIF_URL = SiteContents.TERMINAL_GIF_URL;
+    /** Logo 图片文件名, 用于加载插件设置面板顶部的图标资源 */
+    private static final String LOGO_FILE = "logo.png";
+    /** GIF 动图文件名, 用于显示终端示例动画 */
+    private static final String GIF_FILE = "sample.gif";
     // Prompt 配置
     /** 系统提示文本区域, 用于输入和编辑系统级别的提示词内容 */
     public final JBTextArea systemPromptTextArea = new JBTextArea(15, 50);
@@ -252,14 +269,15 @@ public class TerminalSettingsPanel {
     }
 
     /**
-     * 创建包含 GIF 图片的面板
-     * <p> 该方法用于生成一个居中显示 GIF 图片的面板, 图片路径为 "sample.gif", 若资源不存在则返回空面板.
-     * <p> 图片会根据指定宽度进行缩放, 保持原始宽高比, 确保显示效果适配界面.
+     * 创建包含 GIF 动图的面板
+     * <p> 从资源路径加载指定的 GIF 文件并显示在面板中, 若文件不存在则返回空面板.
+     * <p> 该方法通过调用 {@link #picPanel(String, String)} 方法构建包含 GIF 图片的面板, 图片将按原始尺寸等比例缩放并保持圆角效果.
      *
-     * @return 包含缩放后 GIF 图片的面板, 若资源不存在则返回空面板
+     * @return 包含 GIF 图片的面板, 若资源不存在则返回空面板
+     * @since 1.0.0
      */
     private JPanel createGifPanel() {
-        return picPanel("sample.gif");
+        return picPanel(GIF_URL, GIF_FILE);
     }
 
     /**
@@ -269,7 +287,77 @@ public class TerminalSettingsPanel {
      * @return 包含 Logo 图片的面板, 若资源不存在则返回空面板
      */
     private JPanel createLogoPanel() {
-        return picPanel("logo.png");
+        return picPanel(LOGO_URL, LOGO_FILE);
+    }
+
+    /**
+     * 创建包含指定图片资源的面板
+     * <p> 该方法用于生成一个左对齐布局的面板, 面板内包含一个图片标签, 图片资源通过 URL 路径加载. 若缓存文件已存在, 则直接加载本地缓存图片; 若不存在, 则在后台线程下载图片并缓存, 下载完成后在事件调度线程中更新面板显示.</p>
+     * <p> 图片资源路径由传入的 URL 和文件名组合确定, 缓存路径根据用户主目录和插件标识构建, 确保资源可复用.</p>
+     *
+     * @param url      图片资源的网络地址, 用于下载未缓存的图片
+     * @param fileName 图片文件名, 用于在本地缓存目录中定位或存储图片
+     * @return 包含图片标签的面板, 若资源不存在或加载失败则返回空面板
+     * @since 1.0.0
+     */
+    private JPanel picPanel(String url, String fileName) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 8));
+        JBLabel label = new JBLabel();
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        panel.add(label);
+
+        Path cacheFile = resolveCacheFile(fileName);
+        if (Files.exists(cacheFile)) {
+            label.setIcon(new ImageIcon(cacheFile.toFile().getAbsolutePath()));
+        } else {
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                if (downloadToCache(url, cacheFile)) {
+                    ApplicationManager.getApplication().invokeLater(() -> {
+                        label.setIcon(new ImageIcon(cacheFile.toFile().getAbsolutePath()));
+                        label.revalidate();
+                        label.repaint();
+                    });
+                }
+            });
+        }
+        return panel;
+    }
+
+    /**
+     * 根据文件名解析缓存文件的完整路径
+     * <p> 通过获取用户主目录, 构造位于 ~/.zeka-stack/plugin/terminal/ 路径下的子文件路径, 若目录不存在则自动创建.
+     *
+     * @param fileName 缓存文件的名称, 如 "logo.png" 或 "sample.gif"
+     * @return 缓存文件的完整路径对象
+     * @since 1.0.0
+     */
+    private static Path resolveCacheFile(String fileName) {
+        return StorageUtil.resolve(PluginContents.PLUGIN_SIMPLE_NAME, fileName);
+    }
+
+    /**
+     * 将指定 URL 的内容下载并保存到本地缓存路径
+     * <p> 该方法会创建目标路径的父目录, 然后通过 HTTP 连接下载资源, 并将其写入指定的本地文件. 若下载失败或发生异常, 则返回 false.
+     * <p> 下载过程中设置连接超时 5000 毫秒, 读取超时 8000 毫秒, 并设置 User-Agent 为 "IntelliAI-Terminal".
+     *
+     * @param url    要下载的资源 URL, 不能为空
+     * @param target 本地保存的目标路径, 不能为空
+     * @return 如果下载成功且文件存在则返回 true, 否则返回 false
+     */
+    private static boolean downloadToCache(String url, Path target) {
+        try {
+            Files.createDirectories(target.getParent());
+            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("User-Agent", "IntelliAI-Terminal");
+            try (BufferedInputStream in = new BufferedInputStream(conn.getInputStream())) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return Files.exists(target);
+        } catch (IOException ignored) {
+            return false;
+        }
     }
 
     /**

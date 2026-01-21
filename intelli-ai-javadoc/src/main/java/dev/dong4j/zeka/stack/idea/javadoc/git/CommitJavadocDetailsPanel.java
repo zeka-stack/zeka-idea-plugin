@@ -34,7 +34,6 @@ import com.intellij.ui.content.ContentFactory;
 import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.MessageView;
 import com.intellij.ui.treeStructure.Tree;
-import com.intellij.util.containers.Convertor;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 
@@ -510,7 +509,7 @@ public final class CommitJavadocDetailsPanel implements Disposable {
      * @version 1.0.0
      * @email "mailto:dong4j@gmail.com"
      * @date 2026.01.20
-     * @since x.x.x
+     * @since 2025.3.1200
      */
     private enum NodeType {
         /** 根节点类型, 表示树结构的顶层节点 */

@@ -15,6 +15,8 @@ public final class PluginContents {
     public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin.swagger";
     /** 插件名称, 值为 "IntelliAI Swagger" */
     public static final String PLUGIN_NAME = "IntelliAI Swagger";
+    /** 插件简短名称, 用于本地存储目录标识 */
+    public static final String PLUGIN_SIMPLE_NAME = "swagger";
 
     /**
      * 私有构造函数, 防止外部实例化

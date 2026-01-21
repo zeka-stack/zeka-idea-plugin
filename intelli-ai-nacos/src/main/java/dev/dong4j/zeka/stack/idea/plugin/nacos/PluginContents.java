@@ -15,6 +15,8 @@ public class PluginContents {
 
     /** 插件名称, 值为 "IntelliAI Nacos" */
     public static final String PLUGIN_NAME = "IntelliAI Nacos";
+    /** 插件简短名称, 用于本地存储目录标识 */
+    public static final String PLUGIN_SIMPLE_NAME = "nacos";
     /** 插件的唯一标识符 */
     public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin.nacos";
 }

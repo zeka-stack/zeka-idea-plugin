@@ -21,7 +21,7 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2026.01.20
- * @since x.x.x
+ * @since 2025.3.1200
  */
 public final class PatchApplier {
     /**

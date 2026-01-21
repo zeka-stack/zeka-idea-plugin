@@ -15,6 +15,8 @@ public class PluginContents {
 
     /** 插件名称 */
     public static final String PLUGIN_NAME = "ZKS Dev Helper";
+    /** 插件简短名称, 用于本地存储目录标识 */
+    public static final String PLUGIN_SIMPLE_NAME = "helper";
     /**
      * 插件的唯一标识符
      * <p> 用于标识和区分不同的插件实例

@@ -1,6 +1,12 @@
 package dev.dong4j.zeka.stack.idea.plugin.nacos.model;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
+import java.nio.file.Path;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
+import dev.dong4j.zeka.stack.idea.plugin.nacos.PluginContents;
 
 /**
  * 本地注册中心常量定义
@@ -87,7 +93,8 @@ public class LocalRegistryConstants {
         EDAS_HOME = var10000 + File.separator + ".zeka-stack";
         REGISTRY_DIR = EDAS_HOME + File.separator + "registry";
         LOCAL_REGISTRY_DIR = REGISTRY_DIR + File.separator + "local";
-        LOCAL_REGISTRY_PKG_DIR = EDAS_HOME + File.separator + "plugin" + File.separator + "nacos" + File.separator + "dists";
+        Path pluginDir = getPluginDir();
+        LOCAL_REGISTRY_PKG_DIR = pluginDir.resolve("dists").toString();
         LOCAL_REGISTRY_LOG_DIR = LOCAL_REGISTRY_DIR + File.separator + "logs";
         LOCAL_REGISTRY_TMP_LOG = LOCAL_REGISTRY_DIR + File.separator + "temp_log";
         NACOS_PORTS = new int[] {8848};
@@ -101,7 +108,7 @@ public class LocalRegistryConstants {
      * @return Nacos 目录路径
      */
     public static String getNacosDir(String version) {
-        return EDAS_HOME + File.separator + "plugin" + File.separator + "nacos" + File.separator + version;
+        return getPluginDir().resolve(version).toString();
     }
 
     /**
@@ -152,5 +159,10 @@ public class LocalRegistryConstants {
      */
     public static String getNacosStartLog(String version) {
         return getNacosLogDir(version) + File.separator + "start.out";
+    }
+
+    @NotNull
+    private static Path getPluginDir() {
+        return StorageUtil.getPluginStorageDir(PluginContents.PLUGIN_SIMPLE_NAME);
     }
 }

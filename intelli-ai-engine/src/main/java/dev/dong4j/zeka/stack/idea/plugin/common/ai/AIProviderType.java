@@ -285,7 +285,7 @@ public enum AIProviderType {
      * 智谱AI (ChatGLM) 服务提供商, 支持多种 GLM 模型, 包括 glm-4.6, glm-4.5, glm-4.5-flash 等.
      */
     ZHIPU(
-        "",
+        "glm",
         "智谱AI",
         "https://open.bigmodel.cn/api/paas/v4",
         "glm-4.7",
@@ -612,7 +612,6 @@ public enum AIProviderType {
      * @return API Key 获取地址，如果不需要或不存在则返回 null
      */
     @SuppressWarnings("DuplicatedCode")
-    @Nullable
     public String getApiKeyUrl() {
         return switch (this) {
             case OPENAI, CODEX -> "https://platform.openai.com/api-keys";
@@ -636,7 +635,6 @@ public enum AIProviderType {
             case ZHIPU_ANTHROPIC -> "https://docs.bigmodel.cn/cn/guide/develop/claude/introduction";
             case ZAI -> "https://docs.z.ai/api-reference/introduction";
             case ZAI_ANTHROPIC -> "https://docs.z.ai/scenario-example/develop-tools/claude";
-            default -> null;
         };
     }
 }

@@ -30,8 +30,10 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Optional;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -537,11 +539,11 @@ public final class IntelliAgentManager {
 
     @NotNull
     private Path getWorkDir() {
-        Path dir = Paths.get(System.getProperty("user.home"), ".zeka-stack", "plugin", "agent");
+        Path dir = StorageUtil.getPluginStorageDir(EngineContents.PLUGIN_SIMPLE_NAME).resolve("agent");
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
-            log.debug("创建 IntelliAI Agent 目录失败: " + dir, e);
+            log.debug("创建 IntelliAI Agent 目录失败: {}", dir, e);
         }
         return dir;
     }

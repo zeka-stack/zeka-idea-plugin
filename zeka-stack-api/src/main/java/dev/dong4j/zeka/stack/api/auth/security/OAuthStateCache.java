@@ -99,7 +99,7 @@ public class OAuthStateCache {
      * @version 1.0.0
      * @email mailto:dong4j@gmail.com
      * @date 2026.01.19
-     * @since x.x.x
+     * @since 2025.3.1200
      */
         private record StateEntry(String deviceId, long expiryTime) {
     }

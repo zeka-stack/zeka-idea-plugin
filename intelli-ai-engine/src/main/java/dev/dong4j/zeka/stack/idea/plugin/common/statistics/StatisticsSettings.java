@@ -9,8 +9,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -111,7 +113,8 @@ public class StatisticsSettings implements PersistentStateComponent<StatisticsSe
      */
     public File getStatisticsDirectory() {
         String deviceId = DeviceIdGenerator.sanitizeForPath(getDeviceId());
-        File configDir = Paths.get(System.getProperty("user.home"), ".zeka-stack", "engine", deviceId).toFile();
+        Path base = StorageUtil.getPluginStorageDir(EngineContents.PLUGIN_SIMPLE_NAME).resolve("statistics");
+        File configDir = base.resolve(deviceId).toFile();
         if (!configDir.exists() && configDir.mkdirs()) {
             log.debug("Create statistics directory {}", configDir.getAbsolutePath());
         }

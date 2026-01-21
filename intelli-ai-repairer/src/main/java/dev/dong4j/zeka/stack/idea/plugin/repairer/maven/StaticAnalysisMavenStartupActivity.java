@@ -17,7 +17,7 @@ import kotlin.coroutines.Continuation;
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2026.01.20
- * @since x.x.x
+ * @since 2025.3.1200
  */
 public class StaticAnalysisMavenStartupActivity implements ProjectActivity {
     /**

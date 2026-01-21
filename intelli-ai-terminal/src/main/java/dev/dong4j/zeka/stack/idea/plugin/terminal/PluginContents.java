@@ -16,6 +16,8 @@ public final class PluginContents {
     public static final String PLUGIN_ID = "dev.dong4j.zeka.stack.idea.plugin.terminal";
     /** 插件名称 */
     public static final String PLUGIN_NAME = "IntelliAI Terminal";
+    /** 插件简短名称, 用于界面显示或内部标识, 当前值为 "terminal" */
+    public static final String PLUGIN_SIMPLE_NAME = "terminal";
 
     /**
      * 私有构造函数, 防止外部实例化 {@link PluginContents}.

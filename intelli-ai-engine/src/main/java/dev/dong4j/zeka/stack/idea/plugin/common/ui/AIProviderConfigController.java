@@ -13,7 +13,6 @@ import java.awt.Window;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
@@ -44,6 +44,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import icons.AICommonIcons;
 
 /**
@@ -609,7 +610,7 @@ public final class AIProviderConfigController {
         } else if (!currentModelName.trim().isEmpty() && finalModels.contains(currentModelName)) {
             preferredSelection = currentModelName;
         } else {
-            preferredSelection = finalModels.get(0);
+            preferredSelection = finalModels.getFirst();
         }
         return preferredSelection;
     }
@@ -705,8 +706,8 @@ public final class AIProviderConfigController {
         if (homeDir == null || homeDir.trim().isEmpty()) {
             return null;
         }
-        return Paths.get(homeDir, ".zeka-stack", "plugin", "engine",
-                         "models-" + providerType.getProviderId() + ".txt");
+        return StorageUtil.resolve(EngineContents.PLUGIN_SIMPLE_NAME,
+                                   "models-" + providerType.getProviderId());
     }
 
     /**
@@ -753,8 +754,9 @@ public final class AIProviderConfigController {
         if (!apiKey.trim().isEmpty() && config.credentialId != null) {
             // 密码保存是慢操作, 需要在后台线程执行
             String credentialId = config.credentialId;
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> credentialManager.setApiKey(credentialId, apiKey),
-                                                                        ApplicationManager.getApplication()::executeOnPooledThread);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(
+                () -> credentialManager.setApiKey(credentialId, apiKey),
+                ApplicationManager.getApplication()::executeOnPooledThread);
 
             // 等待密码保存完成, 但设置超时避免无限等待
             try {
@@ -797,8 +799,9 @@ public final class AIProviderConfigController {
         if (config == null) {
             return;
         }
-        String provider = config.providerType != null ? config.providerType.getDisplayName() : AICommonBundle.message("settings.available" +
-                                                                                                                      ".providers.unknown");
+        String provider = config.providerType != null
+                          ? config.providerType.getDisplayName()
+                          : AICommonBundle.message("settings.available.providers.unknown");
         String model = config.modelName != null ? config.modelName : "";
         int result = JOptionPane.showConfirmDialog(ui.getMainPanel(),
                                                    AICommonBundle.message("settings.available.providers.delete.confirm", provider, model),

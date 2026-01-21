@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
  * @date 2026.01.21
- * @since x.x.x
+ * @since 2025.3.1200
  */
 @SuppressWarnings("UnstableApiUsage")
 @Service(Service.Level.PROJECT)
@@ -434,7 +434,7 @@ public final class TerminalContextService implements com.intellij.openapi.Dispos
      * @version 1.0.0
      * @email mailto:dong4j@gmail.com
      * @date 2026.01.21
-     * @since x.x.x
+     * @since 2025.3.1200
      */
     public record ShellEnv(@NotNull String shell, @NotNull String os) {
     }
@@ -448,7 +448,7 @@ public final class TerminalContextService implements com.intellij.openapi.Dispos
      * @version 1.0.0
      * @email "mailto:dong4j@gmail.com"
      * @date 2026.01.21
-     * @since x.x.x
+     * @since 2025.3.1200
      */
     public record ProjectInfo(boolean isGit,
                               boolean hasDockerfile,

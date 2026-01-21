@@ -1,5 +1,7 @@
 # IntelliAI Terminal
 
+![](./assets/20260121_S1Bp2c.png)
+
 IntelliAI Terminal 是一个 IntelliJ IDEA 插件，在 IDEA 的 Terminal 中注入 AI 功能，让你可以通过 AI 快速生成终端命令。只需在终端输入自然语言描述，按
 TAB 键即可自动生成对应的命令并替换当前行，大大提高终端使用效率。
 
@@ -16,6 +18,8 @@ TAB 键即可自动生成对应的命令并替换当前行，大大提高终端�
 - [9 📝 许可证](#9-📝-许可证)
 
 ## 1 🎯 功能特性
+
+![](./assets/20260121_RP9Tdk.gif)
 
 ### 1.1 核心功能
 
