@@ -1,6 +1,5 @@
 intelli-ai-javadoc/.gradle
 build/
-!**/gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
@@ -57,3 +56,5 @@ docs-list.json
 *.mp4
 .tmp*
 .private
+
+!gradle-wrapper.jar
