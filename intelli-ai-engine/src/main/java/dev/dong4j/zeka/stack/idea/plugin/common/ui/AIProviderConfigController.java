@@ -812,7 +812,8 @@ public final class AIProviderConfigController {
                           ? config.providerType.getDisplayName()
                           : AICommonBundle.message("settings.available.providers.unknown");
         String model = config.modelName != null ? config.modelName : "";
-        int result = JOptionPane.showConfirmDialog(ui.getMainPanel(),
+        Component dialogParent = getDialogParent();
+        int result = JOptionPane.showConfirmDialog(dialogParent,
                                                    AICommonBundle.message("settings.available.providers.delete.confirm", provider, model),
                                                    AICommonBundle.message("settings.available.providers.delete.title"),
                                                    JOptionPane.YES_NO_OPTION,
@@ -833,7 +834,8 @@ public final class AIProviderConfigController {
         if (workingSettings.availableProviders.isEmpty()) {
             return;
         }
-        int result = JOptionPane.showConfirmDialog(ui.getMainPanel(),
+        Component dialogParent = getDialogParent();
+        int result = JOptionPane.showConfirmDialog(dialogParent,
                                                    AICommonBundle.message("settings.available.providers.clear.confirm",
                                                                           workingSettings.availableProviders.size()),
                                                    AICommonBundle.message("settings.available.providers.clear.title"),
@@ -1098,5 +1100,11 @@ public final class AIProviderConfigController {
 
                // 说明文字
                "💡 提示：测试连接之前先修改高级参数以适配不同场景需求\n";
+    }
+
+    private Component getDialogParent() {
+        Component parent = ui.getMainPanel();
+        Component window = SwingUtilities.getWindowAncestor(parent);
+        return window != null ? window : parent;
     }
 }
