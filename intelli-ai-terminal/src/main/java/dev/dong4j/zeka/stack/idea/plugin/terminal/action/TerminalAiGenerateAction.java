@@ -32,12 +32,14 @@ import java.util.List;
 import javax.swing.JComponent;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.terminal.ai.TerminalAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.context.TerminalContextService;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.NotificationUtil;
@@ -154,50 +156,12 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     log.debug("Starting AI content generation");
                     AIConsoleLoggerUtil.printWithTimestamp(project, "=== Terminal AI Request ===");
                     if (settings.enableStreamResponse) {
-                        aiService.generateContentStream(project, request, providerConfig, new AIStreamResponseListener() {
-                            /** 用于缓存流式响应的文本内容, 累积所有分块数据以生成完整响应 */
-                            private final StringBuilder streamBuffer = new StringBuilder();
-
-                            /**
-                             * 处理流式响应的片段数据
-                             * <p> 将接收到的片段内容追加到内部缓冲区中, 用于后续完整响应的拼接
-                             *
-                             * @param chunk 当前接收到的响应片段内容
-                             */
-                            @Override
-                            public void onChunk(@NotNull String chunk) {
-                                streamBuffer.append(chunk);
-                            }
-
-                            /**
-                             * 处理 AI 流式响应完成事件
-                             * <p> 当 AI 响应完整返回时, 根据是否为空判断使用完整文本或缓冲区内容作为结果, 并调用处理方法
-                             *
-                             * @param fullText 完整的 AI 响应文本
-                             */
-                            @Override
-                            public void onComplete(@NotNull String fullText) {
-                                String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
-                                handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
-                            }
-
-                            /**
-                             * 处理 AI 流式响应错误情况
-                             * <p> 当 AI 服务发生错误时, 显示失败提示并弹出错误通知
-                             *
-                             * @param error     错误信息字符串, 用于构建错误提示消息
-                             * @param exception 可选的异常对象, 用于记录详细错误堆栈信息
-                             */
-                            @Override
-                            public void onError(@NotNull String error, @Nullable Throwable exception) {
-                                showAiFailedHint(terminalView, jbWidget);
-                                NotificationUtil.showError(project, TerminalBundle.message("error.ai.failed", error));
-                            }
-                        });
+                        generateContentStream(aiService, request, contextService);
                         return;
                     }
 
-                    String result = aiService.generateContent(project, request, providerConfig, null);
+                    AIResponseListener listener = new TerminalAIResponseListener(project);
+                    String result = aiService.generateContent(project, request, providerConfig, listener);
                     log.debug("AI generation completed, result length: {}", result.length());
                     handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
                 } catch (AIServiceException ex) {
@@ -206,6 +170,73 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     AIConsoleLoggerUtil.printError(project, message);
                     NotificationUtil.showError(project, TerminalBundle.message("error.ai.failed", message));
                 }
+            }
+
+            /**
+             * 处理 AI 流式响应的提取逻辑
+             * <p> 根据是否启用流式响应, 调用 AI 服务的流式生成接口, 并注册流式响应监听器. 若启用流式响应, 则返回 true; 否则返回 false.</p>
+             *
+             * @param aiService      AI 服务实例, 用于执行内容生成
+             * @param request        AI 请求对象, 包含系统提示和用户内容
+             * @param contextService 终端上下文服务, 用于构建用户提示上下文
+             * @throws AIServiceException 当 AI 服务调用失败时抛出
+             */
+            private void generateContentStream(AIService aiService,
+                                               AIChatRequest request,
+                                               TerminalContextService contextService) throws AIServiceException {
+                aiService.generateContentStream(project, request, providerConfig, new AIStreamResponseListener() {
+                    /** 用于缓存流式响应的文本内容, 累积所有分块数据以生成完整响应 */
+                    private final StringBuilder streamBuffer = new StringBuilder();
+
+                    /**
+                     * 处理流式响应的片段数据
+                     * <p> 将接收到的片段内容追加到内部缓冲区中, 用于后续完整响应的拼接
+                     *
+                     * @param chunk 当前接收到的响应片段内容
+                     */
+                    @Override
+                    public void onChunk(@NotNull String chunk) {
+                        if (!chunk.isEmpty()) {
+                            AIConsoleLoggerUtil.printStreamPlain(project, chunk);
+                        }
+                        streamBuffer.append(chunk);
+                    }
+
+                    /**
+                     * 流式响应开始
+                     * <p>输出响应头, 便于区分请求与响应</p>
+                     */
+                    @Override
+                    public void onStart() {
+                        AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
+                    }
+
+                    /**
+                     * 处理 AI 流式响应完成事件
+                     * <p> 当 AI 响应完整返回时, 根据是否为空判断使用完整文本或缓冲区内容作为结果, 并调用处理方法
+                     *
+                     * @param fullText 完整的 AI 响应文本
+                     */
+                    @Override
+                    public void onComplete(@NotNull String fullText) {
+                        String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
+                        AIConsoleLoggerUtil.completeStreamPlain(project);
+                        applyAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
+                    }
+
+                    /**
+                     * 处理 AI 流式响应错误情况
+                     * <p> 当 AI 服务发生错误时, 显示失败提示并弹出错误通知
+                     *
+                     * @param error     错误信息字符串, 用于构建错误提示消息
+                     * @param exception 可选的异常对象, 用于记录详细错误堆栈信息
+                     */
+                    @Override
+                    public void onError(@NotNull String error, @Nullable Throwable exception) {
+                        AIConsoleLoggerUtil.completeStreamPlain(project);
+                        showAiFailedHint(terminalView, jbWidget);
+                    }
+                });
             }
         });
     }
@@ -766,6 +797,28 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
         AIConsoleLoggerUtil.print(project, result);
 
+        applyAiResult(project, terminalView, jbWidget, inputInfo, result, question, contextService);
+    }
+
+    /**
+     * 应用 AI 生成结果并替换终端当前行内容
+     * <p> 该方法不负责控制台日志输出, 仅处理结果校验和替换终端内容.</p>
+     *
+     * @param project      当前项目上下文, 用于通知显示
+     * @param terminalView 终端视图实例, 用于替换当前行内容 (可为 null)
+     * @param jbWidget     终端组件实例, 用于替换当前行内容 (可为 null)
+     * @param inputInfo    输入信息封装对象, 包含原始输入内容和是否为多行标识
+     * @param result       AI 服务返回的完整响应内容
+     * @param question     用户原始提问内容, 用于上下文记录
+     * @param contextService 终端上下文服务, 用于记录历史 (可为 null)
+     */
+    private static void applyAiResult(@NotNull Project project,
+                                      @Nullable TerminalView terminalView,
+                                      @Nullable JBTerminalWidget jbWidget,
+                                      @NotNull InputInfo inputInfo,
+                                      @NotNull String result,
+                                      @NotNull String question,
+                                      @Nullable TerminalContextService contextService) {
         String command = extractCommand(result);
         log.debug("Extracted command: {}", command);
         if (command.isBlank()) {
