@@ -183,7 +183,6 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             } catch (AIServiceException e) {
                 attempts++;
                 AIConsoleLoggerUtil.printWarning(project,
-
                                                  "请求失败 (尝试 " + attempts + "/" + Math.max(1, runtime.maxRetries) + "): " + e.getMessage());
                 if (!e.isRetryable() || attempts >= Math.max(1, runtime.maxRetries)) {
                     break;

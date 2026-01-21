@@ -56,7 +56,7 @@ public enum AIProviderType {
             "claude-3-opus-20240229",
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307"
-        )
+               )
     ),
     /**
      * Gemini（Google AI Studio）模型配置
@@ -73,7 +73,7 @@ public enum AIProviderType {
             "gemini-1.5-pro-latest",
             "gemini-1.5-flash-latest",
             "gemini-1.0-pro"
-        )
+               )
     ),
     /**
      * Codex（OpenAI）模型配置
@@ -129,7 +129,7 @@ public enum AIProviderType {
     CLOUDFLARE(
         "cloudflare",
         "Cloudflare Workers AI",
-        "https://api.cloudflare.com/client/v4/accounts/${YOUR_ACCOUNT_ID}/ai/v1",
+        "https://api.cloudflare.com/client/v4/accounts/{YOUR_ACCOUNT_ID}/ai/v1",
         "@cf/meta/llama-3.1-8b-instruct",
         true,
         true,
@@ -150,7 +150,7 @@ public enum AIProviderType {
     /**
      * Azure OpenAI (OpenAI 兼容) 模型配置
      */
-    AZURE_OPENAI(
+    AZURE(
         "azure_openai",
         "Azure OpenAI",
         "https://{YOUR_RESOURCE_NAME}.openai.azure.com/openai/deployments/{YOUR_DEPLOYMENT_NAME}",
@@ -182,6 +182,124 @@ public enum AIProviderType {
         true,
         true,
         List.of("mistral-small-latest")
+    ),
+    /**
+     * DeepSeek (OpenAI 兼容) 模型配置
+     */
+    DEEPSEEK(
+        "deepseek",
+        "DeepSeek",
+        "https://api.deepseek.com/v1",
+        "deepseek-chat",
+        true,
+        true,
+        List.of("deepseek-chat", "deepseek-reasoner")
+    ),
+    /**
+     * DeepSeek (Anthropic 兼容) 模型配置
+     */
+    DEEPSEEK_ANTHROPIC(
+        "deepseek_anthropic",
+        "DeepSeek",
+        "https://api.deepseek.com/anthropic",
+        "deepseek-chat",
+        true,
+        true,
+        List.of("deepseek-chat", "deepseek-reasoner")
+    ),
+    /**
+     * 豆包 (OpenAI 兼容) 模型配置
+     */
+    DOUBAO(
+        "doubao",
+        "豆包",
+        "https://ark.cn-beijing.volces.com/api/coding/v3",
+        "doubao-seed-1-8-251228",
+        true,
+        true,
+        List.of("doubao-seed-1-8-251228", "doubao-seed-1-6-flash-250828")
+    ),
+    /**
+     * 豆包 (Anthropic 兼容) 模型配置
+     */
+    DOUBAO_ANTHROPIC(
+        "doubao_anthropic",
+        "豆包",
+        "https://ark.cn-beijing.volces.com/api/coding",
+        "doubao-seed-1-8-251228",
+        true,
+        true,
+        List.of("doubao-seed-1-8-251228", "doubao-seed-1-6-flash-250828")
+    ),
+    /**
+     * Grok (OpenAI 兼容) 模型配置
+     */
+    GROK(
+        "grok",
+        "Grok",
+        "https://api.x.ai/v1",
+        "grok-3-latest",
+        true,
+        true,
+        List.of(
+            "grok-3-beta",
+            "grok-3",
+            "grok-3-latest",
+            "grok-3-fast-beta",
+            "grok-3-fast",
+            "grok-3-fast-latest",
+            "grok-3-mini-beta",
+            "grok-3-mini",
+            "grok-3-mini-latest"
+               )
+    ),
+    /**
+     * 混元 (OpenAI 兼容) 模型配置
+     */
+    HUNYUAN(
+        "hunyuan",
+        "混元",
+        "https://api.hunyuan.cloud.tencent.com/v1",
+        "hunyuan-2.0-instruct-20251111",
+        true,
+        true,
+        List.of("hunyuan-2.0-instruct-20251111", "hunyuan-2.0-thinking-20251109")
+    ),
+    /**
+     * 混元 (Anthropic 兼容) 模型配置
+     */
+    HUNYUAN_ANTHROPIC(
+        "hunyuan_anthropic",
+        "混元",
+        "https://api.hunyuan.cloud.tencent.com/anthropic",
+        "hunyuan-2.0-instruct-20251111",
+        true,
+        true,
+        List.of("hunyuan-2.0-instruct-20251111", "hunyuan-2.0-thinking-20251109")
+    ),
+    /**
+     * Moonshot (OpenAI 兼容) 模型配置
+     */
+    MOONSHOT(
+        "moonshot",
+        "Moonshot",
+        "https://api.moonshot.cn/v1",
+        "kimi-k2-thinking-turbo",
+        true,
+        true,
+        List.of("kimi-k2-thinking-turbo", "kimi-k2-thinking")
+    ),
+    /**
+     * Moonshot (Anthropic 兼容) 模型配置
+     */
+    MOONSHOT_ANTHROPIC(
+        "moonshot_anthropic",
+        "Moonshot",
+        "https://api.moonshot.cn/anthropic",
+        "kimi-k2-thinking-turbo",
+        true,
+        true,
+        List.of("kimi-k2-thinking-turbo", "kimi-k2-thinking")
     ),
     /**
      * 通义千问模型的标识信息
@@ -579,9 +697,14 @@ public enum AIProviderType {
             AIProviderType.OPENROUTER,
             AIProviderType.CLOUDFLARE,
             AIProviderType.BEDROCK,
-            AIProviderType.AZURE_OPENAI,
+            AIProviderType.AZURE,
             AIProviderType.GITHUB_MODELS,
             AIProviderType.MISTRAL,
+            AIProviderType.DEEPSEEK,
+            AIProviderType.DOUBAO,
+            AIProviderType.GROK,
+            AIProviderType.HUNYUAN,
+            AIProviderType.MOONSHOT,
             AIProviderType.QIANWEN,
             AIProviderType.SILICONFLOW,
             AIProviderType.IFLOW,
@@ -592,6 +715,10 @@ public enum AIProviderType {
                                                                                               ));
         groupedProviders.put(AICommonBundle.message("settings.provider.group.anthropic"), List.of(
             AIProviderType.ANTHROPIC,
+            AIProviderType.DEEPSEEK_ANTHROPIC,
+            AIProviderType.DOUBAO_ANTHROPIC,
+            AIProviderType.HUNYUAN_ANTHROPIC,
+            AIProviderType.MOONSHOT_ANTHROPIC,
             AIProviderType.MODELSCOPE_ANTHROPIC,
             AIProviderType.ZHIPU_ANTHROPIC,
             AIProviderType.ZAI_ANTHROPIC
@@ -620,10 +747,15 @@ public enum AIProviderType {
             case OPENROUTER -> "https://openrouter.ai/settings/keys";
             case CLOUDFLARE -> "https://developers.cloudflare.com/workers-ai/get-started/rest-api/";
             case BEDROCK -> "https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys-generate.html";
-            case AZURE_OPENAI -> "https://portal.azure.com/";
+            case AZURE -> "https://portal.azure.com/";
             case GITHUB_MODELS -> "https://github.com/settings/tokens";
             case MISTRAL -> "https://console.mistral.ai/";
             case ANTHROPIC -> "https://console.anthropic.com/settings/keys";
+            case DEEPSEEK, DEEPSEEK_ANTHROPIC -> "https://platform.deepseek.com/api_keys";
+            case DOUBAO, DOUBAO_ANTHROPIC -> "https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey";
+            case GROK -> "https://console.x.ai/team/default/api-keys";
+            case HUNYUAN, HUNYUAN_ANTHROPIC -> "https://console.cloud.tencent.com/hunyuan/start";
+            case MOONSHOT, MOONSHOT_ANTHROPIC -> "https://platform.moonshot.cn/console/api-keys";
             case GEMINI -> "https://aistudio.google.com/app/apikey";
             case QIANWEN -> "https://dashscope.console.aliyun.com/apiKey";
             case SILICONFLOW -> "https://cloud.siliconflow.cn/settings/api-keys";

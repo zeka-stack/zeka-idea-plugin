@@ -188,11 +188,81 @@ public final class AICommonIcons {
     public static final Icon PROVIDER_MISTRAL = load("/icons/mistral.svg");
 
     /**
+     * DeepSeek 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_DEEPSEEK = load("/icons/deepseek_16.svg");
+
+    /**
+     * 豆包 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_DOUBAO = load("/icons/doubao_16.svg");
+
+    /**
+     * Grok 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_GROK = load("/icons/grok_16.svg");
+
+    /**
+     * 混元 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_HUNYUAN = load("/icons/hunyuan_16.svg");
+
+    /**
+     * Moonshot 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_MOONSHOT = load("/icons/moonshot_16.svg");
+
+    /**
      * Mistral 提供商图标 (32x32)
      * <p>
      * 用于: 设置页面 AI 供应商下拉列表, 状态栏
      */
     public static final Icon PROVIDER_MISTRAL_32 = load("/icons/mistral_32.svg");
+
+    /**
+     * DeepSeek 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_DEEPSEEK_32 = load("/icons/deepseek_32.svg");
+
+    /**
+     * 豆包 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_DOUBAO_32 = load("/icons/doubao_32.svg");
+
+    /**
+     * Grok 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_GROK_32 = load("/icons/grok_32.svg");
+
+    /**
+     * 混元 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_HUNYUAN_32 = load("/icons/hunyuan_32.svg");
+
+    /**
+     * Moonshot 提供商图标 (32x32)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_MOONSHOT_32 = load("/icons/moonshot_32.svg");
 
     /**
      * 提供商图标, 尺寸为 16x16, 用于标识插件功能和供应商类型.
@@ -323,6 +393,41 @@ public final class AICommonIcons {
     public static final Icon PROVIDER_MISTRAL_64 = load("/icons/mistral_64.svg");
 
     /**
+     * DeepSeek 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_DEEPSEEK_64 = load("/icons/deepseek_64.svg");
+
+    /**
+     * 豆包 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_DOUBAO_64 = load("/icons/doubao_64.svg");
+
+    /**
+     * Grok 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_GROK_64 = load("/icons/grok_64.svg");
+
+    /**
+     * 混元 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_HUNYUAN_64 = load("/icons/hunyuan_64.svg");
+
+    /**
+     * Moonshot 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_MOONSHOT_64 = load("/icons/moonshot_64.svg");
+
+    /**
      * OpenRouter 提供商图标 (64x64)
      * <p>
      * 用于：错误提示框、对话框
@@ -411,13 +516,18 @@ public final class AICommonIcons {
             case OPENROUTER -> PROVIDER_OPENROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
             case BEDROCK -> PROVIDER_BEDROCK;
-            case AZURE_OPENAI -> PROVIDER_AZUREAI;
+            case AZURE -> PROVIDER_AZUREAI;
             case MISTRAL -> PROVIDER_MISTRAL;
             case GITHUB_MODELS -> PROVIDER_GITHUB;
             case ANTHROPIC -> PROVIDER_ANTHROPIC;
             case GEMINI -> PROVIDER_GEMINI;
             case NVIDIA -> PROVIDER_NVIDIA;
             case HUGGINGFACE -> PROVIDER_HUGGINGFACE;
+            case DEEPSEEK, DEEPSEEK_ANTHROPIC -> PROVIDER_DEEPSEEK;
+            case DOUBAO, DOUBAO_ANTHROPIC -> PROVIDER_DOUBAO;
+            case GROK -> PROVIDER_GROK;
+            case HUNYUAN, HUNYUAN_ANTHROPIC -> PROVIDER_HUNYUAN;
+            case MOONSHOT, MOONSHOT_ANTHROPIC -> PROVIDER_MOONSHOT;
             case ZHIPU_ANTHROPIC, ZHIPU -> PROVIDER_ZHIPU;
             case QIANWEN -> PROVIDER_QWEN;
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
@@ -448,13 +558,18 @@ public final class AICommonIcons {
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;
             case BEDROCK -> PROVIDER_BEDROCK_64;
-            case AZURE_OPENAI -> PROVIDER_AZUREAI_64;
+            case AZURE -> PROVIDER_AZUREAI_64;
             case MISTRAL -> PROVIDER_MISTRAL_64;
             case GITHUB_MODELS -> PROVIDER_GITHUB_64;
             case ANTHROPIC -> PROVIDER_ANTHROPIC_64;
             case GEMINI -> PROVIDER_GEMINI_64;
             case NVIDIA -> PROVIDER_NVIDIA_64;
             case HUGGINGFACE -> PROVIDER_HUGGINGFACE_64;
+            case DEEPSEEK, DEEPSEEK_ANTHROPIC -> PROVIDER_DEEPSEEK_64;
+            case DOUBAO, DOUBAO_ANTHROPIC -> PROVIDER_DOUBAO_64;
+            case GROK -> PROVIDER_GROK_64;
+            case HUNYUAN, HUNYUAN_ANTHROPIC -> PROVIDER_HUNYUAN_64;
+            case MOONSHOT, MOONSHOT_ANTHROPIC -> PROVIDER_MOONSHOT_64;
             case ZHIPU_ANTHROPIC, ZHIPU -> PROVIDER_ZHIPU_64;
             case QIANWEN -> PROVIDER_QWEN_64;
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;

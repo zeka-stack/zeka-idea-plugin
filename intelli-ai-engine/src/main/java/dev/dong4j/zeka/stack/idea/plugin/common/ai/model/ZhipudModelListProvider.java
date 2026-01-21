@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
+package dev.dong4j.zeka.stack.idea.plugin.common.ai.model;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

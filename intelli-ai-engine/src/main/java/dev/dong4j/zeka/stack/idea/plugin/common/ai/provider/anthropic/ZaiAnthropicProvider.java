@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ZhipudModelListProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.model.ZhipudModelListProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;

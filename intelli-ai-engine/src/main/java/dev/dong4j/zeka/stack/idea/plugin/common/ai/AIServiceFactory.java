@@ -14,19 +14,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.codex.CodexLikeProvi
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.gemini.GeminLikeiProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ollama.OllamaLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.AzureOpenAIProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.BedrockOpenAIProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.CloudflareOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.GitHubModelsProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.HuggingFaceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.IflowProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.LMStudioProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.MistralOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ModelScopeOpenAIProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.NvidiaProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OpenAILikeProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OpenRouterProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.QwenProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.SiliconFlowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZaiOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZhipuOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -75,7 +66,7 @@ public final class AIServiceFactory {
      * 根据传入的配置, 模型参数, 运行时设置以及日志记录器创建相应的 AI 服务提供者.
      * 如果未指定提供者类型, 则默认使用 QIANWEN 类型.
      *
-     * @param config          提供者配置信息, 不能为空
+     * @param config 提供者配置信息, 不能为空
      * @return 创建的 AI 服务提供者实例, 可能为 null
      */
     public static AIServiceProvider createProvider(@NotNull Project project, @NotNull AIProviderConfig config) {
@@ -83,29 +74,26 @@ public final class AIServiceFactory {
         AIModelParameters modelParameters = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
         AIRuntimeSettings runtimeSettings = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
         return switch (providerType) {
-            case OPENAI -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
-            case ANTHROPIC -> new AnthropicLikeProvider(project, config, modelParameters, runtimeSettings);
-            case GEMINI -> new GeminLikeiProvider(project, config, modelParameters, runtimeSettings);
-            case CODEX -> new CodexLikeProvider(project, config, modelParameters, runtimeSettings);
-            case NVIDIA -> new NvidiaProvider(project, config, modelParameters, runtimeSettings);
-            case HUGGINGFACE -> new HuggingFaceProvider(project, config, modelParameters, runtimeSettings);
-            case OPENROUTER -> new OpenRouterProvider(project, config, modelParameters, runtimeSettings);
-            case CLOUDFLARE -> new CloudflareOpenAIProvider(project, config, modelParameters, runtimeSettings);
-            case BEDROCK -> new BedrockOpenAIProvider(project, config, modelParameters, runtimeSettings);
-            case AZURE_OPENAI -> new AzureOpenAIProvider(project, config, modelParameters, runtimeSettings);
+            case OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE, NVIDIA,
+                 MISTRAL, LM_STUDIO, MOONSHOT -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
+
+            case AZURE -> new AzureOpenAIProvider(project, config, modelParameters, runtimeSettings);
             case GITHUB_MODELS -> new GitHubModelsProvider(project, config, modelParameters, runtimeSettings);
-            case MISTRAL -> new MistralOpenAIProvider(project, config, modelParameters, runtimeSettings);
-            case ZHIPU_ANTHROPIC -> new ZhipuAnthropicProvider(project, config, modelParameters, runtimeSettings);
-            case QIANWEN -> new QwenProvider(project, config, modelParameters, runtimeSettings);
-            case SILICONFLOW -> new SiliconFlowProvider(project, config, modelParameters, runtimeSettings);
-            case OLLAMA -> new OllamaLikeProvider(project, config, modelParameters, runtimeSettings);
-            case LM_STUDIO -> new LMStudioProvider(project, config, modelParameters, runtimeSettings);
             case MODELSCOPE -> new ModelScopeOpenAIProvider(project, config, modelParameters, runtimeSettings);
-            case MODELSCOPE_ANTHROPIC -> new ModelScopeAnthropicProvider(project, config, modelParameters, runtimeSettings);
             case IFLOW -> new IflowProvider(project, config, modelParameters, runtimeSettings);
             case ZHIPU -> new ZhipuOpenAIProvider(project, config, modelParameters, runtimeSettings);
             case ZAI -> new ZaiOpenAIProvider(project, config, modelParameters, runtimeSettings);
+
+            case ANTHROPIC, MOONSHOT_ANTHROPIC,
+                 DEEPSEEK_ANTHROPIC, DOUBAO_ANTHROPIC,
+                 HUNYUAN_ANTHROPIC -> new AnthropicLikeProvider(project, config, modelParameters, runtimeSettings);
+            case ZHIPU_ANTHROPIC -> new ZhipuAnthropicProvider(project, config, modelParameters, runtimeSettings);
+            case MODELSCOPE_ANTHROPIC -> new ModelScopeAnthropicProvider(project, config, modelParameters, runtimeSettings);
             case ZAI_ANTHROPIC -> new ZaiAnthropicProvider(project, config, modelParameters, runtimeSettings);
+
+            case OLLAMA -> new OllamaLikeProvider(project, config, modelParameters, runtimeSettings);
+            case GEMINI -> new GeminLikeiProvider(project, config, modelParameters, runtimeSettings);
+            case CODEX -> new CodexLikeProvider(project, config, modelParameters, runtimeSettings);
         };
     }
 
