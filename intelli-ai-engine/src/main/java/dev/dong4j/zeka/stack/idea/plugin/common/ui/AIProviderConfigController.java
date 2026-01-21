@@ -104,6 +104,15 @@ public final class AIProviderConfigController {
     }
 
     /**
+     * 释放 UI 资源
+     * <p>
+     * 该方法用于清除智能代理面板的状态更新回调, 释放相关资源, 确保在组件销毁时不会残留监听器或引用.
+     */
+    public void dispose() {
+        ui.getAgentPanel().clearStatusUpdateCallback();
+    }
+
+    /**
      * 加载并应用设置到用户界面
      * <p>
      * 该方法用于将传入的 AI 提供者设置复制到内部工作设置中, 并根据设置更新用户界面相关组件的状态和显示内容.

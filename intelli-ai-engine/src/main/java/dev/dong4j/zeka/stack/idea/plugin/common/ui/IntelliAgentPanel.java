@@ -29,9 +29,12 @@ import java.awt.event.MouseEvent;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -72,8 +75,11 @@ public final class IntelliAgentPanel {
     private static final JBColor DOT_RED = new JBColor(new Color(239, 68, 68), new Color(255, 82, 82));
     /** Agent 代理配置面板使用的绿色 */
     private static final JBColor GREEN = new JBColor(new Color(76, 175, 80), new Color(76, 175, 80));
+    /** 红色指示灯颜色, 用于表示错误或警告状态 */
     private static final JBColor RED = new JBColor(new Color(244, 67, 54), new Color(244, 67, 54));
+    /** 黄色指示灯颜色, 用于显示警告或提示状态 */
     private static final JBColor YELLOW = new JBColor(new Color(255, 193, 7), new Color(255, 193, 7));
+    /** 用于格式化文件大小的数字格式器, 支持千位分隔和两位小数 */
     private static final DecimalFormat SIZE_FORMAT = new DecimalFormat("#,##0.00");
     /** 主面板, 承载整个代理配置面板的 UI 组件 */
     @NotNull
@@ -119,7 +125,9 @@ public final class IntelliAgentPanel {
     private final JPanel mainPanel;
     /** 状态更新定时器 */
     @Nullable
-    private Timer statusUpdateTimer;
+    private static Timer sharedStatusUpdateTimer;
+    /** 状态更新回调列表（可能由多个 panel 注册） */
+    private static final List<Runnable> STATUS_UPDATE_CALLBACKS = new CopyOnWriteArrayList<>();
     /** 状态更新回调 */
     @Nullable
     private Runnable statusUpdateCallback;
@@ -240,16 +248,43 @@ public final class IntelliAgentPanel {
      * 如果定时器已存在, 会先停止之前的定时器再重新创建.
      */
     private void startStatusUpdateTimer() {
-        if (statusUpdateTimer != null) {
-            statusUpdateTimer.stop();
+        ensureSharedStatusUpdateTimer();
+    }
+
+    /**
+     * 确保共享状态更新定时器已启动
+     * <p> 如果定时器已存在且正在运行, 则直接返回; 否则创建一个新的定时器, 每 3 秒执行一次状态更新回调列表中的所有回调函数, 用于定期检查 Agent 代理服务状态并更新 UI. 定时器启动后会持续重复执行.
+     *
+     * @since 1.0.0
+     */
+    private static void ensureSharedStatusUpdateTimer() {
+        if (sharedStatusUpdateTimer != null && sharedStatusUpdateTimer.isRunning()) {
+            return;
         }
-        statusUpdateTimer = new Timer(3000, e -> {
-            if (statusUpdateCallback != null) {
-                statusUpdateCallback.run();
+        sharedStatusUpdateTimer = new Timer(3000, e -> {
+            for (Runnable callback : STATUS_UPDATE_CALLBACKS) {
+                try {
+                    callback.run();
+                } catch (Exception ex) {
+                    log.debug("状态更新回调执行失败", ex);
+                }
             }
         });
-        statusUpdateTimer.setRepeats(true);
-        statusUpdateTimer.start();
+        sharedStatusUpdateTimer.setRepeats(true);
+        sharedStatusUpdateTimer.start();
+    }
+
+    /**
+     * 停止空闲状态更新定时器
+     * <p> 当没有注册任何状态更新回调时, 且定时器存在时, 停止该定时器并将其置为 null, 以释放资源.
+     *
+     * @since 1.0.0
+     */
+    private static void stopSharedStatusUpdateTimerIfIdle() {
+        if (STATUS_UPDATE_CALLBACKS.isEmpty() && sharedStatusUpdateTimer != null) {
+            sharedStatusUpdateTimer.stop();
+            sharedStatusUpdateTimer = null;
+        }
     }
 
     /**
@@ -258,7 +293,26 @@ public final class IntelliAgentPanel {
      * @param callback 状态更新回调
      */
     public void setStatusUpdateCallback(@Nullable Runnable callback) {
-        this.statusUpdateCallback = callback;
+        if (statusUpdateCallback != null) {
+            STATUS_UPDATE_CALLBACKS.remove(statusUpdateCallback);
+        }
+        statusUpdateCallback = callback;
+        if (callback != null) {
+            STATUS_UPDATE_CALLBACKS.add(callback);
+            ensureSharedStatusUpdateTimer();
+        } else {
+            stopSharedStatusUpdateTimerIfIdle();
+        }
+    }
+
+    /**
+     * 清除状态更新回调
+     * <p> 将当前注册的状态更新回调设置为 null, 并根据回调列表是否为空决定是否停止共享状态更新定时器.
+     *
+     * @see #setStatusUpdateCallback(Runnable)
+     */
+    public void clearStatusUpdateCallback() {
+        setStatusUpdateCallback(null);
     }
 
     /**
@@ -314,6 +368,12 @@ public final class IntelliAgentPanel {
 
         // 为容器添加点击事件（整个容器都可以点击）
         content.addMouseListener(new MouseAdapter() {
+            /**
+             * 处理鼠标点击事件, 用于切换面板的可见性并更新标题栏图标
+             * <p> 点击时切换 mainPanel 的可见状态, 根据当前状态生成不同的箭头图标 (▼ 或 ▶), 并更新边框标题, 最后重新验证和重绘内容区域 </p>
+             *
+             * @param e 鼠标点击事件对象
+             */
             @Override
             public void mouseClicked(MouseEvent e) {
                 boolean isVisible = mainPanel.isVisible();
@@ -398,6 +458,12 @@ public final class IntelliAgentPanel {
         }
     }
 
+    /**
+     * 设置最新版本的 JAR 文件名称
+     * <p> 根据传入的 JAR 文件名更新界面中“最新版本”标签的显示内容. 如果文件名为空或空白, 则显示“未知”提示; 否则直接显示文件名.
+     *
+     * @param jarName 最新 JAR 文件名称, 可为空
+     */
     public void setLatestJarName(@Nullable String jarName) {
         this.latestJarName = jarName;
         if (jarName == null || jarName.isBlank()) {
@@ -407,6 +473,14 @@ public final class IntelliAgentPanel {
         }
     }
 
+    /**
+     * 设置本地 JAR 文件名称及大小显示
+     * <p> 根据传入的 JAR 文件名称和大小, 更新界面中本地版本标签的显示内容.
+     * 若文件名为空或空白, 则显示“未安装”提示; 否则显示文件名及大小信息.
+     *
+     * @param jarName 本地 JAR 文件名称, 可为空
+     * @param size    本地 JAR 文件大小 (字节), 若为 0 或负数则视为未知大小
+     */
     public void setLocalJarName(@Nullable String jarName, long size) {
         this.currentJarName = jarName;
         if (jarName == null || jarName.isBlank()) {
@@ -417,6 +491,12 @@ public final class IntelliAgentPanel {
         }
     }
 
+    /**
+     * 设置下载文件的总字节数
+     * <p> 用于在下载过程中更新进度条的总大小, 以便计算下载百分比.
+     *
+     * @param totalBytes 下载文件的总字节数, 必须为非负数
+     */
     public void setDownloadSize(long totalBytes) {
         // 仅用于保留调用点，不在 UI 上显示大小
     }
@@ -444,6 +524,17 @@ public final class IntelliAgentPanel {
         downloadProgressBar.repaint();
     }
 
+    /**
+     * 重置下载进度条状态
+     * <p> 隐藏进度条, 设置为非不确定状态, 进度值为 0, 不显示进度文本, 并强制重绘 UI.
+     *
+     * @see JProgressBar#setVisible(boolean)
+     * @see JProgressBar#setIndeterminate(boolean)
+     * @see JProgressBar#setValue(int)
+     * @see JProgressBar#setStringPainted(boolean)
+     * @see JProgressBar#setString(String)
+     * @see JComponent#repaint()
+     */
     public void resetDownloadProgress() {
         downloadProgressBar.setVisible(false);
         downloadProgressBar.setIndeterminate(false);
@@ -453,18 +544,41 @@ public final class IntelliAgentPanel {
         downloadProgressBar.repaint();
     }
 
+    /**
+     * 设置启动状态指示灯的颜色
+     * <p> 用于更新启动按钮旁的状态指示灯的颜色, 以反映当前 Agent 代理服务的运行状态.
+     *
+     * @param color 指定的颜色对象, 用于设置状态指示灯的颜色
+     */
     public void setStartStatusColor(@NotNull Color color) {
         startStatusIcon.setColor(color);
     }
 
+    /**
+     * 设置下载状态指示灯的颜色
+     * <p> 通过传入指定颜色, 更新下载状态指示灯的显示颜色, 用于视觉反馈下载状态.
+     *
+     * @param color 指定的颜色, 用于设置下载状态指示灯的颜色, 不能为空
+     */
     public void setDownloadStatusColor(@NotNull Color color) {
         downloadStatusIcon.setColor(color);
     }
 
+    /**
+     * 设置下载按钮的文本内容
+     * <p> 更新下载按钮上显示的文本, 用于动态修改按钮标签以反映当前状态或操作提示.
+     *
+     * @param text 下载按钮要显示的文本内容, 不能为空
+     */
     public void setDownloadButtonText(@NotNull String text) {
         downloadButton.setText(text);
     }
 
+    /**
+     * 设置状态文本
+     *
+     * @param text 状态显示的文本内容
+     */
     public void setStatusText(@NotNull String text) {
         statusLabel.setText(text);
     }
@@ -491,16 +605,34 @@ public final class IntelliAgentPanel {
 
             // 添加点击事件来复制到剪贴板
             statusLabel.addMouseListener(new MouseAdapter() {
+                /**
+                 * 鼠标点击事件处理方法
+                 * <p> 当用户点击鼠标时, 将 endpoint 内容复制到剪贴板
+                 *
+                 * @param e 鼠标事件对象, 包含点击位置等信息
+                 */
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     copyToClipboard(endpoint);
                 }
 
+                /**
+                 * 鼠标进入时设置状态标签的光标为手型光标
+                 * <p> 当鼠标指针进入状态标签区域时, 将光标样式设置为手型, 表示该区域可点击
+                 *
+                 * @param e 鼠标事件对象, 包含鼠标进入的位置等信息
+                 */
                 @Override
                 public void mouseEntered(MouseEvent e) {
                     statusLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 }
 
+                /**
+                 * 鼠标移出时设置状态标签的光标为默认光标
+                 * <p> 当鼠标从状态标签区域移出时, 将光标恢复为默认样式, 以提供良好的用户体验
+                 *
+                 * @param e 鼠标事件对象, 包含鼠标位置和状态信息
+                 */
                 @Override
                 public void mouseExited(MouseEvent e) {
                     statusLabel.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
@@ -552,16 +684,35 @@ public final class IntelliAgentPanel {
         }
     }
 
+    /**
+     * 获取最新版本的 JAR 文件名称
+     * <p> 返回当前已知的最新版 Agent JAR 文件名称, 如果未设置则返回空字符串.
+     *
+     * @return 最新版 JAR 文件名称, 若未设置则返回空字符串
+     */
     @NotNull
     public String getLatestJarName() {
         return latestJarName != null ? latestJarName : "";
     }
 
+    /**
+     * 获取当前本地 JAR 文件名称
+     * <p> 返回当前本地已下载的 Agent 代理 JAR 文件名称, 如果未设置或为空则返回空字符串.
+     *
+     * @return 当前本地 JAR 文件名称, 若未设置或为空则返回空字符串
+     */
     @NotNull
     public String getCurrentJarName() {
         return currentJarName != null ? currentJarName : "";
     }
 
+    /**
+     * 格式化字节大小为带单位的字符串
+     * <p> 将给定的字节数转换为以 MB 为单位的格式化字符串, 保留两位小数. 如果字节数小于等于 0, 则返回未知大小的提示文本.
+     *
+     * @param sizeInBytes 待格式化的字节数
+     * @return 格式化后的大小字符串, 例如 "1.23 MB", 若输入无效则返回 "未知大小" 的提示文本
+     */
     @NotNull
     private String formatSize(long sizeInBytes) {
         if (sizeInBytes <= 0) {

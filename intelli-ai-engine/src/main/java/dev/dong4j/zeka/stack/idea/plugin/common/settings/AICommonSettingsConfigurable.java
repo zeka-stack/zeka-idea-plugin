@@ -144,6 +144,9 @@ public class AICommonSettingsConfigurable implements SearchableConfigurable {
      */
     @Override
     public void disposeUIResources() {
-        settingsPanel = null;
+        if (settingsPanel != null) {
+            settingsPanel.dispose();
+            settingsPanel = null;
+        }
     }
 }

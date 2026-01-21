@@ -110,6 +110,16 @@ public final class AIProviderConfigPanel {
     }
 
     /**
+     * 释放资源并清理控制器相关状态
+     * <p> 调用控制器的 dispose 方法, 释放与 AI 提供商配置相关的资源, 确保内存和系统资源被正确释放.
+     *
+     * @since 1.0.0
+     */
+    public void dispose() {
+        controller.dispose();
+    }
+
+    /**
      * 初始化各种监听器，用于响应用户界面组件的事件
      */
     private void setupListeners() {
