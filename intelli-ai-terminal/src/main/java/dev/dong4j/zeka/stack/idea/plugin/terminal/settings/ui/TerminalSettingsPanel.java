@@ -14,10 +14,19 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.geom.RoundRectangle2D;
+import java.net.URL;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
@@ -117,7 +126,9 @@ public class TerminalSettingsPanel {
         );
 
         mainPanel = FormBuilder.createFormBuilder()
+            .addComponent(createLogoPanel())
             .addComponent(aiProviderSelectionPanel.getPanel())
+            .addComponent(createGifPanel())
             .addSeparator(10)
             .addComponent(enableTerminalAICheckBox)
             .addComponent(enableStreamResponseCheckBox)
@@ -129,6 +140,7 @@ public class TerminalSettingsPanel {
             .addComponent(feedbackPanel.getContent())
             .getPanel();
 
+        mainPanel.setMinimumSize(new Dimension(JBUI.scale(630), 0));
         mainPanel.setBorder(JBUI.Borders.empty(10));
         setupListeners();
     }
@@ -242,6 +254,113 @@ public class TerminalSettingsPanel {
         panel.setBorder(titledBorder);
 
         return panel;
+    }
+
+    /**
+     * 创建包含 GIF 图片的面板
+     * <p> 该方法用于生成一个居中显示 GIF 图片的面板, 图片路径为 "sample.gif", 若资源不存在则返回空面板.
+     * <p> 图片会根据指定宽度进行缩放, 保持原始宽高比, 确保显示效果适配界面.
+     *
+     * @return 包含缩放后 GIF 图片的面板, 若资源不存在则返回空面板
+     */
+    private JPanel createGifPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 8));
+        URL gifUrl = TerminalSettingsPanel.class.getClassLoader().getResource("sample.gif");
+        if (gifUrl == null) {
+            return panel;
+        }
+        ImageIcon icon = new ImageIcon(gifUrl);
+        int targetWidth = JBUI.scale(630);
+        int width = icon.getIconWidth();
+        int height = icon.getIconHeight();
+        if (width > 0 && height > 0 && width > targetWidth) {
+            int targetHeight = (int) ((long) height * targetWidth / width);
+            Image scaled = icon.getImage().getScaledInstance(targetWidth, targetHeight, Image.SCALE_DEFAULT);
+            icon = new ImageIcon(scaled);
+        }
+        RoundedGifLabel label = new RoundedGifLabel(icon, JBUI.scale(10));
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        panel.add(label);
+        return panel;
+    }
+
+    /**
+     * 创建包含 Logo 图片的面板
+     * <p> Logo 位于设置页顶部, 左对齐显示, 并保持等比例缩放与圆角效果.</p>
+     *
+     * @return 包含 Logo 图片的面板, 若资源不存在则返回空面板
+     */
+    private JPanel createLogoPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 8));
+        URL logoUrl = TerminalSettingsPanel.class.getClassLoader().getResource("logo.png");
+        if (logoUrl == null) {
+            return panel;
+        }
+        ImageIcon icon = new ImageIcon(logoUrl);
+        int targetWidth = JBUI.scale(630);
+        int width = icon.getIconWidth();
+        int height = icon.getIconHeight();
+        if (width > 0 && height > 0 && width > targetWidth) {
+            int targetHeight = (int) ((long) height * targetWidth / width);
+            Image scaled = icon.getImage().getScaledInstance(targetWidth, targetHeight, Image.SCALE_DEFAULT);
+            icon = new ImageIcon(scaled);
+        }
+        RoundedGifLabel label = new RoundedGifLabel(icon, JBUI.scale(10));
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        panel.add(label);
+        return panel;
+    }
+
+    private static final class RoundedGifLabel extends JBLabel {
+        /** 圆角半径值, 用于绘制圆角矩形背景 */
+        private final int radius;
+
+        /**
+         * 初始化圆角 GIF 标签组件
+         * <p> 创建一个带有指定图标和圆角半径的标签组件, 设置为非透明背景, 确保圆角区域显示图标内容
+         *
+         * @param icon   图标对象, 不能为空
+         * @param radius 圆角半径, 最小值为 0, 负值将被截断为 0
+         */
+        private RoundedGifLabel(@NotNull ImageIcon icon, int radius) {
+            super(icon);
+            this.radius = Math.max(0, radius);
+            setOpaque(false);
+        }
+
+        /**
+         * 重绘组件内容, 绘制圆角背景内的图标
+         * <p> 在绘制前先裁剪为圆角矩形区域, 然后绘制图标. 若图标为空则调用父类绘制方法.
+         *
+         * @param g 绘制上下文
+         */
+        @Override
+        protected void paintComponent(Graphics g) {
+            ImageIcon icon = (ImageIcon) getIcon();
+            if (icon == null) {
+                super.paintComponent(g);
+                return;
+            }
+            int w = getWidth();
+            int h = getHeight();
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.clip(new RoundRectangle2D.Float(0, 0, w, h, radius, radius));
+            icon.paintIcon(this, g2, 0, 0);
+            g2.dispose();
+        }
+
+        /**
+         * 获取组件的首选尺寸
+         * <p> 当图标不为空时, 返回图标的宽度和高度作为尺寸; 否则返回父类的默认尺寸
+         *
+         * @return 组件的首选尺寸, 若图标为空则返回父类计算的尺寸
+         */
+        @Override
+        public Dimension getPreferredSize() {
+            ImageIcon icon = (ImageIcon) getIcon();
+            return icon == null ? super.getPreferredSize() : new Dimension(icon.getIconWidth(), icon.getIconHeight());
+        }
     }
 
     /**
