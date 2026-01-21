@@ -45,7 +45,10 @@ public enum StatisticsEventType {
     JAVADOC_METHOD("javadoc_method", "方法注释生成"),
 
     /** 字段注释生成 */
-    JAVADOC_FIELD("javadoc_field", "字段注释生成");
+    JAVADOC_FIELD("javadoc_field", "字段注释生成"),
+
+    /** 终端命令生成 */
+    TERMINAL_COMMAND("terminal_command", "终端命令生成");
 
 
     /** 事件类型的唯一标识码 */

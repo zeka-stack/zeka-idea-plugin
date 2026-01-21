@@ -33,6 +33,8 @@ public enum StatisticsUserAction {
     INTENTION("intention", "意图动作"),
     /** 状态栏入口 */
     STATUS_BAR("status_bar", "状态栏"),
+    /** 终端快捷键触发 */
+    TERMINAL_SHORTCUT("terminal_shortcut", "终端快捷键"),
     /** 其他/未知入口 */
     UNKNOWN("unknown", "未知");
 

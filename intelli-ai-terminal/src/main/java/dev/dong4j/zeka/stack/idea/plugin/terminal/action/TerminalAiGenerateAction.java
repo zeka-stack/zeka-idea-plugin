@@ -38,10 +38,12 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.ai.TerminalAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.context.TerminalContextService;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.terminal.statistics.TerminalStatisticsReporter;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.TerminalBundle;
 import icons.TerminalIcons;
@@ -151,19 +153,22 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                 String userPrompt = settings.terminalTemplate.replace("{content}", userContent);
                 log.debug("Built user prompt from template:\n{}", userPrompt);
                 AIChatRequest request = new AIChatRequest(settings.systemPrompt, userPrompt);
+                long startTimeMs = System.currentTimeMillis();
+                StatisticsUserAction userAction = StatisticsUserAction.TERMINAL_SHORTCUT;
                 AIService aiService = com.intellij.openapi.application.ApplicationManager.getApplication().getService(AIService.class);
                 try {
                     log.debug("Starting AI content generation");
                     AIConsoleLoggerUtil.printWithTimestamp(project, "=== Terminal AI Request ===");
                     if (settings.enableStreamResponse) {
-                        generateContentStream(aiService, request, contextService);
+                        generateContentStream(aiService, request, contextService, providerConfig, startTimeMs, userAction);
                         return;
                     }
 
                     AIResponseListener listener = new TerminalAIResponseListener(project);
                     String result = aiService.generateContent(project, request, providerConfig, listener);
                     log.debug("AI generation completed, result length: {}", result.length());
-                    handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
+                    handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService,
+                                   providerConfig, request, startTimeMs, userAction);
                 } catch (AIServiceException ex) {
                     String message = AIServiceException.build(ex);
                     log.debug("AI service exception: {}", message, ex);
@@ -183,7 +188,10 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
              */
             private void generateContentStream(AIService aiService,
                                                AIChatRequest request,
-                                               TerminalContextService contextService) throws AIServiceException {
+                                               TerminalContextService contextService,
+                                               AIProviderConfig providerConfig,
+                                               long startTimeMs,
+                                               StatisticsUserAction userAction) throws AIServiceException {
                 aiService.generateContentStream(project, request, providerConfig, new AIStreamResponseListener() {
                     /** 用于缓存流式响应的文本内容, 累积所有分块数据以生成完整响应 */
                     private final StringBuilder streamBuffer = new StringBuilder();
@@ -221,7 +229,16 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     public void onComplete(@NotNull String fullText) {
                         String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
                         AIConsoleLoggerUtil.completeStreamPlain(project);
-                        applyAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
+                        boolean applied = applyAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
+                        if (applied) {
+                            long latencyMs = System.currentTimeMillis() - startTimeMs;
+                            TerminalStatisticsReporter.reportSuccess(project,
+                                                                     providerConfig,
+                                                                     request,
+                                                                     result,
+                                                                     latencyMs,
+                                                                     userAction);
+                        }
                     }
 
                     /**
@@ -793,11 +810,24 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                        @NotNull InputInfo inputInfo,
                                        @NotNull String result,
                                        @NotNull String question,
-                                       @Nullable TerminalContextService contextService) {
+                                       @Nullable TerminalContextService contextService,
+                                       @NotNull AIProviderConfig providerConfig,
+                                       @NotNull AIChatRequest request,
+                                       long startTimeMs,
+                                       @NotNull StatisticsUserAction userAction) {
         AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
         AIConsoleLoggerUtil.print(project, result);
 
-        applyAiResult(project, terminalView, jbWidget, inputInfo, result, question, contextService);
+        boolean applied = applyAiResult(project, terminalView, jbWidget, inputInfo, result, question, contextService);
+        if (applied) {
+            long latencyMs = System.currentTimeMillis() - startTimeMs;
+            TerminalStatisticsReporter.reportSuccess(project,
+                                                     providerConfig,
+                                                     request,
+                                                     result,
+                                                     latencyMs,
+                                                     userAction);
+        }
     }
 
     /**
@@ -811,25 +841,26 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param result       AI 服务返回的完整响应内容
      * @param question     用户原始提问内容, 用于上下文记录
      * @param contextService 终端上下文服务, 用于记录历史 (可为 null)
+     * @return 如果命令合法并成功替换返回 true, 否则返回 false
      */
-    private static void applyAiResult(@NotNull Project project,
-                                      @Nullable TerminalView terminalView,
-                                      @Nullable JBTerminalWidget jbWidget,
-                                      @NotNull InputInfo inputInfo,
-                                      @NotNull String result,
-                                      @NotNull String question,
-                                      @Nullable TerminalContextService contextService) {
+    private static boolean applyAiResult(@NotNull Project project,
+                                         @Nullable TerminalView terminalView,
+                                         @Nullable JBTerminalWidget jbWidget,
+                                         @NotNull InputInfo inputInfo,
+                                         @NotNull String result,
+                                         @NotNull String question,
+                                         @Nullable TerminalContextService contextService) {
         String command = extractCommand(result);
         log.debug("Extracted command: {}", command);
         if (command.isBlank()) {
             log.debug("Extracted command is blank");
             showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.empty"));
-            return;
+            return false;
         }
         if (!isValidShellOutput(command)) {
             log.debug("Command validation failed: {}", command);
             showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.invalid.output"));
-            return;
+            return false;
         }
         log.debug("Replacing current line with command, multiLine: {}", inputInfo.multiLine);
         if (terminalView != null) {
@@ -841,6 +872,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             contextService.recordHistory(question, command);
         }
         log.debug("Terminal line replaced successfully");
+        return true;
     }
 
     /**

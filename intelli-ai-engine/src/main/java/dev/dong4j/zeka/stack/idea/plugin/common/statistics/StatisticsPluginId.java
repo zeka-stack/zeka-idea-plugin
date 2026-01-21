@@ -19,6 +19,9 @@ public enum StatisticsPluginId {
     /** Engine 插件标识, 代码为 "engine", 描述为 "Engine" */
     ENGINE("engine", "Engine"),
 
+    /** Terminal 插件标识代码及描述 */
+    TERMINAL("terminal", "Terminal"),
+
     /** Changelog 插件标识代码及描述 */
     CHANGELOG("changelog", "Changelog"),
 
