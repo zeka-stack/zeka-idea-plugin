@@ -1,11 +1,11 @@
 package dev.dong4j.zeka.stack.idea.plugin.terminal.settings.ui;
 
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.components.JBTextArea;
-import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
@@ -63,8 +63,8 @@ public class TerminalSettingsPanel {
     private final JBCheckBox enableStreamResponseCheckBox;
     /** 是否启用上下文检测 */
     private final JBCheckBox enableTerminalContextCheckBox;
-    /** 触发前缀输入框, 用于设置终端命令触发前缀 */
-    private final JBTextField triggerPrefixField;
+    /** 触发前缀下拉框, 用于设置终端命令触发前缀 */
+    private final ComboBox<String> triggerPrefixField;
 
     // Prompt 配置
     /** 系统提示文本区域, 用于输入和编辑系统级别的提示词内容 */
@@ -92,7 +92,8 @@ public class TerminalSettingsPanel {
         enableTerminalAICheckBox = new JBCheckBox(TerminalBundle.message("settings.terminal.enable"));
         enableStreamResponseCheckBox = new JBCheckBox(TerminalBundle.message("settings.terminal.stream.enable"));
         enableTerminalContextCheckBox = new JBCheckBox(TerminalBundle.message("settings.terminal.context.enable"));
-        triggerPrefixField = new JBTextField();
+        triggerPrefixField = new ComboBox<>(new String[] {"#", "::", "??"});
+        triggerPrefixField.setEditable(true);
 
         advancedSettingsPanel = new JPanel(new BorderLayout());
         JPanel advancedSettingsContent = FormBuilder.createFormBuilder()
@@ -145,11 +146,11 @@ public class TerminalSettingsPanel {
     public boolean isModified(@NotNull SettingsState settings, @Nullable AIProviderConfig providerSettings) {
         if (!systemPromptTextArea.getText().equals(settings.systemPrompt)
             || !terminalTemplateTextArea.getText().equals(settings.terminalTemplate)
-            || showAdvancedSettingsCheckBox.isSelected() != settings.showAdvancedSettings
+            || showAdvancedSettingsCheckBox.isSelected() != settings.showPromptSettings
             || enableTerminalAICheckBox.isSelected() != settings.enableTerminalAI
             || enableStreamResponseCheckBox.isSelected() != settings.enableStreamResponse
             || enableTerminalContextCheckBox.isSelected() != settings.enableTerminalContext
-            || !triggerPrefixField.getText().equals(settings.triggerPrefix)) {
+            || !getSelectedTriggerPrefix().equals(settings.triggerPrefix)) {
             return true;
         }
 
@@ -173,11 +174,11 @@ public class TerminalSettingsPanel {
     public void apply(@NotNull SettingsState settings) {
         settings.systemPrompt = systemPromptTextArea.getText();
         settings.terminalTemplate = terminalTemplateTextArea.getText();
-        settings.showAdvancedSettings = showAdvancedSettingsCheckBox.isSelected();
+        settings.showPromptSettings = showAdvancedSettingsCheckBox.isSelected();
         settings.enableTerminalAI = enableTerminalAICheckBox.isSelected();
         settings.enableStreamResponse = enableStreamResponseCheckBox.isSelected();
         settings.enableTerminalContext = enableTerminalContextCheckBox.isSelected();
-        settings.triggerPrefix = triggerPrefixField.getText();
+        settings.triggerPrefix = getSelectedTriggerPrefix();
         if (settings.isUsingDefaultPrompts()) {
             settings.promptTemplateVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
             settings.promptTemplateNoticeVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
@@ -200,12 +201,12 @@ public class TerminalSettingsPanel {
     public void reset(@NotNull SettingsState settings) {
         systemPromptTextArea.setText(settings.systemPrompt);
         terminalTemplateTextArea.setText(settings.terminalTemplate);
-        showAdvancedSettingsCheckBox.setSelected(settings.showAdvancedSettings);
+        showAdvancedSettingsCheckBox.setSelected(settings.showPromptSettings);
         enableTerminalAICheckBox.setSelected(settings.enableTerminalAI);
         enableStreamResponseCheckBox.setSelected(settings.enableStreamResponse);
         enableTerminalContextCheckBox.setSelected(settings.enableTerminalContext);
-        triggerPrefixField.setText(settings.triggerPrefix);
-        advancedSettingsPanel.setVisible(settings.showAdvancedSettings);
+        triggerPrefixField.setSelectedItem(settings.triggerPrefix);
+        advancedSettingsPanel.setVisible(settings.showPromptSettings);
         aiProviderSelectionPanel.setSelectedProvider(settings.providerConfig);
     }
 
@@ -255,8 +256,8 @@ public class TerminalSettingsPanel {
 
         promptTabbedPane.addTab(TerminalBundle.message("settings.prompt.tab.system"),
                                 createPromptTab(systemPromptTextArea, "system"));
-        promptTabbedPane.addTab(TerminalBundle.message("settings.prompt.tab.terminal"),
-                                createPromptTab(terminalTemplateTextArea, "terminal"));
+        promptTabbedPane.addTab(TerminalBundle.message("settings.prompt.tab.user"),
+                                createPromptTab(terminalTemplateTextArea, "user"));
 
         return promptTabbedPane;
     }
@@ -303,12 +304,24 @@ public class TerminalSettingsPanel {
             case "system":
                 textArea.setText(SettingsState.getDefaultSystemPrompt());
                 break;
-            case "terminal":
+            case "user":
                 textArea.setText(SettingsState.getDefaultUserPrompt());
                 break;
             default:
                 break;
         }
+    }
+
+    /**
+     * 获取当前选中的触发前缀
+     * <p> 从触发前缀下拉框的编辑器中获取当前选中项, 若项为 null 则返回空字符串, 否则转换为字符串并去除首尾空格
+     *
+     * @return 当前选中的触发前缀字符串, 若无选中项则返回空字符串
+     */
+    private String getSelectedTriggerPrefix() {
+        Object item = triggerPrefixField.getEditor().getItem();
+        String value = item == null ? "" : item.toString();
+        return value.trim();
     }
 
     /**

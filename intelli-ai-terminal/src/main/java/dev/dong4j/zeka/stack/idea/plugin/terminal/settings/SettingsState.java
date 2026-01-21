@@ -34,7 +34,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public AIProviderConfig providerConfig;
 
     /** 是否显示高级设置 (包含 Prompt 模板配置), 默认为 false(隐藏) */
-    public boolean showAdvancedSettings = false;
+    public boolean showPromptSettings = false;
 
     /** 是否启用 Terminal AI, 控制是否在 Terminal 中拦截触发前缀并执行 AI 生成逻辑. */
     public boolean enableTerminalAI = true;
@@ -156,6 +156,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public static String getDefaultUserPrompt() {
         return """
             根据下面的描述，生成最合适的一条 shell 命令:
+
             {content}
             """;
     }

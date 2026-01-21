@@ -138,13 +138,16 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                 indicator.setIndeterminate(true);
                 indicator.setText(TerminalBundle.message("action.terminal.progress"));
 
+                TerminalContextService contextService;
                 String userContent = input;
                 if (settings.enableTerminalContext) {
-                    TerminalContextService contextService = project.getService(TerminalContextService.class);
+                    contextService = project.getService(TerminalContextService.class);
                     userContent = contextService.buildUserPrompt(input, terminalView);
+                } else {
+                    contextService = null;
                 }
                 String userPrompt = settings.terminalTemplate.replace("{content}", userContent);
-                log.debug("Built user prompt from template, length: {}", userPrompt.length());
+                log.debug("Built user prompt from template:\n{}", userPrompt);
                 AIChatRequest request = new AIChatRequest(settings.systemPrompt, userPrompt);
                 AIService aiService = com.intellij.openapi.application.ApplicationManager.getApplication().getService(AIService.class);
                 try {
@@ -175,7 +178,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                             @Override
                             public void onComplete(@NotNull String fullText) {
                                 String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
-                                handleAiResult(project, terminalView, jbWidget, inputInfo, result);
+                                handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
                             }
 
                             /**
@@ -196,7 +199,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
 
                     String result = aiService.generateContent(project, request, providerConfig, null);
                     log.debug("AI generation completed, result length: {}", result.length());
-                    handleAiResult(project, terminalView, jbWidget, inputInfo, result);
+                    handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService);
                 } catch (AIServiceException ex) {
                     String message = AIServiceException.build(ex);
                     log.debug("AI service exception: {}", message, ex);
@@ -757,7 +760,9 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                        @Nullable TerminalView terminalView,
                                        @Nullable JBTerminalWidget jbWidget,
                                        @NotNull InputInfo inputInfo,
-                                       @NotNull String result) {
+                                       @NotNull String result,
+                                       @NotNull String question,
+                                       @Nullable TerminalContextService contextService) {
         AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
         AIConsoleLoggerUtil.print(project, result);
 
@@ -778,6 +783,9 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             replaceCurrentLine(terminalView, command, inputInfo.multiLine);
         } else if (jbWidget != null) {
             replaceCurrentLine(jbWidget, command, project, inputInfo.multiLine);
+        }
+        if (contextService != null) {
+            contextService.recordHistory(question, command);
         }
         log.debug("Terminal line replaced successfully");
     }
