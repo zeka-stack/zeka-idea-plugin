@@ -25,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.PluginContents;
+import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.PromptTemplateVersionStore;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.TerminalBundle;
 import lombok.Getter;
@@ -179,6 +180,9 @@ public class TerminalSettingsPanel {
         settings.triggerPrefix = triggerPrefixField.getText();
         if (settings.isUsingDefaultPrompts()) {
             settings.promptTemplateVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
+            settings.promptTemplateNoticeVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
+            PromptTemplateVersionStore.setPromptTemplateVersion(SettingsState.PROMPT_TEMPLATE_VERSION);
+            PromptTemplateVersionStore.setPromptTemplateNoticeVersion(SettingsState.PROMPT_TEMPLATE_VERSION);
         }
 
         AIProviderConfig selectedConfig = aiProviderSelectionPanel.getSelectedProvider();

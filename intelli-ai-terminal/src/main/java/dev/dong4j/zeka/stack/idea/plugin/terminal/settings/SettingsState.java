@@ -28,7 +28,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 )
 public class SettingsState implements PersistentStateComponent<SettingsState> {
     /** 默认提示词版本号 (仅在默认提示词更新时递增) */
-    public static final int PROMPT_TEMPLATE_VERSION = 4;
+    public static final int PROMPT_TEMPLATE_VERSION = 5;
 
     /** AI 服务商配置 <p> 插件使用的默认服务商, 从全局可用服务商列表中选取. 全局服务商配置在 Settings → Tools → IntelliAI Engine 中管理. */
     public AIProviderConfig providerConfig;

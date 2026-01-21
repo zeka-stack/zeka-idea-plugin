@@ -1,63 +1,121 @@
-<p><b>IntelliAI Terminal</b> brings AI directly into the IDE Terminal. Generate safe commands, explain outputs, and accelerate
-    troubleshooting with a
-    unified AI provider setup powered by <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a>.</p>
+<p>IntelliAI Terminal brings AI directly into the IDE Terminal. Generate shell commands from natural language descriptions by pressing TAB,
+    significantly improving terminal efficiency.</p>
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-terminal">GitHub</a> |
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
+<a href="https://zekastack.dong4j.site/#/plugins/terminal">Homepage</a>
 <br/>
-<p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>: Unified AI provider management, fast
-    response,
-    and consistent UX across the IDE.</p>
-
-<h3>Key Features</h3>
-<ul>
-    <li><b>🤖 AI Terminal Assistant</b>: Generate commands and operational steps from natural language</li>
-    <li><b>🧠 Output Explanation</b>: Explain command output and suggest next actions</li>
-    <li><b>⚙️ Prompt Templates</b>: Customize system and terminal prompts</li>
-    <li><b>📌 Status Bar Quick Settings</b>: Switch AI providers and open settings quickly</li>
-    <li><b>💬 Feedback Panel</b>: Built-in feedback entry for continuous improvement</li>
-</ul>
-
-<h3>Development Environment</h3>
-<ul>
-    <li>JDK 17+</li>
-    <li>Gradle 8.0+</li>
-    <li>IntelliJ IDEA 2022.3+</li>
-    <li><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> plugin (auto-installed in local dev)</li>
-</ul>
-
-<h3>Quick Start</h3>
-<ol>
-    <li>Configure AI providers in Settings → Tools → <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></li>
-    <li>Open Terminal and trigger the AI action</li>
-    <li>Review and run generated commands safely</li>
-</ol>
-
-<hr/>
-
-<p><b>IntelliAI Terminal</b> 将 AI 注入到 IDE 的 Terminal 中，支持生成安全命令、解释输出并加速问题排查，依赖
-    <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 统一管理 AI 服务商。</p>
 <br/>
-<p><b>⚡ 由 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 驱动</b>：统一的 AI 服务商配置、稳定的响应能力与一致的使用体验。
-</p>
-
-<h3>核心特性</h3>
+<p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>: Seamlessly integrates with <b><a
+    href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b> to provide unified, pluggable, and
+    high-performance AI capabilities</p>
+<h3>Why This Plugin?</h3>
+<p>When working in the terminal, you often need to remember various shell commands or switch windows to look them up. This plugin solves
+    this problem by:</p>
 <ul>
-    <li><b>🤖 AI 终端助手</b>：自然语言生成终端命令和操作步骤</li>
-    <li><b>🧠 输出解释</b>：解读终端输出并给出下一步建议</li>
-    <li><b>⚙️ 提示词模板</b>：支持系统提示与终端提示模板配置</li>
-    <li><b>📌 状态栏快捷设置</b>：快速切换 AI 服务商并打开设置</li>
-    <li><b>💬 反馈入口</b>：内置反馈面板</li>
+    <li><b>Natural Language Input</b>: Simply describe what you want to do in natural language</li>
+    <li><b>One-Click Generation</b>: Press TAB to instantly generate the corresponding command</li>
+    <li><b>Context Awareness</b>: IDE provides more context than standalone terminal tools, making AI-generated commands more accurate</li>
+    <li><b>No Context Switching</b>: Complete all operations within IDEA without leaving your development environment</li>
 </ul>
 
-<h3>开发环境</h3>
+<h3>Core Features</h3>
 <ul>
-    <li>JDK 17+</li>
-    <li>Gradle 8.0+</li>
-    <li>IntelliJ IDEA 2022.3+</li>
-    <li><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 插件（本地开发自动安装）</li>
+    <li><b>🚀 One-Click Command Generation</b>: Generate shell commands from natural language by pressing TAB</li>
+    <li><b>📝 Smart Input Extraction</b>: Automatically extracts user input from the last terminal line, supporting removal of shell prompts
+        ($, >, etc.)
+    </li>
+    <li><b>🔄 Automatic Replacement</b>: Generated commands automatically replace the current terminal line, ready to execute or edit</li>
+    <li><b>✅ Format Validation</b>: Automatically validates generated command format to ensure valid shell commands</li>
+    <li><b>🎯 Prefix Trigger</b>: Support custom trigger prefix (default #), only lines starting with the prefix trigger AI generation</li>
+    <li><b>🔌 Dual Terminal Support</b>: Supports both TerminalView and JBTerminalWidget implementations</li>
+    <li><b>⚡ Background Execution</b>: AI calls execute in background threads without blocking UI</li>
+    <li><b>📊 Streaming Response</b>: Optional streaming response support for real-time command generation</li>
+    <li><b>🧠 Context Detection</b>: Optional context detection for smarter command generation (may increase latency)</li>
+    <li><b>🎨 Customizable Prompts</b>: Support custom system and user prompt templates for different scenarios</li>
 </ul>
 
-<h3>快速开始</h3>
-<ol>
-    <li>在 Settings → Tools → <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 中配置 AI 服务商</li>
-    <li>打开 Terminal 并触发 AI 动作</li>
-    <li>确认输出后安全执行命令</li>
-</ol>
+<h3>Usage</h3>
+<ul>
+    <li>Open Terminal (Alt+F12 or View → Tool Windows → Terminal)</li>
+    <li>Enter natural language description starting with trigger prefix (default #), e.g.: <code># List all Python files in current
+        directory</code></li>
+    <li>Press TAB to trigger AI generation</li>
+    <li>Generated command will automatically replace the current line, ready to execute or continue editing</li>
+</ul>
+
+<h3>Configuration</h3>
+<p>Configuration path: Settings → Tools → IntelliAI Engine → 🧩 IntelliAI Terminal</p>
+<ul>
+    <li>Enable/disable Terminal AI (enabled by default)</li>
+    <li>Configure trigger prefix (default #)</li>
+    <li>Select AI provider (defaults to first verified global provider)</li>
+    <li>Customize system and user prompt templates (advanced settings)</li>
+    <li>Enable streaming response (optional)</li>
+    <li>Enable context detection (optional, may increase latency)</li>
+</ul>
+
+<h3>Requirements</h3>
+<ul>
+    <li><b>IntelliJ IDEA 2025.3+</b>: Plugin requires IntelliJ IDEA 2025.3 or higher (Terminal API requires 2025.3+)</li>
+    <li><b>IntelliAI Engine Plugin</b>: Must install <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> plugin and
+        configure at least one AI provider
+    </li>
+    <li><b>AI Provider Configuration</b>: Configure and verify at least one AI provider in Settings → Tools → IntelliAI Engine</li>
+</ul>
+
+<p><b>⚡ 由 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 驱动</b>：深度集成 <b><a
+    href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>，提供统一、可扩展、高性能的 AI 能力支持</p>
+<h2>IntelliAI Terminal</h2>
+<p>将 AI 直接注入到 IDE 的 Terminal 中，通过自然语言描述按 TAB 键即可生成 shell 命令，大幅提升终端使用效率。
+    与独立终端工具不同，本插件充分利用 IDEA 提供的上下文信息，让 AI 生成的命令更加准确、智能。</p>
+
+<h3>为什么选择这个插件？</h3>
+<p>在终端中工作时，经常需要记住各种 shell 命令，或者切换窗口去查找命令。本插件通过以下方式解决这些问题：</p>
+<ul>
+    <li><b>自然语言输入</b>：只需用自然语言描述你想要做什么</li>
+    <li><b>一键生成</b>：按 TAB 键即可瞬间生成对应的命令</li>
+    <li><b>上下文感知</b>：IDE 提供的上下文比独立终端工具更丰富，让 AI 生成的命令更加准确</li>
+    <li><b>无需切换窗口</b>：在 IDEA 中完成所有操作，无需离开开发环境</li>
+</ul>
+
+<h3>核心功能</h3>
+<ul>
+    <li><b>🚀 一键生成命令</b>：在终端输入自然语言描述，按 TAB 键即可生成对应的命令</li>
+    <li><b>📝 智能提取</b>：自动从终端最后一行提取输入内容，支持去除 shell 提示符（$、> 等）</li>
+    <li><b>🔄 自动替换</b>：生成的命令会自动替换当前终端行，可直接执行或继续编辑</li>
+    <li><b>✅ 格式验证</b>：自动验证生成的命令格式，确保输出是有效的 shell 命令</li>
+    <li><b>🎯 前缀触发</b>：支持自定义触发前缀（默认 #），只有以该前缀开头的行才会触发 AI 生成</li>
+    <li><b>🔌 双终端支持</b>：同时支持 TerminalView 和 JBTerminalWidget 两种终端实现</li>
+    <li><b>⚡ 后台执行</b>：AI 调用在后台线程执行，不会阻塞 UI</li>
+    <li><b>📊 流式输出</b>：支持可选的流式响应，实时显示命令生成过程</li>
+    <li><b>🧠 上下文检测</b>：可选启用上下文检测功能，让生成的命令更加智能（可能增加延迟）</li>
+    <li><b>🎨 提示词定制</b>：支持自定义系统提示词和用户提示词模板，满足不同场景需求</li>
+</ul>
+
+<h3>使用方式</h3>
+<ul>
+    <li>打开 Terminal（Alt+F12 或 视图 → 工具窗口 → Terminal）</li>
+    <li>输入自然语言描述，以触发前缀开头（默认 #），例如：<code># 列出当前目录下所有 Python 文件</code></li>
+    <li>按 TAB 键触发 AI 生成</li>
+    <li>AI 生成的命令会自动替换当前行，可以直接执行或继续编辑</li>
+</ul>
+
+<h3>配置说明</h3>
+<p>配置路径：Settings → Tools → IntelliAI Engine → 🧩 IntelliAI Terminal</p>
+<ul>
+    <li>启用/禁用 Terminal AI（默认已启用）</li>
+    <li>配置触发前缀（默认 #）</li>
+    <li>选择 AI 服务商（默认使用全局第一个已验证的服务商）</li>
+    <li>自定义系统提示词和用户提示词模板（高级设置）</li>
+    <li>启用流式输出（可选）</li>
+    <li>启用上下文检测（可选，可能增加延迟）</li>
+</ul>
+
+<h3>系统要求</h3>
+<ul>
+    <li><b>IntelliJ IDEA 2025.3+</b>：插件需要 IntelliJ IDEA 2025.3 或更高版本（Terminal API 要求 2025.3+）</li>
+    <li><b>IntelliAI Engine 插件</b>：必须安装 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 插件并配置至少一个
+        AI 服务商
+    </li>
+    <li><b>AI 服务商配置</b>：在 Settings → Tools → IntelliAI Engine 中配置并验证至少一个 AI 服务商</li>
+</ul>

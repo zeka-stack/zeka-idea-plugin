@@ -61,14 +61,21 @@ public class PromptTemplateVersionNotifier implements ProjectActivity {
     @Override
     public @Nullable Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         SettingsState state = SettingsState.getInstance();
-        if (state.promptTemplateVersion >= SettingsState.PROMPT_TEMPLATE_VERSION) {
+        int currentVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
+        int storedVersion = PromptTemplateVersionStore.getPromptTemplateVersion();
+        int noticeVersion = PromptTemplateVersionStore.getPromptTemplateNoticeVersion();
+
+        if (storedVersion >= currentVersion) {
             return Unit.INSTANCE;
         }
-        if (state.promptTemplateNoticeVersion >= SettingsState.PROMPT_TEMPLATE_VERSION) {
+        if (noticeVersion >= currentVersion) {
             return Unit.INSTANCE;
         }
         if (state.isUsingDefaultPrompts()) {
-            state.promptTemplateVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
+            state.promptTemplateVersion = currentVersion;
+            state.promptTemplateNoticeVersion = currentVersion;
+            PromptTemplateVersionStore.setPromptTemplateVersion(currentVersion);
+            PromptTemplateVersionStore.setPromptTemplateNoticeVersion(currentVersion);
             return Unit.INSTANCE;
         }
 
@@ -88,7 +95,8 @@ public class PromptTemplateVersionNotifier implements ProjectActivity {
                                                               ));
 
         notification.notify(project);
-        state.promptTemplateNoticeVersion = SettingsState.PROMPT_TEMPLATE_VERSION;
+        state.promptTemplateNoticeVersion = currentVersion;
+        PromptTemplateVersionStore.setPromptTemplateNoticeVersion(currentVersion);
 
         return Unit.INSTANCE;
     }
