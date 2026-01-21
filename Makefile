@@ -1,7 +1,7 @@
 # IntelliAI 插件套件 Makefile
 # 为所有插件提供构建、运行、测试和发布的便捷操作
 
-.PHONY: help build run test clean doc publish-install publish-repo verify check-format copy-zips install-plugins copy-and-install copy-install-upload
+.PHONY: help build run test clean doc publish-install publish-repo verify check-format copy-zips install-plugins copy-and-install copy-install-upload copy-install-upload-publish-beta publish-swagger-beta publish-swagger-default
 
 # 插件目录
 KIT_DIR := idea-plugin-kit
@@ -110,6 +110,14 @@ publish-javadoc:
 	@echo "正在发布 intelli-ai-javadoc 插件..."
 	cd $(JAVADOC_DIR) && ./gradlew publishPlugin
 	@echo "正在完成: https://plugins.jetbrains.com/plugin/28835."
+
+publish-swagger-beta:
+	@echo "正在发布 intelli-ai-swagger (beta)..."
+	cd intelli-ai-swagger && ./gradlew publishBeta
+
+publish-swagger-default:
+	@echo "正在发布 intelli-ai-swagger (default)..."
+	cd intelli-ai-swagger && ./gradlew publishDefault
 
 # 必须先部署且通过审核才能发布后续插件
 deploy-engine:
@@ -261,3 +269,18 @@ copy-install-upload: install-plugins
 		fi; \
 	done; \
 	echo "✓ 构建产物上传完成"
+
+# 拷贝、安装、上传，并发布 beta 渠道
+copy-install-upload-publish-beta: copy-install-upload
+	@echo "正在发布所有插件到 beta 渠道..."
+	cd $(ENGINE_DIR) && ./gradlew publishBeta
+	cd $(JAVADOC_DIR) && ./gradlew publishBeta
+	cd $(CHANGELOG_DIR) && ./gradlew publishBeta
+	cd $(NACOS_DIR) && ./gradlew publishBeta
+	cd $(TRACER_DIR) && ./gradlew publishBeta
+	cd $(REPAIRER_DIR) && ./gradlew publishBeta
+	cd $(TERMINAL_DIR) && ./gradlew publishBeta
+	cd intelli-ai-swagger && ./gradlew publishBeta
+	cd archiver-man && ./gradlew publishBeta
+	cd zks-dev-helper && ./gradlew publishBeta
+	@echo "✓ beta 发布完成"

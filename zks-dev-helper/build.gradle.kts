@@ -94,7 +94,28 @@ tasks {
 
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
-        channels = providers.gradleProperty("publishChannels").map { listOf(it) }
+        val publishChannel = providers.gradleProperty("publishChannels").get()
+        channels = listOf(publishChannel)
+        hidden = publishChannel == "default"
+    }
+
+
+    register("publishBeta") {
+        group = "intellij"
+        description = "Publish plugin to beta channel"
+        doFirst {
+            project.extensions.extraProperties["publishChannels"] = "beta"
+        }
+        dependsOn("publishPlugin")
+    }
+
+    register("publishDefault") {
+        group = "intellij"
+        description = "Publish plugin to default channel (hidden)"
+        doFirst {
+            project.extensions.extraProperties["publishChannels"] = "default"
+        }
+        dependsOn("publishPlugin")
     }
 
     test {
