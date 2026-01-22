@@ -47,11 +47,7 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
     private static final Logger LOG = Logger.getInstance(EngineFeedbackSubmitter.class);
     /** ObjectMapper 实例, 用于 JSON 数据的序列化和反序列化 */
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    /**
-     * 提交反馈的 API 路径
-     *
-     * @see #sendHttpRequest(Map<String, Object>)
-     */
+    /** 提交反馈的 API 路径 */
     private static final String ISSUE_PATH = "/api/plugin/feedback/issue";
     /** 签名密钥, 用于生成请求签名以保证数据传输安全 */
     private static final String SIGN_SECRET = "zeka-stack-engine-plugin";
@@ -233,24 +229,24 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
             throw new IOException("生成请求签名失败: " + e.getMessage(), e);
         }
 
-        HttpClient client = HttpClient.newBuilder()
+        try (HttpClient client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
-            .build();
+            .build()) {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .header("Content-Type", "application/json")
+                .header("X-Client-Id", signedHeaders.clientId())
+                .header("X-Timestamp", signedHeaders.timestamp())
+                .header("X-Nonce", signedHeaders.nonce())
+                .header("X-Body-SHA256", signedHeaders.bodySha256())
+                .header("X-Signature", signedHeaders.signature())
+                .POST(HttpRequest.BodyPublishers.ofByteArray(bodyBytes))
+                .timeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
+                .build();
 
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(uri)
-            .header("Content-Type", "application/json")
-            .header("X-Client-Id", signedHeaders.clientId())
-            .header("X-Timestamp", signedHeaders.timestamp())
-            .header("X-Nonce", signedHeaders.nonce())
-            .header("X-Body-SHA256", signedHeaders.bodySha256())
-            .header("X-Signature", signedHeaders.signature())
-            .POST(HttpRequest.BodyPublishers.ofByteArray(bodyBytes))
-            .timeout(Duration.ofSeconds(REQUEST_TIMEOUT_SECONDS))
-            .build();
-
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        return response.body();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            return response.body();
+        }
     }
 
     /**
