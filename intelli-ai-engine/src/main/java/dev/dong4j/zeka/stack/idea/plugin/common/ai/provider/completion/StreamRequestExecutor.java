@@ -184,6 +184,7 @@ public class StreamRequestExecutor {
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
         boolean[] contentStarted = {false};
+        UsageStats usageStats = null;
         try (BufferedReader reader = new BufferedReader(
             new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
@@ -209,6 +210,10 @@ public class StreamRequestExecutor {
                     JsonObject json = parseSseJson(data);
                     if (json == null) {
                         continue;
+                    }
+                    UsageStats currentUsage = parseUsage(json);
+                    if (currentUsage != null) {
+                        usageStats = currentUsage;
                     }
                     RawStreamChunk rawChunk = RawStreamChunk.fromJson(json);
                     boolean done = rawChunk.isDone();
@@ -253,6 +258,9 @@ public class StreamRequestExecutor {
             }
         }
         AIConsoleLoggerUtil.completeStreamPlain(project);
+        if (usageStats != null) {
+            logUsage(usageStats, listener);
+        }
         listener.onComplete(fullText.toString());
     }
 
@@ -351,6 +359,53 @@ public class StreamRequestExecutor {
         if (listener != null) {
             listener.onRequest(config.providerType.getDisplayName(), config.modelName, requestBody, false);
         }
+    }
+
+    /**
+     * 解析 JSON 对象中的使用统计信息
+     * <p>从传入的 JSON 对象中提取并构建 UsageStats 实例, 仅当包含至少一个 token 相关字段 (prompt_tokens,completion_tokens 或 total_tokens) 时才返回有效结果.
+     * <p>若 JSON 中不存在 "usage" 字段或其值不是对象, 或其中无任何 token 字段, 则返回 null.
+     *
+     * @param json 需要解析的 JSON 对象, 不能为空
+     * @return 解析后的 UsageStats 实例, 若解析失败或无有效 token 数据则返回 null
+     */
+    @Nullable
+    private static UsageStats parseUsage(@NotNull JsonObject json) {
+        if (!json.has("usage") || !json.get("usage").isJsonObject()) {
+            return null;
+        }
+        JsonObject usage = json.getAsJsonObject("usage");
+        boolean hasAny = usage.has("prompt_tokens") || usage.has("completion_tokens") || usage.has("total_tokens");
+        if (!hasAny) {
+            return null;
+        }
+        int promptTokens = usage.has("prompt_tokens") ? usage.get("prompt_tokens").getAsInt() : 0;
+        int completionTokens = usage.has("completion_tokens") ? usage.get("completion_tokens").getAsInt() : 0;
+        int totalTokens = usage.has("total_tokens") ? usage.get("total_tokens").getAsInt() : (promptTokens + completionTokens);
+        return new UsageStats(promptTokens, completionTokens, totalTokens);
+    }
+
+    /**
+     * 记录请求的 Token 消耗信息并通知监听器
+     * <p> 该方法通过控制台打印 Token 使用统计信息 (包括 Prompt,Completion 和总 Token 数量), 并调用监听器的 onUsage 方法将相同数据传递给外部处理逻辑.
+     * <p> 打印格式示例:Token 消耗: Prompt=100 | Completion=50 | Total=150
+     *
+     * @param usageStats Token 使用统计对象, 包含 Prompt,Completion 和总 Token 数量
+     * @param listener   用于接收 Token 使用数据的监听器, 必须非空
+     */
+    private void logUsage(@NotNull UsageStats usageStats, @NotNull AIStreamResponseListener listener) {
+        AIConsoleLoggerUtil.print(project, String.format("Token 消耗: Prompt=%d | Completion=%d | Total=%d",
+                                                         usageStats.promptTokens(),
+                                                         usageStats.completionTokens(),
+                                                         usageStats.totalTokens()));
+        listener.onUsage(config.providerType.getDisplayName(),
+                         config.modelName,
+                         usageStats.promptTokens(),
+                         usageStats.completionTokens(),
+                         usageStats.totalTokens());
+    }
+
+    private record UsageStats(int promptTokens, int completionTokens, int totalTokens) {
     }
 
 }
