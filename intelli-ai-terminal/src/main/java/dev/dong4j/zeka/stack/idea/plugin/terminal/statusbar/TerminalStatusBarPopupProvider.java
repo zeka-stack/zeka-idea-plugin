@@ -82,6 +82,9 @@ public class TerminalStatusBarPopupProvider implements AIStatusBarPopupProvider 
         List<AIProviderConfig> providers = AIProviderUtils.getProviders();
         group.add(new ProviderSelectionActionGroup(project, providers));
         group.add(Separator.create(TerminalBundle.message("statusbar.quick.settings.title")));
+        group.add(new EnableTerminalAIToggleAction());
+        group.add(new EnableStreamResponseToggleAction());
+        group.add(new EnableTerminalContextToggleAction());
         group.add(new OpenSettingsAction(project));
         return group;
     }
@@ -284,6 +287,81 @@ public class TerminalStatusBarPopupProvider implements AIStatusBarPopupProvider 
         @Override
         public @NotNull ActionUpdateThread getActionUpdateThread() {
             return ActionUpdateThread.BGT;
+        }
+    }
+
+    /**
+     * 启用 Terminal AI 的切换动作
+     * <p> 使用状态栏快捷设置控制 Terminal AI 开关
+     */
+    private static class EnableTerminalAIToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        EnableTerminalAIToggleAction() {
+            super(TerminalBundle.message("settings.terminal.enable"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableTerminalAI;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableTerminalAI = state;
+        }
+    }
+
+    /**
+     * 启用流式输出的切换动作
+     * <p> 使用状态栏快捷设置控制流式响应开关
+     */
+    private static class EnableStreamResponseToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        EnableStreamResponseToggleAction() {
+            super(TerminalBundle.message("settings.terminal.stream.enable"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableStreamResponse;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableStreamResponse = state;
+        }
+    }
+
+    /**
+     * 启用上下文检测的切换动作
+     * <p> 使用状态栏快捷设置控制上下文检测开关
+     */
+    private static class EnableTerminalContextToggleAction extends com.intellij.openapi.actionSystem.ToggleAction {
+        EnableTerminalContextToggleAction() {
+            super(TerminalBundle.message("settings.terminal.context.enable"));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return SettingsState.getInstance().enableTerminalContext;
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            SettingsState.getInstance().enableTerminalContext = state;
         }
     }
 }
