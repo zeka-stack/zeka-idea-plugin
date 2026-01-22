@@ -10,6 +10,7 @@
         <result column="key" property="key"/>
         <result column="name" property="name"/>
         <result column="description" property="description"/>
+        <result column="repos" property="repos"/>
         <result column="icon" property="icon"/>
         <result column="sort_order" property="sortOrder"/>
         <result column="status" property="status"/>
@@ -21,6 +22,7 @@
         a.`key`,
         a.`name`,
         a.`description`,
+        a.`repos`,
         a.`icon`,
         a.`sort_order`,
         a.`status`,

@@ -48,6 +48,9 @@ public class ProjectForm extends BaseForm<Long> {
     @Schema(description = "项目描述")
     @NotBlank(message = "[项目描述] 必填)")
     private String description;
+    /** GitHub 仓库 URL (如 https://github.com/zeka-stack/zeka-idea-plugin) */
+    @Schema(description = "GitHub 仓库 URL (如 https://github.com/zeka-stack/zeka-idea-plugin)")
+    private String repos;
     /** 图标标识(前端映射 lucide 图标) */
     @Schema(description = "图标标识(前端映射 lucide 图标)")
     @NotBlank(message = "[图标标识(前端映射 lucide 图标)] 必填)")

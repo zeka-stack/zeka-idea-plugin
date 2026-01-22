@@ -139,6 +139,9 @@ alter table feedback
 alter table feedback
     add issues_id bigint unsigned default null comment 'github issues id' after issues_url;
 
+alter table project
+    add repos varchar(512) default '' null comment 'GitHub 仓库 URL (如 https://github.com/zeka-stack/zeka-idea-plugin)' after description;
+
 -- 3. 需求评论表 (匿名评论)
 create table if not exists feedback_comment (
     id          bigint unsigned auto_increment primary key comment '主键',

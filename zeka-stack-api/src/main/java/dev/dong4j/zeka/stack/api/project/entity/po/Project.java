@@ -38,6 +38,8 @@ public class Project extends BaseWithTimePO<Long, Project> {
     public static final String NAME = "name";
     /** 项目描述-表字段 */
     public static final String DESCRIPTION = "description";
+    /** GitHub 仓库 URL-表字段 */
+    public static final String REPOS = "repos";
     /** 图标标识(前端映射 lucide 图标)-表字段 */
     public static final String ICON = "icon";
     /** 排序权重-表字段 */
@@ -54,6 +56,9 @@ public class Project extends BaseWithTimePO<Long, Project> {
     /** 项目描述 */
     @TableField("`description`")
     private String description;
+    /** GitHub 仓库 URL (如 https://github.com/zeka-stack/zeka-idea-plugin) */
+    @TableField("`repos`")
+    private String repos;
     /** 图标标识(前端映射 lucide 图标) */
     @TableField("`icon`")
     private String icon;
