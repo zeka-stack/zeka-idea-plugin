@@ -208,8 +208,8 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                      */
                     @Override
                     public void onChunk(@NotNull String chunk) {
-                        if (!chunk.isEmpty()) {
-                            AIConsoleLoggerUtil.printStreamPlain(project, chunk);
+                        if (chunk.isEmpty()) {
+                            return;
                         }
                         streamBuffer.append(chunk);
                     }
@@ -232,7 +232,6 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     @Override
                     public void onComplete(@NotNull String fullText) {
                         String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
-                        AIConsoleLoggerUtil.completeStreamPlain(project);
                         boolean applied = applyAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService,
                                                         shellType);
                         if (applied) {

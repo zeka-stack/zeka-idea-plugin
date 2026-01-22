@@ -1,8 +1,14 @@
 <component name="ProjectRunConfigurationManager">
-    <configuration default="false" name="IntelliAI Template" type="GradleRunConfiguration" factoryName="Gradle">
+    <configuration default="false" name="IntelliAI Terminal" type="GradleRunConfiguration" factoryName="Gradle">
         <ExternalSystemSettings>
+            <option name="env">
+                <map>
+                    <entry key="PATH"
+                           value="/opt/homebrew/opt/libpq/bin:$USER_HOME$/.npm-global/bin:$USER_HOME$/.codebuddy/bin:$USER_HOME$/.bun/bin:/usr/local/sbin:/usr/local/bin:/opt/homebrew/opt/mysql-client/bin:$USER_HOME$/go/bin:$USER_HOME$/.opencode/bin:$USER_HOME$/.asdf/shims:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/usr/local/MacGPG2/bin:$USER_HOME$/.orbstack/bin:$USER_HOME$/.local/bin:$USER_HOME$/.cache/lm-studio/bin:$USER_HOME$/Library/Android/sdk/tools:$USER_HOME$/Library/Android/sdk/platform-tools:$USER_HOME$/Library/Android/sdk/tools/bin:$USER_HOME$/Library/Android/sdk/emulator:$USER_HOME$/.cache/lm-studio/bin:$USER_HOME$/.local/bin"/>
+                </map>
+            </option>
             <option name="executionName"/>
-            <option name="externalProjectPath" value="$PROJECT_DIR$/template-with-ai"/>
+            <option name="externalProjectPath" value="$PROJECT_DIR$/intelli-ai-terminal"/>
             <option name="externalSystemIdString" value="GRADLE"/>
             <option name="scriptParameters" value=""/>
             <option name="taskDescriptions">
