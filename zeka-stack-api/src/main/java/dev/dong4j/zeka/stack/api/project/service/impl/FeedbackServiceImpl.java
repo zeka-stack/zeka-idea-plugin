@@ -5,7 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.concurrent.CompletableFuture;
+
 import dev.dong4j.zeka.kernel.common.api.BaseCodes;
+import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackRequest;
 import dev.dong4j.zeka.stack.api.project.dao.FeedbackMapper;
 import dev.dong4j.zeka.stack.api.project.entity.converter.FeedbackConverter;
 import dev.dong4j.zeka.stack.api.project.entity.dto.FeedbackDTO;
@@ -29,6 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @AllArgsConstructor
 public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedback> implements FeedbackService {
+    /** Plugin feedback service for creating GitHub issues */
+    private final dev.dong4j.zeka.stack.api.plugin.feedback.service.FeedbackService pluginFeedbackService;
 
     /**
      * 根据 ID 获取详细信息
@@ -56,7 +61,49 @@ public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedbac
         final Feedback po = FeedbackConverter.INSTANCE.f2p(form);
         final int savedCount = this.baseMapper.insertIgnore(po);
         BaseCodes.OPTION_FAILURE.isTrue(savedCount == 1);
+
+
+        // 异步调用 GitHub 创建 Issue
+        CompletableFuture.runAsync(() -> {
+            try {
+                FeedbackRequest request = convertToFeedbackRequest(form);
+                pluginFeedbackService.submitIssue(request);
+                log.debug("Successfully created GitHub issue for feedback: {}", form.getTitle());
+            } catch (Exception e) {
+                log.warn("Failed to create GitHub issue for feedback: {}", form.getTitle(), e);
+            }
+        });
     }
+
+    /**
+     * 将 FeedbackForm 转换为 FeedbackRequest
+     * <p> 目前先写死一些数据，后续可以根据实际需求调整
+     *
+     * @param form 反馈表单
+     * @return FeedbackRequest
+     */
+    private FeedbackRequest convertToFeedbackRequest(FeedbackForm form) {
+        FeedbackRequest request = new FeedbackRequest();
+        request.setTitle(form.getTitle());
+        request.setContent(form.getDescription() != null ? form.getDescription() : "");
+        // 默认设置为功能建议类型
+        request.setType(FeedbackRequest.FeedbackType.FEATURE);
+
+        // 构建用户信息（目前写死）
+        FeedbackRequest.UserInfo userInfo = new FeedbackRequest.UserInfo();
+        userInfo.setPluginName("IntelliAI WebUI");
+        userInfo.setGithubUsername(""); // 可以从认证信息中获取，目前先写死
+        request.setUserInfo(userInfo);
+
+        // 构建元数据
+        FeedbackRequest.Metadata metadata = new FeedbackRequest.Metadata();
+        metadata.setClientId("zeka-idea-webui");
+        metadata.setTimestamp(System.currentTimeMillis());
+        request.setMetadata(metadata);
+
+        return request;
+    }
+
 
     /**
      * 更新数据

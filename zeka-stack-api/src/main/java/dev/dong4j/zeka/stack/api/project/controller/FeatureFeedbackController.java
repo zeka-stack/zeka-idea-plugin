@@ -19,13 +19,13 @@ import dev.dong4j.zeka.kernel.validation.group.UpdateGroup;
 import dev.dong4j.zeka.stack.api.project.entity.dto.FeedbackDTO;
 import dev.dong4j.zeka.stack.api.project.entity.form.FeedbackForm;
 import dev.dong4j.zeka.stack.api.project.entity.form.FeedbackQuery;
-import dev.dong4j.zeka.stack.api.project.service.FeedbackService;
 import dev.dong4j.zeka.starter.rest.ServletController;
 import dev.dong4j.zeka.starter.rest.annotation.RestControllerWrapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.groups.Default;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p> 反馈表 控制器 </p>
@@ -36,13 +36,14 @@ import lombok.AllArgsConstructor;
  * @date 2026.01.22 20:02
  * @since 1.0.0
  */
+@Slf4j
 @Tag(name = "反馈表接口")
 @AllArgsConstructor
 @RestControllerWrapper("/projects/feedbacks")
 public class FeatureFeedbackController extends ServletController {
 
     /** Feedback service */
-    private final FeedbackService feedbackService;
+    private final dev.dong4j.zeka.stack.api.project.service.FeedbackService feedbackService;
 
     /**
      * 根据条件查询全部数据

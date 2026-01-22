@@ -160,12 +160,6 @@ export const Donate: React.FC = () => {
             `}</style>
 
             <div className="max-w-[900px] mx-auto">
-                {/* Header */}
-                <div className="text-center text-white mb-10">
-                    <h1 className="text-[2.5rem] font-bold mb-2 drop-shadow-md">☀️ 捐赠支持 IntelliAI</h1>
-                    <p className="text-lg opacity-90">感谢您使用 IntelliAI 插件！您的支持是我持续开发的动力。</p>
-                </div>
-
                 {/* Donation Card */}
                 <div className="bg-[rgba(255,248,240,0.94)] rounded-xl p-8 mb-8 shadow-[0_10px_30px_rgba(165,84,40,0.2)]">
                     <h2 className="text-2xl font-bold mb-5 pb-2 border-b-2 border-[#4a63d4] text-[#212529]">捐赠方式</h2>

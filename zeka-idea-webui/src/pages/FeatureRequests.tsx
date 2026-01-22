@@ -109,11 +109,14 @@ export const FeatureRequests = () => {
         }
     };
 
-    const isAdmin = authStatus?.loggedIn === true && authStatus?.user?.role === 'admin';
+    // 本地开发时允许拖拽，生产环境需要管理员权限
+    const isAdmin = import.meta.env.DEV
+        ? true
+        : (authStatus?.loggedIn === true && authStatus?.user?.role === 'admin');
 
     // Debug log
     useEffect(() => {
-        console.log('isAdmin:', isAdmin, 'authStatus:', authStatus);
+        console.log('isAdmin:', isAdmin, 'authStatus:', authStatus, 'isDev:', import.meta.env.DEV);
     }, [isAdmin, authStatus]);
 
     const handleDragStart = (e: React.DragEvent, request: Request) => {
