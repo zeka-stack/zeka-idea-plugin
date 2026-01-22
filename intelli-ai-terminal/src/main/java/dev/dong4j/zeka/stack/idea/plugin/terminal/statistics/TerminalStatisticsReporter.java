@@ -46,12 +46,15 @@ public final class TerminalStatisticsReporter {
      * <p> 根据传入的项目,AI 提供者配置, 请求信息, 响应内容, 延迟时间及用户操作行为, 计算提示词与完成词的总 token 数, 并构造统计事件上报至服务.
      * 该方法用于在终端模块中记录 AI 命令成功执行的统计信息, 便于后续分析与优化.
      *
-     * @param project    非空项目对象, 用于获取项目名称
-     * @param provider   非空 AI 提供者配置对象, 用于提取提供者 ID 和模型名称
-     * @param request    非空 AI 聊天请求对象, 用于获取提示词 token 估算值
-     * @param response   非空响应内容字符串, 用于估算完成词 token 数
-     * @param latencyMs  延迟时间 (毫秒), 用于记录请求处理耗时
-     * @param userAction 非空用户操作行为对象, 用于记录用户交互类型
+     * @param project          当前项目对象, 用于标识统计来源
+     * @param provider          AI 提供商配置对象, 包含提供商类型和模型名称
+     * @param request           AI 聊天请求对象, 用于估算提示 Token 数量
+     * @param response          响应内容字符串, 用于估算完成 Token 数量
+     * @param latencyMs         生成耗时 (毫秒)
+     * @param promptTokens      提示 Token 数量, 若为 0 则使用请求对象估算值
+     * @param completionTokens  完成 Token 数量, 若为 0 则使用响应内容估算值
+     * @param totalTokens       总 Token 数量, 若为 0 则根据输入输出 Token 计算
+     * @param userAction        用户操作行为, 若为 null 则默认为 {@code StatisticsUserAction.UNKNOWN}
      * @since 1.0.0
      */
     public static void reportSuccess(@NotNull Project project,
@@ -59,23 +62,26 @@ public final class TerminalStatisticsReporter {
                                      @NotNull AIChatRequest request,
                                      @NotNull String response,
                                      long latencyMs,
-                                     @NotNull StatisticsUserAction userAction) {
-        int promptTokens = Math.max(0, request.promptTokenEstimate());
-        int completionTokens = estimateTokens(response);
-        int totalTokens = Math.max(0, completionTokens + promptTokens);
+                                     int promptTokens,
+                                     int completionTokens,
+                                     int totalTokens,
+                                     @Nullable StatisticsUserAction userAction) {
+        int inputToken = promptTokens > 0 ? promptTokens : Math.max(0, request.promptTokenEstimate());
+        int outputToken = completionTokens > 0 ? completionTokens : estimateTokens(response);
+        int totalToken = totalTokens > 0 ? totalTokens : Math.max(0, inputToken + outputToken);
 
         StatisticsEvent event = new StatisticsEvent(
             StatisticsPluginId.TERMINAL,
             StatisticsEventType.TERMINAL_COMMAND,
             provider.providerType != null ? provider.providerType.getProviderId() : "",
             provider.modelName != null ? provider.modelName : "",
-            totalTokens,
+            totalToken,
             project.getName(),
             "success",
             latencyMs,
-            promptTokens,
-            completionTokens,
-            userAction
+            inputToken,
+            outputToken,
+            userAction != null ? userAction : StatisticsUserAction.UNKNOWN
         );
 
         StatisticsServiceInitializer.getService().report(event);

@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.Getter;
 
 /**
  * 终端 AI 响应监听器实现类
@@ -23,6 +24,15 @@ public class TerminalAIResponseListener implements AIResponseListener {
 
     /** 当前项目对象 */
     private final Project project;
+    /** 用于记录提示词所消耗的 token 数量 */
+    @Getter
+    private volatile int promptTokens;
+    /** 用于记录完成阶段使用的 token 数量 */
+    @Getter
+    private volatile int completionTokens;
+    /** 用于记录总 token 数量 */
+    @Getter
+    private volatile int totalTokens;
 
     /**
      * 初始化 TerminalAIResponseListener
@@ -72,7 +82,8 @@ public class TerminalAIResponseListener implements AIResponseListener {
 
     /**
      * 记录 Token 使用情况
-     * <p> 将提供者名称, 模型名称,Prompt Token 数,Completion Token 数和总 Token 数格式化后输出到控制台
+     * <p> 将提供者名称, 模型名称,Prompt Token 数,Completion Token 数和总 Token 数格式化后输出到控制台,
+     * 并保存 token 信息用于统计上报.
      *
      * @param providerName     提供者名称
      * @param modelName        模型名称
@@ -83,6 +94,10 @@ public class TerminalAIResponseListener implements AIResponseListener {
     @Override
     public void onUsage(String providerName, String modelName,
                         int promptTokens, int completionTokens, int totalTokens) {
+        // 保存 token 信息用于统计上报
+        this.promptTokens = promptTokens;
+        this.completionTokens = completionTokens;
+        this.totalTokens = totalTokens;
         AIConsoleLoggerUtil.print(project,
                                   String.format("Token 使用: %s | %s | Prompt: %d | Completion: %d | Total: %d",
                                                 providerName, modelName, promptTokens, completionTokens, totalTokens));

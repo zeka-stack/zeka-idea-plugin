@@ -34,15 +34,14 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.JComponent;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.ai.TerminalAIResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.terminal.ai.TerminalAIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.context.TerminalContextService;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.shell.TerminalShellDetector;
@@ -201,7 +200,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     // 非流式输出：接收响应阶段
                     indicator.setText(TerminalBundle.message("action.terminal.progress.receiving.response"));
                     indicator.checkCanceled();
-                    AIResponseListener listener = new TerminalAIResponseListener(project);
+                    TerminalAIResponseListener listener = new TerminalAIResponseListener(project);
                     String result = aiService.generateContent(project, request, providerConfig, listener);
                     log.debug("AI generation completed, result length: {}", result.length());
 
@@ -209,7 +208,8 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                     indicator.setText(TerminalBundle.message("action.terminal.progress.processing"));
                     indicator.checkCanceled();
                     handleAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService,
-                                   providerConfig, request, startTimeMs, userAction, shellType, indicator);
+                                   providerConfig, request, startTimeMs, userAction, shellType, indicator,
+                                   listener.getPromptTokens(), listener.getCompletionTokens(), listener.getTotalTokens());
                 } catch (AIServiceException ex) {
                     String message = AIServiceException.build(ex);
                     log.debug("AI service exception: {}", message, ex);
@@ -240,127 +240,22 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                                TerminalShellType shellType,
                                                @NotNull ProgressIndicator indicator,
                                                @NotNull CountDownLatch streamLatch) throws AIServiceException {
-                aiService.generateContentStream(project, request, providerConfig, new AIStreamResponseListener() {
-                    /** 用于缓存流式响应的文本内容, 累积所有分块数据以生成完整响应 */
-                    private final StringBuilder streamBuffer = new StringBuilder();
-
-                    /**
-                     * 处理流式响应的片段数据
-                     * <p> 将接收到的片段内容追加到内部缓冲区中, 用于后续完整响应的拼接
-                     *
-                     * @param chunk 当前接收到的响应片段内容
-                     */
-                    @Override
-                    public void onChunk(@NotNull String chunk) {
-                        if (chunk.isEmpty()) {
-                            return;
-                        }
-                        streamBuffer.append(chunk);
-                        // 更新流式接收进度 - 直接调用，ProgressIndicator 是线程安全的
-                        indicator.setText(TerminalBundle.message("action.terminal.progress.streaming"));
-                    }
-
-                    /**
-                     * 流式响应开始
-                     * <p>输出响应头, 便于区分请求与响应</p>
-                     */
-                    @Override
-                    public void onStart() {
-                        AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
-                        // 更新为流式接收状态 - 直接调用，ProgressIndicator 是线程安全的
-                        indicator.setText(TerminalBundle.message("action.terminal.progress.streaming"));
-                    }
-
-                    /**
-                     * 处理 AI 流式响应完成事件
-                     * <p> 当 AI 响应完整返回时, 根据是否为空判断使用完整文本或缓冲区内容作为结果, 并调用处理方法
-                     *
-                     * @param fullText 完整的 AI 响应文本
-                     */
-                    @Override
-                    public void onComplete(@NotNull String fullText) {
-                        try {
-                            String result = fullText.isBlank() ? streamBuffer.toString() : fullText;
-                            // 更新为处理响应状态 - 直接调用，ProgressIndicator 是线程安全的
-                            indicator.setText(TerminalBundle.message("action.terminal.progress.processing"));
-                            indicator.checkCanceled();
-                            boolean applied = applyAiResult(project, terminalView, jbWidget, inputInfo, result, input, contextService,
-                                                            shellType, indicator);
-                            if (applied) {
-                                long latencyMs = System.currentTimeMillis() - startTimeMs;
-                                TerminalStatisticsReporter.reportSuccess(project,
-                                                                         providerConfig,
-                                                                         request,
-                                                                         result,
-                                                                         latencyMs,
-                                                                         userAction);
-                            }
-                            // 完成状态
-                            indicator.setText(TerminalBundle.message("action.terminal.progress.completed"));
-                        } finally {
-                            // 释放锁，允许 run 方法继续执行
-                            streamLatch.countDown();
-                        }
-                    }
-
-                    /**
-                     * 处理 AI 流式响应错误情况
-                     * <p> 当 AI 服务发生错误时, 显示失败提示并弹出错误通知
-                     *
-                     * @param error     错误信息字符串, 用于构建错误提示消息
-                     * @param exception 可选的异常对象, 用于记录详细错误堆栈信息
-                     */
-                    @Override
-                    public void onError(@NotNull String error, @Nullable Throwable exception) {
-                        try {
-                            AIConsoleLoggerUtil.completeStreamPlain(project);
-                            showAiFailedHint(terminalView, jbWidget);
-                            // 更新错误状态 - 直接调用，ProgressIndicator 是线程安全的
-                            indicator.setText(TerminalBundle.message("action.terminal.progress.completed"));
-                        } finally {
-                            // 释放锁，允许 run 方法继续执行
-                            streamLatch.countDown();
-                        }
-                    }
-
-                    /**
-                     * 处理 AI 请求并记录相关信息
-                     * <p> 在控制台输出请求日志, 包含提供者名称, 模型名称及请求体内容 (如非空).
-                     *
-                     * @param providerName 提供者名称
-                     * @param modelName    模型名称
-                     * @param requestBody  请求体内容, 若非空则输出到控制台
-                     * @param validation   是否进行验证
-                     */
-                    @Override
-                    public void onRequest(String providerName, String modelName, String requestBody, boolean validation) {
-                        AIConsoleLoggerUtil.printWithTimestamp(project,
-                                                               String.format("请求: %s - %s", providerName, modelName));
-                        if (requestBody != null && !requestBody.isEmpty()) {
-                            AIConsoleLoggerUtil.print(project, requestBody);
-                        }
-                        // 更新为发送请求状态 - 直接调用，ProgressIndicator 是线程安全的
-                        indicator.setText(TerminalBundle.message("action.terminal.progress.sending.request"));
-                    }
-
-                    /**
-                     * 记录 Token 使用情况
-                     * <p> 将提供者名称, 模型名称,Prompt Token 数,Completion Token 数和总 Token 数格式化后输出到控制台
-                     *
-                     * @param providerName     提供者名称
-                     * @param modelName        模型名称
-                     * @param promptTokens     Prompt 使用 token 数
-                     * @param completionTokens Completion 使用 token 数
-                     * @param totalTokens      总 token 数
-                     */
-                    @Override
-                    public void onUsage(String providerName, String modelName,
-                                        int promptTokens, int completionTokens, int totalTokens) {
-                        AIConsoleLoggerUtil.print(project,
-                                                  String.format("Token 使用: %s | %s | Prompt: %d | Completion: %d | Total: %d",
-                                                                providerName, modelName, promptTokens, completionTokens, totalTokens));
-                    }
-                });
+                TerminalAIStreamResponseListener listener = new TerminalAIStreamResponseListener(
+                    project,
+                    terminalView,
+                    jbWidget,
+                    inputInfo,
+                    input,
+                    contextService,
+                    shellType,
+                    indicator,
+                    providerConfig,
+                    request,
+                    startTimeMs,
+                    userAction,
+                    streamLatch
+                );
+                aiService.generateContentStream(project, request, providerConfig, listener);
             }
         });
     }
@@ -955,12 +850,22 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * 处理 AI 生成的结果并替换终端当前行内容
      * <p> 该方法接收 AI 服务返回的响应内容, 提取其中的命令并替换终端当前输入行. 若提取的命令为空或无效, 则显示相应错误提示.</p>
      *
-     * @param project      当前项目上下文, 用于日志记录和通知显示
-     * @param terminalView 终端视图实例, 用于替换当前行内容 (可为 null)
-     * @param jbWidget     终端组件实例, 用于替换当前行内容 (可为 null)
-     * @param inputInfo    输入信息封装对象, 包含原始输入内容和是否为多行标识
-     * @param result       AI 服务返回的完整响应内容
-     * @param indicator    进度指示器, 用于更新进度状态
+     * @param project          当前项目上下文, 用于日志记录和通知显示
+     * @param terminalView     终端视图实例, 用于替换当前行内容 (可为 null)
+     * @param jbWidget         终端组件实例, 用于替换当前行内容 (可为 null)
+     * @param inputInfo        输入信息封装对象, 包含原始输入内容和是否为多行标识
+     * @param result           AI 服务返回的完整响应内容
+     * @param question         用户原始提问内容, 用于上下文记录
+     * @param contextService   终端上下文服务, 用于记录历史 (可为 null)
+     * @param providerConfig   AI 提供商配置对象
+     * @param request          AI 聊天请求对象
+     * @param startTimeMs      请求开始时间 (毫秒)
+     * @param userAction       用户操作行为
+     * @param shellType        终端 shell 类型
+     * @param indicator        进度指示器, 用于更新进度状态
+     * @param promptTokens     提示 Token 数量
+     * @param completionTokens 完成 Token 数量
+     * @param totalTokens      总 Token 数量
      * @since 1.0.0
      */
     private static void handleAiResult(@NotNull Project project,
@@ -975,7 +880,10 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                        long startTimeMs,
                                        @NotNull StatisticsUserAction userAction,
                                        @NotNull TerminalShellType shellType,
-                                       @NotNull ProgressIndicator indicator) {
+                                       @NotNull ProgressIndicator indicator,
+                                       int promptTokens,
+                                       int completionTokens,
+                                       int totalTokens) {
         AIConsoleLoggerUtil.printSuccess(project, "=== Terminal AI Response ===");
         AIConsoleLoggerUtil.print(project, result);
 
@@ -987,6 +895,9 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
                                                      request,
                                                      result,
                                                      latencyMs,
+                                                     promptTokens,
+                                                     completionTokens,
+                                                     totalTokens,
                                                      userAction);
         }
     }
@@ -1005,15 +916,15 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param indicator    进度指示器, 用于更新进度状态
      * @return 如果命令合法并成功替换返回 true, 否则返回 false
      */
-    private static boolean applyAiResult(@NotNull Project project,
-                                         @Nullable TerminalView terminalView,
-                                         @Nullable JBTerminalWidget jbWidget,
-                                         @NotNull InputInfo inputInfo,
-                                         @NotNull String result,
-                                         @NotNull String question,
-                                         @Nullable TerminalContextService contextService,
-                                         @NotNull TerminalShellType shellType,
-                                         @NotNull ProgressIndicator indicator) {
+    public static boolean applyAiResult(@NotNull Project project,
+                                        @Nullable TerminalView terminalView,
+                                        @Nullable JBTerminalWidget jbWidget,
+                                        @NotNull InputInfo inputInfo,
+                                        @NotNull String result,
+                                        @NotNull String question,
+                                        @Nullable TerminalContextService contextService,
+                                        @NotNull TerminalShellType shellType,
+                                        @NotNull ProgressIndicator indicator) {
         // 提取命令阶段 - 直接调用，ProgressIndicator 是线程安全的
         indicator.setText(TerminalBundle.message("action.terminal.progress.extracting.command"));
         indicator.checkCanceled();
@@ -1073,7 +984,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param terminalView 终端视图实例, 可为 null
      * @param widget       终端组件实例, 可为 null
      */
-    private static void showAiFailedHint(@Nullable TerminalView terminalView, @Nullable JBTerminalWidget widget) {
+    public static void showAiFailedHint(@Nullable TerminalView terminalView, @Nullable JBTerminalWidget widget) {
         showAiStatusHint(terminalView, widget, TerminalBundle.message("terminal.hint.failed"));
     }
 
@@ -1131,7 +1042,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @date 2026.01.20
      * @since 1.0.0
      */
-    private record InputInfo(String content, boolean multiLine) {
+    public record InputInfo(String content, boolean multiLine) {
         /**
          * 初始化输入信息对象
          * <p> 构造函数用于创建包含内容和是否多行标记的输入信息对象
@@ -1139,7 +1050,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
          * @param content   输入内容, 不能为空
          * @param multiLine 是否为多行内容
          */
-        private InputInfo(@NotNull String content, boolean multiLine) {
+        public InputInfo(@NotNull String content, boolean multiLine) {
             this.content = content;
             this.multiLine = multiLine;
         }
