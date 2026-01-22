@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.dong4j.zeka.stack.api.project.dao.FeedbackMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="FeedbackResultMap" type="dev.dong4j.zeka.stack.api.project.entity.po.Feedback">
+        <result column="id" property="id"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="project_id" property="projectId"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/>
+        <result column="priority" property="priority"/>
+        <result column="vote_count" property="voteCount"/>
+        <result column="comment_count" property="commentCount"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="all_field">
+        a.id,
+        a.`project_id`,
+        a.`title`,
+        a.`description`,
+        a.`status`,
+        a.`priority`,
+        a.`vote_count`,
+        a.`comment_count`,
+        a.create_time
+    </sql>
+
+    <sql id="date_query">
+        <if test="query.startTime != null">
+            <![CDATA[
+                and a.create_time >= #{query.startTime}
+            ]]>
+        </if>
+        <if test="query.endTime != null">
+            <![CDATA[
+                and a.create_time < #{query.endTime}
+            ]]>
+        </if>
+        <if test="query.title != null and query.title != ''">
+            and a.title like CONCAT('%', #{query.title}, '%')
+        </if>
+    </sql>
+
+    <select id="page" resultType="dev.dong4j.zeka.stack.api.project.entity.dto.FeedbackDTO"
+            parameterType="dev.dong4j.zeka.stack.api.project.entity.form.FeedbackQuery">
+        select
+        <include refid="all_field"/>
+        from feedback as a
+        <where>
+            <include refid="date_query"/>
+            and a.project_id = #{query.projectId}
+        </where>
+        order by create_time desc
+    </select>
+</mapper>

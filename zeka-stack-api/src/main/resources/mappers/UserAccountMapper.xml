@@ -12,6 +12,7 @@
         <result column="github_name" property="githubName"/>
         <result column="avatar_url" property="avatarUrl"/>
         <result column="email" property="email"/>
+        <result column="role" property="role"/>
         <result column="device_id" property="deviceId"/>
         <result column="last_login_time" property="lastLoginTime"/>
     </resultMap>
@@ -24,6 +25,7 @@
         a.`github_name`,
         a.`avatar_url`,
         a.`email`,
+        a.`role`,
         a.`device_id`,
         a.`last_login_time`
     </sql>

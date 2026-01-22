@@ -50,6 +50,9 @@ public class UserAccountDTO extends BaseDTO<Long> {
     /** 邮箱(可选) */
     @Schema(description = "邮箱(可选)")
     private String email;
+    /** 用户角色, 用于标识账户权限等级 */
+    @Schema(description = "用户角色, 用于标识账户权限等级")
+    private String role;
     /** 设备 ID */
     @Schema(description = "设备 ID")
     private String deviceId;

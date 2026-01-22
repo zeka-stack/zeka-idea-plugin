@@ -85,6 +85,9 @@ create table if not exists user_account (
 ) engine = InnoDB
     default charset = utf8mb4 comment 'GitHub 账号绑定表';
 
+alter table user_account
+    add role varchar(8) default '' null after email;
+
 -- auto-generated definition
 create table user_session (
     id            bigint unsigned auto_increment comment '主键' primary key,
@@ -99,6 +102,52 @@ create table user_session (
 create index idx_expires_at on user_session (expires_at);
 
 create index idx_user_id on user_session (user_id);
+
+-- 1. 项目/插件表 (用于前端下拉选择)
+create table if not exists project (
+    id          bigint unsigned auto_increment primary key comment '主键',
+    `key`       varchar(64)                            not null comment '项目唯一标识 (如 zeka-idea-plugin)',
+    name        varchar(128)                           not null comment '项目显示名称',
+    description varchar(512) default '' comment '项目描述',
+    icon        varchar(255) default '' comment '图标标识(前端映射 lucide 图标)',
+    sort_order  int          default 0 comment '排序权重',
+    status      tinyint      default 1 comment '状态: 1-启用, 0-禁用',
+    create_time timestamp    default current_timestamp not null comment '创建时间',
+    update_time timestamp    default current_timestamp not null on update current_timestamp comment '更新时间',
+    unique key uq_project_key (`key`)
+) comment '项目表' charset = utf8mb4;
+
+-- 2. 需求反馈表 (匿名提交)
+create table if not exists feedback (
+    id            bigint unsigned auto_increment primary key comment '主键',
+    project_id    bigint unsigned                       not null comment '关联的项目ID',
+    title         varchar(255)                          not null comment '标题',
+    description   text                                  null comment '详细描述',
+    status        varchar(32) default 'Open' comment '状态: Open, In Progress, Complete, Planned, Under Review',
+    priority      varchar(32) default 'Medium' comment '优先级: Low, Medium, High',
+    vote_count    int         default 0 comment '点赞数',
+    comment_count int         default 0 comment '评论数',
+    create_time   timestamp   default current_timestamp not null comment '创建时间',
+    update_time   timestamp   default current_timestamp not null on update current_timestamp comment '更新时间',
+    key idx_project_status (project_id, status),
+    key idx_project_title (project_id, title)
+) comment '反馈表' charset = utf8mb4;
+
+-- 3. 需求评论表 (匿名评论)
+create table if not exists feedback_comment (
+    id          bigint unsigned auto_increment primary key comment '主键',
+    feedback_id bigint unsigned                     not null comment '关联的需求ID',
+    content     text                                not null comment '评论内容',
+    create_time timestamp default current_timestamp not null comment '创建时间',
+    key idx_feedback_id (feedback_id)
+) comment '反馈评论表' charset = utf8mb4;
+
+-- 初始化数据
+insert into project (`key`, name, description, icon, sort_order)
+values ('zeka-idea-plugin', 'Zeka Idea Plugin', 'ZekaStack 框架支撑插件', 'Bot', 10),
+       ('blen-kernel', '核心工具包', 'Common utilities and tools', 'FileText', 20);
+
+
 
 
 

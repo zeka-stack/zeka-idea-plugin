@@ -165,6 +165,12 @@ public class AuthServiceImpl implements AuthService {
         return new AuthStatusDTO(true, UserAccountConverter.INSTANCE.p2d(account));
     }
 
+    /**
+     * 用户登出操作
+     * <p> 根据会话令牌查找并删除对应的用户会话记录. 若会话不存在或已过期, 则直接返回, 不执行任何操作.
+     *
+     * @param token 会话令牌, 用于定位用户会话记录
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void logout(String token) {
@@ -241,6 +247,7 @@ public class AuthServiceImpl implements AuthService {
             account.setGithubName(user.getName() == null ? "" : user.getName());
             account.setAvatarUrl(user.getAvatarUrl() == null ? "" : user.getAvatarUrl());
             account.setEmail(email == null ? "" : email);
+            account.setRole(""); // GitHub 登录时默认为空字符串
             account.setDeviceId(deviceId);
             account.setLastLoginTime(now);
             int inserted = userAccountMapper.insert(account);

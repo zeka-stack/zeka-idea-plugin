@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="dev.dong4j.zeka.stack.api.project.dao.FeedbackCommentMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="FeedbackCommentResultMap" type="dev.dong4j.zeka.stack.api.project.entity.po.FeedbackComment">
+        <result column="id" property="id"/>
+        <result column="create_time" property="createTime"/>
+        <result column="feedback_id" property="feedbackId"/>
+        <result column="content" property="content"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="all_field">
+        a.id,
+        a.`feedback_id`,
+        a.`content`,
+        a.create_time
+    </sql>
+
+    <sql id="date_query">
+        <if test="query.startTime != null">
+            <![CDATA[
+                and a.create_time >= #{query.startTime}
+            ]]>
+        </if>
+        <if test="query.endTime != null">
+            <![CDATA[
+                and a.create_time < #{query.endTime}
+            ]]>
+        </if>
+    </sql>
+
+    <select id="page" resultType="dev.dong4j.zeka.stack.api.project.entity.dto.FeedbackCommentDTO"
+            parameterType="dev.dong4j.zeka.stack.api.project.entity.form.FeedbackCommentQuery">
+        select
+        <include refid="all_field"/>
+        from feedback_comment as a
+        <where>
+            <include refid="date_query"/>
+            and a.feedback_id = #{query.feedbackId}
+        </where>
+        order by create_time desc
+    </select>
+</mapper>
+

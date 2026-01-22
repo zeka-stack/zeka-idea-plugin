@@ -43,6 +43,8 @@ public class UserAccount extends BaseWithTimePO<Long, UserAccount> {
     public static final String AVATAR_URL = "avatar_url";
     /** 邮箱(可选)-表字段 */
     public static final String EMAIL = "email";
+    /** 角色标识, 用于标识用户权限或身份 */
+    public static final String ROLE = "role";
     /** 设备 ID-表字段 */
     public static final String DEVICE_ID = "device_id";
     /** 最后登录时间-表字段 */
@@ -63,6 +65,9 @@ public class UserAccount extends BaseWithTimePO<Long, UserAccount> {
     /** 邮箱(可选) */
     @TableField("`email`")
     private String email;
+    /** 用户角色, 用于标识账户权限等级 */
+    @TableField("`role`")
+    private String role;
     /** 设备 ID */
     @TableField("`device_id`")
     private String deviceId;
