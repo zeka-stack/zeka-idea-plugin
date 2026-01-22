@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.api.project.controller;
+package dev.dong4j.zeka.stack.api.webhook;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -40,13 +40,17 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/webhook")
+@RequestMapping("/webhook")
 @AllArgsConstructor
 public class WebhookController {
 
+    /** 项目服务, 用于获取和管理项目相关数据 */
     private final ProjectService projectService;
+    /** 反馈服务, 用于操作 feedback 表数据 */
     private final FeedbackService feedbackService;
+    /** JSON 序列化与反序列化工具, 用于处理 webhook 请求体的结构化数据 */
     private final ObjectMapper objectMapper;
+    /** GitHub Webhook 配置属性, 用于获取密钥和事件处理规则 */
     private final WebhookProperties webhookProperties;
 
     /** 幂等处理：记录已处理的事件 ID */

@@ -5,7 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -317,11 +320,8 @@ public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedbac
         }
 
         return switch (status) {
-            case "Complete" -> "closed";
-            case "Open" -> "open";
-            case "In Progress" -> "open";
-            case "Planned" -> "closed";
-            case "Under Review" -> "open";
+            case "Complete", "Planned" -> "closed";
+            case "Open", "In Progress", "Under Review" -> "open";
             default -> {
                 log.debug("Unknown status: {}, skip mapping", status);
                 yield null;
@@ -346,6 +346,98 @@ public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedbac
         private RepoInfo {
         }
         }
+
+    /**
+     * 批量删除数据
+     * <p>在删除前，会先关闭对应的 GitHub Issue（如果存在）</p>
+     *
+     * @param idList 主键集合
+     * @since 1.0.0
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeByIds(Collection<?> idList) {
+        if (idList == null || idList.isEmpty()) {
+            return false;
+        }
+
+        // 在删除前，获取所有要删除的 feedback 记录
+        @SuppressWarnings("unchecked") List<Feedback> feedbacksToDelete = this.listByIds((Collection<? extends Serializable>) idList);
+        if (feedbacksToDelete == null || feedbacksToDelete.isEmpty()) {
+            return false;
+        }
+
+        // 异步关闭对应的 GitHub Issue
+        CompletableFuture.runAsync(() -> {
+            for (Feedback feedback : feedbacksToDelete) {
+                try {
+                    closeGitHubIssue(feedback);
+                } catch (Exception e) {
+                    log.warn("Failed to close GitHub issue for feedback: {}", feedback.getId(), e);
+                }
+            }
+        });
+
+        // 执行删除操作
+        return super.removeByIds(idList);
+    }
+
+    /**
+     * 关闭 GitHub Issue
+     * <p>在删除 feedback 时，关闭对应的 GitHub Issue</p>
+     *
+     * @param feedback 反馈对象
+     */
+    private void closeGitHubIssue(Feedback feedback) {
+        // 容错处理：检查 issues_url 是否为空
+        if (feedback.getIssuesUrl() == null || feedback.getIssuesUrl().isBlank()) {
+            log.debug("Issues URL is empty for feedback: {}, skip closing GitHub issue", feedback.getId());
+            return;
+        }
+
+        // 容错处理：检查 project_id 是否为空
+        if (feedback.getProjectId() == null) {
+            log.warn("Project ID is null for feedback: {}, skip closing GitHub issue", feedback.getId());
+            return;
+        }
+
+        // 获取项目信息
+        Project project = projectService.getById(feedback.getProjectId());
+        if (project == null) {
+            log.warn("Project not found for projectId: {}, skip closing GitHub issue", feedback.getProjectId());
+            return;
+        }
+
+        // 容错处理：检查 repos 是否为空
+        if (project.getRepos() == null || project.getRepos().isBlank()) {
+            log.debug("Repos is empty for project: {}, skip closing GitHub issue", project.getKey());
+            return;
+        }
+
+        try {
+            // 解析 repos URL 获取 owner 和 repo
+            RepoInfo repoInfo = parseRepoUrl(project.getRepos());
+            if (repoInfo == null) {
+                log.warn("Failed to parse repos URL: {}, skip closing GitHub issue", project.getRepos());
+                return;
+            }
+
+            // 解析 issues_url 获取 issue_number
+            Integer issueNumber = parseIssueNumber(feedback.getIssuesUrl());
+            if (issueNumber == null) {
+                log.warn("Failed to parse issue number from URL: {}, skip closing GitHub issue", feedback.getIssuesUrl());
+                return;
+            }
+
+            // 调用 GitHub API 关闭 Issue
+            githubIssueClient.updateIssueState(repoInfo.owner, repoInfo.repo, issueNumber, "closed");
+            log.info("Successfully closed GitHub issue {}/{}#{} for deleted feedback: {}",
+                     repoInfo.owner, repoInfo.repo, issueNumber, feedback.getId());
+
+        } catch (Exception e) {
+            log.error("Failed to close GitHub issue for feedback: {}", feedback.getId(), e);
+        }
+    }
 
     /**
      * 点赞
