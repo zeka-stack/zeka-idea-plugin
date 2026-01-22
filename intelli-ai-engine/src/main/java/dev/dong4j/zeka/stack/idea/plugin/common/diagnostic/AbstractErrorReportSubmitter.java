@@ -133,7 +133,7 @@ public abstract class AbstractErrorReportSubmitter extends ErrorReportSubmitter 
      * @return 如果提交成功返回 true, 否则返回 false
      */
     @Override
-    public boolean submit(@NotNull IdeaLoggingEvent[] events,
+    public boolean submit(@NotNull IdeaLoggingEvent @NotNull [] events,
                           @Nullable String additionalInfo,
                           @NotNull Component parentComponent,
                           @NotNull Consumer<? super SubmittedReportInfo> consumer) {

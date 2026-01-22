@@ -1,4 +1,7 @@
-<p>IntelliAI Engine is a foundational IntelliJ extension that provides a unified AI Service API for plugin developers.</p>
+<h2>IntelliAI Engine</h2>
+<p><b>Engine 的存在，是为了让插件保持简单。而插件保持简单，是为了让用户保持信任。</b></p>
+<p>IntelliAI Engine is a foundational AI infrastructure layer for IntelliJ plugins. It provides unified AI capabilities abstraction, not
+    functionality. Engine's responsibility is <b>"how to call AI"</b>, not <b>"what to do with AI"</b>.</p>
 <p><b>⚠️ Important Note</b>: This plugin alone has no functionality. You need to install one of the sub-plugins (IntelliAI Javadoc,
     IntelliAI Changelog, IntelliAI Tracer, etc.) to use AI features. This plugin only provides AI service provider integration and manages
     the list of available service providers for other sub-plugins.</p>
@@ -8,27 +11,66 @@
 <a href="https://ideaplugin.dong4j.site/engine/docs.html">Docs</a>
 <br/>
 <br/>
-<p>
-    <b>Core Capabilities</b>
-</p>
+<h3>What Engine Does (Infrastructure Layer)</h3>
+<p>Engine is AI capability infrastructure, not a feature provider. It handles <b>"how to do"</b>, not <b>"what to do"</b>.</p>
 <ul>
-    <li><b>🤖 Multi-model access</b>: preset endpoints and parameter templates for OpenAI, Qwen, Ollama, LM Studio, SiliconFlow</li>
-    <li><b>⚙️ Unified configuration UI</b>: one panel for credentials, models and rate limits with instant validation</li>
-    <li><b>🔒 Secure credentials</b>: Password Safe based key storage with unique service names to avoid overwrites</li>
-    <li><b>🎨 Reusable UI widgets</b>: inline generation buttons, status bar entries, progress dialogs ready for downstream plugins</li>
-    <li><b>⚡ Task pipeline</b>: handles request orchestration, streaming responses and error recovery off the EDT</li>
+    <li><b>🤖 Model & Provider Management</b>: Unified access to OpenAI, Qwen, Ollama, LM Studio, SiliconFlow with preset endpoints and
+        parameter templates
+    </li>
+    <li><b>⚙️ Prompt Execution & Context Assembly</b>: Handles prompt scheduling and context building</li>
+    <li><b>⚡ Request Lifecycle Management</b>: Orchestrates requests, streaming responses, and error recovery off the EDT</li>
+    <li><b>📊 Token & Usage Statistics</b>: Automatic token counting and usage tracking</li>
+    <li><b>🔒 Secure Credentials</b>: Password Safe based key storage with unique service names to avoid overwrites</li>
+    <li><b>⚙️ Unified Configuration UI</b>: One panel for credentials, models and rate limits with instant validation</li>
+    <li><b>🎨 Reusable UI Widgets</b>: Inline generation buttons, status bar entries, progress dialogs ready for downstream plugins</li>
 </ul>
-<p>
-    <b>How to Use</b>
-</p>
+
+<h3>What Engine Does NOT Do</h3>
+<p>Engine explicitly does not handle:</p>
+<ul>
+    <li>❌ UI presentation and interaction design</li>
+    <li>❌ Business logic and decision making</li>
+    <li>❌ Context semantic understanding</li>
+    <li>❌ User operation workflows</li>
+</ul>
+<p><b>In one sentence</b>: Engine doesn't know "what the user is doing", it only knows "how to call AI correctly".</p>
+<h3>Architecture: Separation of Concerns</h3>
+<p>The design follows a layered structure:</p>
+<pre>
+[ Engine ] - Stable, reusable, low-change infrastructure
+   ↑
+[ Focused Plugin ] - Small, focused, fast iteration
+   ↑
+[ User Interaction ] - Users don't need to know Engine exists
+</pre>
+<p>This separation allows:</p>
+<ul>
+    <li><b>Plugins evolve freely</b>: Each plugin focuses on its core functionality (Javadoc generation, Changelog creation, etc.)</li>
+    <li><b>Clear trust boundaries</b>: Engine = capability foundation, Plugin = problem solution</li>
+    <li><b>Consistent behavior</b>: All plugins share the same error handling, logging, and statistics collection</li>
+</ul>
+
+<h3>How to Use</h3>
 <ol>
     <li><b>📦 Add dependency</b>: Add IntelliAI Engine as a dependency in your custom plugin</li>
-    <li><b>🚀 Invoke API</b>: Invoke <code>AIService</code> (or provider facades) to run chat/completion tasks</li>
-    <li><b>🎯 Optional integration</b>: Reuse the provided UI components, notification utilities and settings entries for consistent UX</li>
+    <li><b>🚀 Invoke API</b>: Call <code>AIService</code> (or provider facades) to run chat/completion tasks</li>
+    <li><b>🎯 Focus on business logic</b>: Let Engine handle all AI infrastructure details</li>
+    <li><b>🎨 Optional integration</b>: Reuse the provided UI components, notification utilities and settings entries for consistent UX</li>
 </ol>
-<p>
-    <b>Plugins Powered by IntelliAI Engine</b>
-</p>
+<h3>Long-term Value</h3>
+<ul>
+    <li><b>Reduce code duplication</b>: All AI-related common capabilities are implemented once in Engine, reused by all plugins</li>
+    <li><b>Ensure consistent behavior</b>: All plugins share the same error handling, logging format, and statistics collection</li>
+    <li><b>Clear responsibility boundaries</b>: When users encounter issues, it's clear whether it's an Engine (AI call) or Plugin (business
+        logic) problem
+    </li>
+    <li><b>Easy to extend</b>: Adding new plugins doesn't require re-implementing AI call logic, just focus on business logic</li>
+    <li><b>Lower maintenance cost</b>: Engine maintained once, all plugins benefit</li>
+</ul>
+<p><b>Example</b>: Adding a new Code Review plugin with Engine takes 2 days instead of 2 weeks, because you only need to focus on business
+    logic while Engine handles all AI infrastructure details.</p>
+
+<h3>Plugins Powered by IntelliAI Engine</h3>
 <ul>
     <li><b>📝 <a href="https://plugins.jetbrains.com/plugin/28835">IntelliAI Javadoc</a></b>: Automatically generate Javadoc comments using
         AI
@@ -39,40 +81,80 @@
     <li><b>🔍 <a href="https://plugins.jetbrains.com/plugin/29155">IntelliAI Tracer</a></b>: Trace and analyze code execution with AI
         assistance
     </li>
+    <li><b>💻 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Terminal</a></b>: Generate shell commands from natural language
+        in terminal
+    </li>
 </ul>
-<p>
-    With IntelliAI Engine you can focus on business logic and UX, while the engine centralizes provider integrations,
-    credential management and UI scaffolding.
-</p>
-<p>IntelliAI Engine 是一个面向插件开发者的基础引擎，提供统一的 AI Service API、配置与凭证管理能力。</p>
+<p>With IntelliAI Engine, you can focus on business logic and UX, while the engine centralizes provider integrations, credential management
+    and UI scaffolding.</p>
+<p><b>Good architecture is a reflection of long-term value.</b></p>
+<h2>IntelliAI Engine</h2>
+<p><b>Engine 的存在，是为了让插件保持简单。而插件保持简单，是为了让用户保持信任。</b></p>
+<p>IntelliAI Engine 是 IntelliJ 插件的 AI 能力基础设施层，提供统一的 AI 能力抽象，而非功能提供。Engine 的职责是 <b>"如何调用 AI"</b>，而不是 <b>"用
+    AI 做什么"</b>。</p>
 <p><b>⚠️ 重要说明</b>：单独下载此插件没有任何功能，需要安装子插件（IntelliAI Javadoc、IntelliAI Changelog、IntelliAI Tracer 等）才能使用 AI
     功能。此插件仅提供 AI 服务商对接能力，为其他子插件管理可用服务商列表。</p>
-<p>
-    <b>核心能力</b>
-</p>
+<h3>Engine 负责什么（基础设施层）</h3>
+<p>Engine 是 AI 能力的基础设施，而不是功能提供者。它负责 <b>"如何做"</b>，而不是 <b>"做什么"</b>。</p>
 <ul>
-    <li><b>🤖 多模型接入</b>：内置 OpenAI、通义千问、Ollama、LM Studio、SiliconFlow 等服务商的 Endpoint 与参数模板</li>
-    <li><b>⚙️ 统一配置面板</b>：集中式设置页管理所有服务商的密钥、模型与速率限制，支持即时验证</li>
+    <li><b>🤖 模型与服务商管理</b>：统一接入 OpenAI、通义千问、Ollama、LM Studio、SiliconFlow，内置 Endpoint 与参数模板</li>
+    <li><b>⚡ Prompt 执行与上下文拼装</b>：处理 Prompt 调度和上下文构建</li>
+    <li><b>⚡ 请求生命周期管理</b>：封装请求调度、流式输出和错误处理，确保在 IDE 中稳定运行</li>
+    <li><b>📊 Token / 使用量统计</b>：自动统计 Token 数量和使用情况</li>
     <li><b>🔒 安全凭证存储</b>：基于 IntelliJ Password Safe 的 API Key 管理策略，自动生成隔离的服务名，避免覆盖</li>
-    <li><b>🎨 可复用 UI</b>：提供生成按钮、状态栏入口、进度弹窗等 UI 组件，帮助下游插件快速搭建交互</li>
-    <li><b>⚡ 任务执行管线</b>：封装请求调度、流式输出和错误处理，确保在 IDE 中稳定运行</li>
+    <li><b>⚙️ 统一配置面板</b>：集中式设置页管理所有服务商的密钥、模型与速率限制，支持即时验证</li>
+    <li><b>🎨 可复用 UI 组件</b>：提供生成按钮、状态栏入口、进度弹窗等 UI 组件，帮助下游插件快速搭建交互</li>
 </ul>
-<p>
-    <b>使用步骤</b>
-</p>
+
+<h3>Engine 明确不负责什么</h3>
+<p>Engine 明确不负责：</p>
+<ul>
+    <li>❌ UI 展示和交互设计</li>
+    <li>❌ 业务逻辑和决策判断</li>
+    <li>❌ 上下文语义理解</li>
+    <li>❌ 用户操作流程</li>
+</ul>
+<p><b>一句话总结</b>：Engine 不知道"用户在做什么"，它只知道"如何正确调用 AI"。</p>
+<h3>架构设计：关注点分离</h3>
+<p>设计采用分层结构：</p>
+<pre>
+[ Engine ] - 稳定、可复用、低变更的基础设施
+   ↑
+[ 专注的插件 ] - 小而专注、快速迭代
+   ↑
+[ 用户交互 ] - 用户无需感知 Engine 的存在
+</pre>
+<p>这种分离带来的好处：</p>
+<ul>
+    <li><b>插件可以自由演进</b>：每个插件专注于自己的核心功能（Javadoc 生成、Changelog 创建等）</li>
+    <li><b>用户信任模型更清晰</b>：Engine = 能力底座，插件 = 问题解法</li>
+    <li><b>保证行为一致性</b>：所有插件共享相同的错误处理、日志格式和统计信息收集</li>
+</ul>
+
+<h3>使用步骤</h3>
 <ol>
     <li><b>📦 添加依赖</b>：在自定义插件的依赖中添加 IntelliAI Engine</li>
     <li><b>🚀 调用 API</b>：通过 <code>AIService</code> 或对应的 Provider Facade 发起推理请求</li>
-    <li><b>🎯 可选集成</b>：复用提供的 UI 组件、通知工具类与设置项，保持一致的交互体验</li>
+    <li><b>🎯 专注于业务逻辑</b>：让 Engine 处理所有 AI 基础设施细节</li>
+    <li><b>🎨 可选集成</b>：复用提供的 UI 组件、通知工具类与设置项，保持一致的交互体验</li>
 </ol>
-<p>
-    <b>基于 IntelliAI Engine 的插件</b>
+<h3>这种设计的长期价值</h3>
+<ul>
+    <li><b>降低重复代码</b>：所有 AI 相关的通用能力都在 Engine 中实现一次，所有插件复用</li>
+    <li><b>保证行为一致性</b>：所有插件共享相同的错误处理、日志格式和统计信息收集</li>
+    <li><b>清晰的职责边界</b>：当用户遇到问题时，可以清楚地知道是 Engine（AI 调用）还是插件（业务逻辑）的问题</li>
+    <li><b>易于扩展</b>：添加新插件不需要重新实现 AI 调用逻辑，只需专注于业务逻辑</li>
+    <li><b>降低维护成本</b>：Engine 维护一次，所有插件受益</li>
+</ul>
+<p><b>实际例子</b>：使用 Engine 架构添加新的 Code Review 插件，开发时间从 2 周缩短到 2 天，因为只需要专注于业务逻辑，Engine 自动处理所有底层细节。
 </p>
+
+<h3>基于 IntelliAI Engine 的插件</h3>
 <ul>
     <li><b>📝 <a href="https://plugins.jetbrains.com/plugin/28835">IntelliAI Javadoc</a></b>：使用 AI 自动生成 Javadoc 注释</li>
     <li><b>📋 <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Changelog</a></b>：使用 AI 生成变更日志、工作日报和提交记录</li>
     <li><b>🔍 <a href="https://plugins.jetbrains.com/plugin/29155">IntelliAI Tracer</a></b>：使用 AI 辅助追踪和分析代码执行</li>
+    <li><b>💻 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Terminal</a></b>：在终端中用自然语言生成 Shell 命令</li>
 </ul>
-<p>
-    借助 IntelliAI Engine，可以把精力集中在业务逻辑与体验设计上，而不是在各个模型服务之间来回打补丁。
-</p>
+<p>借助 IntelliAI Engine，可以把精力集中在业务逻辑与体验设计上，而不是在各个模型服务之间来回打补丁。</p>
+<p><b>好的架构，是长期价值的体现。</b></p>
