@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.terminal.terminal;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.openapi.util.Key;
@@ -174,11 +175,16 @@ public final class TerminalTabTitleDecorator implements ProjectActivity {
         if (!SettingsState.getInstance().enableTerminalAI) {
             return Unit.INSTANCE;
         }
-        ToolWindowManager manager = ToolWindowManager.getInstance(project);
-        ToolWindow terminal = manager.getToolWindow("Terminal");
-        if (terminal != null) {
-            installListener(project, terminal);
-        }
+        ApplicationManager.getApplication().invokeLater(() -> {
+            if (project.isDisposed()) {
+                return;
+            }
+            ToolWindowManager manager = ToolWindowManager.getInstance(project);
+            ToolWindow terminal = manager.getToolWindow("Terminal");
+            if (terminal != null) {
+                installListener(project, terminal);
+            }
+        });
         project.getMessageBus().connect().subscribe(ToolWindowManagerListener.TOPIC, new ToolWindowManagerListener() {
             /**
              * 监听工具窗口注册事件, 当终端工具窗口注册完成后安装监听器
@@ -192,10 +198,15 @@ public final class TerminalTabTitleDecorator implements ProjectActivity {
                 if (!ids.contains("Terminal")) {
                     return;
                 }
-                ToolWindow tw = toolWindowManager.getToolWindow("Terminal");
-                if (tw != null) {
-                    installListener(project, tw);
-                }
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed()) {
+                        return;
+                    }
+                    ToolWindow tw = toolWindowManager.getToolWindow("Terminal");
+                    if (tw != null) {
+                        installListener(project, tw);
+                    }
+                });
             }
         });
         return Unit.INSTANCE;
