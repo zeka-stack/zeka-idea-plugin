@@ -13,6 +13,7 @@ import java.util.Locale;
  *
  * @since 1.0.0
  */
+@SuppressWarnings("UnstableApiUsage")
 public final class TerminalShellDetector {
 
     /**

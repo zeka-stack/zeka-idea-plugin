@@ -72,9 +72,8 @@ public class TerminalStatusBarPopupProvider implements AIStatusBarPopupProvider 
     @Override
     public @NotNull ActionGroup createActionGroup(@NotNull Project project, @NotNull DataContext context) {
         DefaultActionGroup group = new DefaultActionGroup();
-        if (!AIProviderUtils.hasAIProvider(project, TerminalBundle.message("settings.display.name"), TerminalBundle.message("settings.ai" +
-                                                                                                                            ".provider" +
-                                                                                                                            ".selection"))) {
+        if (!AIProviderUtils.hasAIProvider(project, TerminalBundle.message("settings.display.name"),
+                                           TerminalBundle.message("settings.ai.provider.selection"))) {
             group.add(new OpenSettingsAction(project));
             return group;
         }
