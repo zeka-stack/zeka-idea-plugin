@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.api.webhook;
+package dev.dong4j.zeka.stack.api.manager.github.webhook;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
