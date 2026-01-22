@@ -1,6 +1,7 @@
 import React from 'react';
 import {ChevronUp, MessageSquare} from 'lucide-react';
 import type {Request} from '../data';
+import {formatDate} from '../lib/api';
 
 interface RequestCardProps {
     request: Request;
@@ -30,7 +31,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({request, onClick}) => {
                     className="flex flex-col items-center justify-center w-12 h-14 rounded-xl border border-gray-200 bg-gray-50/50 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all group"
                 >
                     <ChevronUp className="w-6 h-6 text-gray-400 group-hover:text-indigo-500 transition-colors" strokeWidth={2.5}/>
-                    <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600">{request.votes}</span>
+                    <span className="text-sm font-bold text-gray-700 group-hover:text-indigo-600">{request.voteCount}</span>
                 </button>
             </div>
 
@@ -51,12 +52,10 @@ export const RequestCard: React.FC<RequestCardProps> = ({request, onClick}) => {
           </span>
                     <span className="flex items-center gap-1 hover:text-gray-600 transition-colors">
             <MessageSquare className="w-4 h-4"/>
-                        {request.comments} Comments
+                        {request.commentCount} Comments
           </span>
                     <span>•</span>
-                    <span>{request.author}</span>
-                    <span>•</span>
-                    <span>{request.date}</span>
+                    <span>{formatDate(request.createTime)}</span>
                 </div>
             </div>
         </div>

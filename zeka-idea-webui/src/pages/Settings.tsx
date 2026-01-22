@@ -31,7 +31,7 @@ export const Settings = () => {
             }
             setUser(data.user);
             setDeviceId(data.user?.deviceId || '');
-        } catch (e) {
+        } catch {
             setError('无法获取用户信息');
         } finally {
             setLoading(false);
@@ -63,7 +63,7 @@ export const Settings = () => {
             const data = json?.data ?? json;
             setUser(data || user);
             authStorage.setDeviceId(deviceId.trim());
-        } catch (e) {
+        } catch {
             setError('deviceId 更新失败');
         } finally {
             setActionLoading('');

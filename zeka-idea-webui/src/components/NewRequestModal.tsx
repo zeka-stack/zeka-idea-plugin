@@ -13,11 +13,19 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({isOpen, onClose
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Low');
 
+    React.useEffect(() => {
+        const handleEsc = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title.trim() || !description.trim()) return;
+        if (!title.trim() || !description.trim() || title.length > 30 || description.length > 1000) return;
 
         onSubmit({
             title,
@@ -47,14 +55,20 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({isOpen, onClose
 
                 <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
                     <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                            Title
-                        </label>
+                        <div className="flex justify-between items-end mb-1">
+                            <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                                Title
+                            </label>
+                            <span className={`text-[10px] ${title.length > 30 ? 'text-red-500' : 'text-gray-400'}`}>
+                                {title.length}/30
+                            </span>
+                        </div>
                         <input
                             type="text"
                             id="title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
+                            maxLength={30}
                             placeholder="What's your feature request?"
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                             required
@@ -62,13 +76,19 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({isOpen, onClose
                     </div>
 
                     <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                            Description
-                        </label>
+                        <div className="flex justify-between items-end mb-1">
+                            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                                Description
+                            </label>
+                            <span className={`text-[10px] ${description.length > 1000 ? 'text-red-500' : 'text-gray-400'}`}>
+                                {description.length}/1000
+                            </span>
+                        </div>
                         <textarea
                             id="description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            maxLength={1000}
                             placeholder="Describe what you want to achieve..."
                             rows={4}
                             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"

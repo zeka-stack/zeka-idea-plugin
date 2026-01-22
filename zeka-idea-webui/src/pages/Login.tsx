@@ -77,7 +77,7 @@ export const Login = () => {
                 throw new Error('无法获取登录地址');
             }
             window.location.href = data.url;
-        } catch (e) {
+        } catch {
             setError('获取 GitHub 登录地址失败');
         } finally {
             setLoading(false);

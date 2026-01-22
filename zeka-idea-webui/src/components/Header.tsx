@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {ChevronDown, Sparkles} from 'lucide-react';
 import {authHeaders, authStorage} from '../lib/auth';
 
@@ -13,7 +13,7 @@ export const Header: React.FC<HeaderProps> = ({variant = 'default'}) => {
     const [loggedIn, setLoggedIn] = useState(false);
     const [user, setUser] = useState<{ avatarUrl?: string; githubLogin?: string } | null>(null);
 
-    const refreshAuth = async () => {
+    const refreshAuth = useCallback(async () => {
         const token = authStorage.getToken();
         if (!token) {
             setLoggedIn(false);
@@ -26,22 +26,32 @@ export const Header: React.FC<HeaderProps> = ({variant = 'default'}) => {
             const isLoggedIn = Boolean(data?.loggedIn);
             setLoggedIn(isLoggedIn);
             setUser(isLoggedIn ? data.user : null);
-        } catch (e) {
+        } catch {
             setLoggedIn(false);
             setUser(null);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        refreshAuth();
-        const handle = () => refreshAuth();
+        // Set up event listeners for auth changes
+        const handle = () => {
+            void refreshAuth();
+        };
+
         window.addEventListener('auth-change', handle);
         window.addEventListener('hashchange', handle);
+
+        // Initial auth check - delay to avoid setState in effect
+        const timeoutId = setTimeout(() => {
+            void refreshAuth();
+        }, 0);
+
         return () => {
+            clearTimeout(timeoutId);
             window.removeEventListener('auth-change', handle);
             window.removeEventListener('hashchange', handle);
         };
-    }, []);
+    }, [refreshAuth]);
 
     const getStyles = () => {
         switch (variant) {

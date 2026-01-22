@@ -98,10 +98,18 @@ export const Donate: React.FC = () => {
         };
 
         try {
+            const body = JSON.stringify(requestBody);
+            const signatureHeaders = await import('../lib/signature').then(m =>
+                m.generateSignatureHeaders('POST', '/api/plugin/feedback/discussion', body)
+            );
+
             const response = await fetch('/api/plugin/feedback/discussion', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(requestBody)
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...signatureHeaders
+                },
+                body
             });
 
             const responseData = await response.json();
@@ -131,8 +139,9 @@ export const Donate: React.FC = () => {
                 const errorMsg = data?.error || data?.message || responseData.message || '提交失败，请稍后重试。';
                 setStatus({type: 'error', message: errorMsg});
             }
-        } catch (error: any) {
-            setStatus({type: 'error', message: '提交失败：' + (error.message || '网络错误')});
+        } catch (error) {
+            const message = error instanceof Error ? error.message : '网络错误';
+            setStatus({type: 'error', message: '提交失败：' + message});
         }
     };
 

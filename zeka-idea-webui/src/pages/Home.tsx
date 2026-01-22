@@ -1,7 +1,12 @@
 import React from 'react';
 import {ArrowRight, Bot, CheckCircle2, Code2, Database, FileText, GitBranch, Layout, Terminal, Zap} from 'lucide-react';
 
-const FeatureCard = ({icon: Icon, title, description, badge}: { icon: any, title: string, description: string, badge?: string }) => (
+const FeatureCard = ({icon: Icon, title, description, badge}: {
+    icon: React.ElementType,
+    title: string,
+    description: string,
+    badge?: string
+}) => (
     <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
         <div className="flex items-start justify-between mb-4">
             <div className="p-3 bg-indigo-50 rounded-lg">
@@ -31,16 +36,16 @@ const CodeDemo = () => (
             <div className="ml-4 text-gray-400 text-xs">UserService.java</div>
         </div>
         <div className="p-6 text-gray-300">
-            <p><span className="text-purple-400">public</span> <span className="text-yellow-400">class</span>
+            <p><span className="text-purple-400">public</span> <span className="text-yellow-400">class </span>
                 <span className="text-blue-400">UserService</span> <span className="text-yellow-400">{`{`}</span></p>
             <p className="ml-4 text-gray-500">// Zeka AI: Generating user validation logic...</p>
-            <p className="ml-4"><span className="text-purple-400">public</span> <span className="text-blue-400">User</span>
+            <p className="ml-4"><span className="text-purple-400">public</span> <span className="text-blue-400">User </span>
                 <span className="text-yellow-300">createUser</span>(String name, String
                 email) <span className="text-yellow-400">{`{`}</span></p>
             <div className="ml-8 bg-indigo-900/30 -mx-4 px-4 py-1 border-l-2 border-indigo-500">
                 <p><span className="text-purple-400">if</span> (name == <span className="text-purple-400">null</span> ||
                     name.isEmpty()) <span className="text-yellow-400">{`{`}</span></p>
-                <p className="ml-4"><span className="text-purple-400">throw</span> <span className="text-purple-400">new</span>
+                <p className="ml-4"><span className="text-purple-400">throw</span> <span className="text-purple-400">new </span>
                     <span className="text-yellow-300">IllegalArgumentException</span>(<span className="text-green-300">"Name cannot be empty"</span>);
                 </p>
                 <p><span className="text-yellow-400">{`}`}</span></p>
@@ -52,6 +57,42 @@ const CodeDemo = () => (
 );
 
 export const Home: React.FC = () => {
+    const [version, setVersion] = React.useState<string>('v1.0.0');
+    const [status, setStatus] = React.useState<'initial' | 'success' | 'error'>('initial');
+
+    React.useEffect(() => {
+        const fetchVersion = async () => {
+            try {
+                const response = await fetch('/api/plugin/version');
+                if (response.ok) {
+                    const text = await response.text();
+                    setVersion('v' + text.trim());
+                    setStatus('success');
+                } else {
+                    setStatus('error');
+                }
+            } catch {
+                setStatus('error');
+            }
+        };
+
+        fetchVersion();
+        const interval = setInterval(fetchVersion, 60000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    const getDotColors = () => {
+        if (status === 'success') {
+            return {ping: 'bg-green-400', dot: 'bg-green-500'};
+        } else if (status === 'error') {
+            return {ping: 'bg-red-400', dot: 'bg-red-500'};
+        }
+        return {ping: 'bg-indigo-400', dot: 'bg-indigo-500'};
+    };
+
+    const dotColors = getDotColors();
+
     return (
         <div className="flex flex-col">
             {/* Hero Section */}
@@ -61,10 +102,10 @@ export const Home: React.FC = () => {
                         <div className="flex-1 text-center lg:text-left">
                             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-medium mb-6">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${dotColors.ping}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${dotColors.dot}`}></span>
                 </span>
-                                v2.0 Now Available
+                                {version} Now Available
                             </div>
                             <h1 className="text-4xl lg:text-6xl font-extrabold text-gray-900 tracking-tight mb-6 leading-tight">
                                 Zeka Stack <br/>

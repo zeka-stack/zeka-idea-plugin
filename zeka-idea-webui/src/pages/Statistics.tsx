@@ -160,7 +160,7 @@ type EventStatOverviewDTO = {
 };
 
 const StatCard = ({icon: Icon, label, value, trend, trendUp}: {
-    icon: any,
+    icon: React.ComponentType<{ className?: string }>,
     label: string,
     value: string,
     trend?: string,
