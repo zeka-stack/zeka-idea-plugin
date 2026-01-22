@@ -138,7 +138,7 @@ public class BlockingRequestExecutor {
 
             if (!responseBody.trim().isEmpty()) {
                 String result = validation ? parseValidationResponse(responseBody) : parseResponse(responseBody, listener);
-                log.debug("AI response length: " + result.length());
+                log.debug("AI response length: {}", result.length());
                 return result;
             }
 

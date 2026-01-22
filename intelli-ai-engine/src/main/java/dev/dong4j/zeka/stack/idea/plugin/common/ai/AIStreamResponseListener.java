@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  * @version hello.world
  * @since hello.world
  */
-public interface AIStreamResponseListener {
+public interface AIStreamResponseListener extends AIResponseListener {
 
     /**
      * 流式响应开始

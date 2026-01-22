@@ -16,6 +16,7 @@ import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
@@ -108,6 +109,7 @@ public class StreamRequestExecutor {
         }
 
         String requestBody = body.toString();
+        logRequest(listener, requestBody);
         StreamCancellationToken cancellationToken = listener.cancellationToken();
 
         try {
@@ -336,6 +338,19 @@ public class StreamRequestExecutor {
         }
         contentStarted[0] = true;
         return text.substring(index);
+    }
+
+    /**
+     * 记录请求信息
+     * <p> 在请求发送前记录请求详情, 若存在监听器且不进行验证, 则调用监听器的 onRequest 方法
+     *
+     * @param listener    请求监听器, 可以为 null
+     * @param requestBody 请求体内容
+     */
+    private void logRequest(@Nullable AIResponseListener listener, String requestBody) {
+        if (listener != null) {
+            listener.onRequest(config.providerType.getDisplayName(), config.modelName, requestBody, false);
+        }
     }
 
 }
