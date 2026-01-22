@@ -62,13 +62,24 @@ public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedbac
         final int savedCount = this.baseMapper.insertIgnore(po);
         BaseCodes.OPTION_FAILURE.isTrue(savedCount == 1);
 
+        final Long feedbackId = po.getId();
 
         // 异步调用 GitHub 创建 Issue
         CompletableFuture.runAsync(() -> {
             try {
                 FeedbackRequest request = convertToFeedbackRequest(form);
-                pluginFeedbackService.submitIssue(request);
-                log.debug("Successfully created GitHub issue for feedback: {}", form.getTitle());
+                dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackResponse response = pluginFeedbackService.submitIssue(request);
+
+                // 如果成功创建 Issue，更新 feedback 表的 issues_url
+                if (response.getSuccess() && response.getIssue() != null && response.getIssue().getUrl() != null) {
+                    String issuesUrl = response.getIssue().getUrl();
+                    this.update(new LambdaUpdateWrapper<Feedback>()
+                                    .set(Feedback::getIssuesUrl, issuesUrl)
+                                    .eq(Feedback::getId, feedbackId));
+                    log.debug("Successfully created GitHub issue for feedback: {}, URL: {}", form.getTitle(), issuesUrl);
+                } else {
+                    log.warn("Failed to create GitHub issue for feedback: {}, response: {}", form.getTitle(), response);
+                }
             } catch (Exception e) {
                 log.warn("Failed to create GitHub issue for feedback: {}", form.getTitle(), e);
             }

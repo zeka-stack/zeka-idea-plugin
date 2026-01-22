@@ -133,6 +133,9 @@ create table if not exists feedback (
     key idx_project_title (project_id, title)
 ) comment '反馈表' charset = utf8mb4;
 
+alter table feedback
+    add issues_url varchar(128) default '' null comment 'github issues url' after description;
+
 -- 3. 需求评论表 (匿名评论)
 create table if not exists feedback_comment (
     id          bigint unsigned auto_increment primary key comment '主键',

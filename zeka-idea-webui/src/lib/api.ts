@@ -16,6 +16,7 @@ export interface Feedback {
     projectId: number;
     title: string;
     description: string;
+    issuesUrl?: string; // GitHub issues URL
     status: 'Open' | 'In Progress' | 'Complete' | 'Planned' | 'Under Review';
     priority: 'Low' | 'Medium' | 'High';
     voteCount: number;
@@ -96,6 +97,13 @@ export const api = {
             body: JSON.stringify(comment),
         });
         if (!res.ok) throw new Error('Failed to create comment');
+    },
+
+    getFeedbackDetail: async (id: number): Promise<Feedback> => {
+        const res = await fetch(`${BASE_URL}/projects/feedbacks/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch feedback detail');
+        const json = await res.json();
+        return Array.isArray(json) ? json[0] : (json.data || json);
     },
 
     getAuthStatus: async (): Promise<AuthStatus | null> => {

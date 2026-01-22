@@ -48,6 +48,9 @@ public class FeedbackForm extends BaseForm<Long> {
     @Schema(description = "详细描述")
     @NotNull(message = "[详细描述] 必填)")
     private String description;
+    /** GitHub issues URL */
+    @Schema(description = "GitHub issues URL")
+    private String issuesUrl;
     /** 状态: Open, In Progress, Complete, Planned, Under Review */
     @Schema(description = "状态: Open, In Progress, Complete, Planned, Under Review")
     private String status;

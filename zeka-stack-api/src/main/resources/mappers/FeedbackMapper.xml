@@ -10,6 +10,7 @@
         <result column="project_id" property="projectId"/>
         <result column="title" property="title"/>
         <result column="description" property="description"/>
+        <result column="issues_url" property="issuesUrl"/>
         <result column="status" property="status"/>
         <result column="priority" property="priority"/>
         <result column="vote_count" property="voteCount"/>
@@ -22,6 +23,7 @@
         a.`project_id`,
         a.`title`,
         a.`description`,
+        a.`issues_url`,
         a.`status`,
         a.`priority`,
         a.`vote_count`,
