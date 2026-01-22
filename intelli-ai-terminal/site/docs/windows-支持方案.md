@@ -83,3 +83,12 @@
 
 Windows 支持不是“新增 API”，而是“行为分支 + 兼容策略”的工作。
 建议先落地 PowerShell 最小版本，再逐步覆盖 cmd 与更多终端。
+
+## 实现说明（当前分支逻辑）
+
+1. 新增 `TerminalShellType` + `TerminalShellDetector`，通过 `os.name` 判断是否进入 Windows 分支，保持 Unix/WSL/Git Bash 走原来的逻辑；AI
+   生成核心流程复用原实现，只需携带 shell type。
+2. `TerminalAiGenerateAction` 在输入提取时传入 shell type：Windows 分支会解析 `PS C:\...>` / `C:\...>` 样式的提示符，Unix 继续沿用 `$`/`>` 规则。
+3. 替换命令行时新增 Windows 分支：先发送 `Ctrl+C` + `Ctrl+U`，再写入命令；`isValidShellOutput` 也支持 `C:`、`./`、`&` 等开头，确保 PowerShell/cmd
+   结果不被误判。
+4. Windows 分支仍复用 AI 调用、上下文收集、控制台日志等逻辑，真正差异只集中在 prompt 清理、行替换和输出校验，满足“尽量少动现有逻辑”的目标。
