@@ -11,6 +11,7 @@
         <result column="title" property="title"/>
         <result column="description" property="description"/>
         <result column="issues_url" property="issuesUrl"/>
+        <result column="issues_id" property="issuesId"/>
         <result column="status" property="status"/>
         <result column="priority" property="priority"/>
         <result column="vote_count" property="voteCount"/>
@@ -24,6 +25,7 @@
         a.`title`,
         a.`description`,
         a.`issues_url`,
+        a.`issues_id`,
         a.`status`,
         a.`priority`,
         a.`vote_count`,

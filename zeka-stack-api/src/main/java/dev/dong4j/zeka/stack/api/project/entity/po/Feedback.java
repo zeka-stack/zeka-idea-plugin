@@ -40,6 +40,8 @@ public class Feedback extends BaseWithTimePO<Long, Feedback> {
     public static final String DESCRIPTION = "description";
     /** GitHub issues URL-表字段 */
     public static final String ISSUES_URL = "issues_url";
+    /** GitHub issues ID-表字段 */
+    public static final String ISSUES_ID = "issues_id";
     /** 状态: Open, In Progress, Complete, Planned, Under Review-表字段 */
     public static final String STATUS = "status";
     /** 优先级: Low, Medium, High-表字段 */
@@ -61,6 +63,9 @@ public class Feedback extends BaseWithTimePO<Long, Feedback> {
     /** GitHub issues URL */
     @TableField("`issues_url`")
     private String issuesUrl;
+    /** GitHub issues ID */
+    @TableField("`issues_id`")
+    private Long issuesId;
     /** 状态: Open, In Progress, Complete, Planned, Under Review */
     @TableField("`status`")
     private String status;

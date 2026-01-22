@@ -46,6 +46,9 @@ public class FeedbackDTO extends BaseDTO<Long> {
     /** GitHub issues URL */
     @Schema(description = "GitHub issues URL")
     private String issuesUrl;
+    /** GitHub issues ID */
+    @Schema(description = "GitHub issues ID")
+    private Long issuesId;
     /** 状态: Open, In Progress, Complete, Planned, Under Review */
     @Schema(description = "状态: Open, In Progress, Complete, Planned, Under Review")
     private String status;

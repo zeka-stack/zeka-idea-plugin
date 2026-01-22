@@ -70,13 +70,24 @@ public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedbac
                 FeedbackRequest request = convertToFeedbackRequest(form);
                 dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackResponse response = pluginFeedbackService.submitIssue(request);
 
-                // 如果成功创建 Issue，更新 feedback 表的 issues_url
+                // 如果成功创建 Issue，更新 feedback 表的 issues_url 和 issues_id
                 if (response.getSuccess() && response.getIssue() != null && response.getIssue().getUrl() != null) {
                     String issuesUrl = response.getIssue().getUrl();
-                    this.update(new LambdaUpdateWrapper<Feedback>()
-                                    .set(Feedback::getIssuesUrl, issuesUrl)
-                                    .eq(Feedback::getId, feedbackId));
-                    log.debug("Successfully created GitHub issue for feedback: {}, URL: {}", form.getTitle(), issuesUrl);
+                    Long issuesId = response.getIssue().getId() != null
+                                    ? Long.parseLong(response.getIssue().getId())
+                                    : null;
+
+                    LambdaUpdateWrapper<Feedback> updateWrapper = new LambdaUpdateWrapper<Feedback>()
+                        .set(Feedback::getIssuesUrl, issuesUrl)
+                        .eq(Feedback::getId, feedbackId);
+
+                    if (issuesId != null) {
+                        updateWrapper.set(Feedback::getIssuesId, issuesId);
+                    }
+
+                    this.update(updateWrapper);
+                    log.debug("Successfully created GitHub issue for feedback: {}, URL: {}, ID: {}",
+                              form.getTitle(), issuesUrl, issuesId);
                 } else {
                     log.warn("Failed to create GitHub issue for feedback: {}, response: {}", form.getTitle(), response);
                 }
