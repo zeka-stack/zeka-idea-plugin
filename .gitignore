@@ -58,3 +58,4 @@ docs-list.json
 .private
 
 !gradle-wrapper.jar
+.env
