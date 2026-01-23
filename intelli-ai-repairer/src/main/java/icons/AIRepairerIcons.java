@@ -32,8 +32,6 @@ public class AIRepairerIcons {
 
     /** 16x16 大小的 Repairer 图标 */
     public static final Icon REPAIRER_16 = load("/icons/repairer_16.svg");
-    /** Repairer 图标, 尺寸为 24x24 像素 */
-    public static final Icon REPAIRER_24 = load("/icons/repairer_24.svg");
     /** Repairer 32x32 像素图标 */
     public static final Icon REPAIRER_32 = load("/icons/repairer_32.svg");
 }
