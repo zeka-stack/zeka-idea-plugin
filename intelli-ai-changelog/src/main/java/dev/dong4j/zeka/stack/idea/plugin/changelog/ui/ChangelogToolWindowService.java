@@ -1846,9 +1846,9 @@ public final class ChangelogToolWindowService {
             setBackground(background);
             setPreferredSize(null);
 
-            if (userObject instanceof HistoryGroup group) {
-                groupLabel.setText(group.text + ": " + node.getChildCount());
-                groupLabel.setIcon(group.icon);
+            if (userObject instanceof HistoryGroup(String text, Icon icon)) {
+                groupLabel.setText(text + ": " + node.getChildCount());
+                groupLabel.setIcon(icon);
                 groupLabel.setForeground(foreground);
                 add(deleteLabel, BorderLayout.WEST);
                 add(groupLabel, BorderLayout.CENTER);
@@ -2016,9 +2016,9 @@ public final class ChangelogToolWindowService {
 
         /**
          * 初始化停止输出动作
-         * <p> 用于创建一个 StopOutputAction 实例, 并设置其名称, 描述和图标.
+         * <p> 用于创建一个 StopOutputAction 实例, 并设置其名称, 描述和图标
          *
-         * @param sessionTitle 要停止的输出会话标题, 不能为空
+         * @param session 要停止的输出会话, 不能为空
          */
         private StopOutputAction(@NotNull ChangelogOutputSession session) {
             super(ChangelogBundle.message("toolwindow.stop.text"),
