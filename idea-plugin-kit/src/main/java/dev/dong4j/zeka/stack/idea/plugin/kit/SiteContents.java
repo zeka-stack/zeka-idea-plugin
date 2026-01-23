@@ -24,6 +24,8 @@ public class SiteContents {
     /** 文件上传的 API 地址, 用于将文件上传到指定的服务端接口 */
     public static final String UPLOAD_URL = "https://zekastack.dong4j.site/api/plugin/events";
     /** 隐私政策页面的 URL */
+    public static final String ZEKA_STACK_HOME = "https://zekastack.dong4j.site/";
+    /** 隐私政策页面的 URL */
     public static final String PRIVACY = "https://zekastack.dong4j.site/#/privacy";
     /** 数据页面访问地址 */
     public static final String DATAS = "https://zekastack.dong4j.site/#/datas";
@@ -55,13 +57,10 @@ public class SiteContents {
     public static final String MARKETPLACE_LINK = "https://plugins.jetbrains.com/plugin/29152";
     /** 插件市场评论链接, 用于引导用户查看插件在 JetBrains Marketplace 上的用户评价与反馈 */
     public static final String MARKETPLACE_REVIEWS_LINK = "https://plugins.jetbrains.com/vendor/9afaba35-91ea-4364-8ced-64db868dd23e";
-
-
     /** 终端图标资源地址 */
     public static final String TERMINAL_LOGO_URL = "https://cdn.dong4j.site/source/image/logo.png";
     /** 终端界面示例动图资源地址 */
     public static final String TERMINAL_GIF_URL = "https://cdn.dong4j.site/source/image/sample.gif";
-
     /** GitHub Releases API 地址, 用于获取 git-cliff 最新版本信息 */
     public static final String GITHUB_API_URL = "https://api.github.com/repos/orhun/git-cliff/releases/latest";
     /** GitHub 发布下载基础 URL */

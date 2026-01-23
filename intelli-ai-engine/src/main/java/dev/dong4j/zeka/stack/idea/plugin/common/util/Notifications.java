@@ -27,6 +27,7 @@ import javax.swing.event.HyperlinkEvent;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.action.DonateAction;
+import dev.dong4j.zeka.stack.idea.plugin.common.action.QuickStartAction;
 
 /**
  * 通知管理类
@@ -191,6 +192,7 @@ public class Notifications {
             .setTitle(AICommonBundle.message("notification.welcome.title", EngineContents.PLUGIN_NAME))
             .setImportant(true)
             .setListener(new NotificationListenerImpl())
+            .addAction(new QuickStartAction())
             .addAction(new DonateAction(AICommonBundle.message("action.donate.welcome.text")));
 
         // 尝试使用自定义位置显示
