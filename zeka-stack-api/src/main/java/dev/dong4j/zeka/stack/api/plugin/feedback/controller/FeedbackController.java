@@ -4,9 +4,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import dev.dong4j.zeka.kernel.common.api.BaseCodes;
+import dev.dong4j.zeka.stack.api.manager.github.FeedbackService;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackRequest;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackResponse;
-import dev.dong4j.zeka.stack.api.plugin.feedback.service.FeedbackService;
 import dev.dong4j.zeka.starter.rest.annotation.RestControllerWrapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

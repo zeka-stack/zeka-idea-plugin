@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import dev.dong4j.zeka.kernel.common.api.BaseCodes;
-import dev.dong4j.zeka.stack.api.plugin.feedback.client.GitHubIssueClient;
+import dev.dong4j.zeka.stack.api.manager.github.client.GitHubIssueClient;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackRequest;
 import dev.dong4j.zeka.stack.api.project.dao.FeedbackMapper;
 import dev.dong4j.zeka.stack.api.project.entity.converter.FeedbackConverter;
@@ -42,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 public class FeedbackServiceImpl extends BaseServiceImpl<FeedbackMapper, Feedback> implements FeedbackService {
     /** Plugin feedback service for creating GitHub issues */
-    private final dev.dong4j.zeka.stack.api.plugin.feedback.service.FeedbackService pluginFeedbackService;
+    private final dev.dong4j.zeka.stack.api.manager.github.FeedbackService pluginFeedbackService;
     /** GitHub Issue client for updating issue state */
     private final GitHubIssueClient githubIssueClient;
     /** Project service for getting project information */

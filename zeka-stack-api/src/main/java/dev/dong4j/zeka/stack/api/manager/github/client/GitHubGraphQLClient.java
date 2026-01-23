@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.api.plugin.feedback.client;
+package dev.dong4j.zeka.stack.api.manager.github.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

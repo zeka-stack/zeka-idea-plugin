@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.api.plugin.feedback.service;
+package dev.dong4j.zeka.stack.api.manager.github;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import dev.dong4j.zeka.stack.api.plugin.feedback.client.GitHubGraphQLClient;
-import dev.dong4j.zeka.stack.api.plugin.feedback.client.GitHubIssueClient;
-import dev.dong4j.zeka.stack.api.plugin.feedback.config.GitHubProperties;
+import dev.dong4j.zeka.stack.api.manager.github.client.GitHubGraphQLClient;
+import dev.dong4j.zeka.stack.api.manager.github.client.GitHubIssueClient;
+import dev.dong4j.zeka.stack.api.manager.github.config.GitHubProperties;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackRequest;
 import dev.dong4j.zeka.stack.api.plugin.feedback.dto.FeedbackResponse;
 import lombok.RequiredArgsConstructor;

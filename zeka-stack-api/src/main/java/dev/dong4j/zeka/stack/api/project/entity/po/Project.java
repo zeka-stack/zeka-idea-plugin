@@ -56,7 +56,7 @@ public class Project extends BaseWithTimePO<Long, Project> {
     /** 项目描述 */
     @TableField("`description`")
     private String description;
-    /** GitHub 仓库 URL (如 https://github.com/zeka-stack/zeka-idea-plugin) */
+    /** GitHub 仓库 URL (如 <a href="https://github.com/zeka-stack/zeka-idea-plugin">...</a>) */
     @TableField("`repos`")
     private String repos;
     /** 图标标识(前端映射 lucide 图标) */

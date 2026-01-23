@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.api.plugin.feedback.config;
+package dev.dong4j.zeka.stack.api.manager.github.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
