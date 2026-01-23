@@ -100,8 +100,6 @@ public class DocumentationInserterHelper {
                 return;
             }
 
-            PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document);
-
             CommandProcessor.getInstance().executeCommand(
                 project,
                 () -> ApplicationManager.getApplication().runWriteAction(() -> {
@@ -265,16 +263,15 @@ public class DocumentationInserterHelper {
         PsiElement oldComment = null;
 
         // 处理 Java 元素的 Javadoc
-        if (element instanceof PsiDocCommentOwner) {
-            oldComment = ((PsiDocCommentOwner) element).getDocComment();
-        }
-        // 处理 Kotlin 元素的 KDoc
-        else if (element instanceof KtClassOrObject) {
-            oldComment = ((KtClassOrObject) element).getDocComment();
-        } else if (element instanceof KtNamedFunction) {
-            oldComment = ((KtNamedFunction) element).getDocComment();
-        } else if (element instanceof KtProperty) {
-            oldComment = ((KtProperty) element).getDocComment();
+        switch (element) {
+            case PsiDocCommentOwner psiDocCommentOwner -> oldComment = psiDocCommentOwner.getDocComment();
+
+            // 处理 Kotlin 元素的 KDoc
+            case KtClassOrObject ktClassOrObject -> oldComment = ktClassOrObject.getDocComment();
+            case KtNamedFunction ktNamedFunction -> oldComment = ktNamedFunction.getDocComment();
+            case KtProperty ktProperty -> oldComment = ktProperty.getDocComment();
+            default -> {
+            }
         }
         return oldComment;
     }
@@ -297,14 +294,12 @@ public class DocumentationInserterHelper {
      * @return 文档插入位置的偏移量
      */
     private int getInsertPosition(@NotNull PsiElement element) {
-        if (element instanceof PsiMethod method) {
-            return method.getModifierList().getTextRange().getStartOffset();
-        } else if (element instanceof PsiClass clazz) {
-            return Objects.requireNonNull(clazz.getModifierList()).getTextRange().getStartOffset();
-        } else if (element instanceof PsiField field) {
-            return Objects.requireNonNull(field.getModifierList()).getTextRange().getStartOffset();
-        }
-        return element.getTextRange().getStartOffset();
+        return switch (element) {
+            case PsiMethod method -> method.getModifierList().getTextRange().getStartOffset();
+            case PsiClass clazz -> Objects.requireNonNull(clazz.getModifierList()).getTextRange().getStartOffset();
+            case PsiField field -> Objects.requireNonNull(field.getModifierList()).getTextRange().getStartOffset();
+            default -> element.getTextRange().getStartOffset();
+        };
     }
 
     /**
