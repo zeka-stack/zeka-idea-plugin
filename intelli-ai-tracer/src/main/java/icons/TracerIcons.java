@@ -19,6 +19,11 @@ import javax.swing.Icon;
  * @since 1.0.0
  */
 public final class TracerIcons {
+    /**
+     * 私有构造方法, 防止外部实例化该工具类
+     * <p>
+     * 该类为工具类, 所有方法和属性均为静态, 通过私有构造方法确保不可被实例化
+     */
     private TracerIcons() {
         // utility class
     }
@@ -26,7 +31,7 @@ public final class TracerIcons {
     /**
      * 通用图标加载入口。
      *
-     * @param iconPath 相对 {@code resources} 根目录的路径（例如 {@code "/icons/pluginIcon_16.svg"}）
+     * @param iconPath 相对 {@code resources} 根目录的路径（例如 {@code "/icons/tracer_16.svg"}）
      * @return {@link Icon}
      */
     @NotNull
@@ -39,7 +44,7 @@ public final class TracerIcons {
      * <p>
      * 用于：右键菜单、工具栏按钮等基于 {@link com.intellij.openapi.actionSystem.AnAction} 的入口。
      */
-    public static final Icon WORKFLOW_ACTION = load("/icons/pluginIcon_16.svg");
+    public static final Icon WORKFLOW_ACTION = load("/icons/tracer_16.svg");
     /**
      * 工具图标, 用于表示工作流操作
      * <p>
