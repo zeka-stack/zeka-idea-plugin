@@ -9,29 +9,6 @@ import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-import javax.swing.border.TitledBorder;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.AIProviderSelectionPanel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.FeedbackPanel;
@@ -42,6 +19,19 @@ import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.PromptTemplateVersion
 import dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.terminal.util.TerminalBundle;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import javax.swing.border.TitledBorder;
+import java.awt.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 /**
  * 终端设置面板类
@@ -141,6 +131,7 @@ public class TerminalSettingsPanel {
             .addComponent(createLogoPanel())
             .addComponent(aiProviderSelectionPanel.getPanel())
             .addComponent(createGifPanel())
+            .addComponent(createTabHintLabel())
             .addSeparator(10)
             .addComponent(enableTerminalAICheckBox)
             .addComponent(enableStreamResponseCheckBox)
@@ -155,6 +146,18 @@ public class TerminalSettingsPanel {
         mainPanel.setMinimumSize(new Dimension(JBUI.scale(630), 0));
         mainPanel.setBorder(JBUI.Borders.empty(10));
         setupListeners();
+    }
+
+    /**
+     * 创建 TAB 快捷键提示说明
+     *
+     * @return 提示标签组件
+     */
+    private JBLabel createTabHintLabel() {
+        JBLabel label = new JBLabel("<html>" + TerminalBundle.message("settings.terminal.tab.hint") + "</html>");
+        label.setForeground(com.intellij.util.ui.UIUtil.getContextHelpForeground());
+        label.setBorder(JBUI.Borders.empty(0, 2));
+        return label;
     }
 
     /**
