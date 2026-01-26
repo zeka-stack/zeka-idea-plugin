@@ -57,7 +57,7 @@ pick_java() {
 if ! pick_java; then
   echo "错误: 未找到可用的 Java Runtime。" >&2
   echo "建议: 使用 asdf 安装并启用 JDK，例如:" >&2
-  echo "  asdf plugin add java && asdf install java temurin-17.0.17+10 && asdf local java temurin-17.0.17+10" >&2
+  echo "  asdf plugin add java && asdf install java temurin-21.0.9+10.0.LTS && asdf local java temurin-21.0.9+10.0.LTS" >&2
   exit 1
 fi
 
