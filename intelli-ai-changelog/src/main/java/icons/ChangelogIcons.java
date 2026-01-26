@@ -1,10 +1,9 @@
 package icons;
 
 import com.intellij.openapi.util.IconLoader;
-
 import org.jetbrains.annotations.NotNull;
 
-import javax.swing.Icon;
+import javax.swing.*;
 
 /**
  * 变更日志图标类
@@ -40,7 +39,6 @@ public class ChangelogIcons {
      * 用于：工具栏按钮、动作图标、菜单项、工具窗口标签
      */
     public static final Icon CHANGELOG_16 = load("/icons/changelog_16.svg");
-    /** 日志图标, 用于显示日志相关操作或视图的界面元素 */
     public static final Icon LOGS = load("/icons/logs.svg");
     /** 周报图标 (16x16), 用于工具栏按钮, 动作图标, 菜单项, 工具窗口标签 */
     public static final Icon WEEKLY = load("/icons/weekly.svg");
