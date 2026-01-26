@@ -28,7 +28,7 @@ public class SiteContents {
     /** 隐私政策页面的 URL */
     public static final String PRIVACY = "https://zekastack.dong4j.site/#/privacy";
     /** 数据页面访问地址 */
-    public static final String DATAS = "https://zekastack.dong4j.site/#/datas";
+    public static final String DATAS = "https://zekastack.dong4j.site/#/statistics";
     /** 捐赠页面链接, 用于引导用户支持项目开发 */
     public static final String DONATE = "https://zekastack.dong4j.site/#/donate";
     /** 版本检查 URL 地址 */
