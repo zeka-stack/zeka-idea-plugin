@@ -15,6 +15,7 @@ import com.intellij.ui.BalloonImpl;
 import com.intellij.ui.BalloonLayoutData;
 import com.intellij.ui.awt.RelativePoint;
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
+import dev.dong4j.zeka.stack.idea.plugin.common.PluginDisposable;
 import dev.dong4j.zeka.stack.idea.plugin.common.action.DonateAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.action.QuickStartAction;
 import org.jetbrains.annotations.NotNull;
@@ -199,7 +200,7 @@ public class Notifications {
                                                                          false,
                                                                          false,
                                                                          BalloonLayoutData.fullContent(),
-                                                                         project);
+                    PluginDisposable.getInstance(project));
 
                 JComponent component = window.getComponent();
                 balloon.show(getUpperRightRelativePoint(component, (BalloonImpl) balloon), Balloon.Position.above);
