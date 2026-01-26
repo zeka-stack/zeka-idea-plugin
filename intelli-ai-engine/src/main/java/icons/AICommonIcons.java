@@ -487,13 +487,13 @@ public final class AICommonIcons {
      *
      * @see AICommonIcons#load(String) 加载图标
      */
-    public static final Icon WECHAT_PAY = load("/images/wechat.webp");
+    public static final Icon WECHAT_PAY = load("/images/wechat.jpg");
 
     /**
      * 支付宝图标
      * <p> 用于支持对话框中的支付方式显示 </p>
      */
-    public static final Icon ALIPAY = load("/images/alipay.webp");
+    public static final Icon ALIPAY = load("/images/alipay.jpg");
 
     // ========== 工具方法 ==========
 
