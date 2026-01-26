@@ -44,10 +44,6 @@ public class StatisticsUploader {
     private final Path statisticsDir;
     /** JSON 序列化与反序列化工具, 用于将对象转换为 JSON 字符串及从 JSON 解析对象 */
     private final ObjectMapper objectMapper;
-
-    /** 已上报的记录索引文件, 用于跟踪每个数据文件中已上传的记录数量 */
-    private static final String UPLOADED_INDEX_FILE = "uploaded.idx";
-
     /** 上传状态追踪, 用于记录每个数据批次的重试次数 */
     private final Map<String, AtomicInteger> uploadRetryCount = new ConcurrentHashMap<>();
 
