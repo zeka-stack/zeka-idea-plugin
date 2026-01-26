@@ -14,20 +14,15 @@ import com.intellij.openapi.wm.IdeFrame;
 import com.intellij.ui.BalloonImpl;
 import com.intellij.ui.BalloonLayoutData;
 import com.intellij.ui.awt.RelativePoint;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.awt.Component;
-import java.awt.Point;
-import java.util.Objects;
-
-import javax.swing.JComponent;
-import javax.swing.JLayeredPane;
-import javax.swing.event.HyperlinkEvent;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.action.DonateAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.action.QuickStartAction;
+import org.jetbrains.annotations.NotNull;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import java.awt.*;
+import java.util.Objects;
 
 /**
  * 通知管理类
@@ -293,4 +288,3 @@ public class Notifications {
         }
     }
 }
-
