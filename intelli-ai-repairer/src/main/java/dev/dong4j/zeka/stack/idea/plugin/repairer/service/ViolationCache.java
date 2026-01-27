@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 
@@ -28,6 +29,7 @@ public final class ViolationCache {
      * @see CodeViolation
      */
     private volatile List<CodeViolation> violations = Collections.emptyList();
+    private final CopyOnWriteArrayList<ViolationCacheListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
      * 获取指定项目的违规模型缓存实例
@@ -59,5 +61,32 @@ public final class ViolationCache {
      */
     public void setAll(List<CodeViolation> violations) {
         this.violations = violations == null ? Collections.emptyList() : List.copyOf(violations);
+        notifyListeners();
+    }
+
+    /**
+     * Register a listener for cache updates.
+     *
+     * @param listener listener to add
+     */
+    public void addListener(ViolationCacheListener listener) {
+        if (listener != null) {
+            listeners.addIfAbsent(listener);
+        }
+    }
+
+    /**
+     * Remove a previously registered listener.
+     *
+     * @param listener listener to remove
+     */
+    public void removeListener(ViolationCacheListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void notifyListeners() {
+        for (ViolationCacheListener listener : listeners) {
+            listener.violationsUpdated(violations);
+        }
     }
 }

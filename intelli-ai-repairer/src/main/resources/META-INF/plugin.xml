@@ -16,6 +16,8 @@
         <externalAnnotator
             language="JAVA"
             implementationClass="dev.dong4j.zeka.stack.idea.plugin.repairer.annotator.StaticAnalysisAnnotator"/>
+        <problemsViewPanelProvider
+            implementation="dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsViewPanelProvider"/>
     </extensions>
 
     <actions>
@@ -24,6 +26,20 @@
                 text="Import Static Analysis Report..."
                 description="Import Checkstyle/PMD XML report and show problems">
             <add-to-group group-id="AnalyzeMenu" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixSelectedProblemsAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixSelectedProblemsAction"
+                text="Fix Selected with AI"
+                description="Apply AI fixes to selected problems">
+            <add-to-group group-id="ProblemsView.ToolWindow.Toolbar" anchor="last"/>
+            <add-to-group group-id="ProblemsView.ToolWindow.TreePopup" anchor="last"/>
+        </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixAllProblemsAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixAllProblemsAction"
+                text="Fix All with AI"
+                description="Apply AI fixes to all Repairer problems">
+            <add-to-group group-id="ProblemsView.ToolWindow.Toolbar" anchor="last"/>
+            <add-to-group group-id="ProblemsView.ToolWindow.TreePopup" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>

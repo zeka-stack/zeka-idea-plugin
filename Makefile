@@ -181,7 +181,7 @@ quick-deploy:
 
 # 拷贝构建产物到指定目录（带版本号）
 # 用法: make copy-zips [TARGET_DIR=/path/to/dir]
-copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer build-repairer build-terminal
+copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer build-terminal
 	@BASE_TARGET=$${TARGET_DIR:-$(DIST_DIR)}; \
 	version=$$(cd $(ENGINE_DIR) && ./gradlew properties -q | grep "pluginVersion" | awk -F: '{print $$2}' | xargs); \
 	if [ -z "$$version" ]; then \
@@ -191,7 +191,7 @@ copy-zips: build-engine build-javadoc  build-changelog build-nacos build-tracer 
 	TARGET=$$BASE_TARGET/$$version; \
 	echo "正在拷贝构建产物到 $$TARGET (版本: $$version)..."; \
 	mkdir -p $$TARGET; \
-	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR) $(REPAIRER_DIR) $(TERMINAL_DIR); do \
+	for dir in $(ENGINE_DIR) $(JAVADOC_DIR) $(CHANGELOG_DIR) $(NACOS_DIR) $(TRACER_DIR) $(TERMINAL_DIR); do \
 		zip_file=$$(ls -t $$dir/build/distributions/$$dir-*.zip 2>/dev/null | head -n1); \
 		if [ -n "$$zip_file" ]; then \
 			echo "  拷贝 $$zip_file -> $$TARGET/$$(basename $$zip_file)"; \
