@@ -2,16 +2,11 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
-
-import org.jetbrains.annotations.NotNull;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.AnthropicLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ModelScopeAnthropicProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ZaiAnthropicProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ZhipuAnthropicProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.codex.CodexLikeProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.gemini.GeminLikeiProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.ollama.OllamaLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.AzureOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.GitHubModelsProvider;
@@ -23,6 +18,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZhipuOpenAIPr
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * AI 服务工厂类
@@ -92,8 +88,6 @@ public final class AIServiceFactory {
             case ZAI_ANTHROPIC -> new ZaiAnthropicProvider(project, config, modelParameters, runtimeSettings);
 
             case OLLAMA -> new OllamaLikeProvider(project, config, modelParameters, runtimeSettings);
-            case GEMINI -> new GeminLikeiProvider(project, config, modelParameters, runtimeSettings);
-            case CODEX -> new CodexLikeProvider(project, config, modelParameters, runtimeSettings);
         };
     }
 

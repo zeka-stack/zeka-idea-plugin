@@ -58,36 +58,6 @@ public enum AIProviderType {
                )
     ),
     /**
-     * Gemini（Google AI Studio）模型配置
-     */
-    GEMINI(
-        "gemini",
-        "Gemini",
-        "https://generativelanguage.googleapis.com/v1beta",
-        "gemini-3-pro-preview",
-        true,
-        true,
-        List.of(
-            "gemini-3-pro-preview",
-            "gemini-3-flash-preview",
-            "gemini-2.5-pro",
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite"
-               )
-    ),
-    /**
-     * Codex（OpenAI）模型配置
-     */
-    CODEX(
-        "codex",
-        "Codex",
-        "https://api.openai.com/v1",
-        "codex-mini-latest",
-        true,
-        true,
-        List.of("codex-mini-latest", "gpt-4o-mini")
-    ),
-    /**
      * NVIDIA (OpenAI 兼容) 模型配置
      */
     NVIDIA(
@@ -724,8 +694,6 @@ public enum AIProviderType {
             AIProviderType.ZAI_ANTHROPIC
                                                                                                  ));
         groupedProviders.put(AICommonBundle.message("settings.provider.group.other"), List.of(
-            AIProviderType.GEMINI,
-            AIProviderType.CODEX,
             AIProviderType.OLLAMA
                                                                                              ));
         return groupedProviders;
@@ -741,7 +709,7 @@ public enum AIProviderType {
     @SuppressWarnings("DuplicatedCode")
     public String getApiKeyUrl() {
         return switch (this) {
-            case OPENAI, CODEX -> "https://platform.openai.com/api-keys";
+            case OPENAI -> "https://platform.openai.com/api-keys";
             case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";
             case OPENROUTER -> "https://openrouter.ai/settings/keys";
@@ -756,7 +724,6 @@ public enum AIProviderType {
             case GROK -> "https://console.x.ai/team/default/api-keys";
             case HUNYUAN, HUNYUAN_ANTHROPIC -> "https://console.cloud.tencent.com/hunyuan/start";
             case MOONSHOT, MOONSHOT_ANTHROPIC -> "https://platform.moonshot.cn/console/api-keys";
-            case GEMINI -> "https://aistudio.google.com/app/apikey";
             case QIANWEN -> "https://dashscope.console.aliyun.com/apiKey";
             case SILICONFLOW -> "https://cloud.siliconflow.cn/settings/api-keys";
             case OLLAMA -> "https://ollama.com/cloud";

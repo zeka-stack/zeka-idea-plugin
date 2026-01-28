@@ -2,13 +2,11 @@ package icons;
 
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.util.IconUtil;
-
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.Icon;
-
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import javax.swing.*;
 
 /**
  * 用户服务类
@@ -512,7 +510,7 @@ public final class AICommonIcons {
             return null;
         }
         Icon icon = switch (providerType) {
-            case OPENAI, CODEX -> PROVIDER_CHATGPT;
+            case OPENAI -> PROVIDER_CHATGPT;
             case OPENROUTER -> PROVIDER_OPENROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
             case BEDROCK -> PROVIDER_BEDROCK;
@@ -520,7 +518,6 @@ public final class AICommonIcons {
             case MISTRAL -> PROVIDER_MISTRAL;
             case GITHUB_MODELS -> PROVIDER_GITHUB;
             case ANTHROPIC -> PROVIDER_ANTHROPIC;
-            case GEMINI -> PROVIDER_GEMINI;
             case NVIDIA -> PROVIDER_NVIDIA;
             case HUGGINGFACE -> PROVIDER_HUGGINGFACE;
             case DEEPSEEK, DEEPSEEK_ANTHROPIC -> PROVIDER_DEEPSEEK;
@@ -554,7 +551,7 @@ public final class AICommonIcons {
             return null;
         }
         return switch (providerType) {
-            case OPENAI, CODEX -> PROVIDER_CHATGPT_64;
+            case OPENAI -> PROVIDER_CHATGPT_64;
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;
             case BEDROCK -> PROVIDER_BEDROCK_64;
@@ -562,7 +559,6 @@ public final class AICommonIcons {
             case MISTRAL -> PROVIDER_MISTRAL_64;
             case GITHUB_MODELS -> PROVIDER_GITHUB_64;
             case ANTHROPIC -> PROVIDER_ANTHROPIC_64;
-            case GEMINI -> PROVIDER_GEMINI_64;
             case NVIDIA -> PROVIDER_NVIDIA_64;
             case HUGGINGFACE -> PROVIDER_HUGGINGFACE_64;
             case DEEPSEEK, DEEPSEEK_ANTHROPIC -> PROVIDER_DEEPSEEK_64;
