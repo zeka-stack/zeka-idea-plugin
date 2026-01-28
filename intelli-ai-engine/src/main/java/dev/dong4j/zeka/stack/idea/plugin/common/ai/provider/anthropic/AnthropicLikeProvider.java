@@ -4,22 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -31,6 +17,18 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Claude（Anthropic）Provider
@@ -273,9 +271,8 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         // 参数映射：Anthropic 主要使用 max_tokens / temperature / top_p / top_k
         AIModelParameters params = modelParameters;
         Integer maxTokens = parseMaxTokens(params.maxTokens);
-        if (maxTokens != null) {
-            body.addProperty("max_tokens", maxTokens);
-        }
+        body.addProperty("max_tokens", Objects.requireNonNullElse(maxTokens, 10240));
+
         Double temperature = parseDouble(params.temperature);
         if (temperature != null) {
             body.addProperty("temperature", temperature);

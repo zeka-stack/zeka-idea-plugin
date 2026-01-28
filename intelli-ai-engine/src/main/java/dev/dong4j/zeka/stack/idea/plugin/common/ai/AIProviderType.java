@@ -312,7 +312,7 @@ public enum AIProviderType {
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "qwen3-8b",
         true,
-        false,
+        true,
         Arrays.asList("qwen3-omni-flash-2025-12-01", "qwen3-32b", "qwen3-14b", "qwen3-8b")
     ),
     /**
@@ -326,7 +326,7 @@ public enum AIProviderType {
         "https://api.siliconflow.cn/v1",
         "Qwen/Qwen3-8B",
         true,
-        false,
+        true,
         List.of("Qwen/Qwen3-8B", "Qwen/Qwen2.5-14B-Instruct", "THUDM/glm-4-9b-chat")
     ),
     /**
@@ -366,10 +366,10 @@ public enum AIProviderType {
         "modelscope",
         "ModelScope",
         "https://api-inference.modelscope.cn/v1",
-        "ZhipuAI/GLM-4.6",
+        "ZhipuAI/GLM-4.7",
         true,
-        false,
-        List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
+        true,
+        List.of("ZhipuAI/GLM-4.7", "GLM-4.7-Flash","Qwen/Qwen3-235B-A22B-Thinking-2507", "deepseek-ai/DeepSeek-V3.2")
     ),
     /**
      * ModelScope Anthropic 兼容模型配置
@@ -378,10 +378,10 @@ public enum AIProviderType {
         "modelscope_anthropic",
         "ModelScope",
         "https://api-inference.modelscope.cn",
-        "ZhipuAI/GLM-4.6",
+        "ZhipuAI/GLM-4.7",
         true,
-        false,
-        List.of("Qwen/Qwen3-Coder-480B-A35B-Instruc", "Qwen/Qwen3-235B-A22B-Thinking-2507", "ZhipuAI/GLM-4.6")
+        true,
+        List.of("ZhipuAI/GLM-4.7", "GLM-4.7-Flash","Qwen/Qwen3-235B-A22B-Thinking-2507", "deepseek-ai/DeepSeek-V3.2")
     ),
     /**
      * IFlow 模型配置
@@ -394,7 +394,7 @@ public enum AIProviderType {
         "https://apis.iflow.cn/v1",
         "kimi-k2-0905",
         true,
-        false,
+        true,
         List.of("kimi-k2-0905", "qwen3-coder-plus", "glm-4.6", "deepseek-r1")
     ),
     /**
@@ -405,7 +405,7 @@ public enum AIProviderType {
     ZHIPU(
         "glm",
         "智谱AI",
-        "https://open.bigmodel.cn/api/paas/v4",
+        "https://open.bigmodel.cn/api/coding/paas/v4",
         "glm-4.7",
         true,
         true,
@@ -417,7 +417,7 @@ public enum AIProviderType {
     ZAI(
         "zai",
         "Z.AI",
-        "https://api.z.ai/api/paas/v4",
+        "https://api.z.ai/api/coding/paas/v4",
         "glm-4.7",
         true,
         true,
