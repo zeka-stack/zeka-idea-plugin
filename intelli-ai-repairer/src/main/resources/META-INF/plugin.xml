@@ -20,6 +20,10 @@
             implementation="dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsViewPanelProvider"/>
     </extensions>
 
+    <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.plugin.repairer.diagnostic.RepairerFeedbackContextProvider"/>
+    </extensions>
+
     <actions>
         <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.ImportStaticReportAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.ImportStaticReportAction"

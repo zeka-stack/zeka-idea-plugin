@@ -63,6 +63,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.plugin.nacos.diagnostic.NacosFeedbackContextProvider"/>
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.nacos.update.NacosPluginUpdateInfoProvider"/>
     </extensions>
 

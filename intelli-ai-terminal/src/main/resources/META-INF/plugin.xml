@@ -53,6 +53,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.diagnostic.TerminalFeedbackContextProvider"/>
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.update.TerminalPluginUpdateInfoProvider"/>
         <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.terminal.statusbar.TerminalStatusBarPopupProvider"/>
     </extensions>

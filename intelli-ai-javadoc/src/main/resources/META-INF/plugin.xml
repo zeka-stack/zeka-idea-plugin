@@ -94,6 +94,7 @@
     </applicationListeners>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.javadoc.diagnostic.JavadocFeedbackContextProvider"/>
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.javadoc.update.JavadocPluginUpdateInfoProvider"/>
         <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.javadoc.statusbar.AIJavadocStatusBarPopupProvider"/>
     </extensions>

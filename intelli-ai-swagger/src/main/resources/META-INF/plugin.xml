@@ -42,6 +42,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.plugin.swagger.diagnostic.SwaggerFeedbackContextProvider"/>
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.swagger.update.SwaggerPluginUpdateInfoProvider"/>
         <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.swagger.statusbar.SwaggerStatusBarPopupProvider"/>
     </extensions>

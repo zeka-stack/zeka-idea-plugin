@@ -55,6 +55,7 @@
     </extensions>
 
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.plugin.workflow.diagnostic.TracerFeedbackContextProvider"/>
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.workflow.update.TracerPluginUpdateInfoProvider"/>
     </extensions>
 
