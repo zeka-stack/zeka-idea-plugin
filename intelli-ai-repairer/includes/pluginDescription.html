@@ -1,17 +1,143 @@
-<p><b>IntelliAI Repairer</b> 是一个面向 Checkstyle/PMD 违规的 AI 修复插件，依赖
-    <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 提供统一的 AI 能力入口。</p>
-<p><b>当前能力</b></p>
+<h2>IntelliAI Repairer</h2>
+<p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a></b>: Seamlessly integrates with
+    <b><a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a></b> to provide unified, pluggable, and high-performance AI
+    capabilities</p>
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-repairer">GitHub</a> |
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
+<a href="https://zekastack.dong4j.site/#/plugins/repairer">Homepage</a>
+
+<p>Automatically fix Checkstyle and PMD violations using AI-powered QuickFix. No more manual fixes, no more context switching.
+    Just one click to resolve code style issues and get back to coding.</p>
+
+<h3>Why This Plugin?</h3>
+<p>When you're reviewing code quality violations, why spend time manually fixing them one by one?</p>
+<p>Static analysis tools like Checkstyle and PMD are essential for maintaining code quality, but fixing violations can be tedious and
+    error-prone. You need to understand the rule, find the correct fix, and apply it without breaking the code - and repeat this
+    for every single violation.</p>
+<p>Our plugin chooses to <strong>automate rather than eliminate</strong>: it doesn't replace static analysis tools, change your coding
+    standards, or introduce new rules. It simply uses AI to fix the violations that tools detect, so you can focus on writing code
+    instead of fixing it.</p>
+
+<h3>Key Features</h3>
 <ul>
-    <li>基于 Checkstyle-IDEA 扫描结果提供 AI QuickFix</li>
-    <li>采用“片段替换”策略，确保修复范围可控</li>
+    <li><b>🤖 AI-Powered QuickFix</b>: One-click fix for Checkstyle and PMD violations directly in your editor, powered by
+        intelligent AI
+    </li>
+    <li><b>⚡ Context-Aware Fixes</b>: Automatically collects surrounding code context for accurate, intelligent fix suggestions that
+        maintain code semantics
+    </li>
+    <li><b>🎯 Precise Snippet Replacement</b>: Fixes only the problematic code snippet without touching other parts, ensuring safe and
+        controlled changes
+    </li>
+    <li><b>📊 Problems Panel Integration</b>: View and fix all violations in one place with batch operations (Fix Selected / Fix All)
+    </li>
+    <li><b>📄 XML Report Support</b>: Import and fix violations from Maven-generated Checkstyle/PMD reports, no need for Checkstyle-IDEA
+        installation
+    </li>
+    <li><b>🔄 Maven Build Integration</b>: Automatically parses static analysis reports after Maven builds and injects violations into IDE
+    </li>
+    <li><b>✅ Validated Fixes</b>: AI-generated fixes are validated to ensure accuracy and safety before application</li>
 </ul>
-<p><b>规划</b></p>
+
+<h3>Usage</h3>
 <ul>
-    <li>解析 Maven 插件生成的 Checkstyle/PMD XML</li>
-    <li>Problem 面板批量修复</li>
+    <li><b>Quick Fix</b>: Right-click on a violation in editor → Select "AI Fix" to automatically fix the issue</li>
+    <li><b>Batch Fix</b>: Open Problems panel → Select multiple violations → Click "Fix Selected" or "Fix All"</li>
+    <li><b>Import Report</b>: Analyze → Import Static Analysis Report → Select Checkstyle/PMD XML file</li>
+    <li><b>Automatic</b>: Run Maven build → Plugin automatically parses and injects violations</li>
 </ul>
-<p><b>依赖</b></p>
+
+<h3>Design Philosophy</h3>
+<p>This plugin follows three core principles:</p>
 <ul>
-    <li><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 插件</li>
-    <li>CheckStyle-IDEA 插件（可选依赖）</li>
+    <li><b>Non-Invasive</b> - Doesn't change your coding habits or replace existing tools, just adds AI fix capability</li>
+    <li><b>Precision</b> - Fixes only what needs to be fixed, with controlled scope and validated results</li>
+    <li><b>Efficiency</b> - One click to fix what would otherwise take minutes, letting you focus on actual development</li>
 </ul>
+<p><b>Good tools don't add to your workflow, they remove the friction.</b></p>
+
+<h3>Configuration</h3>
+<p>Configuration path: Settings → Tools → IntelliAI Engine → 🧩 IntelliAI Repairer</p>
+<ul>
+    <li>Enable/disable AI fix feature (enabled by default)</li>
+    <li>Select AI provider (defaults to first verified global provider)</li>
+    <li>Customize system and user prompt templates (advanced settings)</li>
+    <li>Configure fix validation settings</li>
+</ul>
+
+<h3>Requirements</h3>
+<ul>
+    <li><b>IntelliJ IDEA 2025.3+</b>: Plugin requires IntelliJ IDEA 2025.3 or higher</li>
+    <li><b>IntelliAI Engine Plugin</b>: Must install <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a> plugin and
+        configure at least one AI provider
+    </li>
+    <li><b>Static Analysis Tools</b>: Checkstyle and/or PMD (Checkstyle-IDEA plugin is optional but recommended)</li>
+    <li><b>AI Provider Configuration</b>: Configure and verify at least one AI provider in Settings → Tools → IntelliAI Engine</li>
+</ul>
+
+<hr/>
+
+<h2>IntelliAI Repairer</h2>
+
+<p><b>⚡ 由 <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a> 驱动</b>：深度集成
+    <b><a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a></b>，提供统一、可扩展、高性能的 AI 能力支持</p>
+
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-repairer">GitHub</a> |
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
+<a href="https://zekastack.dong4j.site/#/plugins/repairer">Homepage</a>
+
+<p>使用 AI 驱动的 QuickFix 自动修复 Checkstyle 和 PMD 违规。无需手动修复，无需切换上下文。只需一键点击，即可解决代码风格问题，让你回到编码状态。</p>
+
+<h3>为什么选择这个插件？</h3>
+<p>当你正在查看代码质量违规时，为什么要花时间一个一个手动修复？</p>
+<p>Checkstyle 和 PMD 等静态分析工具对维护代码质量至关重要，但修复违规往往既繁琐又容易出错。你需要理解规则、找到正确的修复方法，在不破坏代码的前提下应用它——而且要对每一个违规都重复这个过程。</p>
+<p>我们的插件选择<strong>自动化而不是消除</strong>：它不会替代静态分析工具、改变你的编码标准或引入新规则。它只是用 AI 来修复工具检测到的违规，让你专注于编写代码，而不是修复代码。</p>
+
+<h3>核心特性</h3>
+<ul>
+    <li><b>🤖 AI 驱动的智能修复</b>：在编辑器中一键修复 Checkstyle 和 PMD 违规，由强大的 AI 提供支持</li>
+    <li><b>⚡ 上下文感知的精准修复</b>：自动收集周围代码上下文，生成准确、智能的修复建议，保持代码语义不变</li>
+    <li><b>🎯 精确的片段替换</b>：只修复有问题的代码片段，不触及其他部分，确保修改安全可控</li>
+    <li><b>📊 Problems 面板集成</b>：在一个地方查看并修复所有违规，支持批量操作（修复选中/修复全部）</li>
+    <li><b>📄 XML 报告支持</b>：导入并修复 Maven 生成的 Checkstyle/PMD 报告中的违规，无需安装 Checkstyle-IDEA</li>
+    <li><b>🔄 Maven 构建集成</b>：Maven 构建后自动解析静态分析报告并将违规注入 IDE</li>
+    <li><b>✅ 验证的修复结果</b>：AI 生成的修复在应用前经过验证，确保准确性和安全性</li>
+</ul>
+
+<h3>使用方式</h3>
+<ul>
+    <li><b>快速修复</b>：在编辑器中右键点击违规 → 选择"AI Fix"自动修复问题</li>
+    <li><b>批量修复</b>：打开 Problems 面板 → 选择多个违规 → 点击"修复选中"或"修复全部"</li>
+    <li><b>导入报告</b>：Analyze → Import Static Analysis Report → 选择 Checkstyle/PMD XML 文件</li>
+    <li><b>自动触发</b>：运行 Maven 构建 → 插件自动解析并注入违规</li>
+</ul>
+
+<h3>设计理念</h3>
+<p>这个插件遵循三个核心原则：</p>
+<ul>
+    <li><b>非侵入式</b> - 不改变你的编码习惯或替代现有工具，只是增加 AI 修复能力</li>
+    <li><b>精确性</b> - 只修复需要修复的部分，范围可控且结果经过验证</li>
+    <li><b>高效性</b> - 一键完成原本需要几分钟的修复，让你专注于实际开发</li>
+</ul>
+<p><b>好的工具不会增加你的工作流，而是消除其中的摩擦。</b></p>
+
+<h3>配置说明</h3>
+<p>配置路径：Settings → Tools → IntelliAI Engine → 🧩 IntelliAI Repairer</p>
+<ul>
+    <li>启用/禁用 AI 修复功能（默认已启用）</li>
+    <li>选择 AI 服务商（默认使用全局第一个已验证的服务商）</li>
+    <li>自定义系统提示词和用户提示词模板（高级设置）</li>
+    <li>配置修复验证设置</li>
+</ul>
+
+<h3>系统要求</h3>
+<ul>
+    <li><b>IntelliJ IDEA 2025.3+</b>：插件需要 IntelliJ IDEA 2025.3 或更高版本</li>
+    <li><b>IntelliAI Engine 插件</b>：必须安装 <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a> 插件并配置至少一个
+        AI 服务商
+    </li>
+    <li><b>静态分析工具</b>：Checkstyle 和/或 PMD（Checkstyle-IDEA 插件是可选的但推荐安装）</li>
+    <li><b>AI 服务商配置</b>：在 Settings → Tools → IntelliAI Engine 中配置并验证至少一个 AI 服务商</li>
+</ul>
+
+<hr/>

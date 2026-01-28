@@ -18,7 +18,7 @@ import java.util.Objects;
 public final class RepairerModuleNode extends Node {
     /** 模块节点名称 */
     private final String name;
-    /** 模块对象 */
+    /** 关联的模块 */
     private final Module module;
     /**
      * 子节点列表

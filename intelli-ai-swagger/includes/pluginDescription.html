@@ -1,31 +1,145 @@
-<p>IntelliAI Swagger is an IntelliJ IDEA plugin that uses AI to generate and maintain Swagger/OpenAPI annotations and related
-    documentation.</p>
-<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-nacos">GitHub</a> |
+<h2>IntelliAI Swagger</h2>
+<p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a></b>: Seamlessly integrates with
+    <b><a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a></b> to provide unified, pluggable, and high-performance AI
+    capabilities</p>
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-swagger">GitHub</a> |
 <a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
-<a href="https://ideaplugin.dong4j.site/nacos/landing.html">Homepage</a> |
-<a href="https://ideaplugin.dong4j.site/nacos/docs.html">Docs</a>
-<br/>
-<br/>
-<p><b>⚡ Powered by <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>: Seamlessly integrates with
-    <b><a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b> to provide unified, pluggable, and
-    high-performance AI capabilities</p>
+<a href="https://zekastack.dong4j.site/#/plugins/swagger">Homepage</a>
 
-<h2>Key Features</h2>
+<p>Generate Swagger/OpenAPI annotations using AI directly in your code editor. No more manual annotation writing, no more switching between
+    tools. Just right-click on your controller method and let AI generate complete, accurate API documentation.</p>
+
+<h3>Why This Plugin?</h3>
+<p>When you're writing REST APIs, why spend time writing Swagger annotations manually?</p>
+<p>Swagger/OpenAPI is essential for API documentation, but writing annotations is tedious and error-prone. You need to remember all the
+    annotation attributes, ensure consistency across your API, and keep documentation in sync with code changes. One typo or missing
+    attribute, and your API documentation becomes incomplete or misleading.</p>
+<p>Our plugin chooses to <strong>automate rather than eliminate</strong>: it doesn't replace Swagger, change your documentation standards,
+    or introduce new documentation systems. It simply uses AI to generate accurate Swagger annotations based on your code structure, so you
+    can focus on writing business logic instead of documentation boilerplate.</p>
+
+<h3>Key Features</h3>
 <ul>
-    <li><b>🧩 Swagger Annotations</b>: Generate or update method/parameter/response annotations</li>
-    <li><b>📦 Schema Completion</b>: Maintain DTO/Schema annotations referenced by APIs</li>
-    <li><b>⚙️ Provider Selection</b>: Reuse IntelliAI Engine provider settings</li>
-    <li><b>🔔 Notifications</b>: Unified notifications and status bar quick entry</li>
+    <li><b>🤖 AI-Powered Annotation Generation</b>: Generate complete Swagger annotations for Controller methods, parameters, and responses with
+        one click
+    </li>
+    <li><b>🎯 Context-Aware Analysis</b>: Automatically analyzes method signature, parameters, return types, and existing mappings to generate
+        accurate annotations
+    </li>
+    <li><b>📦 DTO/Schema Support</b>: Maintain and update DTO/Schema annotations referenced by your API endpoints</li>
+    <li><b>🔍 Spring Controller Detection</b>: Automatically identifies Spring Controller methods and understands mapping annotations (@GetMapping,
+        @PostMapping, etc.)
+    </li>
+    <li><b>✨ Smart Annotation Writing</b>: Generates well-structured, comprehensive annotations including descriptions, examples, and response
+        codes
+    </li>
+    <li><b>⚙️ Reusable Provider Settings</b>: Leverages IntelliAI Engine's unified provider configuration for seamless AI integration</li>
+    <li><b>🔔 Quick Actions</b>: Right-click menu integration for instant annotation generation</li>
 </ul>
 
-<p><b>⚡ 由 <a href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a> 驱动</b>：深度集成 <b><a
-    href="https://plugins.jetbrains.com/plugin/29152">IntelliAI Engine</a></b>，提供统一、可扩展、高性能的 AI 能力支持</p>
+<h3>Usage</h3>
+<ul>
+    <li>Open your Spring Controller file in the editor</li>
+    <li>Right-click on a controller method</li>
+    <li>Select "AI Generate Swagger" from the context menu</li>
+    <li>AI analyzes the method and generates complete Swagger annotations</li>
+    <li>Review and adjust annotations if needed</li>
+</ul>
+
+<h3>Design Philosophy</h3>
+<p>This plugin follows three core principles:</p>
+<ul>
+    <li><b>Non-Invasive</b> - Doesn't change your coding workflow or introduce new documentation systems, just adds AI-powered annotation
+        generation
+    </li>
+    <li><b>Accuracy</b> - Analyzes actual code structure and existing annotations to generate precise, relevant documentation</li>
+    <li><b>Efficiency</b> - One-click generation replaces manual typing, reducing documentation effort by 90%</li>
+</ul>
+<p><b>Good tools don't add complexity, they remove tedium.</b></p>
+
+<h3>Configuration</h3>
+<p>Configuration path: Settings → Tools → IntelliAI Engine → 🧩 IntelliAI Swagger</p>
+<ul>
+    <li>Enable/disable Swagger AI (enabled by default)</li>
+    <li>Select AI provider (defaults to first verified global provider)</li>
+    <li>Customize system and user prompt templates (advanced settings)</li>
+    <li>Configure annotation generation preferences</li>
+</ul>
+
+<h3>Requirements</h3>
+<ul>
+    <li><b>IntelliJ IDEA 2025.3+</b>: Plugin requires IntelliJ IDEA 2025.3 or higher</li>
+    <li><b>IntelliAI Engine Plugin</b>: Must install <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a> plugin and
+        configure at least one AI provider
+    </li>
+    <li><b>Spring Framework</b>: Project must use Spring Framework (MVC/Boot)</li>
+    <li><b>AI Provider Configuration</b>: Configure and verify at least one AI provider in Settings → Tools → IntelliAI Engine</li>
+</ul>
+
+<hr/>
 
 <h2>IntelliAI Swagger</h2>
-<p>IntelliAI Swagger 是一款基于 AI 的 Swagger/OpenAPI 注解生成与维护插件，帮助接口文档持续保持完整与一致。</p>
+
+<p><b>⚡ 由 <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a> 驱动</b>：深度集成
+    <b><a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a></b>，提供统一、可扩展、高性能的 AI 能力支持</p>
+
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/tree/main/intelli-ai-swagger">GitHub</a> |
+<a href="https://github.com/zeka-stack/zeka-idea-plugin/issues">Issues</a> |
+<a href="https://zekastack.dong4j.site/#/plugins/swagger">Homepage</a>
+
+<p>在代码编辑器中直接使用 AI 生成 Swagger/OpenAPI 注解。无需手动编写注解，无需在工具间切换。只需在 Controller 方法上右键点击，让 AI 生成完整、准确的 API 文档。</p>
+
+<h3>为什么选择这个插件？</h3>
+<p>当你编写 REST API 时，为什么要花时间手动编写 Swagger 注解？</p>
+<p>Swagger/OpenAPI 对 API 文档至关重要，但编写注解既繁琐又容易出错。你需要记住所有注解属性，确保 API 的一致性，并保持文档与代码变更的同步。一个拼写错误或缺少属性，你的 API 文档就会变得不完整或产生误导。</p>
+<p>我们的插件选择<strong>自动化而不是替代</strong>：它不会替代 Swagger、改变你的文档标准或引入新的文档系统。它只是根据你的代码结构使用 AI 生成准确的 Swagger 注解，让你专注于编写业务逻辑，而不是文档模板代码。</p>
+
+<h3>核心特性</h3>
 <ul>
-    <li><b>🧩 注解生成</b>：生成/更新接口方法、参数与响应的注解</li>
-    <li><b>📦 Schema 补全</b>：维护接口引用的 DTO/Schema 注解</li>
-    <li><b>⚙️ 服务商配置</b>：复用 IntelliAI Engine 服务商配置</li>
-    <li><b>🔔 通知与入口</b>：状态栏快捷入口与统一通知提示</li>
+    <li><b>🤖 AI 驱动的注解生成</b>：一键生成 Controller 方法、参数和响应的完整 Swagger 注解</li>
+    <li><b>🎯 上下文感知分析</b>：自动分析方法签名、参数、返回类型和现有映射，生成准确的注解</li>
+    <li><b>📦 DTO/Schema 支持</b>：维护和更新 API 端点引用的 DTO/Schema 注解</li>
+    <li><b>🔍 Spring Controller 检测</b>：自动识别 Spring Controller 方法，理解映射注解（@GetMapping、@PostMapping 等）</li>
+    <li><b>✨ 智能注解写入</b>：生成结构良好、全面的注解，包括描述、示例和响应码</li>
+    <li><b>⚙️ 复用服务商配置</b>：利用 IntelliAI Engine 的统一服务商配置，实现无缝 AI 集成</li>
+    <li><b>🔔 快捷操作</b>：右键菜单集成，即刻生成注解</li>
 </ul>
+
+<h3>使用方式</h3>
+<ul>
+    <li>在编辑器中打开你的 Spring Controller 文件</li>
+    <li>在 Controller 方法上右键点击</li>
+    <li>从上下文菜单中选择"AI 生成 Swagger"</li>
+    <li>AI 分析方法并生成完整的 Swagger 注解</li>
+    <li>审查并根据需要调整注解</li>
+</ul>
+
+<h3>设计理念</h3>
+<p>这个插件遵循三个核心原则：</p>
+<ul>
+    <li><b>非侵入式</b> - 不改变你的编码工作流或引入新的文档系统，只是增加 AI 驱动的注解生成能力</li>
+    <li><b>准确性</b> - 分析实际代码结构和现有注解，生成精确、相关的文档</li>
+    <li><b>高效性</b> - 一键生成替代手动输入，减少 90% 的文档编写工作量</li>
+</ul>
+<p><b>好的工具不会增加复杂性，而是消除繁琐。</b></p>
+
+<h3>配置说明</h3>
+<p>配置路径：Settings → Tools → IntelliAI Engine → 🧩 IntelliAI Swagger</p>
+<ul>
+    <li>启用/禁用 Swagger AI（默认已启用）</li>
+    <li>选择 AI 服务商（默认使用全局第一个已验证的服务商）</li>
+    <li>自定义系统提示词和用户提示词模板（高级设置）</li>
+    <li>配置注解生成偏好</li>
+</ul>
+
+<h3>系统要求</h3>
+<ul>
+    <li><b>IntelliJ IDEA 2025.3+</b>：插件需要 IntelliJ IDEA 2025.3 或更高版本</li>
+    <li><b>IntelliAI Engine 插件</b>：必须安装 <a href="https://plugins.jetbrains.com/plugin/29154">IntelliAI Engine</a> 插件并配置至少一个
+        AI 服务商
+    </li>
+    <li><b>Spring 框架</b>：项目必须使用 Spring 框架（MVC/Boot）</li>
+    <li><b>AI 服务商配置</b>：在 Settings → Tools → IntelliAI Engine 中配置并验证至少一个 AI 服务商</li>
+</ul>
+
+<hr/>

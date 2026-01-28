@@ -19,9 +19,7 @@ public final class RepairerPackageNode extends Node {
     private final String name;
     /**
      * 子节点列表
-     * <p> 包含当前包节点下的所有直接子节点
-     *
-     * @see Node
+     * <p> 包含此包节点下的所有子节点
      */
     private final List<Node> children;
 
