@@ -105,6 +105,11 @@
         <!-- 错误上报 -->
         <errorHandler implementation="dev.dong4j.zeka.stack.idea.plugin.common.diagnostic.EngineFeedbackSubmitter"/>
 
+        <!-- `Help` → `Find Action` → 输入 `Registry...` 开启/关闭调试功能 -->
+        <registryKey key="intelliai.engine.feedback.test"
+                     defaultValue="false"
+                     description="Show feedback test action in intelliAI engine menu"/>
+
         <!-- 状态栏聚合入口 -->
         <statusBarWidgetFactory implementation="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidgetFactory"
                                 order="first" id="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarWidget"/>

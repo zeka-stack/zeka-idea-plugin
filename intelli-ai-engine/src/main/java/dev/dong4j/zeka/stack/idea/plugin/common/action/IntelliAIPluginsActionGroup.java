@@ -2,11 +2,9 @@ package dev.dong4j.zeka.stack.idea.plugin.common.action;
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
-
-import org.jetbrains.annotations.NotNull;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewAction;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * 智能 AI 插件动作组类
@@ -32,6 +30,7 @@ public class IntelliAIPluginsActionGroup extends DefaultActionGroup {
         super(AICommonBundle.message("settings.display.name"), true);
         add(new WhatsNewAction());
         add(new SupportAction());
+        add(new FeedbackTestAction());
     }
 
     /**
@@ -46,4 +45,3 @@ public class IntelliAIPluginsActionGroup extends DefaultActionGroup {
         return ActionUpdateThread.BGT;
     }
 }
-
