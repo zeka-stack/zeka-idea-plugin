@@ -87,6 +87,7 @@
     <extensions defaultExtensionNs="dev.dong4j.zeka.stack.idea.plugin.common.ai">
         <pluginUpdateInfoProvider implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.update.ChengelogPluginUpdateInfoProvider"/>
         <statusBarPopupProvider implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.statusbar.ChangelogStatusBarPopupProvider"/>
+        <feedbackContextProvider implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.diagnostic.ChangelogFeedbackContextProvider"/>
     </extensions>
 
     <!-- 插件定义的动作 -->
