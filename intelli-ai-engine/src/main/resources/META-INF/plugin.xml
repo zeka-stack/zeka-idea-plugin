@@ -32,6 +32,9 @@
         <extensionPoint name="statusBarPopupProvider"
                         interface="dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIStatusBarPopupProvider"
                         dynamic="true"/>
+        <extensionPoint name="feedbackContextProvider"
+                        interface="dev.dong4j.zeka.stack.idea.plugin.common.diagnostic.FeedbackContextProvider"
+                        dynamic="true"/>
     </extensionPoints>
 
     <!-- 插件定义的扩展点 -->

@@ -2,16 +2,19 @@ package dev.dong4j.zeka.stack.idea.plugin.common.diagnostic;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.intellij.ide.plugins.IdeaPluginDescriptor;
+import com.intellij.diagnostic.PluginException;
 import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.application.ApplicationInfo;
+import com.intellij.openapi.diagnostic.IdeaLoggingEvent;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.extensions.PluginDescriptor;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.text.StringUtil;
+import com.intellij.util.Consumer;
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
-import dev.dong4j.zeka.stack.idea.plugin.common.util.Urls;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,6 +55,29 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
     private static final int REQUEST_TIMEOUT_SECONDS = 10;
 
     /**
+     * 提交错误报告
+     * <p> 根据提供的日志事件, 附加信息, 父组件和提交回调, 将错误报告提交到系统. 在提交前会尝试获取当前插件 ID 并解析事件中的插件 ID, 然后将插件 ID 推入上下文, 最后调用父类的提交方法完成实际提交.</p>
+     * <p> 此方法确保在提交过程中使用正确的插件上下文, 避免因插件 ID 缺失导致报告归属错误.</p>
+     *
+     * @param events          日志事件数组, 包含待提交的错误信息
+     * @param additionalInfo  附加信息, 可为空, 用于补充报告内容
+     * @param parentComponent 父组件, 用于提供 UI 上下文, 可为空
+     * @param consumer        提交结果的回调处理器, 用于接收提交后的报告信息
+     * @return 提交是否成功, 由父类方法决定
+     */
+    @Override
+    public boolean submit(@NotNull IdeaLoggingEvent @NotNull [] events,
+                          @Nullable String additionalInfo,
+                          @NotNull java.awt.Component parentComponent,
+                          @NotNull Consumer<? super com.intellij.openapi.diagnostic.SubmittedReportInfo> consumer) {
+        String currentPluginId = FeedbackContextHolder.getCurrentPluginId();
+        String eventPluginId = StringUtil.isEmptyOrSpaces(currentPluginId) ? resolvePluginId(events) : null;
+        try (FeedbackContextHolder.Token ignored = FeedbackContextHolder.pushIfAbsent(eventPluginId)) {
+            return super.submit(events, additionalInfo, parentComponent, consumer);
+        }
+    }
+
+    /**
      * 获取示例问题 ID
      * <p> 返回用于测试或示例的预设问题 ID, 通常用于演示错误报告功能
      *
@@ -69,7 +95,7 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
      */
     @Override
     protected String getIssueListPageUrl() {
-        return Urls.GITHUB_LINK + "/issues";
+        return SiteContents.GITHUB_LINK + "/issues";
     }
 
     /**
@@ -113,17 +139,22 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
      */
     @Override
     protected @NotNull String newIssueByTitleBody(String title, String body) {
+        FeedbackSource source = resolveFeedbackSource();
+        String resolvedTitle = title;
+        if (!StringUtil.isEmptyOrSpaces(source.titlePrefix())) {
+            resolvedTitle = "[Report][" + source.titlePrefix() + "] " + title;
+        }
+
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("title", title);
+        requestBody.put("title", resolvedTitle);
         requestBody.put("content", body);
         requestBody.put("type", "BUG");
         requestBody.put("category", "GENERAL");
 
         Map<String, Object> userInfo = new HashMap<>();
-        userInfo.put("pluginName", EngineContents.PLUGIN_NAME);
-        String pluginVersion = getPluginVersion();
-        if (pluginVersion != null) {
-            userInfo.put("pluginVersion", pluginVersion);
+        userInfo.put("pluginName", source.pluginName());
+        if (source.pluginVersion() != null) {
+            userInfo.put("pluginVersion", source.pluginVersion());
         }
         userInfo.put("ideaVersion", getIdeaVersion());
         userInfo.put("os", getOperatingSystem());
@@ -132,6 +163,11 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("clientId", EngineContents.PLUGIN_ID);
         metadata.put("timestamp", System.currentTimeMillis());
+        metadata.put("sourcePluginId", source.pluginId());
+        metadata.put("sourcePluginName", source.pluginName());
+        if (source.pluginVersion() != null) {
+            metadata.put("sourcePluginVersion", source.pluginVersion());
+        }
         requestBody.put("metadata", metadata);
 
         try {
@@ -152,6 +188,111 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
      */
     @Override
     protected String findIssueByMd5(String throwableMd5) {
+        return null;
+    }
+
+    /**
+     * 解析事件数组中的插件 ID
+     * <p> 遍历事件数组, 获取第一个事件中的异常对象, 并调用 findPluginIdInThrowable 方法查找插件 ID.
+     * 如果事件数组为空, 则返回 null.
+     *
+     * @param events 事件数组
+     * @return 插件 ID, 如果未找到则返回 null
+     */
+    private @Nullable String resolvePluginId(@NotNull IdeaLoggingEvent @NotNull [] events) {
+        if (events.length == 0) {
+            return null;
+        }
+        Throwable throwable = events[0].getThrowable();
+        return findPluginIdInThrowable(throwable);
+    }
+
+    /**
+     * 在异常堆栈中查找插件 ID
+     * <p> 遍历异常及其原因链, 查找是否存在 {@link PluginException} 类型的异常.
+     * 如果找到该类型的异常, 则返回其关联的插件 ID 字符串; 否则返回 null.
+     *
+     * @param throwable 需要分析的异常对象, 可为 null
+     * @return 找到的插件 ID 字符串, 如果未找到或输入为 null 则返回 null
+     */
+    private @Nullable String findPluginIdInThrowable(@Nullable Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof PluginException pluginException) {
+                PluginId pluginId = pluginException.getPluginId();
+                if (pluginId != null) {
+                    return pluginId.getIdString();
+                }
+            }
+            current = current.getCause();
+        }
+        return null;
+    }
+
+    /**
+     * 解析并构建反馈来源信息
+     * <p> 通过以下逻辑确定反馈来源的完整信息:
+     * <ol>
+     *   <li> 首先尝试从 FeedbackContextHolder 获取当前插件 ID</li>
+     *   <li> 根据插件 ID 获取对应的插件描述符 </li>
+     *   <li> 如果插件描述符不存在, 则获取默认的插件描述符 </li>
+     *   <li> 解析插件 ID, 如果为空则使用默认插件 ID</li>
+     *   <li> 确定插件名称, 优先使用插件描述符中的名称, 若无则使用插件 ID</li>
+     *   <li> 获取插件版本信息 (可能为 null)</li>
+     *   <li> 查找对应的反馈上下文提供者以获取标题前缀 </li>
+     *   <li> 如果标题前缀为空, 则使用插件名称作为标题前缀 </li>
+     * </ol>
+     *
+     * @return 包含完整反馈来源信息的 FeedbackSource 对象
+     */
+    private FeedbackSource resolveFeedbackSource() {
+        String pluginId = FeedbackContextHolder.getCurrentPluginId();
+        PluginDescriptor pluginDescriptor = null;
+        if (!StringUtil.isEmptyOrSpaces(pluginId)) {
+            pluginDescriptor = PluginManagerCore.getPlugin(PluginId.getId(pluginId));
+        }
+        if (pluginDescriptor == null) {
+            pluginDescriptor = getPluginDescriptor();
+        }
+
+        String resolvedId = pluginId;
+        if (pluginDescriptor != null) {
+            pluginDescriptor.getPluginId();
+            resolvedId = pluginDescriptor.getPluginId().getIdString();
+        }
+        if (StringUtil.isEmptyOrSpaces(resolvedId)) {
+            resolvedId = EngineContents.PLUGIN_ID;
+        }
+
+        String name = pluginDescriptor != null ? pluginDescriptor.getName() : resolvedId;
+        if (StringUtil.isEmptyOrSpaces(name)) {
+            name = resolvedId;
+        }
+        String version = pluginDescriptor != null ? pluginDescriptor.getVersion() : null;
+
+        FeedbackContextProvider provider = findProvider(resolvedId);
+        String titlePrefix = provider != null ? provider.getTitlePrefix() : null;
+        if (StringUtil.isEmptyOrSpaces(titlePrefix)) {
+            titlePrefix = name;
+        }
+
+        return new FeedbackSource(resolvedId, name, version, titlePrefix);
+    }
+
+    /**
+     * 根据插件 ID 查找对应的反馈上下文提供者
+     * <p> 遍历所有注册的反馈上下文提供者, 查找与给定插件 ID 匹配的提供者实例.</p>
+     *
+     * @param pluginId 插件 ID, 不能为空
+     * @return 匹配的反馈上下文提供者实例, 若未找到则返回 null
+     */
+    private @Nullable FeedbackContextProvider findProvider(@NotNull String pluginId) {
+        for (FeedbackContextProvider provider : FeedbackContextProvider.EP_NAME.getExtensionList()) {
+            String id = provider.getPluginId();
+            if (!StringUtil.isEmptyOrSpaces(id) && id.equals(pluginId)) {
+                return provider;
+            }
+        }
         return null;
     }
 
@@ -216,8 +357,7 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
         String jsonBody = MAPPER.writeValueAsString(requestBody);
         byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
 
-        // URI uri = URI.create(SiteContents.ISSUE_API_URL);
-        URI uri = URI.create("http://127.0.0.1:8080/api/plugin/feedback/issue");
+        URI uri = URI.create(SiteContents.ISSUE_API_URL);
         String pathWithQuery = ISSUE_PATH;
         if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
             pathWithQuery += "?" + uri.getQuery();
@@ -257,26 +397,6 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
     }
 
     /**
-     * 获取插件版本信息
-     * <p> 尝试获取当前插件的版本号, 如果获取失败则返回 null.
-     *
-     * @return 插件版本号, 如果获取失败则返回 null
-     */
-    @Nullable
-    private String getPluginVersion() {
-        try {
-            PluginId pluginId = PluginId.getId(EngineContents.PLUGIN_ID);
-            IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginId);
-            if (pluginDescriptor != null) {
-                return pluginDescriptor.getVersion();
-            }
-        } catch (Exception e) {
-            LOG.debug("获取插件版本失败", e);
-        }
-        return null;
-    }
-
-    /**
      * 获取当前 IDEA 的完整版本号
      * <p> 通过 ApplicationInfo 实例获取当前运行的 IntelliJ IDEA 的完整版本字符串, 若获取失败则返回“未知”</p>
      *
@@ -310,5 +430,23 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
             return "Linux " + SystemInfo.getOsNameAndVersion();
         }
         return SystemInfo.getOsNameAndVersion();
+    }
+
+    /**
+     * 反馈源信息数据类
+     * <p> 用于封装与反馈提交相关的插件信息, 包括插件 ID, 名称, 版本以及标题前缀.</p>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.01.28
+     * @since 1.0.0
+     */
+    private record FeedbackSource(
+        @NotNull String pluginId,
+        @NotNull String pluginName,
+        @Nullable String pluginVersion,
+        @NotNull String titlePrefix
+    ) {
     }
 }

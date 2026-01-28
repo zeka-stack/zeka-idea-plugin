@@ -10,11 +10,10 @@ import com.intellij.openapi.extensions.PluginDescriptor;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.Consumer;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.Component;
+import java.awt.*;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.Locale;
@@ -258,59 +257,51 @@ public abstract class AbstractErrorReportSubmitter extends ErrorReportSubmitter 
         builder.append("## Summary\n\n").append(message).append("\n\n");
 
         if (!StringUtil.isEmptyOrSpaces(additionalInfo)) {
-            builder.append("## User Description\n\n").append(additionalInfo.trim()).append("\n\n");
+            builder.append("## Description\n\n").append(additionalInfo).append("\n\n");
         }
 
-        builder.append("## Stack Trace\n\n```\n")
-            .append(throwableText)
-            .append("\n```\n\n");
-
+        builder.append("## Stack Trace\n\n```").append(throwableText).append("\n```\n\n");
         builder.append("## Environment\n\n");
-        builder.append("- IDE: ").append(appInfo.getFullApplicationName()).append("\n");
-        builder.append("- Edition: ").append(ApplicationNamesInfo.getInstance().getEditionName()).append("\n");
-        builder.append("- Build: ").append(appInfo.getBuild().asString()).append("\n");
-        builder.append("- Build Date: ")
-            .append(appInfo.getBuildDate().getTime().toInstant().toString()).append("\n");
+        builder.append("- IDE: ").append(ApplicationNamesInfo.getInstance().getFullProductName())
+               .append(" ").append(appInfo.getFullVersion()).append("\n");
         builder.append("- OS: ").append(SystemInfo.getOsNameAndVersion()).append("\n");
-        builder.append("- Arch: ").append(systemProperties.getProperty("os.arch", "unknown")).append("\n");
-        builder.append("- JVM: ").append(systemProperties.getProperty("java.runtime.version",
-                                                                      systemProperties.getProperty("java.version", "unknown")))
-            .append("\n");
-        builder.append("- VM: ").append(systemProperties.getProperty("java.vm.name", "unknown"))
-            .append(" / ").append(systemProperties.getProperty("java.vendor", "unknown"))
-            .append("\n");
-        builder.append("- Encoding: ").append(Charset.defaultCharset().displayName()).append("\n");
-
+        builder.append("- JVM: ").append(System.getProperty("java.runtime.version")).append("\n");
+        builder.append("- Locale: ").append(Locale.getDefault()).append("\n");
         if (pluginDescriptor != null) {
-            builder.append("- Plugin: ").append(pluginDescriptor.getName())
-                .append(" ").append(pluginDescriptor.getVersion()).append("\n");
+            builder.append("- Plugin: ")
+                   .append(pluginDescriptor.getName())
+                   .append(" ")
+                   .append(pluginDescriptor.getVersion())
+                   .append("\n");
+        }
+        builder.append("- Issue MD5: ").append(issueMd5).append("\n\n");
+
+        builder.append("## System Properties\n\n");
+        for (String key : systemProperties.stringPropertyNames()) {
+            builder.append(key).append("=").append(systemProperties.getProperty(key)).append("\n");
         }
 
-        builder.append("- Issue MD5: ").append(issueMd5).append("\n");
-        builder.append("- Locale: ").append(Locale.getDefault()).append("\n");
         return builder.toString();
     }
 
     /**
-     * 计算字符串的 MD5 哈希值并返回大写十六进制表示
-     * <p> 使用 MD5 算法对输入文本进行哈希计算, 返回 32 位大写十六进制字符串.
-     * 如果计算过程中发生异常, 将返回 "UNKNOWN" 字符串.
+     * 计算字符串的 MD5 值并返回大写字符串
      *
-     * @param text 要计算 MD5 值的文本字符串
-     * @return 32 位大写十六进制 MD5 哈希值, 如果计算失败则返回 "UNKNOWN"
+     * @param text 输入字符串
+     * @return MD5 值, 大写字符串
      */
     private String md5Upper(String text) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(text.getBytes(Charset.defaultCharset()));
+            md.update(text.getBytes(Charset.defaultCharset()));
+            byte[] digest = md.digest();
             StringBuilder sb = new StringBuilder(digest.length * 2);
             for (byte b : digest) {
                 sb.append(String.format("%02X", b));
             }
             return sb.toString();
         } catch (Exception e) {
-            LOG.warn("Failed to compute MD5", e);
-            return "UNKNOWN";
+            return "";
         }
     }
 }
