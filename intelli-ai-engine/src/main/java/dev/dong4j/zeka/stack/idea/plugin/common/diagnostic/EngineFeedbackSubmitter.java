@@ -9,7 +9,9 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.text.StringUtil;
-
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.Urls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,11 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-
-import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
-import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
-import dev.dong4j.zeka.stack.idea.plugin.common.util.Urls;
-import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 
 /**
  * 引擎反馈提交器
@@ -167,6 +164,10 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
      * @throws IOException 当 JSON 解析或其他 I/O 操作失败时抛出
      */
     private String extractDiscussionId(@NotNull String response) throws IOException {
+        String trimmedResponse = response.trim();
+        if (!(trimmedResponse.startsWith("{") || trimmedResponse.startsWith("["))) {
+            throw new IllegalStateException(trimmedResponse);
+        }
         JsonNode root = MAPPER.readTree(response);
         JsonNode dataNode = root.has("data") ? root.get("data") : root;
 
@@ -215,7 +216,8 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
         String jsonBody = MAPPER.writeValueAsString(requestBody);
         byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
 
-        URI uri = URI.create(SiteContents.ISSUE_API_URL);
+        // URI uri = URI.create(SiteContents.ISSUE_API_URL);
+        URI uri = URI.create("http://127.0.0.1:8080/api/plugin/feedback/issue");
         String pathWithQuery = ISSUE_PATH;
         if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
             pathWithQuery += "?" + uri.getQuery();
@@ -245,7 +247,12 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            return response.body();
+            int statusCode = response.statusCode();
+            String responseBody = response.body();
+            if (statusCode < 200 || statusCode >= 300) {
+                throw new IOException("HTTP " + statusCode + ": " + responseBody);
+            }
+            return responseBody;
         }
     }
 
