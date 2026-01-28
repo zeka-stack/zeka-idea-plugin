@@ -4,22 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -31,6 +17,17 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Gemini Provider（Google Generative Language API）
@@ -152,6 +149,8 @@ public class GeminLikeiProvider extends AICompatibleProvider {
         } catch (HttpRequests.HttpStatusException e) {
             AIServiceException.ErrorCode code = AICompatibleProvider.mapHttpError(e.getStatusCode());
             String msg = "Gemini HTTP 错误: " + e.getMessage();
+            AIConsoleLoggerUtil.printError(project, "Gemini 请求失败: HTTP " + e.getStatusCode()
+                + " | 鉴权=" + getAuthMode(apiKey));
             listener.onError(msg, e);
             throw new AIServiceException(msg, code, e);
         } catch (IOException e) {
@@ -258,7 +257,14 @@ public class GeminLikeiProvider extends AICompatibleProvider {
         connection.setConnectTimeout(timeoutMillis);
         connection.setReadTimeout(timeoutMillis * 2);
         if (apiKey != null && !apiKey.isBlank()) {
-            connection.setRequestProperty("x-goog-api-key", apiKey.trim());
+            String key = apiKey.trim();
+            if (key.startsWith("Bearer ")) {
+                connection.setRequestProperty("Authorization", key);
+            } else if (key.startsWith("ya29.")) {
+                connection.setRequestProperty("Authorization", "Bearer " + key);
+            } else {
+                connection.setRequestProperty("x-goog-api-key", key);
+            }
         }
     }
 
@@ -375,7 +381,10 @@ public class GeminLikeiProvider extends AICompatibleProvider {
             }
             return parseGenerateContentResponse(responseBody, listener);
         } catch (HttpRequests.HttpStatusException e) {
-            throw new AIServiceException("Gemini HTTP 错误: " + e.getMessage(), AICompatibleProvider.mapHttpError(e.getStatusCode()), e);
+            AIConsoleLoggerUtil.printError(project, "Gemini 请求失败: HTTP " + e.getStatusCode()
+                + " | 鉴权=" + getAuthMode(apiKey));
+            throw new AIServiceException("Gemini HTTP 错误: " + e.getMessage(),
+                                         AICompatibleProvider.mapHttpError(e.getStatusCode()), e);
         } catch (IOException e) {
             throw new AIServiceException("Gemini 网络错误: " + e.getMessage(), AIServiceException.ErrorCode.NETWORK_ERROR, e);
         } catch (Exception e) {
@@ -619,5 +628,16 @@ public class GeminLikeiProvider extends AICompatibleProvider {
         } catch (NumberFormatException ignored) {
             return null;
         }
+    }
+
+    private static String getAuthMode(@Nullable String apiKey) {
+        if (apiKey == null || apiKey.isBlank()) {
+            return "None";
+        }
+        String key = apiKey.trim();
+        if (key.startsWith("Bearer ") || key.startsWith("ya29.")) {
+            return "Bearer";
+        }
+        return "API Key";
     }
 }

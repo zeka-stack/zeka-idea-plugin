@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -7,9 +9,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
-import lombok.Getter;
 
 /**
  * AI 服务提供商类型枚举
@@ -65,14 +64,15 @@ public enum AIProviderType {
         "gemini",
         "Gemini",
         "https://generativelanguage.googleapis.com/v1beta",
-        "gemini-1.5-flash-latest",
+        "gemini-3-pro-preview",
         true,
         true,
         List.of(
-            "gemini-2.0-flash",
-            "gemini-1.5-pro-latest",
-            "gemini-1.5-flash-latest",
-            "gemini-1.0-pro"
+            "gemini-3-pro-preview",
+            "gemini-3-flash-preview",
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite"
                )
     ),
     /**
