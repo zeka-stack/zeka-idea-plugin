@@ -116,7 +116,11 @@ tasks {
         group = "intellij"
         description = "Publish plugin to beta channel"
         doFirst {
-            project.extensions.extraProperties["publishChannels"] = "beta"
+            project.tasks.named("publishPlugin") {
+                val publishTask = this as org.jetbrains.intellij.platform.gradle.tasks.PublishPluginTask
+                publishTask.channels.set(listOf("beta"))
+                publishTask.hidden.set(false)
+            }
         }
         dependsOn("publishPlugin")
     }
@@ -125,7 +129,11 @@ tasks {
         group = "intellij"
         description = "Publish plugin to default channel (hidden)"
         doFirst {
-            project.extensions.extraProperties["publishChannels"] = "default"
+            project.tasks.named("publishPlugin") {
+                val publishTask = this as org.jetbrains.intellij.platform.gradle.tasks.PublishPluginTask
+                publishTask.channels.set(listOf("default"))
+                publishTask.hidden.set(true)
+            }
         }
         dependsOn("publishPlugin")
     }

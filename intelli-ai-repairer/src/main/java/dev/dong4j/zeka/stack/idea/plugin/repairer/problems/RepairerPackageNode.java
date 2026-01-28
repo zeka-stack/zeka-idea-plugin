@@ -122,6 +122,6 @@ public final class RepairerPackageNode extends Node {
      */
     @Override
     protected void update(@NotNull Project project, @NotNull PresentationData presentationData) {
-
+        update(presentationData);
     }
 }
