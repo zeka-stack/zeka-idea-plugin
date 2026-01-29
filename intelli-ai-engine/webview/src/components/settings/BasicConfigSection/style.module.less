@@ -1,0 +1,488 @@
+.configSection {
+  max-width: 800px;
+  padding-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.sectionDesc {
+  color: var(--text-tertiary);
+  margin: 0 0 24px 0;
+  font-size: 13px;
+}
+
+.themeSection {
+  margin-bottom: 24px;
+}
+
+.fieldHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+
+  .codicon {
+    font-size: 16px;
+    color: var(--accent-primary);
+  }
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.themeSelector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.themeOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-tertiary);
+  }
+
+  &.active {
+    border-color: var(--accent-primary);
+    background: rgba(0, 120, 212, 0.08);
+  }
+}
+
+.themeOptionLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* 保留 themeGrid 和 themeCard 供其他地方使用 (如发送快捷键) */
+.themeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.themeCard {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+
+  &:hover {
+    border-color: var(--border-hover);
+  }
+
+  &.active {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+  }
+}
+
+.checkBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .codicon {
+    font-size: 12px;
+    color: #ffffff;
+  }
+}
+
+.themeIconLight {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  border: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .codicon, svg {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #333333;
+  }
+}
+
+.themeIconDark {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #2d2d2d 0%, #1e1e1e 100%);
+  border: 1px solid #404040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .codicon, svg {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #ffffff;
+  }
+}
+
+.themeIconSystem {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: 1px solid #818cf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .codicon, svg {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #ffffff;
+  }
+}
+
+.themeCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.themeCardDesc {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.languageSection {
+  margin-bottom: 24px;
+}
+
+.languageSelect {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--border-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+  }
+
+  option {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
+.fontSizeSection {
+  margin-bottom: 24px;
+}
+
+.editorFontSection {
+  margin-bottom: 24px;
+}
+
+.fontInfoDisplay {
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--idea-editor-font-family, monospace);
+  max-width: 400px;
+}
+
+.fontSizeSelect {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: var(--border-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+  }
+
+  option {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+}
+
+.nodePathSection {
+  margin-bottom: 24px;
+}
+
+.versionBadge {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.versionBadgeOk {
+  color: var(--color-success, #3fb950);
+}
+
+.versionBadgeError {
+  color: var(--color-error, #f85149);
+}
+
+.versionWarning {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-error, #f85149);
+  font-size: 13px;
+  margin-bottom: 8px;
+
+  .codicon {
+    font-size: 14px;
+  }
+}
+
+.nodePathInputWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 4px;
+}
+
+.nodePathInput {
+  flex: 1 1 300px;
+  min-width: 200px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+  }
+
+  &::placeholder {
+    color: var(--text-placeholder);
+  }
+}
+
+.saveBtn {
+  flex: 0 0 auto;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-secondary);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-hover);
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .codicon {
+    font-size: 14px;
+  }
+}
+
+.formHint {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+
+  .codicon {
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  code {
+    background: var(--color-code-bg);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-family: var(--idea-editor-font-family, monospace);
+    font-size: 11px;
+  }
+}
+
+.workingDirSection {
+  margin-bottom: 24px;
+}
+
+/* 🔧 流式传输开关样式 */
+.streamingSection {
+  margin-bottom: 24px;
+}
+
+.toggleWrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 8px;
+}
+
+.toggleInput {
+  display: none;
+}
+
+.toggleSlider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+}
+
+.toggleInput:checked + .toggleSlider {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+
+  &::after {
+    left: 22px;
+    background: #ffffff;
+  }
+}
+
+.toggleInput:focus + .toggleSlider {
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.3);
+}
+
+.toggleLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.sendShortcutSection {
+  margin-bottom: 24px;
+}
+
+/* 响应式适配 */
+@media (max-width: 480px) {
+  .sectionTitle {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .sectionDesc {
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+
+  .languageSelect {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  .nodePathInput {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  .formHint {
+    font-size: 11px;
+  }
+
+  .saveBtn {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}

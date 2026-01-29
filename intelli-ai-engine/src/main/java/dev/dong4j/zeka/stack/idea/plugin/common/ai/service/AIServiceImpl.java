@@ -2,10 +2,6 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai.service;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
@@ -16,6 +12,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * AI 服务实现类
@@ -78,12 +76,13 @@ public final class AIServiceImpl implements AIService {
                                       @NotNull AIChatRequest request,
                                       @NotNull AIProviderConfig config,
                                       @NotNull AIStreamResponseListener listener) {
-        AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
-        String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
+                AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
+                String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
+                listener.onStart();
                 provider.generateContentStream(request, apiKey, listener);
-            } catch (AIServiceException e) {
+            } catch (Throwable e) {
                 listener.onError("AI 服务调用失败: " + e.getMessage(), e);
             }
         });

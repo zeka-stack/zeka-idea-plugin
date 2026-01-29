@@ -59,3 +59,4 @@ docs-list.json
 
 !gradle-wrapper.jar
 .env
+engine-chat.html

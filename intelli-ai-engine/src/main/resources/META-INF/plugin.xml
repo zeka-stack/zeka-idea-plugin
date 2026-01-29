@@ -73,11 +73,11 @@
 
         <!-- Chat 工具窗口 -->
         <!--suppress PluginXmlI18n -->
-        <!--<toolWindow id="IntelliAI Chat"-->
-        <!--            factoryClass="dev.dong4j.zeka.stack.idea.plugin.common.chat.AIChatToolWindowFactory"-->
-        <!--            anchor="right"-->
-        <!--            icon="icons.AICommonIcons.TOOL_ICON"-->
-        <!--            doNotActivateOnStart="true"/>-->
+        <toolWindow id="IntelliAI Chat"
+                    factoryClass="dev.dong4j.zeka.stack.idea.plugin.common.chat.AIChatToolWindowFactory"
+                    anchor="right"
+                    icon="icons.AICommonIcons.TOOL_ICON"
+                    doNotActivateOnStart="true"/>
 
         <!-- 项目启动时根据配置自动运行 agent -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.agent.AgentServerLifecycleListener"/>

@@ -1,0 +1,155 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ProviderInfo } from '../types';
+
+interface ProviderSelectProps {
+  value: string;
+  providers: ProviderInfo[];
+  onChange?: (providerId: string) => void;
+}
+
+/**
+ * ProviderSelect - AI 提供商选择器组件
+ * 支持动态提供商切换
+ */
+export const ProviderSelect = ({ value, providers, onChange }: ProviderSelectProps) => {
+  const { t } = useTranslation();
+  const [isOpen, setIsOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentProvider = providers.find(p => p.id === value) || providers[0];
+
+  // Helper function to get translated provider label
+  const getProviderLabel = (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId);
+    return provider?.label || providerId;
+  };
+
+  /**
+   * 切换下拉菜单
+   */
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsOpen(!isOpen);
+  }, [isOpen]);
+
+  /**
+   * 显示提示信息
+   */
+  const showToastMessage = useCallback((message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 1500);
+  }, []);
+
+  /**
+   * 选择提供商
+   */
+  const handleSelect = useCallback((providerId: string) => {
+    const provider = providers.find(p => p.id === providerId);
+
+    if (!provider) return;
+
+    if (!provider.enabled) {
+      // 如果提供商不可用，显示提示
+      showToastMessage(t('settings.provider.featureComingSoon'));
+      setIsOpen(false);
+      return;
+    }
+
+    // 提供商可用，执行切换
+    onChange?.(providerId);
+    setIsOpen(false);
+  }, [onChange, providers, showToastMessage]);
+
+  /**
+   * 点击外部关闭
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    // 延迟添加事件监听，避免立即触发
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <>
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <button
+          ref={buttonRef}
+          className="selector-button"
+          onClick={handleToggle}
+          title={`${t('config.switchProvider')}: ${getProviderLabel(currentProvider.id)}`}
+        >
+          <span className="codicon codicon-hubot" style={{ fontSize: '12px' }} />
+          <span>{getProviderLabel(currentProvider.id)}</span>
+          <span className={`codicon codicon-chevron-${isOpen ? 'up' : 'down'}`} style={{ fontSize: '10px', marginLeft: '2px' }} />
+        </button>
+
+        {isOpen && (
+          <div
+            ref={dropdownRef}
+            className="selector-dropdown"
+            style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: 0,
+              marginBottom: '4px',
+              zIndex: 10000,
+            }}
+          >
+            {providers.map((provider) => (
+              <div
+                key={provider.id}
+                className={`selector-option ${provider.id === value ? 'selected' : ''} ${!provider.enabled ? 'disabled' : ''}`}
+                onClick={() => handleSelect(provider.id)}
+                style={{
+                  opacity: provider.enabled ? 1 : 0.5,
+                  cursor: provider.enabled ? 'pointer' : 'not-allowed',
+                }}
+              >
+                <span className="codicon codicon-hubot" style={{ fontSize: '14px' }} />
+                <span>{getProviderLabel(provider.id)}</span>
+                {provider.id === value && (
+                  <span className="codicon codicon-check check-mark" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 提示信息 */}
+      {showToast && (
+        <div className="selector-toast">
+          {toastMessage}
+        </div>
+      )}
+    </>
+  );
+};
+
+export default ProviderSelect;

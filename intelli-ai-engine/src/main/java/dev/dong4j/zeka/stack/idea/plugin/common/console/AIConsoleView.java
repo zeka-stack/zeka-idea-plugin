@@ -17,6 +17,7 @@ import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
@@ -31,33 +32,18 @@ import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.ContentManagerEvent;
 import com.intellij.ui.content.ContentManagerListener;
 import com.intellij.util.ui.JBUI;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+
+import javax.swing.*;
+import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 /**
@@ -270,6 +256,9 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         content.setDisposer(() -> consoleContent = null);
         contentManager.addContent(content);
         consoleContent = content;
+        if (consoleView != null) {
+            Disposer.register(content, consoleView);
+        }
         registerContentListener(contentManager);
     }
 
@@ -300,6 +289,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
             consoleView = TextConsoleBuilderFactory.getInstance()
                 .createBuilder(project)
                 .getConsole();
+            Disposer.register(this, consoleView);
             consolePanel = buildConsolePanel(consoleView);
         }
         ensureRootPanel();

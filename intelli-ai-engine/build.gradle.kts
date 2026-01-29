@@ -90,6 +90,10 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
 }
 
+val webviewDir = layout.projectDirectory.dir("webview")
+val webviewDistDir = webviewDir.dir("dist").asFile
+val webviewResourcesDir = layout.projectDirectory.dir("src/main/resources/html").asFile
+
 tasks {
     val javaVersion = providers.gradleProperty("javaVersion").get()
 
@@ -140,6 +144,29 @@ tasks {
 
     test {
         useJUnitPlatform()
+    }
+
+    val buildWebview by registering(Exec::class) {
+        workingDir = webviewDir.asFile
+        if (System.getProperty("os.name").lowercase().contains("windows")) {
+            commandLine("cmd", "/c", "npm", "run", "build")
+        } else {
+            commandLine("npm", "run", "build")
+        }
+        onlyIf { webviewDir.asFile.exists() }
+    }
+
+    val copyWebview by registering(Copy::class) {
+        dependsOn(buildWebview)
+        from(webviewDistDir) {
+            include("index.html")
+            rename { "engine-chat.html" }
+        }
+        into(webviewResourcesDir)
+    }
+
+    named("processResources") {
+        dependsOn(copyWebview)
     }
 
     // 热更新

@@ -2,20 +2,8 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
-import java.util.function.BiConsumer;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
@@ -28,6 +16,15 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
+import java.util.function.BiConsumer;
 
 /**
  * AI 流式请求执行器类
@@ -184,6 +181,8 @@ public class StreamRequestExecutor {
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
         boolean[] contentStarted = {false};
+        int[] contentNewlineStreak = {0};
+        int[] thinkingNewlineStreak = {0};
         UsageStats usageStats = null;
         try (BufferedReader reader = new BufferedReader(
             new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
@@ -226,8 +225,12 @@ public class StreamRequestExecutor {
                             return;
                         }
                         if (chunk.type() == StreamChunkType.THINKING) {
-                            printThinking(chunk.text(), inThinking, thinkPrefixPrinted);
-                            listener.onThinkingChunk(chunk.text());
+                            String thinking = normalizeStreamNewlines(chunk.text(), thinkingNewlineStreak);
+                            if (thinking.isEmpty()) {
+                                return;
+                            }
+                            printThinking(thinking, inThinking, thinkPrefixPrinted);
+                            listener.onThinkingChunk(thinking);
                             return;
                         }
                         if (chunk.type() == StreamChunkType.NOTICE) {
@@ -246,9 +249,13 @@ public class StreamRequestExecutor {
                             if (content.isEmpty()) {
                                 return;
                             }
-                            fullText.append(content);
-                            AIConsoleLoggerUtil.printStreamPlain(project, content);
-                            listener.onChunk(content);
+                            String normalizedContent = normalizeStreamNewlines(content, contentNewlineStreak);
+                            if (normalizedContent.isEmpty()) {
+                                return;
+                            }
+                            fullText.append(normalizedContent);
+                            AIConsoleLoggerUtil.printStreamPlain(project, normalizedContent);
+                            listener.onChunk(normalizedContent);
                         }
                     });
                     if (done) {
@@ -299,7 +306,7 @@ public class StreamRequestExecutor {
     /**
      * 打印思考内容到控制台.
      * <p>
-     * 该方法用于输出流式响应中的思考过程文本, 支持自动添加 "[🤔thinking]" 前缀标记.
+     * 该方法用于输出流式响应中的思考过程文本, 支持自动添加 "[🤔 thinking]" 前缀标记.
      * 首次调用时会打印带前缀的思考内容, 后续调用仅打印纯文本内容.
      *
      * @param thinking           待打印的思考内容, 不能为 null
@@ -346,6 +353,42 @@ public class StreamRequestExecutor {
         }
         contentStarted[0] = true;
         return text.substring(index);
+    }
+
+    /**
+     * 归一化流式文本中的换行, 将连续空行压缩为单个换行.
+     *
+     * @param text           原始文本片段
+     * @param newlineStreak  换行连续计数, 用于跨 chunk 处理
+     * @return 处理后的文本片段
+     */
+    @NotNull
+    private String normalizeStreamNewlines(@NotNull String text, int @NotNull [] newlineStreak) {
+        if (text.isEmpty()) {
+            return text;
+        }
+        StringBuilder builder = new StringBuilder(text.length());
+        int length = text.length();
+        for (int i = 0; i < length; i++) {
+            char ch = text.charAt(i);
+            if (ch == '\r') {
+                if (i + 1 < length && text.charAt(i + 1) == '\n') {
+                    i++;
+                }
+                ch = '\n';
+            }
+            if (ch == '\n') {
+                if (newlineStreak[0] >= 1) {
+                    continue;
+                }
+                newlineStreak[0] = 1;
+                builder.append('\n');
+                continue;
+            }
+            newlineStreak[0] = 0;
+            builder.append(ch);
+        }
+        return builder.toString();
     }
 
     /**
