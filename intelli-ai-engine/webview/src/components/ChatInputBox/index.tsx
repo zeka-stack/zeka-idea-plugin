@@ -5,9 +5,8 @@
 
 export { ChatInputBox, default } from './ChatInputBox';
 export { ButtonArea } from './ButtonArea';
-export { TokenIndicator } from './TokenIndicator';
 export { AttachmentList } from './AttachmentList';
-export { ModeSelect, ModelSelect } from './selectors';
+export { ModelSelect } from './selectors';
 
 // 导出类型
 export type {
@@ -15,21 +14,13 @@ export type {
   ChatInputBoxHandle,
   ChatInputBoxProps,
   ButtonAreaProps,
-  TokenIndicatorProps,
   AttachmentListProps,
-  PermissionMode,
   DropdownItemData,
   DropdownPosition,
   TriggerQuery,
   FileItem,
-  CommandItem,
   CompletionType,
 } from './types';
 
 // 导出常量
-export {
-  AVAILABLE_MODES,
-  AVAILABLE_MODELS,
-  IMAGE_MEDIA_TYPES,
-  isImageAttachment,
-} from './types';
+export { AVAILABLE_MODELS, IMAGE_MEDIA_TYPES, isImageAttachment } from './types';

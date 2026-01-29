@@ -200,6 +200,40 @@ echo "----------------------------------------"
 #    echo "  ⚠️  跳过: $SUPPORT_STARTUP_ACTIVITY 文件不存在"
 #fi
 
+# 更新 webview version.ts 文件中的版本号
+echo ""
+echo "----------------------------------------"
+echo "更新 webview version.ts 文件"
+VERSION_TS="$SCRIPT_DIR/intelli-ai-engine/webview/src/version/version.ts"
+
+if [ -f "$VERSION_TS" ]; then
+    # 检查是否存在 APP_VERSION 配置行
+    if grep -q "APP_VERSION = " "$VERSION_TS"; then
+        # 更新版本号（匹配 APP_VERSION = 'xxx'; 格式）
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS 使用 sed -i ''
+            sed -i '' "s/APP_VERSION = '[^']*'/APP_VERSION = '${NEW_VERSION}'/" "$VERSION_TS"
+        else
+            # Linux 使用 sed -i
+            sed -i "s/APP_VERSION = '[^']*'/APP_VERSION = '${NEW_VERSION}'/" "$VERSION_TS"
+        fi
+        echo "  ✓ 已更新 $VERSION_TS 中的版本号为: $NEW_VERSION"
+
+        # 验证更新结果
+        CURRENT_TS_VERSION=$(grep "APP_VERSION = " "$VERSION_TS" | sed -n "s/.*APP_VERSION = '\([^']*\)'.*/\1/p" | head -n 1)
+        if [ "$CURRENT_TS_VERSION" = "$NEW_VERSION" ]; then
+            echo "    ✓ 验证成功: APP_VERSION = '${CURRENT_TS_VERSION}'"
+        else
+            echo "    ✗ 验证失败: 期望 $NEW_VERSION，实际 $CURRENT_TS_VERSION"
+            ((ERROR_COUNT++))
+        fi
+    else
+        echo "  ⚠️  跳过: 未找到 APP_VERSION 配置行"
+    fi
+else
+    echo "  ⚠️  跳过: $VERSION_TS 文件不存在"
+fi
+
 # 输出总结
 echo ""
 echo "=========================================="

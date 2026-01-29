@@ -6,7 +6,6 @@ export { useTooltip } from './useTooltip.js';
 export { useKeyboardNavigation } from './useKeyboardNavigation.js';
 export { useIMEComposition } from './useIMEComposition.js';
 export { usePasteAndDrop } from './usePasteAndDrop.js';
-export { usePromptEnhancer } from './usePromptEnhancer.js';
 export { useGlobalCallbacks } from './useGlobalCallbacks.js';
 export { useInputHistory } from './useInputHistory.js';
 export { useSubmitHandler } from './useSubmitHandler.js';

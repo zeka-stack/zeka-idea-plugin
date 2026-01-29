@@ -1,13 +1,11 @@
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {TFunction} from 'i18next';
-import type {ClaudeContentBlock, ClaudeMessage, ToolResultBlock} from '../../types';
+import type {ClaudeContentBlock, ClaudeMessage} from '../../types';
 
 import MarkdownBlock from '../MarkdownBlock';
-import {BashToolBlock, BashToolGroupBlock, EditToolBlock, EditToolGroupBlock, ReadToolBlock, ReadToolGroupBlock,} from '../toolBlocks';
 import {ContentBlockRenderer} from './ContentBlockRenderer';
 import {formatTime} from '../../utils/helpers';
 import {copyToClipboard} from '../../utils/copyUtils';
-import {BASH_TOOL_NAMES, EDIT_TOOL_NAMES, isToolName, READ_TOOL_NAMES} from '../../utils/toolConstants';
 
 export interface MessageItemProps {
   message: ClaudeMessage;
@@ -18,100 +16,7 @@ export interface MessageItemProps {
   t: TFunction;
   getMessageText: (message: ClaudeMessage) => string;
   getContentBlocks: (message: ClaudeMessage) => ClaudeContentBlock[];
-  findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined;
   extractMarkdownContent: (message: ClaudeMessage) => string;
-}
-
-type GroupedBlock =
-  | { type: 'single'; block: ClaudeContentBlock; originalIndex: number }
-  | { type: 'read_group'; blocks: ClaudeContentBlock[]; startIndex: number }
-  | { type: 'edit_group'; blocks: ClaudeContentBlock[]; startIndex: number }
-  | { type: 'bash_group'; blocks: ClaudeContentBlock[]; startIndex: number };
-
-function isToolBlockOfType(block: ClaudeContentBlock, toolNames: Set<string>): boolean {
-  return block.type === 'tool_use' && isToolName(block.name, toolNames);
-}
-
-function groupBlocks(blocks: ClaudeContentBlock[]): GroupedBlock[] {
-  const groupedBlocks: GroupedBlock[] = [];
-  let currentReadGroup: ClaudeContentBlock[] = [];
-  let readGroupStartIndex = -1;
-  let currentEditGroup: ClaudeContentBlock[] = [];
-  let editGroupStartIndex = -1;
-  let currentBashGroup: ClaudeContentBlock[] = [];
-  let bashGroupStartIndex = -1;
-
-  const flushReadGroup = () => {
-    if (currentReadGroup.length > 0) {
-      groupedBlocks.push({
-        type: 'read_group',
-        blocks: [...currentReadGroup],
-        startIndex: readGroupStartIndex,
-      });
-      currentReadGroup = [];
-      readGroupStartIndex = -1;
-    }
-  };
-
-  const flushEditGroup = () => {
-    if (currentEditGroup.length > 0) {
-      groupedBlocks.push({
-        type: 'edit_group',
-        blocks: [...currentEditGroup],
-        startIndex: editGroupStartIndex,
-      });
-      currentEditGroup = [];
-      editGroupStartIndex = -1;
-    }
-  };
-
-  const flushBashGroup = () => {
-    if (currentBashGroup.length > 0) {
-      groupedBlocks.push({
-        type: 'bash_group',
-        blocks: [...currentBashGroup],
-        startIndex: bashGroupStartIndex,
-      });
-      currentBashGroup = [];
-      bashGroupStartIndex = -1;
-    }
-  };
-
-  blocks.forEach((block, idx) => {
-    if (isToolBlockOfType(block, READ_TOOL_NAMES)) {
-      flushEditGroup();
-      flushBashGroup();
-      if (currentReadGroup.length === 0) {
-        readGroupStartIndex = idx;
-      }
-      currentReadGroup.push(block);
-    } else if (isToolBlockOfType(block, EDIT_TOOL_NAMES)) {
-      flushReadGroup();
-      flushBashGroup();
-      if (currentEditGroup.length === 0) {
-        editGroupStartIndex = idx;
-      }
-      currentEditGroup.push(block);
-    } else if (isToolBlockOfType(block, BASH_TOOL_NAMES)) {
-      flushReadGroup();
-      flushEditGroup();
-      if (currentBashGroup.length === 0) {
-        bashGroupStartIndex = idx;
-      }
-      currentBashGroup.push(block);
-    } else {
-      flushReadGroup();
-      flushEditGroup();
-      flushBashGroup();
-      groupedBlocks.push({ type: 'single', block, originalIndex: idx });
-    }
-  });
-
-  flushReadGroup();
-  flushEditGroup();
-  flushBashGroup();
-
-  return groupedBlocks;
 }
 
 export const MessageItem = memo(function MessageItem({
@@ -123,7 +28,6 @@ export const MessageItem = memo(function MessageItem({
   t,
   getMessageText,
   getContentBlocks,
-  findToolResult,
   extractMarkdownContent,
 }: MessageItemProps): React.ReactElement {
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
@@ -323,13 +227,12 @@ export const MessageItem = memo(function MessageItem({
   // Ensure timer cleanup on unmount
   useEffect(() => () => stopThinkingTimer(), [stopThinkingTimer]);
 
-  const groupedBlocks = useMemo(() => groupBlocks(blocks), [blocks]);
   const messageStyle = useMemo(
     () => ({ contentVisibility: 'auto', containIntrinsicSize: '0 320px' } as const),
     []
   );
 
-  const renderGroupedBlocks = () => {
+  const renderBlocks = () => {
     if (message.type === 'error') {
       return <MarkdownBlock content={getMessageText(message)} />;
     }
@@ -342,99 +245,11 @@ export const MessageItem = memo(function MessageItem({
       );
     }
 
-    return groupedBlocks.map((grouped) => {
-      if (grouped.type === 'read_group') {
-        const readItems = grouped.blocks.map((b) => {
-          const block = b as { type: 'tool_use'; id?: string; name?: string; input?: Record<string, unknown> };
-          return {
-            name: block.name,
-            input: block.input,
-            result: findToolResult(block.id, messageIndex),
-          };
-        });
-
-        if (readItems.length === 1) {
-          return (
-            <div key={`${messageIndex}-readgroup-${grouped.startIndex}`} className="content-block">
-              <ReadToolBlock input={readItems[0].input} />
-            </div>
-          );
-        }
-
-        return (
-          <div key={`${messageIndex}-readgroup-${grouped.startIndex}`} className="content-block">
-            <ReadToolGroupBlock items={readItems} />
-          </div>
-        );
-      }
-
-      if (grouped.type === 'edit_group') {
-        const editItems = grouped.blocks.map((b) => {
-          const block = b as { type: 'tool_use'; id?: string; name?: string; input?: Record<string, unknown> };
-          return {
-            name: block.name,
-            input: block.input,
-            result: findToolResult(block.id, messageIndex),
-          };
-        });
-
-        if (editItems.length === 1) {
-          return (
-            <div key={`${messageIndex}-editgroup-${grouped.startIndex}`} className="content-block">
-              <EditToolBlock
-                name={editItems[0].name}
-                input={editItems[0].input}
-                result={editItems[0].result}
-              />
-            </div>
-          );
-        }
-
-        return (
-          <div key={`${messageIndex}-editgroup-${grouped.startIndex}`} className="content-block">
-            <EditToolGroupBlock items={editItems} />
-          </div>
-        );
-      }
-
-      if (grouped.type === 'bash_group') {
-        const bashItems = grouped.blocks.map((b) => {
-          const block = b as { type: 'tool_use'; id?: string; name?: string; input?: Record<string, unknown> };
-          return {
-            name: block.name,
-            input: block.input,
-            result: findToolResult(block.id, messageIndex),
-            toolId: block.id,
-          };
-        });
-
-        if (bashItems.length === 1) {
-          return (
-            <div key={`${messageIndex}-bashgroup-${grouped.startIndex}`} className="content-block">
-              <BashToolBlock
-                name={bashItems[0].name}
-                input={bashItems[0].input}
-                result={bashItems[0].result}
-                toolId={bashItems[0].toolId}
-              />
-            </div>
-          );
-        }
-
-        return (
-          <div key={`${messageIndex}-bashgroup-${grouped.startIndex}`} className="content-block">
-            <BashToolGroupBlock items={bashItems} deniedToolIds={window.__deniedToolIds} />
-          </div>
-        );
-      }
-
-      const { block, originalIndex: blockIndex } = grouped;
-
+    return blocks.map((block, blockIndex) => {
       return (
         <div key={`${messageIndex}-${blockIndex}`} className="content-block">
           <ContentBlockRenderer
             block={block}
-            messageIndex={messageIndex}
             messageType={message.type}
             isStreaming={isMessageStreaming}
             isThinkingExpanded={isThinkingExpanded(blockIndex)}
@@ -445,7 +260,6 @@ export const MessageItem = memo(function MessageItem({
             isLastBlock={blockIndex === blocks.length - 1}
             t={t}
             onToggleThinking={() => toggleThinking(blockIndex)}
-            findToolResult={findToolResult}
           />
         </div>
       );
@@ -494,7 +308,7 @@ export const MessageItem = memo(function MessageItem({
       )}
 
       <div className="message-content">
-        {renderGroupedBlocks()}
+        {renderBlocks()}
       </div>
     </div>
   );

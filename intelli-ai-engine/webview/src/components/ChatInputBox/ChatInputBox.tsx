@@ -1,6 +1,6 @@
 import {forwardRef, useCallback, useMemo, useRef, useState,} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {Attachment, ChatInputBoxHandle, ChatInputBoxProps, CommandItem, FileItem, PermissionMode,} from './types.js';
+import type {Attachment, ChatInputBoxHandle, ChatInputBoxProps, FileItem,} from './types.js';
 import {ChatInputBoxHeader} from './ChatInputBoxHeader.js';
 import {ChatInputBoxFooter} from './ChatInputBoxFooter.js';
 import {ResizeHandles} from './ResizeHandles.js';
@@ -17,7 +17,6 @@ import {
     useKeyboardNavigation,
     useNativeEventCapture,
     usePasteAndDrop,
-    usePromptEnhancer,
     useResizableChatInputBox,
     useSpaceKeyListener,
     useSubmitHandler,
@@ -25,15 +24,7 @@ import {
     useTooltip,
     useTriggerDetection,
 } from './hooks/index.js';
-import {
-    type AgentItem,
-    agentProvider,
-    agentToDropdownItem,
-    commandToDropdownItem,
-    fileReferenceProvider,
-    fileToDropdownItem,
-    slashCommandProvider,
-} from './providers/index.js';
+import {fileReferenceProvider, fileToDropdownItem,} from './providers/index.js';
 import {debounce} from './utils/debounce.js';
 import {perfTimer} from '../../utils/debug.js';
 import {TEXT_LENGTH_THRESHOLDS} from '../../constants/performance.js';
@@ -41,7 +32,7 @@ import './styles.css';
 
 /**
  * ChatInputBox - Chat input component
- * Uses contenteditable div with auto height adjustment, IME handling, @ file references, / slash commands
+ * Uses contenteditable div with auto height adjustment, IME handling, @ file references
  *
  * Performance optimizations:
  * - Uses uncontrolled mode with useImperativeHandle for minimal re-renders
@@ -54,13 +45,8 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       isLoading = false,
       selectedModel = 'claude-sonnet-4-5',
       models,
-      permissionMode = 'bypassPermissions',
       currentProvider = 'claude',
       providers,
-      usagePercentage = 0,
-      usageUsedTokens,
-      usageMaxTokens,
-      showUsage = true,
       attachments: externalAttachments,
       placeholder = '', // Will be passed from parent via t('chat.inputPlaceholder')
       disabled = false,
@@ -70,11 +56,8 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       onInput,
       onAddAttachment,
       onRemoveAttachment,
-      onModeSelect,
       onModelSelect,
       onProviderSelect,
-      reasoningEffort = 'medium',
-      onReasoningChange,
       activeFile,
       selectedLines,
       onClearContext,
@@ -83,16 +66,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       streamingEnabled,
       onStreamingEnabledChange,
       sendShortcut = 'enter',
-      selectedAgent,
-      onAgentSelect,
-      onOpenAgentSettings,
-      hasMessages = false,
-      onRewind,
-      statusPanelExpanded = true,
-      onToggleStatusPanel,
-      sdkInstalled = true, // Default to true to avoid disabling input box on initial state
-      sdkStatusLoading = false, // SDK status loading state
-      onInstallSdk,
       addToast,
     }: ChatInputBoxProps,
     ref: React.ForwardedRef<ChatInputBoxHandle>
@@ -123,8 +96,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
     // Close all completions helper
     const closeAllCompletions = useCallback(() => {
       fileCompletion.close();
-      commandCompletion.close();
-      agentCompletion.close();
     }, []);
 
     // File tags hook
@@ -178,90 +149,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       },
     });
 
-    // Slash command completion hook
-    const commandCompletion = useCompletionDropdown<CommandItem>({
-      trigger: '/',
-      provider: slashCommandProvider,
-      toDropdownItem: commandToDropdownItem,
-      onSelect: (command, query) => {
-        if (!editableRef.current || !query) return;
-
-        const text = getTextContent();
-        const replacement = `${command.label} `;
-        const newText = commandCompletion.replaceText(text, replacement, query);
-
-        // Update input box content
-        editableRef.current.innerText = newText;
-
-        // Set cursor to end of inserted text
-        const range = document.createRange();
-        const selection = window.getSelection();
-        range.selectNodeContents(editableRef.current);
-        range.collapse(false);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-
-        handleInput();
-      },
-    });
-
-    // Agent selection completion hook (# trigger at line start)
-    const agentCompletion = useCompletionDropdown<AgentItem>({
-      trigger: '#',
-      provider: agentProvider,
-      toDropdownItem: agentToDropdownItem,
-      onSelect: (agent, query) => {
-        // Skip loading and empty state special items
-        if (
-          agent.id === '__loading__' ||
-          agent.id === '__empty__' ||
-          agent.id === '__empty_state__'
-        )
-          return;
-
-        // Handle create agent
-        if (agent.id === '__create_new__') {
-          onOpenAgentSettings?.();
-          // Clear # trigger text from input box
-          if (editableRef.current && query) {
-            const text = getTextContent();
-            const newText = agentCompletion.replaceText(text, '', query);
-            editableRef.current.innerText = newText;
-
-            const range = document.createRange();
-            const selection = window.getSelection();
-            range.selectNodeContents(editableRef.current);
-            range.collapse(false);
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-
-            handleInput();
-          }
-          return;
-        }
-
-        // Select agent: don't insert text, call onAgentSelect callback
-        onAgentSelect?.({ id: agent.id, name: agent.name, prompt: agent.prompt });
-
-        // Clear # trigger text from input box
-        if (editableRef.current && query) {
-          const text = getTextContent();
-          const newText = agentCompletion.replaceText(text, '', query);
-          editableRef.current.innerText = newText;
-
-          // Set cursor position
-          const range = document.createRange();
-          const selection = window.getSelection();
-          range.selectNodeContents(editableRef.current);
-          range.collapse(false);
-          selection?.removeAllRanges();
-          selection?.addRange(range);
-
-          handleInput();
-        }
-      },
-    });
-
     // Tooltip hook
     const { tooltip, handleMouseOver, handleMouseLeave } = useTooltip();
 
@@ -311,8 +198,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       if (justRenderedTagRef.current) {
         justRenderedTagRef.current = false;
         fileCompletion.close();
-        commandCompletion.close();
-        agentCompletion.close();
         return;
       }
 
@@ -323,8 +208,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       // This prevents expensive operations (cursor position calculation, trigger detection) on large inputs
       if (text.length > TEXT_LENGTH_THRESHOLDS.COMPLETION_DETECTION) {
         fileCompletion.close();
-        commandCompletion.close();
-        agentCompletion.close();
         timer.mark('skip-large-text');
         timer.end();
         return;
@@ -332,13 +215,9 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
 
       // Optimization: Quick check if text contains trigger characters, return immediately if not
       const hasAtSymbol = text.includes('@');
-      const hasSlashSymbol = text.includes('/');
-      const hasHashSymbol = text.includes('#');
 
-      if (!hasAtSymbol && !hasSlashSymbol && !hasHashSymbol) {
+      if (!hasAtSymbol) {
         fileCompletion.close();
-        commandCompletion.close();
-        agentCompletion.close();
         timer.end();
         return;
       }
@@ -354,8 +233,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       // Close currently open completion
       if (!trigger) {
         fileCompletion.close();
-        commandCompletion.close();
-        agentCompletion.close();
         timer.end();
         return;
       }
@@ -369,31 +246,11 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
 
       // Open corresponding completion based on trigger symbol
       if (trigger.trigger === '@') {
-        commandCompletion.close();
-        agentCompletion.close();
         if (!fileCompletion.isOpen) {
           fileCompletion.open(position, trigger);
           fileCompletion.updateQuery(trigger);
         } else {
           fileCompletion.updateQuery(trigger);
-        }
-      } else if (trigger.trigger === '/') {
-        fileCompletion.close();
-        agentCompletion.close();
-        if (!commandCompletion.isOpen) {
-          commandCompletion.open(position, trigger);
-          commandCompletion.updateQuery(trigger);
-        } else {
-          commandCompletion.updateQuery(trigger);
-        }
-      } else if (trigger.trigger === '#') {
-        fileCompletion.close();
-        commandCompletion.close();
-        if (!agentCompletion.isOpen) {
-          agentCompletion.open(position, trigger);
-          agentCompletion.updateQuery(trigger);
-        } else {
-          agentCompletion.updateQuery(trigger);
         }
       }
 
@@ -404,8 +261,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       detectTrigger,
       getTriggerPosition,
       fileCompletion,
-      commandCompletion,
-      agentCompletion,
     ]);
 
     // Create debounced version of renderFileTags (300ms delay)
@@ -537,49 +392,21 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       getTextContent,
       attachments,
       isLoading,
-      sdkStatusLoading,
-      sdkInstalled,
-      currentProvider,
       clearInput,
       externalAttachments,
       setInternalAttachments,
       fileCompletion,
-      commandCompletion,
-      agentCompletion,
       recordInputHistory,
       onSubmit,
-      onInstallSdk,
       addToast,
       t,
-    });
-
-    // Prompt enhancer hook
-    const {
-      isEnhancing,
-      showEnhancerDialog,
-      originalPrompt,
-      enhancedPrompt,
-      handleEnhancePrompt,
-      handleUseEnhancedPrompt,
-      handleKeepOriginalPrompt,
-      handleCloseEnhancerDialog,
-    } = usePromptEnhancer({
-      editableRef,
-      getTextContent,
-      selectedModel,
-      setHasContent,
-      onInput,
     });
 
     const { onKeyDown: handleKeyDown, onKeyUp: handleKeyUp } = useKeyboardHandler({
       isComposing,
       lastCompositionEndTimeRef,
       sendShortcut,
-      sdkStatusLoading,
-      sdkInstalled,
       fileCompletion,
-      commandCompletion,
-      agentCompletion,
       handleMacCursorMovement,
       handleHistoryKeyDown,
       completionSelectedRef,
@@ -605,12 +432,9 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       lastCompositionEndTimeRef,
       sendShortcut,
       fileCompletion,
-      commandCompletion,
-      agentCompletion,
       completionSelectedRef,
       submittedOnEnterRef,
       handleSubmit,
-      handleEnhancePrompt,
     });
 
     // Paste and drop hook
@@ -624,7 +448,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       setInternalAttachments,
       onInput,
       fileCompletion,
-      commandCompletion,
       handleInput,
     });
 
@@ -634,16 +457,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       onRemoveAttachment,
       setInternalAttachments,
     });
-
-    /**
-     * Handle mode select
-     */
-    const handleModeSelect = useCallback(
-      (mode: PermissionMode) => {
-        onModeSelect?.(mode);
-      },
-      [onModeSelect]
-    );
 
     /**
      * Handle model select
@@ -686,7 +499,6 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
       setHasContent,
       onInput,
       fileCompletion,
-      commandCompletion,
       focusInput,
     });
 
@@ -713,27 +525,12 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
         <ResizeHandles getHandleProps={getHandleProps} nudge={nudge} />
 
         <ChatInputBoxHeader
-          sdkStatusLoading={sdkStatusLoading}
-          sdkInstalled={sdkInstalled}
-          currentProvider={currentProvider}
-          onInstallSdk={onInstallSdk}
-          t={t}
           attachments={attachments}
           onRemoveAttachment={handleRemoveAttachment}
           activeFile={activeFile}
           selectedLines={selectedLines}
-          usagePercentage={usagePercentage}
-          usageUsedTokens={usageUsedTokens}
-          usageMaxTokens={usageMaxTokens}
-          showUsage={showUsage}
           onClearContext={onClearContext}
           onAddAttachment={handleAddAttachment}
-          selectedAgent={selectedAgent}
-          onClearAgent={() => onAgentSelect?.(null)}
-          hasMessages={hasMessages}
-          onRewind={onRewind}
-          statusPanelExpanded={statusPanelExpanded}
-          onToggleStatusPanel={onToggleStatusPanel}
         />
 
         {/* Input area */}
@@ -769,11 +566,7 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
                   return;
                 }
                 // Don't send message when completion menu is open
-                if (
-                  fileCompletion.isOpen ||
-                  commandCompletion.isOpen ||
-                  agentCompletion.isOpen
-                ) {
+                if (fileCompletion.isOpen) {
                   return;
                 }
                 // Only allow submit when not loading and not in IME composition
@@ -797,41 +590,20 @@ export const ChatInputBox = forwardRef<ChatInputBoxHandle, ChatInputBoxProps>(
           disabled={disabled}
           hasInputContent={hasContent || attachments.length > 0}
           isLoading={isLoading}
-          isEnhancing={isEnhancing}
           selectedModel={selectedModel}
           models={models}
-          permissionMode={permissionMode}
           currentProvider={currentProvider}
           providers={providers}
-          reasoningEffort={reasoningEffort}
           onSubmit={handleSubmit}
           onStop={onStop}
-          onModeSelect={handleModeSelect}
           onModelSelect={handleModelSelect}
           onProviderSelect={onProviderSelect}
-          onReasoningChange={onReasoningChange}
-          onEnhancePrompt={handleEnhancePrompt}
           alwaysThinkingEnabled={alwaysThinkingEnabled}
           onToggleThinking={onToggleThinking}
           streamingEnabled={streamingEnabled}
           onStreamingEnabledChange={onStreamingEnabledChange}
-          selectedAgent={selectedAgent}
-          onAgentSelect={(agent) => onAgentSelect?.(agent)}
-          onOpenAgentSettings={onOpenAgentSettings}
-          onClearAgent={() => onAgentSelect?.(null)}
           fileCompletion={fileCompletion}
-          commandCompletion={commandCompletion}
-          agentCompletion={agentCompletion}
           tooltip={tooltip}
-          promptEnhancer={{
-            isOpen: showEnhancerDialog,
-            isLoading: isEnhancing,
-            originalPrompt,
-            enhancedPrompt,
-            onUseEnhanced: handleUseEnhancedPrompt,
-            onKeepOriginal: handleKeepOriginalPrompt,
-            onClose: handleCloseEnhancerDialog,
-          }}
           t={t}
         />
       </div>

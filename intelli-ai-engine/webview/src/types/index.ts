@@ -40,27 +40,3 @@ export interface TodoItem {
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
 }
-
-export interface HistorySessionSummary {
-  sessionId: string;
-  title: string;
-  messageCount: number;
-  lastTimestamp?: string;
-  isFavorited?: boolean;
-  favoritedAt?: number;
-  provider?: string; // 'claude' 或 'codex'
-}
-
-export interface HistoryData {
-  success: boolean;
-  error?: string;
-  sessions?: HistorySessionSummary[];
-  total?: number;
-  favorites?: Record<string, { favoritedAt: number }>;
-}
-
-// File changes types
-export type { FileChangeStatus, EditOperation, FileChangeSummary } from './fileChanges';
-
-// Subagent types
-export type { SubagentStatus, SubagentInfo } from './subagent';

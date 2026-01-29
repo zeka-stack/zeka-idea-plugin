@@ -120,20 +120,6 @@ export interface FileItem {
 }
 
 /**
- * Command item (returned from Java)
- */
-export interface CommandItem {
-  /** Command identifier */
-  id: string;
-  /** Display name */
-  label: string;
-  /** Description */
-  description?: string;
-  /** Category */
-  category?: string;
-}
-
-/**
  * Dropdown menu position
  */
 export interface DropdownPosition {
@@ -160,70 +146,6 @@ export interface TriggerQuery {
   /** Character offset position of query end */
   end: number;
 }
-
-/**
- * Selected agent information
- */
-export interface SelectedAgent {
-  id: string;
-  name: string;
-  prompt?: string;
-}
-
-// ============================================================
-// Mode and Model Types
-// ============================================================
-
-/**
- * Permission mode for conversations
- */
-export type PermissionMode = 'default' | 'acceptEdits' | 'plan' | 'bypassPermissions';
-
-/**
- * Mode information
- */
-export interface ModeInfo {
-  id: PermissionMode;
-  label: string;
-  icon: string;
-  disabled?: boolean;
-  tooltip?: string;
-  description?: string;
-}
-
-/**
- * Available permission modes
- */
-export const AVAILABLE_MODES: ModeInfo[] = [
-  {
-    id: 'default',
-    label: 'Default Mode',
-    icon: 'codicon-comment-discussion',
-    tooltip: 'Standard permission behavior',
-    description: 'Requires manual confirmation for each operation',
-  },
-  {
-    id: 'plan',
-    label: 'Plan Mode',
-    icon: 'codicon-tasklist',
-    tooltip: 'Plan mode - read-only analysis',
-    description: 'Read-only tools only, generates plan for user approval',
-  },
-  {
-    id: 'acceptEdits',
-    label: 'Agent Mode',
-    icon: 'codicon-robot',
-    tooltip: 'Auto-accept file edits',
-    description: 'Auto-accept file creation/editing, fewer confirmations',
-  },
-  {
-    id: 'bypassPermissions',
-    label: 'Auto Mode',
-    icon: 'codicon-zap',
-    tooltip: 'Bypass all permission checks',
-    description: 'Fully automated, bypasses all permission checks [use with caution]',
-  },
-];
 
 /**
  * Model information
@@ -306,69 +228,6 @@ export const AVAILABLE_PROVIDERS: ProviderInfo[] = [
   { id: 'opencode', label: 'OpenCode', icon: 'codicon-terminal', enabled: false },
 ];
 
-/**
- * Codex Reasoning Effort (thinking depth)
- * Controls the depth of reasoning for Codex models
- * Valid values: low, medium, high, xhigh
- */
-export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh';
-
-/**
- * Reasoning level information
- */
-export interface ReasoningInfo {
-  id: ReasoningEffort;
-  label: string;
-  icon: string;
-  description?: string;
-}
-
-/**
- * Available reasoning levels for Codex
- */
-export const REASONING_LEVELS: ReasoningInfo[] = [
-  {
-    id: 'low',
-    label: 'Low',
-    icon: 'codicon-circle-small',
-    description: 'Quick responses with basic reasoning',
-  },
-  {
-    id: 'medium',
-    label: 'Medium',
-    icon: 'codicon-circle-filled',
-    description: 'Balanced thinking (default)',
-  },
-  {
-    id: 'high',
-    label: 'High',
-    icon: 'codicon-circle-large-filled',
-    description: 'Deep reasoning for complex tasks',
-  },
-  {
-    id: 'xhigh',
-    label: 'Max',
-    icon: 'codicon-flame',
-    description: 'Maximum reasoning depth',
-  },
-];
-
-// ============================================================
-// Usage Types
-// ============================================================
-
-/**
- * Usage information
- */
-export interface UsageInfo {
-  /** Usage percentage (0-100) */
-  percentage: number;
-  /** Used amount */
-  used?: number;
-  /** Total amount */
-  total?: number;
-}
-
 // ============================================================
 // Component Ref Handle Types
 // ============================================================
@@ -406,20 +265,10 @@ export interface ChatInputBoxProps {
   selectedModel?: string;
   /** Available models */
   models?: ModelInfo[];
-  /** Current permission mode */
-  permissionMode?: PermissionMode;
   /** Current provider */
   currentProvider?: string;
   /** Available providers */
   providers?: ProviderInfo[];
-  /** Usage percentage */
-  usagePercentage?: number;
-  /** Used context tokens */
-  usageUsedTokens?: number;
-  /** Maximum context tokens */
-  usageMaxTokens?: number;
-  /** Whether to show usage */
-  showUsage?: boolean;
   /** Whether always thinking is enabled */
   alwaysThinkingEnabled?: boolean;
   /** Attachment list */
@@ -452,16 +301,10 @@ export interface ChatInputBoxProps {
   onAddAttachment?: (files: FileList) => void;
   /** Remove attachment */
   onRemoveAttachment?: (id: string) => void;
-  /** Switch mode */
-  onModeSelect?: (mode: PermissionMode) => void;
   /** Switch model */
   onModelSelect?: (modelId: string) => void;
   /** Switch provider */
   onProviderSelect?: (providerId: string) => void;
-  /** Current reasoning effort (Codex only) */
-  reasoningEffort?: ReasoningEffort;
-  /** Switch reasoning effort callback (Codex only) */
-  onReasoningChange?: (effort: ReasoningEffort) => void;
   /** Toggle thinking mode */
   onToggleThinking?: (enabled: boolean) => void;
   /** Whether streaming is enabled */
@@ -472,31 +315,6 @@ export interface ChatInputBoxProps {
   /** Send shortcut setting: 'enter' = Enter sends | 'cmdEnter' = Cmd/Ctrl+Enter sends */
   sendShortcut?: 'enter' | 'cmdEnter';
 
-  /** Currently selected agent */
-  selectedAgent?: SelectedAgent | null;
-  /** Select agent callback */
-  onAgentSelect?: (agent: SelectedAgent | null) => void;
-  /** Clear agent callback */
-  onClearAgent?: () => void;
-  /** Open agent settings callback */
-  onOpenAgentSettings?: () => void;
-
-  /** Whether has messages (for rewind button display) */
-  hasMessages?: boolean;
-  /** Rewind file callback */
-  onRewind?: () => void;
-
-  /** Whether StatusPanel is expanded */
-  statusPanelExpanded?: boolean;
-  /** Toggle StatusPanel expand/collapse */
-  onToggleStatusPanel?: () => void;
-
-  /** SDK installed status (disable input when not installed) */
-  sdkInstalled?: boolean;
-  /** SDK status loading state */
-  sdkStatusLoading?: boolean;
-  /** Go to install SDK callback */
-  onInstallSdk?: () => void;
   /** Show toast message */
   addToast?: (message: string, type: 'info' | 'success' | 'warning' | 'error') => void;
 }
@@ -511,31 +329,20 @@ export interface ButtonAreaProps {
   hasInputContent?: boolean;
   /** Whether in conversation */
   isLoading?: boolean;
-  /** Whether enhancing prompt */
-  isEnhancing?: boolean;
   /** Current model */
   selectedModel?: string;
   /** Available models */
   models?: ModelInfo[];
-  /** Current mode */
-  permissionMode?: PermissionMode;
   /** Current provider */
   currentProvider?: string;
   /** Available providers */
   providers?: ProviderInfo[];
-  /** Current reasoning effort (Codex only) */
-  reasoningEffort?: ReasoningEffort;
 
   // Event callbacks
   onSubmit?: () => void;
   onStop?: () => void;
-  onModeSelect?: (mode: PermissionMode) => void;
   onModelSelect?: (modelId: string) => void;
   onProviderSelect?: (providerId: string) => void;
-  /** Switch reasoning effort callback (Codex only) */
-  onReasoningChange?: (effort: ReasoningEffort) => void;
-  /** Enhance prompt callback */
-  onEnhancePrompt?: () => void;
   /** Whether always thinking enabled */
   alwaysThinkingEnabled?: boolean;
   /** Toggle thinking mode */
@@ -544,14 +351,6 @@ export interface ButtonAreaProps {
   streamingEnabled?: boolean;
   /** Toggle streaming */
   onStreamingEnabledChange?: (enabled: boolean) => void;
-  /** Currently selected agent */
-  selectedAgent?: SelectedAgent | null;
-  /** Agent selection callback */
-  onAgentSelect?: (agent: SelectedAgent) => void;
-  /** Clear agent callback */
-  onClearAgent?: () => void;
-  /** Open agent settings callback */
-  onOpenAgentSettings?: () => void;
 }
 
 /**
@@ -574,20 +373,6 @@ export interface DropdownProps {
   onClose?: () => void;
   /** Children */
   children: React.ReactNode;
-}
-
-/**
- * TokenIndicator component props
- */
-export interface TokenIndicatorProps {
-  /** Percentage (0-100) */
-  percentage: number;
-  /** Size */
-  size?: number;
-  /** Used context tokens */
-  usedTokens?: number;
-  /** Maximum context tokens */
-  maxTokens?: number;
 }
 
 /**

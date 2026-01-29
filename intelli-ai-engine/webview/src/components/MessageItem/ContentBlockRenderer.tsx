@@ -1,14 +1,11 @@
 import type {TFunction} from 'i18next';
-import type {ClaudeContentBlock, ToolResultBlock} from '../../types';
+import type {ClaudeContentBlock} from '../../types';
 
 import MarkdownBlock from '../MarkdownBlock';
 import CollapsibleTextBlock from '../CollapsibleTextBlock';
-import {BashToolBlock, EditToolBlock, GenericToolBlock, TaskExecutionBlock,} from '../toolBlocks';
-import {BASH_TOOL_NAMES, EDIT_TOOL_NAMES, isToolName} from '../../utils/toolConstants';
 
 export interface ContentBlockRendererProps {
   block: ClaudeContentBlock;
-  messageIndex: number;
   messageType: string;
   isStreaming: boolean;
   isThinkingExpanded: boolean;
@@ -19,12 +16,10 @@ export interface ContentBlockRendererProps {
   isLastBlock?: boolean;
   t: TFunction;
   onToggleThinking: () => void;
-  findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined;
 }
 
 export function ContentBlockRenderer({
   block,
-  messageIndex,
   messageType,
   isStreaming,
   isThinkingExpanded,
@@ -35,7 +30,6 @@ export function ContentBlockRenderer({
   isLastBlock = false,
   t,
   onToggleThinking,
-  findToolResult,
 }: ContentBlockRendererProps): React.ReactElement | null {
   if (block.type === 'text') {
     return messageType === 'user' ? (
@@ -144,54 +138,6 @@ export function ContentBlockRenderer({
           />
         </div>
       </div>
-    );
-  }
-
-  if (block.type === 'tool_use') {
-    const toolName = block.name?.toLowerCase();
-
-    if (toolName === 'todowrite') {
-      return null;
-    }
-
-    if (toolName === 'task') {
-      return (
-        <TaskExecutionBlock
-          input={block.input}
-          result={findToolResult(block.id, messageIndex)}
-        />
-      );
-    }
-
-    if (isToolName(block.name, EDIT_TOOL_NAMES)) {
-      return (
-        <EditToolBlock
-          name={block.name}
-          input={block.input}
-          result={findToolResult(block.id, messageIndex)}
-          toolId={block.id}
-        />
-      );
-    }
-
-    if (isToolName(block.name, BASH_TOOL_NAMES)) {
-      return (
-        <BashToolBlock
-          name={block.name}
-          input={block.input}
-          result={findToolResult(block.id, messageIndex)}
-          toolId={block.id}
-        />
-      );
-    }
-
-    return (
-      <GenericToolBlock
-        name={block.name}
-        input={block.input}
-        result={findToolResult(block.id, messageIndex)}
-        toolId={block.id}
-      />
     );
   }
 

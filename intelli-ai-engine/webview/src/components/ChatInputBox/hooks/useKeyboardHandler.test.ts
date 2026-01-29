@@ -38,11 +38,7 @@ describe('useKeyboardHandler', () => {
         isComposing: false,
         lastCompositionEndTimeRef: { current: Date.now() - 1000 },
         sendShortcut: 'enter',
-        sdkStatusLoading: false,
-        sdkInstalled: true,
         fileCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
-        commandCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
-        agentCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
         handleMacCursorMovement: vi.fn(() => false),
         handleHistoryKeyDown: vi.fn(() => false),
         completionSelectedRef,
@@ -68,11 +64,7 @@ describe('useKeyboardHandler', () => {
         isComposing: false,
         lastCompositionEndTimeRef: { current: Date.now() - 1000 },
         sendShortcut: 'enter',
-        sdkStatusLoading: false,
-        sdkInstalled: true,
         fileCompletion: { isOpen: true, handleKeyDown: vi.fn(() => true) },
-        commandCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
-        agentCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
         handleMacCursorMovement: vi.fn(() => false),
         handleHistoryKeyDown: vi.fn(() => false),
         completionSelectedRef,
@@ -99,11 +91,7 @@ describe('useKeyboardHandler', () => {
         isComposing: false,
         lastCompositionEndTimeRef: { current: Date.now() - 1000 },
         sendShortcut: 'enter',
-        sdkStatusLoading: false,
-        sdkInstalled: true,
         fileCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
-        commandCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
-        agentCompletion: { isOpen: false, handleKeyDown: vi.fn(() => false) },
         handleMacCursorMovement: vi.fn(() => false),
         handleHistoryKeyDown: vi.fn(() => false),
         completionSelectedRef,
@@ -118,4 +106,3 @@ describe('useKeyboardHandler', () => {
     expect(submittedOnEnterRef.current).toBe(false);
   });
 });
-

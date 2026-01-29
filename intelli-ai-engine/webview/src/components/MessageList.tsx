@@ -1,6 +1,6 @@
 import {memo} from 'react';
 import type {TFunction} from 'i18next';
-import type {ClaudeContentBlock, ClaudeMessage, ToolResultBlock} from '../types';
+import type {ClaudeContentBlock, ClaudeMessage} from '../types';
 import {MessageItem} from './MessageItem';
 import WaitingIndicator from './WaitingIndicator';
 
@@ -13,7 +13,6 @@ interface MessageListProps {
   t: TFunction;
   getMessageText: (message: ClaudeMessage) => string;
   getContentBlocks: (message: ClaudeMessage) => ClaudeContentBlock[];
-  findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined;
   extractMarkdownContent: (message: ClaudeMessage) => string;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -27,7 +26,6 @@ export const MessageList = memo(function MessageList({
   t,
   getMessageText,
   getContentBlocks,
-  findToolResult,
   extractMarkdownContent,
   messagesEndRef,
 }: MessageListProps) {
@@ -50,7 +48,6 @@ export const MessageList = memo(function MessageList({
             t={t}
             getMessageText={getMessageText}
             getContentBlocks={getContentBlocks}
-            findToolResult={findToolResult}
             extractMarkdownContent={extractMarkdownContent}
           />
         );

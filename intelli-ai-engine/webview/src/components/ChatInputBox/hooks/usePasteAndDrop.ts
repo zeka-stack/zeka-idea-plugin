@@ -20,7 +20,6 @@ interface UsePasteAndDropOptions {
   setInternalAttachments: React.Dispatch<React.SetStateAction<Attachment[]>>;
   onInput?: (content: string) => void;
   fileCompletion: { close: () => void };
-  commandCompletion: { close: () => void };
   handleInput: () => void;
 }
 
@@ -52,7 +51,6 @@ export function usePasteAndDrop({
   setInternalAttachments,
   onInput,
   fileCompletion,
-  commandCompletion,
   handleInput,
 }: UsePasteAndDropOptions): UsePasteAndDropReturn {
   /**
@@ -281,7 +279,6 @@ export function usePasteAndDrop({
 
         // Close completion menus
         fileCompletion.close();
-        commandCompletion.close();
 
         // Directly trigger state update, don't call handleInput (avoid re-detecting completion)
         const newText = getTextContent();
@@ -305,7 +302,6 @@ export function usePasteAndDrop({
       setInternalAttachments,
       onInput,
       fileCompletion,
-      commandCompletion,
     ]
   );
 

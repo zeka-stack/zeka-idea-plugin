@@ -1,17 +1,11 @@
-import { useEffect, useRef } from 'react';
-import type { TFunction } from 'i18next';
-import type { MutableRefObject, RefObject } from 'react';
-import type { ClaudeMessage, ClaudeRawMessage, HistoryData } from '../types';
-import type { PermissionMode, SelectedAgent } from '../components/ChatInputBox/types';
-import type { ProviderConfig } from '../types/provider';
-import type { PermissionRequest } from '../components/PermissionDialog';
-import type { AskUserQuestionRequest } from '../components/AskUserQuestionDialog';
-import type { PlanApprovalRequest } from '../components/PlanApprovalDialog';
-import type { RewindRequest } from '../components/RewindDialog';
-import { THROTTLE_INTERVAL } from './useStreamingMessages';
-import { sendBridgeEvent } from '../utils/bridge';
-import { setupSlashCommandsCallback, resetSlashCommandsState, resetFileReferenceState } from '../components/ChatInputBox/providers';
-import { downloadJSON } from '../utils/exportMarkdown';
+import type {MutableRefObject, RefObject} from 'react';
+import {useEffect, useRef} from 'react';
+import type {TFunction} from 'i18next';
+import type {ClaudeMessage, ClaudeRawMessage} from '../types';
+import type {ProviderConfig} from '../types/provider';
+import {THROTTLE_INTERVAL} from './useStreamingMessages';
+import {sendBridgeEvent} from '../utils/bridge';
+import {resetFileReferenceState} from '../components/ChatInputBox/providers';
 
 // Performance optimization constants
 /**
@@ -42,13 +36,6 @@ export interface UseWindowCallbacksOptions {
   setIsThinking: React.Dispatch<React.SetStateAction<boolean>>;
   setExpandedThinking?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   setStreamingActive: React.Dispatch<React.SetStateAction<boolean>>;
-  setHistoryData: React.Dispatch<React.SetStateAction<HistoryData | null>>;
-  setCurrentSessionId: React.Dispatch<React.SetStateAction<string | null>>;
-  setUsagePercentage: React.Dispatch<React.SetStateAction<number>>;
-  setUsageUsedTokens: React.Dispatch<React.SetStateAction<number | undefined>>;
-  setUsageMaxTokens: React.Dispatch<React.SetStateAction<number | undefined>>;
-  setPermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
-  setClaudePermissionMode: React.Dispatch<React.SetStateAction<PermissionMode>>;
   setSelectedClaudeModel: React.Dispatch<React.SetStateAction<string>>;
   setSelectedCodexModel: React.Dispatch<React.SetStateAction<string>>;
   setProviderConfigVersion: React.Dispatch<React.SetStateAction<number>>;
@@ -56,19 +43,12 @@ export interface UseWindowCallbacksOptions {
   setClaudeSettingsAlwaysThinkingEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setStreamingEnabledSetting: React.Dispatch<React.SetStateAction<boolean>>;
   setSendShortcut: React.Dispatch<React.SetStateAction<'enter' | 'cmdEnter'>>;
-  setSdkStatus: React.Dispatch<React.SetStateAction<Record<string, { installed?: boolean; status?: string }>>>;
-  setSdkStatusLoaded: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsRewinding: (loading: boolean) => void;
-  setRewindDialogOpen: (open: boolean) => void;
-  setCurrentRewindRequest: (request: RewindRequest | null) => void;
   setContextInfo: React.Dispatch<React.SetStateAction<ContextInfo | null>>;
-  setSelectedAgent: React.Dispatch<React.SetStateAction<SelectedAgent | null>>;
 
   // Refs
   currentProviderRef: MutableRefObject<string>;
   messagesContainerRef: RefObject<HTMLDivElement | null>;
   isUserAtBottomRef: MutableRefObject<boolean>;
-  suppressNextStatusToastRef: MutableRefObject<boolean>;
 
   // Streaming refs from useStreamingMessages
   streamingContentRef: MutableRefObject<string>;
@@ -94,11 +74,6 @@ export interface UseWindowCallbacksOptions {
 
   // Other functions
   syncActiveProviderModelMapping: (provider: ProviderConfig) => void;
-
-  // Permission dialog handlers from useDialogManagement
-  openPermissionDialog: (request: PermissionRequest) => void;
-  openAskUserQuestionDialog: (request: AskUserQuestionRequest) => void;
-  openPlanApprovalDialog: (request: PlanApprovalRequest) => void;
 }
 
 export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
@@ -112,13 +87,6 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
     setIsThinking,
     setExpandedThinking,
     setStreamingActive,
-    setHistoryData,
-    setCurrentSessionId,
-    setUsagePercentage,
-    setUsageUsedTokens,
-    setUsageMaxTokens,
-    setPermissionMode,
-    setClaudePermissionMode,
     setSelectedClaudeModel,
     setSelectedCodexModel,
     setProviderConfigVersion,
@@ -126,17 +94,10 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
     setClaudeSettingsAlwaysThinkingEnabled,
     setStreamingEnabledSetting,
     setSendShortcut,
-    setSdkStatus,
-    setSdkStatusLoaded,
-    setIsRewinding,
-    setRewindDialogOpen,
-    setCurrentRewindRequest,
     setContextInfo,
-    setSelectedAgent,
     currentProviderRef,
     messagesContainerRef,
     isUserAtBottomRef,
-    suppressNextStatusToastRef,
     streamingContentRef,
     isStreamingRef,
     useBackendStreamingRenderRef,
@@ -156,9 +117,6 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
     getOrCreateStreamingAssistantIndex,
     patchAssistantForStreaming,
     syncActiveProviderModelMapping,
-    openPermissionDialog,
-    openAskUserQuestionDialog,
-    openPlanApprovalDialog,
   } = options;
 
   // Store t in ref to avoid stale closures
@@ -293,7 +251,7 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
             let smartMerged = parsed.map((newMsg, i) => {
               // 总是更新最后一条消息（可能在流式生成中，或者状态在变）
               if (i === parsed.length - 1) return newMsg;
-              
+
               if (i < prev.length) {
                 const oldMsg = prev[i];
                 if (
@@ -314,7 +272,7 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
           // 下面是原有的流式处理逻辑，我们需要保留它
           // 因为不能在 if (!isStreamingRef.current) 里 return，所以这里需要重复一下或者重构
           // 为了最小化改动，我将把流式逻辑复制在这里（或者保持原样）
-          
+
           if (useBackendStreamingRenderRef.current) {
             let smartMerged = parsed.map((newMsg, i) => {
               if (i === parsed.length - 1) return newMsg;
@@ -395,10 +353,6 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
 
     window.updateStatus = (text) => {
       setStatus(text);
-      if (suppressNextStatusToastRef.current) {
-        suppressNextStatusToastRef.current = false;
-        return;
-      }
       addToast(text);
     };
 
@@ -422,16 +376,10 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
     };
 
     window.showThinkingStatus = (value) => setIsThinking(isTruthy(value));
-    window.setHistoryData = (data) => setHistoryData(data);
     window.clearMessages = () => {
-      window.__deniedToolIds?.clear();
       setMessages([]);
     };
     window.addErrorMessage = (message) => addToast(message, 'error');
-
-    window.addHistoryMessage = (message: ClaudeMessage) => {
-      setMessages((prev) => [...prev, message]);
-    };
 
     window.addUserMessage = (content: string) => {
       const userMessage: ClaudeMessage = {
@@ -650,165 +598,9 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
       setStreamingActive(false);
     };
 
-    // 权限被拒绝回调 - 标记未完成的工具调用为"中断"状态
-    window.onPermissionDenied = () => {
-      if (!window.__deniedToolIds) {
-        window.__deniedToolIds = new Set<string>();
-      }
-
-      // 收集需要标记为拒绝的工具 ID
-      const idsToAdd: string[] = [];
-
-      setMessages((currentMessages) => {
-        try {
-          // 从后向前遍历，找到最后一条包含未完成工具调用的消息
-          for (let i = currentMessages.length - 1; i >= 0; i--) {
-            const msg = currentMessages[i];
-            if (msg.type === 'assistant' && msg.raw) {
-              const rawObj = typeof msg.raw === 'string' ? JSON.parse(msg.raw) : msg.raw;
-              const content = rawObj.content || rawObj.message?.content;
-
-              if (Array.isArray(content)) {
-                const toolUses = content.filter(
-                  (block: { type?: string; id?: string }) => block.type === 'tool_use' && block.id
-                ) as Array<{ type: string; id: string; name?: string }>;
-
-                if (toolUses.length > 0) {
-                  // 检查这些工具调用是否已经有结果
-                  const nextMsg = currentMessages[i + 1];
-                  const existingResultIds = new Set<string>();
-
-                  if (nextMsg?.type === 'user' && nextMsg.raw) {
-                    const nextRaw = typeof nextMsg.raw === 'string' ? JSON.parse(nextMsg.raw) : nextMsg.raw;
-                    const nextContent = nextRaw.content || nextRaw.message?.content;
-                    if (Array.isArray(nextContent)) {
-                      nextContent.forEach((block: { type?: string; tool_use_id?: string }) => {
-                        if (block.type === 'tool_result' && block.tool_use_id) {
-                          existingResultIds.add(block.tool_use_id);
-                        }
-                      });
-                    }
-                  }
-
-                  // 收集没有结果的工具调用 ID
-                  for (const tu of toolUses) {
-                    if (!existingResultIds.has(tu.id)) {
-                      idsToAdd.push(tu.id);
-                    }
-                  }
-
-                  break;
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error('[Frontend] Error in onPermissionDenied:', e);
-        }
-
-        // 返回新数组引用以触发重新渲染
-        return [...currentMessages];
-      });
-
-      // 在 updater 外部修改全局状态，避免并发模式下的副作用问题
-      for (const id of idsToAdd) {
-        window.__deniedToolIds!.add(id);
-      }
-    };
-
-    // ========== Session Callbacks ==========
-    window.setSessionId = (sessionId: string) => {
-      console.log('[Frontend] setSessionId:', sessionId);
-      setCurrentSessionId(sessionId);
-    };
-
     window.addToast = (message, type) => {
       addToast(message, type as 'info' | 'success' | 'warning' | 'error' | undefined);
     };
-
-    window.onExportSessionData = (json) => {
-      try {
-        const data = JSON.parse(json);
-        // Backend sends: { sessionId, title, messages }
-        if (data.sessionId && data.messages) {
-          // Format the export content
-          const exportContent = JSON.stringify(data, null, 2);
-          // Generate filename from title, sanitize for file system
-          const sanitizedTitle = (data.title || 'session')
-            .replace(/[<>:"/\\|?*]/g, '_')  // Replace invalid file name chars
-            .replace(/\s+/g, '_')            // Replace spaces with underscores
-            .substring(0, 50);               // Limit length
-          const filename = `${sanitizedTitle}_${data.sessionId.substring(0, 8)}.json`;
-          // Use downloadJSON which calls backend to show native file save dialog
-          downloadJSON(exportContent, filename);
-        } else if (data.error) {
-          addToast(data.error, 'error');
-        } else {
-          addToast(tRef.current('history.exportFailed'), 'error');
-        }
-      } catch (error) {
-        console.error('[Frontend] Failed to process export data:', error);
-        addToast(tRef.current('history.exportFailed'), 'error');
-      }
-    };
-
-    // ========== SDK Status Callbacks ==========
-    const originalUpdateDependencyStatus = window.updateDependencyStatus;
-    window.updateDependencyStatus = (jsonStr: string) => {
-      try {
-        const data = JSON.parse(jsonStr);
-        console.log('[Frontend] updateDependencyStatus:', data);
-        setSdkStatus(data);
-        setSdkStatusLoaded(true);
-      } catch (error) {
-        console.error('[Frontend] Failed to parse dependency status:', error);
-      }
-      if (originalUpdateDependencyStatus && originalUpdateDependencyStatus !== window.updateDependencyStatus) {
-        originalUpdateDependencyStatus(jsonStr);
-      }
-    };
-    (window as unknown as Record<string, unknown>)._appUpdateDependencyStatus = window.updateDependencyStatus;
-
-    if ((window as unknown as Record<string, unknown>).__pendingDependencyStatus) {
-      const pending = (window as unknown as Record<string, unknown>).__pendingDependencyStatus as string;
-      delete (window as unknown as Record<string, unknown>).__pendingDependencyStatus;
-      window.updateDependencyStatus?.(pending);
-    }
-
-    if (window.sendToJava) {
-      window.sendToJava('get_dependency_status:');
-    }
-
-    // ========== Usage & Mode Callbacks ==========
-    window.onUsageUpdate = (json) => {
-      try {
-        const data = JSON.parse(json);
-        if (typeof data.percentage === 'number') {
-          const used = typeof data.usedTokens === 'number' ? data.usedTokens : (typeof data.totalTokens === 'number' ? data.totalTokens : undefined);
-          const max = typeof data.maxTokens === 'number' ? data.maxTokens : (typeof data.limit === 'number' ? data.limit : undefined);
-          setUsagePercentage(data.percentage);
-          setUsageUsedTokens(used);
-          setUsageMaxTokens(max);
-        }
-      } catch (error) {
-        console.error('[Frontend] Failed to parse usage update:', error);
-      }
-    };
-
-    const updateMode = (mode?: PermissionMode, providerOverride?: string) => {
-      const activeProvider = providerOverride || currentProviderRef.current;
-      if (activeProvider === 'codex') {
-        setPermissionMode('bypassPermissions');
-        return;
-      }
-      if (mode === 'default' || mode === 'plan' || mode === 'acceptEdits' || mode === 'bypassPermissions') {
-        setPermissionMode(mode);
-        setClaudePermissionMode(mode);
-      }
-    };
-
-    window.onModeChanged = (mode) => updateMode(mode as PermissionMode);
-    window.onModeReceived = (mode) => updateMode(mode as PermissionMode);
 
     window.onModelChanged = (modelId) => {
       const provider = currentProviderRef.current;
@@ -902,85 +694,6 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
     };
     setTimeout(requestInitialSettings, 200);
 
-    // ========== Permission Dialog Callbacks ==========
-    window.showPermissionDialog = (json) => {
-      try {
-        const request = JSON.parse(json);
-        openPermissionDialog(request);
-      } catch (error) {
-        console.error('[Frontend] Failed to parse permission request:', error);
-      }
-    };
-
-    if (Array.isArray(window.__pendingPermissionDialogRequests) && window.__pendingPermissionDialogRequests.length > 0) {
-      const pending = window.__pendingPermissionDialogRequests.slice();
-      window.__pendingPermissionDialogRequests = [];
-      for (const payload of pending) {
-        window.showPermissionDialog?.(payload);
-      }
-    }
-
-    window.showAskUserQuestionDialog = (json) => {
-      try {
-        const request = JSON.parse(json);
-        openAskUserQuestionDialog(request);
-      } catch (error) {
-        console.error('[Frontend] Failed to parse ask user question request:', error);
-      }
-    };
-
-    if (Array.isArray(window.__pendingAskUserQuestionDialogRequests) && window.__pendingAskUserQuestionDialogRequests.length > 0) {
-      const pending = window.__pendingAskUserQuestionDialogRequests.slice();
-      window.__pendingAskUserQuestionDialogRequests = [];
-      for (const payload of pending) {
-        window.showAskUserQuestionDialog?.(payload);
-      }
-    }
-
-    window.showPlanApprovalDialog = (json) => {
-      try {
-        const request = JSON.parse(json);
-        openPlanApprovalDialog(request);
-      } catch (error) {
-        console.error('[Frontend] Failed to parse plan approval request:', error);
-      }
-    };
-
-    if (Array.isArray(window.__pendingPlanApprovalDialogRequests) && window.__pendingPlanApprovalDialogRequests.length > 0) {
-      const pending = window.__pendingPlanApprovalDialogRequests.slice();
-      window.__pendingPlanApprovalDialogRequests = [];
-      for (const payload of pending) {
-        window.showPlanApprovalDialog?.(payload);
-      }
-    }
-
-    // ========== Rewind Result Callback ==========
-    window.onRewindResult = (json: string) => {
-      try {
-        const result = JSON.parse(json);
-        setIsRewinding(false);
-        if (result.success) {
-          setRewindDialogOpen(false);
-          setCurrentRewindRequest(null);
-          window.addToast?.(
-            tRef.current('rewind.success'),
-            'success'
-          );
-        } else {
-          window.addToast?.(
-            result.message || tRef.current('rewind.failed'),
-            'error'
-          );
-        }
-      } catch (error) {
-        console.error('[Frontend] Failed to parse rewind result:', error);
-        setIsRewinding(false);
-        setRewindDialogOpen(false);
-        setCurrentRewindRequest(null);
-        window.addToast?.(tRef.current('rewind.parseError'), 'error');
-      }
-    };
-
     // ========== Selection Context Callbacks ==========
     window.addSelectionInfo = (selectionInfo) => {
       console.log('[Frontend] addSelectionInfo (auto) called:', selectionInfo);
@@ -1013,68 +726,7 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
       setContextInfo(null);
     };
 
-    // ========== Agent Callbacks ==========
-    window.onSelectedAgentReceived = (json) => {
-      console.log('[Frontend] onSelectedAgentReceived:', json);
-      try {
-        if (!json || json === 'null' || json === '{}') {
-          setSelectedAgent(null);
-          return;
-        }
-        const data = JSON.parse(json);
-        const agentFromNewShape = data?.agent;
-        const agentFromLegacyShape = data;
-
-        const agentData = agentFromNewShape?.id ? agentFromNewShape : (agentFromLegacyShape?.id ? agentFromLegacyShape : null);
-        if (!agentData) {
-          setSelectedAgent(null);
-          return;
-        }
-
-        setSelectedAgent({
-          id: agentData.id,
-          name: agentData.name || '',
-          prompt: agentData.prompt,
-        });
-      } catch (error) {
-        console.error('[Frontend] Failed to parse selected agent:', error);
-        setSelectedAgent(null);
-      }
-    };
-
-    window.onSelectedAgentChanged = (json) => {
-      console.log('[Frontend] onSelectedAgentChanged:', json);
-      try {
-        if (!json || json === 'null' || json === '{}') {
-          setSelectedAgent(null);
-          return;
-        }
-
-        const data = JSON.parse(json);
-        if (data?.success === false) {
-          return;
-        }
-
-        const agentData = data?.agent;
-        if (!agentData || !agentData.id) {
-          setSelectedAgent(null);
-          return;
-        }
-
-        setSelectedAgent({
-          id: agentData.id,
-          name: agentData.name || '',
-          prompt: agentData.prompt,
-        });
-      } catch (error) {
-        console.error('[Frontend] Failed to parse selected agent changed:', error);
-      }
-    };
-
-    // ========== Slash Commands Setup ==========
-    resetSlashCommandsState();
     resetFileReferenceState();
-    setupSlashCommandsCallback();
 
     // ========== Request Initial States ==========
     let retryCount = 0;

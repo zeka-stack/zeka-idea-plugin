@@ -5,7 +5,6 @@ import './codicon.css';
 import './styles/app.less';
 import './i18n/config';
 import i18n from './i18n/config';
-import {setupSlashCommandsCallback} from './components/ChatInputBox/providers/slashCommandProvider';
 import {sendBridgeEvent} from './utils/bridge';
 
 // Silence console output in production (including third-party libs).
@@ -295,43 +294,6 @@ if (window.__pendingLanguageConfig) {
   delete window.__pendingLanguageConfig;
 }
 
-// 预注册 updateSlashCommands，避免后端调用早于 React 初始化
-if (typeof window !== 'undefined' && !window.updateSlashCommands) {
-  console.log('[Main] Pre-registering updateSlashCommands placeholder');
-  window.updateSlashCommands = (json: string) => {
-    console.log('[Main] Storing pending slash commands, length=' + json.length);
-    window.__pendingSlashCommands = json;
-  };
-}
-
-// 预注册 setSessionId，避免后端调用早于 React 初始化
-// 这是 rewind 功能所需的会话 ID
-if (typeof window !== 'undefined' && !window.setSessionId) {
-  console.log('[Main] Pre-registering setSessionId placeholder');
-  window.setSessionId = (sessionId: string) => {
-    console.log('[Main] Storing pending session ID:', sessionId);
-    (window as any).__pendingSessionId = sessionId;
-  };
-}
-
-// 预注册 updateDependencyStatus，避免后端返回状态早于 React 初始化
-if (typeof window !== 'undefined' && !window.updateDependencyStatus) {
-  console.log('[Main] Pre-registering updateDependencyStatus placeholder');
-  window.updateDependencyStatus = (json: string) => {
-    console.log('[Main] Storing pending dependency status, length=' + (json ? json.length : 0));
-    window.__pendingDependencyStatus = json;
-  };
-}
-
-// 预注册 dependencyUpdateAvailable，避免后端检查更新早于 Settings/React 初始化
-if (typeof window !== 'undefined' && !window.dependencyUpdateAvailable) {
-  console.log('[Main] Pre-registering dependencyUpdateAvailable placeholder');
-  window.dependencyUpdateAvailable = (json: string) => {
-    console.log('[Main] Storing pending dependency updates, length=' + (json ? json.length : 0));
-    window.__pendingDependencyUpdates = json;
-  };
-}
-
 // 预注册 updateStreamingEnabled，避免后端返回状态早于 React 初始化
 if (typeof window !== 'undefined' && !window.updateStreamingEnabled) {
   console.log('[Main] Pre-registering updateStreamingEnabled placeholder');
@@ -347,42 +309,6 @@ if (typeof window !== 'undefined' && !window.updateSendShortcut) {
   window.updateSendShortcut = (json: string) => {
     console.log('[Main] Storing pending send shortcut status, length=' + (json ? json.length : 0));
     window.__pendingSendShortcut = json;
-  };
-}
-
-// 预注册 updateUsageStatistics，避免后端返回状态早于 Settings/UsageStatisticsSection 初始化
-if (typeof window !== 'undefined' && !window.updateUsageStatistics) {
-  console.log('[Main] Pre-registering updateUsageStatistics placeholder');
-  window.updateUsageStatistics = (json: string) => {
-    console.log('[Main] Storing pending usage statistics, length=' + (json ? json.length : 0));
-    window.__pendingUsageStatistics = json;
-  };
-}
-
-if (typeof window !== 'undefined' && !window.showPermissionDialog) {
-  console.log('[Main] Pre-registering showPermissionDialog placeholder');
-  window.showPermissionDialog = (json: string) => {
-    const pending = window.__pendingPermissionDialogRequests || [];
-    pending.push(json);
-    window.__pendingPermissionDialogRequests = pending;
-  };
-}
-
-if (typeof window !== 'undefined' && !window.showAskUserQuestionDialog) {
-  console.log('[Main] Pre-registering showAskUserQuestionDialog placeholder');
-  window.showAskUserQuestionDialog = (json: string) => {
-    const pending = window.__pendingAskUserQuestionDialogRequests || [];
-    pending.push(json);
-    window.__pendingAskUserQuestionDialogRequests = pending;
-  };
-}
-
-if (typeof window !== 'undefined' && !window.showPlanApprovalDialog) {
-  console.log('[Main] Pre-registering showPlanApprovalDialog placeholder');
-  window.showPlanApprovalDialog = (json: string) => {
-    const pending = window.__pendingPlanApprovalDialogRequests || [];
-    pending.push(json);
-    window.__pendingPlanApprovalDialogRequests = pending;
   };
 }
 
@@ -418,17 +344,8 @@ function waitForBridge(callback: () => void, maxAttempts = 50, interval = 100) {
 
 // 等待桥接可用后，初始化斜杠命令
 waitForBridge(() => {
-  console.log('[Main] Bridge ready, setting up slash commands');
-  setupSlashCommandsCallback();
   startBridgeHeartbeat();
 
   console.log('[Main] Sending frontend_ready signal');
   sendBridgeEvent('frontend_ready');
-
-  console.log('[Main] Sending refresh_slash_commands request');
-  sendBridgeEvent('refresh_slash_commands');
-
-  // Ensure SDK dependency status is fetched on initial load (not only after opening Settings).
-  console.log('[Main] Requesting dependency status');
-  sendBridgeEvent('get_dependency_status');
 });

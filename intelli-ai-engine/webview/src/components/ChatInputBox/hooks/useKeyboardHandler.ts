@@ -10,11 +10,7 @@ export interface UseKeyboardHandlerOptions {
   isComposing: boolean;
   lastCompositionEndTimeRef: MutableRefObject<number>;
   sendShortcut: 'enter' | 'cmdEnter';
-  sdkStatusLoading: boolean;
-  sdkInstalled: boolean;
   fileCompletion: CompletionWithKeyDown;
-  commandCompletion: CompletionWithKeyDown;
-  agentCompletion: CompletionWithKeyDown;
   handleMacCursorMovement: (e: ReactKeyboardEvent<HTMLDivElement>) => boolean;
   handleHistoryKeyDown: (e: {
     key: string;
@@ -43,11 +39,7 @@ export function useKeyboardHandler({
   isComposing,
   lastCompositionEndTimeRef,
   sendShortcut,
-  sdkStatusLoading,
-  sdkInstalled,
   fileCompletion,
-  commandCompletion,
-  agentCompletion,
   handleMacCursorMovement,
   handleHistoryKeyDown,
   completionSelectedRef,
@@ -80,26 +72,6 @@ export function useKeyboardHandler({
         }
       }
 
-      if (commandCompletion.isOpen) {
-        const handled = commandCompletion.handleKeyDown(e.nativeEvent);
-        if (handled) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.key === 'Enter') completionSelectedRef.current = true;
-          return;
-        }
-      }
-
-      if (agentCompletion.isOpen) {
-        const handled = agentCompletion.handleKeyDown(e.nativeEvent);
-        if (handled) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.key === 'Enter') completionSelectedRef.current = true;
-          return;
-        }
-      }
-
       if (handleHistoryKeyDown(e)) return;
 
       const isRecentlyComposing = Date.now() - lastCompositionEndTimeRef.current < 100;
@@ -111,8 +83,6 @@ export function useKeyboardHandler({
       if (!isSendKey) return;
 
       e.preventDefault();
-      if (sdkStatusLoading || !sdkInstalled) return;
-
       submittedOnEnterRef.current = true;
       handleSubmit();
     },
@@ -120,13 +90,9 @@ export function useKeyboardHandler({
       isComposing,
       handleMacCursorMovement,
       fileCompletion,
-      commandCompletion,
-      agentCompletion,
       handleHistoryKeyDown,
       lastCompositionEndTimeRef,
       sendShortcut,
-      sdkStatusLoading,
-      sdkInstalled,
       submittedOnEnterRef,
       completionSelectedRef,
       handleSubmit,

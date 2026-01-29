@@ -12,12 +12,9 @@ export interface UseNativeEventCaptureOptions {
   lastCompositionEndTimeRef: MutableRefObject<number>;
   sendShortcut: 'enter' | 'cmdEnter';
   fileCompletion: CompletionOpenLike;
-  commandCompletion: CompletionOpenLike;
-  agentCompletion: CompletionOpenLike;
   completionSelectedRef: MutableRefObject<boolean>;
   submittedOnEnterRef: MutableRefObject<boolean>;
   handleSubmit: () => void;
-  handleEnhancePrompt: () => void;
 }
 
 /**
@@ -35,12 +32,9 @@ export function useNativeEventCapture({
   lastCompositionEndTimeRef,
   sendShortcut,
   fileCompletion,
-  commandCompletion,
-  agentCompletion,
   completionSelectedRef,
   submittedOnEnterRef,
   handleSubmit,
-  handleEnhancePrompt,
 }: UseNativeEventCaptureOptions): void {
   // Keep latest values without re-subscribing native listeners on every render.
   const latestRef = useRef<UseNativeEventCaptureOptions>({
@@ -50,12 +44,9 @@ export function useNativeEventCapture({
     lastCompositionEndTimeRef,
     sendShortcut,
     fileCompletion,
-    commandCompletion,
-    agentCompletion,
     completionSelectedRef,
     submittedOnEnterRef,
     handleSubmit,
-    handleEnhancePrompt,
   });
   latestRef.current = {
     editableRef,
@@ -64,12 +55,9 @@ export function useNativeEventCapture({
     lastCompositionEndTimeRef,
     sendShortcut,
     fileCompletion,
-    commandCompletion,
-    agentCompletion,
     completionSelectedRef,
     submittedOnEnterRef,
     handleSubmit,
-    handleEnhancePrompt,
   };
 
   useEffect(() => {
@@ -84,13 +72,6 @@ export function useNativeEventCapture({
       }
 
       const isEnterKey = ev.key === 'Enter' || ev.keyCode === 13;
-
-      if (ev.key === '/' && ev.metaKey && !ev.shiftKey && !ev.altKey) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        latest.handleEnhancePrompt();
-        return;
-      }
 
       const isMacCursorMovementOrDelete =
         (ev.key === 'ArrowLeft' && ev.metaKey) ||
@@ -107,7 +88,7 @@ export function useNativeEventCapture({
         ((ev.key === 'e' || ev.key === 'E') && ev.ctrlKey && !ev.metaKey);
       if (isCursorMovementKey) return;
 
-      if (latest.fileCompletion.isOpen || latest.commandCompletion.isOpen || latest.agentCompletion.isOpen) {
+      if (latest.fileCompletion.isOpen) {
         return;
       }
 
@@ -162,7 +143,7 @@ export function useNativeEventCapture({
         latest.completionSelectedRef.current = false;
         return;
       }
-      if (latest.fileCompletion.isOpen || latest.commandCompletion.isOpen || latest.agentCompletion.isOpen) {
+      if (latest.fileCompletion.isOpen) {
         return;
       }
       latest.handleSubmit();

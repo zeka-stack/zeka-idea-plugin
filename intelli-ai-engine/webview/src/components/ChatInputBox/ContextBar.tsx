@@ -1,50 +1,19 @@
 import React, {memo, useCallback, useRef} from 'react';
-import {useTranslation} from 'react-i18next';
 import {getFileIcon} from '../../utils/fileIcons';
-import {TokenIndicator} from './TokenIndicator';
-import type {SelectedAgent} from './types';
 
 interface ContextBarProps {
   activeFile?: string;
   selectedLines?: string;
-  percentage?: number;
-  usedTokens?: number;
-  maxTokens?: number;
-  showUsage?: boolean;
   onClearFile?: () => void;
   onAddAttachment?: (files: FileList) => void;
-  selectedAgent?: SelectedAgent | null;
-  onClearAgent?: () => void;
-  /** Current provider (for conditional rendering) */
-  currentProvider?: string;
-  /** Whether there are messages (for rewind button visibility) */
-  hasMessages?: boolean;
-  /** Rewind callback */
-  onRewind?: () => void;
-  /** Whether StatusPanel is expanded */
-  statusPanelExpanded?: boolean;
-  /** Toggle StatusPanel expand/collapse */
-  onToggleStatusPanel?: () => void;
 }
 
 export const ContextBar: React.FC<ContextBarProps> = memo(({
   activeFile,
   selectedLines,
-  percentage = 0,
-  usedTokens,
-  maxTokens,
-  showUsage = true,
   onClearFile,
   onAddAttachment,
-  selectedAgent,
-  onClearAgent,
-  currentProvider = 'claude',
-  hasMessages = false,
-  onRewind,
-  statusPanelExpanded = true,
-  onToggleStatusPanel,
 }) => {
-  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAttachClick = useCallback((e: React.MouseEvent) => {
@@ -91,18 +60,6 @@ export const ContextBar: React.FC<ContextBarProps> = memo(({
           <span className="codicon codicon-attach" />
         </div>
 
-        {/* Token Indicator */}
-        {showUsage && (
-          <div className="context-token-indicator">
-            <TokenIndicator
-              percentage={percentage}
-              usedTokens={usedTokens}
-              maxTokens={maxTokens}
-              size={14}
-            />
-          </div>
-        )}
-
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -115,32 +72,6 @@ export const ContextBar: React.FC<ContextBarProps> = memo(({
 
         <div className="context-tool-divider" />
       </div>
-
-      {/* Selected Agent Chip */}
-      {selectedAgent && (
-        <div
-          className="context-item has-tooltip"
-          data-tooltip={selectedAgent.name}
-          style={{ cursor: 'default' }}
-        >
-          <span
-            className="codicon codicon-robot"
-            style={{ marginRight: 4 }}
-          />
-          <span className="context-text">
-            <span dir="ltr">
-              {selectedAgent.name.length > 3
-                ? `${selectedAgent.name.slice(0, 3)}...`
-                : selectedAgent.name}
-            </span>
-          </span>
-          <span
-            className="codicon codicon-close context-close"
-            onClick={onClearAgent}
-            title="Remove agent"
-          />
-        </div>
-      )}
 
       {/* Active Context Chip */}
       {displayText && (
@@ -173,31 +104,7 @@ export const ContextBar: React.FC<ContextBarProps> = memo(({
         </div>
       )}
 
-      {/* Right side tools - StatusPanel toggle and Rewind button */}
-      <div className="context-tools-right">
-        {/* StatusPanel expand/collapse toggle - always visible */}
-        {onToggleStatusPanel && (
-          <button
-            className={`context-tool-btn status-panel-toggle has-tooltip ${statusPanelExpanded ? 'expanded' : 'collapsed'}`}
-            onClick={onToggleStatusPanel}
-            data-tooltip={statusPanelExpanded ? t('statusPanel.collapse') : t('statusPanel.expand')}
-          >
-            <span className={`codicon ${statusPanelExpanded ? 'codicon-chevron-down' : 'codicon-layers'}`} />
-          </button>
-        )}
-
-        {/* Rewind button */}
-        {currentProvider === 'claude' && onRewind && (
-          <button
-            className="context-tool-btn has-tooltip"
-            onClick={onRewind}
-            disabled={!hasMessages}
-            data-tooltip={t('rewind.tooltip')}
-          >
-            <span className="codicon codicon-discard" />
-          </button>
-        )}
-      </div>
+      <div className="context-tools-right" />
     </div>
   );
 });

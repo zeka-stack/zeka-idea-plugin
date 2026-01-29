@@ -116,7 +116,7 @@ export function normalizeBlocks(
         let mediaType: string | undefined;
 
         // Support two formats:
-        // 1. Backend/history format: { type: 'image', source: { type: 'base64', media_type: '...', data: '...' } }
+        // 1. Backend format: { type: 'image', source: { type: 'base64', media_type: '...', data: '...' } }
         // 2. Frontend direct format: { type: 'image', src: 'data:...', mediaType: '...' }
         if (source && typeof source === 'object') {
           const st = source.type;
@@ -357,7 +357,7 @@ export function getContentBlocks(
 }
 
 /**
- * Merge consecutive assistant messages to fix style inconsistencies in history
+ * Merge consecutive assistant messages to fix style inconsistencies
  * where Thinking and ToolUse are separated
  */
 export function mergeConsecutiveAssistantMessages(

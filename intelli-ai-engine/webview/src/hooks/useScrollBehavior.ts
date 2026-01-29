@@ -1,10 +1,7 @@
 import {useCallback, useEffect, useLayoutEffect, useRef} from 'react';
 import type {ClaudeMessage} from '../types';
 
-type ViewMode = 'chat' | 'history' | 'settings';
-
 export interface UseScrollBehaviorOptions {
-  currentView: ViewMode;
   messages: ClaudeMessage[];
   expandedThinking?: Record<string, boolean>;
   loading: boolean;
@@ -27,7 +24,6 @@ interface UseScrollBehaviorReturn {
  * - Handles view switching scroll behavior
  */
 export function useScrollBehavior({
-  currentView,
   messages,
   expandedThinking,
   loading,
@@ -67,7 +63,7 @@ export function useScrollBehavior({
   }, []);
 
   // Listen to scroll events to detect if user is at bottom
-  // If user scrolls up to view history, mark as "not at bottom" and stop auto-scrolling
+  // If user scrolls up, mark as "not at bottom" and stop auto-scrolling
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -83,26 +79,14 @@ export function useScrollBehavior({
 
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [currentView]);
+  }, []);
 
   // Auto-scroll: follow latest content when user is at bottom
   // Includes streaming, expanded thinking blocks, loading indicator, etc.
   useLayoutEffect(() => {
-    if (currentView !== 'chat') return;
     if (!isUserAtBottomRef.current) return;
     scrollToBottom();
-  }, [currentView, messages, expandedThinking, loading, streamingActive, scrollToBottom]);
-
-  // Scroll to bottom when switching back to chat view
-  useEffect(() => {
-    if (currentView === 'chat') {
-      // Use setTimeout to ensure view is fully rendered before scrolling
-      const timer = setTimeout(() => {
-        scrollToBottom();
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [currentView, scrollToBottom]);
+  }, [messages, expandedThinking, loading, streamingActive, scrollToBottom]);
 
   return {
     messagesContainerRef,

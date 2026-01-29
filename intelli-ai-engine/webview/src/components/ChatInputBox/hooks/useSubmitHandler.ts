@@ -10,18 +10,12 @@ export interface UseSubmitHandlerOptions {
   getTextContent: () => string;
   attachments: Attachment[];
   isLoading: boolean;
-  sdkStatusLoading: boolean;
-  sdkInstalled: boolean;
-  currentProvider: string;
   clearInput: () => void;
   externalAttachments: Attachment[] | undefined;
   setInternalAttachments: Dispatch<SetStateAction<Attachment[]>>;
   fileCompletion: CompletionLike;
-  commandCompletion: CompletionLike;
-  agentCompletion: CompletionLike;
   recordInputHistory: (text: string) => void;
   onSubmit?: (content: string, attachmentsToSend?: Attachment[]) => void;
-  onInstallSdk?: () => void;
   addToast?: (message: string, type: 'info' | 'warning' | 'error' | 'success') => void;
   t: (key: string, options?: Record<string, unknown>) => string;
 }
@@ -38,18 +32,12 @@ export function useSubmitHandler({
   getTextContent,
   attachments,
   isLoading,
-  sdkStatusLoading,
-  sdkInstalled,
-  currentProvider,
   clearInput,
   externalAttachments,
   setInternalAttachments,
   fileCompletion,
-  commandCompletion,
-  agentCompletion,
   recordInputHistory,
   onSubmit,
-  onInstallSdk,
   addToast,
   t,
 }: UseSubmitHandlerOptions) {
@@ -57,30 +45,10 @@ export function useSubmitHandler({
     const content = getTextContent();
     const cleanContent = content.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
 
-    if (sdkStatusLoading) {
-      addToast?.(t('chat.sdkStatusLoading'), 'info');
-      return;
-    }
-
-    if (!sdkInstalled) {
-      addToast?.(
-        t('chat.sdkNotInstalled', {
-          provider: currentProvider === 'codex' ? 'Codex' : 'Claude Code',
-        }) +
-          ' ' +
-          t('chat.goInstallSdk'),
-        'warning'
-      );
-      onInstallSdk?.();
-      return;
-    }
-
     if (!cleanContent && attachments.length === 0) return;
     if (isLoading) return;
 
     fileCompletion.close();
-    commandCompletion.close();
-    agentCompletion.close();
 
     recordInputHistory(content);
 
@@ -98,18 +66,12 @@ export function useSubmitHandler({
     getTextContent,
     attachments,
     isLoading,
-    sdkStatusLoading,
-    sdkInstalled,
-    currentProvider,
     clearInput,
     externalAttachments,
     setInternalAttachments,
     fileCompletion,
-    commandCompletion,
-    agentCompletion,
     recordInputHistory,
     onSubmit,
-    onInstallSdk,
     addToast,
     t,
   ]);
