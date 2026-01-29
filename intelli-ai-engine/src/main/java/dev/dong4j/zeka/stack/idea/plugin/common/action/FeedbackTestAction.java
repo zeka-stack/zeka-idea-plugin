@@ -118,10 +118,10 @@ public class FeedbackTestAction extends DumbAwareAction {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setText(AICommonBundle.message("action.feedback.test.progress.text"));
-                boolean success = submitter.submit(new IdeaLoggingEvent[] {loggingEvent},
-                                                   additionalInfo,
+                boolean success = submitter.submitFeedback(new IdeaLoggingEvent[] {loggingEvent},
+                                                           additionalInfo,
                     finalParent,
-                                                   resultRef::set);
+                                                           resultRef::set);
                 SubmittedReportInfo reportInfo = resultRef.get();
                 String status = reportInfo != null ? reportInfo.getStatus().toString() : "UNKNOWN";
                 String linkText = reportInfo != null ? reportInfo.getLinkText() : "";

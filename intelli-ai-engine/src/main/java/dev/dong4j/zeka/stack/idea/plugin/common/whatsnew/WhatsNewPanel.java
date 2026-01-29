@@ -1,22 +1,18 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.whatsnew;
 
-import com.intellij.ide.BrowserUtil;
-import com.intellij.ide.ui.text.StyledTextPane;
+import com.intellij.ide.util.TipUIUtil;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.util.ResourceUtil;
 import com.intellij.util.ui.JBDimension;
 import com.intellij.util.ui.JBUI;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
+import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.JPanel;
-import javax.swing.event.HyperlinkEvent;
 
 /**
  * 用于显示“新功能”或“更新日志”的面板组件
@@ -30,9 +26,13 @@ import javax.swing.event.HyperlinkEvent;
  * @since 1.0.0
  */
 public class WhatsNewPanel extends JPanel {
-    /** 浏览器组件, 用于显示 "What's New" 内容 */
-    @SuppressWarnings("UnstableApiUsage")
-    private final StyledTextPane browser = new StyledTextPane();
+    /**
+     * 浏览器组件, 用于显示 "What's New" 内容
+     *
+     * @see TipUIUtil#createBrowser()
+     */
+    @SuppressWarnings("deprecation")
+    private final TipUIUtil.Browser browser = TipUIUtil.createBrowser();
     /**
      * 提供者对象, 用于获取更新页面列表
      *
@@ -48,7 +48,7 @@ public class WhatsNewPanel extends JPanel {
     /**
      * 当前显示的变更日志页面索引
      *
-     * @see #newerChangelog()
+     * @see #newerChangelog()*@see #olderChangelog()
      */
     private int pageIndex;
 
@@ -61,16 +61,8 @@ public class WhatsNewPanel extends JPanel {
      */
     public WhatsNewPanel() {
         super(new BorderLayout());
-        browser.setContentType("text/html");
-        browser.setEditable(false);
-        browser.setOpaque(false);
-        browser.setBorder(JBUI.Borders.empty(8, 12));
-        browser.addHyperlinkListener(event -> {
-            if (event.getEventType() == HyperlinkEvent.EventType.ACTIVATED && event.getURL() != null) {
-                BrowserUtil.browse(event.getURL());
-            }
-        });
-        var scrollPane = ScrollPaneFactory.createScrollPane(browser, true);
+        browser.getComponent().setBorder(JBUI.Borders.empty(8, 12));
+        var scrollPane = ScrollPaneFactory.createScrollPane(browser.getComponent(), true);
         scrollPane.setBorder(JBUI.Borders.customLine(new JBColor(0xd9d9d9, 0x515151), 0, 0, 1, 0));
         add(scrollPane, BorderLayout.CENTER);
     }
