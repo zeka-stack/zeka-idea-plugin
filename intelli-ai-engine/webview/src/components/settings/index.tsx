@@ -22,7 +22,6 @@ import PlaceholderSection from './PlaceholderSection';
 import CommunitySection from './CommunitySection';
 import AgentSection from './AgentSection';
 import CommitSection from './CommitSection';
-import {SkillsSettingsSection} from '../skills';
 
 // 导入自定义 hooks
 import {useAgentManagement, useCodexProviderManagement, useProviderManagement,} from './hooks';
@@ -55,10 +54,9 @@ const AUTO_COLLAPSE_THRESHOLD = 900;
 const SettingsView = ({ onClose, initialTab, currentProvider, streamingEnabled: streamingEnabledProp, onStreamingEnabledChange: onStreamingEnabledChangeProp, sendShortcut: sendShortcutProp, onSendShortcutChange: onSendShortcutChangeProp }: SettingsViewProps) => {
   const { t } = useTranslation();
   const isCodexMode = currentProvider === 'codex';
-  // Codex mode: allow providers, usage, and mcp tabs, disable other features
-  // Note: 'mcp' is now enabled for Codex as it supports MCP via ~/.codex/config.toml
+  // Codex mode: allow providers and usage tabs, disable other features
   const disabledTabs = useMemo<SettingsTab[]>(
-    () => (isCodexMode ? ['permissions', 'agents', 'skills'] : []),
+    () => (isCodexMode ? ['permissions', 'agents'] : []),
     [isCodexMode]
   );
   const [currentTab, setCurrentTab] = useState<SettingsTab>(() => {
@@ -876,11 +874,6 @@ const SettingsView = ({ onClose, initialTab, currentProvider, streamingEnabled: 
             <UsageSection currentProvider={currentProvider} />
           </div>
 
-          {/* MCP服务器 */}
-          <div style={{ display: currentTab === 'mcp' ? 'block' : 'none' }}>
-            <PlaceholderSection type="mcp" currentProvider={currentProvider} />
-          </div>
-
           {/* 权限配置 */}
           <div style={{ display: currentTab === 'permissions' ? 'block' : 'none' }}>
             <PlaceholderSection type="permissions" />
@@ -905,11 +898,6 @@ const SettingsView = ({ onClose, initialTab, currentProvider, streamingEnabled: 
               onEdit={handleEditAgent}
               onDelete={handleDeleteAgent}
             />
-          </div>
-
-          {/* Skills */}
-          <div style={{ display: currentTab === 'skills' ? 'block' : 'none' }}>
-            <SkillsSettingsSection />
           </div>
 
           {/* 官方交流群 */}
