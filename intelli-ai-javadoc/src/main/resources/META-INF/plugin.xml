@@ -105,7 +105,8 @@
         <!-- 使用 Vcs.MessageActionGroup 添加到提交消息区域 -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForCommitAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForCommitAction"
-                icon="/icons/aij_16.svg">
+                icon="/icons/aij_16.svg"
+                text="Generate Javadoc For Commit">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="last"/>
         </action>
         <!-- 快捷键入口 (Ctrl+Shift+D / Cmd+Shift+D) -->
@@ -120,21 +121,24 @@
         <!-- 编辑器右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForEditorAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForEditorAction"
-                icon="/icons/aij_16.svg">
+                icon="/icons/aij_16.svg"
+                text="Generate Javadoc For Editor">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
         <!-- 编辑器右键菜单 - 删除 Javadoc -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.DeleteJavadocForEditorAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.DeleteJavadocForEditorAction"
-                icon="/icons/aij_16.svg">
+                icon="/icons/aij_16.svg"
+                text="Delete Javadoc For Editor">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
         <!-- 项目视图右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForFilesAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocForFilesAction"
-                icon="/icons/aij_16.svg">
+                icon="/icons/aij_16.svg"
+                text="Generate Javadoc For Files">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <add-to-group group-id="ProjectViewToolbar" anchor="last"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
@@ -143,14 +147,16 @@
         <!-- 项目视图右键菜单 - 删除 Javadoc -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.DeleteJavadocForFilesAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.DeleteJavadocForFilesAction"
-                icon="/icons/aij_16.svg">
+                icon="/icons/aij_16.svg"
+                text="Delete Javadoc For Files">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
 
         <!-- Generate 菜单 (Command+N / Alt+Insert) -->
         <action id="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocGenerateAction"
                 class="dev.dong4j.zeka.stack.idea.javadoc.action.GenerateJavadocGenerateAction"
-                icon="/icons/aij_16.svg">
+                icon="/icons/aij_16.svg"
+                text="Generate Javadoc">
             <add-to-group group-id="GenerateGroup" anchor="last"/>
         </action>
     </actions>

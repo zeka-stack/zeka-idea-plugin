@@ -44,15 +44,16 @@
     <actions>
         <!-- 编辑器右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ArchiveContextAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ArchiveContextAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ArchiveContextAction"
+                text="Archive Context">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
 
         <!-- 强制保存归档内容 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ForceSaveArchiveAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ForceSaveArchiveAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.archiver.action.ForceSaveArchiveAction"
+                text="Force Save Archive">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>
 </idea-plugin>
-

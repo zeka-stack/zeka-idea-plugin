@@ -118,7 +118,7 @@ public class FeedbackTestAction extends DumbAwareAction {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setText(AICommonBundle.message("action.feedback.test.progress.text"));
-                boolean success = submitter.submitFeedback(new IdeaLoggingEvent[] {loggingEvent},
+                boolean success = submitter.submitInternal(new IdeaLoggingEvent[] {loggingEvent},
                                                            additionalInfo,
                     finalParent,
                                                            resultRef::set);

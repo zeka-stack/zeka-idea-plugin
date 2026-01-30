@@ -51,7 +51,8 @@
     <actions>
         <!-- 编辑器右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.swagger.action.SwaggerAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.swagger.action.SwaggerAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.swagger.action.SwaggerAction"
+                text="Generate Swagger">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
     </actions>

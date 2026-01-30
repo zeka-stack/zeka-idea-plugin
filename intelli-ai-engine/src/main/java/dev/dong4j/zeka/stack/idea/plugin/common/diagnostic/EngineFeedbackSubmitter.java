@@ -57,7 +57,7 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
     /**
      * 提交错误报告（由 IntelliJ 平台调用）
      * <p> 此方法带有 @ApiStatus.OverrideOnly 注解, 只能被 IntelliJ 平台内部调用,
-     * 不应该由客户端代码直接调用. 如需手动触发反馈提交, 请使用 {@link #submitFeedback(IdeaLoggingEvent[], String, java.awt.Component, Consumer)}.</p>
+     * 不应该由客户端代码直接调用. 如需手动触发反馈提交, 请使用 {@link #submitInternal(IdeaLoggingEvent[], String, java.awt.Component, Consumer)}.</p>
      *
      * @param events          日志事件数组, 包含待提交的错误信息
      * @param additionalInfo  附加信息, 可为空, 用于补充报告内容
@@ -70,14 +70,14 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
                           @Nullable String additionalInfo,
                           @NotNull java.awt.Component parentComponent,
                           @NotNull Consumer<? super com.intellij.openapi.diagnostic.SubmittedReportInfo> consumer) {
-        return submitFeedback(events, additionalInfo, parentComponent, consumer);
+        return submitInternal(events, additionalInfo, parentComponent, consumer);
     }
 
     /**
-     * 手动提交反馈信息
+     * 内部提交入口, 供手动触发提交流程复用
      * <p> 此方法用于测试或手动触发反馈提交流程. 与 {@link #submit(IdeaLoggingEvent[], String, java.awt.Component, Consumer)} 不同,
      * 此方法可以被客户端代码安全调用.</p>
-     * <p> 在提交前会尝试获取当前插件 ID 并解析事件中的插件 ID, 然后将插件 ID 推入上下文, 最后调用父类的提交方法完成实际提交.</p>
+     * <p> 在提交前会尝试获取当前插件 ID 并解析事件中的插件 ID, 然后将插件 ID 推入上下文, 最后调用内部提交逻辑完成实际提交.</p>
      * <p> 此方法确保在提交过程中使用正确的插件上下文, 避免因插件 ID 缺失导致报告归属错误.</p>
      *
      * @param events          日志事件数组, 包含待提交的错误信息
@@ -86,14 +86,15 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
      * @param consumer        提交结果的回调处理器, 用于接收提交后的报告信息
      * @return 提交是否成功, 由父类方法决定
      */
-    public boolean submitFeedback(@NotNull IdeaLoggingEvent @NotNull [] events,
-                                  @Nullable String additionalInfo,
-                                  @NotNull java.awt.Component parentComponent,
-                                  @NotNull Consumer<? super com.intellij.openapi.diagnostic.SubmittedReportInfo> consumer) {
+    @Override
+    public boolean submitInternal(@NotNull IdeaLoggingEvent @NotNull [] events,
+                                     @Nullable String additionalInfo,
+                                     @NotNull java.awt.Component parentComponent,
+                                     @NotNull Consumer<? super com.intellij.openapi.diagnostic.SubmittedReportInfo> consumer) {
         String currentPluginId = FeedbackContextHolder.getCurrentPluginId();
         String eventPluginId = StringUtil.isEmptyOrSpaces(currentPluginId) ? resolvePluginId(events) : null;
         try (FeedbackContextHolder.Token ignored = FeedbackContextHolder.pushIfAbsent(eventPluginId)) {
-            return super.submit(events, additionalInfo, parentComponent, consumer);
+            return super.submitInternal(events, additionalInfo, parentComponent, consumer);
         }
     }
 

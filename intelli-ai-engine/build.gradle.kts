@@ -93,6 +93,7 @@ dependencies {
 val webviewDir = layout.projectDirectory.dir("webview")
 val webviewDistDir = webviewDir.dir("dist").asFile
 val webviewResourcesDir = layout.projectDirectory.dir("src/main/resources/html").asFile
+val engineChatFile = webviewResourcesDir.resolve("engine-chat.html")
 
 tasks {
     val javaVersion = providers.gradleProperty("javaVersion").get()
@@ -110,35 +111,27 @@ tasks {
 
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
-        val publishChannel = providers.gradleProperty("publishChannels").get()
-        channels = listOf(publishChannel)
-        hidden = publishChannel == "default"
+        val taskNames = gradle.startParameter.taskNames
+        val isBeta = taskNames.any { it.contains("publishBeta", ignoreCase = true) }
+        val isDefault = taskNames.any { it.contains("publishDefault", ignoreCase = true) }
+        if (isBeta) {
+            channels = listOf("beta")
+            hidden = false
+        } else {
+            channels = emptyList()
+            hidden = isDefault
+        }
     }
-
 
     register("publishBeta") {
         group = "intellij"
-        description = "Publish plugin to beta channel"
-        doFirst {
-            project.tasks.named("publishPlugin") {
-                val publishTask = this as org.jetbrains.intellij.platform.gradle.tasks.PublishPluginTask
-                publishTask.channels.set(listOf("beta"))
-                publishTask.hidden.set(false)
-            }
-        }
+        description = "Publish plugin to beta channel. Usage: ./gradlew publishBeta"
         dependsOn("publishPlugin")
     }
 
     register("publishDefault") {
         group = "intellij"
-        description = "Publish plugin to default channel (hidden)"
-        doFirst {
-            project.tasks.named("publishPlugin") {
-                val publishTask = this as org.jetbrains.intellij.platform.gradle.tasks.PublishPluginTask
-                publishTask.channels.set(listOf("default"))
-                publishTask.hidden.set(true)
-            }
-        }
+        description = "Publish plugin to default channel (hidden). Usage: ./gradlew publishDefault"
         dependsOn("publishPlugin")
     }
 
@@ -153,7 +146,7 @@ tasks {
         } else {
             commandLine("npm", "run", "build")
         }
-        onlyIf { webviewDir.asFile.exists() }
+        onlyIf { webviewDir.asFile.exists() && !engineChatFile.exists() }
     }
 
     val copyWebview by registering(Copy::class) {
@@ -163,6 +156,7 @@ tasks {
             rename { "engine-chat.html" }
         }
         into(webviewResourcesDir)
+        onlyIf { !engineChatFile.exists() }
     }
 
     named("processResources") {

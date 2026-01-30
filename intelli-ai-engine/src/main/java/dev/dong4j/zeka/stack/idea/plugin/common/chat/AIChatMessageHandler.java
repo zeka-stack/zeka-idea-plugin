@@ -14,8 +14,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.ColorUtil;
 import com.intellij.ui.jcef.JBCefBrowser;
-import com.intellij.util.ui.StartupUiUtil;
+import com.intellij.util.ui.UIUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
@@ -284,9 +285,6 @@ final class AIChatMessageHandler {
                 /**
                  * 流式响应开始时的回调处理
                  * <p> 确保流已启动, 并打印流开始的日志信息到控制台和日志系统
-                 *
-                 * @see AIStreamResponseListener#ensureStreamStarted()* @see AIConsoleLoggerUtil#printWithTimestamp(Project, String)
-                 * @see org.slf4j.Logger#info(String)
                  */
                 @Override
                 public void onStart() {
@@ -590,7 +588,8 @@ final class AIChatMessageHandler {
      * @since 2024.6
      */
     private void sendIdeTheme() {
-        boolean isDark = StartupUiUtil.INSTANCE.isDarkTheme();
+        // 使用公共 API 检测主题: 通过面板背景色判断是否为深色主题
+        boolean isDark = ColorUtil.isDark(UIUtil.getPanelBackground());
         JsonObject obj = new JsonObject();
         obj.addProperty("isDark", isDark);
         callJs("onIdeThemeReceived", obj.toString());

@@ -95,44 +95,54 @@
         <!-- Git Log 工具窗口右键菜单 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitLogAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitLogAction"
-                popup="true">
+                popup="true"
+                text="Generate Changelog From Git Log">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateDailyReportFromGitLogAction"
-                popup="true">
+                popup="true"
+                text="Generate Daily Report From Git Log">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateWeeklyReportFromGitLogAction"
-                popup="true">
+                popup="true"
+                text="Generate Weekly Report From Git Log">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFromGitDiffAction"
-                popup="true">
+                popup="true"
+                text="Generate Changelog From Git Diff">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromProjectAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromProjectAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromProjectAction"
+                text="Generate Release Log From Project">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateReleaseLogFromGitLogAction"
-                popup="true">
+                popup="true"
+                text="Generate Release Log From Git Log">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFileAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateChangelogFileAction"
-                popup="true">
+                popup="true"
+                text="Generate Changelog File">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.OpenHistoryToolWindowAction"
+                text="Open History Tool Window">
             <add-to-group group-id="Vcs.Log.Toolbar" anchor="last"/>
         </action>
 
         <!-- Git 提交工具栏操作 -->
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction">
+                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
+                text="Generate Commit Message">
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
-                icon="ChangelogIcons.CHANGELOG_16">
+                icon="ChangelogIcons.CHANGELOG_16"
+                text="Generate Commit Message">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
         </action>
 

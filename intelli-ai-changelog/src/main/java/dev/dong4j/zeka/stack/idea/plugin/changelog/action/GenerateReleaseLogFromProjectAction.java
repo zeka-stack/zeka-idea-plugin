@@ -4,16 +4,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.io.File;
-import java.nio.file.Path;
-import java.util.List;
-
-import javax.swing.Icon;
-
 import dev.dong4j.zeka.stack.idea.plugin.changelog.git.GitCliffDownloadManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.ReleaseLogProvider;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -22,6 +12,13 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import icons.ChangelogIcons;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * 从项目中生成发布日志的动作类

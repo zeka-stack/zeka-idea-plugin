@@ -2,7 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.chat;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.util.ui.StartupUiUtil;
+import com.intellij.ui.ColorUtil;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,7 +69,8 @@ final class AIChatHtmlLoader {
      * @return 注入了主题样式的 HTML 内容
      */
     private String injectIdeTheme(@NotNull String html) {
-        boolean isDark = StartupUiUtil.INSTANCE.isDarkTheme();
+        // 使用公共 API 检测主题: 通过面板背景色判断是否为深色主题
+        boolean isDark = ColorUtil.isDark(UIUtil.getPanelBackground());
         String theme = isDark ? "dark" : "light";
         Color bg = UIUtil.getPanelBackground();
         String bgColor = StringUtil.toUpperCase(String.format("#%02x%02x%02x", bg.getRed(), bg.getGreen(), bg.getBlue()));

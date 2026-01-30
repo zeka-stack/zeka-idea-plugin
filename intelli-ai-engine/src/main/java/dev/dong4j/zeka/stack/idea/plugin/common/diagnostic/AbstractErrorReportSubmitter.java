@@ -136,6 +136,22 @@ public abstract class AbstractErrorReportSubmitter extends ErrorReportSubmitter 
                           @Nullable String additionalInfo,
                           @NotNull Component parentComponent,
                           @NotNull Consumer<? super SubmittedReportInfo> consumer) {
+        return submitInternal(events, additionalInfo, parentComponent, consumer);
+    }
+
+    /**
+     * 内部提交入口, 供手动触发提交流程复用, 避免直接调用 @ApiStatus.OverrideOnly 方法
+     *
+     * @param events          日志事件数组, 当前仅使用第一个事件进行处理
+     * @param additionalInfo  用户提供的附加信息, 可为 null
+     * @param parentComponent 父组件, 用于 UI 上下文 (当前未直接使用)
+     * @param consumer        用于接收提交结果的回调函数
+     * @return 如果提交成功返回 true, 否则返回 false
+     */
+    protected boolean submitInternal(@NotNull IdeaLoggingEvent @NotNull [] events,
+                                     @Nullable String additionalInfo,
+                                     @NotNull Component parentComponent,
+                                     @NotNull Consumer<? super SubmittedReportInfo> consumer) {
         try {
             IdeaLoggingEvent event = events[0];
             String throwableText = event.getThrowableText();
