@@ -29,25 +29,6 @@ import com.intellij.ui.HyperlinkAdapter;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.Alarm;
 import com.intellij.util.concurrency.AppExecutorUtil;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.awt.Point;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
-import javax.swing.JComponent;
-import javax.swing.event.HyperlinkEvent;
-
 import dev.dong4j.zeka.stack.idea.plugin.changelog.PluginContents;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintManager;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintService;
@@ -61,6 +42,22 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import java.awt.*;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 提交消息生成器类
@@ -179,6 +176,17 @@ public class CommitMessageGenerator {
         generateForChanges(changes, commitMessageControl, outputSession, StatisticsUserAction.UNKNOWN);
     }
 
+    /**
+     * 处理代码变更并生成提交记录
+     * <p> 该方法用于根据传入的代码变更集合生成对应的提交消息. 若变更集合为空, 则记录调试日志并显示警告通知. 否则, 启动后台任务进行提交记录的生成, 并将结果写入提交面板或工具窗口输出会话.</p>
+     * <p> 支持在生成过程中根据变更的根目录分组, 若存在多个根目录变更, 则调用多仓库处理逻辑; 否则, 直接调用服务生成单次提交消息.</p>
+     *
+     * @param changes              变更集合, 不能为空
+     * @param commitMessageControl 提交面板的提交信息控件, 可为空
+     * @param outputSession        工具窗口输出会话, 可为空
+     * @param userAction           用户操作统计类型, 不能为空
+     * @since 1.0.0
+     */
     public void generateForChanges(@NotNull Collection<Change> changes,
                                    @Nullable CommitMessageI commitMessageControl,
                                    @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
@@ -189,21 +197,21 @@ public class CommitMessageGenerator {
             return;
         }
         runGeneration(commitMessageControl,
-                      outputSession,
-                      (service, listener, contextText, typingIndicator) -> {
-                          // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
-                          Map<String, List<Change>> changesByRoot = groupChangesByRoot(changes);
-                          if (changesByRoot.size() > 1) {
-                              return handleMultiRepositoryChanges(service,
-                                                                  changesByRoot,
-                                                                  contextText,
-                                                                  outputSession,
-                                                                  commitMessageControl,
-                                                                  typingIndicator,
-                                                                  userAction);
-                          }
-                          return service.generateCommitMessageFromDiffStream(changes, listener, contextText, userAction);
-                      });
+            outputSession,
+            (service, listener, contextText, typingIndicator) -> {
+                // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
+                Map<String, List<Change>> changesByRoot = groupChangesByRoot(changes);
+                if (changesByRoot.size() > 1) {
+                    return handleMultiRepositoryChanges(service,
+                        changesByRoot,
+                        contextText,
+                        outputSession,
+                        commitMessageControl,
+                        typingIndicator,
+                        userAction);
+                }
+                return service.generateCommitMessageFromDiffStream(changes, listener, contextText, userAction);
+            });
     }
 
     /**
@@ -219,6 +227,15 @@ public class CommitMessageGenerator {
         generateForCommitHash(commitHash, commitMessageControl, outputSession, StatisticsUserAction.UNKNOWN);
     }
 
+    /**
+     * 基于单个提交哈希再生提交信息
+     * <p> 根据指定的提交哈希, 从 Git 日志中提取真实变更内容, 调用 AI 服务生成提交信息, 并在 UI 线程中更新提交面板或工具窗口输出. 该方法适用于单条提交的再生场景.
+     *
+     * @param commitHash           提交哈希值, 不能为空, 用于定位 Git 日志中的提交记录
+     * @param commitMessageControl 提交消息控件 (如编辑提交消息对话框或提交面板), 可为空
+     * @param outputSession        工具窗口输出会话, 用于同步显示生成结果, 可为空
+     * @param userAction           统计用户操作类型, 不能为空, 用于记录用户行为数据
+     */
     public void generateForCommitHash(@NotNull String commitHash,
                                       @Nullable CommitMessageI commitMessageControl,
                                       @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
@@ -246,6 +263,17 @@ public class CommitMessageGenerator {
         generateForCommitHashes(commitHashes, selectedCommitTitles, commitMessageControl, outputSession, StatisticsUserAction.UNKNOWN);
     }
 
+    /**
+     * 基于提交哈希列表再生提交信息 (支持单条或压缩提交)
+     * <p> 该方法用于根据指定的提交哈希列表, 从 Git 日志中提取真实变更内容, 调用 AI 服务生成提交信息, 并在 UI 线程中更新提交面板或工具窗口输出. 支持多提交压缩合并场景.
+     *
+     * @param commitHashes         提交哈希列表 (至少 2 条), 用于定位 Git 日志中的提交记录
+     * @param selectedCommitTitles 选中提交的原始消息列表, 用于辅助模型合并语义, 不能为空
+     * @param commitMessageControl 提交消息控件 (如压缩提交对话框或提交面板), 可为空
+     * @param outputSession        工具窗口输出会话, 用于同步显示生成结果, 可为空
+     * @param userAction           统计用户操作类型, 不能为空
+     * @since 1.0.0
+     */
     public void generateForCommitHashes(@NotNull List<String> commitHashes,
                                         @NotNull List<String> selectedCommitTitles,
                                         @Nullable CommitMessageI commitMessageControl,
@@ -280,21 +308,41 @@ public class CommitMessageGenerator {
             return;
         }
         runGeneration(commitMessageControl,
-                      outputSession,
-                      (service, listener, contextText, typingIndicator) -> commitHashes.size() > 1
-                                                                         ? service.generateSquashCommitMessageFromGitLogStream(
-                                                                             commitHashes,
-                                                                             selectedCommitTitles,
-                                                                             listener,
-                                                                             contextText,
-                                                                             userAction)
-                                                                         : service.generateCommitMessageFromGitLogStream(
-                                                                             commitHashes.get(0),
-                                                                             listener,
-                                                                             contextText,
-                                                                             userAction));
+            outputSession,
+            (service, listener, contextText, typingIndicator) -> commitHashes.size() > 1
+                ? service.generateSquashCommitMessageFromGitLogStream(
+                commitHashes,
+                selectedCommitTitles,
+                listener,
+                contextText,
+                userAction)
+                : service.generateCommitMessageFromGitLogStream(
+                commitHashes.getFirst(),
+                listener,
+                contextText,
+                userAction));
     }
 
+    /**
+     * 执行提交消息生成任务
+     * <p> 该方法在后台线程中启动提交消息生成流程, 支持流式响应处理, 进度指示, 取消控制和结果回显. 通过传入的流式生成接口, 调用 AI 服务生成提交消息, 并在 UI 线程中更新提交面板或工具窗口输出.</p>
+     * <p> 流程包括:</p>
+     * <ul>
+     *   <li> 初始化生成状态并绑定到当前项目 </li>
+     *   <li> 设置进度指示器并启动异步任务 </li>
+     *   <li> 根据配置决定是否使用提交文本作为上下文 </li>
+     *   <li> 创建打字动画指示器并绑定取消令牌 </li>
+     *   <li> 调用流式生成接口获取提交消息 </li>
+     *   <li> 格式化消息并在 UI 线程中写入提交面板或输出窗口 </li>
+     *   <li> 异常处理: 失败时显示错误提示并标记生成失败 </li>
+     *   <li> 清理资源: 重置占位符, 停止动画, 移除状态记录 </li>
+     * </ul>
+     *
+     * @param commitMessageControl 提交消息控件 (如提交面板或压缩对话框), 可为空
+     * @param outputSession        工具窗口输出会话, 用于同步显示生成结果, 可为空
+     * @param generation           流式生成接口, 定义了如何从 AI 服务获取响应内容并实时更新提交消息
+     * @since 1.0.0
+     */
     private void runGeneration(@Nullable CommitMessageI commitMessageControl,
                                @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
                                @NotNull StreamGeneration generation) {
@@ -303,6 +351,13 @@ public class CommitMessageGenerator {
 
         ProgressManager.getInstance().run(
             new Task.Backgroundable(project, ChangelogBundle.message("commit.generating.progress"), true) {
+                /**
+                 * 执行 Git 提交消息生成任务
+                 * <p> 该方法在后台线程中运行, 负责分析变更内容, 调用 AI 服务生成提交消息, 并在 UI 线程中更新提交面板.
+                 * 任务过程中会显示进度指示器, 支持取消操作, 并在失败时弹出错误通知.
+                 *
+                 * @param indicator 进度指示器, 用于显示任务状态和进度
+                 */
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
                     indicator.setIndeterminate(true);
@@ -334,12 +389,12 @@ public class CommitMessageGenerator {
                         AtomicReference<Boolean> updated = new AtomicReference<>(false);
                         final AIStreamResponseListener listener =
                             createStreamResponseListener(state,
-                                                         buffer,
-                                                         typingIndicator,
-                                                         updated,
-                                                         cancellationToken,
-                                                         commitMessageControl,
-                                                         outputSession);
+                                buffer,
+                                typingIndicator,
+                                updated,
+                                cancellationToken,
+                                commitMessageControl,
+                                outputSession);
 
                         String commitMessage = generation.generate(service, listener, contextText, typingIndicator);
                         String formattedCommitMessage = MessageFormatter.format(commitMessage);
@@ -376,7 +431,7 @@ public class CommitMessageGenerator {
                                 NotificationUtil.showError(
                                     project,
                                     ChangelogBundle.message("commit.generation.error",
-                                                            ChangelogBundle.message("error.ai.service.unknown")));
+                                        ChangelogBundle.message("error.ai.service.unknown")));
                             }
                         });
                     } finally {
@@ -434,7 +489,7 @@ public class CommitMessageGenerator {
              * @return 流取消令牌, 如果未设置则返回 null
              */
             @Override
-            public @Nullable StreamCancellationToken cancellationToken() {
+            public @NotNull StreamCancellationToken cancellationToken() {
                 return cancellationToken;
             }
 
@@ -468,6 +523,12 @@ public class CommitMessageGenerator {
                 }
             }
 
+            /**
+             * 处理流式响应中的思考阶段片段数据
+             * <p> 当接收到表示“思考中”的响应片段时, 若片段内容非空, 则启动思考状态指示器. 如果当前任务已被取消, 则不执行任何操作.
+             *
+             * @param chunk 当前接收到的响应片段内容, 非空字符串
+             */
             @Override
             public void onThinkingChunk(@NotNull String chunk) {
                 if (state.cancelled.get()) {
@@ -507,6 +568,12 @@ public class CommitMessageGenerator {
                 });
             }
 
+            /**
+             * 处理流式响应中的通知事件
+             * <p> 当接收到通知消息时, 该方法在 UI 线程中执行, 用于在编辑器组件上显示通知提示. 如果当前任务已被取消或项目已销毁, 则不执行任何操作.
+             *
+             * @param message 通知消息内容, 非空字符串
+             */
             @Override
             public void onNotice(@NotNull String message) {
                 if (state.cancelled.get()) {
@@ -592,11 +659,11 @@ public class CommitMessageGenerator {
         }
 
         showActionTip(component,
-                      "",
-                      ChangelogBundle.message("commit.context.tip.enabled"),
-                      "action:close",
-                      MessageType.INFO,
-                      5000);
+            "",
+            ChangelogBundle.message("commit.context.tip.enabled"),
+            "action:close",
+            MessageType.INFO,
+            5000);
     }
 
     /**
@@ -614,11 +681,11 @@ public class CommitMessageGenerator {
      */
     private void showNoticeActionTip(@NotNull JComponent component, @NotNull String message) {
         showActionTip(component,
-                      message,
-                      ChangelogBundle.message("commit.context.tip.fallback"),
-                      "action:fallback",
-                      MessageType.WARNING,
-                      10000);
+            "",
+            ChangelogBundle.message("commit.context.tip.fallback", message),
+            "action:fallback",
+            MessageType.WARNING,
+            10000);
     }
 
 
@@ -633,14 +700,14 @@ public class CommitMessageGenerator {
      * }</pre>
      *
      * @param component   显示气泡的组件, 不能为 null
-     * @param message     提示信息内容, 不能为 null
+     * @param openUrl     提示信息内容, 不能为 null
      * @param htmlContent HTML 格式的内容, 用于显示在气泡中
      * @param actionName  超链接的标识名称, 用于匹配点击事件, 例如 "action:fallback"
      * @param messageType 提示气泡的类型, 如 MessageType.INFO 或 MessageType.WARNING
      * @param outTime     气泡自动消失的延迟时间 (毫秒)
      */
     private void showActionTip(@NotNull JComponent component,
-                               @NotNull String message,
+                               @NotNull String openUrl,
                                String htmlContent,
                                String actionName,
                                MessageType messageType,
@@ -661,8 +728,8 @@ public class CommitMessageGenerator {
             protected void hyperlinkActivated(@NotNull HyperlinkEvent e) {
                 String url = e.getDescription();
                 // 处理 action:fallback 链接
-                if (actionName.equals(url)) {
-                    BrowserUtil.browse(message);
+                if (actionName.equals(url) && !openUrl.isEmpty()) {
+                    BrowserUtil.browse(openUrl);
                 }
             }
         };
@@ -678,8 +745,8 @@ public class CommitMessageGenerator {
             .createBalloon();
 
         balloon.show(new RelativePoint(component,
-                                       new Point(component.getWidth() / 2, component.getHeight())),
-                     Balloon.Position.below);
+                new Point(component.getWidth() / 2, component.getHeight())),
+            Balloon.Position.below);
     }
 
     /**
@@ -868,10 +935,10 @@ public class CommitMessageGenerator {
      * @throws Exception 当任意仓库的提交信息生成失败时抛出异常
      */
     private @NotNull String handleMultiRepositoryChanges(@NotNull ChangelogService service,
-                                              @NotNull Map<String, List<Change>> changesByRoot,
-                                              @Nullable String contextText,
-                                              @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
-                                              @Nullable CommitMessageI commitMessageControl,
+                                                         @NotNull Map<String, List<Change>> changesByRoot,
+                                                         @Nullable String contextText,
+                                                         @Nullable ChangelogToolWindowService.ChangelogOutputSession outputSession,
+                                                         @Nullable CommitMessageI commitMessageControl,
                                                          @NotNull TypingIndicator typingIndicator,
                                                          @NotNull StatisticsUserAction userAction) throws Exception {
 
@@ -1037,9 +1104,6 @@ public class CommitMessageGenerator {
         try {
             // 获取 EditorTextField
             EditorTextField editorField = getEditorTextField(commitMessageControl);
-            if (editorField == null) {
-                return;
-            }
 
             // 获取 Editor
             Editor editor = editorField.getEditor();

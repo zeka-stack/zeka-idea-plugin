@@ -200,6 +200,13 @@ public class GenerateCommitMessageSplitAction extends SplitButtonAction implemen
             return ActionUpdateThread.BGT;
         }
 
+        /**
+         * 判断当前动作是否被选中
+         * <p> 根据全局设置 {@code SettingsState.getInstance().useCommitMessageInputAsContext} 判断提交消息输入框是否启用上下文模式 </p>
+         *
+         * @param e 动作事件对象, 包含当前操作的上下文信息
+         * @return 如果启用上下文模式则返回 true, 否则返回 false
+         */
         @Override
         public boolean isSelected(@NotNull AnActionEvent e) {
             return SettingsState.getInstance().useCommitMessageInputAsContext;
