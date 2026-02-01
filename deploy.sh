@@ -11,6 +11,7 @@
 #   nacos     - intelli-ai-nacos
 #   tracer    - intelli-ai-tracer
 #   swagger   - intelli-ai-swagger
+#   terminal  - intelli-ai-terminal
 
 set -e  # 遇到错误立即退出
 
@@ -171,6 +172,11 @@ case "$PLUGIN_NAME" in
         PLUGIN_DIR_NAME="intelli-ai-swagger"
         PLUGIN_PATH="swagger"
         PLUGIN_ID=""
+        ;;
+    terminal)
+        PLUGIN_DIR_NAME="intelli-ai-terminal"
+        PLUGIN_PATH="terminal"
+        PLUGIN_ID="29989"
         ;;
     archiver)
         PLUGIN_DIR_NAME="archiver-man"
@@ -345,7 +351,7 @@ echo ""
 ############################################
 if $do_publish; then
     echo "[1/3] 执行 Gradle 发布 :publishPlugin ..."
-    (cd "$PLUGIN_DIR" && ./gradlew clean publishPlugin --no-daemon)
+    (cd "$PLUGIN_DIR" && ./gradlew clean publishDefault --no-daemon)
     echo "✓ 插件发布完成"
     if [ -n "$PLUGIN_ID" ]; then
         echo "  插件市场地址: https://plugins.jetbrains.com/plugin/$PLUGIN_ID"
