@@ -106,12 +106,16 @@ tasks {
         val taskNames = gradle.startParameter.taskNames
         val isBeta = taskNames.any { it.contains("publishBeta", ignoreCase = true) }
         val isDefault = taskNames.any { it.contains("publishDefault", ignoreCase = true) }
+        // 注意：channels 不能为空！PublishPluginTask 通过 channels.forEach 执行上传，空列表会导致不执行任何上传
         if (isBeta) {
             channels = listOf("beta")
             hidden = false
+        } else if (isDefault) {
+            channels = listOf("default") // default 渠道，发布为隐藏
+            hidden = true
         } else {
-            channels = emptyList()
-            hidden = isDefault
+            channels = listOf("default") // 直接 publishPlugin 时也用 default
+            hidden = false
         }
     }
 
