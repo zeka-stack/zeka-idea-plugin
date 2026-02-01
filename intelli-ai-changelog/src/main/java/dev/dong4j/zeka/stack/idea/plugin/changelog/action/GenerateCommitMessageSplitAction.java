@@ -5,19 +5,10 @@ import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Separator;
 import com.intellij.openapi.actionSystem.SplitButtonAction;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import dev.dong4j.zeka.stack.idea.plugin.changelog.service.GenerateCommitMessageService;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
@@ -25,6 +16,11 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statusbar.AIProviderSelectionActionGroupFactory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 生成提交消息分割按钮动作类
@@ -129,10 +125,12 @@ public class GenerateCommitMessageSplitAction extends SplitButtonAction implemen
      * 构建下拉菜单中的操作项数组
      * <p> 根据当前操作事件创建包含 AI 提供商选择组和上下文开关的下拉菜单项 </p>
      * <p> 若当前事件中包含有效的项目上下文, 则添加 AI 提供商选择组; 否则仅添加分隔符和上下文开关项 </p>
+     * <p> 使用 {@link AIProviderSelectionActionGroupFactory#createProviderActions} 而非 createActionGroup，
+     * 避免调用标记为 @ApiStatus.OverrideOnly 的 ActionGroup.getChildren(AnActionEvent)。</p>
      *
      * @param e 操作事件, 可能为 null
      * @return 包含下拉菜单操作项的数组, 类型为 {@code AnAction[]}
-     * @see AIProviderSelectionActionGroupFactory#createActionGroup
+     * @see AIProviderSelectionActionGroupFactory#createProviderActions
      * @see Separator#getInstance
      * @see CommitMessageContextToggleAction
      */
@@ -140,16 +138,15 @@ public class GenerateCommitMessageSplitAction extends SplitButtonAction implemen
         List<AnAction> actions = new ArrayList<>();
         Project project = e != null ? e.getProject() : null;
         if (project != null) {
-            DefaultActionGroup group = AIProviderSelectionActionGroupFactory.createActionGroup(
+            String groupTitle = ChangelogBundle.message("statusbar.provider.selection.title");
+            actions.add(Separator.create(groupTitle));
+            actions.addAll(AIProviderSelectionActionGroupFactory.createProviderActions(
                 project,
-                ChangelogBundle.message("statusbar.provider.selection.title"),
                 ChangelogBundle.message("settings.display.name"),
                 ChangelogBundle.message("settings.ai.provider.selection"),
                 () -> SettingsState.getInstance().providerConfig,
                 GenerateCommitMessageSplitAction::updateProviderSelection
-                                                                                              );
-            actions.add(Separator.create(group.getTemplatePresentation().getText()));
-            Collections.addAll(actions, group.getChildren(e));
+            ));
         }
         actions.add(Separator.getInstance());
         actions.add(new CommitMessageContextToggleAction());

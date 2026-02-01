@@ -10,28 +10,22 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import com.intellij.ui.RowIcon;
 import com.intellij.util.ui.JBUI;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
-
-import javax.swing.Icon;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 /**
  * AI 服务商选择菜单构建器
@@ -75,16 +69,41 @@ public final class AIProviderSelectionActionGroupFactory {
                                                                 @NotNull Supplier<AIProviderConfig> currentConfigSupplier,
                                                                 @NotNull BiConsumer<AIProviderType, AIProviderConfig> configUpdater) {
         DefaultActionGroup group = new DefaultActionGroup(groupTitle, true);
-        List<AIProviderConfig> providers = AIProviderUtils.getProviders();
-        for (AIProviderConfig config : providers) {
-            group.add(new SwitchProviderAction(project,
-                                               settingsDisplayName,
-                                               selectionActionName,
-                                               config,
-                                               currentConfigSupplier,
-                                               configUpdater));
+        for (AnAction action : createProviderActions(project, settingsDisplayName, selectionActionName,
+                                                     currentConfigSupplier, configUpdater)) {
+            group.add(action);
         }
         return group;
+    }
+
+    /**
+     * 创建服务商选择动作列表（不包装为 ActionGroup）
+     * <p> 用于需要扁平化展示子动作的场景，避免调用 {@code ActionGroup.getChildren(AnActionEvent)}，
+     * 该方法标记为 {@code @ApiStatus.OverrideOnly}，不得由客户端代码调用。
+     *
+     * @param project               当前项目
+     * @param settingsDisplayName   设置页名称, 用于提示
+     * @param selectionActionName   设置页动作名称, 用于提示
+     * @param currentConfigSupplier 当前配置读取回调
+     * @param configUpdater         切换配置回调
+     * @return 服务商选择动作列表，非空
+     */
+    public static @NotNull List<AnAction> createProviderActions(@NotNull Project project,
+                                                                @NotNull String settingsDisplayName,
+                                                                @NotNull String selectionActionName,
+                                                                @NotNull Supplier<AIProviderConfig> currentConfigSupplier,
+                                                                @NotNull BiConsumer<AIProviderType, AIProviderConfig> configUpdater) {
+        List<AnAction> actions = new ArrayList<>();
+        List<AIProviderConfig> providers = AIProviderUtils.getProviders();
+        for (AIProviderConfig config : providers) {
+            actions.add(new SwitchProviderAction(project,
+                                                 settingsDisplayName,
+                                                 selectionActionName,
+                                                 config,
+                                                 currentConfigSupplier,
+                                                 configUpdater));
+        }
+        return actions;
     }
 
 
