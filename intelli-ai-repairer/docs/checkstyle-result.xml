@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="11.0.1">
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/IllegalImportTest.java">
+<error line="14" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/InnerAssignmentTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="16" column="16" severity="error" message="应避免在子表达式中赋值。" source="com.puppycrawl.tools.checkstyle.checks.coding.InnerAssignmentCheck"/>
+<error line="16" column="26" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/RedundantModifierTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="16" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/LocalVariableNameTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="14" column="13" severity="error" message="局部变量 &apos;LocalInt&apos; 要符合 &apos;^[a-z][a-zA-Z0-9]*$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.LocalVariableNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NestedTryDepthTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="16" column="21" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+<error line="32" column="21" severity="error" message="至多2层 try，目前3层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedTryDepthCheck"/>
+<error line="32" column="25" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/LocalFinalVariableNameTest.java">
+<error line="11" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="13" column="19" severity="error" message="名称 &apos;LocalFinalInt&apos; 必须匹配表达式： &apos;^([a-z][a-zA-Z0-9]*|_)$&apos; 。" source="com.puppycrawl.tools.checkstyle.checks.naming.LocalFinalVariableNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/OperatorWrapTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/RegexpTest.java">
+<error line="4" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="5" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="13" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="14" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="17" column="13" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+<error line="20" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/UnusedImportsTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/LambdaParameterNameTest.java">
+<error line="14" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="15" column="42" severity="error" message="Lambda 表达式参数名 &apos;Param&apos; 要符合 &apos;^[a-z]([a-z0-9][a-zA-Z0-9]*)?$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.LambdaParameterNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/SuperCloneTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+<error line="15" column="19" severity="error" message="方法 &apos;clone&apos; 应调用 &apos;super.clone&apos;。" source="com.puppycrawl.tools.checkstyle.checks.coding.SuperCloneCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ParameterNameTest.java">
+<error line="17" column="17" severity="error" message="方法名 &apos;TestMethod&apos; 要符合 &apos;^[a-z][a-z0-9][a-zA-Z0-9_]*$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.MethodNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/IndentationTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/JavadocMethodTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NoWhitespaceAfterTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="18" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="23" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="28" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/StringLiteralEqualityTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="16" column="17" severity="error" message="字符串应使用equals()方法进行比较，而非&apos;==&apos;。" source="com.puppycrawl.tools.checkstyle.checks.coding.StringLiteralEqualityCheck"/>
+<error line="16" column="28" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+<error line="21" column="33" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/RightCurlyTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="13" column="19" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/UncommentedMainTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ParenPadTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="14" column="19" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+<error line="19" column="19" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/EmptyStatementTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/WhitespaceAroundTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="17" column="25" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NestedForDepthTest.java">
+<error line="15" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="30" column="21" severity="error" message="至多2层 for，目前3层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedForDepthCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/AvoidStarImportTest.java">
+<error line="14" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NestedIfDepthTest.java">
+<error line="16" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="30" column="21" severity="error" message="至多2层 if，目前3层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="47" column="21" severity="error" message="至多2层 if，目前3层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="48" column="25" severity="error" message="至多2层 if，目前4层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="49" column="29" severity="error" message="至多2层 if，目前5层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="50" column="33" severity="error" message="至多2层 if，目前6层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="51" column="37" severity="error" message="至多2层 if，目前7层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="52" column="41" severity="error" message="至多2层 if，目前8层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="53" column="45" severity="error" message="至多2层 if，目前9层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="54" column="49" severity="error" message="至多2层 if，目前10层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+<error line="57" column="53" severity="error" message="至多2层 if，目前11层。" source="com.puppycrawl.tools.checkstyle.checks.coding.NestedIfDepthCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NonEmptyAtclauseDescriptionTest.java">
+<error line="15" severity="error" message="@标签应有非空说明。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.NonEmptyAtclauseDescriptionCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/AvoidNestedBlocksTest.java">
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ParameterNumberTest.java">
+<error line="35" column="17" severity="error" message="参数共： 6个，最多：5个。" source="com.puppycrawl.tools.checkstyle.checks.sizes.ParameterNumberCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/WhitespaceAfterTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/EmptyBlockTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="14" column="13" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/JavadocTypeTest.java">
+<error line="6" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/MissingSwitchDefaultTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="24" column="9" severity="error" message="Switch 块未定义 default 。" source="com.puppycrawl.tools.checkstyle.checks.coding.MissingSwitchDefaultCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/typeNameTest.java">
+<error line="11" column="14" severity="warning" message="类名称 &apos;typeNameTest&apos; 要符合 &apos;(^[A-Z][a-zA-Z0-9]{0,128}$)&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.TypeNameCheck"/>
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/JavadocVariableTest.java">
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/SuperFinalizeTest.java">
+<error line="13" column="20" severity="error" message="方法 &apos;finalize&apos; 应调用 &apos;super.finalize&apos;。" source="com.puppycrawl.tools.checkstyle.checks.coding.SuperFinalizeCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/LineLengthTest.java">
+<error line="13" severity="error" message="行长度超过限制 140 个字符，当前 151 个字符" source="com.puppycrawl.tools.checkstyle.checks.sizes.LineLengthCheck"/>
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/MethodParamPadTest.java">
+<error line="20" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/EqualsHashCodeTest.java">
+<error line="14" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+<error line="16" column="5" severity="error" message="重写&apos;equals()&apos;方法后，必须重写&apos;hashCode()&apos;方法。" source="com.puppycrawl.tools.checkstyle.checks.coding.EqualsHashCodeCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NoWhitespaceBeforeTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="20" column="37" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/FileTabCharacterTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/SimplifyBooleanReturnTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/DesignForExtensionTest.java">
+<error line="22" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="23" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="27" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="33" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="34" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="42" column="1" severity="error" message="缺少 @author 标签。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocTypeCheck"/>
+<error line="48" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/MethodLengthTest.java">
+<error line="16" column="5" severity="error" message="方法 testMethod 83 行（最多： 80 行）。" source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/FileLengthTest.java">
+<error line="1" severity="error" message="文件未以空行结尾。" source="com.puppycrawl.tools.checkstyle.checks.NewlineAtEndOfFileCheck"/>
+<error line="1" severity="warning" message="文件 1,517 行 （最多：1,500 行）。" source="com.puppycrawl.tools.checkstyle.checks.sizes.FileLengthCheck"/>
+<error line="8" severity="error" message="Javadoc 第 42 个字符解析错误。缺少 HTML 闭合标签： &apos;sctelcp-checkstyle&apos;。 有时这代表前一标签未闭合。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.NonEmptyAtclauseDescriptionCheck"/>
+<error line="17" column="18" severity="error" message="&apos;(&apos; 后不应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.ParenPadCheck"/>
+<error line="21" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="21" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="21" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="23" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="23" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="23" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="25" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="25" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="25" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="27" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="27" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="27" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="29" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="29" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="29" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="31" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="31" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="31" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="33" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="33" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="33" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="35" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="35" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="35" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="37" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="37" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="37" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="39" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="39" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="39" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="41" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="41" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="41" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="43" column="28" severity="error" message="WhitespaceAround: &apos;{&apos; is not followed by whitespace. Empty blocks may only be represented as {} when not part of a multi-block statement (4.1.3)" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="43" column="56" severity="error" message="&apos;;&apos; 后应有空格。" source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAfterCheck"/>
+<error line="43" column="57" severity="error" message="WhitespaceAround: &apos;}&apos; is not preceded with whitespace." source="com.puppycrawl.tools.checkstyle.checks.whitespace.WhitespaceAroundCheck"/>
+<error line="45" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="45" column="5" severity="error" message="方法 method13 1,472 行（最多： 80 行）。" source="com.puppycrawl.tools.checkstyle.checks.sizes.MethodLengthCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ConstantNameTest.java">
+<error line="14" column="29" severity="error" message="常量名 &apos;max_count&apos; 要符合 &apos;(^[A-Z0-9_]{0,128}$)&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.ConstantNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/UpperEllTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/MemberNameTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+<error line="12" column="20" severity="error" message="成员变量名称 &apos;me_mberVar&apos; 要符合 &apos;^[a-z][a-z0-9][a-zA-Z0-9]*$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.MemberNameCheck"/>
+<error line="13" column="22" severity="error" message="成员变量名称 &apos;ProtectedVar&apos; 要符合 &apos;^[a-z][a-z0-9][a-zA-Z0-9]*$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.MemberNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/StaticVariableNameTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+<error line="12" column="27" severity="error" message="static 变量 &apos;STATICVAR&apos; 要符合 &apos;^[a-z][a-zA-Z0-9]*$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.StaticVariableNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ModifierOrderTest.java">
+<error line="16" column="12" severity="error" message="&apos;public&apos; 修饰符顺序违反 JLS 建议." source="com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck"/>
+<error line="18" column="18" severity="error" message="&apos;static&apos; 修饰符顺序违反 JLS 建议." source="com.puppycrawl.tools.checkstyle.checks.modifier.ModifierOrderCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/PackageNameTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/LeftCurlyTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/MethodNameTest.java">
+<error line="15" column="17" severity="error" message="方法名 &apos;TestMethod&apos; 要符合 &apos;^[a-z][a-z0-9][a-zA-Z0-9_]*$&apos; 格式." source="com.puppycrawl.tools.checkstyle.checks.naming.MethodNameCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ThrowsCountTest.java">
+<error line="28" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="31" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="34" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="37" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="40" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="43" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+<error line="46" column="1" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocTypeCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/TypecastParenPadTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/SimplifyBooleanExpressionTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="16" column="19" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+<error line="21" column="19" severity="error" message="块中应至少有一条代码语句。" source="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/RedundantImportTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NeedBracesTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+<error line="17" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+<error line="22" severity="error" message="当前行匹配非法表达式： &apos;System\.out\.println|\.printStackTrace&apos;。" source="com.puppycrawl.tools.checkstyle.checks.regexp.RegexpCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/FinalClassTest.java">
+<error line="5" severity="error" message="Javadoc 第 54 个字符解析错误。缺少 HTML 闭合标签： &apos;sctelcp-checkstyle&apos;。 有时这代表前一标签未闭合。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.NonEmptyAtclauseDescriptionCheck"/>
+<error line="11" column="1" severity="error" message="类 FinalClassTest 应定义为 final 的。" source="com.puppycrawl.tools.checkstyle.checks.design.FinalClassCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ArrayTypeStyleTest.java">
+<error line="13" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+<error line="17" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NewlineAtEndOfFileTest.java">
+<error line="1" severity="error" message="文件未以空行结尾。" source="com.puppycrawl.tools.checkstyle.checks.NewlineAtEndOfFileCheck"/>
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/OuterTypeFilenamexTest.java">
+<error line="12" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocVariableCheck"/>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/CodeQualityTestApplication.java">
+<error line="15" column="5" severity="error" message="缺少 Javadoc 。" source="com.puppycrawl.tools.checkstyle.checks.javadoc.MissingJavadocMethodCheck"/>
+</file>
+</checkstyle>

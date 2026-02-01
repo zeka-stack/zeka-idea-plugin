@@ -7,13 +7,6 @@ import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.CheckstyleXmlAdapter;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.PmdXmlAdapter;
@@ -21,6 +14,11 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCache;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 import icons.AIRepairerIcons;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 导入静态报告操作类
@@ -66,7 +64,8 @@ public class ImportStaticReportAction extends AnAction {
 
         FileChooserDescriptor descriptor = new FileChooserDescriptor(true, false, false, false, false, false)
             .withTitle(RepairerBundle.message("dialog.import.title"))
-            .withDescription(RepairerBundle.message("dialog.import.description"));
+            .withDescription(RepairerBundle.message("dialog.import.description"))
+            .withFileFilter(file -> file.getName().toLowerCase().endsWith(".xml"));
         VirtualFile file = FileChooser.chooseFile(descriptor, project, null);
         if (file == null) {
             return;
@@ -74,13 +73,32 @@ public class ImportStaticReportAction extends AnAction {
 
         List<CodeViolation> violations = new ArrayList<>();
         File ioFile = new File(file.getPath());
-        if (file.getName().contains("pmd")) {
+
+        // 改进报告类型判断
+        String fileName = file.getName().toLowerCase();
+        if (fileName.contains("pmd")) {
             violations.addAll(new PmdXmlAdapter().parse(ioFile));
-        } else {
+        } else if (fileName.contains("checkstyle")) {
             violations.addAll(new CheckstyleXmlAdapter().parse(ioFile));
+        } else {
+            // 尝试两种解析器，选择解析结果多的一种
+            List<CodeViolation> checkstyleViolations = new CheckstyleXmlAdapter().parse(ioFile);
+            List<CodeViolation> pmdViolations = new PmdXmlAdapter().parse(ioFile);
+
+            if (checkstyleViolations.size() > pmdViolations.size()) {
+                violations.addAll(checkstyleViolations);
+            } else {
+                violations.addAll(pmdViolations);
+            }
         }
+
         ViolationCache.getInstance(project).setAll(violations);
         DaemonCodeAnalyzer.getInstance(project).restart();
-        NotificationUtil.showInfo(project, RepairerBundle.message("notify.import.count", violations.size()));
+
+        if (violations.isEmpty()) {
+            NotificationUtil.showWarning(project, "No violations found in the report.");
+        } else {
+            NotificationUtil.showInfo(project, RepairerBundle.message("notify.import.count", violations.size()));
+        }
     }
 }

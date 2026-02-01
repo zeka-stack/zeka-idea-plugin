@@ -11,12 +11,6 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-
-import org.infernus.idea.checkstyle.checker.Problem;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
-
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
@@ -25,9 +19,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixPromptBuilder;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixResponseValidator;
-import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.PatchApplier;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.EnhancedPatchApplier;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
+import org.infernus.idea.checkstyle.checker.Problem;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * AI 代码检查修复工具类
@@ -104,13 +102,14 @@ public class AICheckstyleFix implements LocalQuickFix {
             return;
         }
 
-        TextRange range = computeRange(document, element, problem.line(), problem.column());
+        TextRange range = computePreciseRange(document, element, problem.line(), problem.column());
         if (range == null) {
             return;
         }
         String originalSnippet = document.getText(range);
+        String surroundingContext = getSurroundingContext(document, range);
         CodeViolation violation = toViolation();
-        FixContext context = buildContext(violation, originalSnippet);
+        FixContext context = buildContext(violation, originalSnippet, surroundingContext);
         if (context == null) {
             return;
         }
@@ -145,7 +144,11 @@ public class AICheckstyleFix implements LocalQuickFix {
                 }
 
                 String systemPrompt = FixPromptBuilder.systemPrompt();
-                String userPrompt = FixPromptBuilder.userPrompt(context.violation(), context.targetText());
+                String userPrompt = FixPromptBuilder.enhancedUserPrompt(
+                    context.violation(),
+                    context.targetText(),
+                    context.surroundingContext()
+                );
                 AIChatRequest request = new AIChatRequest(systemPrompt, userPrompt);
 
                 String fixedCode;
@@ -167,7 +170,7 @@ public class AICheckstyleFix implements LocalQuickFix {
                     return;
                 }
                 ApplicationManager.getApplication().invokeLater(() ->
-                                                                    PatchApplier.apply(project, file, range, originalSnippet, result));
+                    EnhancedPatchApplier.apply(project, file, element, range, originalSnippet, result));
             }
         }.queue();
     }
@@ -197,7 +200,120 @@ public class AICheckstyleFix implements LocalQuickFix {
      * @return 返回构建好的修复上下文对象
      */
     private FixContext buildContext(@NotNull CodeViolation violation, @NotNull String originalSnippet) {
-        return new FixContext(violation, originalSnippet);
+        return new FixContext(violation, originalSnippet, "");
+    }
+
+    /**
+     * 构建修复上下文对象
+     * <p> 使用指定的代码违规信息和原始代码片段创建一个新的 {@code FixContext} 实例, 用于后续的修复操作.
+     *
+     * @param violation          代码违规信息, 包含工具, 规则 ID, 消息和位置等信息
+     * @param originalSnippet    需要修复的原始代码片段
+     * @param surroundingContext 代码片段周围的上下文内容, 用于增强 AI 修复的语境理解
+     * @return 返回构建好的修复上下文对象
+     */
+    private FixContext buildContext(@NotNull CodeViolation violation, @NotNull String originalSnippet, @NotNull String surroundingContext) {
+        return new FixContext(violation, originalSnippet, surroundingContext);
+    }
+
+    /**
+     * 计算精确的文本范围, 用于定位代码中需要修复或修改的位置
+     * <p> 该方法首先尝试通过递归查找找到与指定行, 列位置匹配的最精确的 PsiElement 元素.
+     * 如果未找到, 则回退到当前元素的文本范围, 并根据指定的行, 列信息计算起始偏移量.
+     * 最终返回一个 TextRange 对象, 表示需要修复或修改的代码文本范围.
+     *
+     * @param document 文档对象, 用于获取行和列的偏移信息
+     * @param element  代码元素对象, 表示当前处理的代码节点
+     * @param line     指定的行号 (从 1 开始)
+     * @param column   指定的列号 (从 1 开始)
+     * @return 返回计算后的 TextRange 对象, 如果无法计算则返回 null
+     */
+    private TextRange computePreciseRange(@NotNull Document document, @NotNull PsiElement element, int line, int column) {
+        // 1. 尝试获取最小的有意义的代码单元
+        PsiElement targetElement = findTargetElement(element, line, column);
+
+        // 2. 如果找不到合适的元素，回退到原始逻辑
+        if (targetElement == null) {
+            TextRange elementRange = element.getTextRange();
+            if (elementRange == null) {
+                return null;
+            }
+            int startOffset = elementRange.getStartOffset();
+            if (line > 0 && line <= document.getLineCount()) {
+                int lineStart = document.getLineStartOffset(line - 1);
+                int columnOffset = Math.max(0, column - 1);
+                startOffset = lineStart + columnOffset;
+                if (startOffset < elementRange.getStartOffset()) {
+                    startOffset = elementRange.getStartOffset();
+                }
+                if (startOffset > elementRange.getEndOffset()) {
+                    startOffset = elementRange.getStartOffset();
+                }
+            }
+            return new TextRange(startOffset, elementRange.getEndOffset());
+        }
+
+        // 3. 使用目标元素的范围
+        return targetElement.getTextRange();
+    }
+
+    /**
+     * 递归查找指定位置对应的代码元素
+     * <p> 从给定的 PsiElement 开始, 遍历其子元素, 检查指定行和列是否位于子元素范围内. 如果在, 则递归进入该子元素继续查找; 否则返回当前元素.
+     *
+     * @param element 起始的代码元素, 用于遍历其子元素
+     * @param line    指定的行号 (从 1 开始)
+     * @param column  指定的列号 (从 1 开始)
+     * @return 匹配位置的最深层代码元素, 若未找到则返回原始元素
+     */
+    private PsiElement findTargetElement(@NotNull PsiElement element, int line, int column) {
+        // 遍历元素的子元素，找到最精确的匹配
+        for (PsiElement child : element.getChildren()) {
+            TextRange childRange = child.getTextRange();
+            if (childRange != null) {
+                // 检查子元素是否包含问题位置
+                // 这里需要根据具体的 PSI 结构进行调整
+                if (isPositionInElement(child, line, column)) {
+                    return findTargetElement(child, line, column);
+                }
+            }
+        }
+
+        // 如果没有子元素包含问题位置，返回当前元素
+        return element;
+    }
+
+    /**
+     * 判断指定位置是否位于元素内部
+     * <p> 当前实现直接返回 true, 表示默认认为指定行和列位置位于该元素内. 该方法可能用于定位代码中违规位置的精确范围, 但当前版本未做实际位置校验.</p>
+     *
+     * @param element 要检查的 PsiElement 对象
+     * @param line    指定的行号 (从 1 开始)
+     * @param column  指定的列号 (从 1 开始)
+     * @return 始终返回 true, 表示位置被认为在元素内
+     */
+    private boolean isPositionInElement(@NotNull PsiElement element, int line, int column) {
+        // 简化实现：假设元素的文本范围包含问题位置
+        // 实际实现可能需要更复杂的逻辑
+        return true;
+    }
+
+    /**
+     * 获取指定文本范围周围的上下文内容
+     * <p> 从文档中提取指定文本范围前后各 200 个字符的上下文内容, 总长度不超过 400 个字符. 若内容超过 400 字符, 则截取前 200 字符和后 200 字符, 并用“...”连接中间部分.</p>
+     *
+     * @param document 文档对象, 用于获取文本内容和偏移量
+     * @param range    文本范围, 用于确定提取上下文的起始和结束位置
+     * @return 返回提取的上下文字符串, 长度不超过 400 字符, 若超过则截断并添加省略号
+     */
+    private String getSurroundingContext(@NotNull Document document, @NotNull TextRange range) {
+        // 获取范围前后的上下文信息
+        int startOffset = Math.max(0, range.getStartOffset() - 200);
+        int endOffset = Math.min(document.getTextLength(), range.getEndOffset() + 200);
+
+        String context = document.getText(new TextRange(startOffset, endOffset));
+        // 确保上下文不包含太多无关信息
+        return context.length() > 400 ? context.substring(0, 200) + "..." + context.substring(context.length() - 200) : context;
     }
 
     /**

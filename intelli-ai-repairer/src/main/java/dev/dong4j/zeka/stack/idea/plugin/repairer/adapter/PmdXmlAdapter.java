@@ -1,18 +1,16 @@
 package dev.dong4j.zeka.stack.idea.plugin.repairer.adapter;
 
+import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.SeverityMapper;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
-import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.SeverityMapper;
 
 /**
  * PMD XML 适配器类
@@ -37,7 +35,16 @@ public class PmdXmlAdapter {
     public List<CodeViolation> parse(@NotNull File xmlFile) {
         List<CodeViolation> violations = new ArrayList<>();
         try {
-            Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
+            // 配置 DocumentBuilderFactory 以提高解析健壮性
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
+            factory.setValidating(false);
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+            Document document = factory.newDocumentBuilder().parse(xmlFile);
+            document.getDocumentElement().normalize();
+
+            // 使用更健壮的方式来查找元素，忽略命名空间
             NodeList fileNodes = document.getElementsByTagName("file");
             for (int i = 0; i < fileNodes.getLength(); i++) {
                 Element fileElement = (Element) fileNodes.item(i);
@@ -48,17 +55,44 @@ public class PmdXmlAdapter {
                     CodeViolation v = new CodeViolation();
                     v.tool = "PMD";
                     v.filePath = filePath;
-                    v.ruleId = violation.getAttribute("rule");
-                    v.message = violation.getTextContent() != null ? violation.getTextContent().trim() : "";
+
+                    // 改进 ruleId 解析
+                    String rule = violation.getAttribute("rule");
+                    v.ruleId = rule != null && !rule.isEmpty() ? rule : "Unknown";
+
+                    // 改进消息解析
+                    String textContent = violation.getTextContent();
+                    v.message = textContent != null ? textContent.trim() : "";
+
+                    // 改进行号解析，尝试不同的属性名
                     v.startLine = parseInt(violation.getAttribute("beginline"));
+                    if (v.startLine == 0) {
+                        v.startLine = parseInt(violation.getAttribute("line"));
+                    }
+
                     v.endLine = parseInt(violation.getAttribute("endline"));
-                    v.startColumn = 0;
-                    v.endColumn = 0;
+                    if (v.endLine == 0) {
+                        v.endLine = v.startLine;
+                    }
+
+                    // 尝试解析列号
+                    v.startColumn = parseInt(violation.getAttribute("begincolumn"));
+                    if (v.startColumn == 0) {
+                        v.startColumn = parseInt(violation.getAttribute("column"));
+                    }
+
+                    v.endColumn = parseInt(violation.getAttribute("endcolumn"));
+                    if (v.endColumn == 0) {
+                        v.endColumn = v.startColumn;
+                    }
+
                     v.severity = SeverityMapper.fromPmdPriority(violation.getAttribute("priority"));
                     violations.add(v);
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 打印异常信息，以便调试
+            e.printStackTrace();
         }
         return violations;
     }

@@ -94,7 +94,7 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
     @Override
     public @NotNull Collection<Node> getChildren(@NotNull FileNode fileNode) {
         List<Problem> problems = getProblemsIndex().problemsByFile.getOrDefault(fileNode.getVirtualFile(), List.of());
-        return getNodesForProblems(fileNode, problems);
+        return super.getNodesForProblems(fileNode, problems);
     }
 
     /**
@@ -107,7 +107,7 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
     @Override
     public @NotNull Collection<Node> getChildren(@NotNull VirtualFile file) {
         List<Problem> problems = getProblemsIndex().problemsByFile.getOrDefault(file, List.of());
-        return getNodesForProblems(new FileNode(this, file), problems);
+        return super.getNodesForProblems(new FileNode(this, file), problems);
     }
 
     /**

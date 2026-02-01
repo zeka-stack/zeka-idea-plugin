@@ -71,4 +71,49 @@ public final class FixPromptBuilder {
             snippet
                          );
     }
+
+    /**
+     * 生成增强版用户提示信息字符串, 用于指导代码修复引擎在保留上下文的前提下仅修改指定代码片段
+     * <p> 该方法结合规则信息, 原始代码片段和上下文信息, 生成结构化提示, 确保修复过程精准, 安全, 语义不变 </p>
+     *
+     * @param violation          包含工具名, 规则 ID 和描述的 CodeViolation 对象
+     * @param snippet            原始代码片段, 将被替换或修复的部分
+     * @param surroundingContext 与原始代码片段相邻的上下文内容, 用于提供语义背景, 但不得被修改
+     * @return 包含规则信息, 原始代码片段, 上下文信息及修复要求的完整提示字符串
+     */
+    public static String enhancedUserPrompt(CodeViolation violation, String snippet, String surroundingContext) {
+        return """
+            以下是静态代码分析工具检测出的代码问题。
+
+            【规则信息】
+            - 工具：%s
+            - Rule：%s
+            - 描述：%s
+
+            【原始代码片段】
+            <<<CODE>>>
+            %s
+            <<<END>>>
+
+            【上下文信息】
+            <<<CONTEXT>>>
+            %s
+            <<<END>>>
+
+            【要求】
+            - 仅修改上述代码片段，不得修改上下文
+            - 保持原有语义不变
+            - 修复该规则问题
+            - 保持与原始代码相同的缩进和格式
+            - 不引入额外的变量或方法
+            - 不改变代码的执行逻辑
+            - 返回完整替换后的代码片段，不要添加任何解释
+            """.formatted(
+            violation.tool,
+            violation.ruleId,
+            violation.message,
+            snippet,
+            surroundingContext
+                         );
+    }
 }

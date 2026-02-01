@@ -1,18 +1,16 @@
 package dev.dong4j.zeka.stack.idea.plugin.repairer.adapter;
 
+import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.SeverityMapper;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
-import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.SeverityMapper;
 
 /**
  * Checkstyle XML 解析适配器
@@ -39,7 +37,15 @@ public class CheckstyleXmlAdapter {
     public List<CodeViolation> parse(@NotNull File xmlFile) {
         List<CodeViolation> violations = new ArrayList<>();
         try {
-            Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
+            // 配置 DocumentBuilderFactory 以提高解析健壮性
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(false);
+            factory.setValidating(false);
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+            Document document = factory.newDocumentBuilder().parse(xmlFile);
+            document.getDocumentElement().normalize();
+
             NodeList fileNodes = document.getElementsByTagName("file");
             for (int i = 0; i < fileNodes.getLength(); i++) {
                 Element fileElement = (Element) fileNodes.item(i);
@@ -50,7 +56,17 @@ public class CheckstyleXmlAdapter {
                     CodeViolation v = new CodeViolation();
                     v.tool = "CHECKSTYLE";
                     v.filePath = filePath;
-                    v.ruleId = error.getAttribute("source");
+
+                    // 改进 ruleId 解析，尝试从 source 属性中提取规则名
+                    String source = error.getAttribute("source");
+                    if (source != null && !source.isEmpty()) {
+                        // 从 source 中提取规则名，例如从 "com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck" 中提取 "EmptyBlockCheck"
+                        int lastDotIndex = source.lastIndexOf('.');
+                        v.ruleId = lastDotIndex >= 0 ? source.substring(lastDotIndex + 1) : source;
+                    } else {
+                        v.ruleId = "Unknown";
+                    }
+
                     v.message = error.getAttribute("message");
                     v.startLine = parseInt(error.getAttribute("line"));
                     v.startColumn = parseInt(error.getAttribute("column"));
@@ -60,7 +76,9 @@ public class CheckstyleXmlAdapter {
                     violations.add(v);
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // 打印异常信息，以便调试
+            e.printStackTrace();
         }
         return violations;
     }

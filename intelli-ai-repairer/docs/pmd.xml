@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pmd xmlns="http://pmd.sourceforge.net/report/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pmd.sourceforge.net/report/2.0.0 http://pmd.sourceforge.net/report_2_0_0.xsd" version="6.55.0" timestamp="2025-12-27T16:59:47.785">
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ConstantNameTest.java">
+<violation beginline="14" endline="14" begincolumn="29" endcolumn="37" rule="ConstantFieldShouldBeUpperCaseRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="ConstantNameTest" variable="max_count" priority="2">
+常量【max_count】命名应全部大写并以下划线分隔
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/InnerAssignmentTest.java">
+<violation beginline="16" endline="16" begincolumn="18" endcolumn="18" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="InnerAssignmentTest" method="testMethod" priority="3">
+魔法值【2】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/MissingSwitchDefaultTest.java">
+<violation beginline="24" endline="29" begincolumn="9" endcolumn="9" rule="SwitchStatementRule" ruleset="AlibabaJavaFlowControl" package="com.sctelcp.checkstyle.sample.checkstyle" class="MissingSwitchDefaultTest" method="testMethod" priority="2">
+switch块缺少default语句
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NestedForDepthTest.java">
+<violation beginline="18" endline="18" begincolumn="29" endcolumn="30" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+<violation beginline="19" endline="19" begincolumn="33" endcolumn="34" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+<violation beginline="20" endline="20" begincolumn="37" endcolumn="38" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+<violation beginline="27" endline="27" begincolumn="29" endcolumn="30" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+<violation beginline="28" endline="28" begincolumn="33" endcolumn="34" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+<violation beginline="29" endline="29" begincolumn="37" endcolumn="38" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+<violation beginline="30" endline="30" begincolumn="41" endcolumn="42" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedForDepthTest" method="testMethod" priority="3">
+魔法值【10】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NestedIfDepthTest.java">
+<violation beginline="50" endline="50" begincolumn="45" endcolumn="47" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedIfDepthTest" method="deepNestedIfMethod" priority="3">
+魔法值【100】
+</violation>
+<violation beginline="53" endline="53" begincolumn="49" endcolumn="55" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedIfDepthTest" method="deepNestedIfMethod" priority="3">
+魔法值【"admin"】
+</violation>
+<violation beginline="54" endline="54" begincolumn="65" endcolumn="70" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedIfDepthTest" method="deepNestedIfMethod" priority="3">
+魔法值【"user"】
+</violation>
+<violation beginline="56" endline="56" begincolumn="72" endcolumn="78" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedIfDepthTest" method="deepNestedIfMethod" priority="3">
+魔法值【"order"】
+</violation>
+<violation beginline="57" endline="57" begincolumn="65" endcolumn="66" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NestedIfDepthTest" method="deepNestedIfMethod" priority="3">
+魔法值【50】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NoWhitespaceAfterTest.java">
+<violation beginline="20" endline="20" begincolumn="26" endcolumn="26" rule="AvoidCommentBehindStatementRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.checkstyle" class="NoWhitespaceAfterTest" method="dotOperator" priority="3">
+请不要使用行尾注释
+</violation>
+<violation beginline="29" endline="29" begincolumn="13" endcolumn="14" rule="AvoidCommentBehindStatementRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.checkstyle" class="NoWhitespaceAfterTest" method="bitwiseNot" priority="3">
+请不要使用行尾注释
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/NoWhitespaceBeforeTest.java">
+<violation beginline="20" endline="20" begincolumn="29" endcolumn="29" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="NoWhitespaceBeforeTest" method="testMethod" priority="3">
+魔法值【5】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/RegexpTest.java">
+<violation beginline="16" endline="16" begincolumn="9" endcolumn="9" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.checkstyle" class="RegexpTest" method="testMethod" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/StringLiteralEqualityTest.java">
+<violation beginline="16" endline="16" begincolumn="20" endcolumn="25" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="StringLiteralEqualityTest" method="testMethod" priority="3">
+魔法值【"test"】
+</violation>
+<violation beginline="21" endline="21" begincolumn="13" endcolumn="18" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.checkstyle" class="StringLiteralEqualityTest" method="testMethod" priority="3">
+魔法值【"test"】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/ThrowsCountTest.java">
+<violation beginline="28" endline="29" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception1" priority="2">
+【Exception1】命名应以Exception结尾
+</violation>
+<violation beginline="31" endline="32" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception2" priority="2">
+【Exception2】命名应以Exception结尾
+</violation>
+<violation beginline="34" endline="35" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception3" priority="2">
+【Exception3】命名应以Exception结尾
+</violation>
+<violation beginline="37" endline="38" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception4" priority="2">
+【Exception4】命名应以Exception结尾
+</violation>
+<violation beginline="40" endline="41" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception5" priority="2">
+【Exception5】命名应以Exception结尾
+</violation>
+<violation beginline="43" endline="44" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception6" priority="2">
+【Exception6】命名应以Exception结尾
+</violation>
+<violation beginline="46" endline="47" begincolumn="1" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="Exception7" priority="2">
+【Exception7】命名应以Exception结尾
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/checkstyle/typeNameTest.java">
+<violation beginline="11" endline="13" begincolumn="8" endcolumn="1" rule="ClassNamingShouldBeCamelRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.checkstyle" class="typeNameTest" priority="3">
+【typeNameTest】不符合UpperCamelCase命名风格
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidComplexConditionRuleTest.java">
+<violation beginline="20" endline="20" begincolumn="9" endcolumn="9" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidComplexConditionRuleTest" method="testMethod" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+<violation beginline="20" endline="20" begincolumn="27" endcolumn="30" rule="AvoidCommentBehindStatementRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidComplexConditionRuleTest" method="testMethod" priority="3">
+请不要使用行尾注释
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidConcurrentCompetitionRandomRuleTest.java">
+<violation beginline="16" endline="16" begincolumn="33" endcolumn="38" rule="ConstantFieldShouldBeUpperCaseRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidConcurrentCompetitionRandomRuleTest" variable="random" priority="2">
+常量【random】命名应全部大写并以下划线分隔
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidDoubleOrFloatEqualCompareRuleTest.java">
+<violation beginline="16" endline="16" begincolumn="13" endcolumn="18" rule="AvoidDoubleOrFloatEqualCompareRule" ruleset="AlibabaJavaOthers" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidDoubleOrFloatEqualCompareRuleTest" method="testMethod" priority="2">
+浮点数之间的等值判断，基本数据类型不能用==来比较，包装数据类型不能用equals来判断。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidManuallyCreateThreadRuleTest.java">
+<violation beginline="14" endline="16" begincolumn="25" endcolumn="10" rule="AvoidManuallyCreateThreadRule" ruleset="AlibabaJavaConcurrent" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidManuallyCreateThreadRuleTest" method="testMethod" priority="2">
+不要显式创建线程，请使用线程池。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidMissUseOfMathRandomRuleTest.java">
+<violation beginline="17" endline="17" begincolumn="36" endcolumn="48" rule="AvoidMissUseOfMathRandomRule" ruleset="AlibabaJavaOthers" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidMissUseOfMathRandomRuleTest" method="testMethod" priority="3">
+注意 Math.random() 这个方法返回是double类型，注意取值的范围[0,1)（能够取到零值，注意除零异常），如果想获取整数类型的随机数，不要将x放大10的若干倍然后取整，直接使用Random对象的nextInt或者nextLong方法。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidNegationOperatorRuleTest.java">
+<violation beginline="14" endline="14" begincolumn="13" endcolumn="23" rule="AvoidNegationOperatorRule" ruleset="AlibabaJavaFlowControl" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidNegationOperatorRuleTest" method="testMethod" priority="3">
+"!"运算符不利于快速理解。
+</violation>
+<violation beginline="14" endline="14" begincolumn="20" endcolumn="22" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidNegationOperatorRuleTest" method="testMethod" priority="3">
+魔法值【628】
+</violation>
+<violation beginline="19" endline="19" begincolumn="17" endcolumn="19" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidNegationOperatorRuleTest" method="testMethod" priority="3">
+魔法值【628】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidNewDateGetTimeRuleTest.java">
+<violation beginline="19" endline="19" begincolumn="18" endcolumn="37" rule="AvoidNewDateGetTimeRule" ruleset="AlibabaJavaOthers" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidNewDateGetTimeRuleTest" method="testMethod" priority="1">
+请使用System.currentTimeMillis()代替new Date().getTime()
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidPatternCompileInMethodRuleTest.java">
+<violation beginline="19" endline="19" begincolumn="16" endcolumn="40" rule="AvoidPatternCompileInMethodRule" ruleset="AlibabaJavaOthers" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidPatternCompileInMethodRuleTest" method="getNumberPattern" priority="1">
+在使用正则表达式时，利用好其预编译功能，可以有效加快正则匹配速度。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/AvoidReturnInFinallyRuleTest.java">
+<violation beginline="27" endline="27" begincolumn="13" endcolumn="22" rule="AvoidReturnInFinallyRule" ruleset="AlibabaJavaExceptions" package="com.sctelcp.checkstyle.sample.pmd" class="AvoidReturnInFinallyRuleTest" method="readFileLength1" priority="2">
+请不要在finally中使用return
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/ClassCastExceptionWithSubListToArrayListRuleTest.java">
+<violation beginline="22" endline="22" begincolumn="9" endcolumn="65" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="ClassCastExceptionWithSubListToArrayListRuleTest" method="testMethod" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/ClassCastExceptionWithToArrayRuleTest.java">
+<violation beginline="24" endline="24" begincolumn="9" endcolumn="55" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="ClassCastExceptionWithToArrayRuleTest" method="testMethod" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/DontModifyInForeachCircleRuleTest.java">
+<violation beginline="24" endline="24" begincolumn="9" endcolumn="52" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="DontModifyInForeachCircleRuleTest" method="testMethod" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+<violation beginline="28" endline="28" begincolumn="17" endcolumn="20" rule="AvoidCommentBehindStatementRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="DontModifyInForeachCircleRuleTest" method="testMethod" priority="3">
+请不要使用行尾注释
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/EqualsAvoidNullRuleTest.java">
+<violation beginline="15" endline="15" begincolumn="13" endcolumn="16" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.pmd" class="EqualsAvoidNullRuleTest" method="f" priority="3">
+魔法值【"hi"】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/ExceptionClassShouldEndWithExceptionRuleTest.java">
+<violation beginline="11" endline="15" begincolumn="8" endcolumn="1" rule="ExceptionClassShouldEndWithExceptionRule" ruleset="AlibabaJavaNaming" package="com.sctelcp.checkstyle.sample.pmd" class="ExceptionClassShouldEndWithExceptionRuleTest" priority="2">
+【ExceptionClassShouldEndWithExceptionRuleTest】命名应以Exception结尾
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/MethodReturnWrapperTypeRuleTest.java">
+<violation beginline="18" endline="18" begincolumn="12" endcolumn="5" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="MethodReturnWrapperTypeRuleTest" method="method" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/PojoNoDefaultValueRuleTest.java">
+<violation beginline="17" endline="17" begincolumn="19" endcolumn="34" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="PojoNoDefaultValueRuleTest" variable="VariableDeclaratorId" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/ThreadLocalShouldRemoveRuleTest.java">
+<violation beginline="13" endline="13" begincolumn="46" endcolumn="62" rule="ThreadLocalShouldRemoveRule" ruleset="AlibabaJavaConcurrent" package="com.sctelcp.checkstyle.sample.pmd" class="ThreadLocalShouldRemoveRuleTest" variable="USER_THREAD_LOCAL" priority="2">
+ThreadLocal字段【USER_THREAD_LOCAL】应该至少调用一次remove()方法。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/ThreadPoolCreationRuleTest.java">
+<violation beginline="21" endline="21" begincolumn="33" endcolumn="64" rule="ThreadPoolCreationRule" ruleset="AlibabaJavaConcurrent" package="com.sctelcp.checkstyle.sample.pmd" class="ThreadPoolCreationRuleTest" method="testMethod" priority="1">
+手动创建线程池，效果会更好哦。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/ThreadShouldSetNameRuleTest.java">
+<violation beginline="24" endline="24" begincolumn="9" endcolumn="92" rule="RemoveCommentedCodeRule" ruleset="AlibabaJavaComments" package="com.sctelcp.checkstyle.sample.pmd" class="ThreadShouldSetNameRuleTest" method="testMethod" priority="3">
+及时清理不再使用的代码段或配置信息。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/UndefineMagicConstantRuleTest.java">
+<violation beginline="21" endline="21" begincolumn="13" endcolumn="37" rule="EqualsAvoidNullRule" ruleset="AlibabaJavaOop" package="com.sctelcp.checkstyle.sample.pmd" class="UndefineMagicConstantRuleTest" method="testMethod" priority="2">
+【keykey】应该作为equals的参数，而不是调用方
+</violation>
+<violation beginline="21" endline="21" begincolumn="24" endcolumn="36" rule="UndefineMagicConstantRule" ruleset="AlibabaJavaConstants" package="com.sctelcp.checkstyle.sample.pmd" class="UndefineMagicConstantRuleTest" method="testMethod" priority="3">
+魔法值【"Id#taobao_1"】
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/UnsupportedExceptionWithModifyAsListRuleTest.java">
+<violation beginline="19" endline="19" begincolumn="9" endcolumn="13" rule="UnsupportedExceptionWithModifyAsListRule" ruleset="AlibabaJavaSets" package="com.sctelcp.checkstyle.sample.pmd" class="UnsupportedExceptionWithModifyAsListRuleTest" method="testMethod" priority="2">
+这里使用【t.add】可能会导致UnsupportedOperationException
+</violation>
+<violation beginline="20" endline="20" begincolumn="9" endcolumn="16" rule="UnsupportedExceptionWithModifyAsListRule" ruleset="AlibabaJavaSets" package="com.sctelcp.checkstyle.sample.pmd" class="UnsupportedExceptionWithModifyAsListRuleTest" method="testMethod" priority="2">
+这里使用【t.remove】可能会导致UnsupportedOperationException
+</violation>
+<violation beginline="21" endline="21" begincolumn="9" endcolumn="15" rule="UnsupportedExceptionWithModifyAsListRule" ruleset="AlibabaJavaSets" package="com.sctelcp.checkstyle.sample.pmd" class="UnsupportedExceptionWithModifyAsListRuleTest" method="testMethod" priority="2">
+这里使用【t.clear】可能会导致UnsupportedOperationException
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/UseRightCaseForDateFormatRuleTest.java">
+<violation beginline="19" endline="19" begincolumn="67" endcolumn="87" rule="UseRightCaseForDateFormatRule" ruleset="AlibabaJavaOthers" package="com.sctelcp.checkstyle.sample.pmd" class="UseRightCaseForDateFormatRuleTest" priority="2">
+日期格式化字符串[YYYY-MM-dd HH:mm:ss]使用错误，应注意使用小写‘y’表示当天所在的年，大写‘Y’代表week in which year。
+</violation>
+</file>
+<file name="/Users/dong4j/Developer/0.Worker/sctelcp/sctelcp.stack.microservices/business/code-quality-test-service/src/main/java/com/sctelcp/checkstyle/sample/pmd/WrapperTypeEqualityRuleTest.java">
+<violation beginline="21" endline="21" begincolumn="13" endcolumn="18" rule="WrapperTypeEqualityRule" ruleset="AlibabaJavaOop" package="com.sctelcp.checkstyle.sample.pmd" class="WrapperTypeEqualityRuleTest" method="testMethod" priority="1">
+应使用equals方法代替==
+</violation>
+</file>
+</pmd>

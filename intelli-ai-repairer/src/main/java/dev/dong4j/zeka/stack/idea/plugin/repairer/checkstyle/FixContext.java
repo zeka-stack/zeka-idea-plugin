@@ -17,5 +17,16 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
  * @date 2026.01.20
  * @since 1.0.0
  */
-record FixContext(CodeViolation violation, String targetText) {
+record FixContext(CodeViolation violation, String targetText, String surroundingContext) {
+    /**
+     * 构造函数, 用于创建修复上下文实例
+     * <p> 初始化修复上下文, 指定违规项, 目标文本和周围上下文 (默认为空字符串)
+     *
+     * @param violation  违规项对象, 表示代码中违反规范的部分
+     * @param targetText 目标文本, 即需要被修复的具体代码片段
+     * @since 1.0.0
+     */
+    public FixContext(CodeViolation violation, String targetText) {
+        this(violation, targetText, "");
+    }
 }
