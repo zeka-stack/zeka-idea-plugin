@@ -180,8 +180,9 @@ public class StreamRequestExecutor {
         ParseContext parseContext = new ParseContext();
         boolean[] inThinking = {false};
         boolean[] thinkPrefixPrinted = {false};
+        boolean[] hasThinking = {false};
+        boolean[] lengthNoticeSent = {false};
         boolean[] contentStarted = {false};
-        int[] contentNewlineStreak = {0};
         int[] thinkingNewlineStreak = {0};
         UsageStats usageStats = null;
         try (BufferedReader reader = new BufferedReader(
@@ -216,6 +217,15 @@ public class StreamRequestExecutor {
                     }
                     RawStreamChunk rawChunk = RawStreamChunk.fromJson(json);
                     boolean done = rawChunk.isDone();
+                    if (!lengthNoticeSent[0]) {
+                        String finishReason = rawChunk.finishReason();
+                        if (finishReason != null && "length".equalsIgnoreCase(finishReason)) {
+                            String notice = AICommonBundle.message("stream.response.finish.length");
+                            AIConsoleLoggerUtil.printStreamPlain(project, notice + "\n");
+                            listener.onNotice(notice);
+                            lengthNoticeSent[0] = true;
+                        }
+                    }
                     if (isCancelled(cancellationToken)) {
                         connection.disconnect();
                         break;
@@ -225,6 +235,7 @@ public class StreamRequestExecutor {
                             return;
                         }
                         if (chunk.type() == StreamChunkType.THINKING) {
+                            hasThinking[0] = true;
                             String thinking = normalizeStreamNewlines(chunk.text(), thinkingNewlineStreak);
                             if (thinking.isEmpty()) {
                                 return;
@@ -238,24 +249,21 @@ public class StreamRequestExecutor {
                             return;
                         }
                         if (chunk.type() == StreamChunkType.CONTENT) {
-                            if (inThinking[0]) {
+                            if (hasThinking[0]) {
                                 AIConsoleLoggerUtil.printStreamPlain(
                                     project,
                                     AICommonBundle.message("stream.response.content.body.divider"));
                                 inThinking[0] = false;
                                 thinkPrefixPrinted[0] = false;
+                                hasThinking[0] = false;
                             }
                             String content = trimLeadingNewlines(chunk.text(), contentStarted);
                             if (content.isEmpty()) {
                                 return;
                             }
-                            String normalizedContent = normalizeStreamNewlines(content, contentNewlineStreak);
-                            if (normalizedContent.isEmpty()) {
-                                return;
-                            }
-                            fullText.append(normalizedContent);
-                            AIConsoleLoggerUtil.printStreamPlain(project, normalizedContent);
-                            listener.onChunk(normalizedContent);
+                            fullText.append(content);
+                            AIConsoleLoggerUtil.printStreamPlain(project, content);
+                            listener.onChunk(content);
                         }
                     });
                     if (done) {
@@ -320,7 +328,7 @@ public class StreamRequestExecutor {
             inThinking[0] = true;
         }
         if (!thinkPrefixPrinted[0]) {
-            AIConsoleLoggerUtil.printStreamPlain(project, AICommonBundle.message("stream.response.thinking.prefix") + " " + thinking);
+            AIConsoleLoggerUtil.printStreamPlain(project, AICommonBundle.message("stream.response.thinking.prefix") + "\n" + thinking);
             thinkPrefixPrinted[0] = true;
             return;
         }
@@ -356,7 +364,7 @@ public class StreamRequestExecutor {
     }
 
     /**
-     * 归一化流式文本中的换行, 将连续空行压缩为单个换行.
+     * 归一化流式文本中的换行, 将连续空行压缩为最多 1 个空行.
      *
      * @param text           原始文本片段
      * @param newlineStreak  换行连续计数, 用于跨 chunk 处理
@@ -378,10 +386,10 @@ public class StreamRequestExecutor {
                 ch = '\n';
             }
             if (ch == '\n') {
-                if (newlineStreak[0] >= 1) {
+                if (newlineStreak[0] >= 2) {
                     continue;
                 }
-                newlineStreak[0] = 1;
+                newlineStreak[0] += 1;
                 builder.append('\n');
                 continue;
             }
@@ -448,6 +456,22 @@ public class StreamRequestExecutor {
                          usageStats.totalTokens());
     }
 
+    /**
+     * Token 使用统计数据记录类
+     * <p> 用于封装和存储 AI 服务请求中消耗的 Token 数量信息, 包括 Prompt Token,Completion Token 和总 Token 数量.
+     * <p> 该记录类为不可变数据结构, 适用于在流式响应或请求完成后传递 Token 使用统计信息, 便于日志记录, 费用计算或性能分析.
+     * <p> 示例使用场景:
+     * <pre>{@code
+     * UsageStats stats = new UsageStats(100, 50, 150);
+     * System.out.println(stats.promptTokens()); // 输出 100
+     * }</pre>
+     *
+     * @author dong4j
+     * @version 1.0.0
+     * @email "mailto:dong4j@gmail.com"
+     * @date 2026.02.01
+     * @since 1.0.0
+     */
     private record UsageStats(int promptTokens, int completionTokens, int totalTokens) {
     }
 

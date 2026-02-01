@@ -120,6 +120,15 @@ public final class RawStreamChunk {
     }
 
     /**
+     * 获取结束原因
+     *
+     * @return 结束原因字符串, 如果未设置则返回 null
+     */
+    public @Nullable String finishReason() {
+        return finishReason;
+    }
+
+    /**
      * 检查流式数据块是否已完成
      * <p> 通过比较 finishReason 是否为 "stop"(忽略大小写) 来判断流是否结束
      *

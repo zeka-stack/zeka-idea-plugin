@@ -10,22 +10,29 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import com.intellij.ui.RowIcon;
 import com.intellij.util.ui.JBUI;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
+
+import javax.swing.Icon;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIProviderUtils;
 import icons.AICommonIcons;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.Supplier;
 
 /**
  * AI 服务商选择菜单构建器
