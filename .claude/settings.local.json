@@ -17,6 +17,8 @@
       "mcp__jetbrains__get_all_open_file_paths",
       "WebFetch(domain:www.jetbrains.com)",
       "WebFetch(domain:blog.jetbrains.com)",
+      "Bash(git pull:*)"
+      "WebFetch(domain:blog.jetbrains.com)",
       "mcp__zai-mcp-server__analyze_image",
       "mcp__fetch__fetch"
     ],
