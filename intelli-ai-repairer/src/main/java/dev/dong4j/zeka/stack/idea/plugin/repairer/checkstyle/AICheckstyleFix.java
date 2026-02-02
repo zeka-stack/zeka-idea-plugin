@@ -159,14 +159,14 @@ public class AICheckstyleFix implements LocalQuickFix {
                     return;
                 }
 
-                if (fixedCode.isBlank()) {
-                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.empty"));
+                String diff = FixResponseValidator.extractUnifiedDiff(fixedCode);
+                if (diff.isBlank()) {
+                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.diff.invalid"));
                     return;
                 }
-
-                String result = FixResponseValidator.normalize(fixedCode);
+                String result = FixResponseValidator.applyUnifiedDiffToSnippet(originalSnippet, diff);
                 if (result.isBlank()) {
-                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.empty"));
+                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.diff.invalid"));
                     return;
                 }
                 ApplicationManager.getApplication().invokeLater(() ->

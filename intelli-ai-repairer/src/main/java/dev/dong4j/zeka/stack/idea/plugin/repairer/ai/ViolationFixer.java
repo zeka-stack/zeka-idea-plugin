@@ -90,13 +90,18 @@ public final class ViolationFixer {
                     NotificationUtil.showError(project, RepairerBundle.message("error.ai.failed", e.getMessage()));
                     return;
                 }
-                String normalized = FixResponseValidator.normalize(fixedCode);
-                if (normalized.isBlank()) {
-                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.empty"));
+                String diff = FixResponseValidator.extractUnifiedDiff(fixedCode);
+                if (diff.isBlank()) {
+                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.diff.invalid"));
+                    return;
+                }
+                String patched = FixResponseValidator.applyUnifiedDiffToSnippet(originalSnippet, diff);
+                if (patched.isBlank()) {
+                    NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.diff.invalid"));
                     return;
                 }
                 ApplicationManager.getApplication().invokeLater(() ->
-                                                                    PatchApplier.apply(project, file, range, originalSnippet, normalized));
+                                                                    PatchApplier.apply(project, file, range, originalSnippet, patched));
             }
         }.queue();
     }

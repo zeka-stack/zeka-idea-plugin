@@ -31,7 +31,8 @@ public final class FixPromptBuilder {
         return """
             你是一个 IntelliJ IDEA 插件中的代码修复引擎。
             你只允许修改提供的代码片段，不得假设其他上下文。
-            不要输出解释，只返回修复后的代码片段本身。
+            你必须输出统一 diff（unified diff），不要输出解释。
+            diff 必须只包含对给定代码片段的修改，文件名固定为 a/snippet 和 b/snippet。
             """;
     }
 
@@ -63,7 +64,9 @@ public final class FixPromptBuilder {
             - 保持原有语义不变
             - 修复该规则问题
             - 不引入额外格式化
-            - 返回完整替换后的代码片段
+            - 仅输出统一 diff（unified diff）
+            - diff 只针对上述片段，文件名使用 a/snippet 和 b/snippet
+            - 不要输出任何解释或额外文本
             """.formatted(
             violation.tool,
             violation.ruleId,
@@ -107,7 +110,9 @@ public final class FixPromptBuilder {
             - 保持与原始代码相同的缩进和格式
             - 不引入额外的变量或方法
             - 不改变代码的执行逻辑
-            - 返回完整替换后的代码片段，不要添加任何解释
+            - 仅输出统一 diff（unified diff）
+            - diff 只针对上述片段，文件名使用 a/snippet 和 b/snippet
+            - 不要输出任何解释或额外文本
             """.formatted(
             violation.tool,
             violation.ruleId,
