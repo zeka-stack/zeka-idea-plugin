@@ -29,6 +29,12 @@ public final class ViolationCache {
      * @see CodeViolation
      */
     private volatile List<CodeViolation> violations = Collections.emptyList();
+    /**
+     * 违规模型缓存监听器列表
+     * <p> 使用 CopyOnWriteArrayList 实现线程安全的监听器管理, 支持动态添加和移除监听器
+     *
+     * @see ViolationCacheListener
+     */
     private final CopyOnWriteArrayList<ViolationCacheListener> listeners = new CopyOnWriteArrayList<>();
 
     /**
@@ -84,6 +90,10 @@ public final class ViolationCache {
         listeners.remove(listener);
     }
 
+    /**
+     * 通知所有已注册的监听器违规项已更新
+     * <p> 遍历当前所有已注册的 {@link ViolationCacheListener}, 调用其 {@code violationsUpdated} 方法, 将最新的违规列表传递给监听器
+     */
     private void notifyListeners() {
         for (ViolationCacheListener listener : listeners) {
             listener.violationsUpdated(violations);
