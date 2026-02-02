@@ -61,9 +61,15 @@ public class RepairerAIResponseListener implements AIResponseListener {
     public void onResponse(String providerName, String modelName, String responseBody, boolean validation) {
         AIConsoleLoggerUtil.printWithTimestamp(project,
                                                String.format("响应: %s - %s", providerName, modelName));
-        if (responseBody != null && !responseBody.isEmpty()) {
-            AIConsoleLoggerUtil.print(project, responseBody);
+        if (responseBody == null || responseBody.isEmpty()) {
+            return;
         }
+        String content = extractContent(responseBody);
+        if (content.isBlank()) {
+            return;
+        }
+        String structured = formatDiffContent(content);
+        AIConsoleLoggerUtil.print(project, structured);
     }
 
     /**
@@ -82,5 +88,86 @@ public class RepairerAIResponseListener implements AIResponseListener {
         AIConsoleLoggerUtil.print(project,
                                   String.format("Token 使用: %s | %s | Prompt: %d | Completion: %d | Total: %d",
                                                 providerName, modelName, promptTokens, completionTokens, totalTokens));
+    }
+
+    /**
+     * 从 JSON 响应体中提取 content 字段的值
+     * <p> 根据固定标记 <code>"content":</code> 定位内容起始位置, 然后解析后续的 JSON 字符串内容, 支持转义字符处理, 直到遇到结束引号为止.
+     * <p> 若未找到标记或起始引号, 则返回空字符串.
+     *
+     * @param responseBody 原始响应体字符串, 可能包含 JSON 格式数据
+     * @return 提取的 content 字段内容字符串, 若未找到或解析失败则返回空字符串
+     */
+    private static String extractContent(String responseBody) {
+        String marker = "\"content\":";
+        int idx = responseBody.indexOf(marker);
+        if (idx < 0) {
+            return "";
+        }
+        int start = responseBody.indexOf('"', idx + marker.length());
+        if (start < 0) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        boolean escape = false;
+        for (int i = start + 1; i < responseBody.length(); i++) {
+            char c = responseBody.charAt(i);
+            if (escape) {
+                switch (c) {
+                    case 'n' -> sb.append('\n');
+                    case 'r' -> sb.append('\r');
+                    case 't' -> sb.append('\t');
+                    case '"' -> sb.append('"');
+                    case '\\' -> sb.append('\\');
+                    default -> sb.append(c);
+                }
+                escape = false;
+                continue;
+            }
+            if (c == '\\') {
+                escape = true;
+                continue;
+            }
+            if (c == '"') {
+                break;
+            }
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 格式化差异内容为特定结构的字符串
+     * <p> 将原始差异内容进行处理, 过滤出 diff 块, 文件头和代码变更行, 并统计 hunk 数量.
+     *
+     * @param content 需要格式化的原始差异内容字符串
+     * @return 格式化后的字符串, 包含 "[AI Diff]" 标识, 差异内容以及 "[Hunks] X" 的统计信息, 其中 X 为 hunk 数量
+     */
+    private static String formatDiffContent(String content) {
+        String diff = content.trim();
+        if (diff.isEmpty()) {
+            return "";
+        }
+        String[] lines = diff.split("\n");
+        StringBuilder out = new StringBuilder();
+        out.append("[AI Diff]\n");
+        int hunkCount = 0;
+        for (String line : lines) {
+            if (line.startsWith("diff --git") || line.startsWith("---") || line.startsWith("+++")) {
+                out.append(line).append("\n");
+                continue;
+            }
+            if (line.startsWith("@@")) {
+                hunkCount++;
+                out.append(line).append("\n");
+                continue;
+            }
+            if (line.startsWith("+") || line.startsWith("-") || line.startsWith(" ")) {
+                out.append(line).append("\n");
+                continue;
+            }
+        }
+        out.append("[Hunks] ").append(hunkCount);
+        return out.toString();
     }
 }

@@ -19,6 +19,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.PatchApplier;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 
@@ -108,13 +109,18 @@ public final class ViolationFixer {
 
     /**
      * 选择 AI 提供者配置
-     * <p> 从 AI 服务的全局设置中获取已验证的提供者配置列表,
-     * 如果列表不为空则返回第一个配置, 否则返回默认配置 </p>
+     * <p>
+     * 优先使用 Repairer 插件设置页中选择的服务商；未配置时从全局已验证列表取第一个，否则取默认配置。
+     * </p>
      *
-     * @param aiService AI 服务实例, 用于获取全局设置和提供者配置
-     * @return AI 提供者配置, 如果存在已验证的配置则返回第一个, 否则返回默认配置
+     * @param aiService AI 服务实例
+     * @return AI 提供者配置，可能为 null
      */
     private static AIProviderConfig selectProviderConfig(@NotNull AIService aiService) {
+        SettingsState repairerSettings = SettingsState.getInstance();
+        if (repairerSettings != null && repairerSettings.providerConfig != null) {
+            return repairerSettings.providerConfig;
+        }
         AIProviderSettings settings = aiService.getGlobalSettings();
         List<AIProviderConfig> verified = settings.getVerifiedProviders();
         if (!verified.isEmpty()) {

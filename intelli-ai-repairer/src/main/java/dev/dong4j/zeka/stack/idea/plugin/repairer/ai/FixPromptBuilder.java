@@ -1,124 +1,120 @@
 package dev.dong4j.zeka.stack.idea.plugin.repairer.ai;
 
+import org.jetbrains.annotations.NotNull;
+
+import dev.dong4j.zeka.stack.idea.plugin.repairer.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 
 /**
  * 代码修复提示构造器
- * <p> 此工具类提供用于 IntelliJ IDEA 插件中代码修复引擎的两类提示文本: 系统提示和用户提示.</p>
- * <p> 系统提示告知修复引擎的基本行为约束, 用户提示则包含静态分析工具检测出的违规信息以及需要修改的代码片段, 确保修复过程仅针对指定片段且保持原有逻辑.</p>
+ * <p>
+ * 从 {@link SettingsState} 读取提示词模板，替换占位符后返回最终提示文本。
+ * 系统提示、用户提示、增强版用户提示均可在设置页中配置。
+ * </p>
  *
  * @author dong4j
  * @version 1.0.0
- * @email mailto:dong4j@gmail.com
- * @date 2026.01.20
  * @since 2025.3.1200
  */
 public final class FixPromptBuilder {
     /**
-     * 私有构造函数, 用于防止外部实例化
-     * <p> 该构造函数为私有, 确保 FixPromptBuilder 类不能被外部直接创建实例
+     * 私有构造函数, 防止外部实例化此类
+     * <p> 这是一个工具类, 所有方法都是静态的, 因此不需要实例化
      */
     private FixPromptBuilder() {
     }
 
     /**
-     * 返回 IntelliJ IDEA 插件中代码修复引擎使用的系统提示字符串.<br>
-     * 该提示说明了引擎的角色, 使用限制以及响应格式, 所有信息均为多行文本.<br>
+     * 返回当前生效的系统提示词
+     * <p>
+     * 优先使用 Repairer 设置中的系统提示词；未配置或为空时使用默认。
+     * </p>
      *
-     * @return 系统提示字符串
+     * @return 系统提示词，不为 null
      */
+    @NotNull
     public static String systemPrompt() {
-        return """
-            你是一个 IntelliJ IDEA 插件中的代码修复引擎。
-            你只允许修改提供的代码片段，不得假设其他上下文。
-            你必须输出统一 diff（unified diff），不要输出解释。
-            diff 必须只包含对给定代码片段的修改，文件名固定为 a/snippet 和 b/snippet。
-            """;
+        SettingsState settings = SettingsState.getInstance();
+        if (settings != null && settings.systemPrompt != null && !settings.systemPrompt.isBlank()) {
+            return settings.systemPrompt;
+        }
+        return SettingsState.getDefaultSystemPrompt();
     }
 
     /**
-     * 生成用户提示信息字符串
-     * <p> 根据给定的 CodeViolation 对象和代码片段, 生成一个包含规则信息和原始代码片段的提示信息字符串.
-     * 提示信息用于指导代码修复, 确保仅修改指定的代码片段, 并保持原有语义不变.
+     * 根据用户提示词模板与违规、代码片段生成用户提示
+     * <p>
+     * 模板占位符：{tool}、{ruleId}、{message}、{snippet}。
+     * </p>
      *
-     * @param violation 包含工具名, 规则 ID 和描述的 CodeViolation 对象
+     * @param violation 违规信息
      * @param snippet   原始代码片段
-     * @return 包含规则信息和原始代码片段的提示信息字符串
+     * @return 替换占位符后的用户提示
      */
-    public static String userPrompt(CodeViolation violation, String snippet) {
-        return """
-            以下是静态代码分析工具检测出的代码问题。
-
-            【规则信息】
-            - 工具：%s
-            - Rule：%s
-            - 描述：%s
-
-            【原始代码片段】
-            <<<CODE>>>
-            %s
-            <<<END>>>
-
-            【要求】
-            - 仅修改上述代码片段
-            - 保持原有语义不变
-            - 修复该规则问题
-            - 不引入额外格式化
-            - 仅输出统一 diff（unified diff）
-            - diff 只针对上述片段，文件名使用 a/snippet 和 b/snippet
-            - 不要输出任何解释或额外文本
-            """.formatted(
-            violation.tool,
-            violation.ruleId,
-            violation.message,
-            snippet
-                         );
+    @NotNull
+    public static String userPrompt(@NotNull CodeViolation violation, @NotNull String snippet) {
+        String template = getEffectiveUserPromptTemplate();
+        return template
+            .replace("{tool}", violation.tool)
+            .replace("{ruleId}", violation.ruleId)
+            .replace("{message}", violation.message)
+            .replace("{snippet}", snippet);
     }
 
     /**
-     * 生成增强版用户提示信息字符串, 用于指导代码修复引擎在保留上下文的前提下仅修改指定代码片段
-     * <p> 该方法结合规则信息, 原始代码片段和上下文信息, 生成结构化提示, 确保修复过程精准, 安全, 语义不变 </p>
+     * 根据增强版用户提示词模板与违规、代码片段、上下文生成用户提示
+     * <p>
+     * 模板占位符：{tool}、{ruleId}、{message}、{snippet}、{context}。
+     * </p>
      *
-     * @param violation          包含工具名, 规则 ID 和描述的 CodeViolation 对象
-     * @param snippet            原始代码片段, 将被替换或修复的部分
-     * @param surroundingContext 与原始代码片段相邻的上下文内容, 用于提供语义背景, 但不得被修改
-     * @return 包含规则信息, 原始代码片段, 上下文信息及修复要求的完整提示字符串
+     * @param violation          违规信息
+     * @param snippet            原始代码片段
+     * @param surroundingContext 上下文内容
+     * @return 替换占位符后的用户提示
      */
-    public static String enhancedUserPrompt(CodeViolation violation, String snippet, String surroundingContext) {
-        return """
-            以下是静态代码分析工具检测出的代码问题。
+    @NotNull
+    public static String enhancedUserPrompt(@NotNull CodeViolation violation,
+                                            @NotNull String snippet,
+                                            @NotNull String surroundingContext) {
+        String template = getEffectiveEnhancedUserPromptTemplate();
+        return template
+            .replace("{tool}", violation.tool)
+            .replace("{ruleId}", violation.ruleId)
+            .replace("{message}", violation.message)
+            .replace("{snippet}", snippet)
+            .replace("{context}", surroundingContext);
+    }
 
-            【规则信息】
-            - 工具：%s
-            - Rule：%s
-            - 描述：%s
+    /**
+     * 获取当前生效的用户提示词模板
+     * <p>
+     * 优先使用 {@link SettingsState} 中配置的用户提示词模板; 若未配置或为空, 则返回默认模板.
+     * </p>
+     *
+     * @return 生效的用户提示词模板, 不为 null
+     */
+    @NotNull
+    private static String getEffectiveUserPromptTemplate() {
+        SettingsState settings = SettingsState.getInstance();
+        if (settings != null && settings.userPromptTemplate != null && !settings.userPromptTemplate.isBlank()) {
+            return settings.userPromptTemplate;
+        }
+        return SettingsState.getDefaultUserPromptTemplate();
+    }
 
-            【原始代码片段】
-            <<<CODE>>>
-            %s
-            <<<END>>>
-
-            【上下文信息】
-            <<<CONTEXT>>>
-            %s
-            <<<END>>>
-
-            【要求】
-            - 仅修改上述代码片段，不得修改上下文
-            - 保持原有语义不变
-            - 修复该规则问题
-            - 保持与原始代码相同的缩进和格式
-            - 不引入额外的变量或方法
-            - 不改变代码的执行逻辑
-            - 仅输出统一 diff（unified diff）
-            - diff 只针对上述片段，文件名使用 a/snippet 和 b/snippet
-            - 不要输出任何解释或额外文本
-            """.formatted(
-            violation.tool,
-            violation.ruleId,
-            violation.message,
-            snippet,
-            surroundingContext
-                         );
+    /**
+     * 获取当前生效的增强版用户提示词模板
+     * <p> 优先使用设置中配置的增强版用户提示词模板; 若配置为空, 则返回默认模板.
+     *
+     * @return 当前生效的增强版用户提示词模板, 不为 null
+     */
+    @NotNull
+    private static String getEffectiveEnhancedUserPromptTemplate() {
+        SettingsState settings = SettingsState.getInstance();
+        if (settings != null && settings.enhancedUserPromptTemplate != null
+            && !settings.enhancedUserPromptTemplate.isBlank()) {
+            return settings.enhancedUserPromptTemplate;
+        }
+        return SettingsState.getDefaultEnhancedUserPromptTemplate();
     }
 }

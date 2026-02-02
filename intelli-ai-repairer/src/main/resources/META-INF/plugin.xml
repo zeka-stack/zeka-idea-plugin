@@ -13,6 +13,17 @@
     <resource-bundle>messages.RepairerBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
+        <!-- 配置持久化 -->
+        <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.repairer.settings.SettingsState"/>
+
+        <!-- 设置面板（挂在 IntelliAI Engine 下） -->
+        <!--suppress PluginXmlI18n -->
+        <applicationConfigurable
+            parentId="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
+            instance="dev.dong4j.zeka.stack.idea.plugin.repairer.settings.RepairerSettingsConfigurable"
+            id="dev.dong4j.zeka.stack.idea.plugin.repairer.settings.RepairerSettingsConfigurable"
+            displayName="🔧 IntelliAI Repairer"/>
+
         <externalAnnotator
             language="JAVA"
             implementationClass="dev.dong4j.zeka.stack.idea.plugin.repairer.annotator.StaticAnalysisAnnotator"/>
