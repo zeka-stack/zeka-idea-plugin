@@ -119,8 +119,8 @@ public class RefreshStaticReportsAction extends AnAction implements DumbAware {
     @Override
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
-        boolean enabled = project != null && isRepairerTab(e);
-        e.getPresentation().setEnabledAndVisible(enabled);
+        e.getPresentation().setVisible(project != null);
+        e.getPresentation().setEnabled(project != null);
     }
 
     /**
