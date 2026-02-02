@@ -29,7 +29,8 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.ImportStaticReportAction"
                 text="Import Static Analysis Report..."
                 description="Import Checkstyle/PMD XML report and show problems">
-            <add-to-group group-id="AnalyzeMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixSelectedProblemsAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixSelectedProblemsAction"

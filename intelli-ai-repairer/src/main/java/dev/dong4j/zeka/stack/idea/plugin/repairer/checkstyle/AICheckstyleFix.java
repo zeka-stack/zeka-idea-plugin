@@ -11,6 +11,12 @@ import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+
+import org.infernus.idea.checkstyle.checker.Problem;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
@@ -22,10 +28,6 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixResponseValidator;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.EnhancedPatchApplier;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
-import org.infernus.idea.checkstyle.checker.Problem;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.List;
 
 /**
  * AI 代码检查修复工具类
@@ -110,9 +112,6 @@ public class AICheckstyleFix implements LocalQuickFix {
         String surroundingContext = getSurroundingContext(document, range);
         CodeViolation violation = toViolation();
         FixContext context = buildContext(violation, originalSnippet, surroundingContext);
-        if (context == null) {
-            return;
-        }
 
         new Task.Backgroundable(project, RepairerBundle.message("task.ai.checkstyle"), true) {
             /**
@@ -159,7 +158,7 @@ public class AICheckstyleFix implements LocalQuickFix {
                     return;
                 }
 
-                if (fixedCode == null || fixedCode.isBlank()) {
+                if (fixedCode.isBlank()) {
                     NotificationUtil.showWarning(project, RepairerBundle.message("error.ai.empty"));
                     return;
                 }
@@ -186,7 +185,7 @@ public class AICheckstyleFix implements LocalQuickFix {
         AIProviderSettings settings = aiService.getGlobalSettings();
         List<AIProviderConfig> verified = settings.getVerifiedProviders();
         if (!verified.isEmpty()) {
-            return verified.get(0);
+            return verified.getFirst();
         }
         return settings.getDefaultProviderConfig(settings.aiProviderType);
     }
