@@ -187,6 +187,13 @@ public class ImportStaticReportAction extends AnAction {
         return extension != null && "xml".equals(extension.toLowerCase(Locale.ROOT));
     }
 
+    /**
+     * 收集给定根文件中的所有 XML 文件
+     * <p> 遍历给定的根文件列表, 对于每个根文件, 如果是目录, 则递归地收集其中的所有 XML 文件; 如果不是目录但扩展名为 "xml", 则直接加入结果集合.</p>
+     *
+     * @param roots 根文件列表
+     * @return 包含所有找到的 XML 文件的集合
+     */
     private static Set<VirtualFile> collectXmlFiles(@NotNull List<VirtualFile> roots) {
         Set<VirtualFile> result = new LinkedHashSet<>();
         for (VirtualFile root : roots) {

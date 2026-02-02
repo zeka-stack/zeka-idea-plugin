@@ -300,6 +300,14 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
         return new ProblemsIndex(currentVersion, rootNodes, problemsByFile, problemsByTool);
     }
 
+    /**
+     * 统计指定工具分组下所有文件的问题总数
+     * <p> 遍历工具分组映射中的每个文件及其对应的问题列表, 对每个文件的问题数量求和, 返回总问题数.
+     * 如果输入的映射为 null 或为空, 则返回 0.
+     *
+     * @param toolFiles 工具分组映射,Key 为虚拟文件,Value 为该文件的问题列表集合, 不能为 null
+     * @return 该工具分组下所有文件的问题总数
+     */
     private static int countProblems(Map<VirtualFile, List<Problem>> toolFiles) {
         if (toolFiles == null || toolFiles.isEmpty()) {
             return 0;
@@ -307,11 +315,26 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
         return toolFiles.values().stream().mapToInt(Collection::size).sum();
     }
 
+    /**
+     * 格式化工具名称并附加问题数量
+     * <p> 将工具键转换为友好的工具名称, 并在名称后附加括号中的问题数量, 用于显示在用户界面中.
+     *
+     * @param toolKey 工具的键, 用于标识不同的代码检查工具
+     * @param count   与该工具相关的问题总数
+     * @return 格式化后的工具名称, 格式为 "工具名称 (问题数量)"
+     */
     private static String formatToolName(String toolKey, int count) {
         String name = friendlyToolName(toolKey);
         return name + " (" + count + ")";
     }
 
+    /**
+     * 将工具名称转换为友好的显示名称
+     * <p> 根据传入的工具键名, 返回对应的友好显示名称. 若工具键为 null 或空白, 则返回 "Unknown"; 若为 "CHECKSTYLE", 则返回 "Checkstyle"; 若为 "PMD", 则返回 "PMD"; 否则返回去除首尾空格后的原始名称.
+     *
+     * @param toolKey 工具键名, 可能为 null 或空白字符串
+     * @return 友好显示的工具名称, 如 "Checkstyle","PMD" 或 "Unknown"
+     */
     private static String friendlyToolName(String toolKey) {
         if (toolKey == null || toolKey.isBlank()) {
             return "Unknown";
@@ -329,11 +352,27 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
      * File node with attached problems for tool grouping.
      */
     private static final class RepairerFileNode extends Node {
+        /** 用于存储与该文件节点相关的修复问题根对象 */
         private final RepairerProblemsRoot root;
+        /** 委托的文件节点 */
         private final FileNode delegate;
+        /**
+         * 存储与文件关联的问题列表
+         * <p> 这些问题用于工具分组和显示
+         */
         private final List<Problem> problems;
+        /** 与当前节点关联的虚拟文件对象, 用于表示文件系统中的实际文件. */
         private final VirtualFile file;
 
+        /**
+         * 构造函数, 初始化 RepairerFileNode 对象
+         * <p> 根据传入的参数初始化对象属性, 并调用父类构造函数
+         *
+         * @param root     问题根对象
+         * @param parent   父节点
+         * @param file     虚拟文件对象
+         * @param problems 问题列表
+         */
         private RepairerFileNode(@NotNull RepairerProblemsRoot root,
                                  @NotNull Node parent,
                                  @NotNull VirtualFile file,
@@ -345,27 +384,60 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
             this.problems = problems;
         }
 
+        /**
+         * 获取子节点集合
+         * <p> 根据委托节点和问题列表, 从根节点获取对应的子节点集合
+         *
+         * @return 子节点集合, 类型为 {@code Collection<Node>}
+         * @since 1.0
+         */
         @Override
         public @NotNull Collection<Node> getChildren() {
             return root.getNodesForProblems(delegate, problems);
         }
 
+        /**
+         * 获取当前节点的叶子状态
+         * <p> 根据问题列表是否为空来决定节点的叶子状态. 如果问题列表为空, 则返回 ALWAYS, 否则返回 NEVER
+         *
+         * @return 节点的叶子状态
+         */
         @Override
         public @NotNull com.intellij.ui.tree.LeafState getLeafState() {
             return problems.isEmpty() ? com.intellij.ui.tree.LeafState.ALWAYS : com.intellij.ui.tree.LeafState.NEVER;
         }
 
+        /**
+         * 获取并返回文件节点对应文件的名称.
+         *
+         * <p> 此方法重写自 {@link Node#getName}, 返回存储在 {@link VirtualFile} 中的文件名.
+         *
+         * @return 文件名称, 不能为空
+         */
         @Override
         public @NotNull String getName() {
             return file.getName();
         }
 
+        /**
+         * 更新节点的显示表示数据
+         * <p> 设置节点的可显示文本为文件名, 并设置节点的图标为文件类型对应的图标
+         *
+         * @param presentation 项目的展示数据对象
+         */
         @Override
         protected void update(@NotNull com.intellij.ide.projectView.PresentationData presentation) {
             presentation.setPresentableText(file.getName());
             presentation.setIcon(file.getFileType().getIcon());
         }
 
+        /**
+         * 更新节点的展示信息
+         * <p> 根据当前项目和展示数据对象更新节点的显示状态, 调用无参数的 update 方法实现具体逻辑.
+         *
+         * @param project          当前项目对象
+         * @param presentationData 展示数据对象, 用于设置节点的显示信息
+         */
         @Override
         protected void update(@NotNull Project project, @NotNull com.intellij.ide.projectView.PresentationData presentationData) {
             update(presentationData);
