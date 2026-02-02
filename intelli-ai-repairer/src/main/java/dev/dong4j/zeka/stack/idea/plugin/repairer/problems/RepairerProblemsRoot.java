@@ -6,22 +6,12 @@ import com.intellij.analysis.problemsView.toolWindow.Node;
 import com.intellij.analysis.problemsView.toolWindow.ProblemsViewPanel;
 import com.intellij.analysis.problemsView.toolWindow.Root;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ReadAction;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiJavaFile;
-import com.intellij.psi.PsiManager;
-import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCache;
-import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCacheListener;
-import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import javax.swing.tree.TreePath;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,17 +19,19 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.swing.tree.TreePath;
+
+import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCache;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCacheListener;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 
 /**
  * Root node for the IntelliAI Repairer Problems tab.
  */
 public final class RepairerProblemsRoot extends Root implements ViolationCacheListener {
-    /** 无模块标识符, 用于表示未归属到任何模块的代码问题 */
-    private static final String NO_MODULE = "No Module";
-    /** 默认包名 */
-    private static final String DEFAULT_PACKAGE = "<default>";
 
     /**
      * 当前项目实例
@@ -81,7 +73,7 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
      */
     @Override
     public @NotNull Collection<Node> getChildren() {
-        return getProblemsIndex().moduleNodes;
+        return getProblemsIndex().rootNodes;
     }
 
     /**
@@ -234,7 +226,6 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
      */
     private ProblemsIndex buildIndex(long currentVersion) {
         Map<VirtualFile, List<Problem>> problemsByFile = new HashMap<>();
-        Map<String, ModuleBucket> modules = new TreeMap<>(String::compareToIgnoreCase);
 
         for (CodeViolation violation : cache.getAll()) {
             if (violation.filePath == null || violation.filePath.isBlank()) {
@@ -246,14 +237,6 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
             }
             RepairerProblem problem = new RepairerProblem(provider, violation, file);
             problemsByFile.computeIfAbsent(file, ignored -> new ArrayList<>()).add(problem);
-
-            Module module = ModuleUtilCore.findModuleForFile(file, project);
-            String moduleName = module != null ? module.getName() : NO_MODULE;
-            ModuleBucket moduleBucket = modules.computeIfAbsent(moduleName, name -> new ModuleBucket(module));
-
-            String packageName = resolvePackageName(file);
-            PackageBucket packageBucket = moduleBucket.packages.computeIfAbsent(packageName, ignored -> new PackageBucket());
-            packageBucket.files.computeIfAbsent(file, ignored -> new ArrayList<>()).add(problem);
         }
 
         for (List<Problem> problems : problemsByFile.values()) {
@@ -261,52 +244,22 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
                                     .thenComparingInt(RepairerProblemsRoot::problemColumn));
         }
 
-        List<Node> moduleNodes = new ArrayList<>();
-        for (Map.Entry<String, ModuleBucket> moduleEntry : modules.entrySet()) {
-            List<Node> packageNodes = new ArrayList<>();
-            RepairerModuleNode moduleNode = new RepairerModuleNode(project, moduleEntry.getKey(),
-                                                                   moduleEntry.getValue().module, packageNodes);
-            moduleNodes.add(moduleNode);
+        List<VirtualFile> sortedFiles = new ArrayList<>(problemsByFile.keySet());
+        sortedFiles.sort(Comparator.comparing(VirtualFile::getName, String::compareToIgnoreCase));
 
-            List<String> packageNames = new ArrayList<>(moduleEntry.getValue().packages.keySet());
-            packageNames.sort(String::compareToIgnoreCase);
-            for (String packageName : packageNames) {
-                List<Node> fileNodes = new ArrayList<>();
-                RepairerPackageNode packageNode = new RepairerPackageNode(moduleNode, packageName, fileNodes);
-                packageNodes.add(packageNode);
-
-                Map<VirtualFile, List<Problem>> files = moduleEntry.getValue().packages.get(packageName).files;
-                List<VirtualFile> sortedFiles = new ArrayList<>(files.keySet());
-                sortedFiles.sort(Comparator.comparing(VirtualFile::getPath, String::compareToIgnoreCase));
-                for (VirtualFile file : sortedFiles) {
-                    fileNodes.add(new FileNode(packageNode, file));
-                }
-            }
+        List<Node> fileNodes = new ArrayList<>();
+        for (VirtualFile file : sortedFiles) {
+            fileNodes.add(new FileNode(this, file));
         }
 
-        return new ProblemsIndex(currentVersion, moduleNodes, problemsByFile);
-    }
+        int problemCount = problemsByFile.values().stream().mapToInt(Collection::size).sum();
+        int fileCount = problemsByFile.size();
+        String summary = RepairerBundle.message("problems.root.summary", problemCount, fileCount);
 
-    /**
-     * 解析指定文件的包名
-     * <p> 如果是 Java 文件, 则返回其声明的包名; 否则返回其父目录名称
-     *
-     * @param file 虚拟文件对象, 不能为空
-     * @return 文件的包名, 如果无法解析则为默认包名 "<default>"
-     */
-    private String resolvePackageName(@NotNull VirtualFile file) {
-        return ReadAction.compute(() -> {
-            PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
-            if (psiFile instanceof PsiJavaFile) {
-                String packageName = ((PsiJavaFile) psiFile).getPackageName();
-                return packageName == null || packageName.isBlank() ? DEFAULT_PACKAGE : packageName;
-            }
-            VirtualFile parent = file.getParent();
-            if (parent == null) {
-                return DEFAULT_PACKAGE;
-            }
-            return parent.getName();
-        });
+        List<Node> rootNodes = new ArrayList<>();
+        rootNodes.add(new RepairerSummaryNode(project, summary, fileNodes));
+
+        return new ProblemsIndex(currentVersion, rootNodes, problemsByFile);
     }
 
     /**
@@ -338,74 +291,22 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
     }
 
     /**
-     * 模块桶类
-     * <p> 用于在代码问题索引中组织和存储模块级别的问题数据结构, 每个模块对应一个模块桶, 内部包含按包名分类的问题集合.
-     * 该类作为内部静态类, 配合 {@code RepairerProblemsRoot} 使用, 用于构建问题树结构中的模块节点.
-     * <p> 模块桶中维护一个按包名排序的映射表, 包名使用自然排序 (忽略大小写), 便于在 UI 中按模块和包结构展示问题.
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.29
-     * @since 1.0.0
-     */
-    private static final class ModuleBucket {
-        /** 所属模块信息, 不可变 */
-        private final Module module;
-        /** 包名称到包桶的映射表, 使用不区分大小写的键排序 */
-        private final Map<String, PackageBucket> packages = new TreeMap<>(String::compareToIgnoreCase);
-
-        /**
-         * 构造一个 ModuleBucket 实例
-         * <p> 使用指定的模块初始化 ModuleBucket 对象, 若模块为 null 则表示未关联模块
-         *
-         * @param module 要关联的模块对象, 可以为 null
-         */
-        private ModuleBucket(@Nullable Module module) {
-            this.module = module;
-        }
-    }
-
-    /**
-     * 包桶类
-     * <p> 用于在构建问题索引时按包结构组织文件及其对应的问题列表
-     *
-     * @author dong4j
-     * @version 1.0.0
-     * @email "mailto:dong4j@gmail.com"
-     * @date 2026.01.29
-     * @since x.x.x
-     */
-    private static final class PackageBucket {
-        /** 虚拟文件到问题列表的映射 */
-        private final Map<VirtualFile, List<Problem>> files = new HashMap<>();
-    }
-
-    /**
      * 问题索引数据类, 用于存储和管理问题相关的结构化数据
      * <p> 该类主要用于缓存和组织由 {@link RepairerProblemsRoot} 构建的问题信息, 包括模块节点, 文件问题映射等.
      * 它封装了问题数据的版本信息以及按模块和文件分类的问题列表, 以便于在 UI 中高效展示和更新.
      *
+     * @param version        当前问题索引的版本号
+     * @param rootNodes      模块节点列表
+     *                       <p> 包含各个模块的相关节点信息
+     * @param problemsByFile 文件与问题列表之间的映射
+     *                       <p> 存储每个文件对应的检查问题列表
      * @author dong4j
      * @version 1.0.0
      * @email "mailto:dong4j@gmail.com"
      * @date 2026.01.29
      * @since 1.0.0
      */
-    private static final class ProblemsIndex {
-        /** 当前问题索引的版本号 */
-        private final long version;
-        /**
-         * 模块节点列表
-         * <p> 包含各个模块的相关节点信息
-         */
-        private final List<Node> moduleNodes;
-        /**
-         * 文件与问题列表之间的映射
-         * <p> 存储每个文件对应的检查问题列表
-         */
-        private final Map<VirtualFile, List<Problem>> problemsByFile;
-
+    private record ProblemsIndex(long version, List<Node> rootNodes, Map<VirtualFile, List<Problem>> problemsByFile) {
         /**
          * 构造 ProblemsIndex 实例
          * <p> 初始化问题索引, 包含版本号, 模块节点列表以及按文件分组的问题映射
@@ -415,10 +316,10 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
          * @param problemsByFile 按虚拟文件分组的问题映射,Key 为文件,Value 为该文件的问题列表
          */
         private ProblemsIndex(long version,
-                              @NotNull List<Node> moduleNodes,
+                              @NotNull List<Node> rootNodes,
                               @NotNull Map<VirtualFile, List<Problem>> problemsByFile) {
             this.version = version;
-            this.moduleNodes = Collections.unmodifiableList(moduleNodes);
+            this.rootNodes = Collections.unmodifiableList(rootNodes);
             this.problemsByFile = problemsByFile;
         }
     }

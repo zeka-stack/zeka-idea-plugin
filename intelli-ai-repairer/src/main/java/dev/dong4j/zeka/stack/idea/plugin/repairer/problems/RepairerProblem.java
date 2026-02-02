@@ -67,13 +67,20 @@ public record RepairerProblem(ProblemsProvider provider, CodeViolation violation
 
     /**
      * 获取问题的文本描述
-     * <p> 根据违规信息中的 ruleId 属性返回对应的文本, 如果 ruleId 为空或空白, 则返回 "Rule"
+     * <p> 根据违规信息组合消息内容、位置和规则信息, 便于在问题面板中直接展示定位信息
      *
-     * @return 问题的文本描述, 若 ruleId 不存在则返回 "Rule"
+     * @return 格式化后的问题文本
      */
     @Override
     public @NotNull String getText() {
-        return violation.ruleId == null || violation.ruleId.isBlank() ? "Rule" : violation.ruleId;
+        String message = safeText(violation.message, "");
+        String rule = safeText(violation.ruleId, "Rule");
+        String line = formatLocationValue(violation.startLine);
+        String column = formatLocationValue(violation.startColumn);
+        if (message.isBlank()) {
+            message = rule;
+        }
+        return String.format("%s (%s:%s) [%s]", message, line, column, rule);
     }
 
     /**
@@ -166,6 +173,32 @@ public record RepairerProblem(ProblemsProvider provider, CodeViolation violation
     @Override
     public int getColumn() {
         return violation.startColumn > 0 ? violation.startColumn - 1 : 0;
+    }
+
+    /**
+     * 安全获取文本内容
+     * <p> 如果输入的字符串为 null 或空白, 则返回备用值, 否则返回去除前后空格的字符串
+     *
+     * @param value    输入的字符串, 可能为 null 或空白
+     * @param fallback 备用值, 当输入字符串无效时返回
+     * @return 处理后的字符串, 如果输入无效则返回备用值
+     */
+    private static String safeText(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value.trim();
+    }
+
+    /**
+     * 格式化位置值
+     * <p> 将给定的整数值转换为字符串表示, 如果值小于等于 0, 则返回字符串 "0"
+     *
+     * @param value 需要格式化的整数值
+     * @return 格式化后的字符串, 如果输入值大于 0 则返回其字符串形式, 否则返回 "0"
+     */
+    private static String formatLocationValue(int value) {
+        return value > 0 ? Integer.toString(value) : "0";
     }
 
     /**
