@@ -32,6 +32,13 @@
             <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
+        <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RefreshStaticReportsAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RefreshStaticReportsAction"
+                text="Refresh Static Reports"
+                description="Re-parse cached Checkstyle/PMD reports">
+            <add-to-group group-id="ProblemsView.ToolWindow.Toolbar" anchor="last"/>
+            <add-to-group group-id="ProblemsView.ToolWindow.TreePopup" anchor="last"/>
+        </action>
         <action id="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixSelectedProblemsAction"
                 class="dev.dong4j.zeka.stack.idea.plugin.repairer.action.RepairerFixSelectedProblemsAction"
                 text="Fix Selected with AI"

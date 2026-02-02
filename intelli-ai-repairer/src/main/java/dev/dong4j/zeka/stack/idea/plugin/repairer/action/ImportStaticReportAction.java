@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -15,14 +16,19 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.CheckstyleXmlAdapter;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.PmdXmlAdapter;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.ReportXmlDetector;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsViewPanel;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ReportPathCache;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCache;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
@@ -70,38 +76,43 @@ public class ImportStaticReportAction extends AnAction {
         if (project == null) {
             return;
         }
-        VirtualFile file = getSelectedXmlFile(e);
-        if (file == null) {
+        List<VirtualFile> roots = getSelectedRoots(e);
+        if (roots.isEmpty()) {
+            return;
+        }
+        Set<VirtualFile> xmlFiles = collectXmlFiles(roots);
+        if (xmlFiles.isEmpty()) {
+            NotificationUtil.showWarning(project, RepairerBundle.message("notify.import.empty"));
             return;
         }
 
+        List<String> checkstylePaths = new ArrayList<>();
+        List<String> pmdPaths = new ArrayList<>();
         List<CodeViolation> violations = new ArrayList<>();
-        File ioFile = new File(file.getPath());
-
-        // 改进报告类型判断
-        String fileName = file.getName().toLowerCase();
-        if (fileName.contains("pmd")) {
-            violations.addAll(new PmdXmlAdapter().parse(ioFile));
-        } else if (fileName.contains("checkstyle")) {
-            violations.addAll(new CheckstyleXmlAdapter().parse(ioFile));
-        } else {
-            // 尝试两种解析器，选择解析结果多的一种
-            List<CodeViolation> checkstyleViolations = new CheckstyleXmlAdapter().parse(ioFile);
-            List<CodeViolation> pmdViolations = new PmdXmlAdapter().parse(ioFile);
-
-            if (checkstyleViolations.size() > pmdViolations.size()) {
-                violations.addAll(checkstyleViolations);
-            } else {
-                violations.addAll(pmdViolations);
+        for (VirtualFile xmlFile : xmlFiles) {
+            File ioFile = Paths.get(xmlFile.getPath()).toFile();
+            ReportXmlDetector.ReportType type = ReportXmlDetector.detect(ioFile);
+            if (type == ReportXmlDetector.ReportType.CHECKSTYLE) {
+                checkstylePaths.add(xmlFile.getPath());
+                violations.addAll(new CheckstyleXmlAdapter().parse(ioFile));
+            } else if (type == ReportXmlDetector.ReportType.PMD) {
+                pmdPaths.add(xmlFile.getPath());
+                violations.addAll(new PmdXmlAdapter().parse(ioFile));
             }
         }
 
+        if (checkstylePaths.isEmpty() && pmdPaths.isEmpty()) {
+            NotificationUtil.showWarning(project, RepairerBundle.message("notify.import.empty"));
+            return;
+        }
+
+        ReportPathCache.getInstance(project).update(checkstylePaths, pmdPaths);
         ViolationCache.getInstance(project).setAll(violations);
         DaemonCodeAnalyzer.getInstance(project).restart();
         openProblemsView(project);
 
         if (violations.isEmpty()) {
-            NotificationUtil.showWarning(project, "No violations found in the report.");
+            NotificationUtil.showWarning(project, RepairerBundle.message("notify.import.empty"));
         } else {
             NotificationUtil.showInfo(project, RepairerBundle.message("notify.import.count", violations.size()));
         }
@@ -131,7 +142,7 @@ public class ImportStaticReportAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         Project project = e.getProject();
         boolean visible = project != null;
-        boolean enabled = visible && getSelectedXmlFile(e) != null;
+        boolean enabled = visible && !getSelectedRoots(e).isEmpty();
         e.getPresentation().setVisible(visible);
         e.getPresentation().setEnabled(enabled);
     }
@@ -143,16 +154,22 @@ public class ImportStaticReportAction extends AnAction {
      * @param e 动作事件对象, 包含当前上下文选中文件的信息
      * @return 选中的 XML 文件, 若不满足条件则返回 null
      */
-    private static VirtualFile getSelectedXmlFile(@NotNull AnActionEvent e) {
+    private static List<VirtualFile> getSelectedRoots(@NotNull AnActionEvent e) {
+        List<VirtualFile> roots = new ArrayList<>();
         VirtualFile[] files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
         if (files != null) {
-            if (files.length != 1) {
-                return null;
+            for (VirtualFile file : files) {
+                if (file != null) {
+                    roots.add(file);
+                }
             }
-            return isXmlFile(files[0]) ? files[0] : null;
+            return roots;
         }
         VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-        return isXmlFile(file) ? file : null;
+        if (file != null) {
+            roots.add(file);
+        }
+        return roots;
     }
 
     /**
@@ -168,6 +185,23 @@ public class ImportStaticReportAction extends AnAction {
         }
         String extension = file.getExtension();
         return extension != null && "xml".equals(extension.toLowerCase(Locale.ROOT));
+    }
+
+    private static Set<VirtualFile> collectXmlFiles(@NotNull List<VirtualFile> roots) {
+        Set<VirtualFile> result = new LinkedHashSet<>();
+        for (VirtualFile root : roots) {
+            if (root.isDirectory()) {
+                VfsUtilCore.iterateChildrenRecursively(root, null, file -> {
+                    if (isXmlFile(file)) {
+                        result.add(file);
+                    }
+                    return true;
+                });
+            } else if (isXmlFile(root)) {
+                result.add(root);
+            }
+        }
+        return result;
     }
 
     /**

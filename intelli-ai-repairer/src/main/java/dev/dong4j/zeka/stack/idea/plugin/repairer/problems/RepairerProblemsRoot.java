@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.swing.tree.TreePath;
@@ -85,7 +86,16 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
      */
     @Override
     public @NotNull Collection<Node> getChildren(@NotNull FileNode fileNode) {
-        List<Problem> problems = getProblemsIndex().problemsByFile.getOrDefault(fileNode.getVirtualFile(), List.of());
+        List<Problem> problems = null;
+        RepairerToolNode toolNode = fileNode.getParent(RepairerToolNode.class);
+        if (toolNode != null) {
+            Map<VirtualFile, List<Problem>> toolFiles =
+                getProblemsIndex().problemsByTool.getOrDefault(toolNode.getKey(), Map.of());
+            problems = toolFiles.get(fileNode.getVirtualFile());
+        }
+        if (problems == null) {
+            problems = getProblemsIndex().problemsByFile.getOrDefault(fileNode.getVirtualFile(), List.of());
+        }
         return super.getNodesForProblems(fileNode, problems);
     }
 
@@ -226,6 +236,7 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
      */
     private ProblemsIndex buildIndex(long currentVersion) {
         Map<VirtualFile, List<Problem>> problemsByFile = new HashMap<>();
+        Map<String, Map<VirtualFile, List<Problem>>> problemsByTool = new TreeMap<>(String::compareToIgnoreCase);
 
         for (CodeViolation violation : cache.getAll()) {
             if (violation.filePath == null || violation.filePath.isBlank()) {
@@ -237,29 +248,128 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
             }
             RepairerProblem problem = new RepairerProblem(provider, violation, file);
             problemsByFile.computeIfAbsent(file, ignored -> new ArrayList<>()).add(problem);
+            String toolName = violation.tool == null || violation.tool.isBlank() ? "Unknown" : violation.tool.trim();
+            problemsByTool
+                .computeIfAbsent(toolName, ignored -> new HashMap<>())
+                .computeIfAbsent(file, ignored -> new ArrayList<>())
+                .add(problem);
         }
 
         for (List<Problem> problems : problemsByFile.values()) {
             problems.sort(Comparator.comparingInt(RepairerProblemsRoot::problemLine)
                                     .thenComparingInt(RepairerProblemsRoot::problemColumn));
         }
+        for (Map<VirtualFile, List<Problem>> toolFiles : problemsByTool.values()) {
+            for (List<Problem> problems : toolFiles.values()) {
+                problems.sort(Comparator.comparingInt(RepairerProblemsRoot::problemLine)
+                                  .thenComparingInt(RepairerProblemsRoot::problemColumn));
+            }
+        }
 
-        List<VirtualFile> sortedFiles = new ArrayList<>(problemsByFile.keySet());
-        sortedFiles.sort(Comparator.comparing(VirtualFile::getName, String::compareToIgnoreCase));
+        List<Node> toolNodes = new ArrayList<>();
+        for (Map.Entry<String, Map<VirtualFile, List<Problem>>> toolEntry : problemsByTool.entrySet()) {
+            List<Node> fileNodes = new ArrayList<>();
+            List<VirtualFile> sortedFiles = new ArrayList<>(toolEntry.getValue().keySet());
+            sortedFiles.sort(Comparator.comparing(VirtualFile::getName, String::compareToIgnoreCase));
+            int toolProblemCount = countProblems(toolEntry.getValue());
+            String toolName = formatToolName(toolEntry.getKey(), toolProblemCount);
+            RepairerToolNode toolNode = new RepairerToolNode(project, toolEntry.getKey(), toolName, fileNodes);
+            toolNodes.add(toolNode);
 
-        List<Node> fileNodes = new ArrayList<>();
-        for (VirtualFile file : sortedFiles) {
-            fileNodes.add(new FileNode(this, file));
+            for (VirtualFile file : sortedFiles) {
+                List<Problem> problems = toolEntry.getValue().getOrDefault(file, List.of());
+                Node fileNode = new RepairerFileNode(this, toolNode, file, problems);
+                fileNodes.add(fileNode);
+
+            }
         }
 
         int problemCount = problemsByFile.values().stream().mapToInt(Collection::size).sum();
         int fileCount = problemsByFile.size();
-        String summary = RepairerBundle.message("problems.root.summary", problemCount, fileCount);
+        int checkstyleCount = countProblems(problemsByTool.get("CHECKSTYLE"));
+        int pmdCount = countProblems(problemsByTool.get("PMD"));
+        String summary = RepairerBundle.message("problems.root.summary.detail",
+                                                problemCount,
+                                                fileCount,
+                                                checkstyleCount,
+                                                pmdCount);
 
         List<Node> rootNodes = new ArrayList<>();
-        rootNodes.add(new RepairerSummaryNode(project, summary, fileNodes));
+        rootNodes.add(new RepairerSummaryNode(project, summary, toolNodes));
 
-        return new ProblemsIndex(currentVersion, rootNodes, problemsByFile);
+        return new ProblemsIndex(currentVersion, rootNodes, problemsByFile, problemsByTool);
+    }
+
+    private static int countProblems(Map<VirtualFile, List<Problem>> toolFiles) {
+        if (toolFiles == null || toolFiles.isEmpty()) {
+            return 0;
+        }
+        return toolFiles.values().stream().mapToInt(Collection::size).sum();
+    }
+
+    private static String formatToolName(String toolKey, int count) {
+        String name = friendlyToolName(toolKey);
+        return name + " (" + count + ")";
+    }
+
+    private static String friendlyToolName(String toolKey) {
+        if (toolKey == null || toolKey.isBlank()) {
+            return "Unknown";
+        }
+        if ("CHECKSTYLE".equalsIgnoreCase(toolKey)) {
+            return "Checkstyle";
+        }
+        if ("PMD".equalsIgnoreCase(toolKey)) {
+            return "PMD";
+        }
+        return toolKey.trim();
+    }
+
+    /**
+     * File node with attached problems for tool grouping.
+     */
+    private static final class RepairerFileNode extends Node {
+        private final RepairerProblemsRoot root;
+        private final FileNode delegate;
+        private final List<Problem> problems;
+        private final VirtualFile file;
+
+        private RepairerFileNode(@NotNull RepairerProblemsRoot root,
+                                 @NotNull Node parent,
+                                 @NotNull VirtualFile file,
+                                 @NotNull List<Problem> problems) {
+            super(parent);
+            this.root = root;
+            this.file = file;
+            this.delegate = new FileNode(this, file);
+            this.problems = problems;
+        }
+
+        @Override
+        public @NotNull Collection<Node> getChildren() {
+            return root.getNodesForProblems(delegate, problems);
+        }
+
+        @Override
+        public @NotNull com.intellij.ui.tree.LeafState getLeafState() {
+            return problems.isEmpty() ? com.intellij.ui.tree.LeafState.ALWAYS : com.intellij.ui.tree.LeafState.NEVER;
+        }
+
+        @Override
+        public @NotNull String getName() {
+            return file.getName();
+        }
+
+        @Override
+        protected void update(@NotNull com.intellij.ide.projectView.PresentationData presentation) {
+            presentation.setPresentableText(file.getName());
+            presentation.setIcon(file.getFileType().getIcon());
+        }
+
+        @Override
+        protected void update(@NotNull Project project, @NotNull com.intellij.ide.projectView.PresentationData presentationData) {
+            update(presentationData);
+        }
     }
 
     /**
@@ -306,21 +416,27 @@ public final class RepairerProblemsRoot extends Root implements ViolationCacheLi
      * @date 2026.01.29
      * @since 1.0.0
      */
-    private record ProblemsIndex(long version, List<Node> rootNodes, Map<VirtualFile, List<Problem>> problemsByFile) {
+    private record ProblemsIndex(long version,
+                                 List<Node> rootNodes,
+                                 Map<VirtualFile, List<Problem>> problemsByFile,
+                                 Map<String, Map<VirtualFile, List<Problem>>> problemsByTool) {
         /**
          * 构造 ProblemsIndex 实例
          * <p> 初始化问题索引, 包含版本号, 模块节点列表以及按文件分组的问题映射
          *
          * @param version        索引版本号
-         * @param moduleNodes    模块节点列表, 构造后将被封装为不可修改列表
+         * @param rootNodes      模块节点列表, 构造后将被封装为不可修改列表
          * @param problemsByFile 按虚拟文件分组的问题映射,Key 为文件,Value 为该文件的问题列表
+         * @param problemsByTool 按工具分组的问题映射,Key 为工具名称,Value 为该工具在各文件中的问题列表映射
          */
         private ProblemsIndex(long version,
                               @NotNull List<Node> rootNodes,
-                              @NotNull Map<VirtualFile, List<Problem>> problemsByFile) {
+                              @NotNull Map<VirtualFile, List<Problem>> problemsByFile,
+                              @NotNull Map<String, Map<VirtualFile, List<Problem>>> problemsByTool) {
             this.version = version;
             this.rootNodes = Collections.unmodifiableList(rootNodes);
             this.problemsByFile = problemsByFile;
+            this.problemsByTool = problemsByTool;
         }
     }
 }

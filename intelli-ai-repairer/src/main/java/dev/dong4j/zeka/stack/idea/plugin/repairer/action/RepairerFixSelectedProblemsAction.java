@@ -7,7 +7,6 @@ import com.intellij.analysis.problemsView.toolWindow.ProblemsTreeModel;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
@@ -19,11 +18,9 @@ import com.intellij.ui.treeStructure.Tree;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.Component;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import javax.swing.SwingUtilities;
 import javax.swing.tree.TreePath;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
@@ -31,6 +28,8 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.ViolationFixer;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblem;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsRoot;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
+
+import static dev.dong4j.zeka.stack.idea.plugin.repairer.action.RefreshStaticReportsAction.tree;
 
 /**
  * Fix selected problems in the Problems view using AI.
@@ -215,14 +214,6 @@ public class RepairerFixSelectedProblemsAction extends AnAction implements DumbA
      * @return 找到的 {@code Tree} 组件, 如果未找到则返回 {@code null}
      */
     private static Tree findTree(@NotNull AnActionEvent e) {
-        Component component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT);
-        if (component instanceof Tree) {
-            return (Tree) component;
-        }
-        if (component == null) {
-            return null;
-        }
-        Component tree = SwingUtilities.getAncestorOfClass(Tree.class, component);
-        return tree instanceof Tree ? (Tree) tree : null;
+        return tree(e);
     }
 }

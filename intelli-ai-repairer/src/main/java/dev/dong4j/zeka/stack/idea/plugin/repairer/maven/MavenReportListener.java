@@ -138,6 +138,7 @@ public final class MavenReportListener {
      * 加载 Checkstyle 静态分析报告
      * <p> 从项目的 target/checkstyle/checkstyle.xml 文件中解析 Checkstyle 报告, 并返回包含代码违规的信息列表.
      * 如果文件不存在, 则返回一个空列表.
+     * todo-dong4j : (2026.02.2 16:11) [做成配置项]
      *
      * @param project 当前项目对象
      * @return 包含代码违规信息的列表, 如果文件不存在则返回空列表
@@ -153,6 +154,7 @@ public final class MavenReportListener {
     /**
      * 加载 PMD 静态分析报告文件并解析为代码违规列表
      * <p> 根据项目路径查找 PMD 报告文件 (target/pmd/pmd.xml), 如果文件存在则使用 PmdXmlAdapter 解析为 CodeViolation 列表, 否则返回空列表.
+     * todo-dong4j : (2026.02.2 16:11) [做成配置项]
      *
      * @param project 项目对象, 用于获取基础路径
      * @return 包含代码违规信息的列表, 若文件不存在则返回空列表
