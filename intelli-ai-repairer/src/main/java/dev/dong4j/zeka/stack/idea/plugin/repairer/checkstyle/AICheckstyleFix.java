@@ -25,6 +25,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixPromptBuilder;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixResponseValidator;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.RepairerAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.EnhancedPatchApplier;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
@@ -153,7 +154,7 @@ public class AICheckstyleFix implements LocalQuickFix {
 
                 String fixedCode;
                 try {
-                    fixedCode = aiService.generateContent(project, request, config, null);
+                    fixedCode = aiService.generateContent(project, request, config, new RepairerAIResponseListener(project));
                 } catch (AIServiceException e) {
                     NotificationUtil.showError(project, RepairerBundle.message("error.ai.failed", e.getMessage()));
                     return;

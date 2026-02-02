@@ -15,7 +15,6 @@ import com.intellij.openapi.wm.ToolWindowManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -243,37 +242,28 @@ public class ImportStaticReportAction extends AnAction {
      * @since 1.0.0
      */
     private static void selectRepairerTab(@NotNull Project project) {
-        try {
-            Class<?> viewClass = Class.forName("com.intellij.analysis.problemsView.toolWindow.ProblemsView");
-            Method getInstance = viewClass.getMethod("getInstance", Project.class);
-            Object problemsView = getInstance.invoke(null, project);
-            if (problemsView == null) {
-                return;
-            }
-            if (trySelectTab(viewClass, problemsView, "selectTab")) {
-                return;
-            }
-            trySelectTab(viewClass, problemsView, "openTab");
-        } catch (Throwable ignored) {
+        ToolWindowManager manager = ToolWindowManager.getInstance(project);
+        ToolWindow toolWindow = manager.getToolWindow("ProblemsView");
+        if (toolWindow == null) {
+            toolWindow = manager.getToolWindow("Problems");
         }
-    }
-
-    /**
-     * 尝试通过反射调用指定方法选择问题视图中的标签页
-     * <p> 根据传入的类, 实例对象和方法名, 动态调用对应方法并传入标签 ID, 若调用成功则返回 true, 否则捕获异常并返回 false</p>
-     *
-     * @param viewClass    问题视图类对象
-     * @param problemsView 问题视图实例对象
-     * @param methodName   要调用的方法名, 例如 "selectTab" 或 "openTab"
-     * @return 如果方法调用成功则返回 true, 否则返回 false
-     */
-    private static boolean trySelectTab(Class<?> viewClass, Object problemsView, String methodName) {
-        try {
-            Method method = viewClass.getMethod(methodName, String.class);
-            method.invoke(problemsView, RepairerProblemsViewPanel.TAB_ID);
-            return true;
-        } catch (Throwable ignored) {
-            return false;
+        if (toolWindow == null) {
+            return;
+        }
+        var contentManager = toolWindow.getContentManager();
+        var contents = contentManager.getContents();
+        for (var content : contents) {
+            var component = content.getComponent();
+            if (component instanceof RepairerProblemsViewPanel) {
+                contentManager.setSelectedContent(content);
+                return;
+            }
+        }
+        for (var content : contents) {
+            if (RepairerProblemsViewPanel.TAB_NAME.equals(content.getDisplayName())) {
+                contentManager.setSelectedContent(content);
+                return;
+            }
         }
     }
 }

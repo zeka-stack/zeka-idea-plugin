@@ -85,7 +85,7 @@ public final class ViolationFixer {
                 AIChatRequest request = new AIChatRequest(FixPromptBuilder.systemPrompt(), userPrompt);
                 String fixedCode;
                 try {
-                    fixedCode = aiService.generateContent(project, request, config, null);
+                    fixedCode = aiService.generateContent(project, request, config, new RepairerAIResponseListener(project));
                 } catch (AIServiceException e) {
                     NotificationUtil.showError(project, RepairerBundle.message("error.ai.failed", e.getMessage()));
                     return;
@@ -118,7 +118,7 @@ public final class ViolationFixer {
         AIProviderSettings settings = aiService.getGlobalSettings();
         List<AIProviderConfig> verified = settings.getVerifiedProviders();
         if (!verified.isEmpty()) {
-            return verified.get(0);
+            return verified.getFirst();
         }
         return settings.getDefaultProviderConfig(settings.aiProviderType);
     }
