@@ -82,6 +82,7 @@ public class ImportStaticReportAction extends AnAction {
         }
         Set<VirtualFile> xmlFiles = collectXmlFiles(roots);
         if (xmlFiles.isEmpty()) {
+            openProblemsView(project);
             NotificationUtil.showWarning(project, RepairerBundle.message("notify.import.empty"));
             return;
         }
@@ -102,6 +103,7 @@ public class ImportStaticReportAction extends AnAction {
         }
 
         if (checkstylePaths.isEmpty() && pmdPaths.isEmpty()) {
+            openProblemsView(project);
             NotificationUtil.showWarning(project, RepairerBundle.message("notify.import.empty"));
             return;
         }
