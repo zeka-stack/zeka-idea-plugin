@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.repairer.action;
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -104,6 +105,18 @@ public class ImportStaticReportAction extends AnAction {
         } else {
             NotificationUtil.showInfo(project, RepairerBundle.message("notify.import.count", violations.size()));
         }
+    }
+
+    /**
+     * 获取动作更新线程的执行上下文
+     * <p>指定该动作在后台线程 (BGT) 中更新, 确保 UI 线程不被阻塞, 适用于需要异步更新界面状态的场景.</p>
+     *
+     * @return 动作更新线程类型, 固定返回 {@link ActionUpdateThread#BGT}
+     * @since 1.0
+     */
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     /**

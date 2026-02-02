@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.repairer.action;
 
 import com.intellij.analysis.problemsView.toolWindow.ProblemsTreeModel;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
@@ -53,6 +54,17 @@ public class RepairerFixAllProblemsAction extends AnAction implements DumbAware 
         for (CodeViolation violation : violations) {
             applyFix(project, violation);
         }
+    }
+
+    /**
+     * 获取动作更新线程的执行上下文
+     * <p> 指定该动作的更新逻辑应在 EDT(Event Dispatch Thread) 线程中执行, 确保 UI 相关操作线程安全 </p>
+     *
+     * @return 表示动作更新应在 EDT 线程中执行的线程类型, 值为 {@link ActionUpdateThread#EDT}
+     */
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.EDT;
     }
 
     /**

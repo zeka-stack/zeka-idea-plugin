@@ -4,6 +4,7 @@ import com.intellij.analysis.problemsView.Problem;
 import com.intellij.analysis.problemsView.toolWindow.Node;
 import com.intellij.analysis.problemsView.toolWindow.ProblemNode;
 import com.intellij.analysis.problemsView.toolWindow.ProblemsTreeModel;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
@@ -63,6 +64,17 @@ public class RepairerFixSelectedProblemsAction extends AnAction implements DumbA
         for (RepairerProblem problem : problems) {
             applyFix(project, problem);
         }
+    }
+
+    /**
+     * 获取动作更新线程的执行上下文
+     * <p> 指定该动作的更新逻辑应在 EDT(Event Dispatch Thread) 线程中执行, 以确保 UI 相关操作的线程安全.</p>
+     *
+     * @return 表示动作更新应在 EDT 线程中执行的枚举值 {@code ActionUpdateThread.EDT}
+     */
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.EDT;
     }
 
     /**

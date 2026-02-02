@@ -44,6 +44,7 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 public class AICheckstyleFix implements LocalQuickFix {
 
     /** 用于存储当前需要修复的 Checkstyle 问题信息 */
+    @SafeFieldForPreview
     private final Problem problem;
 
     /**

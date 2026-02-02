@@ -31,6 +31,7 @@ public class AIViolationFix implements LocalQuickFix {
      * 违规信息对象, 用于表示当前需要修复的代码问题
      * <p> 该对象包含违规的起始和结束行号等信息 </p>
      */
+    @SafeFieldForPreview
     private final CodeViolation violation;
 
     /**
