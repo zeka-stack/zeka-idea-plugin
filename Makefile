@@ -103,7 +103,7 @@ install-dependencies: install-kit install-engine
 # 发布命令
 publish-engine:
 	@echo "正在发布 intelli-ai-engine 插件..."
-	cd $(ENGINE_DIR) && ./gradlew publishBeta
+	cd $(ENGINE_DIR) && ./gradlew publishDefault
 	@echo "正在完成: https://plugins.jetbrains.com/plugin/29152."
 
 publish-javadoc:

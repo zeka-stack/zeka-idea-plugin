@@ -622,16 +622,19 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     private static String extractPrompt(@NotNull String currentLine,
                                         @NotNull String prefix,
                                         @NotNull TerminalShellType shellType) {
-        String trimmed = stripPromptPrefix(currentLine.stripLeading(), shellType);
-        if (!trimmed.startsWith(prefix)) {
-            log.debug("Line does not start with prefix: '{}' vs '{}'", trimmed.substring(0, Math.min(20, trimmed.length())), prefix);
+        String trimmed = currentLine.stripLeading();
+        int index = trimmed.indexOf(prefix);
+        if (index < 0) {
+            log.debug("Line does not contain prefix: '{}'", prefix);
             return null;
         }
-        String content = trimmed.substring(prefix.length());
+        String content = trimmed.substring(index + prefix.length());
         if (content.startsWith(" ")) {
             content = content.substring(1);
         }
-        log.debug("Extracted prompt content: '{}'", content.substring(0, Math.min(50, content.length())));
+        if (!content.isEmpty()) {
+            log.debug("Extracted prompt content: '{}'", content.substring(0, Math.min(50, content.length())));
+        }
         return content.strip();
     }
 
@@ -932,6 +935,11 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         log.debug("Extracted command: {}", command);
         if (command.isBlank()) {
             log.debug("Extracted command is blank");
+            if (terminalView != null) {
+                replaceCurrentLine(terminalView, "", inputInfo.multiLine, shellType);
+            } else if (jbWidget != null) {
+                replaceCurrentLine(jbWidget, "", project, inputInfo.multiLine, shellType);
+            }
             showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.empty"));
             indicator.setText(TerminalBundle.message("action.terminal.progress.completed"));
             return false;
@@ -943,6 +951,11 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         if (!isValidShellOutput(command, shellType)) {
             log.debug("Command validation failed: {}", command);
             showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.invalid.output"));
+            if (terminalView != null) {
+                replaceCurrentLine(terminalView, "", inputInfo.multiLine, shellType);
+            } else if (jbWidget != null) {
+                replaceCurrentLine(jbWidget, "", project, inputInfo.multiLine, shellType);
+            }
             indicator.setText(TerminalBundle.message("action.terminal.progress.completed"));
             return false;
         }
