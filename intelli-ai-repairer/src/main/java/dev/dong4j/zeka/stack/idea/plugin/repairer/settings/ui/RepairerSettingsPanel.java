@@ -113,11 +113,10 @@ public class RepairerSettingsPanel {
     }
 
     /**
-     * 创建提示词选项卡面板
-     * <p> 该方法初始化并返回一个包含系统提示词, 用户提示词和增强用户提示词三个选项卡的选项卡面板.
-     * 每个选项卡都通过调用 {@link #createPromptTab} 方法创建, 并配置了相应的文本区域, 提示信息和默认值获取逻辑.
+     * 创建提示词标签页窗格
+     * <p> 初始化并返回一个包含系统, 用户和增强用户提示词编辑标签页的标签页窗格.
      *
-     * @return 配置好的提示词选项卡面板 {@link JBTabbedPane}
+     * @return 配置好的提示词标签页窗格
      */
     private JBTabbedPane createPromptTabbedPane() {
         JBTabbedPane tabbedPane = new JBTabbedPane();
