@@ -14,6 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
@@ -50,6 +52,14 @@ final class ChangelogPromptBuilder {
 
     /** 提交消息中差异内容的最大字符数限制 */
     private static final int MAX_COMMIT_MESSAGE_DIFF_CHARS = 500_000;
+    /** 提交消息提示词的最大 token 预估上限（全局兜底） */
+    private static final int MAX_COMMIT_MESSAGE_PROMPT_TOKENS = 6000;
+    /** 提交消息提示词的最大字符硬限制（最后兜底） */
+    private static final int MAX_COMMIT_MESSAGE_PROMPT_HARD_CHARS = 24_000;
+    /** 结构化上下文中单文件 full diff 最大字符数 */
+    private static final int MAX_STRUCTURED_FULL_DIFF_CHARS = 4000;
+    /** 结构化上下文降级时单文件 full diff 最大字符数 */
+    private static final int MAX_STRUCTURED_FULL_DIFF_LITE_CHARS = 800;
     /** 最大提交消息中包含的文件数量限制 */
     private static final int MAX_COMMIT_MESSAGE_FILES = 50;
     /** 批量删除操作的阈值, 当删除行数超过该值时触发批量删除统计逻辑 */
@@ -58,6 +68,8 @@ final class ChangelogPromptBuilder {
     private static final int BULK_DELETE_SAMPLE_SIZE = 5;
     /** 目录统计的最大数量限制 */
     private static final int MAX_DIR_STATS = 5;
+    /** 用于匹配中文字符的正则模式, 范围为 \\u4E00 到 \\u9FA5 */
+    private static final Pattern CHINESE_PATTERN = Pattern.compile("[\\u4E00-\\u9FA5]");
 
     /** 当前项目对象 */
     private final Project project;
@@ -219,24 +231,14 @@ final class ChangelogPromptBuilder {
         String template = settings.commitMessageTemplate;
         int maxFiles = MAX_COMMIT_MESSAGE_FILES;
 
-        // 1) 结构化 JSON 上下文：作为核心上下文，单独暴露为 {codeDiffs}。
-        String contextJson = buildStructuredContext(payload,
+        return buildCommitMessagePromptWithFallback(payload,
                                                     recentCommitsText,
                                                     userContext,
                                                     branch,
                                                     isGitRepository,
-                                                    maxFiles,
-                                                    selectionMeta);
-
-        // 2) 原生 patch 与降噪摘要：分别提供为独立占位符，便于用户自行裁剪。
-        String diffSummary = buildDiffSummaryText(payload, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
-        String rawPatch = payload.fullPatchText().trim();
-
-        // 3) 仅做占位符替换，不做额外追加，避免模板中删除占位符后仍被强行拼接。
-        return template
-            .replace("{codeDiffs}", contextJson)
-            .replace("{rawPatch}", rawPatch)
-            .replace("{diffSummary}", diffSummary);
+                                                    selectionMeta,
+                                                    template,
+                                                    maxFiles);
     }
 
     // Git Log 单条/多条提交再生（含压缩提交）已收敛为 DiffPayload + selection meta 的统一构建逻辑。
@@ -254,7 +256,9 @@ final class ChangelogPromptBuilder {
                                           @Nullable String branch,
                                           boolean isGitRepository,
                                           int maxFiles,
-                                          @Nullable CommitSelectionMeta selectionMeta) {
+                                          @Nullable CommitSelectionMeta selectionMeta,
+                                          @NotNull ContextDetailLevel detailLevel,
+                                          int maxFullDiffChars) {
         List<CodeDiff> allDiffs = payload.codeDiffs();
         List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
         ChangeStats stats = buildChangeStats(allDiffs);
@@ -298,9 +302,13 @@ final class ChangelogPromptBuilder {
             String language = resolveLanguage(filePath);
             String extension = extractExtension(filePath);
             String summary = buildFileSummary(diff);
-            String diffSummary = buildDiffSummary(diff);
-            String fullDiff = buildFileFullDiff(payload, diff);
-            String semanticSummary = diff.semanticSummary != null ? diff.semanticSummary : "";
+            String diffSummary = detailLevel.includeDiffSummary ? buildDiffSummary(diff) : "";
+            String fullDiff = detailLevel.includeFullDiff
+                              ? buildFileFullDiff(payload, diff, maxFullDiffChars)
+                              : "";
+            String semanticSummary = detailLevel.includeSemanticSummary
+                                     ? (diff.semanticSummary != null ? diff.semanticSummary : "")
+                                     : "";
 
             json.append("    {\n");
             json.append("      \"path\": \"").append(escapeJson(filePath)).append("\",\n");
@@ -672,6 +680,16 @@ final class ChangelogPromptBuilder {
     @NotNull
     private String buildFileFullDiff(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
                                      @NotNull CodeDiff diff) {
+        return buildFileFullDiff(payload, diff, MAX_STRUCTURED_FULL_DIFF_CHARS);
+    }
+
+    /**
+     * 构建单文件完整 diff 内容（带长度限制）
+     */
+    @NotNull
+    private String buildFileFullDiff(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
+                                     @NotNull CodeDiff diff,
+                                     int maxChars) {
         StringBuilder content = new StringBuilder();
         String metadata = payload.metadataByPath().get(diff.filePath);
         if (metadata != null && !metadata.isBlank()) {
@@ -683,7 +701,7 @@ final class ChangelogPromptBuilder {
         if (diff.diffContent != null && !diff.diffContent.isBlank()) {
             content.append(diff.diffContent.stripTrailing());
         }
-        return content.toString().trim();
+        return truncateToMaxChars(content.toString().trim(), maxChars);
     }
 
     /**
@@ -714,6 +732,171 @@ final class ChangelogPromptBuilder {
         }
         json.append("]");
         return json.toString();
+    }
+
+    /**
+     * 构建提交消息提示词并应用全局兜底限制
+     */
+    @NotNull
+    private String buildCommitMessagePromptWithFallback(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
+                                                        @NotNull String recentCommitsText,
+                                                        @Nullable String userContext,
+                                                        @Nullable String branch,
+                                                        boolean isGitRepository,
+                                                        @Nullable CommitSelectionMeta selectionMeta,
+                                                        @NotNull String template,
+                                                        int maxFiles) {
+        String rawPatch = payload.fullPatchText().trim();
+        String diffSummary = buildDiffSummaryText(payload, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
+        String contextJson = buildStructuredContext(payload,
+                                                    recentCommitsText,
+                                                    userContext,
+                                                    branch,
+                                                    isGitRepository,
+                                                    maxFiles,
+                                                    selectionMeta,
+                                                    ContextDetailLevel.FULL,
+                                                    MAX_STRUCTURED_FULL_DIFF_CHARS);
+
+        String prompt = replaceTemplate(template, contextJson, rawPatch, diffSummary);
+        if (isPromptWithinLimit(prompt)) {
+            return prompt;
+        }
+
+        rawPatch = "";
+        prompt = replaceTemplate(template, contextJson, rawPatch, diffSummary);
+        if (isPromptWithinLimit(prompt)) {
+            return prompt;
+        }
+
+        diffSummary = "";
+        prompt = replaceTemplate(template, contextJson, rawPatch, diffSummary);
+        if (isPromptWithinLimit(prompt)) {
+            return prompt;
+        }
+
+        int liteFiles = Math.min(maxFiles, 15);
+        contextJson = buildStructuredContext(payload,
+                                             recentCommitsText,
+                                             userContext,
+                                             branch,
+                                             isGitRepository,
+                                             liteFiles,
+                                             selectionMeta,
+                                             ContextDetailLevel.LITE,
+                                             MAX_STRUCTURED_FULL_DIFF_LITE_CHARS);
+        prompt = replaceTemplate(template, contextJson, rawPatch, diffSummary);
+        if (isPromptWithinLimit(prompt)) {
+            return prompt;
+        }
+
+        int minimalFiles = Math.min(maxFiles, 5);
+        contextJson = buildStructuredContext(payload,
+                                             recentCommitsText,
+                                             userContext,
+                                             branch,
+                                             isGitRepository,
+                                             minimalFiles,
+                                             selectionMeta,
+                                             ContextDetailLevel.MINIMAL,
+                                             0);
+        prompt = replaceTemplate(template, contextJson, rawPatch, diffSummary);
+        if (isPromptWithinLimit(prompt)) {
+            return prompt;
+        }
+
+        return truncateToMaxChars(prompt, MAX_COMMIT_MESSAGE_PROMPT_HARD_CHARS);
+    }
+
+    /**
+     * 仅做占位符替换，不做额外追加
+     */
+    @NotNull
+    private String replaceTemplate(@NotNull String template,
+                                   @NotNull String contextJson,
+                                   @NotNull String rawPatch,
+                                   @NotNull String diffSummary) {
+        return template
+            .replace("{codeDiffs}", contextJson)
+            .replace("{rawPatch}", rawPatch)
+            .replace("{diffSummary}", diffSummary);
+    }
+
+    /**
+     * 判断 prompt 是否在安全范围内
+     */
+    private boolean isPromptWithinLimit(@NotNull String prompt) {
+        int tokens = estimateTokens(prompt);
+        return tokens <= MAX_COMMIT_MESSAGE_PROMPT_TOKENS
+               && prompt.length() <= MAX_COMMIT_MESSAGE_PROMPT_HARD_CHARS;
+    }
+
+    /**
+     * 估算文本 Token 数量（中英文混合）
+     */
+    private int estimateTokens(@NotNull String text) {
+        if (text.isEmpty()) {
+            return 0;
+        }
+        int totalChars = text.length();
+        int chineseChars = 0;
+        Matcher matcher = CHINESE_PATTERN.matcher(text);
+        while (matcher.find()) {
+            chineseChars++;
+        }
+        int otherChars = Math.max(0, totalChars - chineseChars);
+        double chineseTokens = chineseChars / 1.5;
+        double otherTokens = otherChars / 4.0;
+        return (int) Math.ceil(chineseTokens + otherTokens);
+    }
+
+    /**
+     * 文本截断
+     */
+    @NotNull
+    private String truncateToMaxChars(@NotNull String text, int maxChars) {
+        if (maxChars <= 0 || text.length() <= maxChars) {
+            return text;
+        }
+        String suffix = "\n...[truncated]";
+        if (maxChars <= suffix.length()) {
+            return text.substring(0, maxChars);
+        }
+        int limit = maxChars - suffix.length();
+        return text.substring(0, limit) + suffix;
+    }
+
+    /**
+     * 结构化上下文详细程度
+     */
+    private enum ContextDetailLevel {
+        /** 全量配置标识, 用于控制是否启用全部功能或数据 */
+        FULL(true, true, true),
+        /** 是否启用轻量级模式, 包含启用状态与默认值配置 */
+        LITE(true, true, false),
+        /** 最小化模式标识, 用于控制是否启用最小化功能 */
+        MINIMAL(false, false, false);
+
+        /** 是否包含完整差异内容 */
+        private final boolean includeFullDiff;
+        /** 是否包含差异摘要信息 */
+        private final boolean includeDiffSummary;
+        /** 是否包含语义摘要 */
+        private final boolean includeSemanticSummary;
+
+        /**
+         * 构造函数, 用于初始化上下文详细级别配置
+         * <p> 设置是否包含完整差异, 差异摘要和语义摘要的标志位
+         *
+         * @param includeFullDiff        是否包含完整差异
+         * @param includeDiffSummary     是否包含差异摘要
+         * @param includeSemanticSummary 是否包含语义摘要
+         */
+        ContextDetailLevel(boolean includeFullDiff, boolean includeDiffSummary, boolean includeSemanticSummary) {
+            this.includeFullDiff = includeFullDiff;
+            this.includeDiffSummary = includeDiffSummary;
+            this.includeSemanticSummary = includeSemanticSummary;
+        }
     }
 
     /**
