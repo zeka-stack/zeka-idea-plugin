@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.context.ContextResolverRegistry;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
@@ -50,20 +49,8 @@ public final class CodeDiffUtil {
     private static final int MAX_DIFF_LINE_CHARS = 240;
     /** 新增文件预览最大字符数 */
     private static final int MAX_ADDED_PREVIEW_CHARS = 4000;
-    /** 超过该大小时不生成完整 diff（避免大文件污染上下文） */
-    private static final long MAX_DIFF_FILE_BYTES = 1024L;
-    /** 文本资源类扩展名的更低阈值 */
-    private static final long MAX_TEXT_ASSET_BYTES = 1024L;
-    /** 文本资源类扩展名集合（常见体积大且语义弱的文件） */
-    private static final Set<String> TEXT_ASSET_EXTENSIONS = Set.of("svg", "map", "lock", "json");
-    /** 单个文件触发摘要模式的最大行数阈值 */
-    private static final int LARGE_FILE_MAX_LINES = 300;
-    /** 变更行数超过该值时触发摘要模式 */
-    private static final int LARGE_DIFF_MAX_CHANGED_LINES = 200;
-    /** 内容长度超过该值时触发摘要模式 */
-    private static final int LARGE_DIFF_MAX_CHARS = 6000;
-    /** 摘要模式下 head/tail 保留行数 */
-    private static final int LARGE_DIFF_HEAD_TAIL_LINES = 3;
+    /** 单文件 diff 最大字符数（超过即截断） */
+    private static final int MAX_DIFF_CHARS_PER_FILE = 12000;
 
     /**
      * 私有构造函数, 用于防止外部实例化
@@ -109,32 +96,17 @@ public final class CodeDiffUtil {
 
         String filePath = virtualFile.getPath();
         CodeDiff.ChangeType changeType = determineChangeType(change);
-        boolean skipLargeContent = shouldSkipLargeFileDiff(virtualFile);
         DiffResult diffResult = null;
         String diffContent;
         if (changeType == CodeDiff.ChangeType.DELETE) {
             diffContent = null;
         } else if (changeType == CodeDiff.ChangeType.ADD) {
-            if (skipLargeContent) {
-                diffContent = buildLargeFileSummary("/dev/null", virtualFile.getName(), virtualFile.getLength(), "large file");
-            } else {
-                diffContent = buildAddedFilePreview(change, virtualFile);
-            }
+            diffContent = buildAddedFilePreview(change, virtualFile);
         } else {
-            if (skipLargeContent) {
-                if (changeType == CodeDiff.ChangeType.RENAME) {
-                    diffContent = buildMovedFileSummary(change);
-                } else {
-                    String beforeName = change.getBeforeRevision() != null ? change.getBeforeRevision().getFile().getName() : "unknown";
-                    String afterName = change.getAfterRevision() != null ? change.getAfterRevision().getFile().getName() : "unknown";
-                    diffContent = buildLargeFileSummary(beforeName, afterName, virtualFile.getLength(), "large file");
-                }
-            } else {
-                diffResult = extractDiffResult(change);
-                diffContent = diffResult != null ? diffResult.diffContent() : null;
-                if (changeType == CodeDiff.ChangeType.RENAME && isRenameWithoutContentChange(diffResult)) {
-                    diffContent = buildMovedFileSummary(change);
-                }
+            diffResult = extractDiffResult(change);
+            diffContent = diffResult != null ? diffResult.diffContent() : null;
+            if (changeType == CodeDiff.ChangeType.RENAME && isRenameWithoutContentChange(diffResult)) {
+                diffContent = buildMovedFileSummary(change);
             }
         }
         String scopeHint = resolveScopeHint(virtualFile);
@@ -151,7 +123,7 @@ public final class CodeDiffUtil {
             ContentRevision beforeRevision = change.getBeforeRevision();
             String beforeContent = beforeRevision != null ? safeGetContent(beforeRevision) : null;
             deletedLines = beforeContent != null ? countLines(beforeContent) : 0;
-        } else if (changeType == CodeDiff.ChangeType.ADD && diffContent != null && !skipLargeContent) {
+        } else if (changeType == CodeDiff.ChangeType.ADD && diffContent != null) {
             addedLines = countLines(diffContent);
         } else if (diffContent != null) {
             String[] lines = diffContent.split("\n");
@@ -237,20 +209,16 @@ public final class CodeDiffUtil {
 
                 String beforeFileName = beforeRevision != null ? beforeRevision.getFile().getName() : "null";
                 String afterFileName = afterRevision != null ? afterRevision.getFile().getName() : "null";
-                String diff;
-                if (shouldSummarizeLargeDiff(beforeContent, afterContent, fragments)) {
-                    diff = buildLargeDiffSummary(beforeFileName, afterFileName, beforeContent, afterContent, fragments);
-                } else {
-                    // 生成简单的 unified diff 格式
-                    diff = generateUnifiedDiffInternal(
-                        beforeFileName,
-                        afterFileName,
-                        beforeContent,
-                        afterContent,
-                        change.getVirtualFile(),
-                        fragments
+                // 生成简单的 unified diff 格式
+                String diff = generateUnifiedDiffInternal(
+                    beforeFileName,
+                    afterFileName,
+                    beforeContent,
+                    afterContent,
+                    change.getVirtualFile(),
+                    fragments
                                                       );
-                }
+                diff = truncateDiffIfNeeded(diff);
                 return diff.isEmpty() ? null : new DiffResult(diff, beforeContent, afterContent, fragments);
             } catch (com.intellij.openapi.progress.ProcessCanceledException e) {
                 throw e;
@@ -362,126 +330,10 @@ public final class CodeDiffUtil {
             hunkCount++;
         }
 
-        return hasChanges ? diff.toString() : "";
+        String result = hasChanges ? diff.toString() : "";
+        return truncateDiffIfNeeded(result);
     }
 
-    /**
-     * 判断是否需要对代码差异进行摘要模式处理
-     * <p> 当文件内容长度, 文件行数或变更行数超过预设阈值时, 返回 true, 表示应启用摘要模式以避免输出过长的差异内容.
-     *
-     * @param beforeContent 修改前的文件内容, 不能为空
-     * @param afterContent  修改后的文件内容, 不能为空
-     * @param fragments     差异片段列表, 不能为空
-     * @return 如果满足任一摘要条件 (内容长度, 文件行数或变更行数超过阈值), 则返回 true, 否则返回 false
-     */
-    private static boolean shouldSummarizeLargeDiff(@NotNull String beforeContent,
-                                                    @NotNull String afterContent,
-                                                    @NotNull List<LineFragment> fragments) {
-        if (beforeContent.length() > LARGE_DIFF_MAX_CHARS || afterContent.length() > LARGE_DIFF_MAX_CHARS) {
-            return true;
-        }
-        int beforeLines = countLines(beforeContent);
-        int afterLines = countLines(afterContent);
-        if (beforeLines > LARGE_FILE_MAX_LINES || afterLines > LARGE_FILE_MAX_LINES) {
-            return true;
-        }
-        int[] changed = countChangedLines(fragments);
-        return Math.max(changed[0], changed[1]) > LARGE_DIFF_MAX_CHANGED_LINES;
-    }
-
-    /**
-     * 构建大型差异文件的摘要信息
-     * <p> 当文件差异过大时, 生成包含头部和尾部内容的摘要格式差异信息
-     * <p> 该方法会统计变更行数并添加摘要说明, 然后调用 appendHeadTail 方法显示文件的头部和尾部内容
-     *
-     * @param beforeFileName 修改前的文件名
-     * @param afterFileName  修改后的文件名
-     * @param beforeContent  修改前的内容
-     * @param afterContent   修改后的内容
-     * @param fragments      差异片段列表
-     * @return 包含摘要信息的差异字符串, 显示文件的变更统计和头尾内容
-     */
-    private static String buildLargeDiffSummary(@NotNull String beforeFileName,
-                                                @NotNull String afterFileName,
-                                                @NotNull String beforeContent,
-                                                @NotNull String afterContent,
-                                                @NotNull List<LineFragment> fragments) {
-        int[] changed = countChangedLines(fragments);
-        StringBuilder diff = new StringBuilder();
-        diff.append("--- ").append(beforeFileName).append("\n");
-        diff.append("+++ ").append(afterFileName).append("\n");
-        diff.append("@@ summary @@\n");
-        diff.append("文件: ").append(afterFileName).append("\n");
-        diff.append("变更行数: +").append(changed[0]).append(" / -").append(changed[1]).append("\n");
-        diff.append("diff too large, showing head/tail\n");
-
-        appendHeadTail(diff, beforeContent, afterContent);
-        return diff.toString();
-    }
-
-    /**
-     * 构建大文件的摘要信息（不读取全文）
-     */
-    @NotNull
-    private static String buildLargeFileSummary(@NotNull String beforeFileName,
-                                                @NotNull String afterFileName,
-                                                long fileSizeBytes,
-                                                @NotNull String reason) {
-        StringBuilder diff = new StringBuilder();
-        diff.append("--- ").append(beforeFileName).append("\n");
-        diff.append("+++ ").append(afterFileName).append("\n");
-        diff.append("@@ summary @@\n");
-        diff.append("文件: ").append(afterFileName).append("\n");
-        diff.append("内容过大，已省略 (size: ").append(formatSize(fileSizeBytes))
-            .append(", reason: ").append(reason).append(")\n");
-        return diff.toString();
-    }
-
-    /**
-     * 构建大差异摘要的头尾内容
-     * <p> 当差异内容过大时, 此方法用于生成摘要模式下的头部和尾部展示内容.
-     * 它会将修改前后的内容分别分割成行, 然后提取头部和尾部各 N 行进行展示,
-     * 其中 N 由常量 LARGE_DIFF_HEAD_TAIL_LINES 定义
-     *
-     * @param diff          差异内容的字符串构建器, 用于追加头尾内容
-     * @param beforeContent 修改前的文件内容
-     * @param afterContent  修改后的文件内容
-     */
-    private static void appendHeadTail(@NotNull StringBuilder diff,
-                                       @NotNull String beforeContent,
-                                       @NotNull String afterContent) {
-        List<String> beforeLines = splitLines(beforeContent);
-        List<String> afterLines = splitLines(afterContent);
-
-        diff.append("--- head ---\n");
-        appendPrefixedLines(diff, "-", beforeLines, 0, Math.min(LARGE_DIFF_HEAD_TAIL_LINES, beforeLines.size()));
-        appendPrefixedLines(diff, "+", afterLines, 0, Math.min(LARGE_DIFF_HEAD_TAIL_LINES, afterLines.size()));
-
-        diff.append("--- tail ---\n");
-        int beforeStart = Math.max(0, beforeLines.size() - LARGE_DIFF_HEAD_TAIL_LINES);
-        int afterStart = Math.max(0, afterLines.size() - LARGE_DIFF_HEAD_TAIL_LINES);
-        appendPrefixedLines(diff, "-", beforeLines, beforeStart, beforeLines.size());
-        appendPrefixedLines(diff, "+", afterLines, afterStart, afterLines.size());
-    }
-
-    /**
-     * 将指定范围内的行追加到 {@code diff}, 并在每行前加上 {@code prefix}.
-     *
-     * @param diff   目标 {@link StringBuilder}, 用于接收追加的内容
-     * @param prefix 每行前追加的前缀字符串
-     * @param lines  需要追加的行列表
-     * @param start  起始索引 (包含)
-     * @param end    结束索引 (不包含)
-     */
-    private static void appendPrefixedLines(@NotNull StringBuilder diff,
-                                            @NotNull String prefix,
-                                            @NotNull List<String> lines,
-                                            int start,
-                                            int end) {
-        for (int i = start; i < end; i++) {
-            diff.append(prefix).append(truncateLine(lines.get(i), MAX_DIFF_LINE_CHARS)).append("\n");
-        }
-    }
 
     /**
      * 将字符串按行分割为字符串列表
@@ -589,9 +441,6 @@ public final class CodeDiffUtil {
     private static String buildAddedFilePreview(@NotNull Change change, @NotNull VirtualFile virtualFile) {
         if (virtualFile.getFileType().isBinary()) {
             return null;
-        }
-        if (shouldSkipLargeFileDiff(virtualFile)) {
-            return buildLargeFileSummary("/dev/null", virtualFile.getName(), virtualFile.getLength(), "large file");
         }
         String content = null;
         ContentRevision afterRevision = change.getAfterRevision();
@@ -870,24 +719,6 @@ public final class CodeDiffUtil {
         return new ArrayList<>(lines.subList(0, maxLines));
     }
 
-    /**
-     * 判断是否应跳过大文件 diff 生成
-     */
-    private static boolean shouldSkipLargeFileDiff(@NotNull VirtualFile virtualFile) {
-        long length = virtualFile.getLength();
-        if (length <= 0) {
-            return false;
-        }
-        if (length > MAX_DIFF_FILE_BYTES) {
-            return true;
-        }
-        String extension = virtualFile.getExtension();
-        if (extension == null) {
-            return false;
-        }
-        return TEXT_ASSET_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT))
-               && length >= MAX_TEXT_ASSET_BYTES;
-    }
 
     /**
      * 截断超长单行，避免产生过长 diff
@@ -906,23 +737,21 @@ public final class CodeDiffUtil {
     }
 
     /**
-     * 格式化文件大小
+     * 单文件 diff 内容截断
      */
     @NotNull
-    private static String formatSize(long bytes) {
-        if (bytes < 0) {
-            return "unknown";
+    private static String truncateDiffIfNeeded(@NotNull String diff) {
+        if (diff.length() <= MAX_DIFF_CHARS_PER_FILE) {
+            return diff;
         }
-        if (bytes < 1024) {
-            return bytes + "B";
+        String suffix = "\n...[diff truncated]";
+        if (MAX_DIFF_CHARS_PER_FILE <= suffix.length()) {
+            return diff.substring(0, MAX_DIFF_CHARS_PER_FILE);
         }
-        if (bytes < 1024 * 1024) {
-            return (bytes / 1024) + "KB";
-        }
-        long mb = bytes / (1024 * 1024);
-        long remainder = (bytes % (1024 * 1024)) / (1024 * 100);
-        return mb + "." + remainder + "MB";
+        int limit = MAX_DIFF_CHARS_PER_FILE - suffix.length();
+        return diff.substring(0, limit) + suffix;
     }
+
 
     /**
      * 移除 Java 代码中的注释
