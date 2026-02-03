@@ -745,9 +745,6 @@ public final class CodeDiffUtil {
             return diff;
         }
         String suffix = "\n...[diff truncated]";
-        if (MAX_DIFF_CHARS_PER_FILE <= suffix.length()) {
-            return diff.substring(0, MAX_DIFF_CHARS_PER_FILE);
-        }
         int limit = MAX_DIFF_CHARS_PER_FILE - suffix.length();
         return diff.substring(0, limit) + suffix;
     }

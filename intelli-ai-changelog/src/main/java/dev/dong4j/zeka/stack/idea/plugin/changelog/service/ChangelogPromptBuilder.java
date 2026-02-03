@@ -233,7 +233,6 @@ final class ChangelogPromptBuilder {
                                     @Nullable CommitSelectionMeta selectionMeta) {
         SettingsState settings = SettingsState.getInstance();
         String template = settings.commitMessageTemplate;
-        int maxFiles = MAX_COMMIT_MESSAGE_FILES;
 
         return buildCommitMessagePromptWithFallback(payload,
                                                     recentCommitsText,
@@ -242,7 +241,7 @@ final class ChangelogPromptBuilder {
                                                     isGitRepository,
                                                     selectionMeta,
                                                     template,
-                                                    maxFiles);
+                                                    MAX_COMMIT_MESSAGE_FILES);
     }
 
     // Git Log 单条/多条提交再生（含压缩提交）已收敛为 DiffPayload + selection meta 的统一构建逻辑。

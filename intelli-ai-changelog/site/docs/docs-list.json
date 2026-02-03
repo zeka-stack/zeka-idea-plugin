@@ -4,12 +4,12 @@
     "path": "./docs/Commit-Message-Inlay-Hint实现方案.md"
   },
   {
-    "name": "Commit-Message提示优化",
-    "path": "./docs/Commit-Message提示优化.md"
-  },
-  {
     "name": "Commit-Message生成优化",
     "path": "./docs/Commit-Message生成优化.md"
+  },
+  {
+    "name": "Commit-message提示优化",
+    "path": "./docs/Commit-message提示优化.md"
   },
   {
     "name": "全量变更日志生成方案",
@@ -28,7 +28,15 @@
     "path": "./docs/提交信息生成优化方案.md"
   },
   {
+    "name": "提交信息用户提示词构建逻辑",
+    "path": "./docs/提交信息用户提示词构建逻辑.md"
+  },
+  {
     "name": "用户手册",
     "path": "./docs/用户手册.md"
+  },
+  {
+    "name": "编辑提交消息窗口-提交信息再生成功能实现方案",
+    "path": "./docs/编辑提交消息窗口-提交信息再生成功能实现方案.md"
   }
 ]
