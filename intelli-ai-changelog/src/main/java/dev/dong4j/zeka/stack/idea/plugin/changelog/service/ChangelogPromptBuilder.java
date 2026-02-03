@@ -52,6 +52,10 @@ final class ChangelogPromptBuilder {
 
     /** 提交消息中差异内容的最大字符数限制 */
     private static final int MAX_COMMIT_MESSAGE_DIFF_CHARS = 500_000;
+    /** rawPatch 输出的最大行数 */
+    private static final int MAX_RAW_PATCH_LINES = 400;
+    /** diffSummary 输出的最大行数 */
+    private static final int MAX_DIFF_SUMMARY_LINES = 200;
     /** 提交消息提示词的最大 token 预估上限（全局兜底） */
     private static final int MAX_COMMIT_MESSAGE_PROMPT_TOKENS = 6000;
     /** 提交消息提示词的最大字符硬限制（最后兜底） */
@@ -746,8 +750,9 @@ final class ChangelogPromptBuilder {
                                                         @Nullable CommitSelectionMeta selectionMeta,
                                                         @NotNull String template,
                                                         int maxFiles) {
-        String rawPatch = payload.fullPatchText().trim();
-        String diffSummary = buildDiffSummaryText(payload, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS);
+        String rawPatch = truncateByLines(payload.fullPatchText().trim(), MAX_RAW_PATCH_LINES);
+        String diffSummary = truncateByLines(buildDiffSummaryText(payload, maxFiles, MAX_COMMIT_MESSAGE_DIFF_CHARS),
+                                             MAX_DIFF_SUMMARY_LINES);
         String contextJson = buildStructuredContext(payload,
                                                     recentCommitsText,
                                                     userContext,
@@ -864,6 +869,30 @@ final class ChangelogPromptBuilder {
         }
         int limit = maxChars - suffix.length();
         return text.substring(0, limit) + suffix;
+    }
+
+    /**
+     * 按行数截断文本
+     */
+    @NotNull
+    private String truncateByLines(@NotNull String text, int maxLines) {
+        if (maxLines <= 0 || text.isBlank()) {
+            return text;
+        }
+        int lines = 0;
+        int index = 0;
+        int length = text.length();
+        while (index < length) {
+            if (text.charAt(index) == '\n') {
+                lines++;
+                if (lines >= maxLines) {
+                    String suffix = "\n...[truncated]";
+                    return text.substring(0, index) + suffix;
+                }
+            }
+            index++;
+        }
+        return text;
     }
 
     /**

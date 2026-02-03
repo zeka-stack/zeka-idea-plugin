@@ -50,8 +50,11 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
  */
 final class ChangelogAiExecutor {
 
+    /** 中文字符正则表达式模式, 用于匹配 Unicode 范围内的中文字符. */
     private static final Pattern CHINESE_PATTERN = Pattern.compile("[\\u4E00-\\u9FA5]");
+    /** 英文字符每分词的平均长度系数, 用于分词计算 */
     private static final double ENGLISH_CHARS_PER_TOKEN = 4.0;
+    /** 每个中文字符对应的分词权重系数, 用于计算分词长度时的调整因子 */
     private static final double CHINESE_CHARS_PER_TOKEN = 1.5;
 
     /** 当前项目上下文, 用于标识和操作当前 IDE 中的项目 */
@@ -565,10 +568,10 @@ final class ChangelogAiExecutor {
                                                 config.runtimeSettings.maxRetries));
         AIConsoleLoggerUtil.print(project,
                                   "System Prompt (" + request.systemPrompt().length() + " chars):\n" +
-                                  truncate(request.systemPrompt(), promptLogMaxLength));
+                                  truncatePlain(request.systemPrompt(), promptLogMaxLength));
         AIConsoleLoggerUtil.print(project,
                                   "User Prompt (" + request.userPrompt().length() + " chars):\n" +
-                                  truncate(request.userPrompt(), promptLogMaxLength));
+                                  truncateForLogUserPrompt(request.userPrompt(), promptLogMaxLength));
     }
 
     /**
@@ -579,11 +582,66 @@ final class ChangelogAiExecutor {
      * @param maxLength 截断的最大长度, 必须大于 0
      * @return 截断后的字符串, 若原字符串过长则包含截断提示
      */
-    private String truncate(@NotNull String text, int maxLength) {
+    private String truncatePlain(@NotNull String text, int maxLength) {
         if (text.length() <= maxLength) {
             return text;
         }
         return text.substring(0, maxLength) + "\n...[truncated " + (text.length() - maxLength) + " chars]";
+    }
+
+    /**
+     * 截断用户提示词日志，仅保留 changes 前后 JSON 结构
+     */
+    private String truncateForLogUserPrompt(@NotNull String text, int maxLength) {
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        String marker = "【结构化上下文（JSON）】";
+        int markerIndex = text.indexOf(marker);
+        if (markerIndex < 0) {
+            return truncatePlain(text, maxLength);
+        }
+        int jsonStart = text.indexOf('{', markerIndex + marker.length());
+        if (jsonStart < 0) {
+            return truncatePlain(text, maxLength);
+        }
+        int changesKey = text.indexOf("\"changes\"", jsonStart);
+        if (changesKey < 0) {
+            return truncatePlain(text, maxLength);
+        }
+        int arrayStart = text.indexOf('[', changesKey);
+        if (arrayStart < 0) {
+            return truncatePlain(text, maxLength);
+        }
+        String changesEndMarker = "\n  ],\n  \"metadata\"";
+        int arrayEndMarker = text.indexOf(changesEndMarker, arrayStart);
+        if (arrayEndMarker < 0) {
+            return truncatePlain(text, maxLength);
+        }
+
+        int headEnd = arrayStart + 1;
+        int tailStart = arrayEndMarker + 1;
+        if (headEnd > text.length() || tailStart >= text.length()) {
+            return truncatePlain(text, maxLength);
+        }
+
+        String placeholder = "\n  ...[changes omitted]...\n";
+        int available = maxLength - placeholder.length();
+        if (available <= 0) {
+            return truncatePlain(text, maxLength);
+        }
+
+        int headKeep = Math.min(headEnd, (int) Math.round(available * 0.6));
+        int tailAvailable = text.length() - tailStart;
+        int tailKeep = Math.min(tailAvailable, available - headKeep);
+        if (tailKeep < 0) {
+            headKeep = Math.min(headEnd, available);
+            tailKeep = 0;
+        }
+
+        String head = text.substring(0, headKeep);
+        String tail = tailKeep > 0 ? text.substring(tailStart, tailStart + tailKeep) : "";
+        return head + placeholder + tail;
     }
 
     /**
