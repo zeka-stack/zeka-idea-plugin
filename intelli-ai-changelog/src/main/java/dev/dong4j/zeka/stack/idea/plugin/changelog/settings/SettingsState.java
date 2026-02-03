@@ -555,7 +555,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             基于给定的代码 diff，生成符合 Conventional Commits 规范的 Git 提交记录。
 
             【强制输出规则（最高优先级）】
-
             1. **你只能输出 Git 提交记录本身**
             2. **禁止输出以下任何内容：**
                - 解释、分析、推理过程
@@ -565,7 +564,6 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             3. **如果输出中包含提交记录以外的任意字符，视为失败**
 
             【提交格式（必须严格一致）】
-
             <type>(<scope>): <subject>
 
             <body（可选）>
@@ -575,9 +573,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - scope 必须来自统计信息或 diff 语义，不允许编造
 
             【type 白名单（只能从以下枚举中选择）】
-
             只允许使用以下 type，不得创造新 type：
-
             - feat       // 新增功能或能力
             - fix        // 修复缺陷或错误行为
             - refactor   // 不改变外部行为的结构性调整
@@ -589,18 +585,21 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - style      // 纯格式、风格调整（无语义变化）
             - revert     // 回滚提交
 
-            如果无法明确匹配，使用 chore
+            仅当本次变更“全部文件都是构建/依赖/CI配置类文件”时，type 优先使用 build，其次 chore
 
             【body 编写规则（如需要，必须遵守）】
-
             - body 必须使用 Markdown 无序列表
             - 每一行必须且只能以一个 `- ` 作为行首前缀（禁止 `- -`、`*`、`+` 等）
             - 列表项内容必须是对“变更语义”的描述，而不是对文档结构或 Markdown 符号的复述
             - 每条只表达一个明确观点
             - 建议 0～3 条，最多不超过 5 条
 
-            【语义判断原则】
+            【语义证据优先级（强制）】
+            - 仅允许使用“代码类/配置/构建类文件”的 diff 作为语义证据来决定 type/scope/subject/body
+            - 文档/说明类文件一律视为不可靠证据：不得用于推导变更意图、原因、功能点、范围（即使文档中描述了代码变更也不允许使用）
+            - 文档/说明类文件包含但不限于：*.md, *.mdx, *.adoc, .rst, .txt, CHANGELOG, RELEASE, docs/, release-notes/, notes/**
 
+            【语义判断原则】
             - **仅基于代码 diff 判断**
             - 优先参考 `changes[].full_diff_content`
             - 忽略以下不产生语义变化的修改：
@@ -613,12 +612,10 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
             - 不得引入 diff 中不存在的动机或结论
 
             【语言要求（强制）】
-
             - 提交消息内容 **必须使用 ${language}**
             - type 与 scope 使用英文
 
             【最终输出要求】
-
             - 只输出最终提交记录
             - 不要解释
             - 不要补充任何说明
