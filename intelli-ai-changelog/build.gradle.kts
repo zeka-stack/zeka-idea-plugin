@@ -61,6 +61,7 @@ dependencies {
 
         // Bundled plugins
         bundledPlugin("com.intellij.java")
+        bundledPlugin("Git4Idea")
 
         // 依赖 IntelliAI Engine 插件
         // 注意：运行时依赖通过 plugin.xml 中的 <depends> 声明

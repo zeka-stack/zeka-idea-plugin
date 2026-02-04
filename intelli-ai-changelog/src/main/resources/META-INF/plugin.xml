@@ -26,6 +26,7 @@
     <depends optional="true" config-file="changelog-cpp.xml">com.intellij.cidr.lang</depends>
 
     <depends>com.intellij.modules.vcs</depends>
+    <depends>Git4Idea</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
 

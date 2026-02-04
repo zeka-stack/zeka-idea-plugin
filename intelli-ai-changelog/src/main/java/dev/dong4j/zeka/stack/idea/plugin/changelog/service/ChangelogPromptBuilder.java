@@ -339,8 +339,7 @@ final class ChangelogPromptBuilder {
         if (userContext != null && !userContext.trim().isEmpty()) {
             json.append(",\n    \"extra_context\": \"").append(escapeJson(userContext.trim())).append("\"");
         }
-        json.append(",\n    \"commit_template\": \"type(scope): subject\"\n");
-        json.append("  }\n");
+        json.append("\n  }\n");
 
         json.append("}");
         return json.toString();

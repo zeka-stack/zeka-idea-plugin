@@ -3,6 +3,8 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import git4idea.repo.GitRepository;
+import git4idea.repo.GitRepositoryManager;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -265,6 +267,10 @@ record ChangelogGitService(Project project) {
      */
     @Nullable
     String getCurrentBranch() {
+        String branch = resolveBranchFromIdea();
+        if (branch != null) {
+            return branch;
+        }
         Repository repository = getRepository();
         if (repository == null) {
             return null;
@@ -282,6 +288,10 @@ record ChangelogGitService(Project project) {
      * @return true 表示存在有效的 Git 仓库
      */
     boolean isGitRepository() {
+        Boolean isGit = resolveIsGitRepositoryFromIdea();
+        if (isGit != null) {
+            return isGit;
+        }
         Repository repository = getRepository();
         if (repository == null) {
             return false;
@@ -306,6 +316,47 @@ record ChangelogGitService(Project project) {
             return null;
         }
         return getRepository(new File(basePath));
+    }
+
+    /**
+     * 从 IntelliJ IDEA 项目中解析当前 Git 分支名称
+     * <p> 通过 Git 仓库管理器获取项目根目录对应的 Git 仓库, 并读取当前分支名称. 若未找到仓库或分支名称为空, 则返回 null.
+     *
+     * @return 当前 Git 分支名称, 若无法获取则返回 null
+     */
+    @Nullable
+    private String resolveBranchFromIdea() {
+        try {
+            GitRepositoryManager manager = GitRepositoryManager.getInstance(project);
+            GitRepository repository = manager.getRepositoryForRoot(project.getBaseDir());
+            if (repository == null) {
+                List<GitRepository> repositories = manager.getRepositories();
+                if (repositories.isEmpty()) {
+                    return null;
+                }
+                repository = repositories.getFirst();
+            }
+            String branch = repository.getCurrentBranchName();
+            return branch != null && !branch.trim().isEmpty() ? branch : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * 从 IntelliJ IDEA 项目中解析是否为 Git 仓库
+     * <p> 尝试获取当前项目中的 Git 仓库管理器, 并判断是否存在至少一个 Git 仓库. 若发生异常则返回 null
+     *
+     * @return 如果存在 Git 仓库则返回 true, 否则返回 false; 若发生异常则返回 null
+     */
+    @Nullable
+    private Boolean resolveIsGitRepositoryFromIdea() {
+        try {
+            GitRepositoryManager manager = GitRepositoryManager.getInstance(project);
+            return !manager.getRepositories().isEmpty();
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     /**
