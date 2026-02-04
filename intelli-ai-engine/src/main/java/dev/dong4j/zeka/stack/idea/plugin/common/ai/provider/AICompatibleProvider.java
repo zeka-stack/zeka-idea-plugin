@@ -474,7 +474,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         if (apiKey != null && !apiKey.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         }
-        AIConsoleLoggerUtil.print(project, String.format("连接超时: [%ss] 读取超时: [%ss]", runtime.timeout,
+        AIConsoleLoggerUtil.print(project, String.format("连接超时: [%ss] 读取超时: [%ss]\n", runtime.timeout,
                                                          (runtime.timeout * 2)));
     }
 

@@ -243,7 +243,7 @@ public class GitHubModelsProvider extends OpenAILikeProvider {
         if (apiKey != null && !apiKey.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         }
-        AIConsoleLoggerUtil.print(project, String.format("连接超时: [%ss] 读取超时: [%ss]", runtimeSettings.timeout,
+        AIConsoleLoggerUtil.print(project, String.format("连接超时: [%ss] 读取超时: [%ss]\n", runtimeSettings.timeout,
                                                          (runtimeSettings.timeout * 2)));
     }
 }
