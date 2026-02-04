@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
-import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
-import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -9,6 +7,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import lombok.Getter;
 
 /**
  * AI 服务提供商类型枚举
@@ -25,6 +26,18 @@ import java.util.Map;
  * @since 1.0.0
  */
 public enum AIProviderType {
+    /**
+     * Dong4j Cloud (OpenAI 兼容) 模型配置
+     */
+    DONG4J(
+        "free",
+        "Dong4j AI",
+        "https://api.dong4j.site/v1",
+        "gpt-3.5-turbo",
+        false,
+        false,
+        List.of("gpt-3.5-turbo", "gpt-4o-mini")
+    ),
     /**
      * 自定义模型配置
      * <p>
@@ -661,6 +674,7 @@ public enum AIProviderType {
     public static Map<String, List<AIProviderType>> getGroupedProviders() {
         Map<String, List<AIProviderType>> groupedProviders = new LinkedHashMap<>();
         groupedProviders.put(AICommonBundle.message("settings.provider.group.openai"), List.of(
+            AIProviderType.DONG4J,
             AIProviderType.OPENAI,
             AIProviderType.NVIDIA,
             AIProviderType.HUGGINGFACE,
@@ -709,6 +723,7 @@ public enum AIProviderType {
     @SuppressWarnings("DuplicatedCode")
     public String getApiKeyUrl() {
         return switch (this) {
+            case DONG4J -> null;
             case OPENAI -> "https://platform.openai.com/api-keys";
             case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";

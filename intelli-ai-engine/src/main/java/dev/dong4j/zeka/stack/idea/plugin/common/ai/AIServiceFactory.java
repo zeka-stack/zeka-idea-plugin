@@ -2,6 +2,9 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
+
+import org.jetbrains.annotations.NotNull;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.AnthropicLikeProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.anthropic.ModelScopeAnthropicProvider;
@@ -18,7 +21,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZhipuOpenAIPr
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * AI 服务工厂类
@@ -70,7 +72,8 @@ public final class AIServiceFactory {
         AIModelParameters modelParameters = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
         AIRuntimeSettings runtimeSettings = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
         return switch (providerType) {
-            case OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE, NVIDIA,
+            case DONG4J, OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE,
+                 NVIDIA,
                  MISTRAL, LM_STUDIO, MOONSHOT -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
 
             case AZURE -> new AzureOpenAIProvider(project, config, modelParameters, runtimeSettings);

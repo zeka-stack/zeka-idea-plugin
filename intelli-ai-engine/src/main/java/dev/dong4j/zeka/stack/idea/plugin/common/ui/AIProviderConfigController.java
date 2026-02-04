@@ -30,8 +30,10 @@ import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.auth.Dong4jAuthTokenManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -452,7 +454,8 @@ public final class AIProviderConfigController {
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                ValidationResult result = provider.validateConfiguration(getCurrentApiKey());
+                String apiKey = resolveApiKey(providerType);
+                ValidationResult result = provider.validateConfiguration(apiKey);
                 SwingUtilities.invokeLater(() -> {
                     if (result.isSuccess()) {
                         configurationVerified = true;
@@ -550,7 +553,8 @@ public final class AIProviderConfigController {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 String currentModelName = getSelectedModelName();
-                List<String> models = provider.getAvailableModels(apiKey);
+                String resolvedApiKey = resolveApiKey(providerType);
+                List<String> models = provider.getAvailableModels(resolvedApiKey);
                 models = filterLanguageModels(models);
                 models.sort(String::compareToIgnoreCase);
                 saveCachedModels(providerType, models);
@@ -1100,6 +1104,14 @@ public final class AIProviderConfigController {
 
                // 说明文字
                "💡 提示：测试连接之前先修改高级参数以适配不同场景需求\n";
+    }
+
+    @NotNull
+    private String resolveApiKey(@NotNull AIProviderType providerType) throws AIServiceException {
+        if (providerType == AIProviderType.DONG4J) {
+            return Dong4jAuthTokenManager.getToken();
+        }
+        return getCurrentApiKey();
     }
 
     private Component getDialogParent() {

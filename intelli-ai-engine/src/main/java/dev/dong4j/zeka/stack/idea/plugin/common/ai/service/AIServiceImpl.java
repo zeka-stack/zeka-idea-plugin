@@ -2,18 +2,22 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ai.service;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.auth.Dong4jAuthTokenManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * AI 服务实现类
@@ -79,7 +83,7 @@ public final class AIServiceImpl implements AIService {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
-                String apiKey = GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
+                String apiKey = resolveApiKey(config);
                 listener.onStart();
                 provider.generateContentStream(request, apiKey, listener);
             } catch (Throwable e) {
@@ -107,7 +111,7 @@ public final class AIServiceImpl implements AIService {
         // 创建服务提供者
         AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
         // 生成内容（传递 listener）
-        return provider.generateContent(request, GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId), listener);
+        return provider.generateContent(request, resolveApiKey(config), listener);
     }
 
     /**
@@ -135,6 +139,13 @@ public final class AIServiceImpl implements AIService {
      */
     public static AIService getInstance() {
         return ApplicationManager.getApplication().getService(AIService.class);
+    }
+
+    private static String resolveApiKey(@NotNull AIProviderConfig config) throws AIServiceException {
+        if (config.providerType == AIProviderType.DONG4J) {
+            return Dong4jAuthTokenManager.getToken();
+        }
+        return GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
     }
 
 }

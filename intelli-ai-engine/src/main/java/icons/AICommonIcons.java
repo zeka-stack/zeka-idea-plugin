@@ -2,11 +2,13 @@ package icons;
 
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.util.IconUtil;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+import javax.swing.Icon;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 
 /**
  * 用户服务类
@@ -510,6 +512,7 @@ public final class AICommonIcons {
             return null;
         }
         Icon icon = switch (providerType) {
+            case DONG4J -> PROVIDER_CHATGPT;
             case OPENAI -> PROVIDER_CHATGPT;
             case OPENROUTER -> PROVIDER_OPENROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
@@ -551,6 +554,7 @@ public final class AICommonIcons {
             return null;
         }
         return switch (providerType) {
+            case DONG4J -> PROVIDER_CHATGPT_64;
             case OPENAI -> PROVIDER_CHATGPT_64;
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;
