@@ -26,6 +26,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- 配置持久化 -->
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState"/>
+        <projectService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.terminal.history.TerminalHistoryState"/>
 
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
