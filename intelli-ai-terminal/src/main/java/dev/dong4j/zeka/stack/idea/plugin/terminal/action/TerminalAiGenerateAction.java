@@ -306,7 +306,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param settings 当前设置状态
      * @return AIProviderConfig 对象的副本, 如果没有可用的提供商配置则返回 null
      */
-    private static AIProviderConfig resolveProviderConfig(@NotNull SettingsState settings) {
+    public static AIProviderConfig resolveProviderConfig(@NotNull SettingsState settings) {
         if (settings.providerConfig != null) {
             log.debug("Using terminal-specific provider config: {}", settings.providerConfig.providerType);
             return settings.providerConfig.copy();
@@ -327,7 +327,7 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @param e 动作事件对象, 用于获取数据上下文
      * @return 终端视图实例, 若未找到则返回 null
      */
-    private static TerminalView getTerminalView(@NotNull AnActionEvent e) {
+    public static TerminalView getTerminalView(@NotNull AnActionEvent e) {
         DataKey<TerminalView> key = DataKey.create("TerminalView");
         TerminalView view = e.getData(key);
         if (view != null) {
@@ -977,6 +977,76 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
         // 完成阶段
         indicator.setText(TerminalBundle.message("action.terminal.progress.completed"));
         return true;
+    }
+
+    /**
+     * 从 AI 响应中提取可执行命令
+     *
+     * @param result    AI 原始响应文本
+     * @param shellType 当前终端 shell 类型
+     * @return 提取成功返回命令文本, 失败返回 null
+     */
+    @Nullable
+    public static String extractExecutableCommand(@NotNull String result, @NotNull TerminalShellType shellType) {
+        String command = extractCommand(result).strip();
+        if (command.isBlank()) {
+            return null;
+        }
+        return isValidShellOutput(command, shellType) ? command : null;
+    }
+
+    /**
+     * 直接将命令应用到终端并可选执行
+     *
+     * @param project      当前项目
+     * @param terminalView TerminalView, 可空
+     * @param jbWidget     JBTerminalWidget, 可空
+     * @param command      待应用命令
+     * @param execute      true 表示插入后立即执行
+     * @param shellType    终端 shell 类型
+     * @return 成功返回 true, 失败返回 false
+     */
+    public static boolean applyCommandToTerminal(@NotNull Project project,
+                                                 @Nullable TerminalView terminalView,
+                                                 @Nullable JBTerminalWidget jbWidget,
+                                                 @NotNull String command,
+                                                 boolean execute,
+                                                 @NotNull TerminalShellType shellType) {
+        String trimmed = command.strip();
+        if (trimmed.isBlank()) {
+            showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.empty"));
+            return false;
+        }
+        if (!isValidShellOutput(trimmed, shellType)) {
+            showTip(project, terminalView, jbWidget, TerminalBundle.message("error.ai.invalid.output"));
+            return false;
+        }
+        if (terminalView != null) {
+            replaceCurrentLine(terminalView, trimmed, false, shellType);
+            if (execute) {
+                sendText(terminalView, "\n");
+            }
+            return true;
+        }
+        if (jbWidget != null) {
+            replaceCurrentLine(jbWidget, trimmed, project, false, shellType);
+            if (execute) {
+                try {
+                    if (jbWidget.getTtyConnector() != null && jbWidget.getTtyConnector().isConnected()) {
+                        jbWidget.getTtyConnector().write("\n");
+                    } else {
+                        NotificationUtil.showWarning(project, TerminalBundle.message("error.terminal.not.ready"));
+                        return false;
+                    }
+                } catch (IOException ex) {
+                    NotificationUtil.showError(project, TerminalBundle.message("error.terminal.write.failed", ex.getMessage()));
+                    return false;
+                }
+            }
+            return true;
+        }
+        NotificationUtil.showWarning(project, TerminalBundle.message("error.terminal.not.found"));
+        return false;
     }
 
     /**

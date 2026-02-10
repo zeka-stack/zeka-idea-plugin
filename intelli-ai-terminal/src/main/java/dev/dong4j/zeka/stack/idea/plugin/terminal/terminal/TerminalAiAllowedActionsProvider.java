@@ -30,6 +30,9 @@ public class TerminalAiAllowedActionsProvider implements TerminalAllowedActionsP
      */
     @Override
     public @NotNull List<String> getActionIds() {
-        return List.of("dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiGenerateAction");
+        return List.of(
+            "dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiGenerateAction",
+            "dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiQuickPromptAction"
+                      );
     }
 }
