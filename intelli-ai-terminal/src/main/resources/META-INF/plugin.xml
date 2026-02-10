@@ -26,6 +26,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- 配置持久化 -->
         <applicationService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.terminal.settings.SettingsState"/>
+        <projectService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.terminal.history.TerminalHistoryState"/>
 
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->
@@ -67,6 +68,15 @@
                 text="Terminal AI Generate"
                 description="Generate terminal command with AI">
             <keyboard-shortcut keymap="$default" first-keystroke="TAB"/>
+        </action>
+
+        <!-- Terminal AI Quick Prompt -->
+        <!--suppress PluginXmlI18n -->
+        <action id="dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiQuickPromptAction"
+                class="dev.dong4j.zeka.stack.idea.plugin.terminal.action.TerminalAiQuickPromptAction"
+                text="Terminal AI Quick Prompt"
+                description="Open quick prompt input for terminal AI command generation">
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl I"/>
         </action>
     </actions>
 </idea-plugin>
