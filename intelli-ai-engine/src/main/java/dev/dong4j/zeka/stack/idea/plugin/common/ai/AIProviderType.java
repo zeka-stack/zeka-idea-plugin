@@ -31,12 +31,12 @@ public enum AIProviderType {
      */
     DONG4J(
         "free",
-        "Dong4j AI",
+        "FreeAI",
         "https://api.dong4j.site/v1",
-        "gpt-3.5-turbo",
+        "studio/ollama/glm-4.7",
+        true,
         false,
-        false,
-        List.of("gpt-3.5-turbo", "gpt-4o-mini")
+        List.of("studio/ollama/glm-4.7", "studio/lm/glm-4.7")
     ),
     /**
      * 自定义模型配置

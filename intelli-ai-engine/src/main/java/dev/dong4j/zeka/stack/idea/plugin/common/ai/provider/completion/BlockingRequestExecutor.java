@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -242,7 +243,7 @@ public class BlockingRequestExecutor {
     private String parseValidationResponse(String responseBody) throws AIServiceException {
         try {
             JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
-
+            AIConsoleLoggerUtil.print(project, "Response JSON:\n" + new GsonBuilder().setPrettyPrinting().create().toJson(json));
             if (json.has("usage")) {
                 JsonObject usage = json.getAsJsonObject("usage");
                 if (usage.has("completion_tokens") && usage.get("completion_tokens").getAsInt() > 0) {

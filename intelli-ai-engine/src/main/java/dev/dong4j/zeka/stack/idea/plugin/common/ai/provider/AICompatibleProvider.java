@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.provider;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -229,7 +230,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
             AIChatRequest request = new AIChatRequest("i say ping, you say pong",
                                                       "ping", 0);
             BlockingRequestExecutor executor = new BlockingRequestExecutor(project, config, this::tuneConnection);
-            String response = executor.sendRequest(buildRequestBody(request), apiKey, null, true);
+            final JsonObject jsonObject = buildRequestBody(request);
+            AIConsoleLoggerUtil.print(project, "Request JSON:\n" + new GsonBuilder().setPrettyPrinting().create().toJson(jsonObject));
+            String response = executor.sendRequest(jsonObject, apiKey, null, true);
             if (!response.isEmpty()) {
                 AIConsoleLoggerUtil.printSuccess(project, "=== 配置验证成功 ===");
                 return ValidationResult.success("连接成功！提供商: " + getProviderType().getDisplayName() +
