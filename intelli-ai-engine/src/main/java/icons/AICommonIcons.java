@@ -512,7 +512,7 @@ public final class AICommonIcons {
             return null;
         }
         Icon icon = switch (providerType) {
-            case DONG4J -> PROVIDER_CHATGPT;
+            case FREEAI -> PROVIDER_CHATGPT;
             case OPENAI -> PROVIDER_CHATGPT;
             case OPENROUTER -> PROVIDER_OPENROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
@@ -554,7 +554,7 @@ public final class AICommonIcons {
             return null;
         }
         return switch (providerType) {
-            case DONG4J -> PROVIDER_CHATGPT_64;
+            case FREEAI -> PROVIDER_CHATGPT_64;
             case OPENAI -> PROVIDER_CHATGPT_64;
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;

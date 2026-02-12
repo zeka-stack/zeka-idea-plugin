@@ -142,7 +142,7 @@ public final class AIServiceImpl implements AIService {
     }
 
     private static String resolveApiKey(@NotNull AIProviderConfig config) throws AIServiceException {
-        if (config.providerType == AIProviderType.DONG4J) {
+        if (config.providerType == AIProviderType.FREEAI) {
             return Dong4jAuthTokenManager.getToken();
         }
         return GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);

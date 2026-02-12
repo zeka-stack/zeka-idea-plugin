@@ -72,7 +72,7 @@ public final class AIServiceFactory {
         AIModelParameters modelParameters = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
         AIRuntimeSettings runtimeSettings = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
         return switch (providerType) {
-            case DONG4J, OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE,
+            case FREEAI, OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE,
                  NVIDIA,
                  MISTRAL, LM_STUDIO, MOONSHOT -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
 

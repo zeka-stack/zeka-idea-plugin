@@ -1108,7 +1108,7 @@ public final class AIProviderConfigController {
 
     @NotNull
     private String resolveApiKey(@NotNull AIProviderType providerType) throws AIServiceException {
-        if (providerType == AIProviderType.DONG4J) {
+        if (providerType == AIProviderType.FREEAI) {
             return Dong4jAuthTokenManager.getToken();
         }
         return getCurrentApiKey();

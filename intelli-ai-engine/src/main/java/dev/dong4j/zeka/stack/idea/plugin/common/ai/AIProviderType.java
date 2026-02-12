@@ -26,10 +26,8 @@ import lombok.Getter;
  * @since 1.0.0
  */
 public enum AIProviderType {
-    /**
-     * Dong4j Cloud (OpenAI 兼容) 模型配置
-     */
-    DONG4J(
+    /** Dong4j Cloud(OpenAI 兼容) 模型配置 */
+    FREEAI(
         "free",
         "FreeAI",
         "https://api.dong4j.site/v1",
@@ -674,7 +672,7 @@ public enum AIProviderType {
     public static Map<String, List<AIProviderType>> getGroupedProviders() {
         Map<String, List<AIProviderType>> groupedProviders = new LinkedHashMap<>();
         groupedProviders.put(AICommonBundle.message("settings.provider.group.openai"), List.of(
-            AIProviderType.DONG4J,
+            AIProviderType.FREEAI,
             AIProviderType.OPENAI,
             AIProviderType.NVIDIA,
             AIProviderType.HUGGINGFACE,
@@ -723,7 +721,7 @@ public enum AIProviderType {
     @SuppressWarnings("DuplicatedCode")
     public String getApiKeyUrl() {
         return switch (this) {
-            case DONG4J -> null;
+            case FREEAI -> "https://zekastack.dong4j.site/#/plugins/engine/monitor";
             case OPENAI -> "https://platform.openai.com/api-keys";
             case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";
