@@ -6,6 +6,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import com.intellij.ide.plugins.IdeaPluginDescriptor;
+import com.intellij.ide.plugins.PluginManagerCore;
+import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -18,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
@@ -47,6 +51,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class AICompatibleProvider implements AIServiceProvider {
+    /** FREEAI 请求时使用的 User-Agent */
+    private static final String FREEAI_USER_AGENT = buildFreeAiUserAgent();
 
     /**
      * 当前操作的项目对象
@@ -477,8 +483,27 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         if (apiKey != null && !apiKey.isEmpty()) {
             connection.setRequestProperty("Authorization", "Bearer " + apiKey);
         }
+        if (config.providerType == AIProviderType.FREEAI) {
+            connection.setRequestProperty("User-Agent", FREEAI_USER_AGENT);
+        }
         AIConsoleLoggerUtil.print(project, String.format("连接超时: [%ss] 读取超时: [%ss]\n", runtime.timeout,
                                                          (runtime.timeout * 2)));
+    }
+
+    /**
+     * 构建 FREEAI 请求使用的 User-Agent 字符串
+     * <p> 通过获取当前插件的描述符来提取版本号, 并将其与插件 ID 组合成符合标准的 User-Agent 格式.
+     * 如果无法获取插件描述符或版本信息, 版本号默认为 "unknown".
+     *
+     * @return User-Agent 字符串, 格式为 "插件 ID/ 版本号"
+     */
+    private static String buildFreeAiUserAgent() {
+        String version = "unknown";
+        IdeaPluginDescriptor descriptor = PluginManagerCore.getPlugin(PluginId.getId(EngineContents.PLUGIN_ID));
+        if (descriptor != null && descriptor.getVersion() != null && !descriptor.getVersion().isBlank()) {
+            version = descriptor.getVersion().trim();
+        }
+        return EngineContents.PLUGIN_ID + "/" + version;
     }
 
     /**

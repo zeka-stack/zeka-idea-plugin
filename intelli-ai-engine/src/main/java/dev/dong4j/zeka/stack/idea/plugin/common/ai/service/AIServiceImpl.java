@@ -13,11 +13,11 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.auth.Dong4jAuthTokenManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings;
 
 /**
  * AI 服务实现类
@@ -141,9 +141,22 @@ public final class AIServiceImpl implements AIService {
         return ApplicationManager.getApplication().getService(AIService.class);
     }
 
+    /**
+     * 解析并获取 API 密钥
+     * <p> 根据 AI 提供者配置解析对应的 API 密钥.
+     * 如果提供者类型为 FREEAI, 会检查统计功能是否已开启, 仅在开启时返回密钥.
+     *
+     * @param config AI 提供者配置信息
+     * @return 解析后的 API 密钥字符串
+     * @throws AIServiceException 当提供者类型为 FREEAI 但未开启统计功能时抛出
+     */
     private static String resolveApiKey(@NotNull AIProviderConfig config) throws AIServiceException {
         if (config.providerType == AIProviderType.FREEAI) {
-            return Dong4jAuthTokenManager.getToken();
+            if (!StatisticsSettings.getInstance().isEnableStatistics()) {
+                throw new AIServiceException("FREEAI 仅对开启统计功能的设备开放",
+                                             AIServiceException.ErrorCode.CONFIGURATION_ERROR);
+            }
+            return GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
         }
         return GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
     }

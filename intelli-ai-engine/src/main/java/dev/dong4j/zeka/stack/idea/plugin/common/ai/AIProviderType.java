@@ -30,7 +30,7 @@ public enum AIProviderType {
     FREEAI(
         "free",
         "FreeAI",
-        "https://api.dong4j.site/v1",
+        "https://api.dong4j.site/freeai/v1",
         "studio/ollama/glm-4.7",
         true,
         false,
