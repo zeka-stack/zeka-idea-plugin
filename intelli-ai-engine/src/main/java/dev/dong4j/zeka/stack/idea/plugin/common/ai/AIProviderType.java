@@ -30,7 +30,7 @@ public enum AIProviderType {
     FREEAI(
         "free",
         "FreeAI",
-        "https://api.dong4j.site/freeai/v1",
+        "https://zekastack.dong4j.site/freeai/v1",
         "studio/ollama/glm-4.7",
         true,
         false,
@@ -721,7 +721,7 @@ public enum AIProviderType {
     @SuppressWarnings("DuplicatedCode")
     public String getApiKeyUrl() {
         return switch (this) {
-            case FREEAI -> "https://zekastack.dong4j.site/#/plugins/engine/monitor";
+            case FREEAI -> "https://zekastack.dong4j.site/#/settings";
             case OPENAI -> "https://platform.openai.com/api-keys";
             case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";

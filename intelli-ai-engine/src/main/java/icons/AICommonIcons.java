@@ -46,6 +46,8 @@ public final class AICommonIcons {
     public static final Icon TOOL_ICON = PLUGIN;
     /** ChatGPT 提供商图标 (16x16 像素), 用于设置页面 AI 供应商下拉列表及状态栏 */
     public static final Icon PROVIDER_CHATGPT = load("/icons/chatgpt_16.svg");
+    /** FREEAI 提供商图标 (16x16 像素) */
+    public static final Icon PROVIDER_FREEAI = load("/icons/freeai_16.svg");
 
     /**
      * Anthropic 提供商图标 (16x16)
@@ -325,6 +327,11 @@ public final class AICommonIcons {
      * @since 1.0.0
      */
     public static final Icon PROVIDER_CHATGPT_64 = load("/icons/chatgpt_64.svg");
+    /** FREEAI 提供商图标 (32x32 像素) */
+    public static final Icon PROVIDER_FREEAI_32 = load("/icons/freeai_32.svg");
+
+    /** FREEAI 提供商图标 (64x64 像素) */
+    public static final Icon PROVIDER_FREEAI_64 = load("/icons/freeai_64.svg");
 
     /**
      * Anthropic 提供商图标 (64x64)
@@ -512,7 +519,7 @@ public final class AICommonIcons {
             return null;
         }
         Icon icon = switch (providerType) {
-            case FREEAI -> PROVIDER_CHATGPT;
+            case FREEAI -> PROVIDER_FREEAI;
             case OPENAI -> PROVIDER_CHATGPT;
             case OPENROUTER -> PROVIDER_OPENROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
@@ -543,6 +550,28 @@ public final class AICommonIcons {
     }
 
     /**
+     * 根据 AIProviderType 获取对应的 32x32 图标
+     *
+     * @param providerType 提供商类型
+     * @return 对应的 32x32 图标，如果未找到返回 null
+     */
+    @Nullable
+    public static Icon getProviderIcon32(@Nullable AIProviderType providerType) {
+        if (providerType == null) {
+            return null;
+        }
+        if (providerType == AIProviderType.FREEAI) {
+            return PROVIDER_FREEAI_32;
+        }
+        Icon icon64 = getProviderIcon64(providerType);
+        if (icon64 != null) {
+            return IconUtil.scale(icon64, null, 0.5f);
+        }
+        Icon icon13 = getProviderIcon(providerType);
+        return IconUtil.scale(icon13, null, 32f / 13f);
+    }
+
+    /**
      * 根据 AIProviderType 获取对应的 64x64 图标
      *
      * @param providerType 提供商类型
@@ -554,7 +583,7 @@ public final class AICommonIcons {
             return null;
         }
         return switch (providerType) {
-            case FREEAI -> PROVIDER_CHATGPT_64;
+            case FREEAI -> PROVIDER_FREEAI_64;
             case OPENAI -> PROVIDER_CHATGPT_64;
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;

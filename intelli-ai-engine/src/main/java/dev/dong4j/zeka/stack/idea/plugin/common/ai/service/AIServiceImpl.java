@@ -1,10 +1,18 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.service;
 
+import com.intellij.ide.BrowserUtil;
+import com.intellij.notification.NotificationType;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
@@ -18,6 +26,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.Notifications;
 
 /**
  * AI 服务实现类
@@ -34,6 +44,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings;
  * @since 1.0.0
  */
 public final class AIServiceImpl implements AIService {
+    /** FREEAI 隐私说明地址 */
+    private static final String FREEAI_PRIVACY_URL = "https://zekastack.dong4j.site/#/privacy";
 
     /**
      * 全局凭证管理器实例
@@ -44,6 +56,11 @@ public final class AIServiceImpl implements AIService {
      */
     private static final AICredentialManager GLOBAL_CREDENTIAL_MANAGER =
         new AICredentialManager(EngineContents.PLUGIN_NAME, "AI_COMMON_");
+
+    /** FREEAI 统计开关未开启提示的最小通知间隔（毫秒） */
+    private static final long FREEAI_STATISTICS_NOTICE_INTERVAL_MS = 30_000L;
+    /** 上次弹出 FREEAI 统计开关提醒的时间戳（毫秒） */
+    private static final AtomicLong LAST_FREEAI_STATISTICS_NOTICE_AT = new AtomicLong(0L);
 
     /**
      * 生成内容
@@ -83,7 +100,7 @@ public final class AIServiceImpl implements AIService {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
-                String apiKey = resolveApiKey(config);
+                String apiKey = resolveApiKey(project, config);
                 listener.onStart();
                 provider.generateContentStream(request, apiKey, listener);
             } catch (Throwable e) {
@@ -111,7 +128,7 @@ public final class AIServiceImpl implements AIService {
         // 创建服务提供者
         AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
         // 生成内容（传递 listener）
-        return provider.generateContent(request, resolveApiKey(config), listener);
+        return provider.generateContent(request, resolveApiKey(project, config), listener);
     }
 
     /**
@@ -150,15 +167,72 @@ public final class AIServiceImpl implements AIService {
      * @return 解析后的 API 密钥字符串
      * @throws AIServiceException 当提供者类型为 FREEAI 但未开启统计功能时抛出
      */
-    private static String resolveApiKey(@NotNull AIProviderConfig config) throws AIServiceException {
+    private static String resolveApiKey(@NotNull Project project, @NotNull AIProviderConfig config) throws AIServiceException {
         if (config.providerType == AIProviderType.FREEAI) {
             if (!StatisticsSettings.getInstance().isEnableStatistics()) {
-                throw new AIServiceException("FREEAI 仅对开启统计功能的设备开放",
+                notifyFreeAiStatisticsRequired(project);
+                throw new AIServiceException(AICommonBundle.message("freeai.statistics.required.message"),
                                              AIServiceException.ErrorCode.CONFIGURATION_ERROR);
             }
             return GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
         }
         return GLOBAL_CREDENTIAL_MANAGER.getApiKey(config.credentialId);
+    }
+
+    /**
+     * 通知用户 FREEAI 需要先启用统计功能，并做节流避免高频打扰。
+     *
+     * @param project 当前项目
+     */
+    private static void notifyFreeAiStatisticsRequired(@NotNull Project project) {
+        long now = System.currentTimeMillis();
+        long last = LAST_FREEAI_STATISTICS_NOTICE_AT.get();
+        if (now - last < FREEAI_STATISTICS_NOTICE_INTERVAL_MS) {
+            return;
+        }
+        if (!LAST_FREEAI_STATISTICS_NOTICE_AT.compareAndSet(last, now)) {
+            return;
+        }
+        AnAction enableStatisticsAction = new DumbAwareAction(AICommonBundle.message("freeai.statistics.required.action.enable")) {
+            /**
+             * 处理动作执行事件
+             * <p> 启用统计功能并显示操作成功通知
+             *
+             * @param e 动作事件对象, 不能为空
+             */
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                StatisticsSettings settings = StatisticsSettings.getInstance();
+                settings.setEnableStatistics(true);
+                Notifications.showNotification(
+                    AICommonBundle.message("freeai.statistics.required.title"),
+                    AICommonBundle.message("freeai.statistics.enabled.success"),
+                    NotificationType.INFORMATION,
+                    project
+                                              );
+            }
+        };
+
+        AnAction privacyAction = new DumbAwareAction(AICommonBundle.message("freeai.statistics.required.action.privacy")) {
+            /**
+             * 处理动作事件
+             * <p> 当用户执行该操作时, 在默认浏览器中打开隐私政策链接
+             *
+             * @param e 动作事件, 必须不为 null
+             */
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                BrowserUtil.browse(FREEAI_PRIVACY_URL);
+            }
+        };
+
+        Notifications.showNotification(
+            AICommonBundle.message("freeai.statistics.required.title"),
+            AICommonBundle.message("freeai.statistics.required.message"),
+            NotificationType.WARNING,
+            List.of(enableStatisticsAction, privacyAction),
+            project
+                                      );
     }
 
 }

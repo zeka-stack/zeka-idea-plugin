@@ -30,10 +30,8 @@ import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.auth.Dong4jAuthTokenManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -454,8 +452,7 @@ public final class AIProviderConfigController {
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                String apiKey = resolveApiKey(providerType);
-                ValidationResult result = provider.validateConfiguration(apiKey);
+                ValidationResult result = provider.validateConfiguration(getCurrentApiKey());
                 SwingUtilities.invokeLater(() -> {
                     if (result.isSuccess()) {
                         configurationVerified = true;
@@ -553,8 +550,7 @@ public final class AIProviderConfigController {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 String currentModelName = getSelectedModelName();
-                String resolvedApiKey = resolveApiKey(providerType);
-                List<String> models = provider.getAvailableModels(resolvedApiKey);
+                List<String> models = provider.getAvailableModels(apiKey);
                 models = filterLanguageModels(models);
                 models.sort(String::compareToIgnoreCase);
                 saveCachedModels(providerType, models);
@@ -1106,14 +1102,13 @@ public final class AIProviderConfigController {
                "💡 提示：测试连接之前先修改高级参数以适配不同场景需求\n";
     }
 
-    @NotNull
-    private String resolveApiKey(@NotNull AIProviderType providerType) throws AIServiceException {
-        if (providerType == AIProviderType.FREEAI) {
-            return Dong4jAuthTokenManager.getToken();
-        }
-        return getCurrentApiKey();
-    }
-
+    /**
+     * 获取对话框的父组件
+     * <p> 该方法通过查找主面板的顶层窗口来获取对话框的父组件. 如果找到了顶层窗口 (Window),
+     * 则返回该窗口; 否则返回主面板本身作为父组件.
+     *
+     * @return 对话框的父组件, 如果找到顶层窗口则返回 Window, 否则返回主面板
+     */
     private Component getDialogParent() {
         Component parent = ui.getMainPanel();
         Component window = SwingUtilities.getWindowAncestor(parent);

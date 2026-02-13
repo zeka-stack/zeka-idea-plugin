@@ -2,6 +2,13 @@
     <configuration default="false" name="IntelliAI Javadoc" type="GradleRunConfiguration" factoryName="Gradle">
         <log_file alias="idea.log" path="$PROJECT_DIR$/build/idea-sandbox/system/log/idea.log"/>
         <ExternalSystemSettings>
+            <option name="env">
+                <map>
+                    <entry key="PATH"
+                           value="/opt/homebrew/opt/libpq/bin:$USER_HOME$/.npm-global/bin:$USER_HOME$/.codebuddy/bin:$USER_HOME$/.bun/bin:/usr/local/sbin:/usr/local/bin:/opt/homebrew/opt/mysql-client/bin:$USER_HOME$/go/bin:$USER_HOME$/.opencode/bin:$USER_HOME$/.asdf/shims:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/usr/local/MacGPG2/bin:/Applications/iTerm.app/Contents/Resources/utilities:$USER_HOME$/.orbstack/bin:$USER_HOME$/.local/bin:$USER_HOME$/.cache/lm-studio/bin:$USER_HOME$/Library/Android/sdk/tools:$USER_HOME$/Library/Android/sdk/platform-tools:$USER_HOME$/Library/Android/sdk/tools/bin:$USER_HOME$/Library/Android/sdk/emulator:$USER_HOME$/.cache/lm-studio/bin:$USER_HOME$/.local/bin:$USER_HOME$/.cache/lm-studio/bin"/>
+                    <entry key="_MISE_PLUGIN_ENV_VARS_CUSTOMIZATION" value="done"/>
+                </map>
+            </option>
             <option name="executionName"/>
             <option name="externalProjectPath" value="$PROJECT_DIR$/intelli-ai-javadoc"/>
             <option name="externalSystemIdString" value="GRADLE"/>
@@ -18,8 +25,11 @@
         </ExternalSystemSettings>
         <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
         <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+        <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
         <DebugAllEnabled>false</DebugAllEnabled>
         <RunAsTest>false</RunAsTest>
+        <GradleProfilingDisabled>false</GradleProfilingDisabled>
+        <GradleCoverageDisabled>false</GradleCoverageDisabled>
         <method v="2"/>
     </configuration>
 </component>
