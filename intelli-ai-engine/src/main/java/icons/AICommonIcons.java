@@ -486,6 +486,13 @@ public final class AICommonIcons {
      */
     public static final Icon PROVIDER_ZAI_64 = load("/icons/zai_64.svg");
 
+    /** Quotio 64x64 像素图标资源, 用于对话框或提示界面中显示 Quotio 服务标识. */
+    public static final Icon QUOTIO_64 = load("/icons/quotio_64.png");
+    /** Quotio 供应商图标, 尺寸为 32x32 像素, 用于界面中标识 Quotio 服务. */
+    public static final Icon QUOTIO_32 = load("/icons/quotio_32.png");
+    /** Quotio 供应商图标, 尺寸为 16x16 像素, 用于界面中标识 Quotio 服务. */
+    public static final Icon QUOTIO = load("/icons/quotio.png");
+
     // ========== 支付方式图标 ==========
 
     /**
@@ -540,6 +547,7 @@ public final class AICommonIcons {
             case SILICONFLOW -> PROVIDER_SILICONFLOW;
             case OLLAMA -> PROVIDER_OLLAMA;
             case LM_STUDIO -> PROVIDER_LMSTUDIO;
+            case QUOTIO -> QUOTIO;
             case MODELSCOPE, MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE;
             case IFLOW -> PROVIDER_IFLOW;
             case ZAI, ZAI_ANTHROPIC -> PROVIDER_ZAI;
@@ -604,6 +612,7 @@ public final class AICommonIcons {
             case SILICONFLOW -> PROVIDER_SILICONFLOW_64;
             case OLLAMA -> PROVIDER_OLLAMA_64;
             case LM_STUDIO -> PROVIDER_LMSTUDIO_64;
+            case QUOTIO -> QUOTIO_64;
             case MODELSCOPE, MODELSCOPE_ANTHROPIC -> PROVIDER_MODELSCOPE_64;
             case IFLOW -> PROVIDER_IFLOW_64;
             case ZAI, ZAI_ANTHROPIC -> PROVIDER_ZAI_64;

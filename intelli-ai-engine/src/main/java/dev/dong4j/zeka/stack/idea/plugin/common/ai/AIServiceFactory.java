@@ -74,7 +74,7 @@ public final class AIServiceFactory {
         return switch (providerType) {
             case FREEAI, OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE,
                  NVIDIA,
-                 MISTRAL, LM_STUDIO, MOONSHOT -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
+                 MISTRAL, LM_STUDIO, MOONSHOT, QUOTIO -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
 
             case AZURE -> new AzureOpenAIProvider(project, config, modelParameters, runtimeSettings);
             case GITHUB_MODELS -> new GitHubModelsProvider(project, config, modelParameters, runtimeSettings);

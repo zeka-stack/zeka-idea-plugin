@@ -333,10 +333,23 @@ public enum AIProviderType {
         "lmstudio",
         "LM Studio",
         "http://localhost:1234/v1",
-        "gpt-3.5-turbo",
+        "qwen3-8b",
         false,
         true,
         List.of("qwen3-8b")
+    ),
+
+    /**
+     * Quotio 模型配置
+     */
+    QUOTIO(
+        "quotio",
+        "Quotio",
+        "http://127.0.0.1:8317/v1",
+        "",
+        false,
+        true,
+        List.of("")
     ),
     /**
      * ModelScope 模型配置
@@ -691,6 +704,7 @@ public enum AIProviderType {
             AIProviderType.SILICONFLOW,
             AIProviderType.IFLOW,
             AIProviderType.LM_STUDIO,
+            AIProviderType.QUOTIO,
             AIProviderType.MODELSCOPE,
             AIProviderType.ZHIPU,
             AIProviderType.ZAI
@@ -741,6 +755,7 @@ public enum AIProviderType {
             case SILICONFLOW -> "https://cloud.siliconflow.cn/settings/api-keys";
             case OLLAMA -> "https://ollama.com/cloud";
             case LM_STUDIO -> "https://lmstudio.ai/";
+            case QUOTIO -> "https://www.quotio.dev/docs/integrations/cli#generate-api-key";
             case MODELSCOPE, MODELSCOPE_ANTHROPIC -> "https://modelscope.cn/usercenter/personal/settings/api-token";
             case IFLOW -> "https://console.iflow.cn/api-key";
             case ZHIPU -> "https://docs.bigmodel.cn/cn/guide/develop/openai/introduction";

@@ -29,7 +29,7 @@
             <option name="executionName"/>
             <option name="externalProjectPath" value="$PROJECT_DIR$/intelli-ai-engine"/>
             <option name="externalSystemIdString" value="GRADLE"/>
-            <option name="scriptParameters" value=""/>
+            <option name="scriptParameters" value=" "/>
             <option name="taskDescriptions">
                 <list/>
             </option>
