@@ -24,6 +24,7 @@ public class InternalWhatsNewProvider implements WhatsNewProvider {
      */
     private static final List<WhatsNewPage> PAGES = List.of(
         // version mark
+        new DefaultWhatsNewPage("2025.3.1311", "2025_3_1311.html"),
         new DefaultWhatsNewPage("2025.3.1310", "2025_3_1310.html"),
         new DefaultWhatsNewPage("2025.3.1300", "2025_3_1300.html"),
         new DefaultWhatsNewPage("2025.3.1200", "2025_3_1200.html"),
