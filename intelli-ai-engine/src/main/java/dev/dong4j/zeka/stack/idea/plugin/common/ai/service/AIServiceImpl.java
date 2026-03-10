@@ -1,17 +1,16 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ai.service;
 
 import com.intellij.ide.BrowserUtil;
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationType;
-import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
@@ -193,17 +192,27 @@ public final class AIServiceImpl implements AIService {
         if (!LAST_FREEAI_STATISTICS_NOTICE_AT.compareAndSet(last, now)) {
             return;
         }
-        AnAction enableStatisticsAction = new DumbAwareAction(AICommonBundle.message("freeai.statistics.required.action.enable")) {
+        Notification notification = Notifications.getBalloonNotificationGroup().createNotification(
+            AICommonBundle.message("freeai.statistics.required.title"),
+            AICommonBundle.message("freeai.statistics.required.message"),
+            NotificationType.WARNING
+                                                                                                  );
+
+        notification.addAction(new NotificationAction(AICommonBundle.message("freeai.statistics.required.action.enable")) {
             /**
              * 处理动作执行事件
              * <p> 启用统计功能并显示操作成功通知
              *
-             * @param e 动作事件对象, 不能为空
+             * @param e            动作事件对象, 不能为空
+             * @param notification 当前通知对象, 用于关闭通知
              */
             @Override
-            public void actionPerformed(@NotNull AnActionEvent e) {
+            public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
                 StatisticsSettings settings = StatisticsSettings.getInstance();
+                settings.setPrivacyAgreementAccepted(true);
                 settings.setEnableStatistics(true);
+                settings.setAllowUpload(true);
+                notification.expire();
                 Notifications.showNotification(
                     AICommonBundle.message("freeai.statistics.required.title"),
                     AICommonBundle.message("freeai.statistics.enabled.success"),
@@ -211,28 +220,24 @@ public final class AIServiceImpl implements AIService {
                     project
                                               );
             }
-        };
+        });
 
-        AnAction privacyAction = new DumbAwareAction(AICommonBundle.message("freeai.statistics.required.action.privacy")) {
+        notification.addAction(new NotificationAction(AICommonBundle.message("freeai.statistics.required.action.privacy")) {
             /**
              * 处理动作事件
-             * <p> 当用户执行该操作时, 在默认浏览器中打开隐私政策链接
+             * <p> 当用户执行该操作时, 在默认浏览器中打开隐私政策链接并关闭通知.
              *
-             * @param e 动作事件, 必须不为 null
+             * @param e            动作事件, 必须不为 null
+             * @param notification 当前通知对象, 用于关闭通知
              */
             @Override
-            public void actionPerformed(@NotNull AnActionEvent e) {
+            public void actionPerformed(@NotNull AnActionEvent e, @NotNull Notification notification) {
                 BrowserUtil.browse(FREEAI_PRIVACY_URL);
+                notification.expire();
             }
-        };
+        });
 
-        Notifications.showNotification(
-            AICommonBundle.message("freeai.statistics.required.title"),
-            AICommonBundle.message("freeai.statistics.required.message"),
-            NotificationType.WARNING,
-            List.of(enableStatisticsAction, privacyAction),
-            project
-                                      );
+        notification.notify(project);
     }
 
 }

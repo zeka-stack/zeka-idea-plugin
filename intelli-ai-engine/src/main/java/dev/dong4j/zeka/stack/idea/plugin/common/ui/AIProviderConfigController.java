@@ -211,49 +211,7 @@ public final class AIProviderConfigController {
      */
     @NotNull
     public AIProviderSettings getSettings() {
-        AIProviderType providerType = resolveSelectedProviderType();
-
-        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
-        String modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
-        defaultConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
-        defaultConfig.baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText().trim());
-        defaultConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
-
-        updateCredentialIdAndSaveApiKey(defaultConfig);
-        workingSettings.availableProviders.clear();
-        ui.getAvailableProvidersTableModel().getData().forEach(workingSettings::addAvailableProvider);
-
-        AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
-        workingSettings.runtimeSettings = runtimeSnapshot.copy();
-        workingSettings.showAvailableProviders = ui.getShowAvailableProvidersCheckBox().isSelected();
-
-        workingSettings.showAdvancedSettings = ui.getShowAdvancedSettingsCheckBox().isSelected();
-
-        // verboseLogging 已迁移到全局配置
-        workingSettings.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
-        workingSettings.lastUpdateCheck = ui.getLastUpdateCheckCheckBox().isSelected();
-        workingSettings.showUpdateNotification = ui.getShowUpdateNotificationCheckBox().isSelected();
-        ResponseLanguage selectedLanguage = (ResponseLanguage) ui.getLanguageComboBox().getSelectedItem();
-        workingSettings.responseLanguage = selectedLanguage != null ? selectedLanguage : ResponseLanguage.ZH;
-
-        AIModelParameters modelSnapshot = snapshotModelParameters();
-        workingSettings.modelParameters = modelSnapshot.copy();
-        workingSettings.intelliAgentSettings = ui.getAgentPanel().snapshotAgentSettings().copy();
-
-        AIProviderConfig selectedAutocompleteProvider = (AIProviderConfig) ui.getAutocompleteProviderComboBox().getSelectedItem();
-        workingSettings.autocompleteProviderCredentialId = selectedAutocompleteProvider != null
-                                                           ? selectedAutocompleteProvider.credentialId
-                                                           : null;
-        workingSettings.aiProviderType = providerType;
-
-        applyParametersToConfig(defaultConfig, modelSnapshot, runtimeSnapshot);
-        workingSettings.updateDefaultProviderConfig(providerType, defaultConfig);
-
-        // 保存统计设置
-        StatisticsSettings statisticsSettings =
-            StatisticsSettings.getInstance();
-        ui.getStatisticsSettingsPanel().apply(statisticsSettings);
-
+        workingSettings = collectSettingsFromUi(true, true);
         return workingSettings;
     }
 
@@ -266,7 +224,7 @@ public final class AIProviderConfigController {
      * @return 如果当前设置与基线设置不同, 返回 true; 否则返回 false
      */
     public boolean isModified(@NotNull AIProviderSettings baseline) {
-        AIProviderSettings latest = getSettings();
+        AIProviderSettings latest = collectSettingsFromUi(false, false);
         if (!latest.contentEquals(baseline)) {
             return true;
         }
@@ -277,6 +235,69 @@ public final class AIProviderConfigController {
         StatisticsSettings statisticsSettings =
             StatisticsSettings.getInstance();
         return ui.getStatisticsSettingsPanel().isModified(statisticsSettings);
+    }
+
+    /**
+     * 从当前 UI 收集设置快照。
+     * <p>
+     * 根据调用场景选择是否持久化凭据、是否应用统计设置，避免在 isModified 中产生副作用。
+     * </p>
+     *
+     * @param persistCredentialAndApiKey 是否持久化凭据和 API Key
+     * @param applyStatisticsToGlobal     是否将统计设置应用到全局设置
+     * @return 收集后的设置快照
+     */
+    @NotNull
+    private AIProviderSettings collectSettingsFromUi(boolean persistCredentialAndApiKey,
+                                                     boolean applyStatisticsToGlobal) {
+        AIProviderSettings snapshot = workingSettings.copy();
+        AIProviderType providerType = resolveSelectedProviderType();
+
+        AIProviderConfig defaultConfig = snapshot.getDefaultProviderConfig(providerType);
+        String modelName = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
+        defaultConfig.modelName = modelName.isEmpty() ? providerType.getDefaultModel() : modelName;
+        defaultConfig.baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText().trim());
+        defaultConfig.configurationVerified = Boolean.TRUE.equals(configurationVerified);
+
+        if (persistCredentialAndApiKey) {
+            updateCredentialIdAndSaveApiKey(defaultConfig);
+        } else {
+            defaultConfig.updateCredentialId(getCurrentApiKey());
+        }
+
+        snapshot.availableProviders.clear();
+        ui.getAvailableProvidersTableModel().getData().forEach(snapshot::addAvailableProvider);
+
+        AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
+        snapshot.runtimeSettings = runtimeSnapshot.copy();
+        snapshot.showAvailableProviders = ui.getShowAvailableProvidersCheckBox().isSelected();
+        snapshot.showAdvancedSettings = ui.getShowAdvancedSettingsCheckBox().isSelected();
+
+        // verboseLogging 已迁移到全局配置
+        snapshot.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
+        snapshot.lastUpdateCheck = ui.getLastUpdateCheckCheckBox().isSelected();
+        snapshot.showUpdateNotification = ui.getShowUpdateNotificationCheckBox().isSelected();
+        ResponseLanguage selectedLanguage = (ResponseLanguage) ui.getLanguageComboBox().getSelectedItem();
+        snapshot.responseLanguage = selectedLanguage != null ? selectedLanguage : ResponseLanguage.ZH;
+
+        AIModelParameters modelSnapshot = snapshotModelParameters();
+        snapshot.modelParameters = modelSnapshot.copy();
+        snapshot.intelliAgentSettings = ui.getAgentPanel().snapshotAgentSettings().copy();
+
+        AIProviderConfig selectedAutocompleteProvider = (AIProviderConfig) ui.getAutocompleteProviderComboBox().getSelectedItem();
+        snapshot.autocompleteProviderCredentialId = selectedAutocompleteProvider != null
+                                                    ? selectedAutocompleteProvider.credentialId
+                                                    : null;
+        snapshot.aiProviderType = providerType;
+
+        applyParametersToConfig(defaultConfig, modelSnapshot, runtimeSnapshot);
+        snapshot.updateDefaultProviderConfig(providerType, defaultConfig);
+
+        if (applyStatisticsToGlobal) {
+            StatisticsSettings statisticsSettings = StatisticsSettings.getInstance();
+            ui.getStatisticsSettingsPanel().apply(statisticsSettings);
+        }
+        return snapshot;
     }
 
     /**
