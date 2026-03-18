@@ -25,6 +25,7 @@ import javax.swing.tree.TreePath;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.ViolationFixer;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.fix.RuleFixSupport;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblem;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsRoot;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
@@ -60,8 +61,17 @@ public class RepairerFixSelectedProblemsAction extends AnAction implements DumbA
             NotificationUtil.showInfo(project, "No problems selected.");
             return;
         }
+        preFormatTargets(project, problems);
+        int aiFixCount = 0;
         for (RepairerProblem problem : problems) {
+            if (RuleFixSupport.shouldFormatFirst(problem.violation().ruleId)) {
+                continue;
+            }
+            aiFixCount++;
             applyFix(project, problem);
+        }
+        if (aiFixCount == 0) {
+            NotificationUtil.showInfo(project, "Formatting applied. No AI fixes required.");
         }
     }
 
@@ -166,6 +176,25 @@ public class RepairerFixSelectedProblemsAction extends AnAction implements DumbA
             collectProblems(node, problems);
         }
         return problems;
+    }
+
+    /**
+     * 批量修复前先执行一次文件级格式化，以优先处理代码风格类规则。
+     *
+     * @param project  项目
+     * @param problems 待处理问题
+     */
+    private static void preFormatTargets(@NotNull Project project, @NotNull Set<RepairerProblem> problems) {
+        Set<PsiFile> files = new LinkedHashSet<>();
+        PsiManager psiManager = PsiManager.getInstance(project);
+        for (RepairerProblem problem : problems) {
+            VirtualFile file = problem.getFile();
+            PsiFile psiFile = psiManager.findFile(file);
+            if (psiFile != null) {
+                files.add(psiFile);
+            }
+        }
+        RuleFixSupport.formatFiles(project, files);
     }
 
     /**

@@ -13,10 +13,14 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.intellij.ui.treeStructure.Tree;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import org.jetbrains.annotations.NotNull;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.ViolationFixer;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.fix.RuleFixSupport;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsRoot;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCache;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
@@ -48,8 +52,17 @@ public class RepairerFixAllProblemsAction extends AnAction implements DumbAware 
             NotificationUtil.showInfo(project, "No problems to fix.");
             return;
         }
+        preFormatTargets(project, violations);
+        int aiFixCount = 0;
         for (CodeViolation violation : violations) {
+            if (RuleFixSupport.shouldFormatFirst(violation.ruleId)) {
+                continue;
+            }
+            aiFixCount++;
             applyFix(project, violation);
+        }
+        if (aiFixCount == 0) {
+            NotificationUtil.showInfo(project, "Formatting applied. No AI fixes required.");
         }
     }
 
@@ -165,5 +178,30 @@ public class RepairerFixAllProblemsAction extends AnAction implements DumbAware 
      */
     private static Tree findTree(@NotNull AnActionEvent e) {
         return tree(e);
+    }
+
+    /**
+     * 批量修复前先执行一次文件级格式化，以优先处理代码风格类规则。
+     *
+     * @param project    项目
+     * @param violations 违规列表
+     */
+    private static void preFormatTargets(@NotNull Project project, @NotNull java.util.List<CodeViolation> violations) {
+        Set<PsiFile> files = new LinkedHashSet<>();
+        PsiManager psiManager = PsiManager.getInstance(project);
+        for (CodeViolation violation : violations) {
+            if (violation.filePath == null || violation.filePath.isBlank()) {
+                continue;
+            }
+            VirtualFile file = com.intellij.openapi.vfs.LocalFileSystem.getInstance().findFileByPath(violation.filePath);
+            if (file == null) {
+                continue;
+            }
+            PsiFile psiFile = psiManager.findFile(file);
+            if (psiFile != null) {
+                files.add(psiFile);
+            }
+        }
+        RuleFixSupport.formatFiles(project, files);
     }
 }

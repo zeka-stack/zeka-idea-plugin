@@ -27,6 +27,7 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixPromptBuilder;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.FixResponseValidator;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.ai.RepairerAIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.EnhancedPatchApplier;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.fix.RuleFixSupport;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
 
@@ -105,6 +106,11 @@ public class AICheckstyleFix implements LocalQuickFix {
         if (document == null) {
             return;
         }
+        CodeViolation violation = toViolation();
+        if (RuleFixSupport.shouldFormatFirst(violation.ruleId)) {
+            RuleFixSupport.formatFile(project, file);
+            return;
+        }
 
         TextRange range = computePreciseRange(document, element, problem.line(), problem.column());
         if (range == null) {
@@ -112,7 +118,6 @@ public class AICheckstyleFix implements LocalQuickFix {
         }
         String originalSnippet = document.getText(range);
         String surroundingContext = getSurroundingContext(document, range);
-        CodeViolation violation = toViolation();
         FixContext context = buildContext(violation, originalSnippet, surroundingContext);
 
         new Task.Backgroundable(project, RepairerBundle.message("task.ai.checkstyle"), true) {

@@ -19,6 +19,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.apply.PatchApplier;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.fix.RuleFixSupport;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.violation.CodeViolation;
@@ -59,6 +60,10 @@ public final class ViolationFixer {
                              @NotNull Document document,
                              @NotNull TextRange range,
                              @NotNull CodeViolation violation) {
+        if (RuleFixSupport.shouldFormatFirst(violation.ruleId)) {
+            RuleFixSupport.formatFile(project, file);
+            return;
+        }
         String originalSnippet = document.getText(range);
         new Task.Backgroundable(project, RepairerBundle.message("task.ai.generic"), true) {
             /**
