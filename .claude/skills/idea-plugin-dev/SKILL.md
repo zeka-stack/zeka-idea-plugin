@@ -114,8 +114,8 @@ template-with-ai/
    ```properties
    pluginGroup=dev.dong4j.zeka.stack
    pluginName=Your Plugin Name
-   pluginVersion=2025.3.1
-   kitVersion=2025.3.1
+   pluginVersion=2026.1.1000
+   kitVersion=2026.1.1000
    rootProjectName=your-plugin-name
    ```
 

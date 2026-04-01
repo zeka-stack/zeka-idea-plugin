@@ -281,7 +281,8 @@ vim gradle.properties
 dependencies {
     // IntelliJ Platform 基础依赖
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        // create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        intellijIdea(providers.gradleProperty("platformVersion"))
 
         // 本地开发时注释掉，发布时取消注释
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai")
@@ -513,7 +514,7 @@ cd intelli-ai-javadoc  # 进入任一插件目录
 编辑 `gradle.properties`:
 
 ```properties
-pluginVersion=2025.3.1
+pluginVersion=2026.1.1000
 ```
 
 #### 4.9.2 更新变更日志

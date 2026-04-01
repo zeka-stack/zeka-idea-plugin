@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform") version "2.10.5"
+    id("org.jetbrains.intellij.platform") version "2.13.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -30,7 +30,9 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("platformSinceBuild")
-            untilBuild = providers.gradleProperty("platformUntilBuild")
+            // https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html#intellijPlatform-pluginConfiguration-ideaVersion-untilBuild
+            // untilBuild = providers.gradleProperty("platformUntilBuild")
+            untilBuild = provider { null }
         }
     }
 
@@ -54,7 +56,8 @@ intellijPlatform {
 dependencies {
     // IntelliJ Platform
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        // create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        intellijIdea(providers.gradleProperty("platformVersion"))
 
         // Bundled plugins
         bundledPlugin("com.intellij.java")

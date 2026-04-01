@@ -60,8 +60,8 @@ cd my-new-plugin
 # 插件基本信息
 pluginGroup=dev.dong4j.zeka.stack
 pluginName=My New Plugin
-pluginVersion=2025.3.1
-kitVersion=2025.3.1
+pluginVersion=2026.1.1000
+kitVersion=2026.1.1000
 # 项目名称
 rootProjectName=my-new-plugin
 
@@ -69,7 +69,7 @@ rootProjectName=my-new-plugin
 platformType=IC
 platformVersion=2025.2
 platformSinceBuild=242.2
-platformUntilBuild=999.*
+platformUntilBuild=261.*
 ```
 
 ### 3.3 修改包名和类名

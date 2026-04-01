@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     id("maven-publish")
-    id("org.jetbrains.intellij.platform") version "2.10.5"
+    id("org.jetbrains.intellij.platform") version "2.13.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -30,7 +30,8 @@ publishing {
 dependencies {
     // IntelliJ Platform API（库项目仅编译期依赖，运行时由插件提供）
     intellijPlatform {
-        create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        // create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
+        intellijIdea(providers.gradleProperty("platformVersion"))
     }
 
     // Lombok

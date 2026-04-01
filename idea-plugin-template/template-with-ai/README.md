@@ -60,10 +60,10 @@ cd my-new-ai-plugin
 # 插件基本信息
 pluginGroup=dev.dong4j.zeka.stack
 pluginName=My New AI Plugin
-pluginVersion=2025.3.1
-kitVersion=2025.3.1
+pluginVersion=2026.1.1000
+kitVersion=2026.1.1000
 # IntelliAI Engine 版本（统一管理，避免重复）
-engineVersion=2025.3.1
+engineVersion=2026.1.1000
 
 # 项目名称
 rootProjectName=my-new-ai-plugin
@@ -72,7 +72,7 @@ rootProjectName=my-new-ai-plugin
 platformType=IC
 platformVersion=2025.2
 platformSinceBuild=242.2
-platformUntilBuild=999.*
+platformUntilBuild=261.*
 ```
 
 ### 3.3 修改包名和类名
