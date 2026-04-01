@@ -21,7 +21,6 @@ import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowId;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
@@ -32,18 +31,33 @@ import com.intellij.ui.content.ContentManager;
 import com.intellij.ui.content.ContentManagerEvent;
 import com.intellij.ui.content.ContentManagerListener;
 import com.intellij.util.ui.JBUI;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-
-import javax.swing.*;
-import java.awt.*;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 
 /**
@@ -79,12 +93,6 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * <p> 用于标识 Problems 工具窗口, 支持新旧版本的兼容性.
      */
     public static final String PROBLEMS_TOOL_WINDOW_ID = "Problems";
-
-    /**
-     * Problems 工具窗口旧 ID
-     * 用于兼容旧版本 IntelliJ IDEA 的工具窗口标识符
-     */
-    public static final String PROBLEMS_TOOL_WINDOW_LEGACY_ID = ToolWindowId.PROBLEMS_VIEW;
 
     /**
      * 控制台 Tab 名称
@@ -557,11 +565,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      */
     private ToolWindow findProblemsToolWindow() {
         ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
-        ToolWindow toolWindow = toolWindowManager.getToolWindow(PROBLEMS_TOOL_WINDOW_ID);
-        if (toolWindow != null) {
-            return toolWindow;
-        }
-        return toolWindowManager.getToolWindow(PROBLEMS_TOOL_WINDOW_LEGACY_ID);
+        return toolWindowManager.getToolWindow(PROBLEMS_TOOL_WINDOW_ID);
     }
 
     /**

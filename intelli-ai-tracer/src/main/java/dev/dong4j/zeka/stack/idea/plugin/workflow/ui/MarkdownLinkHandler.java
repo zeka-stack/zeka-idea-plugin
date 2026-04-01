@@ -10,6 +10,7 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import org.intellij.plugins.markdown.extensions.MarkdownBrowserPreviewExtension;
+import org.intellij.plugins.markdown.ui.preview.BrowserPipe;
 import org.intellij.plugins.markdown.ui.preview.MarkdownHtmlPanel;
 import org.intellij.plugins.markdown.ui.preview.ResourceProvider;
 import org.jetbrains.annotations.NotNull;
@@ -42,9 +43,13 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
 
     /** scratch:// 链接格式：scratch://文件名 */
     private static final Pattern SCRATCH_LINK_PATTERN = Pattern.compile("scratch://(.+)");
-
-    private final MarkdownHtmlPanel panel;
     private final Project project;
+    private final BrowserPipe.Handler linkHandler = new BrowserPipe.Handler() {
+        @Override
+        public boolean processMessageReceived(@NotNull String data) {
+            return handleLink(data);
+        }
+    };
 
     /**
      * 构造函数
@@ -54,7 +59,6 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
      */
     @SuppressWarnings("UnstableApiUsage")
     public MarkdownLinkHandler(@NotNull MarkdownHtmlPanel panel, @NotNull Project project) {
-        this.panel = panel;
         this.project = project;
 
         // 订阅链接点击事件
@@ -62,9 +66,9 @@ public class MarkdownLinkHandler implements MarkdownBrowserPreviewExtension, Res
         // 目前没有稳定的替代方案，如果未来 API 变更，需要相应更新
         var browserPipe = panel.getBrowserPipe();
         if (browserPipe != null) {
-            browserPipe.subscribe(OPEN_LINK_EVENT_NAME, this::handleLink);
+            browserPipe.subscribe(OPEN_LINK_EVENT_NAME, linkHandler);
             Disposer.register(this, () -> {
-                browserPipe.removeSubscription(OPEN_LINK_EVENT_NAME, this::handleLink);
+                browserPipe.removeSubscription(OPEN_LINK_EVENT_NAME, linkHandler);
             });
         }
     }
