@@ -1122,7 +1122,6 @@
   let documentsManifest = [];
   let currentDocumentId = null;
 
-  const MANIFEST_PATH = './docs/docs-list.json';
   const DEFAULT_DOC_PATH = './docs/用户手册.md';
   const LAST_DOC_STORAGE_KEY = 'intelliAI.docs.lastDocId';
 
@@ -1136,7 +1135,7 @@
 
   async function loadManifest() {
     try {
-      const response = await fetch(MANIFEST_PATH, {cache: 'no-cache'});
+      const response = await fetch(getManifestFetchPath(), {cache: 'no-cache'});
       if (!response.ok) {
         throw new Error('Failed to load manifest');
       }
@@ -1152,6 +1151,11 @@
   }
 
   function getInitialDocumentMeta() {
+    const urlDoc = getDocumentMetaFromUrl();
+    if (urlDoc) {
+      return urlDoc;
+    }
+
     const savedId = localStorage.getItem(LAST_DOC_STORAGE_KEY);
     if (savedId) {
       const savedDoc = documentsManifest.find(doc => (
@@ -1178,7 +1182,87 @@
     };
   }
 
-  async function loadDocument(docMeta) {
+  function getDocumentMetaFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const queryDoc = params.get('doc');
+    if (queryDoc) {
+      return resolveDocumentMeta(queryDoc);
+    }
+
+    const pathMatch = window.location.pathname.match(/\/docs\/([^?#]+\.md)$/);
+    if (pathMatch) {
+      return resolveDocumentMeta(`./docs/${decodeURIComponent(pathMatch[1])}`);
+    }
+
+    return null;
+  }
+
+  function normalizeDocumentPath(path) {
+    if (!path) {
+      return '';
+    }
+    let normalized = decodeURIComponent(path).trim();
+    if (normalized.startsWith('/')) {
+      normalized = normalized.substring(1);
+    }
+    if (normalized.startsWith('./')) {
+      normalized = normalized.substring(2);
+    }
+    if (!normalized.startsWith('docs/')) {
+      normalized = `docs/${normalized}`;
+    }
+    return `./${normalized}`;
+  }
+
+  function resolveDocumentMeta(path) {
+    const normalizedPath = normalizeDocumentPath(path);
+    const matched = documentsManifest.find(doc => normalizeDocumentPath(doc.path) === normalizedPath);
+    if (matched) {
+      return matched;
+    }
+    if (!normalizedPath.endsWith('.md') || normalizedPath.includes('..')) {
+      return null;
+    }
+    const fileName = normalizedPath.substring(normalizedPath.lastIndexOf('/') + 1);
+    return {
+      id: normalizedPath,
+      name: fileName.replace(/\.md$/, ''),
+      path: normalizedPath,
+      category: '文档'
+    };
+  }
+
+  function getDocsBasePath() {
+    const pathname = window.location.pathname;
+    const docsIndex = pathname.lastIndexOf('/docs/');
+    if (docsIndex >= 0) {
+      return `${pathname.substring(0, docsIndex)}/docs/`;
+    }
+    const lastSlash = pathname.lastIndexOf('/');
+    return `${pathname.substring(0, lastSlash + 1)}docs/`;
+  }
+
+  function getManifestFetchPath() {
+    return `${getDocsBasePath()}docs-list.json`;
+  }
+
+  function getDocumentFetchPath(docPath) {
+    const normalizedPath = normalizeDocumentPath(docPath);
+    const fileName = normalizedPath.substring('./docs/'.length);
+    return `${getDocsBasePath()}${encodeURI(fileName)}`;
+  }
+
+  function updateDocumentUrl(docMeta) {
+    if (!docMeta || !docMeta.path) {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    params.set('doc', normalizeDocumentPath(docMeta.path).substring(2));
+    const nextUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', nextUrl);
+  }
+
+  async function loadDocument(docMeta, syncUrl = false) {
     if (!docMeta || !docMeta.path) {
       return;
     }
@@ -1192,7 +1276,7 @@
                     </div>
                 `;
     try {
-      const response = await fetch(docMeta.path);
+      const response = await fetch(getDocumentFetchPath(docMeta.path));
       if (!response.ok) {
         throw new Error('Failed to load markdown');
       }
@@ -1200,6 +1284,9 @@
       renderMarkdown();
       setActiveDocument(currentDocumentId);
       updateDocumentsPanelStatus(docMeta);
+      if (syncUrl) {
+        updateDocumentUrl(docMeta);
+      }
       if (currentDocumentId) {
         localStorage.setItem(LAST_DOC_STORAGE_KEY, currentDocumentId);
       }
@@ -1282,7 +1369,7 @@
         path: target.dataset.docPath,
         category: target.dataset.docCategory
       };
-      loadDocument(selected);
+      loadDocument(selected, true);
     });
   }
 

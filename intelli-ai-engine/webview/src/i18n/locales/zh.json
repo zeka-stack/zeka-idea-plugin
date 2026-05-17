@@ -22,6 +22,7 @@
   },
   "chat": {
     "sendMessage": "给 {{provider}} 发送消息",
+    "notAgentLink": "我不是 Agent",
     "createNewSession": "创建新会话",
     "confirmNewSession": "当前会话已有消息，确定要创建新会话吗？",
     "confirmInterrupt": "当前正在对话中，创建新会话将中断当前对话，是否继续？",

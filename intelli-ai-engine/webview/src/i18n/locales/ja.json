@@ -21,6 +21,7 @@
   },
   "chat": {
     "sendMessage": "{{provider}}にメッセージを送信",
+    "notAgentLink": "私は Agent ではありません",
     "createNewSession": "新規セッションを作成",
     "confirmNewSession": "現在のセッションにメッセージがあります。新規セッションを作成してもよろしいですか?",
     "confirmInterrupt": "会話が進行中です。新規セッションを作成すると中断されます。続行しますか?",

@@ -52,6 +52,10 @@
     "path": "./docs/Engine-SSE-流式输出实现方案.md"
   },
   {
+    "name": "Engine Chat 不是 Agent",
+    "path": "./docs/Engine-Chat-不是-Agent.md"
+  },
+  {
     "name": "IntelliJ平台超链接实现方式总结",
     "path": "./docs/IntelliJ平台超链接实现方式总结.md"
   },

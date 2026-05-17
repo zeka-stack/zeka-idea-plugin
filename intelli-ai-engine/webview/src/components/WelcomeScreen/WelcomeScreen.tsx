@@ -3,6 +3,9 @@ import type {TFunction} from 'i18next';
 import {BlinkingLogo} from '../BlinkingLogo';
 import {AnimatedText} from '../AnimatedText';
 import {APP_VERSION} from '../../version/version';
+import {openBrowser} from '../../utils/bridge';
+
+const NOT_AGENT_DOC_URL = 'https://ideaplugin.dong4j.site/engine/docs/Engine-Chat-%E4%B8%8D%E6%98%AF-Agent.md';
 
 export interface WelcomeScreenProps {
   currentProvider: string;
@@ -39,6 +42,13 @@ export function WelcomeScreen({
       <div>
         <AnimatedText text={t('chat.sendMessage', { provider: providerLabel })} />
       </div>
+      <button
+        type="button"
+        className="not-agent-link"
+        onClick={() => openBrowser(NOT_AGENT_DOC_URL)}
+      >
+        {t('chat.notAgentLink')}
+      </button>
     </div>
   );
 }

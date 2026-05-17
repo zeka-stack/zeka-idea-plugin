@@ -21,6 +21,7 @@
   },
   "chat": {
     "sendMessage": "Envoyer un message à {{provider}}",
+    "notAgentLink": "Je ne suis pas un Agent",
     "createNewSession": "Créer une nouvelle session",
     "confirmNewSession": "La session actuelle contient des messages, êtes-vous sûr de vouloir créer une nouvelle session ?",
     "confirmInterrupt": "Une conversation est en cours, créer une nouvelle session l'interrompra, continuer ?",

@@ -21,6 +21,7 @@
   },
   "chat": {
     "sendMessage": "給 {{provider}} 發送訊息",
+    "notAgentLink": "我不是 Agent",
     "createNewSession": "建立新會話",
     "confirmNewSession": "目前會話已有訊息，確定要建立新會話嗎？",
     "confirmInterrupt": "目前正在對話中，建立新會話將中斷目前對話，是否繼續？",
