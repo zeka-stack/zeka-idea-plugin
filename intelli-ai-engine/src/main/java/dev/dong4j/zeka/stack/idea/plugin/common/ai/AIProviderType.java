@@ -57,14 +57,16 @@ public enum AIProviderType {
         "anthropic",
         "Anthropic",
         "https://api.anthropic.com",
-        "claude-3-5-sonnet-20241022",
+        "claude-sonnet-4-20250514",
         true,
         true,
         List.of(
+            "claude-opus-4-1-20250805",
+            "claude-opus-4-20250514",
+            "claude-sonnet-4-20250514",
+            "claude-3-7-sonnet-20250219",
             "claude-3-5-sonnet-20241022",
             "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307"
                )
     ),
@@ -666,6 +668,25 @@ public enum AIProviderType {
     @NotNull
     public static List<String> getAllDisplayNames() {
         return Arrays.stream(values()).map(AIProviderType::getDisplayName).toList();
+    }
+
+    /**
+     * 判断当前提供商是否使用 Anthropic Messages API 兼容协议.
+     * <p>
+     * Engine 同时支持同名服务商的 OpenAI 兼容和 Anthropic 兼容入口, Chat 面板需要据此区分展示名称和日志,
+     * 避免用户在下拉列表中无法判断当前使用的是哪一种接口协议.
+     *
+     * @return 如果当前提供商使用 Anthropic 兼容协议则返回 {@code true}
+     */
+    public boolean isAnthropicCompatible() {
+        return this == ANTHROPIC
+               || this == DEEPSEEK_ANTHROPIC
+               || this == DOUBAO_ANTHROPIC
+               || this == HUNYUAN_ANTHROPIC
+               || this == MOONSHOT_ANTHROPIC
+               || this == MODELSCOPE_ANTHROPIC
+               || this == ZHIPU_ANTHROPIC
+               || this == ZAI_ANTHROPIC;
     }
 
     /**

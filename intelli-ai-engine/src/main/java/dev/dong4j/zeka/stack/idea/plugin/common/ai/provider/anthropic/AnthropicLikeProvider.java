@@ -4,19 +4,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AICompatibleProvider;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
-import lombok.extern.slf4j.Slf4j;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,6 +21,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AICompatibleProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Claude（Anthropic）Provider
  * <p>
@@ -40,6 +43,14 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
 
     /** Anthropic API 的版本号, 固定为 2023-06-01 */
     private static final String ANTHROPIC_VERSION = "2023-06-01";
+    /** Anthropic Messages API 路径 */
+    private static final String MESSAGES_PATH = "/messages";
+    /** Anthropic Models API 路径 */
+    private static final String MODELS_PATH = "/models";
+    /** Anthropic API 版本路径 */
+    private static final String API_VERSION_PATH = "/v1";
+    /** 默认输出 token 上限, 避免部分 Claude 模型因过大的 max_tokens 参数拒绝请求 */
+    private static final int DEFAULT_MAX_TOKENS = 4096;
 
     /**
      * 初始化 Anthropic 提供商实例
@@ -126,12 +137,13 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
             throw new AIServiceException("需要 API 密钥但未进行配置", AIServiceException.ErrorCode.CONFIGURATION_ERROR);
         }
 
-        String url = config.baseUrl + "/v1/messages";
+        String url = buildMessagesUrl();
         JsonObject body = buildMessagesRequestBody(request, true);
         String requestBody = body.toString();
 
         try {
             listener.onStart();
+            listener.onRequest(getProviderType().getDisplayName(), config.modelName, requestBody, false);
             byte[] requestBodyBytes = requestBody.getBytes(StandardCharsets.UTF_8);
             final int contentLength = requestBodyBytes.length;
             HttpRequests.post(url, "application/json")
@@ -208,8 +220,9 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
             return new ArrayList<>();
         }
 
-        String url = config.baseUrl + "/v1/models";
+        String url = buildModelsUrl();
         try {
+            AIConsoleLoggerUtil.print(project, "请求 URL: " + url);
             String responseBody = HttpRequests.request(url)
                 .tuner(connection -> tuneAnthropicConnection((HttpURLConnection) connection, apiKey))
                 .connect(HttpRequests.Request::readString);
@@ -239,8 +252,55 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         connection.setReadTimeout(timeoutMillis * 2);
         connection.setRequestProperty("anthropic-version", ANTHROPIC_VERSION);
         if (apiKey != null && !apiKey.isBlank()) {
-            connection.setRequestProperty("x-api-key", apiKey.trim());
+            String trimmedApiKey = apiKey.trim();
+            connection.setRequestProperty("x-api-key", trimmedApiKey);
+            // 官方 Anthropic API 使用 x-api-key, 部分兼容网关只识别 Bearer token, 因此同时发送以提升兼容性.
+            connection.setRequestProperty("Authorization", "Bearer " + trimmedApiKey);
         }
+    }
+
+    /**
+     * 构建 Messages API 请求地址.
+     * <p> 用户可能填写根地址、版本地址或完整 messages 地址。这里统一归一化, 防止拼出
+     * {@code /v1/v1/messages} 或 {@code /v1/messages/v1/messages} 这类错误地址.
+     *
+     * @return Messages API 完整地址
+     */
+    @NotNull
+    private String buildMessagesUrl() {
+        return buildAnthropicUrl(MESSAGES_PATH);
+    }
+
+    /**
+     * 构建 Models API 请求地址.
+     * <p> 当基础地址已经指向 messages 端点时, 会转换为同版本 models 端点, 供刷新模型列表使用.
+     *
+     * @return Models API 完整地址
+     */
+    @NotNull
+    private String buildModelsUrl() {
+        return buildAnthropicUrl(MODELS_PATH);
+    }
+
+    /**
+     * 根据基础 URL 构建 Anthropic 兼容端点地址.
+     * <p> Engine 的设置页允许用户编辑 Base URL。为了兼容官方 Anthropic 和第三方兼容网关,
+     * 这里接受三类输入: 服务根地址、{@code /v1} 地址、完整 {@code /v1/messages} 或 {@code /v1/models} 地址.
+     *
+     * @param targetPath 目标端点路径, 目前为 {@code /messages} 或 {@code /models}
+     * @return 归一化后的请求地址
+     */
+    @NotNull
+    private String buildAnthropicUrl(@NotNull String targetPath) {
+        String baseUrl = config.baseUrl;
+        if (baseUrl.endsWith(MESSAGES_PATH) || baseUrl.endsWith(MODELS_PATH)) {
+            int lastSlash = baseUrl.lastIndexOf('/');
+            return baseUrl.substring(0, lastSlash) + targetPath;
+        }
+        if (baseUrl.endsWith(API_VERSION_PATH)) {
+            return baseUrl + targetPath;
+        }
+        return baseUrl + API_VERSION_PATH + targetPath;
     }
 
     /**
@@ -271,7 +331,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         // 参数映射：Anthropic 主要使用 max_tokens / temperature / top_p / top_k
         AIModelParameters params = modelParameters;
         Integer maxTokens = parseMaxTokens(params.maxTokens);
-        body.addProperty("max_tokens", Objects.requireNonNullElse(maxTokens, 10240));
+        body.addProperty("max_tokens", Objects.requireNonNullElse(maxTokens, DEFAULT_MAX_TOKENS));
 
         Double temperature = parseDouble(params.temperature);
         if (temperature != null) {
@@ -304,7 +364,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
                                        @Nullable String apiKey,
                                        @Nullable AIResponseListener listener,
                                        boolean validation) throws AIServiceException {
-        String url = config.baseUrl + "/v1/messages";
+        String url = buildMessagesUrl();
         String requestBody = body.toString();
         if (listener != null) {
             listener.onRequest(getProviderType().getDisplayName(), config.modelName, requestBody, validation);

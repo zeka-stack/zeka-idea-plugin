@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.chat;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
@@ -17,15 +18,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.ColorUtil;
 import com.intellij.ui.jcef.JBCefBrowser;
 import com.intellij.util.ui.UIUtil;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +29,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 
 /**
  * AI 聊天消息处理器
@@ -258,9 +262,14 @@ final class AIChatMessageHandler {
             config.modelName = currentModel;
         }
 
-        AIConsoleLoggerUtil.printWithTimestamp(project, "[Chat] send message, provider="
-            + config.providerType.getDisplayName() + ", model=" + config.modelName);
-        LOG.info("[Chat] send message, provider=" + config.providerType.getDisplayName() + ", model=" + config.modelName);
+        String protocol = config.providerType.isAnthropicCompatible() ? "anthropic" : "openai-compatible";
+        String providerLog = "[Chat] send message, provider=" + config.providerType.getDisplayName()
+                             + ", providerId=" + config.providerType.getProviderId()
+                             + ", protocol=" + protocol
+                             + ", model=" + config.modelName
+                             + ", baseUrl=" + config.baseUrl;
+        AIConsoleLoggerUtil.printWithTimestamp(project, providerLog);
+        LOG.info(providerLog);
 
         String systemPrompt = buildSystemPrompt();
         String fileTagContext = buildFileTagContext(obj);
@@ -559,7 +568,7 @@ final class AIChatMessageHandler {
 
             JsonObject item = new JsonObject();
             item.addProperty("id", id);
-            item.addProperty("label", config.providerType.getDisplayName());
+            item.addProperty("label", buildChatProviderLabel(config.providerType));
             item.addProperty("providerType", config.providerType.getProviderId());
             item.addProperty("model", config.modelName);
             item.addProperty("isActive", id.equals(currentProviderId));
@@ -578,6 +587,20 @@ final class AIChatMessageHandler {
 
         payload.add("providers", providers);
         callJs("updateEngineProviders", payload.toString());
+    }
+
+    /**
+     * 构建 Chat 面板中展示的服务商名称.
+     * <p> 部分服务商同时提供 OpenAI 兼容和 Anthropic 兼容入口, 仅展示 displayName 会导致两项同名.
+     * 对 Anthropic 兼容入口追加协议标识, 方便用户确认当前接口类型.
+     *
+     * @param providerType 服务商类型
+     * @return Chat 下拉列表展示名称
+     */
+    @NotNull
+    private static String buildChatProviderLabel(@NotNull AIProviderType providerType) {
+        String displayName = providerType.getDisplayName();
+        return providerType.isAnthropicCompatible() ? displayName + " (Anthropic)" : displayName;
     }
 
     /**
