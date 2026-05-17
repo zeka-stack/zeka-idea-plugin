@@ -22,7 +22,7 @@
   },
   "chat": {
     "sendMessage": "Send message to {{provider}}",
-      "notAgentLink": "I'm not an Agent",
+    "notAgentLink": "I'm not an Agent",
     "createNewSession": "Create New Session",
     "confirmNewSession": "Current session has messages. Are you sure you want to create a new session?",
     "confirmInterrupt": "A conversation is in progress. Creating a new session will interrupt it. Continue?",
