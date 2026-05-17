@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.console;
 
+import com.intellij.analysis.problemsView.toolWindow.ProblemsViewToolWindowUtils;
 import com.intellij.execution.filters.HyperlinkInfo;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.ui.ConsoleView;
@@ -90,9 +91,19 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
 
     /**
      * Problems 工具窗口 ID(新旧兼容)
-     * <p> 用于标识 Problems 工具窗口, 支持新旧版本的兼容性.
+     * <p> 2026.1 之后 IDE 侧会使用 {@code Problems View}, 旧版本仍是 {@code Problems}.
      */
+    public static final String PROBLEMS_VIEW_TOOL_WINDOW_ID = "Problems View";
+    /** 旧版 Problems 工具窗口 ID */
     public static final String PROBLEMS_TOOL_WINDOW_ID = "Problems";
+
+    /**
+     * Problems View 中的自定义日志 tab ID.
+     * <p>
+     * 2026.1 之后, 直接向 Problems 工具窗口追加普通 Content 的方式不稳定,
+     * 这里改为通过 ProblemsViewPanelProvider 注册专用 tab.
+     */
+    public static final String PROBLEMS_VIEW_TAB_ID = "IntelliAI.Engine.Console";
 
     /**
      * 控制台 Tab 名称
@@ -215,10 +226,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     public void ensureTabVisible() {
         ApplicationManager.getApplication().invokeLater(() -> {
             ensureRootPanel();
-            ToolWindow toolWindow = findProblemsToolWindow();
-            if (toolWindow != null) {
-                ensureProblemsToolWindowTab(toolWindow);
-            }
+            ensureProblemsToolWindowTab();
             syncConsoleTogglesFromSettings();
             refreshPanelBySettings();
         });
@@ -232,6 +240,14 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      */
     private void showToolWindow() {
         ApplicationManager.getApplication().invokeLater(() -> {
+            if (ensureProblemsToolWindowTab()) {
+                ToolWindow toolWindow = findProblemsToolWindow();
+                if (toolWindow != null && !toolWindow.isVisible()) {
+                    toolWindow.show(null);
+                }
+                showConsolePanel();
+                return;
+            }
             ToolWindow toolWindow = findProblemsToolWindow();
             if (toolWindow != null) {
                 ensureProblemsToolWindowTab(toolWindow);
@@ -242,6 +258,27 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
                 }
             }
         });
+    }
+
+    /**
+     * 通过新版 Problems View API 确保日志 tab 可见.
+     * <p>
+     * 新版 IDEA 会优先走 {@link ProblemsViewToolWindowUtils} 注册的 tab;
+     * 如果当前运行环境不支持该 API, 返回 false 交给旧版 contentManager 逻辑兜底.
+     *
+     * @return 成功走新版 Problems View tab 时返回 true, 否则返回 false
+     */
+    private boolean ensureProblemsToolWindowTab() {
+        try {
+            ProblemsViewToolWindowUtils utils = ProblemsViewToolWindowUtils.INSTANCE;
+            if (utils.getTabById(project, PROBLEMS_VIEW_TAB_ID) == null) {
+                utils.addTab(project, new AIConsoleProblemsViewPanelProvider(project));
+            }
+            utils.selectTab(project, PROBLEMS_VIEW_TAB_ID);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /**
@@ -268,6 +305,20 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
             Disposer.register(content, consoleView);
         }
         registerContentListener(contentManager);
+    }
+
+    /**
+     * 获取 Problems View tab 中实际展示的根组件.
+     * <p>
+     * 该方法由 ProblemsViewPanelProvider 适配层调用, 用于把现有的 Console UI
+     * 直接复用到新的 Problems View tab 中.
+     *
+     * @return 日志面板的根组件
+     */
+    @NotNull
+    JComponent getProblemsViewRootComponent() {
+        ensureRootPanel();
+        return rootPanel;
     }
 
     /**
@@ -565,6 +616,10 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      */
     private ToolWindow findProblemsToolWindow() {
         ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
+        ToolWindow toolWindow = toolWindowManager.getToolWindow(PROBLEMS_VIEW_TOOL_WINDOW_ID);
+        if (toolWindow != null) {
+            return toolWindow;
+        }
         return toolWindowManager.getToolWindow(PROBLEMS_TOOL_WINDOW_ID);
     }
 
@@ -603,7 +658,11 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         if (consoleContent != null && selected == consoleContent) {
             return true;
         }
-        return rootPanel != null && selected.getComponent() == rootPanel;
+        if (rootPanel == null) {
+            return false;
+        }
+        Component component = selected.getComponent();
+        return component == rootPanel || component instanceof AIConsoleProblemsViewPanel;
     }
 
     /**
@@ -1061,6 +1120,14 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         return consoleView;
     }
 
+    /**
+     * 获取控制台编辑器可显示的字符列数
+     * <p> 基于控制台编辑器组件的实际像素宽度与字符宽度进行计算, 返回一个合理的字符列数值.
+     * 若无法获取编辑器, 组件宽度无效或字符宽度无效, 则返回默认值 80.
+     * 最终结果至少为 40, 避免因极端情况返回过小值.
+     *
+     * @return 控制台可显示的字符列数, 默认最小值为 40
+     */
     private int getConsoleWidthChars() {
         Editor editor = getConsoleEditor();
         if (editor == null) {
@@ -1079,18 +1146,50 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         return Math.max(40, width / charWidth);
     }
 
+    /**
+     * 生成盒子顶部边框字符串.
+     * <p> 根据指定的内部宽度, 使用制表符绘制字符构造盒子顶部边框,
+     * 返回类似 <pre>{@code "╔═══╗\n"}</pre> 的字符串.
+     *
+     * @param innerWidth 盒子内部区域的宽度 (字符数), 即水平线条字符的重复次数
+     * @return 表示盒子顶部边框的字符串, 末尾包含换行符
+     */
     private String boxTop(int innerWidth) {
         return "╔" + repeat("═", innerWidth) + "╗\n";
     }
 
+    /**
+     * 构建方框底部边框字符串.
+     * <p> 根据内部宽度, 生成由“╚”, 重复的“═”以及“╝”组成的底部边框, 并在末尾添加换行符.
+     *
+     * @param innerWidth 方框的内部宽度, 即“═”字符重复的次数
+     * @return 表示方框底部边框的字符串, 格式为“╚” + 若干“═” + “╝\n”
+     */
     private String boxBottom(int innerWidth) {
         return "╚" + repeat("═", innerWidth) + "╝\n";
     }
 
+    /**
+     * 将指定内容格式化为带有双竖线边框的行
+     * <p>在内容两侧添加双竖线字符 (║) 并在末尾追加换行符, 通常用于构建控制台输出中的框线样式行.
+     *
+     * @param content 需要被框起来的内容, 不能为空
+     * @return 格式化后的框线行字符串, 格式为 {@code ║content║\n}
+     */
     private String boxLine(@NotNull String content) {
         return "║" + content + "║\n";
     }
 
+    /**
+     * 将文本在指定宽度内居中对齐
+     *
+     * <p> 如果文本长度大于或等于给定宽度, 则直接截取前 width 个字符;
+     * 否则在左右两侧填充空格, 使文本居中显示, 总长度等于 width.
+     *
+     * @param text  要居中的文本, 不能为 null
+     * @param width 目标宽度
+     * @return 居中后的字符串, 长度固定为 width
+     */
     private String center(@NotNull String text, int width) {
         if (text.length() >= width) {
             return text.substring(0, width);
@@ -1101,6 +1200,14 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         return repeat(" ", left) + text + repeat(" ", right);
     }
 
+    /**
+     * 将给定的字符串重复指定次数, 并返回拼接后的结果.
+     * <p> 当 {@code count <= 0} 时, 直接返回空字符串.
+     *
+     * @param value 需要重复的原始字符串, 不能为 {@code null}
+     * @param count 重复的次数
+     * @return 重复拼接后的字符串; 若 {@code count <= 0} 则返回空字符串
+     */
     private String repeat(@NotNull String value, int count) {
         if (count <= 0) {
             return "";
@@ -1112,6 +1219,15 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
         return builder.toString();
     }
 
+    /**
+     * 将给定的数值限制在指定的最小值和最大值之间
+     * <p> 返回 {@code Math.max(min, Math.min(max, value))}, 确保结果不小于 {@code min} 且不大于 {@code max}
+     *
+     * @param value 需要被限制的原始数值
+     * @param min   允许的最小值
+     * @param max   允许的最大值
+     * @return 被限制在 {@code min} 与 {@code max} 之间的数值
+     */
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
     }

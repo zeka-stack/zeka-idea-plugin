@@ -71,6 +71,10 @@
             id="dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable"
             displayName="🤖 IntelliAI Engine"/>
 
+        <!-- Problems View 子 tab：引擎日志面板 -->
+        <problemsViewPanelProvider
+            implementation="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleProblemsViewPanelProvider"/>
+
         <!-- Chat 工具窗口 -->
         <!--suppress PluginXmlI18n -->
         <toolWindow id="IntelliAI Chat"
