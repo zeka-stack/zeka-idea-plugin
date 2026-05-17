@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("maven-publish")
-    id("org.jetbrains.intellij.platform") version "2.13.1"
+    id("org.jetbrains.intellij.platform") version "2.16.0"
 }
 
 group = providers.gradleProperty("pluginGroup").get()

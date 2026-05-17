@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform") version "2.13.1"
+    id("org.jetbrains.intellij.platform") version "2.16.0"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -8,6 +8,8 @@ version = providers.gradleProperty("pluginVersion").get()
 
 // IntelliAI Engine 插件版本号（从 gradle.properties 中获取）
 val kitVersion: String = providers.gradleProperty("kitVersion").get()
+
+/** 引擎版本 */
 val engineVersion: String = providers.gradleProperty("engineVersion").get()
 
 repositories {

@@ -12,7 +12,7 @@
             <option name="executionName"/>
             <option name="externalProjectPath" value="$PROJECT_DIR$/intelli-ai-javadoc"/>
             <option name="externalSystemIdString" value="GRADLE"/>
-            <option name="scriptParameters" value="--stacktrace"/>
+            <option name="scriptParameters" value="  --stacktrace"/>
             <option name="taskDescriptions">
                 <list/>
             </option>
@@ -21,7 +21,7 @@
                     <option value="runIde"/>
                 </list>
             </option>
-            <option name="vmOptions" value=""/>
+            <option name="vmOptions"/>
         </ExternalSystemSettings>
         <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
         <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
