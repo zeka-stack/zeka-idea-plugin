@@ -347,6 +347,28 @@ fi
 echo ""
 
 ############################################
+# 0) 构建 engine 前端页面
+############################################
+if [ "$PLUGIN_NAME" = "engine" ] && { $do_publish || $do_zip; }; then
+    WEBVIEW_DIR="$PLUGIN_DIR/webview"
+    echo "[0/3] 构建 engine 前端页面 ..."
+    if [ ! -d "$WEBVIEW_DIR" ]; then
+        echo "错误: 找不到 engine 前端目录: $WEBVIEW_DIR"
+        exit 1
+    fi
+    if [ ! -f "$WEBVIEW_DIR/package.json" ]; then
+        echo "错误: 找不到 engine 前端 package.json: $WEBVIEW_DIR/package.json"
+        exit 1
+    fi
+    # 必须在 Gradle 打包前生成 engine-chat.html，否则插件 ZIP 会携带旧的前端页面。
+    (cd "$WEBVIEW_DIR" && npm run build)
+    echo "✓ engine 前端页面构建完成"
+    echo ""
+else
+    echo "[跳过] engine 前端页面构建"
+fi
+
+############################################
 # 1) 执行 Gradle publishPlugin
 ############################################
 if $do_publish; then
