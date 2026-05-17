@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.repairer.action;
 
+import com.intellij.analysis.problemsView.toolWindow.ProblemsViewToolWindowUtils;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -9,8 +10,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowManager;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -27,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.CheckstyleXmlAdapter;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.PmdXmlAdapter;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.adapter.ReportXmlDetector;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsViewPanel;
+import dev.dong4j.zeka.stack.idea.plugin.repairer.problems.RepairerProblemsViewPanelProvider;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ReportPathCache;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.service.ViolationCache;
 import dev.dong4j.zeka.stack.idea.plugin.repairer.util.RepairerBundle;
@@ -213,57 +213,18 @@ public class ImportStaticReportAction extends AnAction {
     }
 
     /**
-     * 在指定项目中激活问题视图工具窗口并切换到修复器标签页
-     * <p> 通过应用的异步事件调度器, 在 UI 线程中执行操作, 获取当前项目的问题视图工具窗口并激活它, 若名为 "ProblemsView" 的工具窗口不存在, 则尝试获取 "Problems" 工具窗口. 激活后, 会进一步调用方法切换到修复器专用标签页
-     * .</p>
+     * 在指定项目中激活 Problems View 工具窗口并切换到修复器标签页
+     * <p> 通过 ProblemsViewToolWindowUtils 处理 2026.1 之后的 "Problems View" 工具窗口 ID, 必要时先注册修复器标签页, 再切换到对应内容.</p>
      *
-     * @param project 目标项目对象, 用于获取工具窗口管理器和上下文
+     * @param project 目标项目对象, 用于获取 Problems View 和上下文
      */
     private static void openProblemsView(@NotNull Project project) {
         ApplicationManager.getApplication().invokeLater(() -> {
-            ToolWindowManager manager = ToolWindowManager.getInstance(project);
-            ToolWindow toolWindow = manager.getToolWindow("ProblemsView");
-            if (toolWindow == null) {
-                toolWindow = manager.getToolWindow("Problems");
+            ProblemsViewToolWindowUtils utils = ProblemsViewToolWindowUtils.INSTANCE;
+            if (utils.getTabById(project, RepairerProblemsViewPanel.TAB_ID) == null) {
+                utils.addTab(project, new RepairerProblemsViewPanelProvider(project));
             }
-            if (toolWindow != null) {
-                toolWindow.activate(null);
-            }
-            selectRepairerTab(project);
+            utils.selectTab(project, RepairerProblemsViewPanel.TAB_ID);
         });
-    }
-
-    /**
-     * 选择并激活修复器问题视图的标签页
-     * <p>通过反射获取 IntelliJ IDEA 的 ProblemsView 工具窗口实例, 并尝试调用其方法 (如 selectTab 或 openTab) 来定位并激活修复器专用的问题标签页. 若方法调用失败则忽略异常, 不中断执行.</p>
-     * <p>该方法旨在确保在导入静态报告后, 用户界面能自动跳转到修复器相关的问题视图, 提升用户体验.</p>
-     *
-     * @param project 当前项目对象, 用于获取 ProblemsView 实例
-     * @since 1.0.0
-     */
-    private static void selectRepairerTab(@NotNull Project project) {
-        ToolWindowManager manager = ToolWindowManager.getInstance(project);
-        ToolWindow toolWindow = manager.getToolWindow("ProblemsView");
-        if (toolWindow == null) {
-            toolWindow = manager.getToolWindow("Problems");
-        }
-        if (toolWindow == null) {
-            return;
-        }
-        var contentManager = toolWindow.getContentManager();
-        var contents = contentManager.getContents();
-        for (var content : contents) {
-            var component = content.getComponent();
-            if (component instanceof RepairerProblemsViewPanel) {
-                contentManager.setSelectedContent(content);
-                return;
-            }
-        }
-        for (var content : contents) {
-            if (RepairerProblemsViewPanel.TAB_NAME.equals(content.getDisplayName())) {
-                contentManager.setSelectedContent(content);
-                return;
-            }
-        }
     }
 }
