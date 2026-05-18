@@ -44,7 +44,8 @@ if [ "${1:-}" = "-n" ]; then
         fi
 
     echo "上传 Nginx 配置到 $REMOTE_HOST:$REMOTE_NGINX_DIR/ ..."
-    rsync -avz --progress \
+    # 本地配置允许是指向 ECS nginx/conf.d 的 symlink; 部署到服务器时必须上传真实文件内容.
+    rsync -avz --copy-links --progress \
         "$IDEAPLUGIN_NGINX_CONF" \
         "$DOWNLOAD_NGINX_CONF" \
         "$REMOTE_HOST:$REMOTE_NGINX_DIR/"
