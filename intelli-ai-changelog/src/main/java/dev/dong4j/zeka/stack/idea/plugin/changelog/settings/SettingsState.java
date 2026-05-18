@@ -512,7 +512,13 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
               - statistics.lines_added：新增行数
               - statistics.lines_deleted：删除行数
               - statistics.change_type：整体变更类型推断
-              - statistics.scope：基于路径推断的提交范围建议值
+              - statistics.scope：基于路径和模块名推断的范围候选值，仅作弱参考
+
+            - scope_policy / scope_candidates：scope 选择规则与候选值
+              - scope 表示当前项目提交历史中稳定使用的功能域或模块域
+              - recent_commit_scopes：近期提交中已经出现过的 scope，优先级最高
+              - normalized_path_scopes：从变更路径和模块名降噪后的候选
+              - path_or_module_hints：原始路径或 IDEA module 名提示，仅作最低优先级参考
 
             - changes[*].*：文件级变更信息
               - changes[*].path：文件路径
@@ -570,7 +576,7 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
             - 不允许多余空行
             - subject 使用祈使语气，不要句号
-            - scope 必须来自统计信息或 diff 语义，不允许编造
+            - scope 是可选项; 无法可靠判断时允许输出 `<type>: <subject>`
 
             【type 白名单（只能从以下枚举中选择）】
             只允许使用以下 type，不得创造新 type：
@@ -610,6 +616,15 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
               - 文件末尾换行或换行符格式变化
             - 如果是 refactor，**必须明确说明“为什么现在需要重构”**
             - 不得引入 diff 中不存在的动机或结论
+
+            【scope 判断规则（强制）】
+            - scope 表示当前项目提交历史中稳定使用的功能域、模块域或子系统边界
+            - scope 不等同于 IDEA module 名、目录名、包名、类名或完整服务名
+            - 优先从 `scope_candidates.recent_commit_scopes` 中选择已有项目约定
+            - 如果近期提交没有合适 scope，再根据 diff 语义从 `scope_candidates.normalized_path_scopes` 中选择简短英文 scope
+            - `scope_candidates.path_or_module_hints` 和 `statistics.scope` 只是弱提示，不得机械照抄完整模块名
+            - 不要使用过长 scope，例如 `sctelcp-gateway-service`、`intelli-ai-changelog`; 应选择 `gateway`、`changelog` 这类稳定短名称
+            - 如果无法确定稳定 scope，必须省略 scope，而不是编造
 
             【语言要求（强制）】
             - 提交消息内容 **必须使用 ${language}**

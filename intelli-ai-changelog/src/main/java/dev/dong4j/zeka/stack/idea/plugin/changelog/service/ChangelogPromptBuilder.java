@@ -74,6 +74,10 @@ final class ChangelogPromptBuilder {
     private static final int MAX_DIR_STATS = 5;
     /** 用于匹配中文字符的正则模式, 范围为 \\u4E00 到 \\u9FA5 */
     private static final Pattern CHINESE_PATTERN = Pattern.compile("[\\u4E00-\\u9FA5]");
+    /** 用于从近期 Conventional Commit 中提取已有 scope */
+    private static final Pattern CONVENTIONAL_SCOPE_PATTERN = Pattern.compile("^[a-z]+\\(([^)]+)\\)!?:\\s+.+");
+    /** 结构化上下文中保留的 scope 候选数量 */
+    private static final int MAX_SCOPE_CANDIDATES = 8;
 
     /** 当前项目对象 */
     private final Project project;
@@ -265,6 +269,7 @@ final class ChangelogPromptBuilder {
         List<CodeDiff> allDiffs = payload.codeDiffs();
         List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
         ChangeStats stats = buildChangeStats(allDiffs);
+        ScopeCandidates scopeCandidates = buildScopeCandidates(allDiffs, recentCommitsText);
 
         StringBuilder json = new StringBuilder();
         json.append("{\n");
@@ -295,6 +300,18 @@ final class ChangelogPromptBuilder {
         json.append("    \"lines_deleted\": ").append(stats.linesDeleted()).append(",\n");
         json.append("    \"change_type\": \"").append(escapeJson(stats.primaryType())).append("\",\n");
         json.append("    \"scope\": \"").append(escapeJson(stats.scope())).append("\"\n");
+        json.append("  },\n");
+
+        // scope 选择策略：将路径/模块推断降级为候选，避免模型机械使用 IDEA module 名。
+        json.append("  \"scope_policy\": {\n");
+        json.append("    \"meaning\": \"scope 表示当前项目提交历史中稳定使用的功能域或模块域, 不等同于 IDEA module 名、目录名、包名或类名\",\n");
+        json.append("    \"priority\": [\"recent_commit_scopes\", \"diff_semantics\", \"normalized_path_scopes\", \"path_or_module_hints\"],\n");
+        json.append("    \"fallback\": \"无法可靠判断时可以省略 scope, 不要强行使用完整模块名\"\n");
+        json.append("  },\n");
+        json.append("  \"scope_candidates\": {\n");
+        json.append("    \"recent_commit_scopes\": ").append(buildStringArrayJson(scopeCandidates.recentCommitScopes())).append(",\n");
+        json.append("    \"normalized_path_scopes\": ").append(buildStringArrayJson(scopeCandidates.normalizedPathScopes())).append(",\n");
+        json.append("    \"path_or_module_hints\": ").append(buildStringArrayJson(scopeCandidates.pathOrModuleHints())).append("\n");
         json.append("  },\n");
 
         // 文件级变更列表
@@ -600,7 +617,7 @@ final class ChangelogPromptBuilder {
         Map<String, Integer> counters = new LinkedHashMap<>();
         for (CodeDiff diff : diffs) {
             String scopeHint = diff.scopeHint != null ? diff.scopeHint.trim() : "";
-            String scope = !scopeHint.isEmpty() ? scopeHint : extractScopeFromPath(diff.filePath);
+            String scope = !scopeHint.isEmpty() ? simplifyScopeCandidate(scopeHint) : extractScopeFromPath(diff.filePath);
             counters.put(scope, counters.getOrDefault(scope, 0) + 1);
         }
         if (counters.isEmpty()) {
@@ -651,6 +668,149 @@ final class ChangelogPromptBuilder {
             return "ui";
         }
         return "core";
+    }
+
+    /**
+     * 构建 scope 候选集合
+     * <p> 近期提交中的 scope 最能代表项目约定; 路径和 IDEA module 名只作为弱候选, 交给模型结合 diff 语义判断.
+     */
+    @NotNull
+    private ScopeCandidates buildScopeCandidates(@NotNull List<CodeDiff> diffs, @NotNull String recentCommitsText) {
+        List<String> recentScopes = extractRecentCommitScopes(recentCommitsText);
+        List<String> rawHints = new ArrayList<>();
+        List<String> normalizedScopes = new ArrayList<>();
+        for (CodeDiff diff : diffs) {
+            if (diff.scopeHint != null && !diff.scopeHint.trim().isEmpty()) {
+                addUnique(rawHints, diff.scopeHint.trim(), MAX_SCOPE_CANDIDATES);
+                addUnique(normalizedScopes, simplifyScopeCandidate(diff.scopeHint), MAX_SCOPE_CANDIDATES);
+            }
+            addUnique(normalizedScopes, extractScopeFromPath(diff.filePath), MAX_SCOPE_CANDIDATES);
+        }
+        return new ScopeCandidates(recentScopes, normalizedScopes, rawHints);
+    }
+
+    /**
+     * 从近期提交信息中提取项目已有 scope
+     * <p> 历史提交习惯比路径猜测更可靠, 因此该列表会作为 prompt 中最高优先级候选.
+     */
+    @NotNull
+    private List<String> extractRecentCommitScopes(@NotNull String recentCommitsText) {
+        Map<String, Integer> counters = new LinkedHashMap<>();
+        if (!recentCommitsText.isBlank()) {
+            String[] lines = recentCommitsText.split("\n");
+            for (String line : lines) {
+                String message = line.trim();
+                if (message.startsWith("- ")) {
+                    message = message.substring(2).trim();
+                }
+                Matcher matcher = CONVENTIONAL_SCOPE_PATTERN.matcher(message);
+                if (matcher.matches()) {
+                    String scope = simplifyScopeCandidate(matcher.group(1));
+                    if (!scope.isEmpty()) {
+                        counters.put(scope, counters.getOrDefault(scope, 0) + 1);
+                    }
+                }
+            }
+        }
+        return topCandidates(counters, MAX_SCOPE_CANDIDATES);
+    }
+
+    /**
+     * 简化路径或 module 名推断出的 scope 候选
+     * <p> 目标是把明显的工程前缀/技术后缀降噪, 例如 {@code sctelcp-gateway-service -> gateway}.
+     */
+    @NotNull
+    private String simplifyScopeCandidate(@NotNull String raw) {
+        String normalized = normalizeScopeCandidate(raw);
+        if (normalized.isEmpty()) {
+            return normalized;
+        }
+        String projectName = normalizeScopeCandidate(project.getName());
+        if (!projectName.isEmpty() && normalized.startsWith(projectName + "-")) {
+            normalized = normalized.substring(projectName.length() + 1);
+        }
+
+        List<String> parts = new ArrayList<>(List.of(normalized.split("-")));
+        parts.removeIf(String::isBlank);
+        while (parts.size() > 1 && isGenericScopePrefix(parts.getFirst())) {
+            parts.removeFirst();
+        }
+        while (parts.size() > 1 && isGenericScopeSuffix(parts.getLast())) {
+            parts.removeLast();
+        }
+        if (parts.size() > 2) {
+            parts.removeFirst();
+        }
+        return String.join("-", parts);
+    }
+
+    /**
+     * 统一 scope 候选格式
+     */
+    @NotNull
+    private String normalizeScopeCandidate(@NotNull String raw) {
+        return raw.trim()
+            .replaceAll("([a-z0-9])([A-Z])", "$1-$2")
+            .replaceAll("[^a-zA-Z0-9]+", "-")
+            .replaceAll("^-+|-+$", "")
+            .toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 判断常见工程名前缀
+     */
+    private boolean isGenericScopePrefix(@NotNull String part) {
+        return "intelli".equals(part)
+               || "ai".equals(part)
+               || "zeka".equals(part)
+               || "stack".equals(part);
+    }
+
+    /**
+     * 判断常见技术或工程后缀
+     */
+    private boolean isGenericScopeSuffix(@NotNull String part) {
+        return "service".equals(part)
+               || "module".equals(part)
+               || "plugin".equals(part)
+               || "app".equals(part)
+               || "application".equals(part);
+    }
+
+    /**
+     * 追加去重候选
+     */
+    private void addUnique(@NotNull List<String> values, @NotNull String value, int limit) {
+        String normalized = normalizeScopeCandidate(value);
+        if (!normalized.isEmpty() && !values.contains(normalized) && values.size() < limit) {
+            values.add(normalized);
+        }
+    }
+
+    /**
+     * 按出现次数提取候选
+     */
+    @NotNull
+    private List<String> topCandidates(@NotNull Map<String, Integer> counters, int limit) {
+        List<String> result = new ArrayList<>();
+        while (result.size() < limit && result.size() < counters.size()) {
+            String best = null;
+            int bestCount = -1;
+            for (Map.Entry<String, Integer> entry : counters.entrySet()) {
+                if (result.contains(entry.getKey())) {
+                    continue;
+                }
+                if (entry.getValue() > bestCount) {
+                    best = entry.getKey();
+                    bestCount = entry.getValue();
+                }
+            }
+            if (best == null) {
+                break;
+            }
+            result.add(best);
+        }
+        return result;
     }
 
     /**
@@ -1153,6 +1313,14 @@ final class ChangelogPromptBuilder {
      */
     private record ChangeStats(int filesChanged, int linesAdded, int linesDeleted,
                                @NotNull String primaryType, @NotNull String scope) {
+    }
+
+    /**
+     * scope 候选集合
+     */
+    private record ScopeCandidates(@NotNull List<String> recentCommitScopes,
+                                   @NotNull List<String> normalizedPathScopes,
+                                   @NotNull List<String> pathOrModuleHints) {
     }
 
     /**
