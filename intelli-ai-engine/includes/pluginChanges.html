@@ -3,6 +3,10 @@
     <li><b>🐛 修复</b>：修复 IDEA 2026.1 下 Engine 日志面板无法显示的问题，改为通过 Problems View tab 注册日志面板</li>
     <li><b>🐛 修复</b>：修复日志面板迁移后内容为空的问题，复用原有 Console 根面板作为 Problems View tab 内容</li>
     <li><b>🐛 修复</b>：修复日志面板左侧工具按钮不可见的问题，恢复换行、滚动到底部、关闭日志、清空日志等操作</li>
+    <li><b>🔧 优化</b>：启动 IDEA 时仅注册 Engine 日志 tab，不再自动打开 Problems View 或切换到日志面板</li>
+    <li><b>🔧 优化</b>：用户从 Status Bar 显式启用日志后，会自动打开 Problems View 并定位到 Engine 日志 tab</li>
+    <li><b>✨ 新增</b>：Engine Chat 增加“我不是 Agent”说明入口，明确 Chat 面板定位为服务商配置验证与轻量调试工具</li>
+    <li><b>🐛 修复</b>：修复直接访问 Engine Markdown 文档时被浏览器下载或无法渲染的问题，支持通过 docs.html 渲染指定文档</li>
 </ul>
 <h3>2026.1.2000</h3>
 <ul>
@@ -12,6 +16,16 @@
     </li>
     <li><b>🐛 Fixed</b>: Fixed missing left-side toolbar actions in the log panel, restoring word wrap, scroll to end, stop logging, and
         clear log actions
+    </li>
+    <li><b>🔧 Optimized</b>: Register the Engine log tab on IDE startup without opening Problems View or switching focus to the log panel</li>
+    <li><b>🔧 Optimized</b>: Automatically open Problems View and select the Engine log tab when verbose logging is explicitly enabled from the
+        Status Bar
+    </li>
+    <li><b>✨ Added</b>: Added an "I am not an Agent" help entry in Engine Chat to clarify that Chat is intended for provider verification and
+        lightweight debugging
+    </li>
+    <li><b>🐛 Fixed</b>: Fixed direct Engine Markdown documentation links being downloaded or not rendered, and added support for rendering
+        selected documents through docs.html
     </li>
 </ul>
 

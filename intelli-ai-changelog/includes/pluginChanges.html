@@ -1,3 +1,24 @@
+<h3>2026.1.2000</h3>
+<ul>
+    <li><b>🔧 优化</b>：优化 Commit Message scope 推断逻辑，优先参考项目近期提交中已有的 scope 习惯</li>
+    <li><b>🔧 优化</b>：新增 scope 候选上下文，将近期提交 scope、路径降噪候选和原始模块提示分层提供给 AI</li>
+    <li><b>🐛 修复</b>：修复多模块项目中 scope 容易被直接生成为完整 IDEA module 名或服务名的问题</li>
+    <li><b>🔧 优化</b>：优化默认提交信息提示词，明确 scope 表示稳定功能域或模块域，无法可靠判断时允许省略 scope</li>
+    <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 2026.1.2000</li>
+</ul>
+<h3>2026.1.2000</h3>
+<ul>
+    <li><b>🔧 Optimized</b>: Improved Commit Message scope inference by prioritizing existing scope conventions from recent project commits</li>
+    <li><b>🔧 Optimized</b>: Added layered scope candidates, including recent commit scopes, normalized path candidates, and raw module hints
+        for AI context
+    </li>
+    <li><b>🐛 Fixed</b>: Fixed scopes in multi-module projects being generated directly from full IDEA module names or service names</li>
+    <li><b>🔧 Optimized</b>: Improved the default commit message prompt to clarify that scope represents a stable feature/module domain, and
+        may be omitted when it cannot be determined reliably
+    </li>
+    <li><b>⬆️ Dependency Update</b>: Upgraded IntelliAI Engine to 2026.1.2000</li>
+</ul>
+
 <h3>2026.1.1000</h3>
 <ul>
     <li><b>✨ 新增</b>：支持 2026.1</li>
@@ -322,5 +343,4 @@
     <li>Java 17+</li>
 </ul>
 <hr/>
-
 

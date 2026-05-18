@@ -34,7 +34,7 @@
     - `DEST_ZIP_NAME="tra.zip"`
     - ZIP 匹配模式 `intelli-ai-tracer-*.zip`
     - 下载地址输出 `https://tra.dong4j.site/tra.zip`
-3. 其余逻辑保持一致，包括 `rsync`、权限设置、`update_version.sh` 调用等
+3. 其余逻辑保持一致，包括 `rsync`、权限设置、`update-version.sh` 调用等
 
 ### Nginx 配置
 

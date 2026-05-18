@@ -27,7 +27,7 @@ echo "开始发布与部署 intelli-ai-changelog"
 echo "================================"
 
 # 参数解析：
-# -v 指定版本号，会先调用 update_version.sh 更新版本号
+# -v 指定版本号，会先调用 update-version.sh 更新版本号
 # -l 仅部署 landing.html
 # -z 仅上传 zip 到阿里云
 # -d 仅部署用户手册文档
@@ -51,7 +51,7 @@ while getopts ":v:lzd" opt; do
             ;;
         \?)
             echo "用法: $0 [-v <version>] [-l] [-z] [-d]"
-            echo "  -v <version>  指定版本号，会先调用 update_version.sh 更新版本号 (例如: -v 1.5.0)"
+            echo "  -v <version>  指定版本号，会先调用 update-version.sh 更新版本号 (例如: -v 1.5.0)"
             echo "  -l           仅部署 landing.html"
             echo "  -z           仅上传 zip 到阿里云"
             echo "  -d           仅部署用户手册文档"
@@ -68,13 +68,13 @@ done
 # 如果指定了版本号，先更新版本号
 if [ -n "$VERSION" ]; then
     echo "[0/4] 更新版本号为 $VERSION ..."
-    UPDATE_VERSION_SCRIPT="$SCRIPT_DIR/update_version.sh"
+    UPDATE_VERSION_SCRIPT="$SCRIPT_DIR/update-version.sh"
     if [ ! -f "$UPDATE_VERSION_SCRIPT" ]; then
         echo "错误: 找不到 $UPDATE_VERSION_SCRIPT 文件"
         exit 1
     fi
-    
-    # 调用 update_version.sh 更新版本号
+
+    # 调用 update-version.sh 更新版本号
     bash "$UPDATE_VERSION_SCRIPT" "$VERSION"
     echo "✓ 版本号已更新为 $VERSION"
     echo ""
@@ -92,7 +92,7 @@ if $only_landing || $only_zip || $only_docs; then
     do_zip=false
     do_landing=false
     do_docs=false
-    
+
     if $only_landing; then
         do_landing=true
     fi

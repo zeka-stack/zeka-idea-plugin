@@ -27,7 +27,7 @@ echo "开始发布与部署 Archiver Man"
 echo "================================"
 
 # 参数解析：
-# -v 指定版本号，会先调用 update_version.sh 更新版本号
+# -v 指定版本号，会先调用 update-version.sh 更新版本号
 # -l 仅部署 landing.html
 # -z 仅上传 zip 到服务器
 # -d 仅部署用户手册文档
@@ -77,7 +77,7 @@ if $only_landing || $only_zip || $only_docs; then
     do_zip=false
     do_landing=false
     do_docs=false
-    
+
     if $only_landing; then
         do_landing=true
     fi

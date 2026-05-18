@@ -17,7 +17,7 @@
 
 ```bash
 # 更新所有插件版本号为指定版本
-./update_version.sh 2025.3.1
+./update-version.sh 2025.3.1
 ```
 
 ### 插件部署
@@ -105,7 +105,7 @@ make install-plugins
 
 ```bash
 # 1. 更新所有插件版本号
-./update_version.sh 2025.3.1
+./update-version.sh 2025.3.1
 
 # 2. 生成 What's New 页面
 ./generate-whatsnew.sh
@@ -137,7 +137,7 @@ make install-plugins
 
 ```bash
 # 更新版本号
-./update_version.sh 2025.3.1
+./update-version.sh 2025.3.1
 
 # 仅发布到插件市场
 ./deploy.sh engine -p
@@ -152,7 +152,7 @@ make install-plugins
 ### 相关文件
 
 - `deploy.sh` - 统一插件发布与部署脚本
-- `update_version.sh` - 版本更新脚本
+- `update-version.sh` - 版本更新脚本
 - `generate-docs-list.sh` - 文档清单生成脚本
 - `generate-whatsnew.sh` - What's New 聚合页面生成脚本
 - `ideaplugin.dong4j.site.conf` - Nginx 配置文件

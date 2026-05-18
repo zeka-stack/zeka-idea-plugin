@@ -14,7 +14,7 @@
    bash deploy.sh -v 1.0.1
    ```
 2. 常用参数：
-    - `-v <version>`：调用 `update_version.sh` 同步版本号。
+    - `-v <version>`：调用 `update-version.sh` 同步版本号。
     - `-l`：仅部署 `landing.html`。
     - `-z`：仅上传 ZIP（重命名为 `chl.zip`）。
     - `-d`：仅同步 `docs/`。
@@ -25,7 +25,7 @@
 
 ### 注意事项
 
-- 运行脚本前需确保 `gradlew`、`update_version.sh` 具备可执行权限。
+- 运行脚本前需确保 `gradlew`、`update-version.sh` 具备可执行权限。
 - 服务器别名默认 `aliyun`，必要时可在脚本顶部自定义。
 - `docs/` 同步采用 `rsync --delete`，确认本地内容正确后再执行。
 

@@ -68,7 +68,7 @@ description: 将 IntelliJ IDEA 插件部署到 JetBrains Marketplace 和远程�
 - 数据目录: `/var/www/data/intelli-ai-plugin`
 - Nginx 配置: `/etc/nginx/conf.d`
 
-### 2. `update_version.sh` - 版本管理脚本
+### 2. `update-version.sh` - 版本管理脚本
 
 **位置**: 项目根目录
 
@@ -78,7 +78,7 @@ description: 将 IntelliJ IDEA 插件部署到 JetBrains Marketplace 和远程�
 
 ```bash
 # 将所有插件更新到指定版本
-./update_version.sh 2025.3.1
+./update-version.sh 2025.3.1
 ```
 
 **更新内容**:
@@ -225,7 +225,7 @@ make copy-install-upload    # 复制、安装并上传到服务器
 
 ```bash
 # 1. 更新所有插件版本
-./update_version.sh 2025.3.1
+./update-version.sh 2025.3.1
 
 # 2. 生成 What's New 页面
 ./generate-whatsnew.sh
@@ -258,7 +258,7 @@ make copy-install-upload    # 复制、安装并上传到服务器
 
 ```bash
 # 1. 更新版本
-./update_version.sh 2025.3.1
+./update-version.sh 2025.3.1
 
 # 2. 仅发布到市场
 ./deploy.sh engine -p
@@ -384,7 +384,7 @@ make quick-deploy           # 并行部署子插件
 ### 项目根目录文件
 
 - `deploy.sh` - 主部署脚本
-- `update_version.sh` - 版本更新脚本
+- `update-version.sh` - 版本更新脚本
 - `generate-whatsnew.sh` - What's New 生成器
 - `generate-docs-list.sh` - 文档清单生成器
 - `Makefile` - 构建快捷方式
@@ -412,7 +412,7 @@ make quick-deploy           # 并行部署子插件
 
 1. **始终先更新版本**:
    ```bash
-   ./update_version.sh 2025.3.1
+   ./update-version.sh 2025.3.1
    ```
 
 2. **验证版本更新**:
@@ -518,7 +518,7 @@ make quick-deploy           # 并行部署子插件
 
 ```bash
 # 1. 更新所有版本
-./update_version.sh 2025.3.2
+./update-version.sh 2025.3.2
 
 # 2. 生成 What's New
 ./generate-whatsnew.sh
@@ -549,7 +549,7 @@ make quick-deploy           # 并行部署子插件
 
 ```bash
 # 发布到市场而不部署站点
-./update_version.sh 2025.3.2
+./update-version.sh 2025.3.2
 ./deploy.sh engine -p
 ./deploy.sh javadoc -p
 ```

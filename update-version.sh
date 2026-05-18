@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # 版本更新脚本
-# 用法: ./update_version.sh <version>
-# 示例: ./update_version.sh 2025.3.1
+# 用法: ./update-version.sh <version>
+# 示例: ./update-version.sh 2025.3.1
 #
 # 功能:
 # 1. 只处理白名单中指定的插件

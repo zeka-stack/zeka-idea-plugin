@@ -129,7 +129,7 @@ if [ $# -lt 1 ]; then
     echo "  archiver  - archiver-man"
     echo ""
     echo "选项:"
-    echo "  -v <version>  指定版本号，会先调用 update_version.sh 更新版本号 (例如: -v 1.5.0)"
+    echo "  -v <version>  指定版本号，会先调用 update-version.sh 更新版本号 (例如: -v 1.5.0)"
     echo "  -z           仅上传 zip 到阿里云"
     echo "  -d           仅部署 site 整个目录 (包含 landing.html, docs.html, docs/ 等)"
     echo "  -p           仅打包并发布到插件市场 (publishPlugin)"
@@ -267,7 +267,7 @@ while getopts ":v:zdnp" opt; do
             ;;
         \?)
             echo "用法: $0 $PLUGIN_NAME [-v <version>] [-z] [-d] [-p] [-n]"
-            echo "  -v <version>  指定版本号，会先调用 update_version.sh 更新版本号 (例如: -v 1.5.0)"
+            echo "  -v <version>  指定版本号，会先调用 update-version.sh 更新版本号 (例如: -v 1.5.0)"
             echo "  -z           仅上传 zip 到阿里云"
             echo "  -d           仅部署 site 整个目录 (包含 landing.html, docs.html, docs/ 等)"
             echo "  -p           仅打包并发布到插件市场 (publishPlugin)"
@@ -285,7 +285,7 @@ done
 # 如果指定了版本号，先更新版本号
 if [ -n "$VERSION" ]; then
     echo "[0/4] 更新版本号为 $VERSION ..."
-    UPDATE_VERSION_SCRIPT="$PLUGIN_DIR/update_version.sh"
+    UPDATE_VERSION_SCRIPT="$PLUGIN_DIR/update-version.sh"
     if [ ! -f "$UPDATE_VERSION_SCRIPT" ]; then
         echo "警告: 找不到 $UPDATE_VERSION_SCRIPT 文件，跳过版本号更新"
     else
