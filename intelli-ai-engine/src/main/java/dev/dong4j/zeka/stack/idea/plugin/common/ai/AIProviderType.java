@@ -172,11 +172,11 @@ public enum AIProviderType {
     DEEPSEEK(
         "deepseek",
         "DeepSeek",
-        "https://api.deepseek.com/v1",
-        "deepseek-chat",
+        "https://api.deepseek.com",
+        "deepseek-v4-flash",
         true,
         true,
-        List.of("deepseek-chat", "deepseek-reasoner")
+        List.of("deepseek-v4-pro", "deepseek-v4-flash")
     ),
     /**
      * DeepSeek (Anthropic 兼容) 模型配置
@@ -185,10 +185,10 @@ public enum AIProviderType {
         "deepseek_anthropic",
         "DeepSeek",
         "https://api.deepseek.com/anthropic",
-        "deepseek-chat",
+        "deepseek-v4-flash",
         true,
         true,
-        List.of("deepseek-chat", "deepseek-reasoner")
+        List.of("deepseek-v4-pro", "deepseek-v4-flash")
     ),
     /**
      * 豆包 (OpenAI 兼容) 模型配置
