@@ -27,6 +27,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.agent.IntelliAgentUpdateChecker;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.IntelliAgentSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleView;
 import dev.dong4j.zeka.stack.idea.plugin.common.settings.AICommonSettingsConfigurable;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
@@ -444,7 +445,13 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
          */
         @Override
         public void setSelected(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e, boolean state) {
+            if (state && e.getProject() != null) {
+                // 用户从 Status Bar 显式启用日志时, 主动打开 Problems View 并定位到 Engine 日志 tab.
+                AIConsoleView.getInstance(e.getProject()).enableVerboseLoggingAndShowConsole();
+                return;
+            }
             AIProviderSettings.getInstance().verboseLogging = state;
+            ApplicationManager.getApplication().saveSettings();
         }
     }
 

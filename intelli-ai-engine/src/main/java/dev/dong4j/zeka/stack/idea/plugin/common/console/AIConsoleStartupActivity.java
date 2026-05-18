@@ -20,13 +20,21 @@ import kotlin.coroutines.Continuation;
  */
 public class AIConsoleStartupActivity implements ProjectActivity {
 
+    /**
+     * 执行项目启动相关操作
+     * <p> 当项目为默认项目或处于单元测试模式时, 直接返回空值; 否则在主线程中确保 AI 控制台标签页已注册
+     *
+     * @param project 当前项目对象, 非空
+     * @param continuation 继续执行的回调对象, 非空
+     * @return 执行结果, 始终返回 {@code Unit.INSTANCE}
+     */
     @Override
     public @Nullable Object execute(@NotNull Project project, @NotNull Continuation<? super Unit> continuation) {
         if (project.isDefault() || ApplicationManager.getApplication().isUnitTestMode()) {
             return Unit.INSTANCE;
         }
         ApplicationManager.getApplication().invokeLater(() ->
-                                                            AIConsoleView.getInstance(project).ensureTabVisible()
+                                                            AIConsoleView.getInstance(project).ensureTabRegistered()
                                                        );
         return Unit.INSTANCE;
     }

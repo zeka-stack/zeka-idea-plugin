@@ -210,6 +210,29 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     }
 
     /**
+     * 确保日志 tab 已注册, 但不主动选中或打开 Problems 工具窗口.
+     * <p>
+     * 项目启动时只需要把 Engine 日志 tab 挂回 Problems View 生命周期, 否则 IDEA 2026.1 下 tab
+     * 可能不会出现; 但启动阶段不应打断用户工作区, 因此这里禁止调用 {@code selectTab()} 和
+     * {@code toolWindow.show()}.
+     *
+     * @see #ensureProblemsViewTab(boolean)
+     */
+    public void ensureTabRegistered() {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            ensureRootPanel();
+            if (!ensureProblemsViewTab(false)) {
+                ToolWindow toolWindow = findProblemsToolWindow();
+                if (toolWindow != null) {
+                    ensureProblemsToolWindowTab(toolWindow);
+                }
+            }
+            syncConsoleTogglesFromSettings();
+            refreshPanelBySettings();
+        });
+    }
+
+    /**
      * 确保控制台标签可见
      * <p>
      * 该方法确保在 Problems 工具窗口中显示控制台标签页. 如果工具窗口存在, 则会确保标签页已创建并可见.
@@ -226,7 +249,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     public void ensureTabVisible() {
         ApplicationManager.getApplication().invokeLater(() -> {
             ensureRootPanel();
-            ensureProblemsToolWindowTab();
+            ensureProblemsViewTab(true);
             syncConsoleTogglesFromSettings();
             refreshPanelBySettings();
         });
@@ -240,7 +263,7 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      */
     private void showToolWindow() {
         ApplicationManager.getApplication().invokeLater(() -> {
-            if (ensureProblemsToolWindowTab()) {
+            if (ensureProblemsViewTab(true)) {
                 ToolWindow toolWindow = findProblemsToolWindow();
                 if (toolWindow != null && !toolWindow.isVisible()) {
                     toolWindow.show(null);
@@ -268,13 +291,15 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      *
      * @return 成功走新版 Problems View tab 时返回 true, 否则返回 false
      */
-    private boolean ensureProblemsToolWindowTab() {
+    private boolean ensureProblemsViewTab(boolean selectTab) {
         try {
             ProblemsViewToolWindowUtils utils = ProblemsViewToolWindowUtils.INSTANCE;
             if (utils.getTabById(project, PROBLEMS_VIEW_TAB_ID) == null) {
                 utils.addTab(project, new AIConsoleProblemsViewPanelProvider(project));
             }
-            utils.selectTab(project, PROBLEMS_VIEW_TAB_ID);
+            if (selectTab) {
+                utils.selectTab(project, PROBLEMS_VIEW_TAB_ID);
+            }
             return true;
         } catch (Throwable ignored) {
             return false;
@@ -572,11 +597,11 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * <p> 将详细日志记录设置为启用状态, 保存设置, 并显示控制台面板. 同时, 如果需要, 打印欢迎信息.
      *
      */
-    void enableVerboseLoggingAndShowConsole() {
+    public void enableVerboseLoggingAndShowConsole() {
         AIProviderSettings settings = AIProviderSettings.getInstance();
         settings.verboseLogging = true;
         ApplicationManager.getApplication().saveSettings();
-        showConsolePanel();
+        showToolWindow();
         printWelcomeIfNeeded();
     }
 

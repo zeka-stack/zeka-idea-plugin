@@ -48,12 +48,16 @@
     "path": "./docs/Autocomplete-Suggestions功能实现方案.md"
   },
   {
+    "name": "Engine-Chat-不是-Agent",
+    "path": "./docs/Engine-Chat-不是-Agent.md"
+  },
+  {
     "name": "Engine-SSE-流式输出实现方案",
     "path": "./docs/Engine-SSE-流式输出实现方案.md"
   },
   {
-    "name": "Engine Chat 不是 Agent",
-    "path": "./docs/Engine-Chat-不是-Agent.md"
+    "name": "IDEA_2026_PROBLEMS_VIEW_COMPAT",
+    "path": "./docs/IDEA_2026_PROBLEMS_VIEW_COMPAT.md"
   },
   {
     "name": "IntelliJ平台超链接实现方式总结",

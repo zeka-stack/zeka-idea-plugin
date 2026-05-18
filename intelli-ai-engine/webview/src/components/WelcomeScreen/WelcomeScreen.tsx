@@ -5,7 +5,7 @@ import {AnimatedText} from '../AnimatedText';
 import {APP_VERSION} from '../../version/version';
 import {openBrowser} from '../../utils/bridge';
 
-const NOT_AGENT_DOC_URL = 'https://ideaplugin.dong4j.site/engine/docs/Engine-Chat-%E4%B8%8D%E6%98%AF-Agent.md';
+const NOT_AGENT_DOC_URL = 'https://ideaplugin.dong4j.site/engine/docs.html?doc=docs/Engine-Chat-%E4%B8%8D%E6%98%AF-Agent.md';
 
 export interface WelcomeScreenProps {
   currentProvider: string;

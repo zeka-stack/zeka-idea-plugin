@@ -1276,7 +1276,11 @@
                     </div>
                 `;
     try {
-      const response = await fetch(getDocumentFetchPath(docMeta.path));
+      const response = await fetch(getDocumentFetchPath(docMeta.path), {
+        headers: {
+          'Accept': 'text/markdown, text/plain;q=0.9, */*;q=0.1'
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to load markdown');
       }
