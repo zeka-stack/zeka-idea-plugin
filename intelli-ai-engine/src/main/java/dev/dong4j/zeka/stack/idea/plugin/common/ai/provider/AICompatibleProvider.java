@@ -6,9 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import com.intellij.ide.plugins.IdeaPluginDescriptor;
-import com.intellij.ide.plugins.PluginManagerCore;
-import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.io.HttpRequests;
 
@@ -34,6 +31,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -499,9 +497,9 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     private static String buildFreeAiUserAgent() {
         String version = "unknown";
-        IdeaPluginDescriptor descriptor = PluginManagerCore.getPlugin(PluginId.getId(EngineContents.PLUGIN_ID));
-        if (descriptor != null && descriptor.getVersion() != null && !descriptor.getVersion().isBlank()) {
-            version = descriptor.getVersion().trim();
+        String pluginVersion = PluginUtil.getVersion(EngineContents.PLUGIN_ID);
+        if (pluginVersion != null && !pluginVersion.isBlank()) {
+            version = pluginVersion.trim();
         }
         return EngineContents.PLUGIN_ID + "/" + version;
     }

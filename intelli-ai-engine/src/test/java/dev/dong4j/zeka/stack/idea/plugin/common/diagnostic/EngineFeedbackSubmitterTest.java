@@ -214,18 +214,8 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
          * @return 插件版本号, 若插件不存在或获取失败则返回 null
          */
         private String getPluginVersion() {
-            try {
-                com.intellij.openapi.extensions.PluginId pluginId = com.intellij.openapi.extensions.PluginId.getId(
-                    dev.dong4j.zeka.stack.idea.plugin.common.EngineContents.PLUGIN_ID);
-                com.intellij.ide.plugins.IdeaPluginDescriptor pluginDescriptor =
-                    com.intellij.ide.plugins.PluginManagerCore.getPlugin(pluginId);
-                if (pluginDescriptor != null) {
-                    return pluginDescriptor.getVersion();
-                }
-            } catch (Exception e) {
-                // 静默处理
-            }
-            return null;
+            return dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil.getVersion(
+                dev.dong4j.zeka.stack.idea.plugin.common.EngineContents.PLUGIN_ID);
         }
 
         /**
@@ -263,6 +253,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
         }
     }
 
+    /**
+     * 在每个测试用例执行前进行环境初始化
+     * <p> 初始化 MockWebServer 以模拟 HTTP 服务器响应, 创建可测试的 EngineFeedbackSubmitter 子类实例, 并设置其基础 URL 为 MockWebServer 的地址.
+     *
+     * @throws Exception 如果在初始化过程中发生任何异常
+     */
     @BeforeEach
     @Override
     protected void setUp() throws Exception {
@@ -276,6 +272,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
         submitter.setBaseUrl(mockServer.url("/").toString());
     }
 
+    /**
+     * 测试环境清理方法, 在每个测试用例执行后调用.
+     * <p> 首先关闭模拟 HTTP 服务器 (如果已启动), 然后调用父类的清理逻辑以释放其他资源.
+     *
+     * @throws Exception 如果在清理过程中发生任何异常
+     */
     @AfterEach
     @Override
     protected void tearDown() throws Exception {
@@ -327,6 +329,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
             "Additional info: This is a test",
             new javax.swing.JPanel(), // 父组件
             new Consumer<SubmittedReportInfo>() {
+                /**
+                 * 消费提交的报告信息
+                 * <p> 将传入的报告信息存储到结果数组的第一个位置, 并触发计数器倒计时
+                 *
+                 * @param reportInfo 提交的报告信息
+                 */
                 @Override
                 public void consume(SubmittedReportInfo reportInfo) {
                     result[0] = reportInfo;
@@ -396,6 +404,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
             null,
             new javax.swing.JPanel(),
             new Consumer<SubmittedReportInfo>() {
+                /**
+                 * 消费提交的报告信息
+                 * <p> 将传入的报告信息存储到结果数组的第一个位置, 并触发计数器倒计时
+                 *
+                 * @param reportInfo 提交的报告信息
+                 */
                 @Override
                 public void consume(SubmittedReportInfo reportInfo) {
                     result[0] = reportInfo;
@@ -437,6 +451,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
             null,
             new javax.swing.JPanel(),
             new Consumer<SubmittedReportInfo>() {
+                /**
+                 * 消费提交的报告信息
+                 * <p> 将传入的报告信息存储到结果数组的第一个位置, 并触发计数器倒计时
+                 *
+                 * @param reportInfo 提交的报告信息
+                 */
                 @Override
                 public void consume(SubmittedReportInfo reportInfo) {
                     result[0] = reportInfo;
@@ -491,6 +511,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
             null,
             new javax.swing.JPanel(),
             new Consumer<SubmittedReportInfo>() {
+                /**
+                 * 消费提交的报告信息
+                 * <p> 将传入的报告信息存储到结果数组的第一个位置, 并减少闭锁计数器
+                 *
+                 * @param reportInfo 提交的报告信息
+                 */
                 @Override
                 public void consume(SubmittedReportInfo reportInfo) {
                     result[0] = reportInfo;
@@ -542,6 +568,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
             null,
             new javax.swing.JPanel(),
             new Consumer<SubmittedReportInfo>() {
+                /**
+                 * 消费提交的报告信息
+                 * <p> 将传入的报告信息存储到结果数组的第一个位置, 并减少同步计数器的值
+                 *
+                 * @param reportInfo 要消费的报告信息
+                 */
                 @Override
                 public void consume(SubmittedReportInfo reportInfo) {
                     result[0] = reportInfo;
@@ -575,6 +607,12 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
             null,
             new javax.swing.JPanel(),
             new Consumer<SubmittedReportInfo>() {
+                /**
+                 * 消费提交的报告信息
+                 * <p> 将传入的报告信息存储到结果数组的第一个位置, 并触发计数器倒计时
+                 *
+                 * @param reportInfo 提交的报告信息
+                 */
                 @Override
                 public void consume(SubmittedReportInfo reportInfo) {
                     result[0] = reportInfo;

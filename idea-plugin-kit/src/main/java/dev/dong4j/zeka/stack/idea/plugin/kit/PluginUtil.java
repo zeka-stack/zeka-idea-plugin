@@ -1,7 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.kit;
 
 import com.intellij.ide.plugins.IdeaPluginDescriptor;
-import com.intellij.ide.plugins.PluginManagerCore;
+import com.intellij.ide.plugins.PluginManager;
 import com.intellij.openapi.extensions.PluginId;
 
 import org.jetbrains.annotations.Nullable;
@@ -30,23 +30,35 @@ import lombok.extern.slf4j.Slf4j;
 public class PluginUtil {
 
     /**
+     * 获取插件描述符
+     * <p>
+     * 将 IntelliJ 插件管理公开 API 集中封装在工具类中, 避免各业务模块直接依赖具体查询实现。
+     *
+     * @param id 插件 ID
+     * @return 插件描述符, 如果插件未启用或获取失败则返回 null
+     */
+    @Nullable
+    public static IdeaPluginDescriptor getPluginDescriptor(String id) {
+        try {
+            PluginId pluginId = PluginId.getId(id);
+            return PluginManager.getInstance().findEnabledPlugin(pluginId);
+        } catch (Exception e) {
+            log.debug("获取插件描述符失败", e);
+        }
+        return null;
+    }
+
+    /**
      * 获取当前插件版本号
      * <p>
-     * 通过 PluginManagerCore 获取插件的版本信息。
+     * 复用插件描述符查询逻辑, 保证所有插件元信息都通过同一个公开 API 入口获取。
      *
-     * @return 插件版本号，如果获取失败则返回 null
+     * @param id 插件 ID
+     * @return 插件版本号, 如果获取失败则返回 null
      */
     @Nullable
     public static String getVersion(String id) {
-        try {
-            PluginId pluginId = PluginId.getId(id);
-            IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginId);
-            if (pluginDescriptor != null) {
-                return pluginDescriptor.getVersion();
-            }
-        } catch (Exception e) {
-            log.debug("获取插件版本号失败", e);
-        }
-        return null;
+        IdeaPluginDescriptor pluginDescriptor = getPluginDescriptor(id);
+        return pluginDescriptor != null ? pluginDescriptor.getVersion() : null;
     }
 }

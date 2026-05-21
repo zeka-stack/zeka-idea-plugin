@@ -1,13 +1,10 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
 import com.intellij.ide.BrowserUtil;
-import com.intellij.ide.plugins.IdeaPluginDescriptor;
-import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -41,6 +38,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
+import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -628,7 +626,7 @@ public class CommitMessageGenerator {
         String versionKey = "changelog.commit.context.tip.version";
 
         // 获取当前插件版本号
-        String currentVersion = dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil.getVersion(PluginContents.PLUGIN_ID);
+        String currentVersion = PluginUtil.getVersion(PluginContents.PLUGIN_ID);
         if (currentVersion == null) {
             log.debug("无法获取插件版本号，跳过版本检查");
             // 如果无法获取版本号，使用原有逻辑（每个项目只显示一次）
@@ -752,22 +750,13 @@ public class CommitMessageGenerator {
     /**
      * 获取当前插件版本号
      * <p>
-     * 通过 PluginManagerCore 获取插件的版本信息。
+     * 通过公开插件管理 API 获取插件的版本信息。
      *
      * @return 插件版本号，如果获取失败则返回 null
      */
     @Nullable
     private String getCurrentPluginVersion() {
-        try {
-            PluginId pluginId = PluginId.getId(PluginContents.PLUGIN_ID);
-            IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(pluginId);
-            if (pluginDescriptor != null) {
-                return pluginDescriptor.getVersion();
-            }
-        } catch (Exception e) {
-            log.debug("获取插件版本号失败", e);
-        }
-        return null;
+        return PluginUtil.getVersion(PluginContents.PLUGIN_ID);
     }
 
     /**
