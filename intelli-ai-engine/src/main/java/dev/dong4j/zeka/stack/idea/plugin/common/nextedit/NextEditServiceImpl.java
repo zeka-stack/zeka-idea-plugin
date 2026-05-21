@@ -5,6 +5,7 @@ import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +42,7 @@ public final class NextEditServiceImpl implements NextEditService, Disposable {
     public NextEditServiceImpl(@NotNull Project project) {
         this.project = project;
         this.coordinator = new NextEditCoordinator(project);
+        Disposer.register(this, coordinator);
         enableAllOpenEditors();
     }
 
@@ -104,6 +106,6 @@ public final class NextEditServiceImpl implements NextEditService, Disposable {
      */
     @Override
     public void dispose() {
-        coordinator.dispose();
+        // coordinator 已注册为当前项目级服务的子 disposable, 由 Disposer 统一释放。
     }
 }
