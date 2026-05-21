@@ -69,13 +69,13 @@ public class WhatsNewPanel extends JPanel {
 
     /**
      * 获取组件的首选大小
-     * <p> 此方法重写自父类, 指定组件的默认宽度为 640 像素, 高度为 360 像素.
+     * <p> 此方法重写自父类, 指定组件的默认宽度为 1080 像素, 高度为 360 像素.
      *
-     * @return 组件的首选大小, 宽度为 640 像素, 高度为 360 像素
+     * @return 组件的首选大小, 宽度为 1080 像素, 高度为 360 像素
      */
     @Override
     public Dimension getPreferredSize() {
-        return new JBDimension(640, 360);
+        return new JBDimension(1080, 360);
     }
 
     /**
