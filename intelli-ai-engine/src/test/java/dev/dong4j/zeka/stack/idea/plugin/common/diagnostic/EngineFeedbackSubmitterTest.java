@@ -240,16 +240,7 @@ public class EngineFeedbackSubmitterTest extends BasePlatformTestCase {
          */
         @NotNull
         private String getOperatingSystem() {
-            if (com.intellij.openapi.util.SystemInfo.isWindows) {
-                return "Windows " + com.intellij.openapi.util.SystemInfo.getOsNameAndVersion();
-            }
-            if (com.intellij.openapi.util.SystemInfo.isMac) {
-                return "macOS " + com.intellij.openapi.util.SystemInfo.getOsNameAndVersion();
-            }
-            if (com.intellij.openapi.util.SystemInfo.isLinux) {
-                return "Linux " + com.intellij.openapi.util.SystemInfo.getOsNameAndVersion();
-            }
-            return com.intellij.openapi.util.SystemInfo.getOsNameAndVersion();
+            return dev.dong4j.zeka.stack.idea.plugin.kit.SystemUtil.getOsNameAndVersion();
         }
     }
 

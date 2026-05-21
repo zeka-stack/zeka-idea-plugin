@@ -7,9 +7,9 @@ import com.intellij.openapi.diagnostic.IdeaLoggingEvent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.diagnostic.SubmittedReportInfo;
 import com.intellij.openapi.extensions.PluginDescriptor;
-import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.Consumer;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SystemUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -280,7 +280,7 @@ public abstract class AbstractErrorReportSubmitter extends ErrorReportSubmitter 
         builder.append("## Environment\n\n");
         builder.append("- IDE: ").append(ApplicationNamesInfo.getInstance().getFullProductName())
                .append(" ").append(appInfo.getFullVersion()).append("\n");
-        builder.append("- OS: ").append(SystemInfo.getOsNameAndVersion()).append("\n");
+        builder.append("- OS: ").append(SystemUtil.getOsNameAndVersion()).append("\n");
         builder.append("- JVM: ").append(System.getProperty("java.runtime.version")).append("\n");
         builder.append("- Locale: ").append(Locale.getDefault()).append("\n");
         if (pluginDescriptor != null) {

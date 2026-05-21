@@ -6,7 +6,6 @@ import com.intellij.openapi.application.ApplicationInfo;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
-import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
@@ -45,6 +44,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
 import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -558,15 +558,7 @@ public class FeedbackPanel {
      */
     @NotNull
     private String getOperatingSystem() {
-        if (SystemInfo.isWindows) {
-            return "Windows " + SystemInfo.getOsNameAndVersion();
-        } else if (SystemInfo.isMac) {
-            return "macOS " + SystemInfo.getOsNameAndVersion();
-        } else if (SystemInfo.isLinux) {
-            return "Linux " + SystemInfo.getOsNameAndVersion();
-        } else {
-            return SystemInfo.getOsNameAndVersion();
-        }
+        return SystemUtil.getOsNameAndVersion();
     }
 
     /**

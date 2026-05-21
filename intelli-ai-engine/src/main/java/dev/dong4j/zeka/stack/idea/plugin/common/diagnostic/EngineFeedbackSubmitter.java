@@ -8,13 +8,13 @@ import com.intellij.openapi.diagnostic.IdeaLoggingEvent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginDescriptor;
 import com.intellij.openapi.extensions.PluginId;
-import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.util.Consumer;
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.RequestSigner;
 import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
+import dev.dong4j.zeka.stack.idea.plugin.kit.SystemUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -441,16 +441,7 @@ public class EngineFeedbackSubmitter extends AbstractErrorReportSubmitter {
      */
     @NotNull
     private String getOperatingSystem() {
-        if (SystemInfo.isWindows) {
-            return "Windows " + SystemInfo.getOsNameAndVersion();
-        }
-        if (SystemInfo.isMac) {
-            return "macOS " + SystemInfo.getOsNameAndVersion();
-        }
-        if (SystemInfo.isLinux) {
-            return "Linux " + SystemInfo.getOsNameAndVersion();
-        }
-        return SystemInfo.getOsNameAndVersion();
+        return SystemUtil.getOsNameAndVersion();
     }
 
     /**
