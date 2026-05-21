@@ -606,6 +606,19 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
     }
 
     /**
+     * 禁用详细日志记录并回到说明页
+     * <p> 统一 Console 工具栏停止按钮和状态栏快捷操作的关闭行为, 确保关闭日志后 Problems View
+     * 中的 Engine tab 回到占位说明页面, 而不是停留在日志面板.
+     *
+     */
+    public void disableVerboseLoggingAndShowPlaceholder() {
+        AIProviderSettings settings = AIProviderSettings.getInstance();
+        settings.verboseLogging = false;
+        ApplicationManager.getApplication().saveSettings();
+        refreshPanelBySettings();
+    }
+
+    /**
      * 注册内容选择监听器
      * <p> 用于监听控制台内容的选择变化事件, 当当前选中的内容是本插件的控制台面板时,
      * 会调用 refreshPanelBySettings 方法刷新面板状态.

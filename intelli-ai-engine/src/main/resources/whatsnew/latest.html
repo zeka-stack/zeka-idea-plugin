@@ -445,6 +445,9 @@
     <li><b>🐛 修复</b>：修复日志面板左侧工具按钮不可见的问题，恢复换行、滚动到底部、关闭日志、清空日志等操作</li>
     <li><b>🔧 优化</b>：启动 IDEA 时仅注册 Engine 日志 tab，不再自动打开 Problems View 或切换到日志面板</li>
     <li><b>🔧 优化</b>：用户从 Status Bar 显式启用日志后，会自动打开 Problems View 并定位到 Engine 日志 tab</li>
+    <li><b>🐛 修复</b>：修复从 Status Bar 关闭详细日志后日志面板未回到说明页的问题，与左侧停止按钮行为保持一致</li>
+    <li><b>🐛 修复</b>：修复 buildSearchableOptions 阶段 NextEditCoordinator 注册到 ROOT_DISPOSABLE 导致的内存泄漏提示</li>
+    <li><b>🔧 优化</b>：替换 IntelliJ Platform 内部 API 与计划移除 API 调用，提升插件市场兼容性检查通过率</li>
     <li><b>✨ 新增</b>：Engine Chat 增加“我不是 Agent”说明入口，明确 Chat 面板定位为服务商配置验证与轻量调试工具</li>
     <li><b>🐛 修复</b>：修复直接访问 Engine Markdown 文档时被浏览器下载或无法渲染的问题，支持通过 docs.html 渲染指定文档</li>
 </ul>
@@ -460,6 +463,13 @@
     <li><b>🔧 Optimized</b>: Register the Engine log tab on IDE startup without opening Problems View or switching focus to the log panel</li>
     <li><b>🔧 Optimized</b>: Automatically open Problems View and select the Engine log tab when verbose logging is explicitly enabled from the
         Status Bar
+    </li>
+    <li><b>🐛 Fixed</b>: Fixed the Status Bar verbose logging toggle not returning the log tab to the placeholder page when disabled, keeping it
+        consistent with the left-side stop logging action
+    </li>
+    <li><b>🐛 Fixed</b>: Fixed a buildSearchableOptions memory leak warning caused by NextEditCoordinator being registered under ROOT_DISPOSABLE
+    </li>
+    <li><b>🔧 Optimized</b>: Replaced IntelliJ Platform internal and scheduled-for-removal API usages to improve Marketplace verifier compatibility
     </li>
     <li><b>✨ Added</b>: Added an "I am not an Agent" help entry in Engine Chat to clarify that Chat is intended for provider verification and
         lightweight debugging
