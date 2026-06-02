@@ -94,6 +94,7 @@ jobs:
         id: changelog
         # 为 6 个 plugin 分别从 includes/pluginChanges.html 提取与各自 pluginVersion 对应的
         # <h3> 块(中英双语), 转 Markdown, 以 "## <module> <version>" 二级标题串成单一 body
+        # 各 plugin section 内部不留多余空行 (中英文紧凑相连), 段间隔由外层 echo "" 控制
         run: |
           set -e
           : > release-changelog.md
@@ -105,14 +106,25 @@ jobs:
             body=$(awk -v ver_re="$VER_RE" '
               /<h3>/ {
                 line = $0; sub(/.*<h3>/, "", line); sub(/<\/h3>.*/, "", line)
-                if (match(line, ver_re)) {
-                  if (section == 1) print ""   # 双语两段之间插入空行
-                  capture = 1; section++; next
-                }
+                if (match(line, ver_re)) { capture = 1; section++; next }
                 if (capture) { exit }
               }
-              capture { print }
+              capture {
+                # 跳过独占行的 <ul>/</ul>, 避免转空后留下杂散空行
+                if ($0 ~ /^[[:space:]]*<\/?ul>[[:space:]]*$/) next
+                print
+              }
             ' "$html" \
+              | awk '
+                  # 合并跨行 <li>...</li> 为单行, 避免 HTML 中 <li> 内换行在 Markdown 里造成段落断裂
+                  in_li {
+                    buf = buf " " $0
+                    if ($0 ~ /<\/li>/) { print buf; buf = ""; in_li = 0 }
+                    next
+                  }
+                  /<li>/ && $0 !~ /<\/li>/ { buf = $0; in_li = 1; next }
+                  { print }
+                ' \
               | sed -E \
                   -e 's#<strong>#**#g' -e 's#</strong>#**#g' \
                   -e 's#<b>#**#g'      -e 's#</b>#**#g' \
@@ -120,11 +132,11 @@ jobs:
                   -e 's#<kbd>#`#g'     -e 's#</kbd>#`#g' \
                   -e 's#<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>#[\2](\1)#g' \
                   -e 's#<li>#- #g'  -e 's#</li>##g' \
-                  -e 's#<ul>##g'    -e 's#</ul>##g' \
                   -e 's#<[^>]+>##g' \
+                  -e 's/[[:space:]]+/ /g' \
                   -e 's/^[[:space:]]+//' \
                   -e 's/[[:space:]]+$//' \
-              | awk 'NF { found = 1; blank = 0; print; next } found && !blank { blank = 1; print }')
+              | awk 'NF')
             if [ -n "$body" ]; then
               {
                 echo "## $m $ver"
