@@ -21,7 +21,11 @@
 # 自动更新：
 # - InternalWhatsNewProvider.java：在 // version mark 注释后自动添加新版本映射
 
-set -euo pipefail
+set -eu
+# 注意: 此处不启用 pipefail
+# 脚本中多处使用 "echo $var | head -n N" / "echo $var | grep | head" 这类管道, 长字符串
+# 经过 head 截断后, echo 端会收到 SIGPIPE 返回非零退出码, 在 Linux + pipefail 下会让整条
+# 管道失败并触发 set -e 终止脚本 (macOS 下行为不同, 本地能跑通)
 
 # 获取脚本所在目录和项目根目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
