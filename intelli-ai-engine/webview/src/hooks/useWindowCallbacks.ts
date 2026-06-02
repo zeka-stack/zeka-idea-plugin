@@ -566,9 +566,15 @@ export function useWindowCallbacks(options: UseWindowCallbacksOptions): void {
         const idx = streamingMessageIndexRef.current;
         if (idx >= 0 && idx < newMessages.length && newMessages[idx]?.type === 'assistant') {
           const finalContent = streamingContentRef.current;
-          newMessages[idx] = {
+          // 结束流时必须同步 raw blocks, 因为消息渲染优先读取 raw.message.content。
+          // 如果只更新 content, 最后一段被节流缓存的正文可能不会出现在 Chat 面板里。
+          const finalMessage = patchAssistantForStreaming({
             ...newMessages[idx],
             content: finalContent || newMessages[idx].content,
+            isStreaming: true,
+          });
+          newMessages[idx] = {
+            ...finalMessage,
             isStreaming: false,
           };
         }
