@@ -52,6 +52,20 @@ jobs:
           npm ci
           npm run build
 
+      - name: Install ripgrep
+        # generate-whatsnew.sh 中用 `rg` 解析 plugin.xml 提取 <name>; 显式安装
+        # 保证在不同版本的 ubuntu runner 上行为一致 (避免 image 升级后未预装)
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ripgrep
+
+      - name: Generate What's New aggregated pages
+        # 必须在 build intelli-ai-engine 之前运行:
+        # 1) 生成根目录 latest.html (聚合所有插件的更新日志)
+        # 2) 拷贝到 intelli-ai-engine/src/main/resources/whatsnew/latest.html (打包入 engine zip)
+        # 3) 提取 engine 最新版本生成 <version>.html (如 2026_1_2000.html, 打包入 engine zip)
+        # 4) 修改 InternalWhatsNewProvider.java 注入新版本映射 (随 engine 一起编译)
+        # 以上修改仅作用于 CI 临时工作目录, 不 commit 回仓库
+        run: bash generate-whatsnew.sh
+
       - name: Build intelli-ai-engine
         # 此步会通过 includeBuild 自动构建 idea-plugin-kit
         run: cd intelli-ai-engine && ./gradlew buildPlugin --no-daemon
