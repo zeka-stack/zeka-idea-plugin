@@ -1,0 +1,160 @@
+name: Release Plugins
+
+# 触发条件: 推送形如 v* 的 tag (如 v2026.1.2000)
+# Release 标题使用 tag 名, 各 plugin 版本号从各自 gradle.properties 读取 (不强制覆盖)
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    # 顺序构建: webview(npm) -> engine(buildPlugin, 触发 includeBuild kit) -> 5 个 plugin(串行)
+    # 串行而非并行的原因: 5 个 plugin 都通过 includeBuild ../intelli-ai-engine 解析依赖,
+    # 并行执行可能并发触发 engine 的 prepareSandbox 等任务, 引起 build 目录写竞争, 串行最稳
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Node.js
+        # intelli-ai-engine 含 webview (vite + tsc), processResources 依赖前端产物
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'intelli-ai-engine/webview/package-lock.json'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make all gradlew executable
+        # git 上某些机器 mode bit 丢失, 在 CI 显式赋予执行权限
+        run: chmod +x */gradlew
+
+      - name: Build webview (engine)
+        # 显式跑 npm ci + npm run build, 比依赖 gradle Exec task 日志更清晰;
+        # postbuild 会把 dist/index.html 拷贝为 src/main/resources/html/engine-chat.html,
+        # 之后 gradle copyWebview 的 onlyIf 会跳过, 无重复构建
+        working-directory: intelli-ai-engine/webview
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build intelli-ai-engine
+        # 此步会通过 includeBuild 自动构建 idea-plugin-kit
+        run: cd intelli-ai-engine && ./gradlew buildPlugin --no-daemon
+
+      - name: Build other plugins
+        # 5 个 plugin 串行, 每个独立 gradle root project, includeBuild 会复用 engine/kit 产物
+        run: |
+          set -e
+          for m in intelli-ai-changelog intelli-ai-javadoc intelli-ai-nacos intelli-ai-terminal intelli-ai-tracer; do
+            echo "::group::Build $m"
+            (cd "$m" && ./gradlew buildPlugin --no-daemon)
+            echo "::endgroup::"
+          done
+
+      - name: Collect plugin zips
+        id: collect
+        # 每个 plugin 从其 gradle.properties 读取 pluginVersion, 在 build/distributions 中找到
+        # ${module}-${pluginVersion}.zip, 集中收集到 release-assets/
+        run: |
+          set -e
+          mkdir -p release-assets
+          : > release-assets/_summary.txt
+          for m in intelli-ai-engine intelli-ai-changelog intelli-ai-javadoc intelli-ai-nacos intelli-ai-terminal intelli-ai-tracer; do
+            ver=$(grep -E '^pluginVersion=' "$m/gradle.properties" | cut -d= -f2)
+            zip="$m/build/distributions/$m-$ver.zip"
+            if [ ! -f "$zip" ]; then
+              echo "::error::Plugin $m has no zip at $zip"
+              echo "  实际存在的产物:"
+              ls -la "$m/build/distributions/" || true
+              exit 1
+            fi
+            cp "$zip" release-assets/
+            echo "$m|$ver|$(basename "$zip")" >> release-assets/_summary.txt
+            echo "  ✓ $m $ver -> $(basename "$zip")"
+          done
+          echo "----- 资源清单 -----"
+          cat release-assets/_summary.txt
+
+      - name: Generate combined changelog
+        id: changelog
+        # 为 6 个 plugin 分别从 includes/pluginChanges.html 提取与各自 pluginVersion 对应的
+        # <h3> 块(中英双语), 转 Markdown, 以 "## <module> <version>" 二级标题串成单一 body
+        run: |
+          set -e
+          : > release-changelog.md
+          while IFS='|' read -r m ver zipname; do
+            html="$m/includes/pluginChanges.html"
+            [ -f "$html" ] || continue
+            # 版本号点号转义后拼正则; 版本号后必须接非数字非点字符或结束, 避免 2026.1.1 误匹配 2026.1.11
+            VER_RE="^$(echo "$ver" | sed 's/\./\\\\./g')([^0-9.]|$)"
+            body=$(awk -v ver_re="$VER_RE" '
+              /<h3>/ {
+                line = $0; sub(/.*<h3>/, "", line); sub(/<\/h3>.*/, "", line)
+                if (match(line, ver_re)) {
+                  if (section == 1) print ""   # 双语两段之间插入空行
+                  capture = 1; section++; next
+                }
+                if (capture) { exit }
+              }
+              capture { print }
+            ' "$html" \
+              | sed -E \
+                  -e 's#<strong>#**#g' -e 's#</strong>#**#g' \
+                  -e 's#<b>#**#g'      -e 's#</b>#**#g' \
+                  -e 's#<code>#`#g'    -e 's#</code>#`#g' \
+                  -e 's#<kbd>#`#g'     -e 's#</kbd>#`#g' \
+                  -e 's#<a [^>]*href="([^"]+)"[^>]*>([^<]+)</a>#[\2](\1)#g' \
+                  -e 's#<li>#- #g'  -e 's#</li>##g' \
+                  -e 's#<ul>##g'    -e 's#</ul>##g' \
+                  -e 's#<[^>]+>##g' \
+                  -e 's/^[[:space:]]+//' \
+                  -e 's/[[:space:]]+$//' \
+              | awk 'NF { found = 1; blank = 0; print; next } found && !blank { blank = 1; print }')
+            if [ -n "$body" ]; then
+              {
+                echo "## $m $ver"
+                echo ""
+                echo "$body"
+                echo ""
+              } >> release-changelog.md
+            fi
+          done < release-assets/_summary.txt
+          echo "CHANGELOG_FILE=release-changelog.md" >> $GITHUB_OUTPUT
+          echo "----- changelog preview -----"
+          cat release-changelog.md
+
+      - name: Cleanup existing release
+        # 删除可能残留的同 tag release, 防止 softprops/action-gh-release 复用旧 release 时
+        # 只更新 assets 而不更新 name/body 导致页面显示与 changelog 不一致
+        continue-on-error: true
+        run: gh release delete "${{ github.ref_name }}" --yes --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body_path: ${{ steps.changelog.outputs.CHANGELOG_FILE }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          files: release-assets/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
