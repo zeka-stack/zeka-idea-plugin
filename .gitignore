@@ -60,3 +60,6 @@ docs-list.json
 !gradle-wrapper.jar
 .env
 engine-chat.html
+
+# 本地发布备忘 (各开发者自行维护, 不进仓库)
+notes.md
