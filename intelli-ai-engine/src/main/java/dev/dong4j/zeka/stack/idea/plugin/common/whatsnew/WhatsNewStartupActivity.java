@@ -1,13 +1,10 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.whatsnew;
 
-import com.intellij.ide.plugins.IdeaPluginDescriptor;
-import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.util.concurrency.AppExecutorUtil;
@@ -23,6 +20,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.SiteContents;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
@@ -41,9 +39,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class WhatsNewStartupActivity implements ProjectActivity {
+    /** 版本信息的远程 URL */
     private static final String VERSION_URL = SiteContents.VERSION_URL;
-    private static final PluginId PLUGIN_ID = PluginId.getId(EngineContents.PLUGIN_ID);
 
+    /** 用于确保启动活动逻辑仅执行一次的原子标志 */
     private final AtomicBoolean hasRun = new AtomicBoolean(false);
     /**
      * 执行启动活动的逻辑, 用于在项目启动时检查新版本并显示提示
@@ -143,15 +142,7 @@ public class WhatsNewStartupActivity implements ProjectActivity {
      */
     @Nullable
     private String getPluginVersion() {
-        try {
-            IdeaPluginDescriptor pluginDescriptor = PluginManagerCore.getPlugin(PLUGIN_ID);
-            if (pluginDescriptor != null) {
-                return pluginDescriptor.getVersion();
-            }
-        } catch (Exception e) {
-            log.debug("获取插件版本失败", e);
-        }
-        return null;
+        return PluginUtil.getVersion(EngineContents.PLUGIN_ID);
     }
 
     /**
@@ -215,6 +206,13 @@ public class WhatsNewStartupActivity implements ProjectActivity {
         // 添加查看更新内容操作
         notification.addAction(new NotificationAction(
             AICommonBundle.message("whatsnew.update.view")) {
+            /**
+             * 处理通知操作事件
+             * <p> 当用户点击通知中的操作按钮时, 打开最新功能编辑器并使通知过期
+             *
+             * @param e 操作事件对象, 包含触发操作的上下文信息
+             * @param notification 通知对象, 用于在操作完成后使其过期
+             */
             @Override
             public void actionPerformed(@NotNull AnActionEvent e,
                                         @NotNull Notification notification) {
@@ -227,6 +225,13 @@ public class WhatsNewStartupActivity implements ProjectActivity {
         // 添加不再显示操作
         notification.addAction(new NotificationAction(
             AICommonBundle.message("whatsnew.update.dont.show.again")) {
+            /**
+             * 处理通知动作的点击事件
+             * <p> 当用户选择“不再显示”时, 将禁用更新通知提示, 并保存设置, 最后使通知过期
+             *
+             * @param e              动作事件对象, 包含触发事件的上下文信息
+             * @param notification   被点击的通知对象, 用于在操作后使其过期
+             */
             @Override
             public void actionPerformed(@NotNull AnActionEvent e,
                                         @NotNull Notification notification) {

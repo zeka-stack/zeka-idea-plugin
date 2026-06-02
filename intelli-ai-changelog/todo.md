@@ -42,3 +42,8 @@ commit_preprocessors = [
     { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](https://github.com/zeka-stack/zeka-idea-plugin/issues/${2}))" },
 ]
 ```
+
+## 2026.05.24
+
+- [ ] 增加一个开关: 是否在生成 commit message 时附带上协助者, 使用: `Co-authored-by: ZekaStack <zeka.stack@gmail.com>`
+

@@ -445,9 +445,13 @@ public class AIStatusBarWidget extends EditorBasedStatusBarPopup {
          */
         @Override
         public void setSelected(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e, boolean state) {
-            if (state && e.getProject() != null) {
+            if (e.getProject() != null) {
                 // 用户从 Status Bar 显式启用日志时, 主动打开 Problems View 并定位到 Engine 日志 tab.
-                AIConsoleView.getInstance(e.getProject()).enableVerboseLoggingAndShowConsole();
+                if (state) {
+                    AIConsoleView.getInstance(e.getProject()).enableVerboseLoggingAndShowConsole();
+                } else {
+                    AIConsoleView.getInstance(e.getProject()).disableVerboseLoggingAndShowPlaceholder();
+                }
                 return;
             }
             AIProviderSettings.getInstance().verboseLogging = state;

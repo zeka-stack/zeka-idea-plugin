@@ -93,9 +93,7 @@ final class NextEditCoordinator implements Disposable {
      */
     @Override
     public void dispose() {
-        for (NextEditTracker tracker : trackers.values()) {
-            Disposer.dispose(tracker);
-        }
+        // tracker 已注册为 coordinator 的子 disposable, Disposer 会先释放子节点。
         trackers.clear();
     }
 }

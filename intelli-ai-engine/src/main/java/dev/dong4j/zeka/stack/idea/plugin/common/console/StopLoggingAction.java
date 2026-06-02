@@ -4,7 +4,6 @@ import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 
 import org.jetbrains.annotations.NotNull;
@@ -45,12 +44,9 @@ public class StopLoggingAction extends AnAction {
      */
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        AIProviderSettings settings = AIProviderSettings.getInstance();
-        settings.verboseLogging = false;
-        ApplicationManager.getApplication().saveSettings();
         Project project = e.getProject();
         if (project != null) {
-            AIConsoleView.getInstance(project).refreshPanelBySettings();
+            AIConsoleView.getInstance(project).disableVerboseLoggingAndShowPlaceholder();
         }
     }
 
