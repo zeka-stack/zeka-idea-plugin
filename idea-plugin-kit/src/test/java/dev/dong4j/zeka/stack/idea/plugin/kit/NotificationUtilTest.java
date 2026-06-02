@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author dong4j
  * @version 1.0.0
  * @email "mailto:dong4j@gmail.com"
- * @date 2026.01.02
+ * @date 2026.05.25
  * @since 1.0.0
  */
 @Slf4j
