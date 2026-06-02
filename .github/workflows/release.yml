@@ -1,11 +1,14 @@
 name: Release Plugins
 
-# 触发条件: 推送形如 v* 的 tag (如 v2026.1.2000)
+# 触发条件:
+#   1. v* 形式的版本 tag, 如 v2026.1.2000
+#   2. 20YY.MM.DD 形式的日期 tag, 如 2026.06.02 (多插件统一 release 时使用)
 # Release 标题使用 tag 名, 各 plugin 版本号从各自 gradle.properties 读取 (不强制覆盖)
 on:
   push:
     tags:
       - 'v*'
+      - '20[0-9][0-9].*'
 
 permissions:
   contents: write
