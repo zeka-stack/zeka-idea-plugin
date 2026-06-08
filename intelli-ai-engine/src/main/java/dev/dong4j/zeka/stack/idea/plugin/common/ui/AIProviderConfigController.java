@@ -1,6 +1,8 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
+import com.intellij.ide.actions.RevealFileAction;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.PathManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
@@ -9,7 +11,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.Component;
+import java.awt.Toolkit;
 import java.awt.Window;
+import java.awt.datatransfer.StringSelection;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,6 +51,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButt
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import icons.AICommonIcons;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * AI 提供商配置控制器
@@ -60,6 +66,7 @@ import icons.AICommonIcons;
  * @date 2025.11.30
  * @since 1.0.0
  */
+@Slf4j
 public final class AIProviderConfigController {
 
     /** 负责管理 AI 身份凭证的工具类实例 */
@@ -490,18 +497,9 @@ public final class AIProviderConfigController {
                         configurationVerified = false;
                         updateTestButtonState();
                         removeAvailableProvider(testConfig.credentialId);
-                        Object[] options = {AICommonBundle.message("button.ok", "OK"), "Show Log"};
-                        int choice = JOptionPane.showOptionDialog(resolveDialogParent(),
-                                                      result.getFullErrorMessage(),
-                                                      AICommonBundle.message("settings.test.result.title"),
-                                                      JOptionPane.DEFAULT_OPTION,
-                                                      JOptionPane.ERROR_MESSAGE,
-                                                      null,
-                                                      options,
-                                                      options[0]);
-                        if (choice == 1) {
-                            dev.dong4j.zeka.stack.idea.plugin.common.action.ShowLogAction.showLog();
-                        }
+                        // [HOM-194] 用统一 helper 弹窗: 同时把详情写入 idea.log,
+                        // 并提供 "复制详情" / "Show Log" 两个辅助按钮
+                        showTestErrorDialog(result.getFullErrorMessage(), result.getThrowable());
                     }
                 });
             } catch (Exception e) {
@@ -509,18 +507,8 @@ public final class AIProviderConfigController {
                     configurationVerified = false;
                     updateTestButtonState();
                     removeAvailableProvider(testConfig.credentialId);
-                    Object[] options = {AICommonBundle.message("button.ok", "OK"), "Show Log"};
-                    int choice = JOptionPane.showOptionDialog(resolveDialogParent(),
-                                                  AICommonBundle.message("settings.test.connection.error", e.getMessage()),
-                                                  AICommonBundle.message("settings.test.result.title"),
-                                                  JOptionPane.DEFAULT_OPTION,
-                                                  JOptionPane.ERROR_MESSAGE,
-                                                  null,
-                                                  options,
-                                                  options[0]);
-                    if (choice == 1) {
-                        dev.dong4j.zeka.stack.idea.plugin.common.action.ShowLogAction.showLog();
-                    }
+                    showTestErrorDialog(
+                        AICommonBundle.message("settings.test.connection.error", e.getMessage()), e);
                 });
             } finally {
                 SwingUtilities.invokeLater(() -> {
@@ -529,6 +517,82 @@ public final class AIProviderConfigController {
                 });
             }
         });
+    }
+
+    /**
+     * 测试连接失败时展示统一弹窗
+     * <p>
+     * 同一处入口完成三件事:
+     * <ol>
+     *   <li>用 {@code log.warn} 写入 idea.log (slf4j → IDEA 自带 logger), 即使用户关掉弹窗,
+     *       详情仍然持久化, 方便用户事后 / 远程协助时定位</li>
+     *   <li>弹窗以 ERROR 样式展示完整错误 (含 HTTP status + body 摘要 + cause 信息)</li>
+     *   <li>提供 "复制详情" 一键 copy 到系统剪贴板, 用户可以直接贴到 GitHub issue;
+     *       "Show Log" 直接打开 idea.log 所在目录</li>
+     * </ol>
+     * 该方法只在 EDT 线程调用 (UI 操作).
+     *
+     * @param message 已经经过 {@code AIServiceException.build} / i18n 处理的用户可读错误描述,
+     *                可能跨多行, 不为 null
+     * @param cause   原始异常, 可为 null. 不为 null 时会和 message 一起写入 idea.log 的堆栈段
+     */
+    private void showTestErrorDialog(@NotNull String message, @Nullable Throwable cause) {
+        if (cause != null) {
+            log.warn("AI test connection failed: " + message, cause);
+        } else {
+            log.warn("AI test connection failed: " + message);
+        }
+
+        Object[] options = {"OK", "复制详情", "Show Log"};
+        int choice = JOptionPane.showOptionDialog(
+            resolveDialogParent(),
+            message,
+            AICommonBundle.message("settings.test.result.title"),
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.ERROR_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+        if (choice == 1) {
+            try {
+                Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(new StringSelection(message), null);
+            } catch (Throwable t) {
+                // 剪贴板异常 (如 headless / 权限) 仅记录, 不应再开第二个弹窗打断用户
+                log.warn("Failed to copy error detail to clipboard", t);
+            }
+        } else if (choice == 2) {
+            openLogFile();
+        }
+    }
+
+    /**
+     * 打开 idea.log 所在目录
+     * <p>
+     * 优先反射调用 {@code dev.dong4j.zeka.stack.idea.plugin.common.action.ShowLogAction#showLog()}
+     * (HOM-195 / Phase 3) 以便和插件菜单 + Find Action 入口保持一致. 但本 PR 基于
+     * dev 分支, Phase 3 PR (#81) 尚未合并, 所以做了降级: 直接用 {@link PathManager#getLogPath()}
+     * 拼接 idea.log 并交给 {@link RevealFileAction#openFile} 打开. 行为对用户等价,
+     * 等 HOM-195 合并后反射路径会自动接管, 无需再次改这里.
+     */
+    private static void openLogFile() {
+        try {
+            Class<?> clazz = Class.forName(
+                "dev.dong4j.zeka.stack.idea.plugin.common.action.ShowLogAction");
+            clazz.getDeclaredMethod("showLog").invoke(null);
+            return;
+        } catch (ClassNotFoundException ignored) {
+            // Phase 3 (HOM-195) 尚未合并, 走下面的降级路径
+        } catch (Throwable t) {
+            log.warn("Failed to call ShowLogAction.showLog(), falling back", t);
+        }
+        try {
+            File logFile = new File(PathManager.getLogPath(), "idea.log");
+            RevealFileAction.openFile(logFile);
+        } catch (Throwable t) {
+            log.warn("Failed to reveal idea.log", t);
+        }
     }
 
     /**
