@@ -490,10 +490,18 @@ public final class AIProviderConfigController {
                         configurationVerified = false;
                         updateTestButtonState();
                         removeAvailableProvider(testConfig.credentialId);
-                        JOptionPane.showMessageDialog(resolveDialogParent(),
+                        Object[] options = {AICommonBundle.message("button.ok", "OK"), "Show Log"};
+                        int choice = JOptionPane.showOptionDialog(resolveDialogParent(),
                                                       result.getFullErrorMessage(),
                                                       AICommonBundle.message("settings.test.result.title"),
-                                                      JOptionPane.ERROR_MESSAGE);
+                                                      JOptionPane.DEFAULT_OPTION,
+                                                      JOptionPane.ERROR_MESSAGE,
+                                                      null,
+                                                      options,
+                                                      options[0]);
+                        if (choice == 1) {
+                            dev.dong4j.zeka.stack.idea.plugin.common.action.ShowLogAction.showLog();
+                        }
                     }
                 });
             } catch (Exception e) {
@@ -501,10 +509,18 @@ public final class AIProviderConfigController {
                     configurationVerified = false;
                     updateTestButtonState();
                     removeAvailableProvider(testConfig.credentialId);
-                    JOptionPane.showMessageDialog(resolveDialogParent(),
+                    Object[] options = {AICommonBundle.message("button.ok", "OK"), "Show Log"};
+                    int choice = JOptionPane.showOptionDialog(resolveDialogParent(),
                                                   AICommonBundle.message("settings.test.connection.error", e.getMessage()),
                                                   AICommonBundle.message("settings.test.result.title"),
-                                                  JOptionPane.ERROR_MESSAGE);
+                                                  JOptionPane.DEFAULT_OPTION,
+                                                  JOptionPane.ERROR_MESSAGE,
+                                                  null,
+                                                  options,
+                                                  options[0]);
+                    if (choice == 1) {
+                        dev.dong4j.zeka.stack.idea.plugin.common.action.ShowLogAction.showLog();
+                    }
                 });
             } finally {
                 SwingUtilities.invokeLater(() -> {
