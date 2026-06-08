@@ -390,13 +390,14 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         JsonObject body = new JsonObject();
         body.addProperty("model", config.modelName);
 
-        if (!enableThinking) {
-            // 如果设置为关闭思考, 有些思考模型会报错, 所以需要强制设置为开启思考模式
-            if (config.modelName.contains("think")) {
-                enableThinking = true;
-            }
-            body.addProperty("think", enableThinking);
-            body.addProperty("enable_thinking", enableThinking);
+        // [HOM-194] 仅在需要启用思考模式时显式发送 enable_thinking: true.
+        // 部分 OpenAI 兼容服务 (如阿里百炼的 MiniMax-M2.5) 严格校验 enable_thinking
+        // 参数: 若显式传入 false 会直接以 HTTP 400 返回
+        // "The value of the enable_thinking parameter is restricted to True".
+        // 因此默认不写入该字段, 交由后端默认行为处理; 同时移除非标准的 "think" 字段,
+        // 避免对其它 OpenAI 兼容厂商造成兼容性风险.
+        if (enableThinking || config.modelName.contains("think")) {
+            body.addProperty("enable_thinking", true);
         }
         body.addProperty("stream", stream);
         body.add("messages", messagesArray);

@@ -131,14 +131,48 @@ public class AIServiceException extends Exception {
             return AICommonBundle.message("error.ai.service.call.failed", e.getMessage());
         }
 
+        // [HOM-194] 之前 INVALID_API_KEY / RATE_LIMIT / SERVICE_UNAVAILABLE / INVALID_RESPONSE
+        // 分支只返回通用 i18n 文案, 把 BlockingRequestExecutor 透传上来的真实 API 错误体
+        // (例如百炼的 "The value of the enable_thinking parameter is restricted to True")
+        // 完全丢弃, 用户在 UI 弹窗里只能看到 "服务返回的数据格式错误" 这种无信息的提示.
+        // 这里改成: 只要 underlying message 非空, 就走带 detail 的 bundle key 把原文拼进去;
+        // 否则保持原有通用文案, 行为向后兼容.
+        String detail = sanitize(e.getMessage());
+        boolean hasDetail = !detail.isEmpty();
+
         return switch (errorCode) {
-            case INVALID_API_KEY -> AICommonBundle.message("error.ai.service.invalid.api.key");
-            case RATE_LIMIT -> AICommonBundle.message("error.ai.service.rate.limit");
-            case SERVICE_UNAVAILABLE -> AICommonBundle.message("error.ai.service.unavailable");
+            case INVALID_API_KEY -> hasDetail
+                ? AICommonBundle.message("error.ai.service.invalid.api.key.with.detail", detail)
+                : AICommonBundle.message("error.ai.service.invalid.api.key");
+            case RATE_LIMIT -> hasDetail
+                ? AICommonBundle.message("error.ai.service.rate.limit.with.detail", detail)
+                : AICommonBundle.message("error.ai.service.rate.limit");
+            case SERVICE_UNAVAILABLE -> hasDetail
+                ? AICommonBundle.message("error.ai.service.unavailable.with.detail", detail)
+                : AICommonBundle.message("error.ai.service.unavailable");
             case NETWORK_ERROR -> AICommonBundle.message("error.ai.service.network.error");
-            case CONFIGURATION_ERROR -> AICommonBundle.message("error.ai.service.configuration.error", e.getMessage());
-            case INVALID_RESPONSE -> AICommonBundle.message("error.ai.service.invalid.response");
-            default -> AICommonBundle.message("error.ai.service.call.failed.with.suggestion", e.getMessage());
+            case CONFIGURATION_ERROR -> AICommonBundle.message("error.ai.service.configuration.error", detail);
+            case INVALID_RESPONSE -> hasDetail
+                ? AICommonBundle.message("error.ai.service.invalid.response.with.detail", detail)
+                : AICommonBundle.message("error.ai.service.invalid.response");
+            default -> AICommonBundle.message("error.ai.service.call.failed.with.suggestion", detail);
         };
+    }
+
+    /**
+     * 对异常 message 做基础清洗, 仅去除前后空白并把 null 归一为空串
+     * <p>
+     * 注意: 真正的凭据脱敏发生在 BlockingRequestExecutor.sanitizeForUser, 这里只做空值兜底,
+     * 避免把 "null" 字面量写进 i18n 文案.
+     *
+     * @param msg 异常 message, 允许为 null
+     * @return 清洗后的字符串, 永不为 null
+     */
+    @org.jetbrains.annotations.NotNull
+    private static String sanitize(@org.jetbrains.annotations.Nullable String msg) {
+        if (msg == null) {
+            return "";
+        }
+        return msg.trim();
     }
 }

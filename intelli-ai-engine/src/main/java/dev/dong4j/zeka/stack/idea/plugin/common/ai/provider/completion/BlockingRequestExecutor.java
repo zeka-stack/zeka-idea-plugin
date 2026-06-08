@@ -11,9 +11,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiConsumer;
+import java.util.regex.Pattern;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
@@ -123,7 +125,12 @@ public class BlockingRequestExecutor {
             byte[] requestBodyBytes = requestBody.getBytes(StandardCharsets.UTF_8);
             final int contentLength = requestBodyBytes.length;
 
+            // [HOM-194] 关闭 IDEA 自带的 4xx/5xx 自动抛异常逻辑, 由我们手动在回调内读取
+            // error stream 的原始 body 并写入 HttpStatusException.message,
+            // 否则上层只能看到 "Request failed with status code 400" 这类无信息的
+            // 默认描述, API 真正的错误体 (例如百炼的 InvalidParameter 提示) 会被吞掉.
             String responseBody = HttpRequests.post(url, "application/json")
+                .throwStatusCodeException(false)
                 .tuner(connection -> {
                     HttpURLConnection conn = (HttpURLConnection) connection;
                     connectionTuner.accept(conn, apiKey);
@@ -132,7 +139,19 @@ public class BlockingRequestExecutor {
                 })
                 .connect(request -> {
                     request.write(requestBody);
-                    return request.readString();
+                    HttpURLConnection conn = (HttpURLConnection) request.getConnection();
+                    int statusCode = conn.getResponseCode();
+                    if (statusCode >= 200 && statusCode < 300) {
+                        return request.readString();
+                    }
+                    // 非 2xx 时务必使用 getErrorStream(): getInputStream() 在 4xx 下会直接抛 IOException
+                    // 导致拿不到 body. 读到的 body 做截断 + 简单脱敏后塞进 HttpStatusException.message,
+                    // 供上层 (AIServiceException.build / UI 弹窗 / idea.log) 透出.
+                    String errorBody = readErrorBody(conn);
+                    String detail = sanitizeForUser(errorBody);
+                    throw new HttpRequests.HttpStatusException(
+                        "HTTP " + statusCode + ": " + (detail.isEmpty() ? "(empty response body)" : detail),
+                        statusCode, url);
                 });
 
             logResponse(listener, responseBody, validation);
@@ -146,18 +165,81 @@ public class BlockingRequestExecutor {
             throw new AIServiceException("Invalid response from AI service",
                                          AIServiceException.ErrorCode.INVALID_RESPONSE);
         } catch (HttpRequests.HttpStatusException e) {
+            // [HOM-194] 显式区分 400 / 404 (配置类错误, 应当带 detail 给用户)
+            // 与 401 / 403 (鉴权类) / 429 (限流) / 5xx (服务端). 之前所有非显式分支被
+            // 错误地折叠到 INVALID_RESPONSE, 进而被 AIServiceException.build() 翻译成
+            // "服务返回的数据格式错误", 把真正的 API 错误体彻底丢失.
             AIServiceException.ErrorCode code = switch (e.getStatusCode()) {
-                case 401 -> AIServiceException.ErrorCode.INVALID_API_KEY;
+                case 400, 404 -> AIServiceException.ErrorCode.CONFIGURATION_ERROR;
+                case 401, 403 -> AIServiceException.ErrorCode.INVALID_API_KEY;
                 case 429 -> AIServiceException.ErrorCode.RATE_LIMIT;
                 case 500, 502, 503, 504 -> AIServiceException.ErrorCode.SERVICE_UNAVAILABLE;
                 default -> AIServiceException.ErrorCode.INVALID_RESPONSE;
             };
-            throw new AIServiceException("HTTP error: " + e.getMessage(), code, e);
+            // e.getMessage() 已经包含 "HTTP <code>: <body>", 直接透传, 不再额外包一层 "HTTP error:"
+            throw new AIServiceException(e.getMessage(), code, e);
         } catch (IOException e) {
             final String message = getErrorString(e);
             throw new AIServiceException("未知错误: " + message,
                                          AIServiceException.ErrorCode.UNKNOWN_ERROR, e);
         }
+    }
+
+    /** error body 最大保留长度, 避免 4MB 的 HTML 错误页撑爆日志和弹窗. */
+    private static final int MAX_ERROR_BODY_LEN = 4096;
+
+    /** 用于脱敏 Authorization / API Key 出现在错误体 (或上游回显请求) 中的极小概率情况. */
+    private static final Pattern AUTH_HEADER_PATTERN =
+        Pattern.compile("(?i)(authorization\\s*[:=]\\s*['\"]?)(bearer\\s+)?[A-Za-z0-9._\\-]+");
+    private static final Pattern API_KEY_FIELD_PATTERN =
+        Pattern.compile("(?i)(\"?api[_-]?key\"?\\s*[:=]\\s*['\"])([^'\"]+)(['\"])");
+    private static final Pattern SK_TOKEN_PATTERN =
+        Pattern.compile("sk-[A-Za-z0-9]{6,}");
+
+    /**
+     * 读取 HttpURLConnection 的 error stream
+     * <p>
+     * 必须在 4xx/5xx 状态下调用. getErrorStream() 在没有 body 时返回 null, 这里做防御.
+     * 任何 IO 异常都被吞掉返回空串, 因为我们已经处于错误处理路径, 不想把读 body 失败
+     * 再当成另一个错误向上抛.
+     *
+     * @param conn 已经发起请求, 且 responseCode 处于 4xx/5xx 的 HttpURLConnection
+     * @return error body 字符串, 失败或无 body 时返回空串
+     */
+    @NotNull
+    private static String readErrorBody(@NotNull HttpURLConnection conn) {
+        try (InputStream stream = conn.getErrorStream()) {
+            if (stream == null) {
+                return "";
+            }
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            return "";
+        }
+    }
+
+    /**
+     * 对透出给用户的错误内容做截断 + 凭据脱敏
+     * <p>
+     * 截断到 {@value #MAX_ERROR_BODY_LEN} 字符, 同时屏蔽可能出现的 Authorization 头,
+     * api_key 字段和 OpenAI 风格的 sk-xxxx token, 避免敏感信息进入 idea.log / 弹窗.
+     *
+     * @param raw 原始 body, 允许为 null
+     * @return 清洗后的字符串, 总长度不超过 MAX_ERROR_BODY_LEN + 截断提示
+     */
+    @NotNull
+    private static String sanitizeForUser(@Nullable String raw) {
+        if (raw == null || raw.isEmpty()) {
+            return "";
+        }
+        String redacted = AUTH_HEADER_PATTERN.matcher(raw).replaceAll("$1***");
+        redacted = API_KEY_FIELD_PATTERN.matcher(redacted).replaceAll("$1***$3");
+        redacted = SK_TOKEN_PATTERN.matcher(redacted).replaceAll("sk-***");
+        if (redacted.length() <= MAX_ERROR_BODY_LEN) {
+            return redacted;
+        }
+        return redacted.substring(0, MAX_ERROR_BODY_LEN)
+               + "...[truncated " + (redacted.length() - MAX_ERROR_BODY_LEN) + " chars]";
     }
 
     /**
