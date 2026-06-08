@@ -84,3 +84,20 @@ template/
 ## 许可证
 
 MIT License
+
+## 如何查看插件日志
+
+如果你遇到配置失败或 AI 回复异常的问题，可以通过以下方式快速查看插件的详细运行日志：
+
+### 方法 1：使用 Find Action (推荐)
+1. 打开 IDEA 的 **Find Action** (快捷键 ⌘⇧A 或 Ctrl+Shift+A)。
+2. 输入 **Intelli AI: Show Log** (或简写 log) 并回车。
+3. 系统将自动打开 `idea.log` 文件。
+
+### 方法 2：使用菜单入口
+在 IDEA 顶部菜单栏中，点击：
+- **Help** → **Intelli AI: Show Log**
+- 或者 **Tools** → **Intelli AI: Show Log**
+
+### 方法 3：使用 IDEA 自带功能
+在 IDEA 顶部菜单栏中，点击 **Help** → **Show Log in Finder** (macOS) 或 **Show Log in Explorer** (Windows)。这会打开日志所在文件夹，你可以找到并打开 `idea.log`。

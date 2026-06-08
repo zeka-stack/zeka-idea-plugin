@@ -31,6 +31,7 @@ public class IntelliAIPluginsActionGroup extends DefaultActionGroup {
         add(new WhatsNewAction());
         add(new SupportAction());
         add(new FeedbackTestAction());
+        add(new ShowLogAction());
     }
 
     /**
