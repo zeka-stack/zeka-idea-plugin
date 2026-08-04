@@ -574,7 +574,9 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
 
             <body（可选）>
 
-            - 不允许多余空行
+            - body 存在时，subject 与 body 之间必须且只能保留一个空行
+            - body 不存在时，subject 后不得追加空行
+            - 除上述必需的分隔空行外，不允许多余空行
             - subject 使用祈使语气，不要句号
             - scope 是可选项; 无法可靠判断时允许输出 `<type>: <subject>`
 

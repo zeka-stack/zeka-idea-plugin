@@ -37,7 +37,6 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
-import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -395,7 +394,7 @@ public class CommitMessageGenerator {
                                 outputSession);
 
                         String commitMessage = generation.generate(service, listener, contextText, typingIndicator);
-                        String formattedCommitMessage = MessageFormatter.format(commitMessage);
+                        String formattedCommitMessage = CommitMessageFormatter.format(commitMessage);
 
                         ApplicationManager.getApplication().invokeLater(() -> {
                             if (project.isDisposed() || state.cancelled.get()) {
@@ -553,15 +552,16 @@ public class CommitMessageGenerator {
                 } else if (fullContent.isBlank()) {
                     typingIndicator.stop();
                 }
+                String formattedContent = CommitMessageFormatter.format(fullContent);
                 ApplicationManager.getApplication().invokeLater(() -> {
                     if (project.isDisposed() || state.cancelled.get()) {
                         return;
                     }
-                    if (setCommitMessageText(fullContent, commitMessageControl, true)) {
+                    if (setCommitMessageText(formattedContent, commitMessageControl, true)) {
                         updated.set(true);
                     }
                     if (outputSession != null) {
-                        outputSession.setText(fullContent);
+                        outputSession.setText(formattedContent);
                     }
                 });
             }
@@ -947,7 +947,7 @@ public class CommitMessageGenerator {
                         log.debug("Git 提交页面：[{}] 生成失败", rootChanges, e);
                         commitMessage = "";
                     }
-                    String formattedCommitMessage = MessageFormatter.format(commitMessage);
+                    String formattedCommitMessage = CommitMessageFormatter.format(commitMessage);
                     return formattedCommitMessage.isBlank() ? "" : formattedCommitMessage.trim();
                 }, AppExecutorUtil.getAppExecutorService())
                 .exceptionally(ex -> {
