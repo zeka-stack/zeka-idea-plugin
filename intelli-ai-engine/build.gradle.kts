@@ -1,12 +1,13 @@
 plugins {
     id("java")
     id("maven-publish")
-    id("org.jetbrains.intellij.platform") version "2.16.0"
+    id("org.jetbrains.intellij.platform") version "2.18.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 val kitVersion: String = providers.gradleProperty("kitVersion").get()
+val platformVersion = providers.gradleProperty("platformVersion")
 
 repositories {
     mavenLocal()
@@ -38,9 +39,8 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("platformSinceBuild")
-            // https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-extension.html#intellijPlatform-pluginConfiguration-ideaVersion-untilBuild
-            // untilBuild = providers.gradleProperty("platformUntilBuild")
-            untilBuild = provider { null }
+            // 限定到已验证的 2026.2 分支，避免对尚未验证的未来 IDE 版本宣称兼容。
+            untilBuild = providers.gradleProperty("platformUntilBuild")
         }
     }
 
@@ -50,13 +50,13 @@ intellijPlatform {
             create("IC", "2024.3")
             create("IC", "2025.1")
             create("IC", "2025.2")
-            create("IC", "2025.3")
-
             create("IU", "2024.2")
             create("IU", "2024.3")
             create("IU", "2025.1")
             create("IU", "2025.2")
             create("IU", "2025.3")
+            create("IU", "2026.1")
+            create("IU", "2026.2.0.1")
         }
     }
 }
@@ -64,9 +64,13 @@ intellijPlatform {
 dependencies {
     intellijPlatform {
         // create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
-        intellijIdea(providers.gradleProperty("platformVersion"))
+        intellijIdea(platformVersion)
 
         bundledPlugin("com.intellij.java")
+        // 2026.2 起 JCEF 从平台核心拆分为独立 bundled plugin；旧平台仍由核心直接提供。
+        if (platformVersion.get().startsWith("2026.2")) {
+            bundledPlugin("com.intellij.modules.jcef")
+        }
         zipSigner()
         pluginVerifier()
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
@@ -75,8 +79,8 @@ dependencies {
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
     implementation("dev.dong4j.zeka.stack:idea-plugin-kit:${kitVersion}")
 
-    compileOnly("org.projectlombok:lombok:1.18.32")
-    annotationProcessor("org.projectlombok:lombok:1.18.32")
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
@@ -89,8 +93,8 @@ dependencies {
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    testCompileOnly("org.projectlombok:lombok:1.18.32")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
+    testCompileOnly("org.projectlombok:lombok:1.18.46")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.46")
 }
 
 val webviewDir = layout.projectDirectory.dir("webview")

@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.javadoc.settings.ui;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -288,7 +287,8 @@ public class JavadocSettingsPanel {
                 // 如果没有保存的配置，尝试选择第一个可用的提供商
                 AIProviderSettings globalSettings = AIProviderSettings.getInstance();
                 final List<AIProviderConfig> aiProviderTypes = globalSettings.getVerifiedProviders();
-                if (CollectionUtils.isNotEmpty(aiProviderTypes)) {
+                // 2026.2 不再随平台暴露 Commons Collections，使用 JDK 集合判断避免依赖 IDE 内部传递库。
+                if (aiProviderTypes != null && !aiProviderTypes.isEmpty()) {
                     aiProviderSelectionPanel.setSelectedProvider(aiProviderTypes.get(0));
                 }
             } else {

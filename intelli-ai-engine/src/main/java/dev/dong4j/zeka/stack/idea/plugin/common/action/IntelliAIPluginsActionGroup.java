@@ -2,6 +2,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.action;
 
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import dev.dong4j.zeka.stack.idea.plugin.common.promotion.StarcatPromotionAction;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.whatsnew.WhatsNewAction;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +31,7 @@ public class IntelliAIPluginsActionGroup extends DefaultActionGroup {
         super(AICommonBundle.message("settings.display.name"), true);
         add(new WhatsNewAction());
         add(new SupportAction());
+        add(new StarcatPromotionAction());
         add(new FeedbackTestAction());
         add(new ShowLogAction());
     }

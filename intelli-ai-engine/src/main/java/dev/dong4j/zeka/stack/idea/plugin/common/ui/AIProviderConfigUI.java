@@ -66,6 +66,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
+import dev.dong4j.zeka.stack.idea.plugin.common.promotion.StarcatPromotion;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettingsPanel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.SpacedJBLabel;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
@@ -360,7 +361,7 @@ public final class AIProviderConfigUI {
         statisticsSettingsPanel = createStatisticsPanel();
 
         // 组合成主面板
-        mainPanel = FormBuilder.createFormBuilder()
+        FormBuilder formBuilder = FormBuilder.createFormBuilder()
             .addComponent(connectionPanel)
             .addSeparator(10)
             .addComponent(availableProvidersSectionPanel)
@@ -373,7 +374,12 @@ public final class AIProviderConfigUI {
             .addComponentFillVertically(new JPanel(), 0)
             .addComponent(intelliAgentPanel.getContent())
             .addComponent(statisticsSettingsPanel.getPanel())
-            .addComponent(feedbackPanel.getContent())
+            .addComponent(feedbackPanel.getContent());
+        // Starcat 卡片不参与任何设置读写，仅对 macOS 15+ 用户提供被动曝光入口
+        if (StarcatPromotion.isEligible()) {
+            formBuilder.addComponent(StarcatPromotion.createSettingsPanel());
+        }
+        mainPanel = formBuilder
             .addComponent(personalInfoPanel.getContent())
             .getPanel();
         mainPanel.setBorder(JBUI.Borders.empty(8));

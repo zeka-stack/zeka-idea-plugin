@@ -13,6 +13,8 @@
 
     <!-- 依赖的平台模块 -->
     <depends>com.intellij.modules.platform</depends>
+    <!-- 2026.2 起 JCEF 独立为 bundled plugin；保持 optional 以兼容仍内置 JCEF 的旧平台 -->
+    <depends optional="true">com.intellij.modules.jcef</depends>
 
     <applicationListeners>
         <listener class="dev.dong4j.zeka.stack.idea.plugin.common.agent.PluginLifecycleListener"
@@ -95,6 +97,8 @@
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleStartupActivity"/>
         <!-- 项目启动时显示支持通知 -->
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.support.SupportStartupActivity"/>
+        <!-- Starcat 推广仅在 macOS 15+ 生效，并通过跨插件活动 ID 保证只提示一次 -->
+        <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.promotion.StarcatPromotionStartupActivity"/>
         <postStartupActivity implementation="dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditActionInstaller"/>
         <!-- 项目启动时初始化统计服务 -->
         <postStartupActivity

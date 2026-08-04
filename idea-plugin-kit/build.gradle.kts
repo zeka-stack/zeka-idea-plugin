@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     id("maven-publish")
-    id("org.jetbrains.intellij.platform") version "2.16.0"
+    id("org.jetbrains.intellij.platform") version "2.18.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -35,8 +35,8 @@ dependencies {
     }
 
     // Lombok
-    compileOnly("org.projectlombok:lombok:1.18.32")
-    annotationProcessor("org.projectlombok:lombok:1.18.32")
+    compileOnly("org.projectlombok:lombok:1.18.46")
+    annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // 测试依赖
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
@@ -48,8 +48,8 @@ dependencies {
     testImplementation("org.mockito:mockito-junit-jupiter:5.2.0")
     testImplementation("org.assertj:assertj-core:3.24.2")
 
-    testCompileOnly("org.projectlombok:lombok:1.18.32")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
+    testCompileOnly("org.projectlombok:lombok:1.18.46")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.46")
 }
 
 tasks {
