@@ -46,7 +46,8 @@ dependencies {
         intellijIdea(providers.gradleProperty("platformVersion"))
 
         // Bundled plugins
-        bundledPlugin("com.intellij.java")
+        // 注：本插件不使用 Java PSI/JavaPsiFacade 等 Java 语言 API,
+        // 因此不再依赖 com.intellij.java,以支持 PyCharm/WebStorm/GoLand 等非 Java IDE
         bundledPlugin("org.jetbrains.plugins.terminal")
 
         // 依赖 IntelliAI Engine 插件

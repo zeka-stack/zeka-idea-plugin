@@ -538,9 +538,9 @@ public final class AIProviderConfigController {
      */
     private void showTestErrorDialog(@NotNull String message, @Nullable Throwable cause) {
         if (cause != null) {
-            log.warn("AI test connection failed: " + message, cause);
+            log.warn("AI test connection failed: {}", message, cause);
         } else {
-            log.warn("AI test connection failed: " + message);
+            log.warn("AI test connection failed: {}", message);
         }
 
         Object[] options = {"OK", "复制详情", "Show Log"};

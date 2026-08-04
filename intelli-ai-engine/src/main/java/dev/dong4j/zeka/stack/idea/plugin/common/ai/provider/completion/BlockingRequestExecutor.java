@@ -212,7 +212,7 @@ public class BlockingRequestExecutor {
             if (stream == null) {
                 return "";
             }
-            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            return conn.getResponseMessage();
         } catch (IOException ex) {
             return "";
         }

@@ -13,7 +13,6 @@
     <!-- 产品和插件兼容性要求。
          更多信息：https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.modules.java</depends>
     <depends>org.jetbrains.plugins.terminal</depends>
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
