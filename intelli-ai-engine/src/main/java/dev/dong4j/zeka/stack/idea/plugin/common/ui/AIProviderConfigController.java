@@ -30,14 +30,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingProbeResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
@@ -48,6 +49,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
 import dev.dong4j.zeka.stack.idea.plugin.common.nextedit.NextEditSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.ui.component.StatusIndicatorButton;
+import dev.dong4j.zeka.stack.idea.plugin.common.ui.dialog.AvailableProviderSettingsDialog;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
 import dev.dong4j.zeka.stack.idea.plugin.kit.StorageUtil;
 import icons.AICommonIcons;
@@ -161,12 +163,7 @@ public final class AIProviderConfigController {
         ui.getLanguageComboBox().setSelectedItem(responseLanguage);
         ui.updateCheckBoxHintColors();
 
-        // 加载高级配置
-        ui.getShowAdvancedSettingsCheckBox().setSelected(workingSettings.showAdvancedSettings);
-        JPanel advancedPanel = ui.getAdvancedSettingsContentPanel();
-        if (advancedPanel != null) {
-            advancedPanel.setVisible(workingSettings.showAdvancedSettings);
-        }
+        // 加载高级配置到隐藏字段 (主页面分组已隐藏, 通过测试前对话框编辑)
         ui.getMaxRetriesField().setText(String.valueOf(runtimeSettings.maxRetries));
         ui.getTimeoutField().setText(String.valueOf(runtimeSettings.timeout));
         AIModelParameters modelParameters = workingSettings.modelParameters != null
@@ -278,7 +275,8 @@ public final class AIProviderConfigController {
         AIRuntimeSettings runtimeSnapshot = snapshotRuntimeSettings();
         snapshot.runtimeSettings = runtimeSnapshot.copy();
         snapshot.showAvailableProviders = ui.getShowAvailableProvidersCheckBox().isSelected();
-        snapshot.showAdvancedSettings = ui.getShowAdvancedSettingsCheckBox().isSelected();
+        // 高级配置分组已改为测试前对话框入口, 主页面不再展示该分组
+        snapshot.showAdvancedSettings = false;
 
         // verboseLogging 已迁移到全局配置
         snapshot.verboseLogging = ui.getVerboseLoggingCheckBox().isSelected();
@@ -480,27 +478,41 @@ public final class AIProviderConfigController {
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                ValidationResult result = provider.validateConfiguration(getCurrentApiKey());
-                SwingUtilities.invokeLater(() -> {
-                    if (result.isSuccess()) {
-                        configurationVerified = true;
-                        updateTestButtonState();
-                        addAvailableProvider(testConfig, providerType);
-                        String message = buildSuccessMessage(result.getMessage(), testConfig);
-                        javax.swing.Icon icon = AICommonIcons.getProviderIcon64(providerType);
-                        JOptionPane.showMessageDialog(resolveDialogParent(),
-                                                      message,
-                                                      AICommonBundle.message("settings.test.result.title"),
-                                                      JOptionPane.INFORMATION_MESSAGE,
-                                                      icon);
-                    } else {
+                String apiKey = getCurrentApiKey();
+                ValidationResult result = provider.validateConfiguration(apiKey);
+                if (!result.isSuccess()) {
+                    SwingUtilities.invokeLater(() -> {
                         configurationVerified = false;
                         updateTestButtonState();
                         removeAvailableProvider(testConfig.credentialId);
-                        // [HOM-194] 用统一 helper 弹窗: 同时把详情写入 idea.log,
-                        // 并提供 "复制详情" / "Show Log" 两个辅助按钮
                         showTestErrorDialog(result.getFullErrorMessage(), result.getThrowable());
-                    }
+                    });
+                    return;
+                }
+
+                // 基础连通成功后: OpenAI 兼容链路并发三探针探测思考能力 (BGT)
+                testButtonSetTextOnEdt(AICommonBundle.message("settings.test.connection.probing.thinking"));
+                if (provider instanceof AICompatibleProvider compatibleProvider) {
+                    ThinkingProbeResult probeResult = compatibleProvider.probeThinkingCapability(apiKey);
+                    testConfig.thinkingProbeResult = probeResult;
+                    testConfig.applyThinkingProbeDefaults();
+                    // 同步到当前默认服务商模板, 便于设置对话框展示结论
+                    AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
+                    defaultConfig.thinkingProbeResult = probeResult.copy();
+                    defaultConfig.enableThinking = testConfig.enableThinking;
+                }
+
+                SwingUtilities.invokeLater(() -> {
+                    configurationVerified = true;
+                    updateTestButtonState();
+                    addAvailableProvider(testConfig, providerType);
+                    String message = buildSuccessMessage(result.getMessage(), testConfig);
+                    javax.swing.Icon icon = AICommonIcons.getProviderIcon64(providerType);
+                    JOptionPane.showMessageDialog(resolveDialogParent(),
+                                                  message,
+                                                  AICommonBundle.message("settings.test.result.title"),
+                                                  JOptionPane.INFORMATION_MESSAGE,
+                                                  icon);
                 });
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
@@ -517,6 +529,13 @@ public final class AIProviderConfigController {
                 });
             }
         });
+    }
+
+    /**
+     * 在 EDT 更新测试按钮文案 (探测阶段提示)
+     */
+    private void testButtonSetTextOnEdt(@NotNull String text) {
+        SwingUtilities.invokeLater(() -> ui.getTestConnectionButton().setText(text));
     }
 
     /**
@@ -898,6 +917,89 @@ public final class AIProviderConfigController {
     }
 
     /**
+     * 打开「测试连接前」高级参数对话框
+     * <p>
+     * 与可用服务商编辑共用 {@link AvailableProviderSettingsDialog}.
+     * 确认后回写隐藏的高级字段、全局模板参数, 以及当前默认服务商的 {@code enableThinking},
+     * 以便后续测试连接成功时带入可用服务商列表.
+     */
+    public void editConnectionAdvancedSettings() {
+        AIProviderType providerType = resolveSelectedProviderType();
+        AIProviderConfig config = workingSettings.getDefaultProviderConfig(providerType).copy();
+        config.providerType = providerType;
+        config.modelName = getSelectedModelName();
+        config.baseUrl = normalizeBaseUrl(ui.getBaseUrlField().getText());
+        applyParametersToConfig(config, snapshotModelParameters(), snapshotRuntimeSettings());
+
+        AvailableProviderSettingsDialog dialog = new AvailableProviderSettingsDialog(
+            getDialogParent(),
+            config,
+            AvailableProviderSettingsDialog.Mode.CONNECTION_TEMPLATE
+        );
+        if (!dialog.showAndGet()) {
+            return;
+        }
+
+        AIProviderConfig updated = dialog.getUpdatedConfig();
+        applyAdvancedFieldsToUi(updated);
+        workingSettings.modelParameters = updated.modelParameters != null
+                                          ? updated.modelParameters.copy()
+                                          : new AIModelParameters();
+        workingSettings.runtimeSettings = updated.runtimeSettings != null
+                                          ? updated.runtimeSettings.copy()
+                                          : new AIRuntimeSettings();
+
+        AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
+        defaultConfig.enableThinking = updated.enableThinking;
+        applyParametersToConfig(defaultConfig, workingSettings.modelParameters, workingSettings.runtimeSettings);
+    }
+
+    /**
+     * 将配置中的高级参数写回主设置页隐藏字段, 供后续 snapshot / 测试连接使用
+     *
+     * @param config 对话框确认后的配置
+     */
+    private void applyAdvancedFieldsToUi(@NotNull AIProviderConfig config) {
+        AIRuntimeSettings runtime = config.runtimeSettings != null ? config.runtimeSettings : new AIRuntimeSettings();
+        AIModelParameters params = config.modelParameters != null ? config.modelParameters : new AIModelParameters();
+        ui.getMaxRetriesField().setText(String.valueOf(runtime.maxRetries));
+        ui.getTimeoutField().setText(String.valueOf(runtime.timeout));
+        ui.getMaxTokensField().setText(AIModelParameters.migrateMaxTokens(params.maxTokens));
+        ui.getTemperatureField().setText(params.temperature != null ? params.temperature : "auto");
+        ui.getTopPField().setText(params.topP != null ? params.topP : "auto");
+        ui.getTopKField().setText(params.topK != null ? params.topK : "auto");
+        ui.getPresencePenaltyField().setText(params.presencePenalty != null ? params.presencePenalty : "auto");
+    }
+
+    /**
+     * 打开指定行可用服务商的高级参数设置对话框
+     * <p>
+     * 确认后回写表格模型与 workingSettings; 设置页 Apply 时通过 {@link #getSettings()} 持久化.
+     * 其中 {@code enableThinking} 会随配置进入 {@link AIServiceFactory#createProvider},
+     * 并在 OpenAI 兼容请求体中按需发送 {@code enable_thinking}.
+     *
+     * @param rowIndex 表格行索引
+     */
+    public void editAvailableProvider(int rowIndex) {
+        AIProviderConfig config = ui.getAvailableProvidersTableModel().getProviderConfig(rowIndex);
+        if (config == null) {
+            return;
+        }
+        AvailableProviderSettingsDialog dialog = new AvailableProviderSettingsDialog(getDialogParent(), config);
+        if (dialog.showAndGet()) {
+            AIProviderConfig updated = dialog.getUpdatedConfig();
+            ui.getAvailableProvidersTableModel().updateProviderConfig(rowIndex, updated);
+            // 按 credentialId 原地替换, 避免 addAvailableProvider 把条目挪到列表末尾
+            for (int i = 0; i < workingSettings.availableProviders.size(); i++) {
+                if (Objects.equals(workingSettings.availableProviders.get(i).credentialId, updated.credentialId)) {
+                    workingSettings.availableProviders.set(i, updated.copy());
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
      * 删除指定行的可用提供者配置
      * <p>
      * 根据表格中指定行的索引获取对应的提供者配置, 若配置存在则弹出确认对话框, 确认后根据配置的凭证 ID 删除该提供者.
@@ -1197,10 +1299,24 @@ public final class AIProviderConfigController {
                String.format("  Top K: %s\n", modelParams.topK != null ? modelParams.topK : "auto") +
                String.format("  存在惩罚 (Presence Penalty): %s\n", modelParams.presencePenalty != null ? modelParams.presencePenalty : "auto"
                             ) +
+               String.format("  Think 模式: %s\n", config.enableThinking ? "开启" : "关闭") +
                "\n" +
-
+               formatThinkingProbeSection(config) +
+               "\n" +
                // 说明文字
-               "💡 提示：测试连接之前先修改高级参数以适配不同场景需求\n";
+               "💡 提示：测试前可点模型旁齿轮配置高级参数；加入列表后也可设置/双击条目单独修改\n";
+    }
+
+    /**
+     * 格式化思考能力探测结果段落
+     */
+    @NotNull
+    private static String formatThinkingProbeSection(@NotNull AIProviderConfig config) {
+        ThinkingProbeResult probe = config.thinkingProbeResult;
+        if (probe == null) {
+            return "";
+        }
+        return probe.formatForDisplay() + "\n";
     }
 
     /**

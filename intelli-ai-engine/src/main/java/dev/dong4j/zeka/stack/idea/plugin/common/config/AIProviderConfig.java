@@ -3,6 +3,7 @@ package dev.dong4j.zeka.stack.idea.plugin.common.config;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
 import java.util.Objects;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
@@ -42,6 +43,80 @@ public class AIProviderConfig {
     public AIModelParameters modelParameters = new AIModelParameters();
     /** 运行时配置 */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
+    /**
+     * 是否启用 Think / 思考模式
+     * <p>
+     * 为 true 时, OpenAI 兼容请求体可显式发送 {@code enable_thinking: true}.
+     * 默认 false, 兼容已有持久化配置 (缺失字段反序列化为 false).
+     * 实际是否写入字段还受 {@link #thinkingProbeResult} 能力画像约束.
+     */
+    public boolean enableThinking;
+
+    /**
+     * 测试连接时三探针探测的思考能力结果; 可为 null (未探测过的老配置)
+     */
+    public ThinkingProbeResult thinkingProbeResult;
+
+    /**
+     * 判断当前配置是否「希望」启用 Think (用户勾选或模型名约定)
+     * <p>
+     * 最终请求字段由 {@link #resolveThinkingSendMode()} 决定.
+     *
+     * @return 用户侧希望启用思考时返回 true
+     */
+    public boolean shouldEnableThinking() {
+        if (enableThinking) {
+            return true;
+        }
+        ThinkingCapability capability = thinkingProbeResult != null ? thinkingProbeResult.capability : null;
+        // 已有探测结果时不再用模型名猜测, 避免误伤 omni 等名称
+        if (capability != null && capability != ThinkingCapability.UNKNOWN) {
+            return false;
+        }
+        return modelName != null && modelName.toLowerCase(Locale.ROOT).contains("think");
+    }
+
+    /**
+     * 根据探测结果与用户勾选, 决定请求体如何发送 enable_thinking
+     * <p>
+     * OPTIONAL 关闭时默认 {@link ThinkingSendMode#OMIT} (不写 false), 以提升兼容性.
+     *
+     * @return 发送策略
+     */
+    @NotNull
+    public ThinkingSendMode resolveThinkingSendMode() {
+        ThinkingCapability capability = thinkingProbeResult != null ? thinkingProbeResult.capability : null;
+        if (capability == ThinkingCapability.UNSUPPORTED) {
+            return ThinkingSendMode.OMIT;
+        }
+        if (capability == ThinkingCapability.REQUIRED_TRUE) {
+            return ThinkingSendMode.TRUE;
+        }
+        if (capability == ThinkingCapability.DEFAULT_ON_NO_PARAM) {
+            // 默认思考且无需传参: 仅当用户显式要求时才写 true
+            return shouldEnableThinking() ? ThinkingSendMode.TRUE : ThinkingSendMode.OMIT;
+        }
+        // OPTIONAL / UNKNOWN / null
+        return shouldEnableThinking() ? ThinkingSendMode.TRUE : ThinkingSendMode.OMIT;
+    }
+
+    /**
+     * 根据探测结论调整默认 Think 勾选
+     * <p>
+     * REQUIRED_TRUE → 强制勾选; UNSUPPORTED → 强制取消; 其余保持现状.
+     */
+    public void applyThinkingProbeDefaults() {
+        if (thinkingProbeResult == null || thinkingProbeResult.capability == null) {
+            return;
+        }
+        switch (thinkingProbeResult.capability) {
+            case REQUIRED_TRUE -> enableThinking = true;
+            case UNSUPPORTED -> enableThinking = false;
+            default -> {
+                // OPTIONAL / DEFAULT_ON_NO_PARAM / UNKNOWN: 保留用户或模板勾选
+            }
+        }
+    }
 
     /**
      * 构造函数, 用于初始化 AIProviderConfig 对象.
@@ -83,6 +158,8 @@ public class AIProviderConfig {
         config.credentialId = this.credentialId;
         config.modelParameters = this.modelParameters != null ? this.modelParameters.copy() : new AIModelParameters();
         config.runtimeSettings = this.runtimeSettings != null ? this.runtimeSettings.copy() : new AIRuntimeSettings();
+        config.enableThinking = this.enableThinking;
+        config.thinkingProbeResult = this.thinkingProbeResult != null ? this.thinkingProbeResult.copy() : null;
         return config;
     }
 
@@ -150,8 +227,17 @@ public class AIProviderConfig {
                && configurationVerified == other.configurationVerified
                && Objects.equals(credentialId, other.credentialId)
                && Objects.equals(remark, other.remark)
+               && enableThinking == other.enableThinking
+               && compareThinkingProbe(other)
                && compareModelParameters(other)
                && compareRuntimeSettings(other);
+    }
+
+    private boolean compareThinkingProbe(@NotNull AIProviderConfig other) {
+        if (thinkingProbeResult == null) {
+            return other.thinkingProbeResult == null;
+        }
+        return thinkingProbeResult.contentEquals(other.thinkingProbeResult);
     }
 
     /**

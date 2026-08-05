@@ -27,9 +27,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.BlockingRequestExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.StreamRequestExecutor;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingCapabilityProbe;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingCapability;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingProbeResult;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingSendMode;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -343,7 +347,31 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @since 1.0.0
      */
     protected JsonObject buildRequestBody(AIChatRequest request) {
-        return buildRequestBody(request, false, false);
+        return buildRequestBody(request, false);
+    }
+
+    /**
+     * 构建发送给 AI 聊天服务的请求体 (是否启用 Think 由 {@link AIProviderConfig#shouldEnableThinking()} 决定).
+     *
+     * @param request AI 聊天请求对象
+     * @param stream  是否启用流式传输
+     * @return 构建完成的 JSON 请求体
+     */
+    protected JsonObject buildRequestBody(AIChatRequest request, boolean stream) {
+        return buildRequestBody(request, stream, config.resolveThinkingSendMode() == ThinkingSendMode.TRUE);
+    }
+
+    /**
+     * 探测当前模型对 enable_thinking 扩展字段的支持情况
+     * <p>
+     * 必须在后台线程调用. 基础连通失败时不应调用本方法.
+     *
+     * @param apiKey API 密钥
+     * @return 探测结果
+     */
+    @NotNull
+    public ThinkingProbeResult probeThinkingCapability(@Nullable String apiKey) {
+        return ThinkingCapabilityProbe.probe(project, config, apiKey, this::tuneConnection);
     }
 
     /**
@@ -368,7 +396,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      *
      * @param request        AI 聊天请求对象, 包含系统提示和用户提示信息
      * @param stream         是否启用流式传输
-     * @param enableThinking 是否启用思考模式
+     * @param enableThinking 是否启用思考模式; 通常应传入 {@link AIProviderConfig#shouldEnableThinking()}
      * @return 构建完成的 JSON 对象, 包含消息内容和模型参数
      * @since 1.0.0
      */
@@ -388,14 +416,21 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
         JsonObject body = new JsonObject();
         body.addProperty("model", config.modelName);
 
-        // [HOM-194] 仅在需要启用思考模式时显式发送 enable_thinking: true.
-        // 部分 OpenAI 兼容服务 (如阿里百炼的 MiniMax-M2.5) 严格校验 enable_thinking
-        // 参数: 若显式传入 false 会直接以 HTTP 400 返回
-        // "The value of the enable_thinking parameter is restricted to True".
-        // 因此默认不写入该字段, 交由后端默认行为处理; 同时移除非标准的 "think" 字段,
-        // 避免对其它 OpenAI 兼容厂商造成兼容性风险.
-        if (enableThinking || config.modelName.contains("think")) {
+        // [HOM-194] enable_thinking 为厂商扩展字段, 非 OpenAI 官方规范.
+        // 发送策略由探测结果 + 用户勾选共同决定 (见 AIProviderConfig.resolveThinkingSendMode).
+        // 部分服务对 false 直接 400, 故 OPTIONAL 关闭时默认 OMIT 而不是写 false.
+        ThinkingSendMode sendMode = config.resolveThinkingSendMode();
+        if (sendMode == ThinkingSendMode.OMIT
+            && enableThinking
+            && (config.thinkingProbeResult == null
+                || config.thinkingProbeResult.capability == null
+                || config.thinkingProbeResult.capability == ThinkingCapability.UNKNOWN)) {
+            sendMode = ThinkingSendMode.TRUE;
+        }
+        if (sendMode == ThinkingSendMode.TRUE) {
             body.addProperty("enable_thinking", true);
+        } else if (sendMode == ThinkingSendMode.FALSE) {
+            body.addProperty("enable_thinking", false);
         }
         body.addProperty("stream", stream);
         body.add("messages", messagesArray);
@@ -463,7 +498,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
                                       @Nullable String apiKey,
                                       @NotNull AIStreamResponseListener listener) throws AIServiceException {
         StreamRequestExecutor executor = new StreamRequestExecutor(project, config, this::tuneConnection);
-        executor.sendStreamRequest(buildRequestBody(request, true, true), apiKey, listener);
+        executor.sendStreamRequest(buildRequestBody(request, true), apiKey, listener);
     }
 
     /**

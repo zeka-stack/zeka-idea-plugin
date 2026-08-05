@@ -108,7 +108,7 @@ public class GitHubModelsProvider extends OpenAILikeProvider {
                                       @Nullable String apiKey,
                                       @NotNull AIStreamResponseListener listener) throws AIServiceException {
         StreamRequestExecutor executor = new StreamRequestExecutor(project, config, this::tuneConnection);
-        executor.sendStreamRequest(buildRequestBody(request, true, true), apiKey, listener);
+        executor.sendStreamRequest(buildRequestBody(request, true), apiKey, listener);
     }
 
     /**

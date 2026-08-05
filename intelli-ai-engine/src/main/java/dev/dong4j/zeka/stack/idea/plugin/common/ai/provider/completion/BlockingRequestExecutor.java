@@ -112,6 +112,46 @@ public class BlockingRequestExecutor {
                               @Nullable AIResponseListener listener,
                               boolean validation,
                               @NotNull String url) throws AIServiceException {
+        String responseBody = executeHttpPost(body, apiKey, listener, validation, url);
+        if (!responseBody.trim().isEmpty()) {
+            String result = validation ? parseValidationResponse(responseBody) : parseResponse(responseBody, listener);
+            log.debug("AI response length: {}", result.length());
+            return result;
+        }
+        throw new AIServiceException("Invalid response from AI service",
+                                     AIServiceException.ErrorCode.INVALID_RESPONSE);
+    }
+
+    /**
+     * 发送请求并返回原始响应体 (不解析 content / 不过滤 thinking)
+     * <p>
+     * 供思考能力三探针使用: 需要根据完整 JSON 判断是否出现 reasoning/thinking 字段.
+     *
+     * @param body   请求体
+     * @param apiKey API 密钥
+     * @return 原始响应 JSON 字符串
+     * @throws AIServiceException 请求失败时抛出
+     */
+    @NotNull
+    public String sendRawResponse(@NotNull JsonObject body, @Nullable String apiKey) throws AIServiceException {
+        String url = config.baseUrl + "/chat/completions";
+        String responseBody = executeHttpPost(body, apiKey, null, true, url);
+        if (responseBody == null || responseBody.isBlank()) {
+            throw new AIServiceException("Invalid response from AI service",
+                                         AIServiceException.ErrorCode.INVALID_RESPONSE);
+        }
+        return responseBody;
+    }
+
+    /**
+     * 执行 HTTP POST 并返回原始响应体; 非 2xx 时抛出 {@link AIServiceException}
+     */
+    @NotNull
+    private String executeHttpPost(@NotNull JsonObject body,
+                                   @Nullable String apiKey,
+                                   @Nullable AIResponseListener listener,
+                                   boolean validation,
+                                   @NotNull String url) throws AIServiceException {
         if (config.providerType.requiresApiKey() && (apiKey == null || apiKey.trim().isEmpty())) {
             throw new AIServiceException("需要 API 密钥但未进行配置",
                                          AIServiceException.ErrorCode.CONFIGURATION_ERROR);
@@ -155,15 +195,7 @@ public class BlockingRequestExecutor {
                 });
 
             logResponse(listener, responseBody, validation);
-
-            if (!responseBody.trim().isEmpty()) {
-                String result = validation ? parseValidationResponse(responseBody) : parseResponse(responseBody, listener);
-                log.debug("AI response length: {}", result.length());
-                return result;
-            }
-
-            throw new AIServiceException("Invalid response from AI service",
-                                         AIServiceException.ErrorCode.INVALID_RESPONSE);
+            return responseBody != null ? responseBody : "";
         } catch (HttpRequests.HttpStatusException e) {
             // [HOM-194] 显式区分 400 / 404 (配置类错误, 应当带 detail 给用户)
             // 与 401 / 403 (鉴权类) / 429 (限流) / 5xx (服务端). 之前所有非显式分支被
@@ -212,7 +244,7 @@ public class BlockingRequestExecutor {
             if (stream == null) {
                 return "";
             }
-            return conn.getResponseMessage();
+            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException ex) {
             return "";
         }

@@ -42,7 +42,6 @@ public final class AIProviderConfigPanel {
         this.controller = new AIProviderConfigController(credentialManager, ui);
 
         // 创建 UI，传入回调函数
-        // 清除所有可用提供者的回调
         ui.createUI(
             () -> {
                 // 移除可用提供者的回调
@@ -51,7 +50,8 @@ public final class AIProviderConfigPanel {
                     controller.removeAvailableProvider(selected);
                 }
             },
-            controller::clearAllAvailableProviders
+            controller::clearAllAvailableProviders,
+            controller::editAvailableProvider
                    );
 
         // UI 创建完成后，初始化 Agent 面板
@@ -158,13 +158,7 @@ public final class AIProviderConfigPanel {
             }
         });
 
-        ui.getShowAdvancedSettingsCheckBox().addActionListener(e -> {
-            JPanel advancedPanel = ui.getAdvancedSettingsContentPanel();
-            if (advancedPanel != null) {
-                advancedPanel.setVisible(ui.getShowAdvancedSettingsCheckBox().isSelected());
-            }
-        });
-
+        ui.getConnectionAdvancedSettingsButton().addActionListener(e -> controller.editConnectionAdvancedSettings());
         ui.getTestConnectionButton().addActionListener(e -> controller.testConnection());
         ui.getRefreshModelsButton().addActionListener(e -> controller.refreshModels());
         ui.getAgentPanel().getDownloadButton().addActionListener(e -> controller.downloadAgentJar());

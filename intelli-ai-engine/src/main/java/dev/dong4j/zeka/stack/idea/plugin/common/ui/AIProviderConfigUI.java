@@ -1,9 +1,13 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionPlaces;
+import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.ComboboxSpeedSearch;
 import com.intellij.ui.HyperlinkLabel;
@@ -25,9 +29,12 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.IntConsumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
@@ -42,6 +50,8 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -102,6 +112,8 @@ public final class AIProviderConfigUI {
     private JBPasswordField apiKeyField;
     /** 测试连接按钮 */
     private StatusIndicatorButton testConnectionButton;
+    /** 测试连接前的高级设置按钮（仅图标） */
+    private JButton connectionAdvancedSettingsButton;
     /** 刷新模型列表的按钮 */
     private StatusIndicatorButton refreshModelsButton;
     /** 显示可用提供者的复选框 */
@@ -172,9 +184,11 @@ public final class AIProviderConfigUI {
      *
      * @param removeAvailableProviderCallback    删除可用提供者时的回调, 可为 null
      * @param clearAllAvailableProvidersCallback 清除所有可用提供者时的回调, 可为 null
+     * @param editAvailableProviderCallback      编辑可用提供者高级参数时的回调 (参数为行索引), 可为 null
      */
     public void createUI(@Nullable Runnable removeAvailableProviderCallback,
-                         @Nullable Runnable clearAllAvailableProvidersCallback) {
+                         @Nullable Runnable clearAllAvailableProvidersCallback,
+                         @Nullable IntConsumer editAvailableProviderCallback) {
         // 初始化连接配置组件
         setupProviderComboBox();
 
@@ -209,6 +223,15 @@ public final class AIProviderConfigUI {
 
         testConnectionButton = new StatusIndicatorButton(AICommonBundle.message("settings.test.connection"));
         refreshModelsButton = new StatusIndicatorButton(AICommonBundle.message("settings.refresh.models"));
+        connectionAdvancedSettingsButton = new JButton(AllIcons.General.Settings);
+        connectionAdvancedSettingsButton.setToolTipText(
+            AICommonBundle.message("settings.connection.advanced.settings.tooltip"));
+        connectionAdvancedSettingsButton.setText(null);
+        // 图标按钮尽量贴近测试按钮高度, 避免把模型行撑高
+        int iconButtonSize = testConnectionButton.getPreferredSize().height;
+        Dimension iconSize = new Dimension(iconButtonSize, iconButtonSize);
+        connectionAdvancedSettingsButton.setPreferredSize(iconSize);
+        connectionAdvancedSettingsButton.setMaximumSize(iconSize);
 
         // 设置按钮宽度一致，取两个按钮文本中较长的宽度
         int buttonWidth = Math.max(
@@ -307,6 +330,22 @@ public final class AIProviderConfigUI {
         availableProvidersTable.setPreferredScrollableViewportSize(new Dimension(480, 120));
         availableProvidersTable.getColumnModel().getColumn(0).setCellRenderer(new ProviderTableCellRenderer());
 
+        // 双击行打开高级参数设置 (与工具栏设置按钮共用回调)
+        availableProvidersTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() != 2 || SwingUtilities.isRightMouseButton(e)) {
+                    return;
+                }
+                int row = availableProvidersTable.rowAtPoint(e.getPoint());
+                if (row >= 0 && editAvailableProviderCallback != null) {
+                    availableProvidersTable.getSelectionModel().setSelectionInterval(row, row);
+                    editAvailableProviderCallback.accept(row);
+                }
+            }
+        });
+
+        // 左侧: 删除 / 清空; 设置按钮单独右对齐到工具栏行最右侧
         ToolbarDecorator decorator = ToolbarDecorator.createDecorator(availableProvidersTable)
             .setRemoveAction(button -> {
                 if (removeAvailableProviderCallback != null) {
@@ -342,7 +381,7 @@ public final class AIProviderConfigUI {
                     return ActionUpdateThread.EDT;
                 }
             });
-        availableProvidersPanel = decorator.createPanel();
+        availableProvidersPanel = createAvailableProvidersDecoratorPanel(decorator, editAvailableProviderCallback);
         availableProvidersPanel.setVisible(false);
 
         showAvailableProvidersCheckBox = new JBCheckBox(AICommonBundle.message("settings.show.available.providers"));
@@ -352,7 +391,8 @@ public final class AIProviderConfigUI {
         JPanel availableProvidersSectionPanel = createAvailableProvidersPanel();
         JPanel autocompleteProviderPanel = createAutocompleteProviderPanel();
         JPanel basicPanel = createBasicPanel();
-        JPanel advancedPanel = createAdvancedPanel();
+        // 高级字段仍初始化, 供对话框 / load-apply 读写; 主页面不再展示该分组
+        createAdvancedPanel();
         // 个人信息面板（作者信息）
         PersonalInfoPanel personalInfoPanel = createPersonalInfoPanel();
         // 反馈面板
@@ -369,8 +409,6 @@ public final class AIProviderConfigUI {
             .addComponent(autocompleteProviderPanel)
             .addSeparator(10)
             .addComponent(basicPanel)
-            .addSeparator(10)
-            .addComponent(advancedPanel)
             .addComponentFillVertically(new JPanel(), 0)
             .addComponent(intelliAgentPanel.getContent())
             .addComponent(statisticsSettingsPanel.getPanel())
@@ -907,6 +945,15 @@ public final class AIProviderConfigUI {
     }
 
     /**
+     * 获取测试连接前的高级设置按钮
+     *
+     * @return 高级设置图标按钮
+     */
+    public JButton getConnectionAdvancedSettingsButton() {
+        return connectionAdvancedSettingsButton;
+    }
+
+    /**
      * 获取刷新模型列表的按钮组件
      * <p> 返回用于刷新 AI 模型列表的按钮控件, 该按钮通常用于重新加载当前服务提供商支持的模型列表 </p>
      *
@@ -1225,9 +1272,15 @@ public final class AIProviderConfigUI {
         apiKeyPanel.add(apiKeyField, BorderLayout.CENTER);
         apiKeyPanel.add(refreshModelsButton, BorderLayout.EAST);
 
+        // 模型行右侧: [高级设置图标] [测试连接]
+        JPanel modelActionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, JBUI.scale(5), 0));
+        modelActionsPanel.setOpaque(false);
+        modelActionsPanel.add(connectionAdvancedSettingsButton);
+        modelActionsPanel.add(testConnectionButton);
+
         JPanel modelPanel = new JPanel(new BorderLayout(5, 0));
         modelPanel.add(modelComboBox, BorderLayout.CENTER);
-        modelPanel.add(testConnectionButton, BorderLayout.EAST);
+        modelPanel.add(modelActionsPanel, BorderLayout.EAST);
 
         JPanel panel = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.provider.label")), providerPanel)
@@ -1264,12 +1317,86 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 创建可用提供者面板
+     * 组装可用服务商表格面板, 并将「设置」右对齐到工具栏行最右侧
      * <p>
-     * 用于构建显示可用提供者的面板, 包含描述标签和相关组件.
+     * ToolbarDecorator 只能把 ExtraAction 放在左侧按钮组. 这里拆出 NORTH 工具栏后,
+     * 左侧保留删除/清空, 右侧用同款 {@link ActionToolbar} 放置设置按钮, 以获得:
+     * <ul>
+     *   <li>整行右对齐、贴齐右侧 (去掉多余边距)</li>
+     *   <li>与删除/清空一致的悬停 / 聚焦下划线效果</li>
+     * </ul>
      *
-     * @return 包含可用提供者信息的面板
+     * @param decorator                     已配置删除/清空的装饰器
+     * @param editAvailableProviderCallback 编辑回调, 可为 null
+     * @return 可用服务商表格面板
      */
+    @NotNull
+    private JPanel createAvailableProvidersDecoratorPanel(@NotNull ToolbarDecorator decorator,
+                                                          @Nullable IntConsumer editAvailableProviderCallback) {
+        JPanel decoratorPanel = decorator.createPanel();
+
+        AnAction settingsAction = new AnAction(AICommonBundle.message("settings.available.providers.edit"),
+                                               AICommonBundle.message("settings.available.providers.edit.description"),
+                                               AllIcons.General.Settings) {
+            @Override
+            public void actionPerformed(@NotNull AnActionEvent e) {
+                int selected = availableProvidersTable.getSelectedRow();
+                if (selected >= 0 && editAvailableProviderCallback != null) {
+                    editAvailableProviderCallback.accept(selected);
+                }
+            }
+
+            @Override
+            public void update(@NotNull AnActionEvent e) {
+                e.getPresentation().setEnabled(availableProvidersTable.getSelectedRow() >= 0);
+            }
+
+            @Override
+            public @NotNull ActionUpdateThread getActionUpdateThread() {
+                return ActionUpdateThread.EDT;
+            }
+        };
+
+        // 右侧独立 ActionToolbar: place 与 ToolbarDecorator 相同, 悬停/聚焦效果一致
+        DefaultActionGroup rightGroup = new DefaultActionGroup(settingsAction);
+        ActionToolbar rightToolbar = ActionManager.getInstance()
+            .createActionToolbar(ActionPlaces.TOOLBAR_DECORATOR_TOOLBAR, rightGroup, true);
+        rightToolbar.setTargetComponent(availableProvidersTable);
+        rightToolbar.setReservePlaceAutoPopupIcon(false);
+        JComponent rightToolbarComponent = rightToolbar.getComponent();
+        rightToolbarComponent.setBorder(JBUI.Borders.empty());
+        rightToolbarComponent.setOpaque(false);
+
+        availableProvidersTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                rightToolbar.updateActionsImmediately();
+            }
+        });
+
+        if (!(decoratorPanel.getLayout() instanceof BorderLayout borderLayout)) {
+            return decoratorPanel;
+        }
+        Component north = borderLayout.getLayoutComponent(BorderLayout.NORTH);
+        if (north == null) {
+            return decoratorPanel;
+        }
+
+        decoratorPanel.remove(north);
+        // 去掉左侧原工具栏多余边距, 避免右侧看起来「缩进去一截」
+        if (north instanceof JComponent northComponent) {
+            northComponent.setBorder(JBUI.Borders.empty());
+            northComponent.setOpaque(false);
+        }
+
+        JPanel toolbarRow = new JPanel(new BorderLayout(0, 0));
+        toolbarRow.setOpaque(false);
+        toolbarRow.setBorder(JBUI.Borders.empty());
+        toolbarRow.add(north, BorderLayout.WEST);
+        toolbarRow.add(rightToolbarComponent, BorderLayout.EAST);
+        decoratorPanel.add(toolbarRow, BorderLayout.NORTH);
+        return decoratorPanel;
+    }
+
     private JPanel createAvailableProvidersPanel() {
         availableProvidersDescriptionLabel = new SpacedJBLabel();
         String descriptionText = AICommonBundle.message("settings.available.providers.description");
@@ -1448,23 +1575,24 @@ public final class AIProviderConfigUI {
     }
 
     /**
-     * 创建包含提示标签的面板, 用于与 JBTextField 组件结合使用
+     * 创建「提示 + 输入框」组合面板
      * <p>
-     * 该方法创建一个 JPanel, 其中包含一个 JBTextField 组件和一个提示标签. 提示标签使用指定的提示键获取国际化消息, 并设置为较暗的字体颜色和较小的字体大小, 以实现提示效果.
+     * 布局为提示文字在左、输入框在右 (Label 由 FormBuilder 单独放置在更左侧),
+     * 避免输入框夹在标签与说明文字中间导致阅读顺序反直觉.
      *
      * @param textField 要添加到面板中的 JBTextField 组件
-     * @param hintKey 国际化提示消息的键, 用于获取提示文本
-     * @return 包含 JBTextField 和提示标签的 JPanel
+     * @param hintKey   国际化提示消息的键, 用于获取提示文本
+     * @return 包含提示标签和 JBTextField 的 JPanel
      */
     private JPanel createTextFieldWithHint(JBTextField textField, String hintKey) {
         JPanel panel = new JPanel(new BorderLayout(5, 0));
-        panel.add(textField, BorderLayout.WEST);
 
         JBLabel hintLabel = new SpacedJBLabel(AICommonBundle.message(hintKey));
         hintLabel.setFont(hintLabel.getFont().deriveFont(hintLabel.getFont().getSize() - 2.0f));
         hintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         hintLabel.setPreferredSize(new Dimension(300, hintLabel.getPreferredSize().height));
         panel.add(hintLabel, BorderLayout.CENTER);
+        panel.add(textField, BorderLayout.EAST);
 
         return panel;
     }
@@ -2106,6 +2234,22 @@ public final class AIProviderConfigUI {
         }
 
         /**
+         * 用新配置覆盖指定行, 并通知表格刷新该行
+         * <p>
+         * 用于设置对话框确认后回写 UI; 写入的是副本, 避免外部继续持有表格内部引用.
+         *
+         * @param index  行索引
+         * @param config 新的提供者配置
+         */
+        public void updateProviderConfig(int index, @NotNull AIProviderConfig config) {
+            if (index < 0 || index >= data.size()) {
+                return;
+            }
+            data.set(index, config.copy());
+            fireTableRowsUpdated(index, index);
+        }
+
+        /**
          * 获取表格行数
          * <p> 返回当前数据列表中的元素数量, 用于确定表格显示的总行数 </p>
          *
@@ -2169,15 +2313,17 @@ public final class AIProviderConfigUI {
 
         /**
          * 判断表格中指定位置的单元格是否可编辑.
-         * <p>本模型仅允许第 2,3,4 列 (即 “timeout”,"max tokens","remark" 列) 的单元格可编辑, 其余列不可编辑.
+         * <p>
+         * 列表本身不可内联编辑; 超时 / Max Token / 备注 / Think 等均通过设置对话框修改,
+         * 避免双击可编辑列时进入单元格编辑而拦截打开对话框.
          *
          * @param rowIndex    行索引
          * @param columnIndex 列索引
-         * @return 若该单元格属于可编辑列, 返回 {@code true}; 否则返回 {@code false}
+         * @return 始终返回 {@code false}
          */
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
-            return columnIndex == 2 || columnIndex == 3 || columnIndex == 4;
+            return false;
         }
 
         /**

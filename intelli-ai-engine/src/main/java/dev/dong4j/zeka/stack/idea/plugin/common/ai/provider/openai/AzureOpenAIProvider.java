@@ -94,7 +94,7 @@ public class AzureOpenAIProvider extends OpenAILikeProvider {
                                       @NotNull AIStreamResponseListener listener) throws AIServiceException {
         StreamRequestExecutor executor = new StreamRequestExecutor(project, config, this::tuneConnection);
         String url = buildRequestUrl("/chat/completions");
-        executor.sendStreamRequest(buildRequestBody(request, true, true), apiKey, listener, url);
+        executor.sendStreamRequest(buildRequestBody(request, true), apiKey, listener, url);
     }
 
     /**
