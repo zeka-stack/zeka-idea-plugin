@@ -10,7 +10,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
-import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -149,15 +148,13 @@ public class GenerateCommitFromHintAction extends AnAction {
             return;
         }
 
-        // 获取 CommitWorkflowHandler
-        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
-        if (commitWorkflowHandler == null) {
+        // 提交面板上下文: 兼容 COMMIT_WORKFLOW_UI (2025.3+) 与旧版 handler.getUi()
+        if (!dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.hasCommitWorkflow(e.getDataContext())) {
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
             return;
         }
 
-        // 获取变更
-        Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
+        Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(e);
         if (changes.isEmpty()) {
             NotificationUtil.showWarning(project, ChangelogBundle.message("commit.no.selected.changes"));
             return;

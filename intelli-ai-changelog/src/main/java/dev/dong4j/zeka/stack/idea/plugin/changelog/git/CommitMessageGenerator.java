@@ -1093,6 +1093,9 @@ public class CommitMessageGenerator {
         try {
             // 获取 EditorTextField
             EditorTextField editorField = getEditorTextField(commitMessageControl);
+            if (editorField == null) {
+                return;
+            }
 
             // 获取 Editor
             Editor editor = editorField.getEditor();
@@ -1158,7 +1161,20 @@ public class CommitMessageGenerator {
         if (commitMessageControl == null) {
             return null;
         }
-        return ((CommitMessage) commitMessageControl).getEditorField();
+        // 优先走已知实现, 避免新平台 CommitMessageI 实现变化时 ClassCastException 打断生成收尾。
+        if (commitMessageControl instanceof CommitMessage commitMessage) {
+            return commitMessage.getEditorField();
+        }
+        try {
+            Method method = commitMessageControl.getClass().getMethod("getEditorField");
+            Object editorField = method.invoke(commitMessageControl);
+            if (editorField instanceof EditorTextField textField) {
+                return textField;
+            }
+        } catch (ReflectiveOperationException e) {
+            log.debug("无法从 CommitMessageI 获取 EditorTextField: {}", commitMessageControl.getClass().getName(), e);
+        }
+        return null;
     }
 
     /**
@@ -1224,7 +1240,10 @@ public class CommitMessageGenerator {
         if (commitMessageControl == null) {
             return null;
         }
-        final EditorTextField editorField = ((CommitMessage) commitMessageControl).getEditorField();
+        final EditorTextField editorField = getEditorTextField(commitMessageControl);
+        if (editorField == null) {
+            return null;
+        }
         final String text = editorField.getText();
         String trimmed = text.trim();
         return trimmed.isEmpty() ? null : trimmed;

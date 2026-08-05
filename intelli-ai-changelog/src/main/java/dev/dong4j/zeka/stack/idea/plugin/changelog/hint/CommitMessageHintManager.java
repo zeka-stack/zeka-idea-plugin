@@ -16,10 +16,8 @@ import com.intellij.openapi.editor.event.DocumentEvent;
 import com.intellij.openapi.editor.event.DocumentListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.util.concurrency.AppExecutorUtil;
-import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -353,14 +351,13 @@ public class CommitMessageHintManager implements Disposable {
             // 在 EDT 中获取 DataContext
             DataContext dataContext = DataManager.getInstance()
                 .getDataContext(editor.getContentComponent());
-            CommitWorkflowHandler commitWorkflowHandler = dataContext.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
-            if (commitWorkflowHandler == null) {
-                log.debug("Commit Message Hint: 无法获取 CommitWorkflowHandler");
+            if (!dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.hasCommitWorkflow(dataContext)) {
+                log.debug("Commit Message Hint: 无法获取提交工作流上下文");
                 return false;
             }
 
-            // 检查是否有选中的变更
-            Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
+            // 检查是否有选中的变更（兼容 COMMIT_WORKFLOW_UI）
+            Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(dataContext);
             boolean hasChanges = !changes.isEmpty();
             log.debug("Commit Message Hint: 选中的文件数量: {}", changes.size());
             return hasChanges;

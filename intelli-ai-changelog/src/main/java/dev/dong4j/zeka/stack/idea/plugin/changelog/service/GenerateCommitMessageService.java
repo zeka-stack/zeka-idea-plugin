@@ -16,7 +16,6 @@ import com.intellij.openapi.vcs.CommitMessageI;
 import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.ui.awt.RelativePoint;
-import com.intellij.vcs.commit.CommitWorkflowHandler;
 import com.intellij.vcs.log.VcsFullCommitDetails;
 import com.intellij.vcs.log.VcsLogCommitSelection;
 import com.intellij.vcs.log.VcsLogDataKeys;
@@ -163,10 +162,10 @@ public final class GenerateCommitMessageService {
         CommitMessageI commitMessageControl = e.getData(VcsDataKeys.COMMIT_MESSAGE_CONTROL);
         CommitMessageGenerator generator = new CommitMessageGenerator(project);
 
-        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
-        if (commitWorkflowHandler != null) {
+        // 2025.3+ 可能只有 COMMIT_WORKFLOW_UI, handler.getUi() 已从接口移除; 用 hasCommitWorkflow 判断提交面板上下文。
+        if (dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.hasCommitWorkflow(e.getDataContext())) {
             log.debug("Git 提交页面：开始生成提交记录");
-            Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
+            Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(e);
             if (changes.isEmpty()) {
                 log.debug("Git 提交页面：未选择任何文件变更");
                 showActionTip(e, ChangelogBundle.message("commit.no.selected.changes"));

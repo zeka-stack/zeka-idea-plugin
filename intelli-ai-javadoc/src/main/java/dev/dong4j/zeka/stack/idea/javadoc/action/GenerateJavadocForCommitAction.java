@@ -12,12 +12,10 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.popup.Balloon;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.vcs.VcsDataKeys;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.ui.awt.RelativePoint;
-import com.intellij.vcs.commit.CommitWorkflowHandler;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -146,8 +144,8 @@ public class GenerateJavadocForCommitAction extends AnAction {
             return;
         }
 
-        CommitWorkflowHandler commitWorkflowHandler = e.getData(VcsDataKeys.COMMIT_WORKFLOW_HANDLER);
-        if (commitWorkflowHandler == null) {
+        // 提交面板上下文: 兼容 COMMIT_WORKFLOW_UI (2025.3+) 与旧版 handler.getUi()
+        if (!dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.hasCommitWorkflow(e.getDataContext())) {
             NotificationUtil.showWarning(project, JavadocBundle.message("commit.no.selected.changes"));
             return;
         }
@@ -161,8 +159,8 @@ public class GenerateJavadocForCommitAction extends AnAction {
 
         log.debug("Git 提交页面：开始检测缺少 Javadoc 的代码");
 
-        // 在 ReadAction 中获取提交的文件变更和过滤 Java 文件
-        Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(commitWorkflowHandler);
+        // 获取提交的文件变更并过滤 Java 文件
+        Collection<Change> changes = dev.dong4j.zeka.stack.idea.plugin.kit.CommitUtil.getSelectedChanges(e);
         if (changes.isEmpty()) {
             log.debug("Git 提交页面：未选择任何文件变更");
             showActionTip(e, JavadocBundle.message("commit.no.selected.changes"));
