@@ -409,7 +409,7 @@
     <p>The IntelliAI Engine powers all IntelliAI plugins. This page aggregates changes from each module so you can scan updates at a glance.</p>
     <div class="meta">
       <span class="tag">Aggregated Changelog</span>
-      <span>Generated at: 2026-05-21 10:09</span>
+      <span>Generated at: 2026-08-06 01:16</span>
     </div>
   </section>
   <main>
@@ -426,18 +426,41 @@
         </div>
       </div>
       <div class="card-body" id="preview-0">
-<h3>2026.1.2000</h3>
+<h3>2026.2.1001</h3>
 <ul>
-    <li><b>🐛 修复</b>：修复 IDEA 2026.1 下 Engine 日志面板无法显示的问题，改为通过 Problems View tab 注册日志面板</li>
-    <li><b>🐛 修复</b>：修复日志面板迁移后内容为空的问题，复用原有 Console 根面板作为 Problems View tab 内容</li>
-    <li><b>🐛 修复</b>：修复日志面板左侧工具按钮不可见的问题，恢复换行、滚动到底部、关闭日志、清空日志等操作</li>
-    <li><b>🔧 优化</b>：启动 IDEA 时仅注册 Engine 日志 tab，不再自动打开 Problems View 或切换到日志面板</li>
-    <li><b>🔧 优化</b>：用户从 Status Bar 显式启用日志后，会自动打开 Problems View 并定位到 Engine 日志 tab</li>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+    <li><b>✨ 新增</b>：可用服务商列表支持设置按钮与双击编辑，可后置修改高级参数与 Think 模式</li>
+    <li><b>✨ 新增</b>：测试连接前提供高级设置入口（齿轮图标），与可用服务商共用对话框，可配置 Think 模式</li>
+    <li><b>✨ 新增</b>：测试连接成功后并发三探针探测 enable_thinking 能力（不传 / true / false），结果写入可用服务商并展示在成功面板</li>
+    <li><b>🔧 优化</b>：主设置页隐藏原「高级配置」分组，改为测试前 / 可用服务商内编辑</li>
 </ul>
       </div>
       <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-0" style="display:none;">
+<h3>2026.2.1001</h3>
+<ul>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+    <li><b>✨ 新增</b>：可用服务商列表支持设置按钮与双击编辑，可后置修改高级参数与 Think 模式</li>
+    <li><b>✨ 新增</b>：测试连接前提供高级设置入口（齿轮图标），与可用服务商共用对话框，可配置 Think 模式</li>
+    <li><b>✨ 新增</b>：测试连接成功后并发三探针探测 enable_thinking 能力（不传 / true / false），结果写入可用服务商并展示在成功面板</li>
+    <li><b>🔧 优化</b>：主设置页隐藏原「高级配置」分组，改为测试前 / 可用服务商内编辑</li>
+    <li><b>🔧 优化</b>：可用服务商列表禁止内联编辑，统一通过设置对话框修改参数</li>
+    <li><b>🔧 优化</b>：思考能力探测失败摘要仅展示 HTTP 状态码，避免乱码响应体刷屏</li>
+    <li><b>🐛 修复</b>：流式请求不再无条件发送 enable_thinking，改为按探测结果与用户勾选发送，避免部分模型报错</li>
+</ul>
+<h3>2026.2.1001</h3>
+<ul>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
+    <li><b>✨ Added</b>: Available providers list supports Settings button and double-click editing for per-model advanced parameters and Think mode</li>
+    <li><b>✨ Added</b>: Advanced settings button (gear) before Test Connection, reusing the same dialog including Think mode</li>
+    <li><b>✨ Added</b>: After a successful connection test, concurrently probe enable_thinking (omit / true / false) and persist the capability summary</li>
+    <li><b>🔧 Optimized</b>: Hide the main-page Advanced Configuration group; edit via pre-test dialog or available providers</li>
+    <li><b>🔧 Optimized</b>: Disable inline editing in the available providers table; edit only via the settings dialog</li>
+    <li><b>🔧 Optimized</b>: Thinking probe failure summary shows only the HTTP status code to avoid garbled response bodies</li>
+    <li><b>🐛 Fixed</b>: Streaming requests no longer always send enable_thinking; send it based on probe results and the user toggle</li>
+</ul>
+
 <h3>2026.1.2000</h3>
 <ul>
     <li><b>🐛 修复</b>：修复 IDEA 2026.1 下 Engine 日志面板无法显示的问题，改为通过 Problems View tab 注册日志面板</li>
@@ -820,20 +843,26 @@
         </div>
       </div>
       <div class="card-body" id="preview-1">
-<h3>2026.1.1000</h3>
+<h3>2026.2.1001</h3>
 <ul>
-    <li><b>✨ 新增</b>：支持 2026.1</li>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+    <li><b>🐛 修复</b>：修复 2025.3/2026.1+ 提交面板无法读取勾选变更的问题（适配 COMMIT_WORKFLOW_UI）</li>
 </ul>
-<h3>2026.1.1000</h3>
-<ul>
-    <li><b>✨ Added</b>：Support 2026.1</li>
-</ul>
-
-<h3>2025.3.1200</h3>
       </div>
       <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-1" style="display:none;">
+<h3>2026.2.1001</h3>
+<ul>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+    <li><b>🐛 修复</b>：修复 2025.3/2026.1+ 提交面板无法读取勾选变更的问题（适配 COMMIT_WORKFLOW_UI）</li>
+</ul>
+<h3>2026.2.1001</h3>
+<ul>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
+    <li><b>🐛 Fixed</b>: Fixed commit-panel change selection on IntelliJ 2025.3/2026.1+ (use COMMIT_WORKFLOW_UI)</li>
+</ul>
+
 <h3>2026.1.1000</h3>
 <ul>
     <li><b>✨ 新增</b>：支持 2026.1</li>
@@ -1357,18 +1386,26 @@
         </div>
       </div>
       <div class="card-body" id="preview-2">
-<h3>2026.1.2000</h3>
+<h3>2026.2.1001</h3>
 <ul>
-    <li><b>🔧 优化</b>：优化 Commit Message scope 推断逻辑，优先参考项目近期提交中已有的 scope 习惯</li>
-    <li><b>🔧 优化</b>：新增 scope 候选上下文，将近期提交 scope、路径降噪候选和原始模块提示分层提供给 AI</li>
-    <li><b>🐛 修复</b>：修复多模块项目中 scope 容易被直接生成为完整 IDEA module 名或服务名的问题</li>
-    <li><b>🔧 优化</b>：优化默认提交信息提示词，明确 scope 表示稳定功能域或模块域，无法可靠判断时允许省略 scope</li>
-    <li><b>⬆️ 依赖更新</b>：IntelliAI Engine 升级到 2026.1.2000</li>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+    <li><b>🐛 修复</b>：修复 2025.3/2026.1+ 提交面板无法生成 Commit Message 的问题（适配 COMMIT_WORKFLOW_UI，替代已移除的 handler.getUi()）</li>
 </ul>
       </div>
       <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-2" style="display:none;">
+<h3>2026.2.1001</h3>
+<ul>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+    <li><b>🐛 修复</b>：修复 2025.3/2026.1+ 提交面板无法生成 Commit Message 的问题（适配 COMMIT_WORKFLOW_UI，替代已移除的 handler.getUi()）</li>
+</ul>
+<h3>2026.2.1001</h3>
+<ul>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
+    <li><b>🐛 Fixed</b>: Fixed Commit Message generation failure on IntelliJ 2025.3/2026.1+ commit UI (use COMMIT_WORKFLOW_UI instead of removed handler.getUi())</li>
+</ul>
+
 <h3>2026.1.2000</h3>
 <ul>
     <li><b>🔧 优化</b>：优化 Commit Message scope 推断逻辑，优先参考项目近期提交中已有的 scope 习惯</li>
@@ -1644,6 +1681,7 @@
 </ul>
 <hr/>
 
+
 <h3>1.0.0</h3>
 <ul>
     <li>🎉 Initial release</li>
@@ -1728,20 +1766,29 @@
         </div>
       </div>
       <div class="card-body" id="preview-3">
-<h3>2026.1.1000</h3>
+<h3>2026.2.1000</h3>
 <ul>
-    <li><b>✨ 新增</b>：支持 2026.1</li>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
 </ul>
-<h3>2026.1.1000</h3>
+<h3>2026.2.1000</h3>
 <ul>
-    <li><b>✨ Added</b>：Support 2026.1</li>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
 </ul>
 
-<h3>2025.3.1200</h3>
+<h3>2026.1.1000</h3>
       </div>
       <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-3" style="display:none;">
+<h3>2026.2.1000</h3>
+<ul>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+</ul>
+<h3>2026.2.1000</h3>
+<ul>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
+</ul>
+
 <h3>2026.1.1000</h3>
 <ul>
     <li><b>✨ 新增</b>：支持 2026.1</li>
@@ -1982,20 +2029,29 @@
         </div>
       </div>
       <div class="card-body" id="preview-4">
-<h3>2026.1.1000</h3>
+<h3>2026.2.1000</h3>
 <ul>
-    <li><b>✨ 新增</b>：支持 2026.1</li>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
 </ul>
-<h3>2026.1.1000</h3>
+<h3>2026.2.1000</h3>
 <ul>
-    <li><b>✨ Added</b>：Support 2026.1</li>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
 </ul>
 
-<h3>2025.3.1200</h3>
+<h3>2026.1.1000</h3>
       </div>
       <div class="card-footer">点击查看完整更新日志 →</div>
     </section>
     <script type="text/template" id="modal-content-4" style="display:none;">
+<h3>2026.2.1000</h3>
+<ul>
+    <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
+</ul>
+<h3>2026.2.1000</h3>
+<ul>
+    <li><b>✨ Compatibility</b>: Support IntelliJ Platform 2026.2</li>
+</ul>
+
 <h3>2026.1.1000</h3>
 <ul>
     <li><b>✨ 新增</b>：支持 2026.1</li>
@@ -2190,6 +2246,7 @@
     <li>需要安装 IntelliAI Engine 插件（dev.dong4j.zeka.stack.idea.plugin.common.ai）</li>
     <li>Java 17+</li>
 </ul>
+
 
 <hr/>
 

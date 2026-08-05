@@ -116,7 +116,11 @@ get_plugin_download_url() {
 
 # 查找所有插件的 pluginChanges.html 文件
 # 这些文件通常位于：{插件目录}/includes/pluginChanges.html
-mapfile -d '' CHANGE_FILES < <(find "$ROOT_DIR" -type f -path "*/includes/pluginChanges.html" -print0)
+# 使用 while+read 以兼容 macOS 自带 Bash 3.2（无 mapfile）
+CHANGE_FILES=()
+while IFS= read -r -d '' change_file; do
+  CHANGE_FILES+=("$change_file")
+done < <(find "$ROOT_DIR" -type f -path "*/includes/pluginChanges.html" -print0)
 
 # 验证每个文件对应的目录是否为有效的插件目录
 # 通过检查是否存在 plugin.xml 文件来确认，并且只处理白名单中的插件
