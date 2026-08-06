@@ -1,5 +1,6 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.ui.dialog;
 
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -14,10 +15,16 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.Component;
 import java.awt.Dimension;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.UIManager;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingContext;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingEffort;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategy;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategyRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingUiCapability;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
@@ -68,6 +75,9 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
     private final JBTextField remarkField = new JBTextField();
     private final JBCheckBox enableThinkingCheckBox =
         new JBCheckBox(AICommonBundle.message("settings.available.providers.enable.thinking"));
+    private final ComboBox<EffortOption> thinkingEffortCombo = new ComboBox<>();
+
+    private final ThinkingUiCapability thinkingUiCapability;
 
     private JPanel centerPanel;
 
@@ -94,6 +104,8 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         super(parent, true);
         this.sourceConfig = config.copy();
         this.mode = mode;
+        ThinkingParamStrategy thinkingStrategy = ThinkingParamStrategyRegistry.resolve(this.sourceConfig);
+        this.thinkingUiCapability = thinkingStrategy.uiCapability(ThinkingContext.from(this.sourceConfig));
         String titleKey = mode == Mode.CONNECTION_TEMPLATE
                           ? "settings.connection.advanced.settings.title"
                           : "settings.available.providers.edit.title";
@@ -101,6 +113,7 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         setOKButtonText(AICommonBundle.message("settings.available.providers.edit.ok"));
         setCancelButtonText(AICommonBundle.message("settings.available.providers.edit.cancel"));
         setResizable(true);
+        initEffortComboModel();
         initFieldsFromConfig();
         init();
         Dimension preferred = centerPanel.getPreferredSize();
@@ -129,7 +142,10 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         presencePenaltyField.setText(valueOrAuto(params.presencePenalty));
         remarkField.setText(sourceConfig.remark != null ? sourceConfig.remark : "");
         enableThinkingCheckBox.setSelected(sourceConfig.enableThinking);
+        selectEffort(sourceConfig.resolveThinkingEffort());
         applyThinkingCapabilityUiState();
+        updateEffortEnabledState();
+        enableThinkingCheckBox.addActionListener(e -> updateEffortEnabledState());
 
         Dimension fieldSize = new Dimension(JBUI.scale(160), maxRetriesField.getPreferredSize().height);
         maxRetriesField.setPreferredSize(fieldSize);
@@ -154,7 +170,7 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         providerValue.setCopyable(true);
         modelValue.setCopyable(true);
 
-        JBLabel thinkHint = new SpacedJBLabel(AICommonBundle.message("settings.available.providers.enable.thinking.hint"));
+        JBLabel thinkHint = new SpacedJBLabel(AICommonBundle.message(resolveThinkHintKey()));
         thinkHint.setFont(thinkHint.getFont().deriveFont(thinkHint.getFont().getSize() - 1f));
         thinkHint.setForeground(UIManager.getColor("Label.disabledForeground"));
 
@@ -168,12 +184,28 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         enableThinkingCheckBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         thinkHint.setAlignmentX(Component.LEFT_ALIGNMENT);
         probeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        thinkPanel.add(enableThinkingCheckBox);
-        thinkPanel.add(javax.swing.Box.createVerticalStrut(JBUI.scale(4)));
+        thinkingEffortCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        if (thinkingUiCapability.supportsToggle()) {
+            thinkPanel.add(enableThinkingCheckBox);
+            thinkPanel.add(javax.swing.Box.createVerticalStrut(JBUI.scale(4)));
+        }
         thinkPanel.add(thinkHint);
+        if (thinkingUiCapability.supportsEffort()) {
+            JPanel effortRow = new JPanel(new java.awt.BorderLayout(JBUI.scale(8), 0));
+            effortRow.setOpaque(false);
+            effortRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+            effortRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, thinkingEffortCombo.getPreferredSize().height + JBUI.scale(4)));
+            effortRow.add(new SpacedJBLabel(AICommonBundle.message("settings.available.providers.thinking.effort")),
+                          java.awt.BorderLayout.WEST);
+            thinkingEffortCombo.setPreferredSize(new Dimension(JBUI.scale(160), thinkingEffortCombo.getPreferredSize().height));
+            effortRow.add(thinkingEffortCombo, java.awt.BorderLayout.EAST);
+            thinkPanel.add(javax.swing.Box.createVerticalStrut(JBUI.scale(6)));
+            thinkPanel.add(effortRow);
+        }
         thinkPanel.add(javax.swing.Box.createVerticalStrut(JBUI.scale(4)));
         thinkPanel.add(probeLabel);
 
+        boolean showThinkSection = thinkingUiCapability.supportsToggle() || thinkingUiCapability.supportsEffort();
         FormBuilder formBuilder = FormBuilder.createFormBuilder()
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.available.providers.edit.provider")),
                                  providerValue)
@@ -193,9 +225,10 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.k")),
                                  withHint(topKField, "settings.top.k.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.presence.penalty")),
-                                 withHint(presencePenaltyField, "settings.presence.penalty.hint"))
-            .addSeparator(JBUI.scale(8))
-            .addComponent(thinkPanel);
+                                 withHint(presencePenaltyField, "settings.presence.penalty.hint"));
+        if (showThinkSection) {
+            formBuilder.addSeparator(JBUI.scale(8)).addComponent(thinkPanel);
+        }
 
         // 模板模式不展示备注: 测试成功加入列表时仍会自动填充时间戳
         if (mode == Mode.AVAILABLE_PROVIDER) {
@@ -239,15 +272,21 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         updated.modelParameters.topK = normalizeAutoable(topKField.getText());
         updated.modelParameters.presencePenalty = normalizeAutoable(presencePenaltyField.getText());
 
-        updated.enableThinking = enableThinkingCheckBox.isSelected();
-        // 禁用勾选时仍按探测结论落盘, 避免 UI 状态与请求策略不一致
-        ThinkingCapability capability = updated.thinkingProbeResult != null
-                                        ? updated.thinkingProbeResult.capability
-                                        : null;
-        if (capability == ThinkingCapability.REQUIRED_TRUE) {
-            updated.enableThinking = true;
-        } else if (capability == ThinkingCapability.UNSUPPORTED) {
-            updated.enableThinking = false;
+        if (thinkingUiCapability.supportsToggle()) {
+            updated.enableThinking = enableThinkingCheckBox.isSelected();
+            // 禁用勾选时仍按探测结论落盘, 避免 UI 状态与请求策略不一致
+            ThinkingCapability capability = updated.thinkingProbeResult != null
+                                            ? updated.thinkingProbeResult.capability
+                                            : null;
+            if (capability == ThinkingCapability.REQUIRED_TRUE) {
+                updated.enableThinking = true;
+            } else if (capability == ThinkingCapability.UNSUPPORTED) {
+                updated.enableThinking = false;
+            }
+        }
+        if (thinkingUiCapability.supportsEffort()) {
+            EffortOption selected = (EffortOption) thinkingEffortCombo.getSelectedItem();
+            updated.thinkingEffort = selected != null ? selected.effort().name() : ThinkingEffort.AUTO.name();
         }
         if (mode == Mode.AVAILABLE_PROVIDER) {
             updated.remark = remarkField.getText() != null ? remarkField.getText().trim() : "";
@@ -256,9 +295,62 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
     }
 
     /**
+     * 初始化思考强度下拉
+     */
+    private void initEffortComboModel() {
+        DefaultComboBoxModel<EffortOption> model = new DefaultComboBoxModel<>();
+        model.addElement(new EffortOption(ThinkingEffort.AUTO,
+                                          AICommonBundle.message("settings.available.providers.thinking.effort.auto")));
+        for (ThinkingEffort effort : thinkingUiCapability.allowedEfforts()) {
+            model.addElement(new EffortOption(effort, effortDisplayLabel(effort)));
+        }
+        thinkingEffortCombo.setModel(model);
+    }
+
+    private void selectEffort(@NotNull ThinkingEffort effort) {
+        for (int i = 0; i < thinkingEffortCombo.getItemCount(); i++) {
+            EffortOption option = thinkingEffortCombo.getItemAt(i);
+            if (option != null && option.effort() == effort) {
+                thinkingEffortCombo.setSelectedIndex(i);
+                return;
+            }
+        }
+        thinkingEffortCombo.setSelectedIndex(0);
+    }
+
+    private void updateEffortEnabledState() {
+        if (!thinkingUiCapability.supportsEffort()) {
+            return;
+        }
+        // 仅强度（如 Kimi K3）始终可调；有开关时随勾选启用
+        if (!thinkingUiCapability.supportsToggle()) {
+            thinkingEffortCombo.setEnabled(true);
+            return;
+        }
+        thinkingEffortCombo.setEnabled(enableThinkingCheckBox.isEnabled() && enableThinkingCheckBox.isSelected());
+    }
+
+    @NotNull
+    private String resolveThinkHintKey() {
+        if (!thinkingUiCapability.supportsToggle() && thinkingUiCapability.supportsEffort()) {
+            return "settings.available.providers.enable.thinking.hint.effort.only";
+        }
+        if (thinkingUiCapability.supportsEffort() && thinkingUiCapability.supportsProbe()) {
+            return "settings.available.providers.enable.thinking.hint.qianwen";
+        }
+        if (thinkingUiCapability.supportsEffort()) {
+            return "settings.available.providers.enable.thinking.hint.thinking.type";
+        }
+        return "settings.available.providers.enable.thinking.hint";
+    }
+
+    /**
      * 按探测结论调整 Think 勾选可用性
      */
     private void applyThinkingCapabilityUiState() {
+        if (!thinkingUiCapability.supportsToggle()) {
+            return;
+        }
         ThinkingProbeResult probe = sourceConfig.thinkingProbeResult;
         ThinkingCapability capability = probe != null ? probe.capability : null;
         if (capability == ThinkingCapability.UNSUPPORTED) {
@@ -276,11 +368,34 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
     private String resolveProbeDisplayText() {
         ThinkingProbeResult probe = sourceConfig.thinkingProbeResult;
         if (probe == null || probe.capability == null) {
+            String noneKey = thinkingUiCapability.supportsProbe()
+                             ? "settings.available.providers.thinking.probe.none"
+                             : "settings.available.providers.thinking.probe.official";
             return AICommonBundle.message("settings.available.providers.thinking.probe.label") + " "
-                   + AICommonBundle.message("settings.available.providers.thinking.probe.none");
+                   + AICommonBundle.message(noneKey);
         }
         return AICommonBundle.message("settings.available.providers.thinking.probe.label") + " "
                + probe.capability.displayLabel();
+    }
+
+    @NotNull
+    private static String effortDisplayLabel(@NotNull ThinkingEffort effort) {
+        return switch (effort) {
+            case LOW -> AICommonBundle.message("settings.available.providers.thinking.effort.low");
+            case HIGH -> AICommonBundle.message("settings.available.providers.thinking.effort.high");
+            case MAX -> AICommonBundle.message("settings.available.providers.thinking.effort.max");
+            case AUTO -> AICommonBundle.message("settings.available.providers.thinking.effort.auto");
+        };
+    }
+
+    /**
+     * 思考强度下拉项
+     */
+    private record EffortOption(@NotNull ThinkingEffort effort, @NotNull String label) {
+        @Override
+        public @NotNull String toString() {
+            return label;
+        }
     }
 
     /**

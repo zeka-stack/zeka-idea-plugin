@@ -38,6 +38,10 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingContext;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategy;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategyRegistry;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingUiCapability;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingProbeResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -490,9 +494,14 @@ public final class AIProviderConfigController {
                     return;
                 }
 
-                // 基础连通成功后: OpenAI 兼容链路并发三探针探测思考能力 (BGT)
-                testButtonSetTextOnEdt(AICommonBundle.message("settings.test.connection.probing.thinking"));
+                // 基础连通成功后: 按思考策略探测 / 合成结论 (BGT)
                 if (provider instanceof AICompatibleProvider compatibleProvider) {
+                    ThinkingParamStrategy thinkingStrategy = ThinkingParamStrategyRegistry.resolve(testConfig);
+                    ThinkingUiCapability thinkingUi =
+                        thinkingStrategy.uiCapability(ThinkingContext.from(testConfig));
+                    if (thinkingUi.supportsProbe()) {
+                        testButtonSetTextOnEdt(AICommonBundle.message("settings.test.connection.probing.thinking"));
+                    }
                     ThinkingProbeResult probeResult = compatibleProvider.probeThinkingCapability(apiKey);
                     testConfig.thinkingProbeResult = probeResult;
                     testConfig.applyThinkingProbeDefaults();
@@ -500,6 +509,7 @@ public final class AIProviderConfigController {
                     AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
                     defaultConfig.thinkingProbeResult = probeResult.copy();
                     defaultConfig.enableThinking = testConfig.enableThinking;
+                    defaultConfig.thinkingEffort = testConfig.thinkingEffort;
                 }
 
                 SwingUtilities.invokeLater(() -> {
@@ -951,6 +961,7 @@ public final class AIProviderConfigController {
 
         AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(providerType);
         defaultConfig.enableThinking = updated.enableThinking;
+        defaultConfig.thinkingEffort = updated.thinkingEffort;
         applyParametersToConfig(defaultConfig, workingSettings.modelParameters, workingSettings.runtimeSettings);
     }
 
@@ -1300,6 +1311,7 @@ public final class AIProviderConfigController {
                String.format("  存在惩罚 (Presence Penalty): %s\n", modelParams.presencePenalty != null ? modelParams.presencePenalty : "auto"
                             ) +
                String.format("  Think 模式: %s\n", config.enableThinking ? "开启" : "关闭") +
+               String.format("  Think 强度: %s\n", config.resolveThinkingEffort().name()) +
                "\n" +
                formatThinkingProbeSection(config) +
                "\n" +

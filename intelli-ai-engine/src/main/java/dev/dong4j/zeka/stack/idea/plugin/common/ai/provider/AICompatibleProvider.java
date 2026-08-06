@@ -27,13 +27,13 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.BlockingRequestExecutor;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.completion.StreamRequestExecutor;
-import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingCapabilityProbe;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingContext;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategy;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategyRegistry;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingCapability;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingProbeResult;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingSendMode;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
 import dev.dong4j.zeka.stack.idea.plugin.kit.PluginUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -358,11 +358,11 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      * @return 构建完成的 JSON 请求体
      */
     protected JsonObject buildRequestBody(AIChatRequest request, boolean stream) {
-        return buildRequestBody(request, stream, config.resolveThinkingSendMode() == ThinkingSendMode.TRUE);
+        return buildRequestBody(request, stream, config.shouldEnableThinking());
     }
 
     /**
-     * 探测当前模型对 enable_thinking 扩展字段的支持情况
+     * 按当前策略探测 / 合成思考能力结论
      * <p>
      * 必须在后台线程调用. 基础连通失败时不应调用本方法.
      *
@@ -371,7 +371,18 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      */
     @NotNull
     public ThinkingProbeResult probeThinkingCapability(@Nullable String apiKey) {
-        return ThinkingCapabilityProbe.probe(project, config, apiKey, this::tuneConnection);
+        ThinkingParamStrategy strategy = ThinkingParamStrategyRegistry.resolve(config);
+        return strategy.probe(project, config, apiKey, this::tuneConnection);
+    }
+
+    /**
+     * 将思考相关扩展字段写入请求体（由策略决定字段名）
+     *
+     * @param body 已构建的公共请求体
+     */
+    protected void applyThinkingParams(@NotNull JsonObject body) {
+        ThinkingParamStrategy strategy = ThinkingParamStrategyRegistry.resolve(config);
+        strategy.apply(body, config.toThinkingIntent(), ThinkingContext.from(config));
     }
 
     /**
@@ -396,7 +407,7 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
      *
      * @param request        AI 聊天请求对象, 包含系统提示和用户提示信息
      * @param stream         是否启用流式传输
-     * @param enableThinking 是否启用思考模式; 通常应传入 {@link AIProviderConfig#shouldEnableThinking()}
+     * @param enableThinking 兼容旧签名的占位参数; 实际以配置意图 + {@link ThinkingParamStrategy} 为准
      * @return 构建完成的 JSON 对象, 包含消息内容和模型参数
      * @since 1.0.0
      */
@@ -415,23 +426,8 @@ public abstract class AICompatibleProvider implements AIServiceProvider {
 
         JsonObject body = new JsonObject();
         body.addProperty("model", config.modelName);
-
-        // [HOM-194] enable_thinking 为厂商扩展字段, 非 OpenAI 官方规范.
-        // 发送策略由探测结果 + 用户勾选共同决定 (见 AIProviderConfig.resolveThinkingSendMode).
-        // 部分服务对 false 直接 400, 故 OPTIONAL 关闭时默认 OMIT 而不是写 false.
-        ThinkingSendMode sendMode = config.resolveThinkingSendMode();
-        if (sendMode == ThinkingSendMode.OMIT
-            && enableThinking
-            && (config.thinkingProbeResult == null
-                || config.thinkingProbeResult.capability == null
-                || config.thinkingProbeResult.capability == ThinkingCapability.UNKNOWN)) {
-            sendMode = ThinkingSendMode.TRUE;
-        }
-        if (sendMode == ThinkingSendMode.TRUE) {
-            body.addProperty("enable_thinking", true);
-        } else if (sendMode == ThinkingSendMode.FALSE) {
-            body.addProperty("enable_thinking", false);
-        }
+        // 思考扩展字段由策略写入 (通义 enable_thinking / DeepSeek thinking+effort 等)
+        applyThinkingParams(body);
         body.addProperty("stream", stream);
         body.add("messages", messagesArray);
 

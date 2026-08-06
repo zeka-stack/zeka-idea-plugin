@@ -47,18 +47,18 @@
 根据 AI 生成流程，将提示分为三个阶段：
 
 1. **分析阶段** (`analyzingText`)
-    - 中文：`🔍 分析代码变更中...`
-    - 英文：`🔍 Analyzing code changes...`
+    - 中文：`🔍 分析中...`
+    - 英文：`🔍 Analyzing...`
     - 时机：生成任务启动时立即显示
 
 2. **思考阶段** (`thinkingText`)
-    - 中文：`🧠 理解修改意图...`
-    - 英文：`🧠 Understanding intent...`
+    - 中文：`🧠 思考中...`
+    - 英文：`🧠 Thinking...`
     - 时机：当检测到 AI 返回思考内容时触发
 
 3. **草稿阶段** (`draftingText`)
-    - 中文：`📝 生成提交描述`
-    - 英文：`📝 Generating commit description`
+    - 中文：`📝 生成中...`
+    - 英文：`📝 Generating...`
     - 时机：思考阶段完成后自动进入
 
 ### 动画效果

@@ -7,6 +7,8 @@ import java.util.Locale;
 import java.util.Objects;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingEffort;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingIntent;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.ProviderConfigUtils;
 
 /**
@@ -44,23 +46,30 @@ public class AIProviderConfig {
     /** 运行时配置 */
     public AIRuntimeSettings runtimeSettings = new AIRuntimeSettings();
     /**
-     * 是否启用 Think / 思考模式
+     * 是否启用 Think / 思考模式（用户意图）
      * <p>
-     * 为 true 时, OpenAI 兼容请求体可显式发送 {@code enable_thinking: true}.
+     * 实际写入哪些 HTTP 字段由 {@link dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingParamStrategy} 决定.
      * 默认 false, 兼容已有持久化配置 (缺失字段反序列化为 false).
-     * 实际是否写入字段还受 {@link #thinkingProbeResult} 能力画像约束.
      */
     public boolean enableThinking;
 
     /**
-     * 测试连接时三探针探测的思考能力结果; 可为 null (未探测过的老配置)
+     * 思考强度（用户意图）
+     * <p>
+     * 取值见 {@link ThinkingEffort}；老配置缺失时按 {@link ThinkingEffort#AUTO} 处理.
+     * 仅部分策略（如 DeepSeek）会写入对应请求字段.
+     */
+    public String thinkingEffort = ThinkingEffort.AUTO.name();
+
+    /**
+     * 测试连接时思考能力探测 / 合成结论; 可为 null (未探测过的老配置)
      */
     public ThinkingProbeResult thinkingProbeResult;
 
     /**
      * 判断当前配置是否「希望」启用 Think (用户勾选或模型名约定)
      * <p>
-     * 最终请求字段由 {@link #resolveThinkingSendMode()} 决定.
+     * 最终请求字段由 ThinkingParamStrategy 决定.
      *
      * @return 用户侧希望启用思考时返回 true
      */
@@ -77,12 +86,35 @@ public class AIProviderConfig {
     }
 
     /**
+     * 解析用户选择的思考强度；非法值回退 {@link ThinkingEffort#AUTO}
+     *
+     * @return 思考强度
+     */
+    @NotNull
+    public ThinkingEffort resolveThinkingEffort() {
+        return ThinkingEffort.fromConfig(thinkingEffort);
+    }
+
+    /**
+     * 将配置转换为与厂商字段无关的思考意图
+     *
+     * @return 思考意图
+     */
+    @NotNull
+    public ThinkingIntent toThinkingIntent() {
+        return new ThinkingIntent(shouldEnableThinking(), resolveThinkingEffort());
+    }
+
+    /**
      * 根据探测结果与用户勾选, 决定请求体如何发送 enable_thinking
      * <p>
+     * 保留供兼容调用; 新逻辑请走 ThinkingParamStrategy.
      * OPTIONAL 关闭时默认 {@link ThinkingSendMode#OMIT} (不写 false), 以提升兼容性.
      *
      * @return 发送策略
+     * @deprecated 使用 ThinkingParamStrategy.apply
      */
+    @Deprecated
     @NotNull
     public ThinkingSendMode resolveThinkingSendMode() {
         ThinkingCapability capability = thinkingProbeResult != null ? thinkingProbeResult.capability : null;
@@ -93,10 +125,8 @@ public class AIProviderConfig {
             return ThinkingSendMode.TRUE;
         }
         if (capability == ThinkingCapability.DEFAULT_ON_NO_PARAM) {
-            // 默认思考且无需传参: 仅当用户显式要求时才写 true
             return shouldEnableThinking() ? ThinkingSendMode.TRUE : ThinkingSendMode.OMIT;
         }
-        // OPTIONAL / UNKNOWN / null
         return shouldEnableThinking() ? ThinkingSendMode.TRUE : ThinkingSendMode.OMIT;
     }
 
@@ -159,6 +189,7 @@ public class AIProviderConfig {
         config.modelParameters = this.modelParameters != null ? this.modelParameters.copy() : new AIModelParameters();
         config.runtimeSettings = this.runtimeSettings != null ? this.runtimeSettings.copy() : new AIRuntimeSettings();
         config.enableThinking = this.enableThinking;
+        config.thinkingEffort = this.thinkingEffort != null ? this.thinkingEffort : ThinkingEffort.AUTO.name();
         config.thinkingProbeResult = this.thinkingProbeResult != null ? this.thinkingProbeResult.copy() : null;
         return config;
     }
@@ -228,6 +259,7 @@ public class AIProviderConfig {
                && Objects.equals(credentialId, other.credentialId)
                && Objects.equals(remark, other.remark)
                && enableThinking == other.enableThinking
+               && Objects.equals(resolveThinkingEffort(), other.resolveThinkingEffort())
                && compareThinkingProbe(other)
                && compareModelParameters(other)
                && compareRuntimeSettings(other);
