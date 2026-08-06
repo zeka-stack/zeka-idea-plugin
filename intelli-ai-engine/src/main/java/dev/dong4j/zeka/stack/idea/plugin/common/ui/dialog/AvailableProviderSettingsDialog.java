@@ -12,13 +12,21 @@ import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Window;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
+import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.TitledBorder;
 
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingContext;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingEffort;
@@ -218,14 +226,8 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
                                  withHint(timeoutField, "settings.timeout.hint"))
             .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.max.tokens")),
                                  withHint(maxTokensField, "settings.max.tokens.hint"))
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.temperature")),
-                                 withHint(temperatureField, "settings.temperature.hint"))
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.p")),
-                                 withHint(topPField, "settings.top.p.hint"))
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.k")),
-                                 withHint(topKField, "settings.top.k.hint"))
-            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.presence.penalty")),
-                                 withHint(presencePenaltyField, "settings.presence.penalty.hint"));
+            .addSeparator(JBUI.scale(8))
+            .addComponent(createSamplingParamsCollapsible());
         if (showThinkSection) {
             formBuilder.addSeparator(JBUI.scale(8)).addComponent(thinkPanel);
         }
@@ -396,6 +398,68 @@ public class AvailableProviderSettingsDialog extends DialogWrapper {
         public @NotNull String toString() {
             return label;
         }
+    }
+
+    /**
+     * 采样参数折叠区（Temperature / Top-P / Top-K / Presence Penalty）
+     * <p>
+     * 日常使用较少且思考模式下常被服务端忽略，默认收起以缩短对话框。
+     *
+     * @return 可折叠面板
+     */
+    @NotNull
+    private JPanel createSamplingParamsCollapsible() {
+        String title = AICommonBundle.message("settings.available.providers.sampling.params");
+        JPanel fields = FormBuilder.createFormBuilder()
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.temperature")),
+                                 withHint(temperatureField, "settings.temperature.hint"))
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.p")),
+                                 withHint(topPField, "settings.top.p.hint"))
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.top.k")),
+                                 withHint(topKField, "settings.top.k.hint"))
+            .addLabeledComponent(new SpacedJBLabel(AICommonBundle.message("settings.presence.penalty")),
+                                 withHint(presencePenaltyField, "settings.presence.penalty.hint"))
+            .getPanel();
+        fields.setOpaque(false);
+        fields.setVisible(false);
+
+        JPanel contentWrapper = new JPanel(new BorderLayout());
+        contentWrapper.setOpaque(false);
+        contentWrapper.add(fields, BorderLayout.NORTH);
+
+        JPanel container = new JPanel(new BorderLayout());
+        container.setOpaque(true);
+        container.setBackground(UIUtil.getPanelBackground());
+        container.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        container.add(contentWrapper, BorderLayout.CENTER);
+        applyCollapsibleBorder(container, title, false);
+
+        container.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                boolean expanding = !fields.isVisible();
+                fields.setVisible(expanding);
+                applyCollapsibleBorder(container, title, expanding);
+                container.revalidate();
+                container.repaint();
+                // 展开/收起后同步调整对话框高度，避免裁切或留白
+                Window window = SwingUtilities.getWindowAncestor(container);
+                if (window != null) {
+                    window.pack();
+                }
+            }
+        });
+        return container;
+    }
+
+    /**
+     * 更新折叠标题边框箭头
+     */
+    private static void applyCollapsibleBorder(@NotNull JPanel container, @NotNull String title, boolean expanded) {
+        TitledBorder titledBorder = BorderFactory.createTitledBorder((expanded ? "▼ " : "▶ ") + title);
+        titledBorder.setTitleFont(UIUtil.getLabelFont());
+        titledBorder.setTitleColor(UIUtil.getLabelForeground());
+        container.setBorder(BorderFactory.createCompoundBorder(titledBorder, JBUI.Borders.empty(5)));
     }
 
     /**
