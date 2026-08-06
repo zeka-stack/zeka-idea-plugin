@@ -345,7 +345,7 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         if (topK != null) {
             body.addProperty("top_k", topK);
         }
-        // DeepSeek Anthropic: thinking.type + output_config.effort；其他 Anthropic 策略为 no-op
+        // 按 ThinkingParamStrategyRegistry：官方 budget / DeepSeek effort / 厂商复用 OpenAI 策略等
         applyThinkingParams(body);
         return body;
     }

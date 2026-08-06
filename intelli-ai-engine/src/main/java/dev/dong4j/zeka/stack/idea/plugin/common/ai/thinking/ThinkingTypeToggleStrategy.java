@@ -15,34 +15,39 @@ import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingCapability;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ThinkingProbeResult;
 
 /**
- * 不写入思考扩展字段（未知 Anthropic 兼容入口等兜底）
+ * 仅写入 {@code thinking.type} 开关的轻量策略
+ * <p>
+ * 用于上游模型混杂、不宜强加 {@code budget_tokens} / {@code reasoning_effort} 的 Anthropic 兼容网关
+ * （如 ModelScope Anthropic）。
  *
  * @author dong4j
  * @version 1.0.0
  * @since 1.0.0
  */
-public final class NoOpThinkingStrategy implements ThinkingParamStrategy {
+public final class ThinkingTypeToggleStrategy implements ThinkingParamStrategy {
 
-    public static final NoOpThinkingStrategy INSTANCE = new NoOpThinkingStrategy();
+    public static final ThinkingTypeToggleStrategy INSTANCE = new ThinkingTypeToggleStrategy();
 
-    private NoOpThinkingStrategy() {
+    private ThinkingTypeToggleStrategy() {
     }
 
     @Override
     public @NotNull String id() {
-        return "noop";
+        return "thinking_type_toggle";
     }
 
     @Override
     public @NotNull ThinkingUiCapability uiCapability(@NotNull ThinkingContext context) {
-        return ThinkingUiCapability.NONE;
+        return ThinkingUiCapability.TOGGLE_ONLY;
     }
 
     @Override
     public void apply(@NotNull JsonObject body,
                       @NotNull ThinkingIntent intent,
                       @NotNull ThinkingContext context) {
-        // 故意不写任何字段
+        JsonObject thinking = new JsonObject();
+        thinking.addProperty("type", intent.enabled() ? "enabled" : "disabled");
+        body.add("thinking", thinking);
     }
 
     @Override
@@ -51,9 +56,9 @@ public final class NoOpThinkingStrategy implements ThinkingParamStrategy {
                                               @Nullable String apiKey,
                                               @NotNull BiConsumer<HttpURLConnection, String> connectionTuner) {
         ThinkingProbeResult result = new ThinkingProbeResult();
-        result.capability = ThinkingCapability.UNKNOWN;
+        result.capability = ThinkingCapability.OPTIONAL;
         result.probedAt = System.currentTimeMillis();
-        result.summary = "【思考能力】当前协议未接入思考参数策略";
+        result.summary = "【思考能力】thinking.type = enabled/disabled（无强度字段）";
         return result;
     }
 
