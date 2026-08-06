@@ -19,8 +19,8 @@ public class SiteContents {
     public static final String ISSUE_API_URL = "https://zekastack.dong4j.site/api/plugin/feedback/issue";
     /** GitHub 讨论链接 */
     public static final String GITHUB_DISCUSSIONS_URL = "https://github.com/zeka-stack/zeka-idea-plugin/discussions";
-    /** 模型 API 基础地址 */
-    public static final String MODEL_API_BASE_URL = "https://zekastack.dong4j.site/api/plugin/model";
+    /** 模型 Catalog API 基础地址（zeka-stack-api: GET /api/plugin/v1/models/{providerId}） */
+    public static final String MODEL_API_BASE_URL = "https://zekastack.dong4j.site/api/plugin/v1/models";
     /** 文件上传的 API 地址, 用于将文件上传到指定的服务端接口 */
     public static final String UPLOAD_URL = "https://zekastack.dong4j.site/api/plugin/events";
     /** 隐私政策页面的 URL */

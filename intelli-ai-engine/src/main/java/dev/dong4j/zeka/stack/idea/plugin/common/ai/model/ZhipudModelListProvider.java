@@ -85,7 +85,7 @@ public interface ZhipudModelListProvider {
     @Nullable
     default List<String> fetchModelsFromApi(@NotNull Project project, @Nullable String apiKey) {
         try {
-            String url = MODEL_API_BASE_URL + "/zhipu";
+            String url = MODEL_API_BASE_URL + "/" + getModelListProviderName();
             if (apiKey != null && !apiKey.trim().isEmpty()) {
                 url += "?apiKey=" + java.net.URLEncoder.encode(apiKey, java.nio.charset.StandardCharsets.UTF_8);
             }
@@ -147,6 +147,8 @@ public interface ZhipudModelListProvider {
     @NotNull
     default List<String> getDefaultModels() {
         List<String> models = new ArrayList<>();
+        models.add("glm-5.2");
+        models.add("glm-5.1");
         models.add("glm-4.7");
         return models;
     }

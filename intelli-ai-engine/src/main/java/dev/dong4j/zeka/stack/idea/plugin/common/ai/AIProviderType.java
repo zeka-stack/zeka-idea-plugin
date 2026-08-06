@@ -45,10 +45,10 @@ public enum AIProviderType {
         "openai",
         "OpenAI",
         "https://api.openai.com/v1",
-        "gpt-3.5-turbo",
+        "gpt-4.1",
         true,
         true,
-        List.of("gpt-3.5-turbo", "gpt-4o-mini")
+        List.of("gpt-4.1", "gpt-4o", "gpt-4o-mini", "o4-mini", "gpt-3.5-turbo")
     ),
     /**
      * Claude（Anthropic）模型配置
@@ -57,17 +57,17 @@ public enum AIProviderType {
         "anthropic",
         "Anthropic",
         "https://api.anthropic.com",
-        "claude-sonnet-4-20250514",
+        "claude-sonnet-5",
         true,
         true,
         List.of(
-            "claude-opus-4-1-20250805",
-            "claude-opus-4-20250514",
-            "claude-sonnet-4-20250514",
-            "claude-3-7-sonnet-20250219",
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-haiku-20240307"
+            "claude-opus-5",
+            "claude-sonnet-5",
+            "claude-opus-4-8",
+            "claude-opus-4-7",
+            "claude-opus-4-6",
+            "claude-sonnet-4-6",
+            "claude-haiku-4-5-20251001"
                )
     ),
     /**
@@ -197,10 +197,17 @@ public enum AIProviderType {
         "doubao",
         "豆包",
         "https://ark.cn-beijing.volces.com/api/coding/v3",
-        "doubao-seed-1-8-251228",
+        "doubao-seed-2-1-pro-260628",
         true,
         true,
-        List.of("doubao-seed-1-8-251228", "doubao-seed-1-6-flash-250828")
+        List.of(
+            "doubao-seed-2-1-pro-260628",
+            "doubao-seed-2-1-turbo-260628",
+            "doubao-seed-2.0-pro",
+            "doubao-seed-2.0-lite",
+            "doubao-seed-2.0-mini",
+            "doubao-seed-2.0-code"
+               )
     ),
     /**
      * 豆包 (Anthropic 兼容) 模型配置
@@ -209,10 +216,17 @@ public enum AIProviderType {
         "doubao_anthropic",
         "豆包",
         "https://ark.cn-beijing.volces.com/api/coding",
-        "doubao-seed-1-8-251228",
+        "doubao-seed-2-1-pro-260628",
         true,
         true,
-        List.of("doubao-seed-1-8-251228", "doubao-seed-1-6-flash-250828")
+        List.of(
+            "doubao-seed-2-1-pro-260628",
+            "doubao-seed-2-1-turbo-260628",
+            "doubao-seed-2.0-pro",
+            "doubao-seed-2.0-lite",
+            "doubao-seed-2.0-mini",
+            "doubao-seed-2.0-code"
+               )
     ),
     /**
      * Grok (OpenAI 兼容) 模型配置
@@ -221,19 +235,15 @@ public enum AIProviderType {
         "grok",
         "Grok",
         "https://api.x.ai/v1",
-        "grok-3-latest",
+        "grok-4",
         true,
         true,
         List.of(
-            "grok-3-beta",
-            "grok-3",
+            "grok-4",
             "grok-3-latest",
-            "grok-3-fast-beta",
-            "grok-3-fast",
-            "grok-3-fast-latest",
-            "grok-3-mini-beta",
-            "grok-3-mini",
-            "grok-3-mini-latest"
+            "grok-3",
+            "grok-3-mini-latest",
+            "grok-3-mini"
                )
     ),
     /**
@@ -243,10 +253,10 @@ public enum AIProviderType {
         "hunyuan",
         "混元",
         "https://api.hunyuan.cloud.tencent.com/v1",
-        "hunyuan-2.0-instruct-20251111",
+        "hy3-preview",
         true,
         true,
-        List.of("hunyuan-2.0-instruct-20251111", "hunyuan-2.0-thinking-20251109")
+        List.of("hy3-preview", "hy3", "hunyuan-role-latest")
     ),
     /**
      * 混元 (Anthropic 兼容) 模型配置
@@ -255,10 +265,10 @@ public enum AIProviderType {
         "hunyuan_anthropic",
         "混元",
         "https://api.hunyuan.cloud.tencent.com/anthropic",
-        "hunyuan-2.0-instruct-20251111",
+        "hy3-preview",
         true,
         true,
-        List.of("hunyuan-2.0-instruct-20251111", "hunyuan-2.0-thinking-20251109")
+        List.of("hy3-preview", "hy3", "hunyuan-role-latest")
     ),
     /**
      * Moonshot (OpenAI 兼容) 模型配置
@@ -267,10 +277,10 @@ public enum AIProviderType {
         "moonshot",
         "Moonshot",
         "https://api.moonshot.cn/v1",
-        "kimi-k2-thinking-turbo",
+        "kimi-k3",
         true,
         true,
-        List.of("kimi-k2-thinking-turbo", "kimi-k2-thinking")
+        List.of("kimi-k3", "kimi-k2.7-code", "kimi-k2.6", "kimi-k2.5")
     ),
     /**
      * Moonshot (Anthropic 兼容) 模型配置
@@ -279,10 +289,10 @@ public enum AIProviderType {
         "moonshot_anthropic",
         "Moonshot",
         "https://api.moonshot.cn/anthropic",
-        "kimi-k2-thinking-turbo",
+        "kimi-k3",
         true,
         true,
-        List.of("kimi-k2-thinking-turbo", "kimi-k2-thinking")
+        List.of("kimi-k3", "kimi-k2.7-code", "kimi-k2.6", "kimi-k2.5")
     ),
     /**
      * 通义千问模型的标识信息
@@ -293,10 +303,19 @@ public enum AIProviderType {
         "qianwen",
         "通义千问",
         "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "qwen3-8b",
+        "qwen3.5-plus",
         true,
         true,
-        Arrays.asList("qwen3-omni-flash-2025-12-01", "qwen3-32b", "qwen3-14b", "qwen3-8b")
+        Arrays.asList(
+            "qwen3.8-max",
+            "qwen3.5-plus",
+            "qwen3.5-flash",
+            "qwen3-max",
+            "qwen3-235b-a22b",
+            "qwen3-32b",
+            "qwen3-14b",
+            "qwen3-8b"
+                     )
     ),
     /**
      * 硅基流动模型配置
@@ -307,10 +326,16 @@ public enum AIProviderType {
         "siliconflow",
         "硅基流动",
         "https://api.siliconflow.cn/v1",
-        "Qwen/Qwen3-8B",
+        "Qwen/Qwen3-32B",
         true,
         true,
-        List.of("Qwen/Qwen3-8B", "Qwen/Qwen2.5-14B-Instruct", "THUDM/glm-4-9b-chat")
+        List.of(
+            "Qwen/Qwen3-32B",
+            "Qwen/Qwen3-8B",
+            "Qwen/Qwen2.5-14B-Instruct",
+            "deepseek-ai/DeepSeek-V3.2",
+            "THUDM/glm-4-9b-chat"
+               )
     ),
     /**
      * Ollama 模型的配置信息
@@ -365,7 +390,14 @@ public enum AIProviderType {
         "ZhipuAI/GLM-4.7",
         true,
         true,
-        List.of("ZhipuAI/GLM-4.7", "GLM-4.7-Flash","Qwen/Qwen3-235B-A22B-Thinking-2507", "deepseek-ai/DeepSeek-V3.2")
+        List.of(
+            "ZhipuAI/GLM-4.7",
+            "GLM-4.7-Flash",
+            "Qwen/Qwen3-235B-A22B-Thinking-2507",
+            "Qwen/Qwen3-235B-A22B-Instruct-2507",
+            "deepseek-ai/DeepSeek-V3.2",
+            "moonshotai/Kimi-K2-Instruct"
+               )
     ),
     /**
      * ModelScope Anthropic 兼容模型配置
@@ -377,7 +409,14 @@ public enum AIProviderType {
         "ZhipuAI/GLM-4.7",
         true,
         true,
-        List.of("ZhipuAI/GLM-4.7", "GLM-4.7-Flash","Qwen/Qwen3-235B-A22B-Thinking-2507", "deepseek-ai/DeepSeek-V3.2")
+        List.of(
+            "ZhipuAI/GLM-4.7",
+            "GLM-4.7-Flash",
+            "Qwen/Qwen3-235B-A22B-Thinking-2507",
+            "Qwen/Qwen3-235B-A22B-Instruct-2507",
+            "deepseek-ai/DeepSeek-V3.2",
+            "moonshotai/Kimi-K2-Instruct"
+               )
     ),
     /**
      * IFlow 模型配置
@@ -388,24 +427,33 @@ public enum AIProviderType {
         "iflow",
         "IFlow",
         "https://apis.iflow.cn/v1",
-        "kimi-k2-0905",
+        "kimi-k2.6",
         true,
         true,
-        List.of("kimi-k2-0905", "qwen3-coder-plus", "glm-4.6", "deepseek-r1")
+        List.of("kimi-k3", "kimi-k2.6", "qwen3-coder-plus", "glm-4.7", "deepseek-v4-flash")
     ),
     /**
      * 智谱AI 模型配置
      * <p>
-     * 智谱AI (ChatGLM) 服务提供商, 支持多种 GLM 模型, 包括 glm-4.6, glm-4.5, glm-4.5-flash 等.
+     * 智谱AI (ChatGLM) 服务提供商, 支持多种 GLM 模型.
      */
     ZHIPU(
         "glm",
         "智谱AI",
         "https://open.bigmodel.cn/api/coding/paas/v4",
-        "glm-4.7",
+        "glm-5.2",
         true,
         true,
-        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+        List.of(
+            "glm-5.2",
+            "glm-5.1",
+            "glm-5",
+            "glm-5-turbo",
+            "glm-4.7",
+            "glm-4.7-flash",
+            "glm-4.6",
+            "glm-4.5-air"
+               )
     ),
     /**
      * Z.AI（智谱海外版）OpenAI 兼容模型配置
@@ -414,22 +462,31 @@ public enum AIProviderType {
         "zai",
         "Z.AI",
         "https://api.z.ai/api/coding/paas/v4",
-        "glm-4.7",
+        "glm-5.2",
         true,
         true,
-        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+        List.of("glm-5.2", "glm-5.1", "glm-5", "glm-5-turbo", "glm-4.7")
     ),
     /**
-     * Z.AI（智谱 Anthropic 兼容）模型配置
+     * 智谱 Anthropic 兼容模型配置
      */
     ZHIPU_ANTHROPIC(
         "glm_anthropic",
         "智谱AI",
         "https://open.bigmodel.cn/api/anthropic",
-        "glm-4.7",
+        "glm-5.2",
         true,
         true,
-        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+        List.of(
+            "glm-5.2",
+            "glm-5.1",
+            "glm-5",
+            "glm-5-turbo",
+            "glm-4.7",
+            "glm-4.7-flash",
+            "glm-4.6",
+            "glm-4.5-air"
+               )
     ),
     /**
      * Z.AI（智谱海外版）Anthropic 兼容模型配置
@@ -438,10 +495,10 @@ public enum AIProviderType {
         "zai_anthropic",
         "Z.AI",
         "https://api.z.ai/api/anthropic",
-        "glm-4.7",
+        "glm-5.2",
         true,
         true,
-        List.of("glm-4.7", "glm-4.6", "glm-4.5")
+        List.of("glm-5.2", "glm-5.1", "glm-5", "glm-5-turbo", "glm-4.7")
     );
 
     /** 服务提供方唯一标识符 */

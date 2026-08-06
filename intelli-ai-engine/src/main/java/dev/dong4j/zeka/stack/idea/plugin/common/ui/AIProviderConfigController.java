@@ -36,6 +36,8 @@ import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.model.ModelCatalogEntry;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.model.ModelCatalogService;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AICompatibleProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.thinking.ThinkingContext;
@@ -141,6 +143,8 @@ public final class AIProviderConfigController {
 
         ui.setSelectedProviderType(defaultProviderType);
         updateBasicConnectionInfo();
+        // 后台预取远程推荐目录（不阻塞设置页）
+        ModelCatalogService.prefetchAllAsync(null);
 
         AIProviderConfig defaultConfig = workingSettings.getDefaultProviderConfig(defaultProviderType);
         ui.getModelComboBox().setSelectedItem(defaultConfig.modelName);
@@ -357,18 +361,62 @@ public final class AIProviderConfigController {
 
         String currentModel = (String) ui.getModelComboBox().getSelectedItem();
 
-        String preferredSelection = (currentModel != null && !currentModel.trim().isEmpty())
-                                    ? currentModel
-                                    : providerType.getDefaultModel();
-        List<String> cachedModels = loadCachedModels(providerType);
-        if (cachedModels.isEmpty()) {
-            cachedModels = providerType.getSupportedModels();
+        // 优先级：live 缓存（刷新模型）→ 远程 catalog 本地缓存 → 枚举 seed
+        List<String> liveModels = loadCachedModels(providerType);
+        ModelCatalogEntry catalog = ModelCatalogEntry.EMPTY;
+        List<String> models;
+        if (!liveModels.isEmpty()) {
+            models = liveModels;
+        } else {
+            catalog = ModelCatalogService.peek(providerType.getProviderId());
+            if (!catalog.isEmpty()) {
+                models = new ArrayList<>(catalog.models());
+            } else {
+                models = new ArrayList<>(providerType.getSupportedModels());
+            }
+            // catalog 缺失或过期时后台刷新；成功后若仍无 live 缓存则更新下拉
+            if (catalog.isEmpty() || ModelCatalogService.isStale(providerType.getProviderId())) {
+                scheduleCatalogRefresh(providerType);
+            }
         }
-        ui.updateModelItems(cachedModels, preferredSelection);
+
+        String preferredSelection;
+        if (currentModel != null && !currentModel.trim().isEmpty()) {
+            preferredSelection = currentModel;
+        } else if (catalog.defaultModel() != null && !catalog.defaultModel().isBlank()) {
+            preferredSelection = catalog.defaultModel();
+        } else {
+            preferredSelection = providerType.getDefaultModel();
+        }
+        ui.updateModelItems(models, preferredSelection);
 
         ui.getBaseUrlField().setText(providerType.getDefaultBaseUrl());
         ui.getApiKeyField().setEnabled(true);
         updateBaseUrlEditable(providerType);
+    }
+
+    /**
+     * 后台刷新推荐目录，并在 EDT 更新模型下拉（仅当仍无 live 缓存且服务商未切换）
+     */
+    private void scheduleCatalogRefresh(@NotNull AIProviderType providerType) {
+        ModelCatalogService.refreshAsync(providerType.getProviderId(), entry -> {
+            ApplicationManager.getApplication().invokeLater(() -> {
+                if (resolveSelectedProviderType() != providerType) {
+                    return;
+                }
+                if (!loadCachedModels(providerType).isEmpty()) {
+                    return;
+                }
+                if (entry == null || entry.isEmpty()) {
+                    return;
+                }
+                String selected = Objects.toString(ui.getModelComboBox().getSelectedItem(), "").trim();
+                String preferred = !selected.isEmpty()
+                                   ? selected
+                                   : (entry.defaultModel() != null ? entry.defaultModel() : providerType.getDefaultModel());
+                ui.updateModelItems(new ArrayList<>(entry.models()), preferred);
+            });
+        });
     }
 
     /**

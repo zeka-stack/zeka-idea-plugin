@@ -223,20 +223,106 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         String url = buildModelsUrl();
         try {
             AIConsoleLoggerUtil.print(project, "请求 URL: " + url);
-            String responseBody = HttpRequests.request(url)
-                .tuner(connection -> tuneAnthropicConnection((HttpURLConnection) connection, apiKey))
-                .connect(HttpRequests.Request::readString);
-            List<String> models = parseClaudeModelsResponse(responseBody);
+            List<String> models = fetchClaudeModelsPaginated(url, apiKey);
             if (!models.isEmpty()) {
                 AIConsoleLoggerUtil.printSuccess(project, "成功获取 " + models.size() + " 个模型");
                 return models;
             }
+            AIConsoleLoggerUtil.printWarning(project, "Anthropic /v1/models 无数据或不可用，回退内置列表");
         } catch (Exception e) {
             log.debug("Failed to fetch Claude models", e);
+            AIConsoleLoggerUtil.printWarning(project, "Anthropic /v1/models 失败: " + e.getMessage() + "，回退内置列表");
         }
 
-        // Anthropic 的模型列表接口可能因权限/版本差异不可用，兜底使用枚举内置列表
+        // 部分兼容网关不提供 Models API（如部分厂商 Anthropic 口 404），兜底使用枚举内置列表
         return new ArrayList<>(getProviderType().getSupportedModels());
+    }
+
+    /**
+     * 按 Anthropic Models API 分页拉取全部模型 id
+     * <p>
+     * 官方响应含 {@code has_more}/{@code last_id}；兼容网关若忽略分页参数，循环最多执行有限次以防死循环。
+     *
+     * @param firstUrl 首页 URL（通常为 {@code .../v1/models}）
+     * @param apiKey   API Key
+     * @return 模型 id 列表（去重、保序）
+     */
+    @NotNull
+    private List<String> fetchClaudeModelsPaginated(@NotNull String firstUrl, @Nullable String apiKey) throws IOException {
+        List<String> models = new ArrayList<>();
+        java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
+        String nextUrl = firstUrl;
+        // 官方默认分页约 20；上限防止异常 has_more 死循环
+        final int maxPages = 20;
+        for (int page = 0; page < maxPages && nextUrl != null; page++) {
+            final String requestUrl = nextUrl;
+            String responseBody = HttpRequests.request(requestUrl)
+                .tuner(connection -> tuneAnthropicConnection((HttpURLConnection) connection, apiKey))
+                .connect(HttpRequests.Request::readString);
+            ClaudeModelsPage modelsPage = parseClaudeModelsPage(responseBody);
+            for (String id : modelsPage.ids()) {
+                if (seen.add(id)) {
+                    models.add(id);
+                }
+            }
+            if (!modelsPage.hasMore() || modelsPage.lastId() == null || modelsPage.lastId().isBlank()) {
+                break;
+            }
+            nextUrl = appendAfterId(firstUrl, modelsPage.lastId());
+        }
+        return models;
+    }
+
+    /**
+     * 为 Models 列表请求追加 after_id 分页参数
+     */
+    @NotNull
+    private static String appendAfterId(@NotNull String baseModelsUrl, @NotNull String afterId) {
+        String encoded = java.net.URLEncoder.encode(afterId, StandardCharsets.UTF_8);
+        String separator = baseModelsUrl.contains("?") ? "&" : "?";
+        return baseModelsUrl + separator + "after_id=" + encoded + "&limit=100";
+    }
+
+    /**
+     * Anthropic Models 单页解析结果
+     */
+    private record ClaudeModelsPage(@NotNull List<String> ids, boolean hasMore, @Nullable String lastId) {
+    }
+
+    /**
+     * 解析 Claude 模型列表单页响应
+     */
+    @NotNull
+    private ClaudeModelsPage parseClaudeModelsPage(@NotNull String responseBody) {
+        List<String> models = new ArrayList<>();
+        boolean hasMore = false;
+        String lastId = null;
+        try {
+            JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+            if (json.has("data") && json.get("data").isJsonArray()) {
+                for (JsonElement el : json.getAsJsonArray("data")) {
+                    if (!el.isJsonObject()) {
+                        continue;
+                    }
+                    JsonObject obj = el.getAsJsonObject();
+                    if (obj.has("id")) {
+                        String id = obj.get("id").getAsString();
+                        if (id != null && !id.isBlank()) {
+                            models.add(id.trim());
+                        }
+                    }
+                }
+            }
+            if (json.has("has_more") && json.get("has_more").isJsonPrimitive()) {
+                hasMore = json.get("has_more").getAsBoolean();
+            }
+            if (json.has("last_id") && json.get("last_id").isJsonPrimitive() && !json.get("last_id").isJsonNull()) {
+                lastId = json.get("last_id").getAsString();
+            }
+        } catch (Exception e) {
+            log.debug("Failed to parse Claude models response", e);
+        }
+        return new ClaudeModelsPage(models, hasMore, lastId);
     }
 
     /**
@@ -531,37 +617,6 @@ public class AnthropicLikeProvider extends AICompatibleProvider {
         } catch (Exception ignored) {
             return null;
         }
-    }
-
-    /**
-     * 解析 Claude 模型列表响应
-     * <p> 从 API 返回的 JSON 响应中提取模型 ID 列表, 用于展示可用模型
-     *
-     * @param responseBody API 返回的原始响应体, 格式为 JSON
-     * @return 解析出的模型 ID 列表, 若解析失败或无数据则返回空列表
-     */
-    private List<String> parseClaudeModelsResponse(@NotNull String responseBody) {
-        List<String> models = new ArrayList<>();
-        try {
-            JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
-            if (json.has("data") && json.get("data").isJsonArray()) {
-                for (JsonElement el : json.getAsJsonArray("data")) {
-                    if (!el.isJsonObject()) {
-                        continue;
-                    }
-                    JsonObject obj = el.getAsJsonObject();
-                    if (obj.has("id")) {
-                        String id = obj.get("id").getAsString();
-                        if (id != null && !id.isBlank()) {
-                            models.add(id.trim());
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Failed to parse Claude models response", e);
-        }
-        return models;
     }
 
     /**
