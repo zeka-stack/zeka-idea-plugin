@@ -1,0 +1,19 @@
+<h3>2026.2.1002</h3>
+<ul>
+    <li><b>✨ 新增</b>：思考参数按服务商策略写入（通义 enable_thinking + reasoning_effort；DeepSeek / 豆包 / 智谱 thinking.type；Kimi K3 reasoning_effort / K2.x thinking.type）</li>
+    <li><b>🔧 优化</b>：Think 强度可选自动/低/高/最大；关闭时对 thinking.type 系服务商显式发送 disabled</li>
+    <li><b>🔧 优化</b>：高级设置中 Temperature / Top-P / Top-K / Presence Penalty 收入默认折叠的「采样参数」分组</li>
+    <li><b>✨ 新增</b>：补齐 Anthropic 思考参数（官方/混元 budget_tokens；Moonshot/豆包/智谱/Z.AI Anthropic 口复用对应策略；ModelScope 仅 thinking.type）</li>
+    <li><b>✨ 新增</b>：服务商推荐模型目录对接 zeka-stack-api（live 缓存 &gt; 远程 catalog &gt; 枚举 seed）；修正 Catalog API URL；Anthropic /v1/models 支持分页</li>
+    <li><b>🔧 优化</b>：同步更新插件内置默认模型列表（Claude 5 / DeepSeek V4 / Kimi K3 / GLM-5.2 / Qwen3.5 / Seed 2.1 / Hy3 等）</li>
+</ul>
+<h3>2026.2.1002</h3>
+<ul>
+    <li><b>✨ Added</b>: Per-provider thinking strategies (Qianwen enable_thinking + reasoning_effort; DeepSeek/Doubao/Zhipu thinking.type; Kimi K3 reasoning_effort / K2.x thinking.type)</li>
+    <li><b>🔧 Optimized</b>: Thinking effort supports Auto/Low/High/Max; thinking.type providers send disabled explicitly when off</li>
+    <li><b>🔧 Optimized</b>: Advanced settings fold Temperature / Top-P / Top-K / Presence Penalty into a collapsed Sampling Parameters group</li>
+    <li><b>✨ Added</b>: Anthropic thinking params (official/Hunyuan budget_tokens; Moonshot/Doubao/Zhipu/Z.AI Anthropic reuse OpenAI strategies; ModelScope thinking.type only)</li>
+    <li><b>✨ Added</b>: Remote recommended model catalog via zeka-stack-api (live cache &gt; catalog &gt; enum seed); fixed catalog URL; Anthropic /v1/models pagination</li>
+    <li><b>🔧 Optimized</b>: Updated built-in default model lists (Claude 5 / DeepSeek V4 / Kimi K3 / GLM-5.2 / Qwen3.5 / Seed 2.1 / Hy3, etc.)</li>
+</ul>
+
