@@ -174,9 +174,17 @@ public class PluginUpdater {
      */
     @RequiresEdt
     private static void notifyUpdateAvailable(@NotNull Project project, @NotNull PluginDownloader pluginUpdate) {
+        var notificationGroup = NotificationUtil.getNotificationGroup();
+        if (notificationGroup == null) {
+            // 通知组未注册时不应打断更新检查流程（例如插件描述与 ID 未对齐）
+            log.warn("Notification group '{}' not found, skip update available balloon",
+                NotificationUtil.NOTIFICATION_GROUP_ID);
+            return;
+        }
+
         String title = AICommonBundle.message("plugin.update.available.title");
         String message = AICommonBundle.message("plugin.update.available.message", pluginUpdate.getPluginName());
-        Notification notification = NotificationUtil.getNotificationGroup().createNotification(
+        Notification notification = notificationGroup.createNotification(
             title,
             message,
             NotificationType.IDE_UPDATE);

@@ -196,7 +196,13 @@ public class WhatsNewStartupActivity implements ProjectActivity {
                                         @NotNull String localVersion) {
         String message = AICommonBundle.message("whatsnew.update.available", latestVersion, localVersion);
 
-        Notification notification = NotificationUtil.getNotificationGroup()
+        var notificationGroup = NotificationUtil.getNotificationGroup();
+        if (notificationGroup == null) {
+            // 与 PluginUpdater 相同：组缺失时跳过气球通知，避免 NPE
+            return;
+        }
+
+        Notification notification = notificationGroup
             .createNotification(
                 AICommonBundle.message("whatsnew.update.title"),
                 message,

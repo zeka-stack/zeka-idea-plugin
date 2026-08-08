@@ -106,6 +106,9 @@
         <!-- 通知组 -->
         <!--suppress PluginXmlI18n -->
         <notificationGroup displayType="BALLOON" id="IntelliAI Engine" isLogByDefault="false"/>
+        <!-- 与 kit NotificationUtil.getGroupId(PLUGIN_NAME) / NotificationUtil.NOTIFICATION_GROUP_ID 对齐 -->
+        <!--suppress PluginXmlI18n -->
+        <notificationGroup displayType="BALLOON" id="IntelliAI Engine Notifications" isLogByDefault="true"/>
         <!--suppress PluginXmlI18n -->
         <notificationGroup displayType="BALLOON" id="IntelliAI Engine Log" isLogByDefault="true"/>
         <!--suppress PluginXmlI18n -->

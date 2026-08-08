@@ -6,6 +6,7 @@
     <li><b>✨ 新增</b>：补齐 Anthropic 思考参数（官方/混元 budget_tokens；Moonshot/豆包/智谱/Z.AI Anthropic 口复用对应策略；ModelScope 仅 thinking.type）</li>
     <li><b>✨ 新增</b>：服务商推荐模型目录对接 zeka-stack-api（live 缓存 &gt; 远程 catalog &gt; 枚举 seed）；修正 Catalog API URL；Anthropic /v1/models 支持分页</li>
     <li><b>🔧 优化</b>：同步更新插件内置默认模型列表（Claude 5 / DeepSeek V4 / Kimi K3 / GLM-5.2 / Qwen3.5 / Seed 2.1 / Hy3 等）</li>
+    <li><b>🐛 修复</b>：补齐通知组 <code>IntelliAI Engine Notifications</code>，避免插件更新提示因 NotificationGroup 为 null 触发 NPE</li>
 </ul>
 <h3>2026.2.1002</h3>
 <ul>
@@ -15,6 +16,7 @@
     <li><b>✨ Added</b>: Anthropic thinking params (official/Hunyuan budget_tokens; Moonshot/Doubao/Zhipu/Z.AI Anthropic reuse OpenAI strategies; ModelScope thinking.type only)</li>
     <li><b>✨ Added</b>: Remote recommended model catalog via zeka-stack-api (live cache &gt; catalog &gt; enum seed); fixed catalog URL; Anthropic /v1/models pagination</li>
     <li><b>🔧 Optimized</b>: Updated built-in default model lists (Claude 5 / DeepSeek V4 / Kimi K3 / GLM-5.2 / Qwen3.5 / Seed 2.1 / Hy3, etc.)</li>
+    <li><b>🐛 Fixed</b>: Registered notification group <code>IntelliAI Engine Notifications</code> to prevent NPE when showing plugin update balloons</li>
 </ul>
 
 <h3>2026.2.1001</h3>
