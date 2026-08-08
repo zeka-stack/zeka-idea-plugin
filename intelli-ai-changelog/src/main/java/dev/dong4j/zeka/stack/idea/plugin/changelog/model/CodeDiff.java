@@ -35,6 +35,11 @@ public class CodeDiff {
     /** 语义摘要（PSI 增强） */
     @Nullable
     public String semanticSummary;
+    /**
+     * 是否为二进制文件变更
+     * <p>为 true 时只向 AI 提供路径与变更类型，不提供文件内容。
+     */
+    public boolean binary;
 
     /**
      * 构造一个 CodeDiff 对象, 用于表示文件的修改差异信息
@@ -61,6 +66,7 @@ public class CodeDiff {
         this.diffContent = diffContent;
         this.scopeHint = scopeHint;
         this.semanticSummary = semanticSummary;
+        this.binary = false;
     }
 
     /**

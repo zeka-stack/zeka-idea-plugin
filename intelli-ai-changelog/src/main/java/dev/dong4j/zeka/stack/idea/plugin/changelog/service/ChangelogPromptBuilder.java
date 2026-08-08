@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.changelog.util.BinaryFileChangeSummary;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ProjectVersionResolver;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;
@@ -321,18 +322,24 @@ final class ChangelogPromptBuilder {
             String filePath = diff.filePath;
             String language = resolveLanguage(filePath);
             String extension = extractExtension(filePath);
-            String summary = buildFileSummary(diff);
-            String diffSummary = detailLevel.includeDiffSummary ? buildDiffSummary(diff) : "";
-            String fullDiff = detailLevel.includeFullDiff
-                              ? buildFileFullDiff(payload, diff, maxFullDiffChars)
-                              : "";
-            String semanticSummary = detailLevel.includeSemanticSummary
-                                     ? (diff.semanticSummary != null ? diff.semanticSummary : "")
-                                     : "";
+            // 二进制：只暴露路径与变更类型，不附带内容摘要 / full_diff
+            String summary = diff.binary
+                             ? BinaryFileChangeSummary.label(diff.changeType) + " binary file"
+                             : buildFileSummary(diff);
+            String diffSummary = diff.binary || !detailLevel.includeDiffSummary
+                                 ? ""
+                                 : buildDiffSummary(diff);
+            String fullDiff = diff.binary || !detailLevel.includeFullDiff
+                              ? ""
+                              : buildFileFullDiff(payload, diff, maxFullDiffChars);
+            String semanticSummary = diff.binary || !detailLevel.includeSemanticSummary
+                                     ? ""
+                                     : (diff.semanticSummary != null ? diff.semanticSummary : "");
 
             json.append("    {\n");
             json.append("      \"path\": \"").append(escapeJson(filePath)).append("\",\n");
             json.append("      \"type\": \"").append(escapeJson(diff.changeType.name())).append("\",\n");
+            json.append("      \"binary\": ").append(diff.binary).append(",\n");
             json.append("      \"language\": \"").append(escapeJson(language)).append("\",\n");
             json.append("      \"extension\": \"").append(escapeJson(extension)).append("\",\n");
             json.append("      \"lines_added\": ").append(diff.addedLines).append(",\n");
@@ -397,12 +404,15 @@ final class ChangelogPromptBuilder {
         List<CodeDiff> limitedDiffs = limitDiffs(allDiffs, maxFiles);
 
         appendDeleteOnlySummary(summary, limitedDiffs, maxDiffChars);
-        appendAddedBinarySummary(summary, limitedDiffs, maxDiffChars);
+        BinaryFileChangeSummary.append(summary, limitedDiffs, maxDiffChars);
 
         int fileCount = 0;
         for (CodeDiff diff : limitedDiffs) {
             if (summary.length() >= maxDiffChars) {
                 break;
+            }
+            if (diff.binary) {
+                continue;
             }
             if (diff.changeType == CodeDiff.ChangeType.DELETE) {
                 continue;
@@ -472,7 +482,8 @@ final class ChangelogPromptBuilder {
                                          int maxDiffChars) {
         boolean hasDelete = false;
         for (CodeDiff diff : diffs) {
-            if (diff.changeType == CodeDiff.ChangeType.DELETE) {
+            // 二进制删除走 BinaryFileChangeSummary 英文列表
+            if (diff.changeType == CodeDiff.ChangeType.DELETE && !diff.binary) {
                 hasDelete = true;
                 break;
             }
@@ -485,43 +496,7 @@ final class ChangelogPromptBuilder {
             if (summary.length() >= maxDiffChars) {
                 break;
             }
-            if (diff.changeType == CodeDiff.ChangeType.DELETE) {
-                summary.append("- ").append(diff.filePath).append("\n");
-            }
-        }
-        summary.append("\n");
-    }
-
-    /**
-     * 附加新增二进制文件摘要信息
-     * <p>当存在新增二进制文件 (即新增文件但无内容差异) 时, 向摘要中追加此类文件列表.
-     * <p>该方法仅在检测到至少一个新增二进制文件时执行, 避免无意义的输出.
-     *
-     * @param summary      用于追加摘要内容的 StringBuilder 对象, 不能为空
-     * @param diffs        变更文件列表, 不能为空
-     * @param maxDiffChars 摘要内容最大字符数限制, 用于防止内容过长
-     */
-    private void appendAddedBinarySummary(@NotNull StringBuilder summary,
-                                          @NotNull List<CodeDiff> diffs,
-                                          int maxDiffChars) {
-        boolean hasAddedBinary = false;
-        for (CodeDiff diff : diffs) {
-            if (diff.changeType == CodeDiff.ChangeType.ADD
-                && (diff.diffContent == null || diff.diffContent.isBlank())) {
-                hasAddedBinary = true;
-                break;
-            }
-        }
-        if (!hasAddedBinary) {
-            return;
-        }
-        summary.append("新增文件:\n");
-        for (CodeDiff diff : diffs) {
-            if (summary.length() >= maxDiffChars) {
-                break;
-            }
-            if (diff.changeType == CodeDiff.ChangeType.ADD
-                && (diff.diffContent == null || diff.diffContent.isBlank())) {
+            if (diff.changeType == CodeDiff.ChangeType.DELETE && !diff.binary) {
                 summary.append("- ").append(diff.filePath).append("\n");
             }
         }
@@ -852,6 +827,9 @@ final class ChangelogPromptBuilder {
     private String buildFileFullDiff(@NotNull ChangelogCommitDiffBuilder.DiffPayload payload,
                                      @NotNull CodeDiff diff,
                                      int maxChars) {
+        if (diff.binary) {
+            return "";
+        }
         StringBuilder content = new StringBuilder();
         String metadata = payload.metadataByPath().get(diff.filePath);
         if (metadata != null && !metadata.isBlank()) {

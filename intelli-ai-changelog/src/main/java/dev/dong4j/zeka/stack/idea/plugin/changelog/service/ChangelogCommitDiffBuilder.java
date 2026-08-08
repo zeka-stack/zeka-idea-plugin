@@ -3,13 +3,17 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 import com.intellij.openapi.diff.impl.patch.FilePatch;
 import com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder;
 import com.intellij.openapi.fileTypes.FileType;
+import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vcs.changes.patch.PatchWriter;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import org.eclipse.jgit.diff.DiffEntry;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +41,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
  * <p> 主要功能包括:
  * <ul>
  *   <li> 限制最大差异文件数量 (默认 50 个)</li>
- *   <li> 根据文件大小, 二进制类型, 忽略模式等条件过滤变更文件 </li>
+ *   <li> 根据文件大小, 忽略模式等条件过滤变更文件；二进制文件保留路径元数据（不读内容）</li>
  *   <li> 根据配置自动选择差异生成方式 (IDEA 补丁或代码差异)</li>
  *   <li> 构建包含代码差异, 元数据和完整补丁文本的负载对象 </li>
  * </ul>
@@ -93,23 +97,47 @@ final class ChangelogCommitDiffBuilder {
     DiffPayload buildPayload(@NotNull Collection<Change> changes) {
         // 过滤无关/噪音变更，避免生成 commit message 时引入无效上下文。
         List<Change> filteredChanges = filterChanges(changes);
-        if (isDeleteOnlyChanges(filteredChanges)) {
-            return buildDeletedOnlyPayload(filteredChanges);
+
+        // 二进制与文本拆分：二进制只保留路径与变更类型，不读文件内容。
+        List<Change> textChanges = new ArrayList<>();
+        List<Change> binaryChanges = new ArrayList<>();
+        for (Change change : filteredChanges) {
+            if (isBinaryChange(change)) {
+                binaryChanges.add(change);
+            } else {
+                textChanges.add(change);
+            }
         }
-        if (isAddOnlyChanges(filteredChanges)) {
-            return buildAddedOnlyPayload(filteredChanges);
+        List<CodeDiff> binaryDiffs = buildBinaryPathOnlyDiffs(binaryChanges);
+
+        DiffPayload textPayload;
+        if (textChanges.isEmpty()) {
+            textPayload = new DiffPayload(List.of(), Map.of(), "");
+        } else if (isDeleteOnlyChanges(textChanges)) {
+            textPayload = buildDeletedOnlyPayload(textChanges);
+        } else if (isAddOnlyChanges(textChanges)) {
+            textPayload = buildAddedOnlyPayload(textChanges);
+        } else {
+            SettingsState settings = SettingsState.getInstance();
+            SettingsState.CommitMessageDiffProvider provider = settings.commitMessageDiffProvider;
+            if (provider == SettingsState.CommitMessageDiffProvider.AUTO) {
+                provider = textChanges.size() > AUTO_PROVIDER_MAX_FILES
+                           ? SettingsState.CommitMessageDiffProvider.CODE_DIFF
+                           : SettingsState.CommitMessageDiffProvider.IDEA_PATCH;
+            }
+            if (provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH) {
+                textPayload = buildIdeaPatchDiffPayload(textChanges);
+            } else {
+                textPayload = buildCodeDiffPayload(textChanges);
+            }
         }
-        SettingsState settings = SettingsState.getInstance();
-        SettingsState.CommitMessageDiffProvider provider = settings.commitMessageDiffProvider;
-        if (provider == SettingsState.CommitMessageDiffProvider.AUTO) {
-            provider = filteredChanges.size() > AUTO_PROVIDER_MAX_FILES
-                       ? SettingsState.CommitMessageDiffProvider.CODE_DIFF
-                       : SettingsState.CommitMessageDiffProvider.IDEA_PATCH;
+
+        if (binaryDiffs.isEmpty()) {
+            return textPayload;
         }
-        if (provider == SettingsState.CommitMessageDiffProvider.IDEA_PATCH) {
-            return buildIdeaPatchDiffPayload(filteredChanges);
-        }
-        return buildCodeDiffPayload(filteredChanges);
+        List<CodeDiff> merged = new ArrayList<>(textPayload.codeDiffs());
+        merged.addAll(binaryDiffs);
+        return new DiffPayload(merged, textPayload.metadataByPath(), textPayload.fullPatchText());
     }
 
     /**
@@ -301,20 +329,105 @@ final class ChangelogCommitDiffBuilder {
         VirtualFile file = change.getVirtualFile();
         if (file == null) {
             if (change.getBeforeRevision() != null) {
-                change.getBeforeRevision().getFile();
                 String path = change.getBeforeRevision().getFile().getPath();
                 return matchesIgnorePattern(path);
             }
             return false;
         }
-        FileType fileType = file.getFileType();
-        if (fileType.isBinary()) {
-            return true;
-        }
+        // 二进制不再整体排除：由 buildPayload 拆分为「仅路径」CodeDiff，仍交给 AI。
         if (file.getLength() > MAX_FILE_SIZE_BYTES) {
             return true;
         }
         return matchesIgnorePattern(file.getPath());
+    }
+
+    /**
+     * 判断变更是否对应二进制文件
+     * <p>优先使用 VirtualFile 的 FileType；删除等无 VF 时按路径文件名推断。
+     */
+    private boolean isBinaryChange(@NotNull Change change) {
+        VirtualFile file = change.getVirtualFile();
+        if (file != null) {
+            return file.getFileType().isBinary();
+        }
+        String path = resolveAnyFilePath(change);
+        if (path == null || path.isBlank() || "unknown".equals(path)) {
+            return false;
+        }
+        String fileName = Paths.get(path).getFileName() != null
+                          ? Paths.get(path).getFileName().toString()
+                          : path;
+        FileType fileType = FileTypeManager.getInstance().getFileTypeByFileName(fileName);
+        return fileType.isBinary();
+    }
+
+    /**
+     * 将二进制变更转为仅含路径与变更类型的 CodeDiff（不读内容）。
+     */
+    @NotNull
+    private List<CodeDiff> buildBinaryPathOnlyDiffs(@NotNull Collection<Change> changes) {
+        List<CodeDiff> diffs = new ArrayList<>();
+        for (Change change : changes) {
+            CodeDiff.ChangeType diffType = mapToCodeDiffChangeType(change);
+            String path = diffType == CodeDiff.ChangeType.DELETE
+                          ? resolveDeletedFilePath(change)
+                          : resolveAddedOrModifiedFilePath(change);
+            CodeDiff codeDiff = new CodeDiff(path, diffType, 0, 0, null, null, null);
+            codeDiff.binary = true;
+            diffs.add(codeDiff);
+        }
+        return diffs;
+    }
+
+    /**
+     * 将 IDEA Change.Type 映射为 CodeDiff.ChangeType。
+     */
+    @NotNull
+    private CodeDiff.ChangeType mapToCodeDiffChangeType(@NotNull Change change) {
+        return switch (change.getType()) {
+            case NEW -> CodeDiff.ChangeType.ADD;
+            case DELETED -> CodeDiff.ChangeType.DELETE;
+            case MOVED -> CodeDiff.ChangeType.RENAME;
+            default -> CodeDiff.ChangeType.MODIFY;
+        };
+    }
+
+    /**
+     * 解析新增或修改文件的路径。
+     */
+    @NotNull
+    private String resolveAddedOrModifiedFilePath(@NotNull Change change) {
+        if (change.getAfterRevision() != null) {
+            return change.getAfterRevision().getFile().getPath();
+        }
+        VirtualFile file = change.getVirtualFile();
+        if (file != null) {
+            return file.getPath();
+        }
+        return resolveDeletedFilePath(change);
+    }
+
+    /**
+     * 尝试从 before/after 修订解析任意可用路径。
+     */
+    @Nullable
+    private String resolveAnyFilePath(@NotNull Change change) {
+        ContentRevision after = change.getAfterRevision();
+        if (after != null) {
+            FilePath filePath = after.getFile();
+            if (filePath != null) {
+                return filePath.getPath();
+            }
+        }
+        ContentRevision before = change.getBeforeRevision();
+        if (before != null) {
+            FilePath filePath = before.getFile();
+            if (filePath != null) {
+                return filePath.getPath();
+            }
+        }
+        VirtualFile file = change.getVirtualFile();
+        return file != null ? file.getPath() : null;
     }
 
     /**

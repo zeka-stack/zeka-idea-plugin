@@ -1,3 +1,14 @@
+<h3>2026.2.1002</h3>
+<ul>
+    <li><b>🐛 修复</b>：二进制文件（图片、PDF 等）新增/修改/删除不再被过滤；提交给 AI 的上下文仅含英文路径摘要（Added/Modified/Deleted: path），不含文件内容</li>
+    <li><b>🔧 优化</b>：文本与二进制混选时，文本仍走 diff，二进制同样只传路径</li>
+</ul>
+<h3>2026.2.1002</h3>
+<ul>
+    <li><b>🐛 Fixed</b>: Binary files (images, PDFs, etc.) are no longer dropped from commit-message generation; AI context gets English path-only lines (Added/Modified/Deleted: path) without file content</li>
+    <li><b>🔧 Optimized</b>: Mixed text+binary selections keep text diffs and path-only binary entries</li>
+</ul>
+
 <h3>2026.2.1001</h3>
 <ul>
     <li><b>✨ 兼容性</b>：适配 IntelliJ Platform 2026.2</li>
