@@ -12,11 +12,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.util.AICommonBundle;
+
+/**
+ * 打开 IDEA 日志目录中的 idea.log，便于排查 IntelliAI 插件问题。
+ */
 public class ShowLogAction extends DumbAwareAction implements ActionUpdateThreadAware {
 
     public ShowLogAction() {
-        super("Intelli AI: Show Log",
-              "Open the idea.log file to view Intelli AI plugin logs",
+        super(AICommonBundle.message("action.show.log.text"),
+              AICommonBundle.message("action.show.log.description"),
               AllIcons.Nodes.LogFolder);
     }
 
