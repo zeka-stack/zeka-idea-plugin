@@ -68,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0.0
  */
 @Slf4j
-record ChangelogGitService(Project project) {
+public record ChangelogGitService(Project project) {
 
     /**
      * 当 CodeDiffUtil 过滤导致 diff 为空时，使用 JGit diff 作为兜底输出的最大字符数。
@@ -87,7 +87,7 @@ record ChangelogGitService(Project project) {
      *
      * @param project 项目对象, 不能为 null
      */
-    ChangelogGitService(@NotNull Project project) {
+    public ChangelogGitService(@NotNull Project project) {
         this.project = project;
     }
 
@@ -230,7 +230,7 @@ record ChangelogGitService(Project project) {
      * @since 1.0
      */
     @NotNull
-    String buildRecentCommitMessagesText(int limit) {
+    public String buildRecentCommitMessagesText(int limit) {
         Repository repository = getRepository();
         if (repository == null) {
             return "";

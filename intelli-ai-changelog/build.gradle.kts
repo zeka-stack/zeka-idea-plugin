@@ -56,6 +56,10 @@ intellijPlatform {
     }
 }
 
+// 本地 sandbox 依赖的插件 zip（由 prepareSandbox / localPlugin 安装，不会打进本插件包）
+val enginePluginZip = file("../intelli-ai-engine/build/distributions/intelli-ai-engine-$engineVersion.zip")
+val checkstylePluginZip = file("../reference/checkstyle-idea/build/distributions/checkstyle-idea-26.0.0.zip")
+
 dependencies {
     // IntelliJ Platform
     intellijPlatform {
@@ -73,10 +77,11 @@ dependencies {
 
         // 依赖 IntelliAI Engine 插件
         // 注意：运行时依赖通过 plugin.xml 中的 <depends> 声明
-        // 本地开发时，使用 copyAiCommonPlugin 任务手动安装插件
-        // 发布到市场后，用户需要单独安装 IntelliAI Engine 插件
-        // 不要在这里使用 plugin()，否则会导致发布到市场时找不到相关 class
+        // 本地开发：用 localPlugin 让 prepareSandbox 装进正确 sandbox（.intellijPlatform/sandbox/.../plugins）
+        // 发布到市场后，用户仍需单独安装 IntelliAI Engine；不要用 marketplace 的 plugin()
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai", engineVersion)
+        localPlugin(enginePluginZip)
+        localPlugin(checkstylePluginZip)
 
         zipSigner()
         pluginVerifier()
@@ -86,7 +91,7 @@ dependencies {
     // 编译时依赖：本地开发时，includeBuild 会自动将依赖替换为本地项目
     // 发布到市场后，编译时使用 compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:${engineVersion}")
     // 运行时依赖通过 plugin.xml 中的 <depends> 声明，用户需要单独安装 IntelliAI Engine 插件
-    // 本地开发时，运行时依赖通过 copyAiCommonPlugin 任务安装的插件来满足
+    // 本地开发时，运行时依赖由 localPlugin + prepareSandbox 安装的 engine 插件满足
     compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:$engineVersion")
 
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
@@ -167,92 +172,35 @@ tasks {
         useJUnitPlatform()
     }
 
-    // 本地开发：将已构建的 checkstyle-idea.zip 解压到 sandbox 的 plugins
-    val copyCheckstyleIdeaPlugin = register<Copy>("copyCheckstyleIdeaPlugin") {
-        description = "Unzip checkstyle-idea plugin into sandbox plugins"
-        group = "intellij"
-
-        val checkstylePluginDir = file("../reference/checkstyle-idea/build/distributions")
-        val zipFiles = fileTree(checkstylePluginDir) { include("*.zip") }
-
-        val sandboxProductDir =
-            "${providers.gradleProperty("platformType").get()}-${providers.gradleProperty("platformVersion").get()}"
-        val sandboxPluginsDir =
-            layout.buildDirectory.dir("idea-sandbox/$sandboxProductDir/plugins").get().asFile
-
-        doFirst {
-            if (zipFiles.isEmpty) {
-                throw GradleException("checkstyle-idea zip not found in ${checkstylePluginDir.absolutePath}")
-            }
-            sandboxPluginsDir.mkdirs()
-            val existing = sandboxPluginsDir.resolve("CheckStyle-IDEA")
-            if (existing.exists()) {
-                existing.deleteRecursively()
-            }
-        }
-
-        from(zipFiles.map { zipTree(it) })
-        into(sandboxPluginsDir)
-    }
-
-    // 本地开发：构建并复制 intelli-ai-engine 插件到 sandbox
+    // 本地开发：先构建 intelli-ai-engine，再让 prepareSandbox 通过 localPlugin 安装
+    // 注意：不要 clean，否则配置解析阶段可能找不到 zip；也不要手拷到 build/idea-sandbox（路径已过时）
     val buildAiCommonPlugin = register<Exec>("buildAiCommonPlugin") {
         description = "Build intelli-ai-engine plugin for local development"
         group = "intellij"
 
         val aiCommonDir = file("../intelli-ai-engine")
         workingDir = aiCommonDir
-        // 使用 intelli-ai-engine 项目的 gradlew 来执行构建（先 clean 再 buildPlugin）
-        commandLine = listOf(aiCommonDir.resolve("gradlew").absolutePath, "clean", "buildPlugin")
+        commandLine = listOf(aiCommonDir.resolve("gradlew").absolutePath, "buildPlugin")
+        // zip 已是最新则跳过，避免每次 runIde 都全量重打 engine
+        inputs.dir(aiCommonDir.resolve("src"))
+        inputs.file(aiCommonDir.resolve("build.gradle.kts"))
+        inputs.file(aiCommonDir.resolve("gradle.properties"))
+        outputs.file(enginePluginZip)
     }
 
-    val copyAiCommonPlugin = register<Copy>("copyAiCommonPlugin") {
-        description = "Copy intelli-ai-engine plugin to sandbox for local development"
-        group = "intellij"
-
-        // 先构建 intelli-ai-engine 插件
+    // prepareSandbox 解析 localPlugin 前必须保证 engine zip 存在
+    named("prepareSandbox") {
         dependsOn(buildAiCommonPlugin)
-
-        // 确保在 prepareSandbox 之后执行（prepareSandbox 会安装 intelli-ai-javadoc 插件）
-        mustRunAfter("prepareSandbox")
-
-        // 从 intelli-ai-engine 的构建输出复制插件
-        val aiCommonPluginDir = file("../intelli-ai-engine/build/distributions")
-        from(aiCommonPluginDir) {
-            include("*.zip")
-        }
-
-        // 复制到 sandbox 的 plugins 目录（包含平台标识和版本，如 IC-2022.3/plugins）
-        val sandboxProductDir = "${providers.gradleProperty("platformType").get()}-${providers.gradleProperty("platformVersion").get()}"
-        val sandboxPluginsDir = layout.buildDirectory.dir("idea-sandbox/$sandboxProductDir/plugins").get().asFile
-        sandboxPluginsDir.mkdirs()
-        into(sandboxPluginsDir)
-
-        // 解压插件 ZIP 文件
-        doLast {
-            val zipFiles = fileTree(sandboxPluginsDir) { include("*.zip") }
-            zipFiles.forEach { zipFile ->
-                val pluginDirName = zipFile.nameWithoutExtension.substringBeforeLast("-", zipFile.nameWithoutExtension)
-                val targetDir = sandboxPluginsDir.resolve(pluginDirName)
-                if (targetDir.exists()) {
-                    targetDir.deleteRecursively()
-                }
-
-                copy {
-                    from(zipTree(zipFile))
-                    into(sandboxPluginsDir)
-                }
-                zipFile.delete()
-            }
-        }
+    }
+    named("prepareTestSandbox") {
+        dependsOn(buildAiCommonPlugin)
     }
 
-    // 在 runIde 之前执行复制任务（在 prepareSandbox 之后）
     runIde {
         jvmArgumentProviders += CommandLineArgumentProvider {
             listOf("-Didea.kotlin.plugin.use.k2=true")
         }
-        dependsOn(copyAiCommonPlugin, copyCheckstyleIdeaPlugin)
+        dependsOn(buildAiCommonPlugin)
         // 热更新
         // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
     }

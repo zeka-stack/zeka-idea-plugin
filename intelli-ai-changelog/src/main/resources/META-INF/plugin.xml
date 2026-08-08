@@ -54,8 +54,27 @@
         <!-- Commit Message Hint 服务 -->
         <projectService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintService"/>
 
+        <!-- Conventional Commit scope 轻量缓存服务（供 scope 补全提供最近使用过的 scope） -->
+        <projectService serviceImplementation="dev.dong4j.zeka.stack.idea.plugin.changelog.conventional.ConventionalCommitScopeProvider"/>
+
         <!-- Commit Message Hint 编辑器工厂监听器 -->
         <editorFactoryListener implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.hint.CommitMessageHintEditorFactoryListener"/>
+
+        <!-- Conventional Commit 首行高亮编辑器工厂监听器 -->
+        <editorFactoryListener implementation="dev.dong4j.zeka.stack.idea.plugin.changelog.conventional.ConventionalCommitEditorFactoryListener"/>
+
+        <!-- Conventional Commit 首行补全：必须排在平台历史提交补全(commitCompletion)之前 -->
+        <completion.contributor
+            language="TEXT"
+            order="first, before commitCompletion, before coAuthoredCompletion"
+            implementationClass="dev.dong4j.zeka.stack.idea.plugin.changelog.conventional.ConventionalCommitCompletionContributor"/>
+
+        <!-- 允许 Commit Message 纯文本框 autopopup（平台默认常跳过） -->
+        <completion.confidence
+            language="TEXT"
+            id="changelog.conventionalCommit"
+            order="first"
+            implementationClass="dev.dong4j.zeka.stack.idea.plugin.changelog.conventional.ConventionalCommitCompletionConfidence"/>
 
         <!-- 设置面板 -->
         <!--suppress PluginXmlI18n -->

@@ -165,6 +165,16 @@ public class SettingsState implements PersistentStateComponent<SettingsState> {
     public boolean enableCommitMultiRepoCheck = true;
 
     /**
+     * 是否启用 Conventional Commit 首行高亮辅助
+     * <p>
+     * 控制在 Git 提交消息编辑框中，是否对首行的 type/scope/breaking/separator/subject
+     * 各语义片段进行分段高亮显示。
+     *
+     * <p>默认值: true（默认开启）
+     */
+    public boolean enableConventionalCommitAssist = true;
+
+    /**
      * 设置变更监听器
      * <p>
      * 用于在设置发生变化时广播通知，便于同步到其他 UI（如提交前检查面板）。

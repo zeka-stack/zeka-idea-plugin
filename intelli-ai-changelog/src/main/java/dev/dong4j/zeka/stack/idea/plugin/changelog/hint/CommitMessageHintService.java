@@ -1,6 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.hint;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
@@ -95,43 +96,46 @@ public class CommitMessageHintService implements Disposable {
 
     /**
      * 检查指定的编辑器是否是 Commit Message Editor
+     * <p>
+     * 优先使用平台在 Document 上设置的 {@link CommitMessage#DATA_KEY}（与 Conventional Commit 开源插件一致），
+     * 该标记在 Modal / Non-modal / 2025.3+ {@code COMMIT_WORKFLOW_UI} 下都更可靠。
+     * Swing 组件树遍历仅作兜底，避免新版提交面板组件层级变化导致误判。
      *
      * @param editor 编辑器实例，不能为 null
      * @return 如果是 Commit Message Editor 返回 true，否则返回 false
      */
     public static boolean isCommitMessageEditor(@NotNull Editor editor) {
-        // 方法1：检查 EditorTextField
-        // EditorTextField.getEditor() 可以获取其内部的 Editor
-        // 我们需要反向查找：从 Editor 的 contentComponent 向上查找 EditorTextField
-        java.awt.Component component = editor.getContentComponent();
+        // 优先：Document user data（平台官方标记，不依赖 Swing 父链）
+        Document document = editor.getDocument();
+        if (document.getUserData(CommitMessage.DATA_KEY) != null) {
+            log.info("识别为 Commit Message Editor：Document 上存在 CommitMessage.DATA_KEY");
+            return true;
+        }
 
-        // 向上遍历查找 EditorTextField 或 CommitMessage 组件
+        // 兜底：沿组件树查找 CommitMessage / CommitMessageI
+        java.awt.Component component = editor.getContentComponent();
         int depth = 0;
-        while (component != null && depth < 15) { // 限制深度避免无限循环
-            // 如果找到 CommitMessage 组件，直接返回 true
+        while (component != null && depth < 15) {
             if (component instanceof CommitMessage) {
-                log.debug("找到 CommitMessage 组件: {}", component.getClass().getName());
+                log.info("识别为 Commit Message Editor：组件树找到 CommitMessage, depth={}", depth);
                 return true;
             }
 
-            // 如果找到 EditorTextField，检查其父组件是否包含 CommitMessage
             if (component instanceof EditorTextField editorField) {
-                // 检查这个 EditorTextField 是否属于 CommitMessage
                 CommitMessageI commitMessage = getCommitMessageFromEditor(editorField);
                 if (commitMessage != null) {
-                    log.debug("找到 CommitMessageI: {}", commitMessage.getClass().getName());
+                    log.info("识别为 Commit Message Editor：找到 CommitMessageI={}",
+                        commitMessage.getClass().getName());
                     return true;
                 }
 
-                // 检查 EditorTextField 的 Editor 是否是我们当前检查的 Editor
                 try {
                     Editor fieldEditor = editorField.getEditor();
                     if (fieldEditor == editor) {
-                        // 这是 EditorTextField 的 Editor，继续向上查找 CommitMessage
                         java.awt.Component parent = editorField.getParent();
                         while (parent != null && depth < 15) {
                             if (parent instanceof CommitMessage) {
-                                log.debug("在 EditorTextField 父组件中找到 CommitMessage");
+                                log.info("识别为 Commit Message Editor：EditorTextField 父链找到 CommitMessage");
                                 return true;
                             }
                             parent = parent.getParent();
@@ -147,7 +151,7 @@ public class CommitMessageHintService implements Disposable {
             depth++;
         }
 
-        log.debug("未识别为 Commit Message Editor，组件树深度: {}", depth);
+        log.info("未识别为 Commit Message Editor，组件树深度: {}", depth);
         return false;
     }
 
