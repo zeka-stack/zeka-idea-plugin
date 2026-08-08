@@ -401,6 +401,11 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
                 }
             }
         }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
     }
 
     /**
@@ -431,6 +436,11 @@ public class ChangelogStatusBarWidget extends EditorBasedStatusBarPopup {
             super(getTitle(), true);
             add(new ReleaseLogStartPointAction(true));
             add(new ReleaseLogStartPointAction(false));
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
         }
 
         /**

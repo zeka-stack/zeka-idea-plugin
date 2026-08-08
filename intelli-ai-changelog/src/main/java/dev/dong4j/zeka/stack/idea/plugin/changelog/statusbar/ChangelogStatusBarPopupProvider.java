@@ -200,6 +200,11 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
             e.getPresentation().setText(buildTitle());
         }
 
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
+
         private static @NotNull String buildTitle() {
             SettingsState.CommitMessageDiffProvider provider = SettingsState.getInstance().commitMessageDiffProvider;
             String label = switch (provider) {
@@ -300,6 +305,11 @@ public class ChangelogStatusBarPopupProvider implements AIStatusBarPopupProvider
             add(new ReleaseLogStartPointAction(false));
             add(Separator.create());
             add(new ClearTagAndHashAction());
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
         }
 
         /**

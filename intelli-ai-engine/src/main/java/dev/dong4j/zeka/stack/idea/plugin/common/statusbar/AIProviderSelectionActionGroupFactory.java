@@ -8,7 +8,6 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
-import com.intellij.ui.RowIcon;
 import com.intellij.util.ui.JBUI;
 
 import org.jetbrains.annotations.NotNull;
@@ -45,10 +44,12 @@ import lombok.extern.slf4j.Slf4j;
 public final class AIProviderSelectionActionGroupFactory {
     /** 用于标识菜单项是否被选中的状态键 */
     private static final Key<Boolean> SELECTED_KEY = Key.create("selected");
-    /** 菜单中选中状态的小绿点图标 */
-    private static final Icon SELECTED_DOT_ICON = new StatusDotIcon(JBUI.scale(13),
-                                                                    JBUI.scale(6),
-                                                                    StatusIndicatorButton.STATUS_SUCCESS);
+    /** 叠在供应商图标左上角的选中绿点直径（宜小，避免遮住图标主体） */
+    private static final int SELECTED_BADGE_DOT_SIZE = JBUI.scale(4);
+    /** 角标相对图标左上角的内边距，避免贴边 */
+    private static final int SELECTED_BADGE_INSET = JBUI.scale(0);
+    /** 选中角标颜色 */
+    private static final Color SELECTED_BADGE_COLOR = StatusIndicatorButton.STATUS_SUCCESS;
 
     /**
      * 私有构造函数, 禁止外部实例化
@@ -288,8 +289,8 @@ public final class AIProviderSelectionActionGroupFactory {
 
     /**
      * 构建菜单图标
-     * <p> 根据服务商配置和选中状态生成对应的菜单图标
-     * <p> 如果未选中, 则直接返回服务商图标; 如果选中, 则在服务商图标前加上一个表示选中的小绿点图标
+     * <p> 未选中：仅服务商图标。
+     * <p> 选中：在服务商图标左上角叠画小绿点，宽高与底图一致，不增加额外占位列。
      *
      * @param config   服务商配置对象
      * @param selected 是否选中状态
@@ -300,15 +301,18 @@ public final class AIProviderSelectionActionGroupFactory {
         if (!selected) {
             return providerIcon;
         }
-        RowIcon rowIcon = new RowIcon(2);
-        rowIcon.setIcon(SELECTED_DOT_ICON, 0);
-        rowIcon.setIcon(providerIcon, 1);
-        return rowIcon;
+        if (providerIcon == null) {
+            // 无底图时退化为独立绿点
+            return new BadgeOnlyIcon(SELECTED_BADGE_DOT_SIZE, SELECTED_BADGE_COLOR);
+        }
+        return new SelectedProviderIcon(providerIcon,
+                                        SELECTED_BADGE_DOT_SIZE,
+                                        SELECTED_BADGE_INSET,
+                                        SELECTED_BADGE_COLOR);
     }
 
     /**
      * 获取服务商图标
-     * <p> 根据服务商配置对象获取对应的图标, 如果配置中未指定服务商类型则返回 null</p>
      *
      * @param config 服务商配置对象, 不能为 null
      * @return 服务商对应的图标, 如果未指定服务商类型则返回 null
@@ -321,65 +325,64 @@ public final class AIProviderSelectionActionGroupFactory {
     }
 
     /**
-     * 菜单选中状态的圆点图标
+     * 选中态菜单图标：先画服务商底图，再在左上角叠画绿点角标。
+     * <p> 宽高严格等于底图，避免 RowIcon 前置列带来的左侧留白。
      *
-     * @param iconSize 图标尺寸, 决定整个图标区域的宽度和高度
-     * @param dotSize  圆点图标大小
-     * @param color    配置图标颜色
+     * @param baseIcon 服务商底图
+     * @param dotSize  绿点直径
+     * @param inset    相对左上角的内边距
+     * @param color    绿点颜色
      */
-        private record StatusDotIcon(int iconSize, int dotSize, Color color) implements Icon {
-            /**
-             * 初始化状态圆点图标的构造方法
-             * <p> 设置图标尺寸, 圆点尺寸和颜色, 用于绘制选中状态的圆点图标
-             *
-             * @param iconSize 图标整体尺寸
-             * @param dotSize  圆点尺寸
-             * @param color    圆点颜色, 不能为 null
-             */
-            private StatusDotIcon(int iconSize, int dotSize, @NotNull Color color) {
-                this.iconSize = iconSize;
-                this.dotSize = dotSize;
-                this.color = color;
-            }
-
-            /**
-             * 绘制菜单选中状态的圆点图标
-             * <p> 该方法用于在指定位置绘制一个圆点形状的图标, 用于表示菜单项的选中状态.
-             *
-             * @param c 绘制所处的组件对象
-             * @param g 用于绘制的图形上下文
-             * @param x 图标左上角的横坐标
-             * @param y 图标左上角的纵坐标
-             */
-            @Override
-            public void paintIcon(Component c, Graphics g, int x, int y) {
-                int offset = Math.max(0, (iconSize - dotSize) / 2);
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(color);
-                g2.fillOval(x + offset, y + offset, dotSize, dotSize);
-                g2.dispose();
-            }
-
-            /**
-             * 获取图标的宽度
-             * <p> 返回图标的宽度, 单位为像素
-             *
-             * @return 图标的宽度
-             */
-            @Override
-            public int getIconWidth() {
-                return iconSize;
-            }
-
-            /**
-             * 获取图标的高度
-             *
-             * @return 图标高度, 单位为像素
-             */
-            @Override
-            public int getIconHeight() {
-                return iconSize;
-            }
+    private record SelectedProviderIcon(@NotNull Icon baseIcon,
+                                        int dotSize,
+                                        int inset,
+                                        @NotNull Color color) implements Icon {
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            baseIcon.paintIcon(c, g, x, y);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            // 左上角角标
+            g2.fillOval(x + inset, y + inset, dotSize, dotSize);
+            g2.dispose();
         }
+
+        @Override
+        public int getIconWidth() {
+            return baseIcon.getIconWidth();
+        }
+
+        @Override
+        public int getIconHeight() {
+            return baseIcon.getIconHeight();
+        }
+    }
+
+    /**
+     * 无服务商底图时的独立选中绿点。
+     *
+     * @param dotSize 绿点直径
+     * @param color   绿点颜色
+     */
+    private record BadgeOnlyIcon(int dotSize, @NotNull Color color) implements Icon {
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.fillOval(x, y, dotSize, dotSize);
+            g2.dispose();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return dotSize;
+        }
+
+        @Override
+        public int getIconHeight() {
+            return dotSize;
+        }
+    }
 }
