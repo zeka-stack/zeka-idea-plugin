@@ -4,6 +4,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -413,7 +414,7 @@ public class CommitMessageGenerator {
                             if (outputSession != null && !project.isDisposed()) {
                                 outputSession.setText(formattedCommitMessage);
                             }
-                        });
+                        }, ModalityState.defaultModalityState());
                     } catch (Exception e) {
                         log.debug("Git 提交页面：生成提交记录失败", e);
                         ApplicationManager.getApplication().invokeLater(() -> {
@@ -430,7 +431,7 @@ public class CommitMessageGenerator {
                                     ChangelogBundle.message("commit.generation.error",
                                         ChangelogBundle.message("error.ai.service.unknown")));
                             }
-                        });
+                        }, ModalityState.defaultModalityState());
                     } finally {
                         resetCommitMessagePlaceholder(commitMessageControl);
                         typingIndicator.stop();
@@ -514,7 +515,7 @@ public class CommitMessageGenerator {
                     if (setCommitMessageText(buffer.toString(), commitMessageControl)) {
                         updated.set(true);
                     }
-                });
+                }, ModalityState.defaultModalityState());
                 if (outputSession != null) {
                     outputSession.append(chunk);
                 }
@@ -563,7 +564,7 @@ public class CommitMessageGenerator {
                     if (outputSession != null) {
                         outputSession.setText(formattedContent);
                     }
-                });
+                }, ModalityState.defaultModalityState());
             }
 
             /**
@@ -602,7 +603,7 @@ public class CommitMessageGenerator {
                         return;
                     }
                     typingIndicator.generateFailure();
-                });
+                }, ModalityState.defaultModalityState());
             }
         };
     }
@@ -1477,7 +1478,7 @@ public class CommitMessageGenerator {
                         outputSession.setText("");
                     }
                 }
-            });
+            }, ModalityState.defaultModalityState());
             startAnalyzingLine();
         }
 
@@ -1513,7 +1514,7 @@ public class CommitMessageGenerator {
                 if (outputSession != null) {
                     outputSession.setText(ChangelogBundle.message("commit.message.placeholder.reset.error.message"));
                 }
-            });
+            }, ModalityState.defaultModalityState());
         }
 
         /**
