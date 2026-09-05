@@ -163,7 +163,7 @@ public class CommitMultiRepoCheckinHandlerFactory extends CheckinHandlerFactory 
                         return null;
                     }
 
-                    Map<String, List<Change>> changesByRoot = new CommitMessageGenerator(project).groupChangesByRoot(changes);
+                    Map<String, List<Change>> changesByRoot = CommitMessageGenerator.groupChangesByRoot(project, changes);
                     if (changesByRoot.size() <= 1) {
                         return null;
                     }

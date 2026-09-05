@@ -198,7 +198,7 @@ public class CommitMessageGenerator {
             outputSession,
             (service, listener, contextText, typingIndicator) -> {
                 // 多仓库支持：按 VCS Root 分组处理，避免跨仓库混合上下文。
-                Map<String, List<Change>> changesByRoot = groupChangesByRoot(changes);
+                Map<String, List<Change>> changesByRoot = groupChangesByRoot(project, changes);
                 if (changesByRoot.size() > 1) {
                     return handleMultiRepositoryChanges(service,
                         changesByRoot,
@@ -765,15 +765,16 @@ public class CommitMessageGenerator {
      * <p> 多仓库场景下用于拆分生成上下文，避免跨仓库混合导致的噪音.
      * <p> 对于删除的文件, 会从 ContentRevision 获取文件路径来查找 VCS root, 确保正确分组.
      *
+     * @param project 项目实例，用于定位 VCS 根
      * @param changes 变更集合
      * @return key 为仓库根路径的分组 Map
      */
     @NotNull
-    Map<String, List<Change>> groupChangesByRoot(@NotNull Collection<Change> changes) {
+    static Map<String, List<Change>> groupChangesByRoot(@NotNull Project project, @NotNull Collection<Change> changes) {
         ProjectLevelVcsManager vcsManager = ProjectLevelVcsManager.getInstance(project);
         Map<String, List<Change>> grouped = new LinkedHashMap<>();
         for (Change change : changes) {
-            VirtualFile root = findVcsRootForChange(change, vcsManager);
+            VirtualFile root = findVcsRootForChange(project, change, vcsManager);
             if (root == null) {
                 // 无法确定 VCS root, 跳过该变更并记录日志
                 String filePath = getChangeFilePath(change);
@@ -794,7 +795,7 @@ public class CommitMessageGenerator {
      * @return 文件路径, 如果无法获取则返回 "unknown"
      */
     @NotNull
-    private String getChangeFilePath(@NotNull Change change) {
+    private static String getChangeFilePath(@NotNull Change change) {
         VirtualFile file = change.getVirtualFile();
         if (file != null) {
             return file.getPath();
@@ -819,12 +820,13 @@ public class CommitMessageGenerator {
      * </ul>
      * 然后通过路径查找 VirtualFile 并获取 VCS root.
      *
+     * @param project    项目实例, 不能为 null
      * @param change     变更对象, 不能为 null
      * @param vcsManager VCS 管理器, 不能为 null
      * @return VCS root, 如果无法确定则返回 null
      */
     @Nullable
-    private VirtualFile findVcsRootForChange(@NotNull Change change, @NotNull ProjectLevelVcsManager vcsManager) {
+    private static VirtualFile findVcsRootForChange(@NotNull Project project, @NotNull Change change, @NotNull ProjectLevelVcsManager vcsManager) {
         // 首先尝试从 VirtualFile 获取 (适用于大多数情况)
         VirtualFile file = change.getVirtualFile();
         if (file != null) {
