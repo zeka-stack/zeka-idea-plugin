@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,18 @@ public class CommitMessageHintService implements Disposable {
      * 编辑器到 Hint Manager 的映射
      */
     private final Map<Editor, CommitMessageHintManager> hintManagers = new ConcurrentHashMap<>();
+    /**
+     * Commit Message 编辑器识别的「负缓存」：Document → 是否为 Commit Message Editor 的兜底识别结果。
+     * <p>
+     * 仅缓存「兜底组件树遍历失败（{@code false}）」的结果；{@link CommitMessage#DATA_KEY} 快路径命中
+     * （{@code true}）是权威结果，不写入缓存，避免污染。用于消除在 EDT 上对同一 Document 反复执行
+     * 组件树遍历 + 反射（该重复操作是提交面板卡顿、出现彩虹圈的直接根因）。
+     * <p>
+     * 采用 {@link WeakHashMap} 使 key（Document）被 GC 后自动清除，避免泄漏；非线程安全，读写均用
+     * {@code synchronized} 保护。识别失败只发生在「文档未带 DATA_KEY 且组件树无 CommitMessage」时，
+     * 对普通文件该结论长期稳定，负缓存不会误伤真正命中快路径的 Commit Message 编辑器。
+     */
+    private static final Map<Document, Boolean> NON_COMMIT_EDITOR_CACHE = new WeakHashMap<>();
     /**
      * 项目实例
      */
@@ -112,6 +125,16 @@ public class CommitMessageHintService implements Disposable {
             return true;
         }
 
+        // 负缓存：同一 Document 此前已被兜底遍历判定为「非 Commit Message Editor」，
+        // 直接短路返回 false，跳过昂贵的组件树遍历 + 反射。该缓存是消除提交面板卡顿的关键。
+        Boolean nonCommitCached;
+        synchronized (NON_COMMIT_EDITOR_CACHE) {
+            nonCommitCached = NON_COMMIT_EDITOR_CACHE.get(document);
+        }
+        if (nonCommitCached != null && !nonCommitCached) {
+            return false;
+        }
+
         // 兜底：沿组件树查找 CommitMessage / CommitMessageI
         java.awt.Component component = editor.getContentComponent();
         int depth = 0;
@@ -152,6 +175,10 @@ public class CommitMessageHintService implements Disposable {
         }
 
         log.info("未识别为 Commit Message Editor，组件树深度: {}", depth);
+        // 记录负缓存，避免后续对同一 Document 重复执行上述组件树遍历 + 反射
+        synchronized (NON_COMMIT_EDITOR_CACHE) {
+            NON_COMMIT_EDITOR_CACHE.put(document, false);
+        }
         return false;
     }
 
