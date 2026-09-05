@@ -41,6 +41,14 @@ final class CommitMessageHintRenderer implements EditorCustomElementRenderer, Di
      * 编辑器实例
      */
     private final Editor editor;
+    /**
+     * Tab 键快捷键文本缓存（运行期不变，避免每次布局/重绘重复遍历 keymap）
+     */
+    private static volatile String tabShortcutText;
+    /**
+     * 提示字体缓存（运行期不变，避免每次 calcWidth/paint 重复 deriveFont 分配对象）
+     */
+    private static volatile Font hintFont;
 
     /**
      * 构造函数
@@ -61,7 +69,7 @@ final class CommitMessageHintRenderer implements EditorCustomElementRenderer, Di
      */
     @Override
     public int calcWidthInPixels(@NotNull Inlay inlay) {
-        Font font = JBUI.Fonts.label().deriveFont(getFontSize());
+        Font font = getHintFont();
         FontMetrics fm = editor.getContentComponent().getFontMetrics(font);
         String tabText = getTabShortcutText();
         String actionText = ChangelogBundle.message("commit.hint.action.text");
@@ -99,7 +107,7 @@ final class CommitMessageHintRenderer implements EditorCustomElementRenderer, Di
         Graphics2D g2d = (Graphics2D) g.create();
         try {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            Font font = JBUI.Fonts.label().deriveFont(getFontSize());
+            Font font = getHintFont();
             g2d.setFont(font);
             FontMetrics fm = g2d.getFontMetrics();
             String tabText = getTabShortcutText();
@@ -170,21 +178,31 @@ final class CommitMessageHintRenderer implements EditorCustomElementRenderer, Di
      * @return Tab 键的快捷键文本，如果未配置则返回 "Tab"
      */
     private String getTabShortcutText() {
-        AnAction action = ActionManager.getInstance().getAction(IdeActions.ACTION_EDITOR_TAB);
-        String shortcutText = action != null ? KeymapUtil.getFirstKeyboardShortcutText(action) : null;
-        return shortcutText == null || shortcutText.isBlank()
-               ? ChangelogBundle.message("commit.hint.tab.text")
-               : shortcutText;
+        String cached = tabShortcutText;
+        if (cached == null) {
+            AnAction action = ActionManager.getInstance().getAction(IdeActions.ACTION_EDITOR_TAB);
+            String shortcutText = action != null ? KeymapUtil.getFirstKeyboardShortcutText(action) : null;
+            cached = shortcutText == null || shortcutText.isBlank()
+                     ? ChangelogBundle.message("commit.hint.tab.text")
+                     : shortcutText;
+            tabShortcutText = cached;
+        }
+        return cached;
     }
 
     /**
-     * 获取字体大小
+     * 获取提示字体（比默认标签字体小 2 像素）
+     * <p> 懒加载并缓存，避免每次布局/重绘重复 deriveFont 分配新对象。
      *
-     * @return 字体大小（比默认标签字体小 2 像素）
+     * @return 缓存的提示字体
      */
-    private float getFontSize() {
-        Font font = JBUI.Fonts.label();
-        return font.getSize() - 2f;
+    private Font getHintFont() {
+        Font font = hintFont;
+        if (font == null) {
+            font = JBUI.Fonts.label().deriveFont(JBUI.Fonts.label().getSize() - 2f);
+            hintFont = font;
+        }
+        return font;
     }
 
     /**
