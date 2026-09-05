@@ -579,10 +579,15 @@ public class CommitMessageGenerator {
                     return;
                 }
 
-                final EditorTextField editorField = getEditorTextField(commitMessageControl);
-                if (editorField != null) {
-                    showNoticeActionTip(editorField.getComponent(), message);
-                }
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (project.isDisposed() || state.cancelled.get()) {
+                        return;
+                    }
+                    final EditorTextField editorField = getEditorTextField(commitMessageControl);
+                    if (editorField != null) {
+                        showNoticeActionTip(editorField.getComponent(), message);
+                    }
+                }, ModalityState.defaultModalityState());
             }
 
             /**
