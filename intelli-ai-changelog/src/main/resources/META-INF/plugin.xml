@@ -159,12 +159,12 @@
                 class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageAction"
                 text="Generate Commit Message">
         </action>
-        <action id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
-                class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
-                icon="ChangelogIcons.CHANGELOG_16"
-                text="Generate Commit Message">
+        <group id="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
+               class="dev.dong4j.zeka.stack.idea.plugin.changelog.action.GenerateCommitMessageSplitAction"
+               icon="ChangelogIcons.CHANGELOG_16"
+               text="Generate Commit Message">
             <add-to-group group-id="Vcs.MessageActionGroup" anchor="first"/>
-        </action>
+        </group>
 
         <!-- Commit Message Hint Tab 触发 Action -->
         <!--suppress PluginXmlI18n -->
