@@ -298,9 +298,8 @@ public class CommitMessageHintManager implements Disposable {
         }
 
         // 检查文档内容是否只包含空白字符（空格、制表符等）
-        // Document.getText() 需要在 read-action 中调用
-        String text = editor.getDocument().getText();
-        if (text.trim().isEmpty()) {
+        // 使用 getImmutableCharSequence() 零拷贝判断，避免 getText() 每次全文复制分配新 String
+        if (isBlank(editor.getDocument().getImmutableCharSequence())) {
             return false;
         }
 
@@ -323,6 +322,22 @@ public class CommitMessageHintManager implements Disposable {
 
         // 注意：检查是否有选中的文件需要在 EDT 中执行（获取 DataContext）
         // 这部分检查在 finishOnUiThread 回调中进行
+    }
+
+    /**
+     * 判断字符序列是否为空或只包含空白字符
+     * <p> 等价于 {@code String.trim().isEmpty()}，但零拷贝（不分配 String）。
+     *
+     * @param cs 字符序列，不能为 null
+     * @return 若为空或全部为空白字符返回 true，否则返回 false
+     */
+    private static boolean isBlank(@NotNull CharSequence cs) {
+        for (int i = 0; i < cs.length(); i++) {
+            if (!Character.isWhitespace(cs.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
