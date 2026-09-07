@@ -107,6 +107,18 @@ public enum AIProviderType {
         List.of("z-ai/glm-4.5-air:free")
     ),
     /**
+     * OrcaRouter (OpenAI 兼容) 模型配置
+     */
+    ORCAROUTER(
+        "orcarouter",
+        "OrcaRouter",
+        "https://api.orcarouter.ai/v1",
+        "openai/gpt-4o-mini",
+        true,
+        true,
+        List.of("openai/gpt-4o-mini", "orcarouter/auto")
+    ),
+    /**
      * Cloudflare Workers AI (OpenAI 兼容) 模型配置
      */
     CLOUDFLARE(
@@ -768,6 +780,7 @@ public enum AIProviderType {
             AIProviderType.NVIDIA,
             AIProviderType.HUGGINGFACE,
             AIProviderType.OPENROUTER,
+            AIProviderType.ORCAROUTER,
             AIProviderType.CLOUDFLARE,
             AIProviderType.BEDROCK,
             AIProviderType.AZURE,
@@ -818,6 +831,7 @@ public enum AIProviderType {
             case NVIDIA -> "https://docs.api.nvidia.com/nim/reference/llm-apis";
             case HUGGINGFACE -> "https://huggingface.co/docs/inference-providers/index";
             case OPENROUTER -> "https://openrouter.ai/settings/keys";
+            case ORCAROUTER -> "https://orcarouter.ai/console";
             case CLOUDFLARE -> "https://developers.cloudflare.com/workers-ai/get-started/rest-api/";
             case BEDROCK -> "https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys-generate.html";
             case AZURE -> "https://portal.azure.com/";

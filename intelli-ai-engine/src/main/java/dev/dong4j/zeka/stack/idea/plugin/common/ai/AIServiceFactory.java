@@ -16,6 +16,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.GitHubModelsP
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.IflowProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ModelScopeOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OpenAILikeProvider;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.OrcaRouterProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZaiOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.openai.ZhipuOpenAIProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
@@ -75,6 +76,7 @@ public final class AIServiceFactory {
             case FREEAI, OPENAI, DEEPSEEK, DOUBAO, GROK, HUNYUAN, QIANWEN, SILICONFLOW, OPENROUTER, BEDROCK, CLOUDFLARE, HUGGINGFACE,
                  NVIDIA,
                  MISTRAL, LM_STUDIO, MOONSHOT, QUOTIO -> new OpenAILikeProvider(project, config, modelParameters, runtimeSettings);
+            case ORCAROUTER -> new OrcaRouterProvider(project, config, modelParameters, runtimeSettings);
 
             case AZURE -> new AzureOpenAIProvider(project, config, modelParameters, runtimeSettings);
             case GITHUB_MODELS -> new GitHubModelsProvider(project, config, modelParameters, runtimeSettings);

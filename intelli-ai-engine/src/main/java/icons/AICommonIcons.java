@@ -112,6 +112,20 @@ public final class AICommonIcons {
     public static final Icon PROVIDER_OPENROUTER = load("/icons/openrouter.svg");
 
     /**
+     * OrcaRouter 提供商图标 (16x16)
+     * <p>
+     * 用于: 设置页面 AI 供应商下拉列表, 状态栏
+     */
+    public static final Icon PROVIDER_ORCAROUTER = load("/icons/orcarouter.png");
+
+    /**
+     * OrcaRouter 提供商图标 (32x32)
+     * <p>
+     * 使用原始 Logo 直接缩放的独立资源，避免从 64x64 二次缩放损失细节。
+     */
+    public static final Icon PROVIDER_ORCAROUTER_32 = load("/icons/orcarouter_32.png");
+
+    /**
      * OpenRouter 提供商图标 (32x32)
      * <p>
      * 用于: 设置页面 AI 供应商下拉列表, 状态栏
@@ -442,6 +456,13 @@ public final class AICommonIcons {
     public static final Icon PROVIDER_OPENROUTER_64 = load("/icons/openrouter_64.svg");
 
     /**
+     * OrcaRouter 提供商图标 (64x64)
+     * <p>
+     * 用于：错误提示框、对话框
+     */
+    public static final Icon PROVIDER_ORCAROUTER_64 = load("/icons/orcarouter_64.png");
+
+    /**
      * Cloudflare 提供商图标 (64x64)
      * <p>
      * 用于：错误提示框、对话框
@@ -529,6 +550,7 @@ public final class AICommonIcons {
             case FREEAI -> PROVIDER_FREEAI;
             case OPENAI -> PROVIDER_CHATGPT;
             case OPENROUTER -> PROVIDER_OPENROUTER;
+            case ORCAROUTER -> PROVIDER_ORCAROUTER;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE;
             case BEDROCK -> PROVIDER_BEDROCK;
             case AZURE -> PROVIDER_AZUREAI;
@@ -571,6 +593,9 @@ public final class AICommonIcons {
         if (providerType == AIProviderType.FREEAI) {
             return PROVIDER_FREEAI_32;
         }
+        if (providerType == AIProviderType.ORCAROUTER) {
+            return PROVIDER_ORCAROUTER_32;
+        }
         Icon icon64 = getProviderIcon64(providerType);
         if (icon64 != null) {
             return IconUtil.scale(icon64, null, 0.5f);
@@ -594,6 +619,7 @@ public final class AICommonIcons {
             case FREEAI -> PROVIDER_FREEAI_64;
             case OPENAI -> PROVIDER_CHATGPT_64;
             case OPENROUTER -> PROVIDER_OPENROUTER_64;
+            case ORCAROUTER -> PROVIDER_ORCAROUTER_64;
             case CLOUDFLARE -> PROVIDER_CLOUDFLARE_64;
             case BEDROCK -> PROVIDER_BEDROCK_64;
             case AZURE -> PROVIDER_AZUREAI_64;

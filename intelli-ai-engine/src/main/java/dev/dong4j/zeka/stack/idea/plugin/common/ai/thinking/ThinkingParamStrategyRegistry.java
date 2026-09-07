@@ -43,6 +43,7 @@ public final class ThinkingParamStrategyRegistry {
         AIProviderType type = context.providerType();
         return switch (type) {
             case QIANWEN -> QianwenThinkingStrategy.INSTANCE;
+            case ORCAROUTER -> OrcaRouterThinkingStrategy.INSTANCE;
             case DEEPSEEK -> DeepSeekOpenAIThinkingStrategy.INSTANCE;
             case DEEPSEEK_ANTHROPIC -> DeepSeekAnthropicThinkingStrategy.INSTANCE;
             case MOONSHOT, MOONSHOT_ANTHROPIC -> MoonshotThinkingStrategy.INSTANCE;
