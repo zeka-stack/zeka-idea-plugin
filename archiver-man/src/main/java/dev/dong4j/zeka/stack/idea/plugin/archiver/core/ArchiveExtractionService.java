@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -153,25 +154,40 @@ public final class ArchiveExtractionService {
         }
     }
 
+    /**
+     * 解压 7z 条目
+     * <p>
+     * Apache Commons Compress 的 {@link SevenZFile} 只能打开 {@code java.io.File}, 不能直接读 VFS 流.
+     * 2026.2 起 {@code VirtualFile} 写盘可能异步延迟, {@link VfsUtilCore#virtualToIoFile} 看到的磁盘内容可能是旧的.
+     * 因此先把 VFS 当前内容复制到临时文件再交给 7z 解析.
+     * </p>
+     */
     private void extractSevenZipEntries(@NotNull VirtualFile file, @NotNull Path targetDir) throws IOException {
-        File localFile = VfsUtilCore.virtualToIoFile(file);
-        try (SevenZFile sevenZFile = new SevenZFile(localFile)) {
-            SevenZArchiveEntry entry;
-            byte[] buffer = new byte[8192];
-            while ((entry = sevenZFile.getNextEntry()) != null) {
-                Path outPath = resolveSafe(targetDir, entry.getName());
-                if (entry.isDirectory()) {
-                    Files.createDirectories(outPath);
-                    continue;
-                }
-                Files.createDirectories(outPath.getParent());
-                try (OutputStream outputStream = Files.newOutputStream(outPath)) {
-                    int read;
-                    while ((read = sevenZFile.read(buffer)) > 0) {
-                        outputStream.write(buffer, 0, read);
+        Path localCopy = Files.createTempFile("archiver-man-7z-", ".7z");
+        try {
+            try (InputStream inputStream = file.getInputStream()) {
+                Files.copy(inputStream, localCopy, StandardCopyOption.REPLACE_EXISTING);
+            }
+            try (SevenZFile sevenZFile = new SevenZFile(localCopy.toFile())) {
+                SevenZArchiveEntry entry;
+                byte[] buffer = new byte[8192];
+                while ((entry = sevenZFile.getNextEntry()) != null) {
+                    Path outPath = resolveSafe(targetDir, entry.getName());
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(outPath);
+                        continue;
+                    }
+                    Files.createDirectories(outPath.getParent());
+                    try (OutputStream outputStream = Files.newOutputStream(outPath)) {
+                        int read;
+                        while ((read = sevenZFile.read(buffer)) > 0) {
+                            outputStream.write(buffer, 0, read);
+                        }
                     }
                 }
             }
+        } finally {
+            Files.deleteIfExists(localCopy);
         }
     }
 
