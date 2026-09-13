@@ -44,7 +44,7 @@ intellijPlatform {
             create("IU", "2025.2")
             create("IU", "2025.3")
             create("IU", "2026.1")
-            create("IU", "2026.2.0.1")
+            create("IU", "2026.2.2")
         }
     }
 }
