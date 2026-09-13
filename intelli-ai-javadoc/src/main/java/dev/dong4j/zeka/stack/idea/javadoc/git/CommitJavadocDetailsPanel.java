@@ -13,7 +13,6 @@ import com.intellij.openapi.fileEditor.TextEditor;
 import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -56,6 +55,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 提供对提交日志中缺少 Javadoc 的检测和修复功能的面板组件.
@@ -347,7 +347,7 @@ public final class CommitJavadocDetailsPanel implements Disposable {
      * @return 包含所有任务位置信息的列表, 每个元素代表一个任务在源码中的位置和显示名称
      */
     private List<TaskLocation> buildLocations(@NotNull List<DocumentationTask> tasks) {
-        return ApplicationManager.getApplication().runReadAction((Computable<List<TaskLocation>>) () -> {
+        return ReadActionCompat.compute(() -> {
             List<TaskLocation> locations = new ArrayList<>();
             for (DocumentationTask task : tasks) {
                 PsiElement element = task.getElement();

@@ -56,6 +56,8 @@ import kotlin.Unit;
 import kotlin.jvm.functions.Function2;
 import lombok.extern.slf4j.Slf4j;
 
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
+
 /**
  * 生成 Javadoc Code Vision 提供者
  * <p>
@@ -615,7 +617,7 @@ public class GenerateJavadocCodeVisionProvider implements CodeVisionProvider<Uni
             // 由于我们需要精确定位到元素，我们需要手动定位编辑器光标到元素位置
             // 或者直接调用 TaskCollector 收集该元素的任务
             ApplicationManager.getApplication().executeOnPooledThread(
-                () -> ReadAction.run(
+                () -> ReadActionCompat.run(
                     () -> {
                         // 收集该元素的任务
                         TaskCollector collector = new TaskCollector(project);

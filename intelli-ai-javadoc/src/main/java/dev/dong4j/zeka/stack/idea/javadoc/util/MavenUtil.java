@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.javadoc.util;
 
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
@@ -10,6 +9,8 @@ import org.jetbrains.idea.maven.project.MavenProject;
 import org.jetbrains.idea.maven.project.MavenProjectsManager;
 
 import java.util.concurrent.ConcurrentHashMap;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * Maven 工具类
@@ -95,7 +96,7 @@ public final class MavenUtil {
      */
     @SuppressWarnings("D")
     public static String getVersion(PsiElement element) {
-        return ReadAction.compute(() -> {
+        return ReadActionCompat.compute(() -> {
             Project project = element.getProject();
 
             // 1. 检查缓存

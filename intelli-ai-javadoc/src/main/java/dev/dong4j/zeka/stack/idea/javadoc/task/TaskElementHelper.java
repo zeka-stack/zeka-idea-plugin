@@ -1,7 +1,5 @@
 package dev.dong4j.zeka.stack.idea.javadoc.task;
 
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.util.Computable;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
@@ -14,6 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 任务元素辅助类
@@ -56,7 +56,7 @@ public final class TaskElementHelper {
         if (element == null) {
             return "UnknownElement";
         }
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+        return ReadActionCompat.compute(() -> {
             // 1. 如果是类/接口/枚举，直接返回类的全路径
             if (element instanceof PsiClass psiClass) {
                 String qualifiedName = psiClass.getQualifiedName();

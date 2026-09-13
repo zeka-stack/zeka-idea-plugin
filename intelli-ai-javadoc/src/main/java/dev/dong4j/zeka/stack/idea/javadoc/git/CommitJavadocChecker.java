@@ -1,11 +1,9 @@
 package dev.dong4j.zeka.stack.idea.javadoc.git;
 
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vfs.JarFileSystem;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -25,6 +23,7 @@ import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.task.TaskCollector;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 提交 Javadoc 检查器类
@@ -68,26 +67,24 @@ public final class CommitJavadocChecker {
             return new ArrayList<>();
         }
 
-        return ApplicationManager.getApplication().runReadAction(
-            (Computable<List<VirtualFile>>) () -> {
-                ProjectFileIndex fileIndex = ProjectFileIndex.getInstance(project);
-                List<VirtualFile> javaFiles = new ArrayList<>();
-                for (Change change : changes) {
-                    VirtualFile file = change.getVirtualFile();
-                    if (file == null) {
-                        continue;
-                    }
-                    if (!isJavaOrKotlinFile(file)) {
-                        continue;
-                    }
-                    if (!isFileInProject(project, file, fileIndex)) {
-                        continue;
-                    }
-                    javaFiles.add(file);
+        return ReadActionCompat.compute(() -> {
+            ProjectFileIndex fileIndex = ProjectFileIndex.getInstance(project);
+            List<VirtualFile> javaFiles = new ArrayList<>();
+            for (Change change : changes) {
+                VirtualFile file = change.getVirtualFile();
+                if (file == null) {
+                    continue;
                 }
-                return javaFiles;
+                if (!isJavaOrKotlinFile(file)) {
+                    continue;
+                }
+                if (!isFileInProject(project, file, fileIndex)) {
+                    continue;
+                }
+                javaFiles.add(file);
             }
-                                                                );
+            return javaFiles;
+        });
     }
 
     /**
@@ -118,15 +115,13 @@ public final class CommitJavadocChecker {
                 indicator.setFraction((double) i / javaFiles.size());
             }
 
-            List<DocumentationTask> fileTasks = ApplicationManager.getApplication().runReadAction(
-                (Computable<List<DocumentationTask>>) () -> {
-                    PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
-                    if (psiFile instanceof PsiJavaFile) {
-                        return collector.collectMissingJavaDocFromFile(psiFile);
-                    }
-                    return new ArrayList<>();
+            List<DocumentationTask> fileTasks = ReadActionCompat.compute(() -> {
+                PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
+                if (psiFile instanceof PsiJavaFile) {
+                    return collector.collectMissingJavaDocFromFile(psiFile);
                 }
-                                                                                                 );
+                return new ArrayList<>();
+            });
             tasks.addAll(fileTasks);
         }
 

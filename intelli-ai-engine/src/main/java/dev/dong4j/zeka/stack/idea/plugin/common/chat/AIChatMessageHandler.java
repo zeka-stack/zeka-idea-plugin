@@ -40,6 +40,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIServiceImpl;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * AI 聊天消息处理器
@@ -688,7 +689,7 @@ final class AIChatMessageHandler {
      *
      */
     void sendSelectionInfo() {
-        String payload = com.intellij.openapi.application.ReadAction.compute(this::buildSelectionPayload);
+        String payload = ReadActionCompat.compute(this::buildSelectionPayload);
         if (payload == null || payload.isBlank()) {
             callJs("clearSelectionInfo", null);
             return;
@@ -938,7 +939,7 @@ final class AIChatMessageHandler {
         }
         sb.append("项目名称: ").append(project.getName()).append('\n');
 
-        com.intellij.openapi.application.ReadAction.run(() -> {
+        ReadActionCompat.run(() -> {
             Editor editor = FileEditorManager.getInstance(project).getSelectedTextEditor();
             if (editor != null) {
                 Document document = editor.getDocument();
@@ -1010,7 +1011,7 @@ final class AIChatMessageHandler {
             }
             String title = displayPath != null && !displayPath.isBlank() ? displayPath : absolutePath;
 
-            String content = com.intellij.openapi.application.ReadAction.compute(() -> {
+            String content = ReadActionCompat.compute(() -> {
                 com.intellij.openapi.vfs.VirtualFile vf = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
                     .findFileByPath(absolutePath);
                 if (vf == null || vf.isDirectory()) {

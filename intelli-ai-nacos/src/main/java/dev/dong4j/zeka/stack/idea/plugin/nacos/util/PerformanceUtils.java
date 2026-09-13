@@ -14,6 +14,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
+
 /**
  * 性能优化工具类
  * 提供异步执行、线程池管理等性能优化功能
@@ -82,7 +84,7 @@ public class PerformanceUtils {
      * @return 结果
      */
     public static <T> T runInReadAction(java.util.function.Supplier<T> task) {
-        return ApplicationManager.getApplication().runReadAction((com.intellij.openapi.util.Computable<T>) task::get);
+        return ReadActionCompat.compute(task::get);
     }
 
     /**

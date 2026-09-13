@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.common.nextedit;
 
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -17,6 +16,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 提供用于查找下一个编辑候选项的功能
@@ -53,7 +54,7 @@ final class NextEditPsiCandidateFinder {
         if (oldText.isBlank() || oldText.contains("\n")) {
             return List.of();
         }
-        return ReadAction.compute(() -> {
+        return ReadActionCompat.compute(() -> {
             Document document = editor.getDocument();
             PsiDocumentManager documentManager = PsiDocumentManager.getInstance(project);
             if (!documentManager.isCommitted(document)) {

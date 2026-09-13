@@ -5,7 +5,6 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDocCommentOwner;
 import com.intellij.psi.PsiElement;
@@ -27,6 +26,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -160,9 +160,8 @@ public class SequentialTaskProcessor {
                 currentTaskNum = 1;
             }
 
-            VirtualFile virtualFile = ApplicationManager.getApplication().runReadAction((Computable<VirtualFile>) () ->
-                                                                                            task.getElement().getContainingFile().getVirtualFile()
-                                                                                       );
+            VirtualFile virtualFile = ReadActionCompat.compute(() ->
+                task.getElement().getContainingFile().getVirtualFile());
             if (virtualFile != null) {
                 String taskInfo = String.format("========== 任务 %d: %s %s ==========",
                                                 currentTaskNum,
@@ -188,7 +187,7 @@ public class SequentialTaskProcessor {
             boolean verboseLogging = isVerbose();
             if (virtualFile != null && verboseLogging) {
                 PsiElement element = task.getElement();
-                ApplicationManager.getApplication().runReadAction(() -> {
+                ReadActionCompat.run(() -> {
                     try {
                         Document document = FileDocumentManager.getInstance()
                             .getDocument(element.getContainingFile().getVirtualFile());
@@ -291,7 +290,7 @@ public class SequentialTaskProcessor {
      * <p>线程安全：
      * <ul>
      *   <li>PSI 访问必须在 read-action 中执行</li>
-     *   <li>使用 ApplicationManager.runReadAction 确保线程安全</li>
+     *   <li>使用 ReadActionCompat 确保线程安全</li>
      * </ul>
      *
      * @param task 文档生成任务
@@ -303,7 +302,7 @@ public class SequentialTaskProcessor {
             return false;
         }
 
-        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+        return ReadActionCompat.compute(() -> {
             PsiElement element = task.getElement();
             if (element instanceof PsiDocCommentOwner) {
                 com.intellij.psi.javadoc.PsiDocComment docComment = ((PsiDocCommentOwner) element).getDocComment();

@@ -1,5 +1,6 @@
 <h3>2026.2.1003</h3>
 <ul>
+    <li><b>🔧 优化</b>：聊天面板选区 / 文件读取改走可取消 ReadAction，避免 2026.1+ 后台不可取消读锁卡住写操作</li>
     <li><b>✨ 新增</b>：集成 OrcaRouter 服务商，支持 OpenAI 兼容聊天、模型目录能力过滤、<code>reasoning_effort</code> 思考强度及品牌图标</li>
     <li><b>🔧 优化</b>：Help 菜单二级项为 Discover Starcat / Show Log 补充表情符号，与 What's New、Support 风格一致</li>
     <li><b>🔧 优化</b>：服务商选择菜单选中绿点改为叠在图标上绘制，去掉固定占位列，减少模型前留白且保持对齐</li>
@@ -7,6 +8,7 @@
 </ul>
 <h3>2026.2.1003</h3>
 <ul>
+    <li><b>🔧 Optimized</b>: Chat selection / file reads use cancellable ReadAction so 2026.1+ no longer holds uncancellable read locks on background threads</li>
     <li><b>✨ Added</b>: Added OrcaRouter provider with OpenAI-compatible chat, model capability filtering, <code>reasoning_effort</code>, and provider icons</li>
     <li><b>🔧 Optimized</b>: Added emojis to Help submenu items Discover Starcat and Show Log for consistency with What's New / Support</li>
     <li><b>🔧 Optimized</b>: Provider menu selection green dot is overlaid on the provider icon (no fixed slot), reducing left whitespace while keeping rows aligned</li>

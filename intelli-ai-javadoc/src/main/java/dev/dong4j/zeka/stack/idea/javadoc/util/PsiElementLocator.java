@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.javadoc.util;
 
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.psi.PsiAnonymousClass;
 import com.intellij.psi.PsiClass;
@@ -23,6 +22,8 @@ import org.jetbrains.kotlin.psi.KtNamedFunction;
 import org.jetbrains.kotlin.psi.KtProperty;
 
 import lombok.extern.slf4j.Slf4j;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * Psi 元素定位器
@@ -408,7 +409,7 @@ public class PsiElementLocator {
      */
     public static boolean hasJavaDoc(@NotNull PsiElement element) {
         // 使用 ReadAction 保护 PSI 访问，确保线程安全
-        return ReadAction.compute(() -> {
+        return ReadActionCompat.compute(() -> {
             // Java 元素检查
             if (element instanceof PsiDocCommentOwner docOwner) {
                 return docOwner.getDocComment() != null;

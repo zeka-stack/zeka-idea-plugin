@@ -1,11 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.context;
 
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectLocator;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -17,6 +15,8 @@ import com.intellij.util.DocumentUtil;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /** XML 语法上下文解析器 */
 public class XmlContextResolver implements LanguageContextResolver {
@@ -44,7 +44,7 @@ public class XmlContextResolver implements LanguageContextResolver {
      */
     @Override
     public @Nullable String resolveContext(@NotNull VirtualFile file, int preferredLine, int fallbackLine) {
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+        return ReadActionCompat.compute(() -> {
             Project project = ProjectLocator.getInstance().guessProjectForFile(file);
             if (project == null || project.isDisposed()) {
                 return null;
@@ -86,7 +86,7 @@ public class XmlContextResolver implements LanguageContextResolver {
      */
     @Override
     public @Nullable String resolvePrimarySymbolName(@NotNull Project project, @NotNull VirtualFile file) {
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+        return ReadActionCompat.compute(() -> {
             PsiFile psiFile = PsiManager.getInstance(project).findFile(file);
             if (!(psiFile instanceof XmlFile)) {
                 return null;

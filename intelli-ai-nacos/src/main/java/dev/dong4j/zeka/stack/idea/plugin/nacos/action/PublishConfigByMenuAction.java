@@ -3,7 +3,6 @@ package dev.dong4j.zeka.stack.idea.plugin.nacos.action;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
@@ -14,6 +13,7 @@ import dev.dong4j.zeka.stack.idea.plugin.nacos.entity.ConfigFile;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.ConfigDialogUtil;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NacosBundle;
 import dev.dong4j.zeka.stack.idea.plugin.nacos.util.NotificationUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 通过右键菜单发布配置 Action
@@ -98,7 +98,7 @@ public class PublishConfigByMenuAction extends AbstractNacosAction {
         super.update(e);
 
         // 在后台线程中使用 ReadAction 同步访问 VirtualFile
-        boolean isConfigFile = ReadAction.compute(() -> {
+        boolean isConfigFile = ReadActionCompat.compute(() -> {
             VirtualFile virtualFile = e.getData(CommonDataKeys.VIRTUAL_FILE);
             if (virtualFile != null) {
                 // 检查是否是配置文件

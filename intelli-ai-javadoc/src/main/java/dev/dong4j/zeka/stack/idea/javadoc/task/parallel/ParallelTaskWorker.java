@@ -5,7 +5,6 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 
@@ -31,6 +30,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.service.AIService;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.util.AIConsoleLoggerUtil;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -321,7 +321,7 @@ public class ParallelTaskWorker implements Runnable {
      * @param task 任务
      */
     private void outputTaskStartInfo(@NotNull DocumentationTask task) {
-        ApplicationManager.getApplication().runReadAction(() -> {
+        ReadActionCompat.run(() -> {
             try {
                 PsiElement element = task.getElement();
 
@@ -353,7 +353,7 @@ public class ParallelTaskWorker implements Runnable {
      * @param task 任务
      */
     private void outputCodeLocation(@NotNull DocumentationTask task) {
-        ApplicationManager.getApplication().runReadAction(() -> {
+        ReadActionCompat.run(() -> {
             try {
                 PsiElement element = task.getElement();
 
@@ -513,7 +513,7 @@ public class ParallelTaskWorker implements Runnable {
             return false;
         }
 
-        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
+        return ReadActionCompat.compute(() -> {
             var element = task.getElement();
             if (element instanceof com.intellij.psi.PsiDocCommentOwner docOwner) {
                 return docOwner.getDocComment() != null;

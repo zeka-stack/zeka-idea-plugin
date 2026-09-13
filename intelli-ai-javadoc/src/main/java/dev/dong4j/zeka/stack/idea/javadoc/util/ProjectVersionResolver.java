@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.javadoc.util;
 
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.externalSystem.model.DataNode;
 import com.intellij.openapi.externalSystem.model.ExternalProjectInfo;
 import com.intellij.openapi.externalSystem.model.ProjectSystemId;
@@ -22,6 +21,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 项目版本号解析器
@@ -128,7 +129,7 @@ public final class ProjectVersionResolver {
      */
     @NotNull
     public static String resolveVersion(@NotNull Project project, @NotNull PsiElement element) {
-        return ReadAction.compute(() -> resolveVersionWithReadAction(project, element));
+        return ReadActionCompat.compute(() -> resolveVersionWithReadAction(project, element));
     }
 
     /**
@@ -139,7 +140,7 @@ public final class ProjectVersionResolver {
      */
     @NotNull
     public static String resolveVersion(@NotNull PsiElement element) {
-        return ReadAction.compute(() -> resolveVersionWithReadAction(element.getProject(), element));
+        return ReadActionCompat.compute(() -> resolveVersionWithReadAction(element.getProject(), element));
     }
 
     /**

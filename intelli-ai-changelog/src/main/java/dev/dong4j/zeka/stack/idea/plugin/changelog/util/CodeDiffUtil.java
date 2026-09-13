@@ -3,13 +3,11 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 import com.intellij.diff.comparison.ComparisonManager;
 import com.intellij.diff.comparison.ComparisonPolicy;
 import com.intellij.diff.fragments.LineFragment;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.progress.ProgressIndicatorProvider;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectLocator;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vcs.changes.Change;
 import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vfs.VfsUtilCore;
@@ -27,6 +25,7 @@ import java.util.Locale;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.context.ContextResolverRegistry;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 代码差异工具类
@@ -176,7 +175,7 @@ public final class CodeDiffUtil {
     @SuppressWarnings("D")
     @Nullable
     private static DiffResult extractDiffResult(@NotNull Change change) {
-        return ApplicationManager.getApplication().runReadAction((Computable<DiffResult>) () -> {
+        return ReadActionCompat.compute(() -> {
             try {
                 ContentRevision beforeRevision = change.getBeforeRevision();
                 ContentRevision afterRevision = change.getAfterRevision();
@@ -333,7 +332,6 @@ public final class CodeDiffUtil {
         String result = hasChanges ? diff.toString() : "";
         return truncateDiffIfNeeded(result);
     }
-
 
     /**
      * 将字符串按行分割为字符串列表
@@ -718,7 +716,6 @@ public final class CodeDiffUtil {
         }
         return new ArrayList<>(lines.subList(0, maxLines));
     }
-
 
     /**
      * 截断超长单行，避免产生过长 diff

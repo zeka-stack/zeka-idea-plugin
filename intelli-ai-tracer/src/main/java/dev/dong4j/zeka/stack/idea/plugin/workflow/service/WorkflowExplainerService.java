@@ -32,6 +32,7 @@ import dev.dong4j.zeka.stack.idea.plugin.workflow.util.JSONSerializer;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.MethodContextExtractor;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.PSIUtil;
 import dev.dong4j.zeka.stack.idea.plugin.workflow.util.WorkflowBundle;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * 工作流解释服务
@@ -125,7 +126,7 @@ public class WorkflowExplainerService {
      */
     public void explainWorkflow(@NotNull PsiFile psiFile, int caretOffset) throws Exception {
         // PSI 操作必须在 ReadAction 中执行
-        WorkflowAnalysisData analysisData = com.intellij.openapi.application.ReadAction.compute(() -> {
+        WorkflowAnalysisData analysisData = ReadActionCompat.compute(() -> {
             try {
                 // 1. 检测元素类型
                 PSIUtil.ElementContext elementContext = PSIUtil.detectElementType(psiFile, caretOffset);

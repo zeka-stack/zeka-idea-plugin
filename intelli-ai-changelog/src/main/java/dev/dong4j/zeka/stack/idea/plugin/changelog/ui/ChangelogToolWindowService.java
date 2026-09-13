@@ -9,7 +9,6 @@ import com.intellij.openapi.actionSystem.ActionToolbar;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
@@ -83,6 +82,7 @@ import dev.dong4j.zeka.stack.idea.plugin.changelog.util.NotificationUtil;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ToolWindowTitleUtil;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.StreamCancellationToken;
 import icons.ChangelogIcons;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**
  * Changelog 工具窗口服务类
@@ -1277,7 +1277,7 @@ public final class ChangelogToolWindowService {
      * @return 历史记录项列表, 如果未找到历史目录或无有效文件则返回空列表
      */
     private @NotNull List<HistoryItem> loadHistoryItems(@NotNull String filterText) {
-        return ReadAction.compute(() -> {
+        return ReadActionCompat.compute(() -> {
             List<HistoryItem> items = new ArrayList<>();
             VirtualFile historyDir = getHistoryDir();
             if (historyDir == null) {
@@ -1344,7 +1344,7 @@ public final class ChangelogToolWindowService {
      */
     private @Nullable HistoryContent loadHistoryContent(@NotNull VirtualFile file) {
         try {
-            String text = ReadAction.compute(() -> {
+            String text = ReadActionCompat.compute(() -> {
                 Document document = FileDocumentManager.getInstance().getDocument(file);
                 return document != null ? document.getText() : VfsUtilCore.loadText(file);
             });

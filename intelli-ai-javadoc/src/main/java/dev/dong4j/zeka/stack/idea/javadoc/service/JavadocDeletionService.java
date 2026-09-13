@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.javadoc.service;
 
-import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
@@ -23,6 +22,7 @@ import java.util.List;
 
 import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -104,7 +104,7 @@ public class JavadocDeletionService {
         }
 
         // 收集所有需要删除注释的元素
-        List<PsiElement> elementsWithComments = ReadAction.compute(() -> {
+        List<PsiElement> elementsWithComments = ReadActionCompat.compute(() -> {
             List<PsiElement> elements = new ArrayList<>();
             collectElementsWithComments(psiFile, elements);
             return elements;

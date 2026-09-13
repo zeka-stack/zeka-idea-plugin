@@ -2,13 +2,11 @@ package dev.dong4j.zeka.stack.idea.plugin.changelog.context;
 
 import com.intellij.diff.fragments.LineFragment;
 import com.intellij.ide.highlighter.JavaFileType;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectLocator;
-import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiCodeBlock;
@@ -36,6 +34,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /** Java 语法上下文解析器 (依赖 com.intellij.java) */
 public class JavaPsiContextResolver implements LanguageContextResolver {
@@ -72,7 +72,7 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
      */
     @Override
     public @Nullable String resolveContext(@NotNull VirtualFile file, int preferredLine, int fallbackLine) {
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+        return ReadActionCompat.compute(() -> {
             Project project = ProjectLocator.getInstance().guessProjectForFile(file);
             if (project == null || project.isDisposed()) {
                 return null;
@@ -124,7 +124,7 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
      */
     @Override
     public @Nullable String resolvePrimarySymbolName(@NotNull Project project, @NotNull VirtualFile file) {
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+        return ReadActionCompat.compute(() -> {
             if (project.isDisposed() || DumbService.isDumb(project)) {
                 return null;
             }
@@ -158,7 +158,7 @@ public class JavaPsiContextResolver implements LanguageContextResolver {
                                                    @NotNull String beforeContent,
                                                    @NotNull String afterContent,
                                                    @NotNull List<LineFragment> fragments) {
-        return ApplicationManager.getApplication().runReadAction((Computable<String>) () -> {
+        return ReadActionCompat.compute(() -> {
             if (project.isDisposed() || fragments.isEmpty()) {
                 return null;
             }
