@@ -83,6 +83,8 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok:1.18.46")
 
     // 测试依赖
+    // IntelliJ Platform 的 JUnit5TestSessionListener 仍引用 JUnit 4 TestCase
+    testImplementation("junit:junit:4.13.2")
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.platform:junit-platform-suite:1.9.2")
     testImplementation("org.mockito:mockito-core:5.2.0")

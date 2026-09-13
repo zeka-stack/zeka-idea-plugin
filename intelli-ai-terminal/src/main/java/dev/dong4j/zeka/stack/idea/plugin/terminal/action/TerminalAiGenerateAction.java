@@ -1,7 +1,10 @@
 package dev.dong4j.zeka.stack.idea.plugin.terminal.action;
 
+import com.intellij.openapi.actionSystem.ActionPromoter;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.DataKey;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -65,7 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @SuppressWarnings("UnstableApiUsage")
-public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbAwareAction {
+public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbAwareAction implements ActionPromoter {
 
     /**
      * 构造函数, 用于创建 TerminalAiGenerateAction 实例
@@ -261,30 +264,47 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     }
 
     /**
-     * 更新动作的可用状态, 根据终端是否存在以及输入内容是否有效来决定是否启用该动作
-     * <p> 此方法用于在用户界面中动态更新该动作的可用性. 如果终端未启用 AI 功能或没有有效的输入内容, 则禁用该动作.
+     * 不满足 AI 触发条件时, 把自身从 Tab 候选列表中移除
+     * <p>
+     * 多个 Action 共用 TAB 时, 平台会执行候选列表中第一个仍启用的 Action.
+     * 若本 Action 只是 {@code setEnabled(false)} 却留在列表里, Tab 仍可能被吃掉,
+     * 表现为编辑器无法缩进、终端无法补全. {@link ActionPromoter#suppress} 是让出默认 Tab 的正确方式.
+     * </p>
+     * <p>
+     * 不检查 {@code actions.contains(this)}: 列表里可能是 ActionWrapper, 身份比较会漏抑制.
+     * Action 自身实现 Promoter 时, 平台会按 {@code this} 移除对应 Action.
+     * </p>
      *
-     * @param e 代表当前动作事件, 包含项目信息和终端视图数据
+     * @param actions 当前快捷键匹配到的 Action 列表
+     * @param context 仅包含已缓存 UI 数据的 DataContext, 禁止在此做 PSI 解析
+     * @return 需要移出处理流程的 Action; 应占用 Tab 时返回 null
+     */
+    @Override
+    public @Nullable List<AnAction> suppress(@NotNull List<? extends AnAction> actions, @NotNull DataContext context) {
+        try {
+            if (shouldClaimTab(context)) {
+                return null;
+            }
+            return List.of(this);
+        } catch (Exception ex) {
+            // 决策失败时宁可让出 Tab, 也不要覆盖 IDE / 终端默认行为
+            log.debug("Failed to decide Tab claim, suppressing Terminal AI action", ex);
+            return List.of(this);
+        }
+    }
+
+    /**
+     * 更新动作可用状态
+     * <p> 与 {@link #suppress(List, DataContext)} 使用同一套抢占判断, 不满足条件时同时隐藏并禁用,
+     * 避免 disabled Action 仍留在快捷键分发路径中.
+     *
+     * @param e 动作事件, 包含项目与终端上下文
      */
     @Override
     public void update(@NotNull AnActionEvent e) {
-        SettingsState settings = SettingsState.getInstance();
-        if (!settings.enableTerminalAI) {
-            e.getPresentation().setEnabled(false);
-            return;
-        }
-
-        TerminalView terminalView = getTerminalView(e);
-        JBTerminalWidget widget = e.getData(JBTerminalWidget.TERMINAL_DATA_KEY);
-        TerminalShellType shellType = TerminalShellDetector.detect(terminalView, widget);
-
-        String input = terminalView != null
-                       ? getCurrentInput(terminalView, settings, shellType)
-                       : (widget != null ? getCurrentInput(widget, settings, shellType) : null);
-
-        boolean enabled = input != null && !input.isBlank();
-        log.debug("Action update: enabled={}, input={}", enabled, input != null ? input.substring(0, Math.min(50, input.length())) : null);
-        e.getPresentation().setEnabled(enabled);
+        boolean enabled = shouldClaimTab(e.getDataContext());
+        log.debug("Action update: enabled={}", enabled);
+        e.getPresentation().setEnabledAndVisible(enabled);
     }
 
     /**
@@ -328,16 +348,53 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
      * @return 终端视图实例, 若未找到则返回 null
      */
     public static TerminalView getTerminalView(@NotNull AnActionEvent e) {
+        return getTerminalView(e.getDataContext());
+    }
+
+    /**
+     * 从 DataContext 中获取终端视图
+     * <p> ActionPromoter 只能拿到 DataContext, 因此与 {@link #update(AnActionEvent)} 共用同一查找逻辑. </p>
+     *
+     * @param context 动作数据上下文
+     * @return 终端视图, 不在终端中时返回 null
+     */
+    public static TerminalView getTerminalView(@NotNull DataContext context) {
         DataKey<TerminalView> key = DataKey.create("TerminalView");
-        TerminalView view = e.getData(key);
+        TerminalView view = context.getData(key);
         if (view != null) {
             log.debug("Found TerminalView from 'TerminalView' data key");
             return view;
         }
         DataKey<TerminalView> keyLower = DataKey.create("terminalView");
-        TerminalView viewLower = e.getData(keyLower);
+        TerminalView viewLower = context.getData(keyLower);
         log.debug("TerminalView from 'terminalView' data key: {}", viewLower != null);
         return viewLower;
+    }
+
+    /**
+     * 判断当前上下文是否应由本 Action 占用 Tab
+     * <p>
+     * 先做「是否在终端」的轻量判断, 不在终端时立即让出, 避免读取终端快照拖慢编辑器 Tab.
+     * </p>
+     *
+     * @param context 动作数据上下文
+     * @return true 表示占用 Tab 并走 AI 生成
+     */
+    static boolean shouldClaimTab(@NotNull DataContext context) {
+        SettingsState settings = SettingsState.getInstance();
+        if (!settings.enableTerminalAI) {
+            return TerminalAiTabClaimPolicy.shouldClaimTab(false, false, null);
+        }
+        TerminalView terminalView = getTerminalView(context);
+        JBTerminalWidget widget = context.getData(JBTerminalWidget.TERMINAL_DATA_KEY);
+        if (terminalView == null && widget == null) {
+            return TerminalAiTabClaimPolicy.shouldClaimTab(true, false, null);
+        }
+        TerminalShellType shellType = TerminalShellDetector.detect(terminalView, widget);
+        String input = terminalView != null
+                       ? getCurrentInput(terminalView, settings, shellType)
+                       : getCurrentInput(widget, settings, shellType);
+        return TerminalAiTabClaimPolicy.shouldClaimTab(true, true, input);
     }
 
     /**
@@ -372,14 +429,11 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
     private static String getPrefix(@NotNull SettingsState settings,
                                     String line,
                                     @NotNull TerminalShellType shellType) {
-        String prefix = settings.triggerPrefix == null ? "" : settings.triggerPrefix.trim();
-        if (prefix.isEmpty()) {
-            log.debug("No trigger prefix configured, using entire line");
-            return line.strip();
-        }
-        String extracted = extractPrompt(line, prefix, shellType);
-        log.debug("Extracted prefix content: prefix='{}', extracted='{}'", prefix, extracted);
-        return extracted == null || extracted.isBlank() ? null : extracted;
+        // shellType 由调用方传入以保持解析链路一致, 前缀提取本身不依赖 shell
+        String extracted = TerminalAiTabClaimPolicy.extractTriggerContent(settings.triggerPrefix, line);
+        log.debug("Extracted prefix content: prefix='{}', extracted='{}', shellType={}",
+                  settings.triggerPrefix, extracted, shellType);
+        return extracted;
     }
 
     /**
@@ -609,33 +663,6 @@ public class TerminalAiGenerateAction extends com.intellij.openapi.project.DumbA
             normalized = normalized.substring(0, normalized.length() - 1).stripTrailing();
         }
         return normalized.strip();
-    }
-
-    /**
-     * 从当前输入行中提取 AI 命令内容
-     * <p> 该方法首先去除行首空白字符, 然后检查是否以指定前缀开头. 若不匹配前缀, 则返回 null; 若匹配, 则提取前缀后的剩余内容, 并移除首部空格后返回处理后的命令内容.</p>
-     *
-     * @param currentLine 当前输入行文本 (非空)
-     * @param prefix      指定的触发前缀 (非空)
-     * @return 提取后的命令内容, 若不匹配前缀或内容为空则返回 null
-     */
-    private static String extractPrompt(@NotNull String currentLine,
-                                        @NotNull String prefix,
-                                        @NotNull TerminalShellType shellType) {
-        String trimmed = currentLine.stripLeading();
-        int index = trimmed.indexOf(prefix);
-        if (index < 0) {
-            log.debug("Line does not contain prefix: '{}'", prefix);
-            return null;
-        }
-        String content = trimmed.substring(index + prefix.length());
-        if (content.startsWith(" ")) {
-            content = content.substring(1);
-        }
-        if (!content.isEmpty()) {
-            log.debug("Extracted prompt content: '{}'", content.substring(0, Math.min(50, content.length())));
-        }
-        return content.strip();
     }
 
     /**
