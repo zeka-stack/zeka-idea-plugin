@@ -6,8 +6,8 @@ import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.UserDataHolderBase;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBScrollPane;
-import com.intellij.ui.jcef.JBCefApp;
 import com.intellij.ui.jcef.JBCefBrowser;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.JcefSupport;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.handler.CefLifeSpanHandlerAdapter;
@@ -57,7 +57,7 @@ public class WhatsNewHtmlEditor extends UserDataHolderBase implements FileEditor
      */
     public WhatsNewHtmlEditor(@NotNull VirtualFile file, @NotNull String html) {
         this.file = file;
-        if (JBCefApp.isSupported()) {
+        if (JcefSupport.isSupported()) {
             browser = new JBCefBrowser();
             // 注册新窗口请求处理器，拦截所有新窗口请求并在外部浏览器中打开
             browser.getJBCefClient().addLifeSpanHandler(new CefLifeSpanHandlerAdapter() {

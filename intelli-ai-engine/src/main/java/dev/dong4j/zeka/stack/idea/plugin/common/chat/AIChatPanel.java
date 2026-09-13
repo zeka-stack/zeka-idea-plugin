@@ -12,10 +12,10 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBPanel;
-import com.intellij.ui.jcef.JBCefApp;
 import com.intellij.ui.jcef.JBCefBrowser;
 import com.intellij.ui.jcef.JBCefBrowserBase;
 import com.intellij.ui.jcef.JBCefJSQuery;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.JcefSupport;
 import com.intellij.util.Alarm;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
@@ -72,7 +72,7 @@ final class AIChatPanel implements Disposable {
      */
     AIChatPanel(@NotNull Project project) {
         this.project = project;
-        if (!JBCefApp.isSupported()) {
+        if (!JcefSupport.isSupported()) {
             this.browser = null;
             this.messageHandler = null;
             this.editorListener = null;

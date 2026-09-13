@@ -68,8 +68,9 @@ dependencies {
 
         bundledPlugin("com.intellij.java")
         // 2026.2 起 JCEF 从平台核心拆分为独立 bundled plugin；旧平台仍由核心直接提供。
+        // plugin.xml 使用模块别名 com.intellij.modules.jcef；Gradle 2.x bundled 插件 ID 是 intellij.platform.ui.jcef。
         if (platformVersion.get().startsWith("2026.2")) {
-            bundledPlugin("com.intellij.modules.jcef")
+            bundledPlugin("intellij.platform.ui.jcef")
         }
         zipSigner()
         pluginVerifier()
