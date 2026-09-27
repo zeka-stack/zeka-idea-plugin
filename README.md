@@ -753,3 +753,14 @@ MIT License
 感谢所有贡献者的支持!
 
 特别感谢 JetBrains 提供的优秀开发平台和完善的插件生态系统。
+
+<a href="https://github.com/starcat-app/Starcat" target="_blank" rel="noopener noreferrer">
+  <picture data-starcat-star-history>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://history.starcat.ink/embed/v1/repos/zeka-stack/zeka-idea-plugin/star-history.svg?theme=dark&locale=zh">
+    <img
+      alt="zeka-stack/zeka-idea-plugin 星标历史"
+      src="https://history.starcat.ink/embed/v1/repos/zeka-stack/zeka-idea-plugin/star-history.svg?theme=light&locale=zh">
+  </picture>
+</a>
