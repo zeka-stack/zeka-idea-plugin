@@ -10,8 +10,8 @@ package dev.dong4j.zeka.stack.idea.plugin.common.util;
  * </p>
  *
  * @author dong4j
- * @version 2026.2.1003
- * @since 2026.2.1003
+ * @version 2026.2.1004
+ * @since 2026.2.1004
  */
 public final class JcefSupport {
 
