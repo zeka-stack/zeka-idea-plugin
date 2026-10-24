@@ -1,0 +1,13 @@
+<h3>2026.2.1004</h3>
+<ul>
+    <li><b>🔧 优化</b>：聊天面板选区 / 文件读取改走可取消 ReadAction，避免 2026.1+ 后台不可取消读锁卡住写操作</li>
+    <li><b>✨ 新增</b>：集成 OrcaRouter 服务商，支持 OpenAI 兼容聊天、模型目录能力过滤、<code>reasoning_effort</code> 思考强度及品牌图标</li>
+    <li><b>🔧 修复</b>：JCEF 在 2026.2 拆成独立插件后，聊天面板 / What's New 改为反射探测可用性，避免 classloader 看不到 JCEF 时启动崩溃</li>
+</ul>
+<h3>2026.2.1004</h3>
+<ul>
+    <li><b>🔧 Optimized</b>: Chat selection / file reads use cancellable ReadAction so 2026.1+ no longer holds uncancellable read locks on background threads</li>
+    <li><b>✨ Added</b>: Added OrcaRouter provider with OpenAI-compatible chat, model capability filtering, <code>reasoning_effort</code>, and provider icons</li>
+    <li><b>🔧 Fixed</b>: Detect JCEF via reflection so Chat / What's New degrade instead of crashing when the 2026.2 JCEF plugin is absent from the classloader</li>
+</ul>
+
