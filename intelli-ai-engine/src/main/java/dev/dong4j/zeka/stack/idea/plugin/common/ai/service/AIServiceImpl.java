@@ -19,6 +19,7 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.ProjectAIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
@@ -98,7 +99,7 @@ public final class AIServiceImpl implements AIService {
                                       @NotNull AIStreamResponseListener listener) {
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
+                AIServiceProvider provider = AIServiceFactory.createProvider(new ProjectAIConsoleLogger(project), config);
                 String apiKey = resolveApiKey(project, config);
                 listener.onStart();
                 provider.generateContentStream(request, apiKey, listener);
@@ -125,7 +126,7 @@ public final class AIServiceImpl implements AIService {
                                              @NotNull AIProviderConfig config,
                                              @Nullable AIResponseListener listener) throws AIServiceException {
         // 创建服务提供者
-        AIServiceProvider provider = AIServiceFactory.createProvider(project, config);
+        AIServiceProvider provider = AIServiceFactory.createProvider(new ProjectAIConsoleLogger(project), config);
         // 生成内容（传递 listener）
         return provider.generateContent(request, resolveApiKey(project, config), listener);
     }

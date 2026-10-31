@@ -41,6 +41,9 @@ dependencies {
     // 流式响应解析(RawStreamChunk)使用 gson; 运行时由宿主(插件 zip 或 MCP Server fat jar)打包
     implementation("com.google.code.gson:gson:2.11.0")
 
+    // Provider/Executor 使用 @Slf4j; IDE 宿主由平台日志设施桥接, MCP Server 宿主自带 binder
+    implementation("org.slf4j:slf4j-api:2.0.13")
+
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.platform:junit-platform-suite:1.9.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

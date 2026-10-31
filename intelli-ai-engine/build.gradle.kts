@@ -7,6 +7,7 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 val kitVersion: String = providers.gradleProperty("kitVersion").get()
+val coreVersion: String = providers.gradleProperty("coreVersion").get()
 val platformVersion = providers.gradleProperty("platformVersion")
 
 repositories {
@@ -79,6 +80,10 @@ dependencies {
 
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
     implementation("dev.dong4j.zeka.stack:idea-plugin-kit:${kitVersion}")
+
+    // 纯 JVM 核心库（本地库）：使用 api 暴露给下游插件编译期可见（AIProviderConfig 等基础模型的包名未变，
+    // 插件源码 import 无需调整），运行时随 engine 插件 zip 一起打包
+    api("dev.dong4j.zeka.stack:intelli-ai-core:${coreVersion}")
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")

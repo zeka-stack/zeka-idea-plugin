@@ -3,6 +3,8 @@ package dev.dong4j.zeka.stack.idea.plugin.common.ui;
 import com.intellij.ide.actions.RevealFileAction;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.PathManager;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBTextField;
@@ -35,6 +37,7 @@ import javax.swing.SwingUtilities;
 import dev.dong4j.zeka.stack.idea.plugin.common.EngineContents;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.ProjectAIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.ValidationResult;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.model.ModelCatalogEntry;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.model.ModelCatalogService;
@@ -332,6 +335,23 @@ public final class AIProviderConfigController {
      * @return 对话框的父组件, 可能是窗口或主面板
      */
     @NotNull
+    /**
+     * 解析用于创建 AI 服务提供者的项目实例
+     * <p>
+     * 原 AIServiceFactory 单参 createProvider(config) 内置的项目解析逻辑迁移至此:
+     * 优先使用当前打开的项目, 没有打开的项目时回退默认项目,
+     * 保证设置页等无项目上下文的场景也能创建提供者.
+     *
+     * @return 项目实例, 不会为 null
+     */
+    private static Project resolveProjectForProvider() {
+        Project[] openProjects = ProjectManager.getInstance().getOpenProjects();
+        if (openProjects.length > 0) {
+            return openProjects[0];
+        }
+        return ProjectManager.getInstance().getDefaultProject();
+    }
+
     private Component resolveDialogParent() {
         Window window = SwingUtilities.getWindowAncestor(ui.getMainPanel());
         return window != null ? window : ui.getMainPanel();
@@ -514,7 +534,7 @@ public final class AIProviderConfigController {
 
         AIServiceProvider provider;
         try {
-            provider = AIServiceFactory.createProvider(testConfig);
+            provider = AIServiceFactory.createProvider(new ProjectAIConsoleLogger(resolveProjectForProvider()), testConfig);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(resolveDialogParent(),
                                           AICommonBundle.message("settings.error.provider.create.failed"),
@@ -693,7 +713,7 @@ public final class AIProviderConfigController {
 
         AIServiceProvider provider;
         try {
-            provider = AIServiceFactory.createProvider(refreshConfig);
+            provider = AIServiceFactory.createProvider(new ProjectAIConsoleLogger(resolveProjectForProvider()), refreshConfig);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(resolveDialogParent(),
                                           AICommonBundle.message("settings.error.provider.create.failed.details"),

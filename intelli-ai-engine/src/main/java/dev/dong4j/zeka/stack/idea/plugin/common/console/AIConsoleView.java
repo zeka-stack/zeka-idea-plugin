@@ -20,6 +20,7 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.IconLoader;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -850,13 +851,18 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * <p>
      * 仅在 verboseLogging 启用时输出.
      *
-     * @param message     消息内容
-     * @param virtualFile 目标文件
+     * @param message  消息内容
+     * @param filePath 目标文件路径(接口为脱离 IDE 类型, 内部解析回 VirtualFile)
      * @param line        目标行号 (从 0 开始)
      */
     @Override
-    public void printHyperlink(String message, @NotNull VirtualFile virtualFile, int line) {
+    public void printHyperlink(String message, @NotNull String filePath, int line) {
         if (message == null || message.trim().isEmpty()) {
+            return;
+        }
+        VirtualFile virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath);
+        if (virtualFile == null) {
+            print(message);
             return;
         }
         ApplicationManager.getApplication().invokeLater(() -> {
@@ -882,13 +888,18 @@ public final class AIConsoleView implements Disposable, AIConsoleLogger {
      * <p>
      * 仅在 verboseLogging 启用时输出.
      *
-     * @param message     消息内容
-     * @param virtualFile 目标文件
+     * @param message  消息内容
+     * @param filePath 目标文件路径(接口为脱离 IDE 类型, 内部解析回 VirtualFile)
      * @param line        目标行号 (从 0 开始)
      */
     @Override
-    public void printHyperlinkWithTimestamp(String message, @NotNull VirtualFile virtualFile, int line) {
+    public void printHyperlinkWithTimestamp(String message, @NotNull String filePath, int line) {
         if (message == null || message.trim().isEmpty()) {
+            return;
+        }
+        VirtualFile virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath);
+        if (virtualFile == null) {
+            printWithTimestamp(message);
             return;
         }
         ApplicationManager.getApplication().invokeLater(() -> {

@@ -9,6 +9,7 @@ version = providers.gradleProperty("pluginVersion").get()
 // IntelliAI Engine 插件版本号（从 gradle.properties 中获取）
 val kitVersion: String = providers.gradleProperty("kitVersion").get()
 val engineVersion: String = providers.gradleProperty("engineVersion").get()
+val coreVersion: String = providers.gradleProperty("coreVersion").get()
 
 repositories {
     mavenLocal()
@@ -66,6 +67,9 @@ dependencies {
     }
 
     compileOnly("dev.dong4j.zeka.stack:intelli-ai-engine:$engineVersion")
+
+    // 纯 JVM 核心库: engine 的 api 依赖, 编译期类由 core 提供; 运行时由 engine 插件 zip 携带
+    compileOnly("dev.dong4j.zeka.stack:intelli-ai-core:$coreVersion")
 
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
     implementation("dev.dong4j.zeka.stack:idea-plugin-kit:$kitVersion")

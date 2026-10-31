@@ -100,7 +100,7 @@ public final class AIConsoleLoggerUtil {
      */
     public static void printHyperlink(Project project, String message,
                                       @NotNull VirtualFile virtualFile, int line) {
-        safeLog(project, console -> console.printHyperlink(message, virtualFile, line));
+        safeLog(project, console -> console.printHyperlink(message, virtualFile.getPath(), line));
     }
 
     /**
@@ -116,7 +116,7 @@ public final class AIConsoleLoggerUtil {
      */
     public static void printHyperlinkWithTimestamp(Project project, String message,
                                                    @NotNull VirtualFile virtualFile, int line) {
-        safeLog(project, console -> console.printHyperlinkWithTimestamp(message, virtualFile, line));
+        safeLog(project, console -> console.printHyperlinkWithTimestamp(message, virtualFile.getPath(), line));
     }
 
     /**
