@@ -151,8 +151,10 @@ public final class ServerConfig {
         try {
             return AIProviderType.valueOf(normalized);
         } catch (IllegalArgumentException e) {
-            log.warn("无法识别的 provider: {}, 回退 QIANWEN", provider);
-            return AIProviderType.QIANWEN;
+            String supported = java.util.Arrays.stream(AIProviderType.values())
+                .map(AIProviderType::name).collect(java.util.stream.Collectors.joining(", "));
+            throw new IllegalArgumentException(
+                "无法识别的 provider: " + provider + ", 支持的值: " + supported);
         }
     }
 

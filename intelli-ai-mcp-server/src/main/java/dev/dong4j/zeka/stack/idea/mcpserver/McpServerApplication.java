@@ -68,6 +68,7 @@ public final class McpServerApplication {
 
         JavadocTool javadocTool = new JavadocTool(config);
         ChangelogTool changelogTool = new ChangelogTool(config);
+        ListProvidersTool listProvidersTool = new ListProvidersTool();
 
         // stdio 传输: 请求/响应走 stdin/stdout(JSON-RPC 2.0), 日志必须走 stderr
         StdioServerTransportProvider transportProvider =
@@ -82,10 +83,11 @@ public final class McpServerApplication {
                               .build())
             .tools(
                 buildJavadocToolSpec(javadocTool),
-                buildChangelogToolSpec(changelogTool))
+                buildChangelogToolSpec(changelogTool),
+                buildListProvidersToolSpec(listProvidersTool))
             .build();
 
-        log.info("IntelliAI MCP Server 已启动(name={}, tools=[generate_javadoc, generate_changelog])",
+        log.info("IntelliAI MCP Server 已启动(name={}, tools=[generate_javadoc, generate_changelog, list_providers])",
                  SERVER_NAME);
         // server 在后台线程监听 stdio, 主线程阻塞等待, 避免 JVM 提前退出;
         // 客户端关闭 stdin 时进程随之结束
@@ -180,6 +182,22 @@ public final class McpServerApplication {
                 """);
         return new McpServerFeatures.SyncToolSpecification(toolDef,
             (exchange, args) -> handleToolCall(toolNameOf(exchange), () -> tool.execute(args)));
+    }
+
+    /**
+     * 构建 list_providers 工具规格
+     *
+     * @param tool 工具处理器
+     * @return 同步工具规格
+     */
+    private static McpServerFeatures.SyncToolSpecification buildListProvidersToolSpec(ListProvidersTool tool) {
+        McpSchema.Tool toolDef = new McpSchema.Tool(
+            "list_providers",
+            "列出 MCP Server 支持的全部 AI 服务商(INTELLIAI_PROVIDER 取值)、默认模型与端点。"
+                + "无需 API Key, 用于配置前自助查询。",
+            "{\"type\":\"object\",\"properties\":{}}");
+        return new McpServerFeatures.SyncToolSpecification(toolDef,
+            (exchange, args) -> handleToolCall("list_providers", tool::execute));
     }
 
     /**
