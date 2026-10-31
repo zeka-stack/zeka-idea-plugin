@@ -1,0 +1,56 @@
+请为以下测试方法/函数生成文档注释（**${language}**）。
+请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+
+# 重要说明
+- 下面的代码可能已经包含旧的文档注释，请忽略或改进它
+- 只返回测试方法/函数级别的文档注释，不要返回类、字段/属性等其他元素的注释
+- 不要返回代码本身，只返回注释
+- 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
+
+# 格式要求
+1. **必须使用 ${language} 编写注释内容**，这是强制要求，不能使用其他语言
+2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
+3. 注释应描述：测试目标、测试场景、预期结果
+4. 如果代码中有 @link 引用，请在注释中使用 {@link ClassName#methodName} 格式
+5. 如果运行单元测试需要特殊的场景, 尽量添加上说明
+6. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
+
+# 示例说明
+**重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**
+
+示例1 - Java 代码：
+输入代码：
+@Test
+public void testGetUserName_whenUserExists_shouldReturnName() {
+    User user = new User(1, "John");
+    when(userService.findById(1)).thenReturn(user);
+    assertEquals("John", service.getUserName(1));
+}
+
+输出注释（中文示例）：
+/**
+ * 测试获取用户名称功能
+ * <p>
+ * 测试场景：当用户存在时
+ * 预期结果：应返回正确的用户名称
+ */
+
+示例2 - Kotlin 代码：
+输入代码：
+@Test
+fun testGetUserName_whenUserExists_shouldReturnName() {
+    val user = User(1, "John")
+    `when`(userService.findById(1)).thenReturn(user)
+    assertEquals("John", service.getUserName(1))
+}
+
+输出注释（中文示例）：
+/**
+ * 测试获取用户名称功能
+ * <p>
+ * 测试场景：当用户存在时
+ * 预期结果：应返回正确的用户名称
+ */
+
+## 代码片段:
+%s

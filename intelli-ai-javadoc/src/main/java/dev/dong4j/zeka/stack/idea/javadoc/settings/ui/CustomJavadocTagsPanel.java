@@ -22,7 +22,7 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import dev.dong4j.zeka.stack.idea.javadoc.settings.CustomJavadocTag;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 

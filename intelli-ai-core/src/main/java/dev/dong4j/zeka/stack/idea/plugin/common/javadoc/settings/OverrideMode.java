@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.javadoc.settings;
+package dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

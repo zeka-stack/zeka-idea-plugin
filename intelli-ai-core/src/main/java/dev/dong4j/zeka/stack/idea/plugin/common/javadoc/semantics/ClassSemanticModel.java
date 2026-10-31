@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.javadoc.semantics;
+package dev.dong4j.zeka.stack.idea.plugin.common.javadoc.semantics;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

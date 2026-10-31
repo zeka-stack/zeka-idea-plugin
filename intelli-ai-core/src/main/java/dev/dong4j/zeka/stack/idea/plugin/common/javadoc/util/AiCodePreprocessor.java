@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.javadoc.util;
+package dev.dong4j.zeka.stack.idea.plugin.common.javadoc.util;
 
 import org.jetbrains.annotations.NotNull;
 

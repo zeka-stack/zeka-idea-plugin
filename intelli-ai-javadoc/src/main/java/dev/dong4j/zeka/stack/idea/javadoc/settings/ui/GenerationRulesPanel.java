@@ -28,7 +28,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
 
-import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PanelUtil;

@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.javadoc.settings;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.CustomJavadocTag;
+
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.options.SearchableConfigurable;

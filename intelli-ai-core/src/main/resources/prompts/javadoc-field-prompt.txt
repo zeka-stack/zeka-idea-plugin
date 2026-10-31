@@ -1,0 +1,48 @@
+请为以下字段/属性生成文档注释（**${language}**）。
+请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+
+# 重要说明
+- 下面的代码可能已经包含旧的文档注释，请忽略或改进它
+- 只返回字段/属性级别的文档注释，不要返回类、方法/函数等其他元素的注释
+- 不要返回代码本身，只返回注释
+- 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
+
+# 格式要求
+1. **必须使用 ${language} 编写注释内容**，这是强制要求，不能使用其他语言
+2. 必须返回完整的文档注释格式，包括开始标记 /** 和结束标记 */
+3. 注释要准确描述字段/属性的用途和含义
+4. **格式规则（重要）**：
+   - 如果字段/属性说明简单（不超过 80 个字符，没有 @tag 标签），必须使用单行格式：/** 字段/属性说明 */
+   - 如果字段/属性说明复杂（包含多个信息点、有 @tag 标签、或超过 80 个字符），使用多行格式
+5. Kotlin: 注意属性的可空类型（如 String?）和可变性（var/val）
+6. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
+
+# 示例说明
+**重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**
+
+示例1 - Java 简单字段：
+输入：private String username;
+输出：/** 用户名 */
+
+示例2 - Kotlin 简单属性：
+输入：private val username: String
+输出：/** 用户名 */
+
+示例3 - 带旧注释的字段/属性：
+Java: 输入：/** 旧注释 */ private String tokenValue;
+Kotlin: 输入：/** 旧注释 */ private var tokenValue: String?
+输出：/** AccessToken 值 */
+
+示例4 - 复杂字段/属性：
+Java: 输入：private UserConfig config;
+Kotlin: 输入：private val config: UserConfig
+输出（中文示例）：
+/**
+ * 用户配置信息
+ * <p>包含用户偏好设置、主题配置等
+ *
+ * @see UserConfig
+ */
+
+## 代码片段:
+%s

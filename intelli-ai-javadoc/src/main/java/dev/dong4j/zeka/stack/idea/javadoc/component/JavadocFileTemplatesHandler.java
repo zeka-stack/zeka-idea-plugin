@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-import dev.dong4j.zeka.stack.idea.javadoc.settings.CustomJavadocTag;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.CustomJavadocTag;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;

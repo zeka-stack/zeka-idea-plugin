@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.javadoc.semantics;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.semantics.ClassSemanticModel;
+
 import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaRecursiveElementVisitor;

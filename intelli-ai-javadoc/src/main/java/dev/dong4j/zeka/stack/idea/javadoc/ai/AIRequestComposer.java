@@ -9,15 +9,15 @@ import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import dev.dong4j.zeka.stack.idea.javadoc.settings.CustomJavadocTag;
-import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.CustomJavadocTag;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
 import dev.dong4j.zeka.stack.idea.javadoc.task.GenerationContext;
 import dev.dong4j.zeka.stack.idea.javadoc.util.ProjectVersionResolver;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PsiElementLocator;
 import dev.dong4j.zeka.stack.idea.javadoc.util.SystemUtils;
-import dev.dong4j.zeka.stack.idea.javadoc.util.TokenCounter;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.util.TokenCounter;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;

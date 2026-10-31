@@ -35,10 +35,10 @@ import java.util.function.Predicate;
 
 import dev.dong4j.zeka.stack.idea.javadoc.PluginContents;
 import dev.dong4j.zeka.stack.idea.javadoc.semantics.ClassSemanticAnalyzer;
-import dev.dong4j.zeka.stack.idea.javadoc.semantics.SemanticPromptBuilder;
-import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.semantics.SemanticPromptBuilder;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.javadoc.util.AiCodePreprocessor;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.util.AiCodePreprocessor;
 import dev.dong4j.zeka.stack.idea.javadoc.util.PsiElementLocator;
 
 /**

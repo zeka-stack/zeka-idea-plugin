@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dev.dong4j.zeka.stack.idea.javadoc.task.DocumentationTask;
-import dev.dong4j.zeka.stack.idea.javadoc.util.TokenCounter;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.util.TokenCounter;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIChatRequest;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsEvent;

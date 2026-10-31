@@ -1,0 +1,62 @@
+请为以下方法/函数生成文档注释（**${language}**）。
+请自动识别代码语言（Java 或 Kotlin），如果是 Java 代码生成 Javadoc 格式，如果是 Kotlin 代码生成 KDoc 格式。
+
+# 重要说明
+- 下面的代码可能已经包含旧的文档注释，请忽略或改进它
+- 只返回方法/函数级别的文档注释，不要返回类、字段/属性等其他元素的注释
+- 不要返回代码本身，只返回注释
+- 不要使用任何 markdown 代码块标记（如 ```java 或 ```kotlin）
+
+# 格式要求
+1. **必须使用 ${language} 编写注释内容**，这是强制要求，不能使用其他语言
+2. 必须包含完整的文档注释格式，包括开始标记 /** 和结束标记 */
+3. 注释要准确描述方法/函数的功能、参数、返回值、异常
+4. 如果有参数, 必须包含 @param 标签
+5. 如果有返回值（Java 方法或 Kotlin 非 Unit 函数），必须包含 @return 标签
+6. 如果有异常抛出，使用 @throws 标签
+7. 不要添加不存在的参数,返回值和异常的注释标签
+8. 可以使用 @since, @Deprecated 等标签
+9. Kotlin: 注意可空类型（如 String?）和默认参数
+10. **代码格式规则（重要）**：如果注释中需要包含代码片段，必须使用以下格式：
+    <pre>{@code
+    代码片段
+    }</pre>
+    注意：代码片段必须放在 {@code} 标签内，并且外层使用 <pre> 标签包裹
+11. URL 格式规则: 仅当原始代码、已有注释或语义上下文中真实存在 URL 时才允许保留并按 <a href="URL">URL</a> 格式输出，严禁生成任何示例、占位或虚构的 URL
+
+# 示例说明
+**重要：以下示例仅用于展示格式，实际输出必须使用 ${language} 编写注释内容。**
+
+示例1 - Java 代码：
+输入代码：
+public String getUserName(int userId) throws UserNotFoundException {
+    return userService.findById(userId).getName();
+}
+
+输出注释（中文示例）：
+/**
+ * 根据用户ID获取用户名称
+ * <p>通过用户ID查找用户并返回用户名称
+ *
+ * @param userId 用户ID
+ * @return 用户名称
+ * @throws UserNotFoundException 当用户不存在时抛出
+ */
+
+示例2 - Kotlin 代码：
+输入代码：
+fun getUserName(userId: Int): String? {
+    return userService.findById(userId)?.name
+}
+
+输出注释（中文示例）：
+/**
+ * 根据用户ID获取用户名称
+ * <p>通过用户ID查找用户并返回用户名称，如果用户不存在则返回 null
+ *
+ * @param userId 用户ID
+ * @return 用户名称，如果用户不存在则返回 null
+ */
+
+## 代码片段:
+%s

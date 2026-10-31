@@ -27,7 +27,7 @@ import java.util.List;
 import javax.swing.Icon;
 
 import dev.dong4j.zeka.stack.idea.javadoc.settings.JavadocSettingsConfigurable;
-import dev.dong4j.zeka.stack.idea.javadoc.settings.OverrideMode;
+import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.settings.OverrideMode;
 import dev.dong4j.zeka.stack.idea.javadoc.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.javadoc.util.JavadocBundle;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
