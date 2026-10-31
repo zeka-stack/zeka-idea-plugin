@@ -9,6 +9,8 @@ version = providers.gradleProperty("pluginVersion").get()
 // IntelliAI Engine 插件版本号（从 gradle.properties 中获取）
 val kitVersion: String = providers.gradleProperty("kitVersion").get()
 val engineVersion: String = providers.gradleProperty("engineVersion").get()
+// 本地沙箱依赖的 engine 插件 zip(由 localPlugin 装进 sandbox, 不打进本插件包)
+val enginePluginZip = file("../intelli-ai-engine/build/distributions/intelli-ai-engine-$engineVersion.zip")
 val coreVersion: String = providers.gradleProperty("coreVersion").get()
 
 repositories {
@@ -60,6 +62,10 @@ dependencies {
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("org.jetbrains.idea.maven")
+
+        // 依赖 IntelliAI Engine 插件: 运行时通过 plugin.xml 的 <depends> 声明,
+        // 本地开发用 localPlugin 让 prepareSandbox 装进正确 sandbox(.intellijPlatform/...)
+        localPlugin(enginePluginZip)
 
         zipSigner()
         pluginVerifier()
@@ -193,9 +199,10 @@ tasks {
 
     // 在 runIde 之前执行复制任务（在 prepareSandbox 之后）
     runIde {
-        jvmArgumentProviders += CommandLineArgumentProvider {
-            listOf("-Didea.kotlin.plugin.use.k2=true")
-        }
+        // K2 模式会导致本插件与 Kotlin 插件不兼容而被禁用加载(K2 incompatibility), 沙箱验证需用 K1
+        // jvmArgumentProviders += CommandLineArgumentProvider {
+        //     listOf("-Didea.kotlin.plugin.use.k2=true")
+        // }
         dependsOn(copyAiCommonPlugin)
         // 热更新
         // jvmArgs = listOf("-XX:AllowEnhancedClassRedefinition")
