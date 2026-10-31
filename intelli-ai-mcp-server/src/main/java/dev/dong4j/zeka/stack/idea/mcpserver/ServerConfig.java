@@ -1,0 +1,194 @@
+package dev.dong4j.zeka.stack.idea.mcpserver;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialManager;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AICredentialStore;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIModelParameters;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
+import dev.dong4j.zeka.stack.idea.plugin.common.config.AIRuntimeSettings;
+import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+
+/**
+ * MCP Server 配置
+ * <p>
+ * 装配 core 执行链所需的 {@link AIProviderConfig}, 配置来源按优先级:
+ * <ol>
+ *   <li>环境变量: INTELLIAI_PROVIDER / INTELLIAI_BASE_URL / INTELLIAI_MODEL / INTELLIAI_API_KEY</li>
+ *   <li>配置文件: ~/.intelli-ai/mcp-server.properties(同名小写下划线键)</li>
+ *   <li>内置默认值(通义千问官方端点)</li>
+ * </ol>
+ * API Key 单独支持通过 {@link AICredentialManager} 的 SPI 注入, 本类同时注册
+ * 基于配置文件/环境变量的凭证实现, 保证 core 执行链在无 IDE 环境下可取到密钥.
+ * <p>
+ * 配置文件示例:
+ * <pre>
+ * provider=qianwen
+ * base_url=https://dashscope.aliyuncs.com/compatible-mode/v1
+ * model=qwen-plus
+ * api_key=sk-xxx
+ * </pre>
+ *
+ * @author dong4j
+ * @version 1.0.0
+ * @since 1.0.0
+ */
+@Slf4j
+public final class ServerConfig {
+
+    /** 配置文件固定路径: 用户主目录下 */
+    private static final Path CONFIG_PATH = Path.of(System.getProperty("user.home"),
+                                                    ".intelli-ai", "mcp-server.properties");
+
+    /** 组装完成的供应商配置, 供 core 执行链使用 */
+    private final AIProviderConfig providerConfig;
+
+    /** API Key 明文, 调用 provider 时直接传入 */
+    private final String apiKey;
+
+    /**
+     * 读取配置并装配供应商对象
+     */
+    private ServerConfig(@NotNull AIProviderConfig providerConfig, @Nullable String apiKey) {
+        this.providerConfig = providerConfig;
+        this.apiKey = apiKey;
+    }
+
+    /**
+     * 获取供应商配置
+     *
+     * @return 供应商配置对象
+     */
+    public @NotNull AIProviderConfig providerConfig() {
+        return providerConfig;
+    }
+
+    /**
+     * 获取 API Key
+     *
+     * @return API Key, 未配置时返回 null(调用会失败并返回明确的错误信息)
+     */
+    public @Nullable String apiKey() {
+        return apiKey;
+    }
+
+    /**
+     * 加载配置
+     * <p> 环境变量优先于配置文件, 便于在 MCP 客户端配置中以 env 注入密钥而不落盘.
+     *
+     * @return 装配完成的配置对象
+     */
+    public static @NotNull ServerConfig load() {
+        Properties props = loadConfigFile();
+
+        String provider = firstNonBlank(System.getenv("INTELLIAI_PROVIDER"),
+                                        props.getProperty("provider"), "QIANWEN");
+        String baseUrl = firstNonBlank(System.getenv("INTELLIAI_BASE_URL"),
+                                       props.getProperty("base_url"), null);
+        String model = firstNonBlank(System.getenv("INTELLIAI_MODEL"),
+                                     props.getProperty("model"), null);
+        String apiKey = firstNonBlank(System.getenv("INTELLIAI_API_KEY"),
+                                      props.getProperty("api_key"), null);
+
+        // provider 类型解析: AIProviderType 携带各服务商默认端点与模型, 未配置时自动补齐
+        AIProviderType type = resolveType(provider);
+        AIProviderConfig config = new AIProviderConfig();
+        config.providerType = type;
+        config.baseUrl = baseUrl != null ? baseUrl : type.getDefaultBaseUrl();
+        config.modelName = model != null ? model : type.getDefaultModel();
+        config.modelParameters = new AIModelParameters();
+        config.runtimeSettings = new AIRuntimeSettings();
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.warn("未配置 API Key(环境变量 INTELLIAI_API_KEY 或配置文件 {}), AI 调用将失败", CONFIG_PATH);
+        }
+        log.info("MCP Server 配置完成: provider={}, model={}, baseUrl={}",
+                 config.providerType, config.modelName, config.baseUrl);
+        return new ServerConfig(config, apiKey);
+    }
+
+    /**
+     * 读取用户目录配置文件
+     *
+     * @return 配置属性, 文件不存在时返回空属性
+     */
+    private static @NotNull Properties loadConfigFile() {
+        Properties props = new Properties();
+        if (Files.exists(CONFIG_PATH)) {
+            try (InputStream is = Files.newInputStream(CONFIG_PATH)) {
+                props.load(is);
+            } catch (IOException e) {
+                log.warn("读取配置文件失败: {}", CONFIG_PATH, e);
+            }
+        }
+        return props;
+    }
+
+    /**
+     * 解析供应商类型
+     * <p> 支持枚举名(QIANWEN/DEEPSEEK/ZHIPU/OLLAMA 等)与常见别名(qianwen/dashscope).
+     *
+     * @param provider 供应商标识
+     * @return 供应商类型, 无法识别时回退 QIANWEN 并输出告警
+     */
+    private static @NotNull AIProviderType resolveType(@NotNull String provider) {
+        String normalized = provider.trim().toUpperCase().replace("-", "_");
+        // 常见别名映射
+        switch (normalized) {
+            case "DASHSCOPE", "TONGYI" -> normalized = "QIANWEN";
+            case "GLM" -> normalized = "ZHIPU";
+            case "DEEP_SEEK" -> normalized = "DEEPSEEK";
+            default -> {
+            }
+        }
+        try {
+            return AIProviderType.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            log.warn("无法识别的 provider: {}, 回退 QIANWEN", provider);
+            return AIProviderType.QIANWEN;
+        }
+    }
+
+    /**
+     * 返回第一个非空白的值
+     *
+     * @param values 候选值序列
+     * @return 首个非空白值, 全部为空时返回 null
+     */
+    private static @Nullable String firstNonBlank(@Nullable String... values) {
+        for (String v : values) {
+            if (v != null && !v.isBlank()) {
+                return v.trim();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 注册 core 凭证 SPI 的配置文件/环境变量实现
+     * <p> MCP Server 场景密钥直接来自配置, 凭证接口的读写按无操作处理(读取由
+     * {@link ServerConfig#load()} 完成), 此处注册仅为满足 core 执行链的 SPI 前置检查.
+     *
+     * @param apiKey 当前生效的 API Key
+     */
+    public static void registerCredentialStore(@Nullable String apiKey) {
+        AICredentialManager.setCredentialStore(new AICredentialStore() {
+            @Override
+            public @Nullable String getPassword(@NotNull String serviceName, @NotNull String key) {
+                return apiKey;
+            }
+
+            @Override
+            public void setPassword(@NotNull String serviceName, @NotNull String key, @Nullable String password) {
+                log.warn("MCP Server 运行时不支持写入凭证, 请修改 {} 或环境变量", CONFIG_PATH);
+            }
+        });
+    }
+}

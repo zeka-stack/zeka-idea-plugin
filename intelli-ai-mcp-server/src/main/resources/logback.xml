@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MCP stdio 模式下 stdout 是 JSON-RPC 协议通道, 所有日志必须走 stderr -->
+<configuration>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.err</target>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <!-- 执行链的 debug 日志量大, 默认 INFO -->
+    <root level="INFO">
+        <appender-ref ref="STDERR"/>
+    </root>
+</configuration>
