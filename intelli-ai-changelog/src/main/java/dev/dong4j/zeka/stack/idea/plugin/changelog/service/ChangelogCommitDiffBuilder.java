@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.CodeDiffUtil;
 

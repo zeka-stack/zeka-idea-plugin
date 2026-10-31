@@ -1,5 +1,9 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.service.CommitSelectionMeta;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.service.ChangelogCommitModels;
+
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.project.Project;
@@ -17,9 +21,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.BinaryFileChangeSummary;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.util.BinaryFileChangeSummary;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ProjectVersionResolver;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.ResponseLanguage;

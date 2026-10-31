@@ -1,10 +1,10 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
+package dev.dong4j.zeka.stack.idea.plugin.common.changelog.util;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff;
 
 /**
  * 二进制文件变更摘要工具

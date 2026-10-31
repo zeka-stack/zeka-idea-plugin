@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
+package dev.dong4j.zeka.stack.idea.plugin.common.changelog.service;
 
 import java.util.Date;
 

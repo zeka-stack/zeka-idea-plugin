@@ -44,6 +44,10 @@ dependencies {
     // Provider/Executor 使用 @Slf4j; IDE 宿主由平台日志设施桥接, MCP Server 宿主自带 binder
     implementation("org.slf4j:slf4j-api:2.0.13")
 
+    // changelog 核心逻辑(ChangelogGitService)使用 JGit 读提交与 diff;
+    // 版本与 changelog 插件保持一致, IDE 宿主下由插件 zip 各自携带
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
+
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.platform:junit-platform-suite:1.9.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

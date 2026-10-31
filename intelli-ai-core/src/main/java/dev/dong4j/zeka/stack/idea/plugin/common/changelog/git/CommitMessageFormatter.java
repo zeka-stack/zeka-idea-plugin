@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
+package dev.dong4j.zeka.stack.idea.plugin.common.changelog.git;
 
 import dev.dong4j.zeka.stack.idea.plugin.kit.MessageFormatter;
 import org.jetbrains.annotations.NotNull;

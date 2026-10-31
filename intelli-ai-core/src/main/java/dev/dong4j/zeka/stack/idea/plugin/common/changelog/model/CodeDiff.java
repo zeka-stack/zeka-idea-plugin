@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.model;
+package dev.dong4j.zeka.stack.idea.plugin.common.changelog.model;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

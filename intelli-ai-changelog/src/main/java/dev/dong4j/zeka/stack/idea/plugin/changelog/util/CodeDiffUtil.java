@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Locale;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.context.ContextResolverRegistry;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff;
 import dev.dong4j.zeka.stack.idea.plugin.kit.ReadActionCompat;
 
 /**

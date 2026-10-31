@@ -1,4 +1,4 @@
-package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
+package dev.dong4j.zeka.stack.idea.plugin.common.changelog.util;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff;
 
 /**
  * 统一 diff 解析器

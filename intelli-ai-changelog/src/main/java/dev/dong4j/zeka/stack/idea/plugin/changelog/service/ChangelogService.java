@@ -1,5 +1,11 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.service;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.service.CommitSelectionMeta;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.service.ChangelogCommitModels;
+
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff;
+
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.Change;
@@ -20,7 +26,7 @@ import java.util.Map;
 
 import dev.dong4j.zeka.stack.idea.plugin.changelog.settings.SettingsState;
 import dev.dong4j.zeka.stack.idea.plugin.changelog.util.ChangelogBundle;
-import dev.dong4j.zeka.stack.idea.plugin.changelog.util.UnifiedDiffParser;
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.util.UnifiedDiffParser;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIStreamResponseListener;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsEventType;
 import dev.dong4j.zeka.stack.idea.plugin.common.statistics.StatisticsUserAction;
@@ -45,6 +51,8 @@ public final class ChangelogService {
 
     /** Git 服务实例, 用于读取提交记录和处理 Git 相关操作 */
     private final ChangelogGitService gitService;
+    /** 当前项目上下文, 原 record accessor 移除后改为显式持有 */
+    private final Project project;
     /** 提交日志提示词构建器, 用于生成 AI 调用所需的提示文本 */
     private final ChangelogPromptBuilder promptBuilder;
     /** 差异构建器, 用于根据代码变更生成提交信息 */
@@ -60,6 +68,7 @@ public final class ChangelogService {
      * @param project 项目对象, 不能为空
      */
     public ChangelogService(@NotNull Project project) {
+        this.project = project;
         this.gitService = new ChangelogGitService(project);
         this.promptBuilder = new ChangelogPromptBuilder(project);
         this.diffBuilder = new ChangelogCommitDiffBuilder(project);
@@ -630,7 +639,7 @@ public final class ChangelogService {
      */
     @NotNull
     private ChangelogCommitDiffBuilder.DiffPayload buildPayloadFromUnifiedDiff(@NotNull String diffText) {
-        List<dev.dong4j.zeka.stack.idea.plugin.changelog.model.CodeDiff> codeDiffs = UnifiedDiffParser.parseToCodeDiffs(diffText);
+        List<dev.dong4j.zeka.stack.idea.plugin.common.changelog.model.CodeDiff> codeDiffs = UnifiedDiffParser.parseToCodeDiffs(diffText);
         return new ChangelogCommitDiffBuilder.DiffPayload(codeDiffs, Map.of(), diffText);
     }
 
@@ -722,7 +731,7 @@ public final class ChangelogService {
      * @return 项目对象
      */
     public @NotNull Project getProject() {
-        return gitService.project();
+        return project;
     }
 
     /**

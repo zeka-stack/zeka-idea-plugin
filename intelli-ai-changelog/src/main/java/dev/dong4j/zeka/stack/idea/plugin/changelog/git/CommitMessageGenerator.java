@@ -1,5 +1,7 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.git;
 
+import dev.dong4j.zeka.stack.idea.plugin.common.changelog.git.CommitMessageFormatter;
+
 import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.Disposable;

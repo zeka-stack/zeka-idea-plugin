@@ -28,6 +28,9 @@ publishing {
 }
 
 dependencies {
+    // MessageFormatter 平移至 core 后的编译期依赖(api 传递给 kit 的消费方)
+    api("dev.dong4j.zeka.stack:intelli-ai-core:2026.2.1004")
+
     // IntelliJ Platform API（库项目仅编译期依赖，运行时由插件提供）
     intellijPlatform {
         // create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
