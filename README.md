@@ -411,9 +411,11 @@ cd zeka-idea-plugin
 
 ```
 zeka-idea-plugin/
+├── intelli-ai-core/           # 纯 JVM 核心库(AI 执行链/changelog/javadoc 生成核心与模板)
 ├── intelli-ai-engine/         # AI 引擎(其他 AI 插件的依赖)
 ├── intelli-ai-javadoc/        # Javadoc 生成插件
 ├── intelli-ai-changelog/      # Changelog 生成插件
+├── intelli-ai-mcp-server/     # 独立 MCP 服务(将生成能力暴露给外部 AI Agent)
 ├── intelli-ai-tracer/         # 调用链追踪插件
 ├── intelli-ai-nacos/          # Nacos 配置管理插件
 ├── archiver-man/              # 压缩包编辑插件

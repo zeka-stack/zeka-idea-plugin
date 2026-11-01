@@ -47,7 +47,7 @@ public final class McpServerApplication {
     private static final String SERVER_NAME = "intelli-ai-mcp-server";
 
     /** 服务版本, 与 gradle.properties 的 serverVersion 保持一致 */
-    private static final String SERVER_VERSION = "2026.2.1004";
+    private static final String SERVER_VERSION = "2026.2.1005";
 
     /**
      * 私有构造函数, 防止实例化入口类
