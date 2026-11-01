@@ -74,8 +74,23 @@ public final class JavadocTool {
         String userPrompt = templateFilled + "\n\n待生成注释的源码:\n" + sourceCode;
 
         String result = callAi(systemPrompt, userPrompt, args);
-        // 与插件生成链路一致: 剥离 markdown 围栏/多余说明等 AI 输出噪声
-        return AiCodePreprocessor.preprocess(result);
+        // 与插件生成链路一致: 剥离 AI 输出的 markdown 代码围栏, 仅保留纯代码文本
+        return stripCodeFence(result);
+    }
+
+    /**
+     * 剥离 AI 输出的 markdown 代码围栏
+     * <p> 模型倾向于用 ```java ... ``` 包裹代码, 调用方(agent)需要的是纯代码文本;
+     * 原插件链路由生成服务的后处理完成剥离, core 未包含该逻辑, 在此补齐.
+     * 无围栏时原样返回.
+     *
+     * @param text AI 输出文本
+     * @return 去除围栏后的代码文本
+     */
+    static @NotNull String stripCodeFence(@NotNull String text) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+            .compile("^```[a-zA-Z]*\\s*\\n([\\s\\S]*?)\\n?```\\s*$").matcher(text.trim());
+        return m.matches() ? m.group(1) : text;
     }
 
     /**

@@ -46,6 +46,9 @@ public final class McpServerApplication {
     /** 服务名称, MCP 客户端据此识别 */
     private static final String SERVER_NAME = "intelli-ai-mcp-server";
 
+    /** 服务版本, 与 gradle.properties 的 serverVersion 保持一致 */
+    private static final String SERVER_VERSION = "2026.2.1004";
+
     /**
      * 私有构造函数, 防止实例化入口类
      */
@@ -63,7 +66,7 @@ public final class McpServerApplication {
         ServerConfig config = ServerConfig.load();
 
         // 注册 core 宿主 SPI: 版本信息(User-Agent)与凭证存储
-        CoreEnvironment.setVersionProvider(() -> SERVER_NAME + "/" + CoreEnvironment.version());
+        CoreEnvironment.setVersionProvider(() -> SERVER_NAME + "/" + SERVER_VERSION);
         ServerConfig.registerCredentialStore(config.apiKey());
 
         JavadocTool javadocTool = new JavadocTool(config);
@@ -75,8 +78,7 @@ public final class McpServerApplication {
             new StdioServerTransportProvider(new ObjectMapper());
 
         McpServer.sync(transportProvider)
-            .serverInfo(SERVER_NAME, McpServerApplication.class.getPackage() != null
-                ? "2026.2.1004" : "2026.2.1004")
+            .serverInfo(SERVER_NAME, SERVER_VERSION)
             .capabilities(McpSchema.ServerCapabilities.builder()
                               .tools(true)
                               .logging()
