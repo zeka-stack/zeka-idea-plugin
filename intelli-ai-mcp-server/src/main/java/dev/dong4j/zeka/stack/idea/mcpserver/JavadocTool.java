@@ -5,7 +5,6 @@ import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIConsoleLogger;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceException;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.provider.AIServiceProvider;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIProviderType;
-import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderConfig;
 import dev.dong4j.zeka.stack.idea.plugin.common.ai.AIServiceFactory;
 import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.JavadocDefaults;
 import dev.dong4j.zeka.stack.idea.plugin.common.javadoc.util.AiCodePreprocessor;
@@ -74,24 +73,29 @@ public final class JavadocTool {
             .replace("${language}", responseLanguage);
         String userPrompt = templateFilled + "\n\n待生成注释的源码:\n" + sourceCode;
 
-        String result = callAi(systemPrompt, userPrompt);
+        String result = callAi(systemPrompt, userPrompt, args);
         // 与插件生成链路一致: 剥离 markdown 围栏/多余说明等 AI 输出噪声
         return AiCodePreprocessor.preprocess(result);
     }
 
     /**
      * 调用 core AI 执行链
+     * <p> 支持入参级 provider/model 覆盖, 与启动配置解耦.
      *
      * @param systemPrompt 系统提示词
      * @param userPrompt   用户提示词
+     * @param args         工具入参(可含 provider/model 覆盖)
      * @return AI 生成内容
      * @throws AIServiceException 调用失败时抛出
      */
-    private @NotNull String callAi(@NotNull String systemPrompt, @NotNull String userPrompt) throws AIServiceException {
-        AIProviderConfig config = serverConfig.providerConfig();
-        AIServiceProvider provider = AIServiceFactory.createProvider(new StderrLogger(), config);
+    private @NotNull String callAi(@NotNull String systemPrompt,
+                                   @NotNull String userPrompt,
+                                   @NotNull Map<String, Object> args) throws AIServiceException {
+        ServerConfig.ResolvedCall resolved = serverConfig.resolveConfig(
+            optionalString(args, "provider", null), optionalString(args, "model", null));
+        AIServiceProvider provider = AIServiceFactory.createProvider(new StderrLogger(), resolved.config());
         return provider.generateContent(new AIChatRequest(systemPrompt, userPrompt),
-                                        serverConfig.apiKey(), null);
+                                        resolved.apiKey(), null);
     }
 
     /**

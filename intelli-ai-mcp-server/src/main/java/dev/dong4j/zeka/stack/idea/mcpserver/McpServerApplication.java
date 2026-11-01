@@ -126,6 +126,14 @@ public final class McpServerApplication {
                     "responseLanguage": {
                       "type": "string",
                       "description": "注释语言, 默认 中文"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "AI 服务商枚举名(如 DEEPSEEK/ZHIPU/ORCAROUTER), 覆盖启动配置; 需该平台密钥已配置"
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "模型名, 覆盖启动配置或该服务商默认模型"
                     }
                   },
                   "required": ["sourceCode"]
@@ -175,6 +183,14 @@ public final class McpServerApplication {
                     "responseLanguage": {
                       "type": "string",
                       "description": "输出语言, 默认 中文"
+                    },
+                    "provider": {
+                      "type": "string",
+                      "description": "AI 服务商枚举名(如 DEEPSEEK/ZHIPU/ORCAROUTER), 覆盖启动配置; 需该平台密钥已配置"
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "模型名, 覆盖启动配置或该服务商默认模型"
                     }
                   },
                   "required": ["repoPath"]

@@ -11,8 +11,10 @@
 
 | 工具 | 入参 | 说明 |
 |---|---|---|
-| `generate_javadoc` | `sourceCode`（必填）、`elementKind`（class/method/field/test）、`responseLanguage` | 源码文本 → 带 Javadoc 注释的完整代码 |
-| `generate_changelog` | `repoPath`（必填）、`commitHashes` 或 `range`、`type`（changelog/commit_message）、`version`、`responseLanguage` | 本地 Git 仓库 → AI 变更日志 |
+| `generate_javadoc` | `sourceCode`（必填）、`elementKind`（class/method/field/test）、`responseLanguage`、`provider`*、`model`* | 源码文本 → 带 Javadoc 注释的完整代码 |
+| `generate_changelog` | `repoPath`（必填）、`commitHashes` 或 `range`、`type`（changelog/commit_message）、`version`、`responseLanguage`、`provider`*、`model`* | 本地 Git 仓库 → AI 变更日志 |
+
+带 * 的参数为**调用级覆盖**：单次调用可临时切换服务商/模型，无需改配置重启进程。切换服务商时密钥优先取该服务商的独立密钥（见下节），未配置则回退全局密钥。
 | `list_providers` | 无 | 列出支持的 33 家服务商、默认模型与端点（无需 API Key） |
 
 ## 构建
@@ -36,6 +38,17 @@
 | `INTELLIAI_PROVIDER` | 供应商标识，**与 IDEA 插件同源的 33 家全量支持**（见下表），默认 `QIANWEN` |
 | `INTELLIAI_BASE_URL` | 覆盖默认端点（可选，各服务商自带默认值） |
 | `INTELLIAI_MODEL` | 覆盖默认模型（可选，各服务商自带默认值） |
+
+**按服务商独立配置密钥**（调用级切换服务商时自动取对应密钥），配置文件写法：
+
+```properties
+api_key=sk-全局默认key
+api_key.DEEPSEEK=sk-deepseek的key
+api_key.ZHIPU=glm的key
+api_key.ORCAROUTER=orca的key
+```
+
+环境变量等价写法：`INTELLIAI_API_KEY_DEEPSEEK` / `INTELLIAI_API_KEY_ZHIPU` 等（优先于配置文件）。
 
 支持的服务商与 `INTELLIAI_PROVIDER` 取值（枚举名，与插件设置页一一对应）：
 

@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -53,12 +55,18 @@ public final class ServerConfig {
     /** API Key 明文, 调用 provider 时直接传入 */
     private final String apiKey;
 
+    /** 各供应商独立密钥(配置文件 api_key.<PROVIDER> 或环境变量 INTELLIAI_API_KEY_<PROVIDER>), 支持调用时切换供应商 */
+    private final Map<AIProviderType, String> perProviderKeys;
+
     /**
      * 读取配置并装配供应商对象
      */
-    private ServerConfig(@NotNull AIProviderConfig providerConfig, @Nullable String apiKey) {
+    private ServerConfig(@NotNull AIProviderConfig providerConfig,
+                         @Nullable String apiKey,
+                         @NotNull Map<AIProviderType, String> perProviderKeys) {
         this.providerConfig = providerConfig;
         this.apiKey = apiKey;
+        this.perProviderKeys = perProviderKeys;
     }
 
     /**
@@ -87,6 +95,7 @@ public final class ServerConfig {
      */
     public static @NotNull ServerConfig load() {
         Properties props = loadConfigFile();
+        Map<AIProviderType, String> perProviderKeys = collectPerProviderKeys(props);
 
         String provider = firstNonBlank(System.getenv("INTELLIAI_PROVIDER"),
                                         props.getProperty("provider"), "QIANWEN");
@@ -111,7 +120,69 @@ public final class ServerConfig {
         }
         log.info("MCP Server 配置完成: provider={}, model={}, baseUrl={}",
                  config.providerType, config.modelName, config.baseUrl);
-        return new ServerConfig(config, apiKey);
+        return new ServerConfig(config, apiKey, perProviderKeys);
+    }
+
+    /**
+     * 解析调用级覆盖后的供应商配置
+     * <p> 工具入参可携带 provider / model 覆盖启动配置, 实现单次调用切换服务商与模型:
+     * <ul>
+     *   <li>仅指定 model: 沿用启动供应商, 只换模型</li>
+     *   <li>指定 provider: 切换供应商, 端点/默认模型取新供应商默认值,
+     *       密钥优先取该供应商的独立密钥(api_key.&lt;PROVIDER&gt;), 无则回退全局密钥</li>
+     * </ul>
+     *
+     * @param providerOverride 供应商覆盖值, 可为 null
+     * @param modelOverride    模型覆盖值, 可为 null
+     * @return 覆盖后的配置对象(新实例, 不影响启动配置)
+     */
+    public @NotNull ResolvedCall resolveConfig(@Nullable String providerOverride,
+                                               @Nullable String modelOverride) {
+        if ((providerOverride == null || providerOverride.isBlank())
+            && (modelOverride == null || modelOverride.isBlank())) {
+            return new ResolvedCall(providerConfig, apiKey);
+        }
+        AIProviderType type = providerOverride != null && !providerOverride.isBlank()
+            ? resolveType(providerOverride)
+            : providerConfig.providerType;
+        AIProviderConfig config = new AIProviderConfig();
+        config.providerType = type;
+        config.baseUrl = providerOverride != null && !providerOverride.isBlank()
+            ? type.getDefaultBaseUrl()
+            : providerConfig.baseUrl;
+        config.modelName = modelOverride != null && !modelOverride.isBlank()
+            ? modelOverride
+            : (providerOverride != null && !providerOverride.isBlank()
+                ? type.getDefaultModel()
+                : providerConfig.modelName);
+        config.modelParameters = providerConfig.modelParameters;
+        config.runtimeSettings = providerConfig.runtimeSettings;
+        String key = perProviderKeys.getOrDefault(type, apiKey);
+        return new ResolvedCall(config, key);
+    }
+
+    /**
+     * 收集各供应商独立密钥
+     * <p> 来源: 配置文件 {@code api_key.<PROVIDER>} 与环境变量
+     * {@code INTELLIAI_API_KEY_<PROVIDER>}(环境变量优先).
+     *
+     * @param props 配置文件属性
+     * @return 供应商 -> 密钥映射
+     */
+    private static @NotNull Map<AIProviderType, String> collectPerProviderKeys(@NotNull Properties props) {
+        Map<AIProviderType, String> keys = new EnumMap<>(AIProviderType.class);
+        for (AIProviderType type : AIProviderType.values()) {
+            String env = System.getenv("INTELLIAI_API_KEY_" + type.name());
+            if (env != null && !env.isBlank()) {
+                keys.put(type, env.trim());
+                continue;
+            }
+            String file = props.getProperty("api_key." + type.name());
+            if (file != null && !file.isBlank()) {
+                keys.put(type, file.trim());
+            }
+        }
+        return keys;
     }
 
     /**
@@ -192,5 +263,14 @@ public final class ServerConfig {
                 log.warn("MCP Server 运行时不支持写入凭证, 请修改 {} 或环境变量", CONFIG_PATH);
             }
         });
+    }
+
+    /**
+     * 单次调用的解析结果
+     *
+     * @param config 供应商配置
+     * @param apiKey 本次调用使用的密钥
+     */
+    public record ResolvedCall(@NotNull AIProviderConfig config, @Nullable String apiKey) {
     }
 }

@@ -113,7 +113,7 @@ public final class ChangelogTool {
         String systemPrompt = ChangelogDefaults.getDefaultChangelogSystemPrompt()
             .replace("${language}", responseLanguage);
 
-        return callAi(systemPrompt, template);
+        return callAi(systemPrompt, template, args);
     }
 
     /**
@@ -145,7 +145,7 @@ public final class ChangelogTool {
         String systemPrompt = ChangelogDefaults.getDefaultCommitMessageSystemPrompt()
             .replace("${language}", responseLanguage);
 
-        String raw = callAi(systemPrompt, template);
+        String raw = callAi(systemPrompt, template, args);
         // 与插件链路一致: 去代码围栏/中文标点转换等格式化
         return CommitMessageFormatter.format(raw);
     }
@@ -182,11 +182,16 @@ public final class ChangelogTool {
      * @return AI 生成内容
      * @throws AIServiceException 调用失败时抛出
      */
-    private @NotNull String callAi(@NotNull String systemPrompt, @NotNull String userPrompt) throws AIServiceException {
+    private @NotNull String callAi(@NotNull String systemPrompt,
+                                   @NotNull String userPrompt,
+                                   @NotNull Map<String, Object> args) throws AIServiceException {
+        ServerConfig.ResolvedCall resolved = serverConfig.resolveConfig(
+            JavadocTool.optionalString(args, "provider", null),
+            JavadocTool.optionalString(args, "model", null));
         AIServiceProvider provider = AIServiceFactory.createProvider(new JavadocTool.StderrLogger(),
-                                                                     serverConfig.providerConfig());
+                                                                     resolved.config());
         return provider.generateContent(new AIChatRequest(systemPrompt, userPrompt),
-                                        serverConfig.apiKey(), null);
+                                        resolved.apiKey(), null);
     }
 
     /**
