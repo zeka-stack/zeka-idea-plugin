@@ -99,7 +99,10 @@ dependencies {
     compileOnly("dev.dong4j.zeka.stack:intelli-ai-core:$coreVersion")
 
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
-    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:$kitVersion")
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:$kitVersion") {
+        // core 统一由 engine 加载，避免不同插件产生同名但不兼容的类型。
+        exclude(group = "dev.dong4j.zeka.stack", module = "intelli-ai-core")
+    }
 
     // JGit for Git operations (排除 SLF4J 依赖，使用 IntelliJ 平台的日志框架)
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r") {

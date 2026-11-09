@@ -78,7 +78,10 @@ dependencies {
     compileOnly("dev.dong4j.zeka.stack:intelli-ai-core:$coreVersion")
 
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
-    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:$kitVersion")
+    implementation("dev.dong4j.zeka.stack:idea-plugin-kit:$kitVersion") {
+        // core 统一由 engine 加载，避免不同插件产生同名但不兼容的类型。
+        exclude(group = "dev.dong4j.zeka.stack", module = "intelli-ai-core")
+    }
 
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
