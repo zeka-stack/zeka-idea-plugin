@@ -10,12 +10,9 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.jcef.JBCefBrowser;
 import com.intellij.ui.jcef.JBCefBrowserBase;
 import com.intellij.ui.jcef.JBCefJSQuery;
-import dev.dong4j.zeka.stack.idea.plugin.common.util.JcefSupport;
 import com.intellij.util.Alarm;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettings;
 import dev.dong4j.zeka.stack.idea.plugin.common.config.AIProviderSettingsListener;
@@ -26,13 +23,12 @@ import org.cef.handler.CefLoadHandlerAdapter;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * AI 聊天面板
  * <p> 负责在 IntelliJ IDEA 中集成并显示 AI 聊天界面, 基于 JCEF 技术实现浏览器组件的嵌入与管理.
  * <p> 该类处理前端页面的加载,Java 与 JavaScript 的双向通信,IDE 编辑器事件的监听 (如文本选择变化)
- * 以及 AI 提供者配置的同步更新. 如果当前环境不支持 JCEF, 将显示提示信息面板.
+ * 以及 AI 提供者配置的同步更新. 工厂必须在加载本类前确认 JCEF 可用.
  * <p> 实现了 {@code Disposable} 接口, 用于在面板销毁时释放相关资源.
  *
  * @author dong4j
@@ -64,26 +60,13 @@ final class AIChatPanel implements Disposable {
 
     /**
      * 构造 AIChatPanel 实例
-     * <p> 初始化聊天面板, 根据环境是否支持 JCEF 创建相应的 UI 组件.
-     * 如果支持 JCEF, 将初始化浏览器, 消息处理器, 监听器并加载 HTML 页面;
-     * 否则显示不支持提示信息.
+     * <p> 初始化浏览器, 消息处理器, 监听器并加载 HTML 页面.
+     * 调用方须在加载本类前检查 JCEF, 缺少浏览器运行时的降级由工厂处理.
      *
      * @param project 当前项目实例, 不能为空
      */
     AIChatPanel(@NotNull Project project) {
         this.project = project;
-        if (!JcefSupport.isSupported()) {
-            this.browser = null;
-            this.messageHandler = null;
-            this.editorListener = null;
-            this.selectionListener = null;
-            this.providerSettingsListener = null;
-            JBPanel<?> panel = new JBPanel<>(new BorderLayout());
-            panel.add(new JBLabel("当前环境不支持 JCEF，无法显示聊天界面。"), BorderLayout.CENTER);
-            this.component = panel;
-            return;
-        }
-
         this.browser = new JBCefBrowser();
         this.messageHandler = new AIChatMessageHandler(project, browser);
         this.selectionUpdateAlarm = new Alarm(Alarm.ThreadToUse.SWING_THREAD, this);

@@ -4,9 +4,14 @@ import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
+import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBPanel;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
+import dev.dong4j.zeka.stack.idea.plugin.common.util.JcefSupport;
 import org.jetbrains.annotations.NotNull;
+
+import java.awt.BorderLayout;
 
 /**
  * AI 聊天工具窗口工厂类
@@ -30,6 +35,15 @@ public final class AIChatToolWindowFactory implements ToolWindowFactory, DumbAwa
      */
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
+        // 面板引用 org.cef 类型，缺少 JCEF 时会在进入构造函数前发生类链接错误。
+        if (!JcefSupport.isSupported()) {
+            JBPanel<?> panel = new JBPanel<>(new BorderLayout());
+            panel.add(new JBLabel("当前环境不支持 JCEF，无法显示聊天界面。"), BorderLayout.CENTER);
+            Content content = ContentFactory.getInstance().createContent(panel, "", false);
+            toolWindow.getContentManager().addContent(content);
+            return;
+        }
+
         AIChatPanel panel = new AIChatPanel(project);
         ContentFactory contentFactory = ContentFactory.getInstance();
         Content content = contentFactory.createContent(panel.getComponent(), "", false);
