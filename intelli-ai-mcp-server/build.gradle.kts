@@ -23,7 +23,7 @@ java {
 
 // 纯 JVM core 模块: AI 执行链 + changelog/javadoc 生成核心与模板
 dependencies {
-    implementation("dev.dong4j.zeka.stack:intelli-ai-core:2026.2.1004")
+    implementation("dev.dong4j.zeka.stack:intelli-ai-core:${providers.gradleProperty("coreVersion").get()}")
 
     // MCP 官方 Java SDK(stdio transport), 运行时依赖 Jackson 做 JSON-RPC 编解码
     implementation("io.modelcontextprotocol.sdk:mcp:0.10.0")

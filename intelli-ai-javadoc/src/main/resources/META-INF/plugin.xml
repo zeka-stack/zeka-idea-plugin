@@ -16,6 +16,10 @@
     <depends>org.jetbrains.kotlin</depends>
     <depends>com.intellij.modules.vcs</depends>
     <depends>org.jetbrains.idea.maven</depends>
+    <!-- 2026.3 起 externalSystem 使用独立 classloader。该模块在更早平台中也存在。 -->
+    <dependencies>
+        <module name="intellij.platform.externalSystem"/>
+    </dependencies>
     <!-- 依赖 IntelliAI Engine 插件 -->
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
     <resource-bundle>messages.AIJBundle</resource-bundle>

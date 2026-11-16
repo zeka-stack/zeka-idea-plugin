@@ -1,7 +1,7 @@
 plugins {
     id("java")
     id("maven-publish")
-    id("org.jetbrains.intellij.platform") version "2.18.1"
+    id("org.jetbrains.intellij.platform") version "2.20.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -9,6 +9,17 @@ version = providers.gradleProperty("pluginVersion").get()
 val kitVersion: String = providers.gradleProperty("kitVersion").get()
 val coreVersion: String = providers.gradleProperty("coreVersion").get()
 val platformVersion = providers.gradleProperty("platformVersion")
+
+/**
+ * 平台版本是否不低于指定主次版本.
+ * 不能用 startsWith("2026.2"): 2026.3 不会命中, 2026.10 的字符串序也会错.
+ */
+fun isPlatformAtLeast(version: String, major: Int, minor: Int): Boolean {
+    val numbers = version.substringBefore("-").split(".").mapNotNull { it.toIntOrNull() }
+    val currentMajor = numbers.getOrElse(0) { 0 }
+    val currentMinor = numbers.getOrElse(1) { 0 }
+    return currentMajor > major || (currentMajor == major && currentMinor >= minor)
+}
 
 repositories {
     mavenLocal()
@@ -40,7 +51,7 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("platformSinceBuild")
-            // 限定到已验证的 2026.2 分支，避免对尚未验证的未来 IDE 版本宣称兼容。
+            // 已核对 2026.3 拆出的模块依赖，兼容上限到 263.*。
             untilBuild = providers.gradleProperty("platformUntilBuild")
         }
     }
@@ -58,6 +69,7 @@ intellijPlatform {
             create("IU", "2025.3")
             create("IU", "2026.1")
             create("IU", "2026.2.2")
+            create("IU", "2026.3")
         }
     }
 }
@@ -70,8 +82,12 @@ dependencies {
         bundledPlugin("com.intellij.java")
         // 2026.2 起 JCEF 从平台核心拆分为独立 bundled plugin；旧平台仍由核心直接提供。
         // plugin.xml 使用模块别名 com.intellij.modules.jcef；Gradle 2.x bundled 插件 ID 是 intellij.platform.ui.jcef。
-        if (platformVersion.get().startsWith("2026.2")) {
+        if (isPlatformAtLeast(platformVersion.get(), 2026, 2)) {
             bundledPlugin("intellij.platform.ui.jcef")
+        }
+        // 2026.3 起 Problems View 拆成 bundled plugin。稳定版插件 ID 是 com.intellij.problemsView。
+        if (isPlatformAtLeast(platformVersion.get(), 2026, 3)) {
+            bundledPlugin("com.intellij.problemsView")
         }
         zipSigner()
         pluginVerifier()

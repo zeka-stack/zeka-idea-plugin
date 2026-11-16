@@ -9,6 +9,8 @@
     <depends>dev.dong4j.zeka.stack.idea.plugin.common.ai</depends>
     <depends optional="true" config-file="repairer-checkstyle.xml">CheckStyle-IDEA</depends>
     <depends optional="true" config-file="repairer-maven.xml">org.jetbrains.idea.maven</depends>
+    <!-- 2026.3 起 Problems View 独立为 bundled plugin。旧平台没有这个插件 ID, 必须 optional。 -->
+    <depends optional="true" config-file="repairer-problems-view.xml">com.intellij.problemsView</depends>
 
     <resource-bundle>messages.RepairerBundle</resource-bundle>
 

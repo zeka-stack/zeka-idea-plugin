@@ -1,0 +1,7 @@
+<!-- 2026.3 起 Problems View 扩展点随 bundled plugin 一起搬走. 主 plugin.xml 仍保留注册, 供 2026.2 及更早使用. -->
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <problemsViewPanelProvider
+            implementation="dev.dong4j.zeka.stack.idea.plugin.common.console.AIConsoleProblemsViewPanelProvider"/>
+    </extensions>
+</idea-plugin>

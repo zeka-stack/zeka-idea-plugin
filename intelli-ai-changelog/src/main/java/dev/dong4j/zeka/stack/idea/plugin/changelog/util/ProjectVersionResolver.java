@@ -1,6 +1,5 @@
 package dev.dong4j.zeka.stack.idea.plugin.changelog.util;
 
-import com.intellij.openapi.externalSystem.model.ProjectSystemId;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -273,15 +272,17 @@ public final class ProjectVersionResolver {
                 return null;
             }
 
-            // 获取项目数据
-            ProjectSystemId gradleSystemId = new ProjectSystemId("GRADLE");
+            // ProjectSystemId 属于 2026.3 拆出的 externalSystem 模块, 不能出现在本类常量池里.
+            Class<?> projectSystemIdClass = Class.forName(
+                "com.intellij.openapi.externalSystem.model.ProjectSystemId");
+            Object gradleSystemId = projectSystemIdClass.getConstructor(String.class).newInstance("GRADLE");
             String externalProjectPath = getExternalProjectPath(project);
             if (externalProjectPath == null || externalProjectPath.isEmpty()) {
                 return null;
             }
 
             Object projectData = projectDataManagerClass
-                .getMethod("getExternalProjectData", Project.class, ProjectSystemId.class, String.class)
+                .getMethod("getExternalProjectData", Project.class, projectSystemIdClass, String.class)
                 .invoke(projectDataManager, project, gradleSystemId, externalProjectPath);
 
             if (projectData != null) {
@@ -293,8 +294,8 @@ public final class ProjectVersionResolver {
                     return version.toString();
                 }
             }
-        } catch (Exception e) {
-            // Gradle 插件不可用或解析失败，静默处理
+        } catch (Throwable e) {
+            // 2026.3 模块不可见时 Class.forName / 链接会抛 Error, 回退到直接解析 build.gradle.
             log.debug("Gradle 插件 API 不可用或解析失败", e);
         }
         return null;

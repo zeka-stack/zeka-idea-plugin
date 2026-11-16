@@ -83,25 +83,37 @@ description: 将 IntelliJ IDEA 插件部署到 JetBrains Marketplace 和远程�
 
 **更新内容**:
 
-1. **每个插件目录中的 gradle.properties**:
+1. **每个插件目录中的 gradle.properties**（只改已存在的字段）:
     - `pluginVersion`
     - `kitVersion`
-    - `engineVersion` (如果存在)
+    - `engineVersion`
+    - `coreVersion`
 
 2. **Nginx 配置** (`ideaplugin.dong4j.site.conf`):
-    - 响应头中的版本号
+    - 响应头中的版本号。文件是符号链接时写入真实文件，脚本本身不上传。
+
+3. **engine webview** (`intelli-ai-engine/webview/src/version/version.ts`):
+    - `APP_VERSION`
 
 **白名单插件**:
 
+- intelli-ai-core（只有 `coreVersion`）
+- intelli-ai-mcp-server（只改 `coreVersion`，不改 `serverVersion`）
+- idea-plugin-kit
 - intelli-ai-engine
 - intelli-ai-javadoc
 - intelli-ai-changelog
 - intelli-ai-nacos
 - intelli-ai-swagger
 - intelli-ai-tracer
-- idea-plugin-kit
+- intelli-ai-terminal
+- intelli-ai-repairer
 - zks-dev-helper
 - archiver-man
+
+`idea-plugin-template` 不在白名单内，kit 升级后要手改模板里的 `kitVersion`。
+
+构建或发布 engine 之前必须先跑 `./generate-whatsnew.sh`。What's New HTML 会打进 engine 插件，漏跑就会带上旧说明。脚本使用 `set -eu`，不要改成 `pipefail`。
 
 **版本格式**: `x.y.z` 或 `x.y.z.w` (例如: `2025.3.1`)
 
@@ -227,7 +239,8 @@ make copy-install-upload    # 复制、安装并上传到服务器
 # 1. 更新所有插件版本
 ./update-version.sh 2025.3.1
 
-# 2. 生成 What's New 页面
+# 2. 生成 What's New，并在构建 / 发布 engine 之前完成
+#    HTML 会打进 engine 插件，漏掉这一步发布出去的仍是上一版说明
 ./generate-whatsnew.sh
 
 # 3. 部署 What's New 页面
@@ -260,7 +273,10 @@ make copy-install-upload    # 复制、安装并上传到服务器
 # 1. 更新版本
 ./update-version.sh 2025.3.1
 
-# 2. 仅发布到市场
+# 2. 生成并内嵌 What's New 后再发布 engine
+./generate-whatsnew.sh
+
+# 3. 仅发布到市场
 ./deploy.sh engine -p
 ```
 

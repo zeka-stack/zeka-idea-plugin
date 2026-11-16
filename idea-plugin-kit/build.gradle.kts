@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     id("maven-publish")
-    id("org.jetbrains.intellij.platform") version "2.18.1"
+    id("org.jetbrains.intellij.platform") version "2.20.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -29,7 +29,7 @@ publishing {
 
 dependencies {
     // MessageFormatter 平移至 core 后的编译期依赖(api 传递给 kit 的消费方)
-    api("dev.dong4j.zeka.stack:intelli-ai-core:2026.2.1004")
+    api("dev.dong4j.zeka.stack:intelli-ai-core:${providers.gradleProperty("coreVersion").get()}")
 
     // IntelliJ Platform API（库项目仅编译期依赖，运行时由插件提供）
     intellijPlatform {

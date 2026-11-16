@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij.platform") version "2.18.1"
+    id("org.jetbrains.intellij.platform") version "2.20.1"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -31,7 +31,7 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("platformSinceBuild")
-            // 限定到已验证的 2026.2 分支，避免对尚未验证的未来 IDE 版本宣称兼容。
+            // 已核对 2026.3 拆出的模块依赖，兼容上限到 263.*。
             untilBuild = providers.gradleProperty("platformUntilBuild")
         }
     }
@@ -49,19 +49,33 @@ intellijPlatform {
             create("IU", "2025.3")
             create("IU", "2026.1")
             create("IU", "2026.2.2")
+            create("IU", "2026.3")
         }
     }
+}
+
+/** 平台版本是否不低于指定主次版本。2026.3 不能再用 startsWith("2026.2") 判断。 */
+fun isPlatformAtLeast(version: String, major: Int, minor: Int): Boolean {
+    val numbers = version.substringBefore("-").split(".").mapNotNull { it.toIntOrNull() }
+    val currentMajor = numbers.getOrElse(0) { 0 }
+    val currentMinor = numbers.getOrElse(1) { 0 }
+    return currentMajor > major || (currentMajor == major && currentMinor >= minor)
 }
 
 dependencies {
     // IntelliJ Platform
     intellijPlatform {
+        val platformVersion = providers.gradleProperty("platformVersion")
         // create(providers.gradleProperty("platformType"), providers.gradleProperty("platformVersion"))
-        intellijIdea(providers.gradleProperty("platformVersion"))
+        intellijIdea(platformVersion)
 
         // Bundled plugins
         bundledPlugin("com.intellij.java")
         bundledPlugin("org.jetbrains.idea.maven")
+        // 2026.3 起 Problems View 拆成 bundled plugin。稳定版插件 ID 是 com.intellij.problemsView。
+        if (isPlatformAtLeast(platformVersion.get(), 2026, 3)) {
+            bundledPlugin("com.intellij.problemsView")
+        }
 
         // 依赖 IntelliAI Engine 插件
         // 注意：运行时依赖通过 plugin.xml 中的 <depends> 声明

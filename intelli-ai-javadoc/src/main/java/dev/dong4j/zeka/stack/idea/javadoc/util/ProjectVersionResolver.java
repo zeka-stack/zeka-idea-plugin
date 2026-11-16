@@ -1,11 +1,5 @@
 package dev.dong4j.zeka.stack.idea.javadoc.util;
 
-import com.intellij.openapi.externalSystem.model.DataNode;
-import com.intellij.openapi.externalSystem.model.ExternalProjectInfo;
-import com.intellij.openapi.externalSystem.model.ProjectSystemId;
-import com.intellij.openapi.externalSystem.model.project.ProjectData;
-import com.intellij.openapi.externalSystem.service.project.ProjectDataManager;
-import com.intellij.openapi.externalSystem.service.project.manage.ExternalProjectsManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -385,56 +379,19 @@ public final class ProjectVersionResolver {
     @Nullable
     private static String resolveFromGradlePlugin(@NotNull Project project) {
         try {
-            // 检查 Gradle 插件是否可用
-            ExternalProjectsManager externalProjectsManager = ExternalProjectsManager.getInstance(project);
-            if (externalProjectsManager == null) {
-                log.debug("ExternalProjectsManager 不可用");
+            // 单独加载, 避免 External System 类型进入本类常量池.
+            // 2026.3 该模块拆出后, 链接失败应只丢掉 Gradle API 快路径.
+            Class<?> reader = Class.forName(
+                "dev.dong4j.zeka.stack.idea.javadoc.util.GradleExternalSystemVersionReader");
+            Object version = reader.getMethod("resolve", Project.class).invoke(null, project);
+            if (version == null) {
                 return null;
             }
-
-            // 获取 Gradle 项目设置
-            ProjectDataManager projectDataManager = ProjectDataManager.getInstance();
-            if (projectDataManager == null) {
-                log.debug("ProjectDataManager 不可用");
-                return null;
-            }
-
-            // 获取项目数据
-            ProjectSystemId gradleSystemId = new ProjectSystemId("GRADLE");
-            String externalProjectPath = getExternalProjectPath(project);
-            if (externalProjectPath == null || externalProjectPath.isEmpty()) {
-                log.debug("外部项目路径为空");
-                return null;
-            }
-
-            ExternalProjectInfo projectInfo = projectDataManager
-                .getExternalProjectData(project, gradleSystemId, externalProjectPath);
-
-            if (projectInfo == null) {
-                log.debug("ExternalProjectInfo 为空");
-                return null;
-            }
-
-            DataNode<ProjectData> projectDataNode = projectInfo.getExternalProjectStructure();
-            if (projectDataNode == null) {
-                log.debug("ExternalProjectStructure 为空");
-                return null;
-            }
-
-            ProjectData projectData = projectDataNode.getData();
-            if (projectData == null) {
-                log.debug("ProjectData 为空");
-                return null;
-            }
-
-            String version = projectData.getVersion();
-            if (version != null && !version.isEmpty()) {
-                return version;
-            }
-            log.debug("ProjectData 未提供 version");
-        } catch (Exception e) {
-            // Gradle 插件不可用或解析失败，静默处理
-            log.debug("Gradle 插件 API 不可用或解析失败", e);
+            String text = version.toString();
+            return text.isEmpty() ? null : text;
+        } catch (Throwable e) {
+            // NoClassDefFoundError 也要吃掉: 2026.3 未挂上模块依赖时抛的是 Error, 不是 Exception.
+            log.debug("Gradle External System API 不可用或解析失败", e);
         }
         return null;
     }
@@ -657,15 +614,16 @@ public final class ProjectVersionResolver {
     }
 
     /**
-     * 获取外部项目路径
+     * 获取外部项目路径.
      * <p>
-     * 优先通过项目根目录推断外部项目路径, 若失败则返回项目基础路径.
+     * 包可见是为了让 {@link GradleExternalSystemVersionReader} 复用同一套根目录推断,
+     * 同时不把 External System 类型带回本类.
      *
      * @param project 项目对象, 不能为 null
-     * @return 外部项目路径字符串, 如果推断失败则返回项目基础路径, 可能为 null
+     * @return 外部项目路径; 推断失败时返回 null
      */
     @Nullable
-    private static String getExternalProjectPath(@NotNull Project project) {
+    static String externalProjectPath(@NotNull Project project) {
         VirtualFile baseDir = guessProjectDir(project);
         if (baseDir != null) {
             return baseDir.getPath();

@@ -1,3 +1,13 @@
+<h3>2026.3.1000</h3>
+<ul>
+    <li><b>✨ 兼容性</b>：支持 IntelliJ IDEA 2026.3（构建号 263.*）。VCS 继续依赖模块别名，DVCS 编译依赖覆盖 2026.2 及以上</li>
+    <li><b>🔧 修复</b>：Gradle 版本读取不再直接链接 ProjectSystemId。External System 模块不可见时回退到解析 build.gradle</li>
+</ul>
+<h3>2026.3.1000</h3>
+<ul>
+    <li><b>✨ Compatibility</b>: Support IntelliJ IDEA 2026.3 (build 263.*). VCS keeps the module alias, and the DVCS compile dependency now covers 2026.2 and later</li>
+    <li><b>🔧 Fixed</b>: Gradle version lookup no longer links ProjectSystemId directly and falls back to parsing build.gradle when the External System module is not visible</li>
+</ul>
 <h3>2026.2.1005</h3>
 <ul>
     <li><b>🔧 优化</b>：changelog 生成核心（JGit 提交读取、数据模型与默认模板）抽取至共享核心模块 <code>intelli-ai-core</code>，IDE 内保留 git4idea 快路径与 diff 降噪，与 MCP 服务共用同一实现</li>

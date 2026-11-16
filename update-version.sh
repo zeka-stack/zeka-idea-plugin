@@ -6,9 +6,10 @@
 #
 # 功能:
 # 1. 只处理白名单中指定的插件
-# 2. 更新每个插件 gradle.properties 中的 pluginVersion、kitVersion、engineVersion
+# 2. 更新每个插件 gradle.properties 中的 pluginVersion、kitVersion、engineVersion、coreVersion
 # 3. 只更新存在的字段，不存在的字段跳过
-# 4. 同步更新 ideaplugin.dong4j.site.conf 中的版本号
+# 4. 同步更新 ideaplugin.dong4j.site.conf 中的版本号（配置是符号链接时改真实文件）
+# 5. 同步更新 intelli-ai-engine/webview/src/version/version.ts 的 APP_VERSION
 
 set -e
 
@@ -34,13 +35,17 @@ cd "$SCRIPT_DIR"
 
 # 定义白名单插件列表（插件目录名）
 PLUGIN_WHITELIST=(
+    "intelli-ai-core"
+    "intelli-ai-mcp-server"
+    "idea-plugin-kit"
     "intelli-ai-engine"
     "intelli-ai-javadoc"
     "intelli-ai-changelog"
     "intelli-ai-nacos"
     "intelli-ai-swagger"
     "intelli-ai-tracer"
-    "idea-plugin-kit"
+    "intelli-ai-terminal"
+    "intelli-ai-repairer"
     "zks-dev-helper"
     "archiver-man"
 )
@@ -50,6 +55,7 @@ FIELDS_TO_UPDATE=(
     "pluginVersion"
     "kitVersion"
     "engineVersion"
+    "coreVersion"
 )
 
 echo "=========================================="
@@ -138,20 +144,26 @@ echo "更新 Nginx 配置文件"
 NGINX_CONF="$SCRIPT_DIR/ideaplugin.dong4j.site.conf"
 
 if [ -f "$NGINX_CONF" ]; then
+    # GNU sed -i 拒绝直接改符号链接，先解析到真实文件
+    NGINX_TARGET="$NGINX_CONF"
+    if [ -L "$NGINX_CONF" ]; then
+        NGINX_TARGET="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$NGINX_CONF")"
+        echo "  配置是符号链接，写入: $NGINX_TARGET"
+    fi
     # 检查是否存在版本号配置行
-    if grep -q 'return 200 "' "$NGINX_CONF"; then
+    if grep -q 'return 200 "' "$NGINX_TARGET"; then
         # 更新版本号（匹配 return 200 "版本号"; 格式）
         if [[ "$OSTYPE" == "darwin"* ]]; then
             # macOS 使用 sed -i ''
-            sed -i '' "s/return 200 \"[^\"]*\";/return 200 \"${NEW_VERSION}\";/" "$NGINX_CONF"
+            sed -i '' "s/return 200 \"[^\"]*\";/return 200 \"${NEW_VERSION}\";/" "$NGINX_TARGET"
         else
             # Linux 使用 sed -i
-            sed -i "s/return 200 \"[^\"]*\";/return 200 \"${NEW_VERSION}\";/" "$NGINX_CONF"
+            sed -i "s/return 200 \"[^\"]*\";/return 200 \"${NEW_VERSION}\";/" "$NGINX_TARGET"
         fi
         echo "  ✓ 已更新 $NGINX_CONF 中的版本号为: $NEW_VERSION"
 
         # 验证更新结果
-        CURRENT_NGINX_VERSION=$(grep 'return 200 "' "$NGINX_CONF" | sed -n 's/.*return 200 "\([^"]*\)";/\1/p' | head -n 1)
+        CURRENT_NGINX_VERSION=$(grep 'return 200 "' "$NGINX_TARGET" | sed -n 's/.*return 200 "\([^"]*\)";/\1/p' | head -n 1)
         if [ "$CURRENT_NGINX_VERSION" = "$NEW_VERSION" ]; then
             echo "    ✓ 验证成功: return 200 \"${CURRENT_NGINX_VERSION}\""
         else
