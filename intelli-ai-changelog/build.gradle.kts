@@ -98,7 +98,10 @@ dependencies {
         // 发布到市场后，用户仍需单独安装 IntelliAI Engine；不要用 marketplace 的 plugin()
         // plugin("dev.dong4j.zeka.stack.idea.plugin.common.ai", engineVersion)
         localPlugin(enginePluginZip)
-        localPlugin(checkstylePluginZip)
+        // checkstyle 只给本地 runIde 用，不进插件包。CI 没有这份 zip，配置阶段不能强制解析。
+        if (checkstylePluginZip.exists()) {
+            localPlugin(checkstylePluginZip)
+        }
 
         zipSigner()
         pluginVerifier()
