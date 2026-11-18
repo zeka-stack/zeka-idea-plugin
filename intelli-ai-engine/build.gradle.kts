@@ -94,6 +94,9 @@ dependencies {
         testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
 
+    // 2026.3 起平台不再把 Jackson 交给插件 classloader。统计上报和错误反馈直接使用 ObjectMapper，必须打进插件包。
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+
     // Idea Plugin Common 库依赖（本地库，打包时需要包含）
     implementation("dev.dong4j.zeka.stack:idea-plugin-kit:${kitVersion}")
 
